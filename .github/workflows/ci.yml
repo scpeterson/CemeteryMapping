@@ -33,6 +33,9 @@ jobs:
       - name: Validate database changelog
         run: npm run db:validate
 
+      - name: Test database rollback scripts
+        run: npm run db:rollback:test
+
       - name: Apply database migrations
         run: npm run db:migrate
 
