@@ -10,3 +10,5 @@ test-results
 .idea/material_theme_project_new.xml
 .idea/shelf
 *.tsbuildinfo
+.env
+.env.local

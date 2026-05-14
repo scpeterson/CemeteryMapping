@@ -27,6 +27,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Start PostGIS database
+        run: npm run db:up
+
+      - name: Validate database changelog
+        run: npm run db:validate
+
+      - name: Apply database migrations
+        run: npm run db:migrate
+
+      - name: Check database migration status
+        run: npm run db:status
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -38,3 +50,7 @@ jobs:
 
       - name: Run end-to-end tests
         run: npm run test:e2e
+
+      - name: Stop database
+        if: always()
+        run: npm run db:down

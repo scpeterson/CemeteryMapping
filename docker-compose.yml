@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: cemetery-mapping-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cemetery_mapping
+      POSTGRES_USER: cemetery_app
+      POSTGRES_PASSWORD: cemetery_app_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - cemetery-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cemetery_app -d cemetery_mapping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  liquibase:
+    image: liquibase/liquibase:4.33.0
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db/changelog:/liquibase/changelog
+    working_dir: /liquibase
+
+volumes:
+  cemetery-postgres-data:

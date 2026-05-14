@@ -19,6 +19,18 @@ Then open `http://127.0.0.1:5173`.
 - Status filters
 - Ownership history timeline
 - Sample in-memory data that can later move behind an API backed by PostGIS
+- Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
+
+## Database
+
+Start the local Postgres/PostGIS container and apply the Liquibase changelog:
+
+```bash
+npm run db:up
+npm run db:migrate
+```
+
+More database details are in `db/README.md`.
 
 ## Suggested next backend step
 

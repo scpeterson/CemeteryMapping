@@ -8,7 +8,14 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f db",
+    "db:validate": "docker compose run --rm liquibase --defaults-file=/liquibase/changelog/liquibase.properties validate",
+    "db:status": "docker compose run --rm liquibase --defaults-file=/liquibase/changelog/liquibase.properties status --verbose",
+    "db:migrate": "docker compose run --rm liquibase --defaults-file=/liquibase/changelog/liquibase.properties update",
+    "db:rollback": "docker compose run --rm liquibase --defaults-file=/liquibase/changelog/liquibase.properties rollbackCount 1"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
