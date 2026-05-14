@@ -22,6 +22,36 @@ Check migration status:
 npm run db:status
 ```
 
+Roll back the latest changeset:
+
+```bash
+npm run db:rollback
+```
+
+Roll back more than one changeset:
+
+```bash
+npm run db:rollback -- 2
+```
+
+Create a rollback target tag:
+
+```bash
+npm run db:tag -- before-owner-import
+```
+
+Roll back to a tag:
+
+```bash
+npm run db:rollback:tag -- before-owner-import
+```
+
+Test that pending migrations can be applied, rolled back, and applied again:
+
+```bash
+npm run db:rollback:test
+```
+
 Validate the changelog without applying it:
 
 ```bash

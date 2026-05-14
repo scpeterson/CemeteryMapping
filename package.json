@@ -15,7 +15,11 @@
     "db:validate": "docker compose run --rm liquibase --defaults-file=/liquibase/changelog/liquibase.properties validate",
     "db:status": "docker compose run --rm liquibase --defaults-file=/liquibase/changelog/liquibase.properties status --verbose",
     "db:migrate": "docker compose run --rm liquibase --defaults-file=/liquibase/changelog/liquibase.properties update",
-    "db:rollback": "docker compose run --rm liquibase --defaults-file=/liquibase/changelog/liquibase.properties rollbackCount 1"
+    "db:rollback": "node scripts/db-rollback-count.mjs",
+    "db:rollback:one": "node scripts/db-rollback-count.mjs 1",
+    "db:rollback:tag": "node scripts/db-rollback-tag.mjs",
+    "db:rollback:test": "node scripts/db-rollback-test.mjs",
+    "db:tag": "node scripts/db-tag.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
