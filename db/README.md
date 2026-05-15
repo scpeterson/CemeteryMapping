@@ -4,22 +4,54 @@ This project uses Liquibase to manage a PostgreSQL/PostGIS schema for cemetery G
 
 ## Local database
 
-Start Postgres/PostGIS:
+Database commands default to `DEV`. Use `APP_ENV=dev|test|stage|prod` to target a specific environment.
+
+Environment database settings live in:
+
+```text
+db/env/dev.env
+db/env/test.env
+db/env/stage.env
+db/env/prod.env
+```
+
+Local Docker ports:
+
+```text
+DEV:   localhost:5432 / cemetery_mapping_dev
+TEST:  localhost:5433 / cemetery_mapping_test
+STAGE: localhost:5434 / cemetery_mapping_stage
+PROD:  localhost:5435 / cemetery_mapping_prod
+```
+
+The checked-in PROD file is for local/prototype infrastructure only. Real production deployments should inject database credentials through deployment secrets, not commit them to the repository.
+
+Start Postgres/PostGIS for DEV:
 
 ```bash
 npm run db:up
+```
+
+Start another environment:
+
+```bash
+npm run db:up:test
+npm run db:up:stage
+npm run db:up:prod
 ```
 
 Apply migrations:
 
 ```bash
 npm run db:migrate
+APP_ENV=test npm run db:migrate
 ```
 
 Check migration status:
 
 ```bash
 npm run db:status
+APP_ENV=stage npm run db:status
 ```
 
 Roll back the latest changeset:
@@ -62,16 +94,17 @@ Stop the local database:
 
 ```bash
 npm run db:down
+APP_ENV=prod npm run db:down
 ```
 
 ## Connection
 
-The local Docker database uses:
+The local DEV Docker database uses:
 
 ```text
 host: localhost
 port: 5432
-database: cemetery_mapping
+database: cemetery_mapping_dev
 user: cemetery_app
 password: cemetery_app_dev
 ```

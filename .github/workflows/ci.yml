@@ -13,6 +13,8 @@ jobs:
   test:
     name: Lint, build, and test
     runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
 
     steps:
       - name: Check out repository
@@ -49,7 +51,7 @@ jobs:
         run: npm run lint
 
       - name: Build
-        run: npm run build
+        run: npm run build:test
 
       - name: Run end-to-end tests
         run: npm run test:e2e

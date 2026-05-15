@@ -244,6 +244,34 @@ h3 {
   inset: 0;
 }
 
+.environment-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 1;
+  min-width: 58px;
+  padding: 7px 10px;
+  border: 1px solid rgba(23, 32, 29, 0.18);
+  border-radius: 7px;
+  background: rgba(251, 252, 247, 0.94);
+  color: #26342d;
+  font-size: 0.78rem;
+  font-weight: 780;
+  letter-spacing: 0;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.environment-prod {
+  border-color: rgba(199, 82, 79, 0.45);
+  color: #8c302d;
+}
+
+.environment-stage {
+  border-color: rgba(217, 164, 65, 0.5);
+  color: #795316;
+}
+
 .map-legend {
   position: absolute;
   right: 18px;
