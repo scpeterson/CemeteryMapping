@@ -1,4 +1,4 @@
-import type { CemeteryData, GraveSpace } from "../types";
+import type { AreaGeometry, CemeteryData, GraveSpace } from "../types";
 
 export function gravesFeatureCollection(graves: GraveSpace[], selectedId?: string, searchIds: Set<string> = new Set()) {
   return {
@@ -14,7 +14,7 @@ export function gravesFeatureCollection(graves: GraveSpace[], selectedId?: strin
       },
       geometry: grave.geometry,
     })),
-  } satisfies GeoJSON.FeatureCollection<GeoJSON.Polygon>;
+  } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 
 export function sectionsFeatureCollection(data: CemeteryData) {
@@ -28,5 +28,5 @@ export function sectionsFeatureCollection(data: CemeteryData) {
       },
       geometry: section.geometry,
     })),
-  } satisfies GeoJSON.FeatureCollection<GeoJSON.Polygon>;
+  } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }

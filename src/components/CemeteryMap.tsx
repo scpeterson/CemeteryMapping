@@ -14,6 +14,8 @@ type CemeteryMapProps = {
 
 const center: [number, number] = [-76.70431, 39.19604];
 
+const exteriorRing = (geometry: GraveSpace["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
+
 export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultIds, onSelectGrave }: CemeteryMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -180,7 +182,8 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
   useEffect(() => {
     if (!selectedGrave || !mapRef.current) return;
-    const ring = selectedGrave.geometry.coordinates[0];
+    const ring = exteriorRing(selectedGrave.geometry);
+    if (!ring?.length) return;
     const bounds = ring.reduce((mapBounds, coordinate) => mapBounds.extend(coordinate as [number, number]), new maplibregl.LngLatBounds(ring[0] as [number, number], ring[0] as [number, number]));
     mapRef.current.fitBounds(bounds, { padding: 140, maxZoom: 20.5, duration: 450 });
   }, [selectedGrave]);
