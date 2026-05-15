@@ -52,19 +52,21 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
 
     map.on("load", () => {
-      map.addSource("boundary", { type: "geojson", data: data.boundary });
-      map.addLayer({
-        id: "boundary-fill",
-        type: "fill",
-        source: "boundary",
-        paint: { "fill-color": "#dfe7d9", "fill-opacity": 0.9 },
-      });
-      map.addLayer({
-        id: "boundary-line",
-        type: "line",
-        source: "boundary",
-        paint: { "line-color": "#3b4f3d", "line-width": 3 },
-      });
+      if (data.boundary) {
+        map.addSource("boundary", { type: "geojson", data: data.boundary });
+        map.addLayer({
+          id: "boundary-fill",
+          type: "fill",
+          source: "boundary",
+          paint: { "fill-color": "#dfe7d9", "fill-opacity": 0.9 },
+        });
+        map.addLayer({
+          id: "boundary-line",
+          type: "line",
+          source: "boundary",
+          paint: { "line-color": "#3b4f3d", "line-width": 3 },
+        });
+      }
 
       map.addSource("sections", { type: "geojson", data: sectionsFeatureCollection(data) });
       map.addLayer({

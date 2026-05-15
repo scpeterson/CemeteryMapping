@@ -41,6 +41,9 @@ jobs:
       - name: Apply database migrations
         run: npm run db:migrate
 
+      - name: Load demo seed data
+        run: npm run db:seed:demo
+
       - name: Check database migration status
         run: npm run db:status
 
