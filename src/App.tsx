@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchCemeteryData } from "./api/cemeteryApi";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
@@ -6,17 +7,43 @@ import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { statusLabels } from "./lib/format";
 import { searchGraves } from "./lib/search";
-import type { GraveSpace, GraveStatus, SearchMatch } from "./types";
+import type { CemeteryData, GraveSpace, GraveStatus, SearchMatch } from "./types";
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 
 export default function App() {
   const [query, setQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<GraveStatus>>(() => new Set(allStatuses));
-  const [selectedGrave, setSelectedGrave] = useState<GraveSpace | undefined>(() => cemeteryData.graves[0]);
+  const [data, setData] = useState<CemeteryData>(cemeteryData);
+  const [loadError, setLoadError] = useState<string>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedGrave, setSelectedGrave] = useState<GraveSpace | undefined>();
 
-  const matches = useMemo(() => searchGraves(cemeteryData, query, selectedStatuses), [query, selectedStatuses]);
-  const visibleGraves = useMemo(() => cemeteryData.graves.filter((grave) => selectedStatuses.has(grave.status)), [selectedStatuses]);
+  useEffect(() => {
+    let isCurrent = true;
+
+    fetchCemeteryData()
+      .then((nextData) => {
+        if (!isCurrent) return;
+        setData(nextData);
+        setSelectedGrave((current) => (current ? nextData.graves.find((grave) => grave.id === current.id) : nextData.graves[0]));
+        setLoadError(undefined);
+      })
+      .catch((error: unknown) => {
+        if (!isCurrent) return;
+        setLoadError(error instanceof Error ? error.message : "Unable to load cemetery data");
+      })
+      .finally(() => {
+        if (isCurrent) setIsLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  const matches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
+  const visibleGraves = useMemo(() => data.graves.filter((grave) => selectedStatuses.has(grave.status)), [data, selectedStatuses]);
   const searchResultIds = useMemo(() => new Set(matches.map((match) => match.grave.id)), [matches]);
 
   const toggleStatus = (status: GraveStatus) => {
@@ -47,8 +74,13 @@ export default function App() {
         <div className={`environment-badge environment-${appEnvironment.toLowerCase()}`} title={`API: ${apiBaseUrl}`}>
           {appEnvironment}
         </div>
+        {isLoading || loadError ? (
+          <div className={`data-status ${loadError ? "is-error" : ""}`} role="status">
+            {loadError ? `API unavailable: ${loadError}` : "Loading cemetery records..."}
+          </div>
+        ) : null}
         <CemeteryMap
-          data={cemeteryData}
+          data={data}
           selectedGrave={selectedGrave}
           visibleGraves={visibleGraves}
           searchResultIds={searchResultIds}
@@ -63,7 +95,7 @@ export default function App() {
           ))}
         </div>
       </section>
-      <DetailPanel data={cemeteryData} grave={selectedGrave} />
+      <DetailPanel data={data} grave={selectedGrave} />
     </main>
   );
 }

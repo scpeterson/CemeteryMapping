@@ -1,4 +1,5 @@
 export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "unknown";
+export type AreaGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 
 export type Person = {
   id: string;
@@ -38,7 +39,7 @@ export type GraveSpace = {
   lot: string;
   space: string;
   status: GraveStatus;
-  geometry: GeoJSON.Polygon;
+  geometry: AreaGeometry;
   currentOwnerIds: string[];
   burials: Burial[];
   ownershipHistory: OwnershipEvent[];
@@ -48,11 +49,11 @@ export type GraveSpace = {
 export type CemeterySection = {
   id: string;
   name: string;
-  geometry: GeoJSON.Polygon;
+  geometry: AreaGeometry;
 };
 
 export type CemeteryData = {
-  boundary?: GeoJSON.Feature<GeoJSON.Polygon, { name: string }>;
+  boundary?: GeoJSON.Feature<AreaGeometry, { name: string }>;
   sections: CemeterySection[];
   graves: GraveSpace[];
   owners: Owner[];

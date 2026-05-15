@@ -272,6 +272,27 @@ h3 {
   color: #795316;
 }
 
+.data-status {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 1;
+  max-width: min(340px, calc(100% - 112px));
+  padding: 9px 12px;
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: 8px;
+  background: rgba(251, 252, 247, 0.94);
+  color: #26342d;
+  font-size: 0.86rem;
+  font-weight: 680;
+  box-shadow: var(--shadow);
+}
+
+.data-status.is-error {
+  border-color: rgba(199, 82, 79, 0.45);
+  color: #8c302d;
+}
+
 .map-legend {
   position: absolute;
   right: 18px;

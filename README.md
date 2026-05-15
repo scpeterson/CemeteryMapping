@@ -6,10 +6,13 @@ A WebStorm-friendly Vite, React, TypeScript, and MapLibre GL JS prototype for ma
 
 ```bash
 npm install
+npm run db:up
+npm run db:migrate
+npm run db:seed:demo
 npm run dev
 ```
 
-Then open `http://127.0.0.1:5173`.
+Then open `http://127.0.0.1:5173`. The development command starts the API on `http://127.0.0.1:3001` and the Vite front end on `http://127.0.0.1:5173`.
 
 ## Environments
 
@@ -55,6 +58,7 @@ APP_ENV=prod npm run db:status
 - Ownership history timeline
 - Optional non-PROD demo seed data managed by database scripts
 - Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
+- Express API backed by PostgreSQL/PostGIS
 
 ## Database
 
@@ -67,11 +71,20 @@ npm run db:migrate
 
 More database details are in `db/README.md`.
 
-## Suggested next backend step
+## API
 
-Keep the front-end feature IDs stable and expose these endpoints from a backend:
+The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes:
 
 - `GET /api/cemetery-map` for GeoJSON boundary, sections, and grave spaces
 - `GET /api/grave-spaces/:id` for full grave details
-- `GET /api/search?q=...&status=...` for indexed search
-- `POST /api/ownership-events` for ownership transfers and corrections
+- `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search
+
+Run the API by itself when needed:
+
+```bash
+npm run api
+APP_ENV=test npm run api
+API_PORT=3010 APP_ENV=stage npm run api
+```
+
+`APP_ENV` selects `db/env/<environment>.env`. Override `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, or `PGPASSWORD` to connect to a different Postgres instance.
