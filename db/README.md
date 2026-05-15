@@ -81,21 +81,38 @@ password: cemetery_app_dev
 ```text
 db/changelog/db.changelog-root.yaml
 db/changelog/changes/001-initial-schema.sql
+db/changelog/changes/002-esri-cemetery-template-schema.sql
 ```
 
-The first schema creates:
+The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
+
+The schema creates:
 
 - `cemeteries`
-- `cemetery_sections`
-- `grave_spaces`
-- `owners`
-- `people`
+- `sections`
+- `blocks`
+- `lots`
+- `gravesites`
 - `burials`
-- `source_documents`
-- `ownership_events`
-- `ownership_event_owners`
-- `grave_space_documents`
-- `current_ownership_events` view
-- `current_grave_owners` view
+- `owners`
+- `memorials`
 
-Current grave owners are intentionally derived from the latest ownership event instead of stored in a separate table.
+The spatial columns are:
+
+- `cemeteries.geometry geometry(MultiPolygon, 4326)`
+- `sections.geometry geometry(MultiPolygon, 4326)`
+- `blocks.geometry geometry(MultiPolygon, 4326)`
+- `lots.geometry geometry(MultiPolygon, 4326)`
+- `gravesites.geometry geometry(MultiPolygon, 4326)`
+- `memorials.geometry geometry(Point, 4326)`
+
+Hierarchical GIS identifiers mirror the template fields using snake_case names:
+
+- `facility_id`
+- `section_id`
+- `block_id`
+- `lot_id`
+- `grave_id`
+- `gravesite_id`
+
+Foreign keys connect the hierarchy directly in PostgreSQL, so Esri-specific relationship key fields are not needed.
