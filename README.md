@@ -53,7 +53,7 @@ APP_ENV=prod npm run db:status
 - Search by deceased name, owner name, birth date, death date, burial date, section, lot, or space
 - Status filters
 - Ownership history timeline
-- Sample in-memory data that can later move behind an API backed by PostGIS
+- Optional non-PROD demo seed data managed by database scripts
 - Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
 
 ## Database

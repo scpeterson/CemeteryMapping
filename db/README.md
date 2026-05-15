@@ -90,6 +90,16 @@ Validate the changelog without applying it:
 npm run db:validate
 ```
 
+Load demo data into DEV/TEST/STAGE:
+
+```bash
+npm run db:seed:demo
+APP_ENV=test npm run db:seed:demo
+APP_ENV=stage npm run db:seed:demo
+```
+
+The demo seed command refuses to run when `APP_ENV=prod`.
+
 Stop the local database:
 
 ```bash

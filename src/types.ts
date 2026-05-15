@@ -52,7 +52,7 @@ export type CemeterySection = {
 };
 
 export type CemeteryData = {
-  boundary: GeoJSON.Feature<GeoJSON.Polygon, { name: string }>;
+  boundary?: GeoJSON.Feature<GeoJSON.Polygon, { name: string }>;
   sections: CemeterySection[];
   graves: GraveSpace[];
   owners: Owner[];
