@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
+import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { statusLabels } from "./lib/format";
 import { searchGraves } from "./lib/search";
@@ -43,6 +44,9 @@ export default function App() {
         onSelectMatch={selectMatch}
       />
       <section className="map-region">
+        <div className={`environment-badge environment-${appEnvironment.toLowerCase()}`} title={`API: ${apiBaseUrl}`}>
+          {appEnvironment}
+        </div>
         <CemeteryMap
           data={cemeteryData}
           selectedGrave={selectedGrave}
