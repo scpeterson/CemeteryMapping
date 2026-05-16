@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchCemeteryData } from "./api/cemeteryApi";
+import { fetchCemeteryData, fetchGraveSpace, fetchSearchMatches } from "./api/cemeteryApi";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
@@ -7,7 +7,7 @@ import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { statusLabels } from "./lib/format";
 import { searchGraves } from "./lib/search";
-import type { CemeteryData, GraveSpace, GraveStatus, SearchMatch } from "./types";
+import type { CemeteryData, GraveSpace, GraveSpaceSummary, GraveStatus, Owner, SearchMatch } from "./types";
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 
@@ -17,7 +17,13 @@ export default function App() {
   const [data, setData] = useState<CemeteryData>(cemeteryData);
   const [loadError, setLoadError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedGrave, setSelectedGrave] = useState<GraveSpace | undefined>();
+  const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
+  const [selectedGraveDetails, setSelectedGraveDetails] = useState<GraveSpace | undefined>();
+  const [selectedGraveOwners, setSelectedGraveOwners] = useState<Owner[]>([]);
+  const [detailError, setDetailError] = useState<string>();
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailRequestVersion, setDetailRequestVersion] = useState(0);
+  const [remoteMatches, setRemoteMatches] = useState<SearchMatch[]>();
 
   useEffect(() => {
     let isCurrent = true;
@@ -42,7 +48,62 @@ export default function App() {
     };
   }, []);
 
-  const matches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
+  useEffect(() => {
+    setSelectedGraveDetails(undefined);
+    setSelectedGraveOwners([]);
+    setDetailError(undefined);
+
+    if (!selectedGrave) {
+      setIsDetailLoading(false);
+      return;
+    }
+
+    let isCurrent = true;
+    setIsDetailLoading(true);
+
+    fetchGraveSpace(selectedGrave.id)
+      .then((detail) => {
+        if (!isCurrent) return;
+        setSelectedGraveDetails(detail);
+        setSelectedGraveOwners(detail.owners);
+      })
+      .catch((error: unknown) => {
+        if (!isCurrent) return;
+        setDetailError(error instanceof Error ? error.message : "Unable to load grave details");
+      })
+      .finally(() => {
+        if (isCurrent) setIsDetailLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [selectedGrave, detailRequestVersion]);
+
+  useEffect(() => {
+    const cleanedQuery = query.trim();
+    if (!cleanedQuery) {
+      setRemoteMatches(undefined);
+      return;
+    }
+
+    let isCurrent = true;
+
+    fetchSearchMatches(cleanedQuery, selectedStatuses)
+      .then((matches) => {
+        if (isCurrent) setRemoteMatches(matches);
+      })
+      .catch(() => {
+        if (isCurrent) setRemoteMatches([]);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [query, selectedStatuses]);
+
+  const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
+  const matches = remoteMatches ?? localMatches;
   const visibleGraves = useMemo(() => data.graves.filter((grave) => selectedStatuses.has(grave.status)), [data, selectedStatuses]);
   const searchResultIds = useMemo(() => new Set(matches.map((match) => match.grave.id)), [matches]);
 
@@ -95,7 +156,14 @@ export default function App() {
           ))}
         </div>
       </section>
-      <DetailPanel data={data} grave={selectedGrave} />
+      <DetailPanel
+        owners={selectedGraveOwners}
+        summary={selectedGrave}
+        grave={selectedGraveDetails}
+        isLoading={isDetailLoading}
+        error={detailError}
+        onRetry={() => setDetailRequestVersion((version) => version + 1)}
+      />
     </main>
   );
 }

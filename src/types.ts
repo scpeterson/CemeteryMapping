@@ -33,13 +33,17 @@ export type OwnershipEvent = {
   notes?: string;
 };
 
-export type GraveSpace = {
+export type GraveSpaceSummary = {
   id: string;
   section: string;
   lot: string;
   space: string;
   status: GraveStatus;
   geometry: AreaGeometry;
+};
+
+export type GraveSpace = GraveSpaceSummary & {
+  owners: Owner[];
   currentOwnerIds: string[];
   burials: Burial[];
   ownershipHistory: OwnershipEvent[];
@@ -55,11 +59,10 @@ export type CemeterySection = {
 export type CemeteryData = {
   boundary?: GeoJSON.Feature<AreaGeometry, { name: string }>;
   sections: CemeterySection[];
-  graves: GraveSpace[];
-  owners: Owner[];
+  graves: GraveSpaceSummary[];
 };
 
 export type SearchMatch = {
-  grave: GraveSpace;
+  grave: GraveSpaceSummary;
   reasons: string[];
 };

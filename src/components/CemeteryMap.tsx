@@ -1,20 +1,20 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
-import type { CemeteryData, GraveSpace } from "../types";
+import type { CemeteryData, GraveSpaceSummary } from "../types";
 import { gravesFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
 
 type CemeteryMapProps = {
   data: CemeteryData;
-  selectedGrave?: GraveSpace;
-  visibleGraves: GraveSpace[];
+  selectedGrave?: GraveSpaceSummary;
+  visibleGraves: GraveSpaceSummary[];
   searchResultIds: Set<string>;
-  onSelectGrave: (grave: GraveSpace) => void;
+  onSelectGrave: (grave: GraveSpaceSummary) => void;
 };
 
 const center: [number, number] = [-76.70431, 39.19604];
 
-const exteriorRing = (geometry: GraveSpace["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
+const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
 
 export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultIds, onSelectGrave }: CemeteryMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);

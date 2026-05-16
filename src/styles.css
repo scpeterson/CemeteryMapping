@@ -354,6 +354,38 @@ h3 {
   font-weight: 760;
 }
 
+.detail-message {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #d6ded1;
+  border-radius: 8px;
+  background: #fff;
+  color: #4d5a50;
+  font-weight: 680;
+}
+
+.detail-message p {
+  margin-bottom: 0;
+}
+
+.detail-message.is-error {
+  border-color: rgba(199, 82, 79, 0.45);
+  color: #8c302d;
+}
+
+.detail-message button {
+  justify-self: start;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid rgba(199, 82, 79, 0.45);
+  border-radius: 7px;
+  background: #fff;
+  color: #8c302d;
+  font-weight: 720;
+}
+
 .detail-section {
   margin-top: 24px;
   padding-top: 20px;

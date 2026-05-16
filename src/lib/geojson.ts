@@ -1,6 +1,6 @@
-import type { AreaGeometry, CemeteryData, GraveSpace } from "../types";
+import type { AreaGeometry, CemeteryData, GraveSpaceSummary } from "../types";
 
-export function gravesFeatureCollection(graves: GraveSpace[], selectedId?: string, searchIds: Set<string> = new Set()) {
+export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedId?: string, searchIds: Set<string> = new Set()) {
   return {
     type: "FeatureCollection",
     features: graves.map((grave) => ({

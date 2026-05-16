@@ -1,16 +1,20 @@
 import { FileText, History, Landmark, MapPinned, UserRound } from "lucide-react";
-import type { CemeteryData, GraveSpace } from "../types";
+import type { GraveSpace, GraveSpaceSummary, Owner } from "../types";
 import { formatDate, fullName, statusColors, statusLabels } from "../lib/format";
 
 type DetailPanelProps = {
-  data: CemeteryData;
+  owners: Owner[];
+  summary?: GraveSpaceSummary;
   grave?: GraveSpace;
+  isLoading?: boolean;
+  error?: string;
+  onRetry?: () => void;
 };
 
-const ownerName = (data: CemeteryData, ownerId: string) => data.owners.find((owner) => owner.id === ownerId)?.displayName ?? "Unknown owner";
+const ownerName = (owners: Owner[], ownerId: string) => owners.find((owner) => owner.id === ownerId)?.displayName ?? "Unknown owner";
 
-export function DetailPanel({ data, grave }: DetailPanelProps) {
-  if (!grave) {
+export function DetailPanel({ owners, summary, grave, isLoading = false, error, onRetry }: DetailPanelProps) {
+  if (!summary) {
     return (
       <aside className="detail-panel empty-state">
         <MapPinned size={28} aria-hidden="true" />
@@ -20,19 +24,40 @@ export function DetailPanel({ data, grave }: DetailPanelProps) {
     );
   }
 
+  const title = `${summary.section}-${summary.lot}-${summary.space}`;
+  const status = grave?.status ?? summary.status;
+
   return (
     <aside className="detail-panel">
       <div className="grave-title-row">
         <div>
           <p className="eyebrow">Grave site</p>
-          <h2>
-            {grave.section}-{grave.lot}-{grave.space}
-          </h2>
+          <h2>{title}</h2>
         </div>
-        <span className="status-badge" style={{ borderColor: statusColors[grave.status], color: statusColors[grave.status] }}>
-          {statusLabels[grave.status]}
+        <span className="status-badge" style={{ borderColor: statusColors[status], color: statusColors[status] }}>
+          {statusLabels[status]}
         </span>
       </div>
+
+      {isLoading ? (
+        <div className="detail-message" role="status">
+          Loading grave details...
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="detail-message is-error" role="alert">
+          <p>Unable to load grave details: {error}</p>
+          {onRetry ? (
+            <button type="button" onClick={onRetry}>
+              Retry
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!grave || isLoading || error ? null : (
+        <>
 
       <section className="detail-section">
         <div className="section-title">
@@ -41,7 +66,7 @@ export function DetailPanel({ data, grave }: DetailPanelProps) {
         </div>
         <div className="owner-list">
           {grave.currentOwnerIds.map((id) => {
-            const owner = data.owners.find((item) => item.id === id);
+            const owner = owners.find((item) => item.id === id);
             return (
               <div key={id} className="owner-row">
                 <strong>{owner?.displayName ?? "Unknown owner"}</strong>
@@ -97,7 +122,7 @@ export function DetailPanel({ data, grave }: DetailPanelProps) {
               <li key={event.id}>
                 <time>{formatDate(event.effectiveDate)}</time>
                 <strong>{event.eventType}</strong>
-                <span>{event.ownerIds.map((id) => ownerName(data, id)).join(", ")}</span>
+                <span>{event.ownerIds.map((id) => ownerName(owners, id)).join(", ")}</span>
                 <small>{event.recordedBy}</small>
                 {event.documentReference ? (
                   <span className="document-ref">
@@ -120,6 +145,8 @@ export function DetailPanel({ data, grave }: DetailPanelProps) {
           <p className="note-box">{grave.notes}</p>
         </section>
       ) : null}
+        </>
+      )}
     </aside>
   );
 }
