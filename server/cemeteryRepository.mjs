@@ -62,6 +62,17 @@ function toOwnershipEvent(owner) {
   };
 }
 
+function toGraveSummary(grave) {
+  return {
+    id: grave.gravesite_id,
+    section: grave.section_id ?? "",
+    lot: grave.lot_id ?? "",
+    space: grave.grave_id,
+    status: normalizeStatus(grave.status),
+    geometry: parseGeometry(grave.geometry),
+  };
+}
+
 function groupBy(rows, key) {
   return rows.reduce((groups, row) => {
     const value = row[key];
@@ -74,6 +85,58 @@ function groupBy(rows, key) {
 }
 
 export async function getCemeteryData(pool) {
+  const client = await pool.connect();
+  try {
+    const cemeteryResult = await client.query(`
+      SELECT id::text, name, ST_AsGeoJSON(geometry)::json AS geometry
+      FROM cemeteries
+      ORDER BY name, id
+      LIMIT 1
+    `);
+
+    const cemetery = cemeteryResult.rows[0];
+    if (!cemetery) return { sections: [], graves: [] };
+
+    const [sectionsResult, gravesitesResult] = await Promise.all([
+      client.query(
+        `
+          SELECT id::text, section_id, COALESCE(name, section_id) AS name, ST_AsGeoJSON(geometry)::json AS geometry
+          FROM sections
+          WHERE cemetery_id = $1
+          ORDER BY section_id, name
+        `,
+        [cemetery.id],
+      ),
+      client.query(
+        `
+          SELECT section_id, lot_id, grave_id, gravesite_id, status, ST_AsGeoJSON(geometry)::json AS geometry
+          FROM gravesites
+          WHERE cemetery_id = $1
+          ORDER BY section_id, lot_id, grave_id, gravesite_id
+        `,
+        [cemetery.id],
+      ),
+    ]);
+
+    return {
+      boundary: {
+        type: "Feature",
+        properties: { name: cemetery.name },
+        geometry: parseGeometry(cemetery.geometry),
+      },
+      sections: sectionsResult.rows.map((section) => ({
+        id: section.section_id,
+        name: section.name,
+        geometry: parseGeometry(section.geometry),
+      })),
+      graves: gravesitesResult.rows.map(toGraveSummary),
+    };
+  } finally {
+    client.release();
+  }
+}
+
+export async function getDetailedCemeteryData(pool) {
   const client = await pool.connect();
   try {
     const cemeteryResult = await client.query(`
@@ -143,12 +206,8 @@ export async function getCemeteryData(pool) {
         const graveOwners = ownersByGrave.get(grave.uuid) ?? [];
 
         return {
-          id: grave.gravesite_id,
-          section: grave.section_id ?? "",
-          lot: grave.lot_id ?? "",
-          space: grave.grave_id,
-          status: normalizeStatus(grave.status),
-          geometry: parseGeometry(grave.geometry),
+          ...toGraveSummary(grave),
+          owners: graveOwners.map(toOwner),
           currentOwnerIds: graveOwners.map((owner) => owner.id),
           burials: (burialsByGrave.get(grave.uuid) ?? []).map(toBurial),
           ownershipHistory: graveOwners.map(toOwnershipEvent),
@@ -163,6 +222,51 @@ export async function getCemeteryData(pool) {
 }
 
 export async function getGraveSpace(pool, gravesiteId) {
-  const data = await getCemeteryData(pool);
-  return data.graves.find((grave) => grave.id === gravesiteId);
+  const client = await pool.connect();
+  try {
+    const graveResult = await client.query(
+      `
+        SELECT id::text AS uuid, section_id, lot_id, grave_id, gravesite_id, status, cost, ST_AsGeoJSON(geometry)::json AS geometry
+        FROM gravesites
+        WHERE gravesite_id = $1
+        LIMIT 1
+      `,
+      [gravesiteId],
+    );
+
+    const grave = graveResult.rows[0];
+    if (!grave) return undefined;
+
+    const [ownersResult, burialsResult] = await Promise.all([
+      client.query(
+        `
+          SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
+          FROM owners
+          WHERE gravesite_uuid = $1
+          ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
+        `,
+        [grave.uuid],
+      ),
+      client.query(
+        `
+          SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
+          FROM burials
+          WHERE gravesite_uuid = $1
+          ORDER BY burial_date DESC NULLS LAST, death_date DESC NULLS LAST, last_name, first_name
+        `,
+        [grave.uuid],
+      ),
+    ]);
+
+    return {
+      ...toGraveSummary(grave),
+      owners: ownersResult.rows.map(toOwner),
+      currentOwnerIds: ownersResult.rows.map((owner) => owner.id),
+      burials: burialsResult.rows.map(toBurial),
+      ownershipHistory: ownersResult.rows.map(toOwnershipEvent),
+      notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
+    };
+  } finally {
+    client.release();
+  }
 }

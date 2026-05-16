@@ -66,8 +66,10 @@ app.use((error, _request, response, _next) => {
 const server = app.listen(config.apiPort, "127.0.0.1", () => {
   console.log(`Cemetery API listening on http://127.0.0.1:${config.apiPort} (${config.appEnv.toUpperCase()})`);
 });
+const keepAlive = setInterval(() => undefined, 2 ** 31 - 1);
 
 const shutdown = async () => {
+  clearInterval(keepAlive);
   server.close();
   await pool.end();
 };

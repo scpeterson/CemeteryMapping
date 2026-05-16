@@ -1,4 +1,4 @@
-import { getCemeteryData } from "./cemeteryRepository.mjs";
+import { getDetailedCemeteryData } from "./cemeteryRepository.mjs";
 
 const statusLabels = {
   available: "Available",
@@ -31,8 +31,19 @@ function addReason(reasons, label, value, query) {
   if (normalize(value).includes(query)) reasons.push(`${label}: ${value}`);
 }
 
+function toSearchSummary(grave) {
+  return {
+    id: grave.id,
+    section: grave.section,
+    lot: grave.lot,
+    space: grave.space,
+    status: grave.status,
+    geometry: grave.geometry,
+  };
+}
+
 export async function searchCemetery(pool, { query = "", statuses = [] } = {}) {
-  const data = await getCemeteryData(pool);
+  const data = await getDetailedCemeteryData(pool);
   const cleaned = normalize(query);
   const allowedStatuses = new Set(statuses.length ? statuses : Object.keys(statusLabels));
 
@@ -44,7 +55,7 @@ export async function searchCemetery(pool, { query = "", statuses = [] } = {}) {
 
       if (!cleaned) {
         reasons.push(statusLabels[grave.status]);
-        return { grave, reasons };
+        return { grave: toSearchSummary(grave), reasons };
       }
 
       addReason(reasons, "Grave", `${grave.section}-${grave.lot}-${grave.space}`, cleaned);
@@ -71,7 +82,7 @@ export async function searchCemetery(pool, { query = "", statuses = [] } = {}) {
         addReason(reasons, "Document", event.documentReference, cleaned);
       });
 
-      return { grave, reasons };
+      return { grave: toSearchSummary(grave), reasons };
     })
     .filter((match) => match.reasons.length > 0)
     .sort((a, b) => a.grave.id.localeCompare(b.grave.id));
