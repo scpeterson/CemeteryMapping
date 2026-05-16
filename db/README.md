@@ -90,6 +90,15 @@ Validate the changelog without applying it:
 npm run db:validate
 ```
 
+Validate spatial data and topology-like rules:
+
+```bash
+npm run db:validate:spatial
+APP_ENV=test npm run db:validate:spatial
+```
+
+Spatial validation reads the `spatial_validation_issues` view and exits non-zero if any issues are found. The current checks cover invalid geometry, parent/child containment, overlapping grave polygons, and basic geometry-type expectations for staged imports.
+
 Load demo data into DEV/TEST/STAGE:
 
 ```bash
@@ -125,6 +134,7 @@ password: cemetery_app_dev
 db/changelog/db.changelog-root.yaml
 db/changelog/changes/001-initial-schema.sql
 db/changelog/changes/002-esri-cemetery-template-schema.sql
+db/changelog/changes/003-spatial-import-staging.sql
 ```
 
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
@@ -139,6 +149,8 @@ The schema creates:
 - `burials`
 - `owners`
 - `memorials`
+- `spatial_import_batches`
+- `spatial_import_features`
 
 The spatial columns are:
 
@@ -148,6 +160,7 @@ The spatial columns are:
 - `lots.geometry geometry(MultiPolygon, 4326)`
 - `gravesites.geometry geometry(MultiPolygon, 4326)`
 - `memorials.geometry geometry(Point, 4326)`
+- `spatial_import_features.geometry geometry(Geometry, 4326)`
 
 Hierarchical GIS identifiers mirror the template fields using snake_case names:
 
@@ -159,3 +172,13 @@ Hierarchical GIS identifiers mirror the template fields using snake_case names:
 - `gravesite_id`
 
 Foreign keys connect the hierarchy directly in PostgreSQL, so Esri-specific relationship key fields are not needed.
+
+## Spatial import staging
+
+Real GIS imports should land in staging before production tables:
+
+- `spatial_import_batches` records the source file/export, source format, source SRID, importer, and notes.
+- `spatial_import_features` stores raw cemetery, section, block, lot, gravesite, and memorial features with source identifiers, original properties, and normalized 4326 geometry.
+- `spatial_validation_issues` reports production and staging geometry issues before data is promoted.
+
+The first staging model intentionally preserves source metadata as `jsonb`; once the first real source format is known, add a dedicated importer that loads into staging, runs `npm run db:validate:spatial`, and only promotes rows that pass validation.
