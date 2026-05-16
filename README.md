@@ -51,8 +51,8 @@ APP_ENV=prod npm run db:status
 
 ## What is included
 
-- Interactive cemetery map with boundary, sections, and grave spaces
-- Clickable grave sites with ownership, burial, and status details
+- Interactive cemetery map with boundary, sections, and summary grave-space geometry
+- Clickable grave sites that load ownership, burial, and status details on selection
 - Search by deceased name, owner name, birth date, death date, burial date, section, lot, or space
 - Status filters
 - Ownership history timeline
@@ -73,11 +73,11 @@ More database details are in `db/README.md`.
 
 ## API
 
-The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes:
+The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a summary-first map flow:
 
-- `GET /api/cemetery-map` for GeoJSON boundary, sections, and grave spaces
-- `GET /api/grave-spaces/:id` for full grave details
-- `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search
+- `GET /api/cemetery-map` for GeoJSON boundary, sections, and summary grave-space geometry used by the map
+- `GET /api/grave-spaces/:id` for full grave details fetched when a grave is selected
+- `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
 
 Run the API by itself when needed:
 
