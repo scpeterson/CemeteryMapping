@@ -58,6 +58,7 @@ APP_ENV=prod npm run db:status
 - Ownership history timeline
 - Optional non-PROD demo seed data managed by database scripts
 - Spatial import staging and topology-style validation checks
+- Esri File Geodatabase inspection, GeoJSON export, and staging import helpers
 - Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
 - Express API backed by PostgreSQL/PostGIS
 

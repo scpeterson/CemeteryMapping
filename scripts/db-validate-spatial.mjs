@@ -1,8 +1,10 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { currentEnvironment, dockerComposeArgs, loadDbEnvironment } from "./lib/run-liquibase.mjs";
 
 const environment = currentEnvironment();
 const dbEnv = loadDbEnvironment(environment);
+const validationSql = readFileSync("db/validation/spatial-validation.sql", "utf8");
 
 const result = spawnSync(
   "docker",
@@ -18,14 +20,13 @@ const result = spawnSync(
     dbEnv.POSTGRES_DB,
     "-v",
     "ON_ERROR_STOP=1",
-    "-f",
-    "/validation/spatial-validation.sql",
   ],
   {
     env: {
       ...process.env,
       PGPASSWORD: dbEnv.POSTGRES_PASSWORD,
     },
+    input: validationSql,
     encoding: "utf8",
   },
 );

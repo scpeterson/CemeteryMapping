@@ -182,3 +182,35 @@ Real GIS imports should land in staging before production tables:
 - `spatial_validation_issues` reports production and staging geometry issues before data is promoted.
 
 The first staging model intentionally preserves source metadata as `jsonb`; once the first real source format is known, add a dedicated importer that loads into staging, runs `npm run db:validate:spatial`, and only promotes rows that pass validation.
+
+## File Geodatabase workflow
+
+The first real source format is expected to be an Esri File Geodatabase folder ending in `.gdb`. The local inspection/export commands require GDAL/OGR on your PATH.
+
+Inspect available layers:
+
+```bash
+npm run geodatabase:inspect -- /path/to/cemetery.gdb
+```
+
+Export a layer to normalized GeoJSON in EPSG:4326:
+
+```bash
+npm run geodatabase:export -- /path/to/cemetery.gdb Gravesites /tmp/cemetery-import/gravesites.geojson
+```
+
+Import recognized Esri Cemetery Management layers into staging:
+
+```bash
+npm run db:import:geodatabase -- /path/to/cemetery.gdb --source-name "Cemetery Data Management"
+```
+
+The importer currently reads `Cemeteries`, `Sections`, `Blocks`, `Lots`, and `Memorials`, normalizes geometries to EPSG:4326, and preserves original File Geodatabase attributes in `spatial_import_features.source_properties`.
+
+Use the inspection output to map Esri layer and field names to the staging hierarchy fields (`facility_id`, `section_id`, `block_id`, `lot_id`, `grave_id`, `gravesite_id`). After import, run:
+
+```bash
+npm run db:validate:spatial
+```
+
+The first inspected project geodatabase has populated `Cemeteries` and `Sections` layers, empty `Blocks`, `Lots`, and `Memorials` layers, and no visible `Gravesites` layer. Grave polygon import will need the actual gravesite source layer when it becomes available.
