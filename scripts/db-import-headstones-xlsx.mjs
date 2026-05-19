@@ -198,6 +198,7 @@ function importableRows(rows, options) {
         rowNumber,
         graveId,
         gravesiteId: `TLC-GPS-${graveId}`,
+        headstoneId: `TLC-HS-${graveId}`,
         name: people[0]?.fullName ?? `Imported headstone ${graveId}`,
         sectionId: textCell(row, "NhgSection"),
         nhgRow: textCell(row, "NhgRow"),
@@ -306,11 +307,56 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
     [cemetery.id, section?.id ?? null, imported.name, facilityId, section?.section_id ?? imported.sectionId, imported.graveId, imported.gravesiteId, JSON.stringify(imported.geometry)],
   );
 
-  const gravesiteUuid = result.rows[0].id;
+  return { gravesiteUuid: result.rows[0].id, sectionLinked: Boolean(section), notes };
+}
+
+async function upsertHeadstone(client, imported, gravesiteUuid) {
+  const result = await client.query(
+    `
+      INSERT INTO headstones (
+        gravesite_uuid,
+        headstone_id,
+        marker_type,
+        condition,
+        latitude,
+        longitude,
+        geometry,
+        source_properties,
+        updated_at
+      )
+      VALUES (
+        $1,
+        $2,
+        'headstone',
+        'unknown',
+        $3::numeric,
+        $4::numeric,
+        ST_SetSRID(ST_MakePoint($4::double precision, $3::double precision), 4326),
+        $5::jsonb,
+        now()
+      )
+      ON CONFLICT (headstone_id) DO UPDATE SET
+        gravesite_uuid = EXCLUDED.gravesite_uuid,
+        marker_type = EXCLUDED.marker_type,
+        latitude = EXCLUDED.latitude,
+        longitude = EXCLUDED.longitude,
+        geometry = EXCLUDED.geometry,
+        source_properties = EXCLUDED.source_properties,
+        updated_at = now()
+      RETURNING id
+    `,
+    [gravesiteUuid, imported.headstoneId, imported.latitude, imported.longitude, JSON.stringify(imported.sourceProperties)],
+  );
+
+  return result.rows[0].id;
+}
+
+async function replaceBurials(client, imported, gravesiteUuid, headstoneUuid, notes) {
   await client.query("DELETE FROM burials WHERE gravesite_uuid = $1", [gravesiteUuid]);
 
+  let burialCount = 0;
   for (const person of imported.people) {
-    await client.query(
+    const result = await client.query(
       `
         INSERT INTO burials (
           gravesite_uuid,
@@ -324,6 +370,7 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
           updated_at
         )
         VALUES ($1, $2, $3, $4, $5::date, $6::date, $7, $8, now())
+        RETURNING id
       `,
       [
         gravesiteUuid,
@@ -336,9 +383,19 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
         imported.gravesiteId,
       ],
     );
+
+    await client.query(
+      `
+        INSERT INTO headstone_burials (headstone_uuid, burial_uuid)
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING
+      `,
+      [headstoneUuid, result.rows[0].id],
+    );
+    burialCount += 1;
   }
 
-  return { gravesiteUuid, sectionLinked: Boolean(section), burialCount: imported.people.length };
+  return burialCount;
 }
 
 async function validateImportedGravesites(client, gravesiteUuids) {
@@ -444,12 +501,16 @@ async function main() {
 
     let linkedSections = 0;
     let burialCount = 0;
+    let headstoneCount = 0;
     const gravesiteUuids = [];
     for (const imported of importedRows) {
-      const result = await upsertGravesite(client, cemetery, facilityId, imported);
-      if (result.sectionLinked) linkedSections += 1;
-      burialCount += result.burialCount;
-      gravesiteUuids.push(result.gravesiteUuid);
+      const gravesiteResult = await upsertGravesite(client, cemetery, facilityId, imported);
+      const headstoneUuid = await upsertHeadstone(client, imported, gravesiteResult.gravesiteUuid);
+      const importedBurialCount = await replaceBurials(client, imported, gravesiteResult.gravesiteUuid, headstoneUuid, gravesiteResult.notes);
+      if (gravesiteResult.sectionLinked) linkedSections += 1;
+      burialCount += importedBurialCount;
+      headstoneCount += 1;
+      gravesiteUuids.push(gravesiteResult.gravesiteUuid);
     }
 
     const spatialIssues = await validateImportedGravesites(client, gravesiteUuids);
@@ -467,12 +528,14 @@ async function main() {
       console.log("Dry run complete. No data was written.");
     } else {
       await client.query("COMMIT");
-      console.log(`Imported ${importedRows.length} gravesites and ${burialCount} burials into ${cemetery.name}.`);
+      console.log(`Imported ${importedRows.length} gravesites, ${headstoneCount} headstones, and ${burialCount} burials into ${cemetery.name}.`);
     }
 
     console.log(`Workbook: ${basename(workbookPath)}`);
     console.log(`Rows with coordinates: ${rowsWithCoordinates}.`);
     console.log(`Rows with coordinates and burial data: ${importedRows.length}.`);
+    console.log(`Headstones imported: ${headstoneCount}.`);
+    console.log(`Burials imported: ${burialCount}.`);
     console.log(`Gravesites linked to sections: ${linkedSections}.`);
     console.log(`Generated gravesite spatial warnings: ${spatialIssues.length - errorCount}.`);
     console.log(`Generated gravesite spatial errors: ${errorCount}.`);

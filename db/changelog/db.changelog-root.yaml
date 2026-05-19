@@ -11,3 +11,6 @@ databaseChangeLog:
   - include:
       file: changes/004-spatial-validation-severity.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/005-headstones.sql
+      relativeToChangelogFile: true

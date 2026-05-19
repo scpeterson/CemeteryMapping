@@ -101,6 +101,8 @@ Spatial validation reads the `spatial_validation_issues` view and exits non-zero
 
 Containment checks use severity so small boundary slivers can be reviewed without blocking promotion. Geometry that extends more than 1 square meter outside its parent is an `error`; smaller non-zero differences are a `warning`.
 
+Generated `TLC-GPS-*` gravesite rectangles from the headstone spreadsheet are treated as approximate placeholder grave polygons until surveyed grave polygons are available. Overlaps among those generated rectangles are reported as `warning` rows by `npm run db:validate:spatial` rather than blocking errors.
+
 Load demo data into DEV/TEST/STAGE:
 
 ```bash
@@ -138,6 +140,7 @@ db/changelog/changes/001-initial-schema.sql
 db/changelog/changes/002-esri-cemetery-template-schema.sql
 db/changelog/changes/003-spatial-import-staging.sql
 db/changelog/changes/004-spatial-validation-severity.sql
+db/changelog/changes/005-headstones.sql
 ```
 
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
@@ -151,6 +154,8 @@ The schema creates:
 - `gravesites`
 - `burials`
 - `owners`
+- `headstones`
+- `headstone_burials`
 - `memorials`
 - `spatial_import_batches`
 - `spatial_import_features`
@@ -162,6 +167,7 @@ The spatial columns are:
 - `blocks.geometry geometry(MultiPolygon, 4326)`
 - `lots.geometry geometry(MultiPolygon, 4326)`
 - `gravesites.geometry geometry(MultiPolygon, 4326)`
+- `headstones.geometry geometry(Point, 4326)`
 - `memorials.geometry geometry(Point, 4326)`
 - `spatial_import_features.geometry geometry(Geometry, 4326)`
 
@@ -229,7 +235,7 @@ Promotion currently handles only `Cemeteries` and `Sections`. It refuses to run 
 
 Headstone GPS spreadsheets can be imported after cemetery and section polygons exist in the target environment. The importer expects one row per GPS location with `Latitude` and `Longitude` columns and up to six burial people stored in `Person1First` / `Person1Last` through `Person6First` / `Person6Last`. It also supports the legacy second-person headers `Persons26First` and `Persons26Last`.
 
-Each spreadsheet row with coordinates and at least one person becomes one `gravesites` row. The importer generates an 8 foot by 4 foot rectangular `MultiPolygon` centered on the coordinate, with the 8 foot length running east-west so it appears left-to-right on the map. It links the gravesite to the matching cemetery and to the section polygon containing the GPS point when available, and replaces the generated gravesite's existing burial rows with one `burials` row per populated person column. `PersonNYob` and `PersonNYod` become `YYYY-01-01` birth and death dates.
+Each spreadsheet row with coordinates and at least one person becomes one `gravesites` row and one `headstones` row. The importer generates an 8 foot by 4 foot gravesite `MultiPolygon` centered on the coordinate, with the 8 foot length running east-west so it appears left-to-right on the map. It stores the headstone itself as a `Point` at the GPS coordinate with `condition = 'unknown'`, links the gravesite to the matching cemetery and to the section polygon containing the GPS point when available, and replaces the generated gravesite's existing burial rows with one `burials` row per populated person column. It then creates `headstone_burials` join rows connecting the physical headstone to each imported burial. `PersonNYob` and `PersonNYod` become `YYYY-01-01` birth and death dates.
 
 Run a dry run first:
 
