@@ -42,6 +42,7 @@
     "db:rollback:tag": "node scripts/db-rollback-tag.mjs",
     "db:rollback:test": "node scripts/db-rollback-test.mjs",
     "db:import:geodatabase": "node scripts/db-import-geodatabase.mjs",
+    "db:promote:spatial": "node scripts/db-promote-spatial-staging.mjs",
     "db:seed:demo": "node scripts/db-seed-demo.mjs",
     "db:validate:spatial": "node scripts/db-validate-spatial.mjs",
     "db:tag": "node scripts/db-tag.mjs"
