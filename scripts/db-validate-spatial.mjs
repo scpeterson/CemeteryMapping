@@ -57,7 +57,7 @@ const countResult = spawnSync(
     "-v",
     "ON_ERROR_STOP=1",
     "-c",
-    "SELECT count(*) FROM spatial_validation_issues;",
+    "SELECT count(*) FROM spatial_validation_issues WHERE severity = 'error';",
   ],
   {
     env: {
@@ -78,8 +78,8 @@ if (countResult.status !== 0) process.exit(countResult.status ?? 1);
 
 const issueCount = Number.parseInt(countResult.stdout.trim(), 10);
 if (issueCount > 0) {
-  console.error(`Spatial validation failed with ${issueCount} issue${issueCount === 1 ? "" : "s"}.`);
+  console.error(`Spatial validation failed with ${issueCount} error${issueCount === 1 ? "" : "s"}.`);
   process.exit(1);
 }
 
-console.log("Spatial validation passed with 0 issues.");
+console.log("Spatial validation passed with 0 errors.");

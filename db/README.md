@@ -97,7 +97,9 @@ npm run db:validate:spatial
 APP_ENV=test npm run db:validate:spatial
 ```
 
-Spatial validation reads the `spatial_validation_issues` view and exits non-zero if any issues are found. The current checks cover invalid geometry, parent/child containment, overlapping grave polygons, and basic geometry-type expectations for staged imports.
+Spatial validation reads the `spatial_validation_issues` view and exits non-zero if any `error` rows are found. The current checks cover invalid geometry, parent/child containment, overlapping grave polygons, and basic geometry-type expectations for staged imports.
+
+Containment checks use severity so small boundary slivers can be reviewed without blocking promotion. Geometry that extends more than 1 square meter outside its parent is an `error`; smaller non-zero differences are a `warning`.
 
 Load demo data into DEV/TEST/STAGE:
 
@@ -135,6 +137,7 @@ db/changelog/db.changelog-root.yaml
 db/changelog/changes/001-initial-schema.sql
 db/changelog/changes/002-esri-cemetery-template-schema.sql
 db/changelog/changes/003-spatial-import-staging.sql
+db/changelog/changes/004-spatial-validation-severity.sql
 ```
 
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
@@ -181,7 +184,7 @@ Real GIS imports should land in staging before production tables:
 - `spatial_import_features` stores raw cemetery, section, block, lot, gravesite, and memorial features with source identifiers, original properties, and normalized 4326 geometry.
 - `spatial_validation_issues` reports production and staging geometry issues before data is promoted.
 
-The first staging model intentionally preserves source metadata as `jsonb`; once the first real source format is known, add a dedicated importer that loads into staging, runs `npm run db:validate:spatial`, and only promotes rows that pass validation.
+The first staging model intentionally preserves source metadata as `jsonb`. Importers load into staging first, validation separates errors from warnings, and promotion refuses batches that still have staging errors.
 
 ## File Geodatabase workflow
 
@@ -213,4 +216,11 @@ Use the inspection output to map Esri layer and field names to the staging hiera
 npm run db:validate:spatial
 ```
 
-The first inspected project geodatabase has populated `Cemeteries` and `Sections` layers, empty `Blocks`, `Lots`, and `Memorials` layers, and no visible `Gravesites` layer. Grave polygon import will need the actual gravesite source layer when it becomes available.
+Promote a validated staging batch into production cemetery and section tables:
+
+```bash
+npm run db:promote:spatial
+npm run db:promote:spatial -- --batch-id <batch-uuid>
+```
+
+Promotion currently handles only `Cemeteries` and `Sections`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. The first inspected project geodatabase has populated `Cemeteries` and `Sections` layers, empty `Blocks`, `Lots`, and `Memorials` layers, and no visible `Gravesites` layer. Grave polygon import will need the actual gravesite source layer when it becomes available.
