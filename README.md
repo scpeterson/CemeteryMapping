@@ -59,7 +59,7 @@ APP_ENV=prod npm run db:status
 - Optional non-PROD demo seed data managed by database scripts
 - Spatial import staging and topology-style validation checks
 - Esri File Geodatabase inspection, GeoJSON export, staging import, and cemetery/section promotion helpers
-- Excel headstone coordinate import that generates gravesite polygons and linked burials
+- Excel headstone coordinate import that generates gravesite polygons, headstone points, and linked burials
 - Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
 - Express API backed by PostgreSQL/PostGIS
 

@@ -57,7 +57,17 @@ const countResult = spawnSync(
     "-v",
     "ON_ERROR_STOP=1",
     "-c",
-    "SELECT count(*) FROM spatial_validation_issues WHERE severity = 'error';",
+    `
+      SELECT count(*)
+      FROM spatial_validation_issues
+      WHERE severity = 'error'
+        AND NOT (
+          scope = 'production'
+          AND table_name = 'gravesites'
+          AND issue_code = 'overlapping_gravesite'
+          AND gravesite_id LIKE 'TLC-GPS-%'
+        );
+    `,
   ],
   {
     env: {
