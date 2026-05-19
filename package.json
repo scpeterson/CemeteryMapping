@@ -42,6 +42,7 @@
     "db:rollback:tag": "node scripts/db-rollback-tag.mjs",
     "db:rollback:test": "node scripts/db-rollback-test.mjs",
     "db:import:geodatabase": "node scripts/db-import-geodatabase.mjs",
+    "db:import:headstones": "node scripts/db-import-headstones-xlsx.mjs",
     "db:promote:spatial": "node scripts/db-promote-spatial-staging.mjs",
     "db:seed:demo": "node scripts/db-seed-demo.mjs",
     "db:validate:spatial": "node scripts/db-validate-spatial.mjs",
@@ -50,6 +51,7 @@
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.2.1",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "lucide-react": "^0.468.0",
     "maplibre-gl": "^5.6.2",
