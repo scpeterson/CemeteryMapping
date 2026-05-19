@@ -224,3 +224,35 @@ npm run db:promote:spatial -- --batch-id <batch-uuid>
 ```
 
 Promotion currently handles only `Cemeteries` and `Sections`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. The first inspected project geodatabase has populated `Cemeteries` and `Sections` layers, empty `Blocks`, `Lots`, and `Memorials` layers, and no visible `Gravesites` layer. Grave polygon import will need the actual gravesite source layer when it becomes available.
+
+## Headstone spreadsheet workflow
+
+Headstone GPS spreadsheets can be imported after cemetery and section polygons exist in the target environment. The importer expects one row per GPS location with `Latitude` and `Longitude` columns and up to six burial people stored in `Person1First` / `Person1Last` through `Person6First` / `Person6Last`. It also supports the legacy second-person headers `Persons26First` and `Persons26Last`.
+
+Each spreadsheet row with coordinates and at least one person becomes one `gravesites` row. The importer generates a small rectangular `MultiPolygon` centered on the coordinate, links the gravesite to the matching cemetery and to the section polygon containing the GPS point when available, and replaces the generated gravesite's existing burial rows with one `burials` row per populated person column. `PersonNYob` and `PersonNYod` become `YYYY-01-01` birth and death dates.
+
+Run a dry run first:
+
+```bash
+APP_ENV=test npm run db:import:headstones -- "/path/to/TLC Gravesite Registry Geo Locations.xlsx" --dry-run
+```
+
+Import into a target environment:
+
+```bash
+APP_ENV=test npm run db:import:headstones -- "/path/to/TLC Gravesite Registry Geo Locations.xlsx"
+```
+
+Useful options:
+
+```bash
+APP_ENV=test npm run db:import:headstones -- "/path/to/headstones.xlsx" --facility-id 1 --width-meters 1 --height-meters 2.5
+```
+
+The generated `gravesite_id` values use the stable source row shape `TLC-GPS-<row-number>`. After import, run:
+
+```bash
+APP_ENV=test npm run db:validate:spatial
+```
+
+The importer validates generated center points before commit. A center point outside the cemetery is an error. A row whose GPS point does not fall inside a section polygon is imported with the source section text but no `section_uuid`, and is reported as a warning for review.
