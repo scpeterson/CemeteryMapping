@@ -5,12 +5,13 @@ import pg from "pg";
 import { currentEnvironment, loadDbEnvironment } from "./lib/run-liquibase.mjs";
 
 const { Pool } = pg;
-const defaultWidthMeters = 1;
-const defaultHeightMeters = 2.5;
+const feetToMeters = 0.3048;
+const defaultLengthFeet = 8;
+const defaultWidthFeet = 4;
 
 function usage() {
   console.error(
-    "Usage: npm run db:import:headstones -- /path/to/headstones.xlsx [--facility-id 1] [--sheet SheetName] [--width-meters 1] [--height-meters 2.5] [--allow-spatial-errors] [--dry-run]",
+    "Usage: npm run db:import:headstones -- /path/to/headstones.xlsx [--facility-id 1] [--sheet SheetName] [--length-feet 8] [--width-feet 4] [--allow-spatial-errors] [--dry-run]",
   );
 }
 
@@ -109,11 +110,11 @@ function peopleFromRow(row) {
   return people;
 }
 
-function rectangleMultiPolygon(longitude, latitude, widthMeters, heightMeters) {
+function rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters) {
   const latMeters = 111_320;
   const lonMeters = latMeters * Math.cos((latitude * Math.PI) / 180);
-  const halfWidthDegrees = widthMeters / 2 / lonMeters;
-  const halfHeightDegrees = heightMeters / 2 / latMeters;
+  const halfWidthDegrees = eastWestMeters / 2 / lonMeters;
+  const halfHeightDegrees = northSouthMeters / 2 / latMeters;
 
   const west = longitude - halfWidthDegrees;
   const east = longitude + halfWidthDegrees;
@@ -175,11 +176,13 @@ async function normalizedRows(workbookPath, sheetName) {
 }
 
 function importableRows(rows, options) {
-  const widthMeters = Number(options["width-meters"] ?? defaultWidthMeters);
-  const heightMeters = Number(options["height-meters"] ?? defaultHeightMeters);
+  const lengthFeet = Number(options["length-feet"] ?? defaultLengthFeet);
+  const widthFeet = Number(options["width-feet"] ?? defaultWidthFeet);
+  const eastWestMeters = lengthFeet * feetToMeters;
+  const northSouthMeters = widthFeet * feetToMeters;
 
-  if (!Number.isFinite(widthMeters) || widthMeters <= 0) throw new Error("--width-meters must be a positive number.");
-  if (!Number.isFinite(heightMeters) || heightMeters <= 0) throw new Error("--height-meters must be a positive number.");
+  if (!Number.isFinite(lengthFeet) || lengthFeet <= 0) throw new Error("--length-feet must be a positive number.");
+  if (!Number.isFinite(widthFeet) || widthFeet <= 0) throw new Error("--width-feet must be a positive number.");
 
   return rows
     .map(({ rowNumber, row }) => {
@@ -204,7 +207,7 @@ function importableRows(rows, options) {
         sourceGraveNumber: textCell(row, "GraveNumber"),
         latitude,
         longitude,
-        geometry: rectangleMultiPolygon(longitude, latitude, widthMeters, heightMeters),
+        geometry: rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters),
         sourceProperties: row,
         people,
       };
@@ -473,7 +476,7 @@ async function main() {
     console.log(`Gravesites linked to sections: ${linkedSections}.`);
     console.log(`Generated gravesite spatial warnings: ${spatialIssues.length - errorCount}.`);
     console.log(`Generated gravesite spatial errors: ${errorCount}.`);
-    console.log(`Generated rectangle size: ${options["width-meters"] ?? defaultWidthMeters}m x ${options["height-meters"] ?? defaultHeightMeters}m.`);
+    console.log(`Generated rectangle size: ${options["length-feet"] ?? defaultLengthFeet}ft east-west x ${options["width-feet"] ?? defaultWidthFeet}ft north-south.`);
     console.log("Run npm run db:validate:spatial to review generated gravesite geometry.");
   } catch (error) {
     await client.query("ROLLBACK");
