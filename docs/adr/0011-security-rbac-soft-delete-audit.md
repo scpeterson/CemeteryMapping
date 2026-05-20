@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-05-20
 - Owners: Project maintainers
-- Related changes: Phase 1 security documentation
+- Related changes: PR #15, Phase 2 security schema
 
 ## Context
 
@@ -82,7 +82,6 @@ Keeping the initial roles simple matches the current need while leaving a path f
 
 Before building admin editing screens, the project needs:
 
-- Schema support for users, roles, soft deletes, and audit events.
 - API middleware for authentication and authorization.
 - Query updates so normal reads exclude soft-deleted rows.
 - Tests for reader and admin access.
@@ -92,9 +91,13 @@ Existing public or unauthenticated read behavior must be explicitly reviewed bef
 
 ## Rebuild Notes
 
-Phase 1 is documentation-only.
+Apply migration:
 
-Future implementation phases should validate with:
+```bash
+APP_ENV=test npm run db:migrate
+```
+
+Validate with:
 
 ```bash
 npm ci
