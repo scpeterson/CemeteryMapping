@@ -141,6 +141,7 @@ db/changelog/changes/002-esri-cemetery-template-schema.sql
 db/changelog/changes/003-spatial-import-staging.sql
 db/changelog/changes/004-spatial-validation-severity.sql
 db/changelog/changes/005-headstones.sql
+db/changelog/changes/006-security-rbac-soft-delete-audit.sql
 ```
 
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
@@ -156,6 +157,9 @@ The schema creates:
 - `owners`
 - `headstones`
 - `headstone_burials`
+- `app_roles`
+- `app_users`
+- `audit_events`
 - `memorials`
 - `spatial_import_batches`
 - `spatial_import_features`
@@ -181,6 +185,17 @@ Hierarchical GIS identifiers mirror the template fields using snake_case names:
 - `gravesite_id`
 
 Foreign keys connect the hierarchy directly in PostgreSQL, so Esri-specific relationship key fields are not needed.
+
+## Security schema
+
+The security foundation uses:
+
+- `app_roles` for application roles. Initial values are `admin` and `reader`.
+- `app_users` for identity-provider subjects mapped to application roles.
+- `audit_events` for append-only administrative change history.
+- `deleted_at`, `deleted_by`, and `delete_reason` columns on cemetery business tables.
+
+The application should use soft deletes for cemetery data. Normal read queries should filter `deleted_at IS NULL`; administrative recovery and audit views can explicitly include deleted rows.
 
 ## Spatial import staging
 

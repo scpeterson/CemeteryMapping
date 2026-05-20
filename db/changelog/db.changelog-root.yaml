@@ -14,3 +14,6 @@ databaseChangeLog:
   - include:
       file: changes/005-headstones.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/006-security-rbac-soft-delete-audit.sql
+      relativeToChangelogFile: true
