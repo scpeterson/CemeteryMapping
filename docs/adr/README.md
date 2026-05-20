@@ -31,6 +31,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0008: Generate Gravesites and Headstones from Headstone GPS Spreadsheet Rows](0008-headstone-spreadsheet-import.md)
 - [ADR 0009: Model Headstones as Physical Markers Separate from Burials](0009-headstone-marker-model.md)
 - [ADR 0010: Use CI to Validate Rebuildability](0010-ci-rebuild-validation.md)
+- [ADR 0011: Secure Access with RBAC, Soft Deletes, and Audit Logging](0011-security-rbac-soft-delete-audit.md)
 
 ## Creating a New ADR
 
