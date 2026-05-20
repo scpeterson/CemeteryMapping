@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const environments = new Set(["dev", "test", "stage", "prod"]);
-const authModes = new Set(["disabled", "trusted-header"]);
+const authModes = new Set(["disabled", "trusted-header", "auth0"]);
 
 function parseEnvFile(contents) {
   return Object.fromEntries(
@@ -33,6 +33,11 @@ export function loadApiConfig() {
   if (!authModes.has(authMode)) {
     throw new Error(`AUTH_MODE must be one of ${[...authModes].join(", ")}. Received "${authMode}".`);
   }
+  const auth0Domain = process.env.AUTH0_DOMAIN;
+  const auth0Audience = process.env.AUTH0_AUDIENCE;
+  if (authMode === "auth0" && (!auth0Domain || !auth0Audience)) {
+    throw new Error("AUTH0_DOMAIN and AUTH0_AUDIENCE are required when AUTH_MODE=auth0.");
+  }
 
   return {
     appEnv,
@@ -42,6 +47,11 @@ export function loadApiConfig() {
       subjectHeader: process.env.AUTH_TRUSTED_SUBJECT_HEADER ?? "x-cemetery-user-subject",
       emailHeader: process.env.AUTH_TRUSTED_EMAIL_HEADER ?? "x-cemetery-user-email",
       roleHeader: process.env.AUTH_TRUSTED_ROLE_HEADER ?? "x-cemetery-user-role",
+      auth0: {
+        domain: auth0Domain,
+        audience: auth0Audience,
+        issuerBaseUrl: auth0Domain ? `https://${auth0Domain.replace(/^https?:\/\//u, "").replace(/\/$/u, "")}` : undefined,
+      },
     },
     database: {
       host: process.env.PGHOST ?? "127.0.0.1",

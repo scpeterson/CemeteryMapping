@@ -1,7 +1,11 @@
+import { auth as auth0BearerAuth } from "express-oauth2-jwt-bearer";
+
 const roleRank = new Map([
   ["reader", 1],
   ["admin", 2],
 ]);
+
+const auth0ValidatorCache = new WeakMap();
 
 function unauthorized(response, message = "Authentication required") {
   response.status(401).json({ error: message });
@@ -39,10 +43,89 @@ function readTrustedHeaderUser(request, authConfig) {
   };
 }
 
-export function requireRole(authConfig, ...requiredRoles) {
+function middlewareToPromise(middleware, request, response) {
+  return new Promise((resolve, reject) => {
+    middleware(request, response, (error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
+}
+
+function getAuth0Validator(authConfig) {
+  if (authConfig.auth0Validator) return authConfig.auth0Validator;
+  if (auth0ValidatorCache.has(authConfig)) return auth0ValidatorCache.get(authConfig);
+
+  const validator = auth0BearerAuth({
+    issuerBaseURL: authConfig.auth0.issuerBaseUrl,
+    audience: authConfig.auth0.audience,
+    tokenSigningAlg: "RS256",
+  });
+  auth0ValidatorCache.set(authConfig, validator);
+  return validator;
+}
+
+function auth0Payload(request) {
+  return request.auth?.payload ?? request.auth;
+}
+
+function readBearerTokenSubject(request) {
+  const payload = auth0Payload(request);
+  const subject = payload?.sub?.trim();
+  const email = payload?.email?.trim();
+  if (!subject) return undefined;
+
+  return {
+    subject,
+    email,
+  };
+}
+
+async function loadApplicationUser(pool, subject) {
+  const result = await pool.query(
+    `
+      SELECT
+        id::text,
+        external_subject,
+        email,
+        display_name,
+        role_name,
+        is_active
+      FROM app_users
+      WHERE external_subject = $1
+      LIMIT 1
+    `,
+    [subject],
+  );
+  return result.rows[0];
+}
+
+function toRequestUser(appUser, tokenUser) {
+  return {
+    id: appUser.id,
+    subject: appUser.external_subject,
+    email: appUser.email ?? tokenUser.email,
+    displayName: appUser.display_name,
+    role: normalizeRole(appUser.role_name),
+  };
+}
+
+function handleAuth0Error(error, response) {
+  if (error?.status === 401 || error?.statusCode === 401) {
+    unauthorized(response, error.message);
+    return;
+  }
+
+  throw error;
+}
+
+export function requireRole(authConfig, poolOrRole, ...restRequiredRoles) {
+  const hasPool = typeof poolOrRole === "object" && poolOrRole !== null && typeof poolOrRole.query === "function";
+  const pool = hasPool ? poolOrRole : undefined;
+  const requiredRoles = hasPool ? restRequiredRoles : [poolOrRole, ...restRequiredRoles];
   const normalizedRequiredRoles = requiredRoles.map(normalizeRole);
 
-  return (request, response, next) => {
+  return async (request, response, next) => {
     if (authConfig.mode === "disabled") {
       request.user = {
         subject: "local-disabled-auth",
@@ -53,27 +136,65 @@ export function requireRole(authConfig, ...requiredRoles) {
       return;
     }
 
-    if (authConfig.mode !== "trusted-header") {
-      throw new Error(`Unsupported AUTH_MODE "${authConfig.mode}".`);
-    }
+    if (authConfig.mode === "trusted-header") {
+      const user = readTrustedHeaderUser(request, authConfig);
+      if (!user) {
+        unauthorized(response);
+        return;
+      }
 
-    const user = readTrustedHeaderUser(request, authConfig);
-    if (!user) {
-      unauthorized(response);
+      if (!roleRank.has(user.role)) {
+        forbidden(response, "Unknown role");
+        return;
+      }
+
+      if (!hasRequiredRole(user.role, normalizedRequiredRoles)) {
+        forbidden(response);
+        return;
+      }
+
+      request.user = user;
+      next();
       return;
     }
 
-    if (!roleRank.has(user.role)) {
+    if (authConfig.mode !== "auth0") {
+      throw new Error(`Unsupported AUTH_MODE "${authConfig.mode}".`);
+    }
+
+    if (!pool) throw new Error("A database pool is required when AUTH_MODE=auth0.");
+
+    try {
+      await middlewareToPromise(getAuth0Validator(authConfig), request, response);
+    } catch (error) {
+      handleAuth0Error(error, response);
+      return;
+    }
+
+    const tokenUser = readBearerTokenSubject(request);
+    if (!tokenUser) {
+      unauthorized(response, "Token subject is required");
+      return;
+    }
+
+    const appUser = await loadApplicationUser(pool, tokenUser.subject);
+    if (!appUser || !appUser.is_active) {
+      forbidden(response, "User is not authorized");
+      return;
+    }
+
+    const requestUser = toRequestUser(appUser, tokenUser);
+    if (!roleRank.has(requestUser.role)) {
       forbidden(response, "Unknown role");
       return;
     }
 
-    if (!hasRequiredRole(user.role, normalizedRequiredRoles)) {
+    if (!hasRequiredRole(requestUser.role, normalizedRequiredRoles)) {
       forbidden(response);
       return;
     }
 
-    request.user = user;
+    request.user = requestUser;
     next();
   };
 }
