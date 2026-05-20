@@ -74,6 +74,18 @@ npm run db:migrate
 
 More database details are in `db/README.md`.
 
+## Architecture Decisions and Rebuild Documentation
+
+Design decisions are documented as Architecture Decision Records in `docs/adr`. Start with `docs/adr/README.md` for the ADR index, software inventory, and ADR update rules.
+
+A clean rebuild guide is available in `docs/rebuild.md`.
+
+Data origins and stewardship placeholders are tracked in `docs/data-sources.md`.
+
+The `docs/` folder is ready to serve with GitHub Pages. In repository settings, configure Pages to deploy from the `main` branch and `/docs` folder.
+
+Every PR that changes architecture, schema, import behavior, validation policy, deployment/rebuild behavior, or source data assumptions must add or update an ADR.
+
 ## API
 
 The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a summary-first map flow:
