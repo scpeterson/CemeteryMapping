@@ -7,6 +7,7 @@ This site contains the operational and architectural documentation for rebuildin
 - [Rebuild Guide](rebuild.md)
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
+- [Admin Workflow Roadmap](admin-workflows.md)
 
 ## Architecture Decisions
 

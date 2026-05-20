@@ -32,6 +32,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0009: Model Headstones as Physical Markers Separate from Burials](0009-headstone-marker-model.md)
 - [ADR 0010: Use CI to Validate Rebuildability](0010-ci-rebuild-validation.md)
 - [ADR 0011: Secure Access with RBAC, Soft Deletes, and Audit Logging](0011-security-rbac-soft-delete-audit.md)
+- [ADR 0012: Use Auth0 as the Identity Provider](0012-use-auth0-for-identity-provider.md)
+- [ADR 0013: Prioritize Admin Editing Workflows](0013-prioritize-admin-editing-workflows.md)
 
 ## Creating a New ADR
 
