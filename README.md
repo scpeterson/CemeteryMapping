@@ -103,3 +103,15 @@ API_PORT=3010 APP_ENV=stage npm run api
 ```
 
 `APP_ENV` selects `db/env/<environment>.env`. Override `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, or `PGPASSWORD` to connect to a different Postgres instance.
+
+### API Security
+
+Read endpoints are protected by API authorization middleware. Local development and automated tests currently default to `AUTH_MODE=disabled` so the existing map UX still works before the production identity provider is selected.
+
+For controlled integration testing behind a trusted local proxy, use `AUTH_MODE=trusted-header` and send:
+
+- `x-cemetery-user-subject`
+- `x-cemetery-user-email`
+- `x-cemetery-user-role` with `reader` or `admin`
+
+Do not expose trusted-header mode directly to the public internet. Production authentication should be wired to the selected identity provider before deployment.

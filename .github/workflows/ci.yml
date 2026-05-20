@@ -53,6 +53,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Run server unit tests
+        run: npm run test:server
+
       - name: Build
         run: npm run build:test
 

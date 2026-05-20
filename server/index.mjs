@@ -1,6 +1,7 @@
 import express from "express";
 import pg from "pg";
 import { loadApiConfig } from "./config.mjs";
+import { requireRole } from "./auth.mjs";
 import { getCemeteryData, getGraveSpace } from "./cemeteryRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 
@@ -25,7 +26,9 @@ app.get("/api/health", async (_request, response, next) => {
   }
 });
 
-app.get("/api/cemetery-map", async (_request, response, next) => {
+const requireReader = requireRole(config.auth, "reader");
+
+app.get("/api/cemetery-map", requireReader, async (_request, response, next) => {
   try {
     response.json(await getCemeteryData(pool));
   } catch (error) {
@@ -33,7 +36,7 @@ app.get("/api/cemetery-map", async (_request, response, next) => {
   }
 });
 
-app.get("/api/grave-spaces/:id", async (request, response, next) => {
+app.get("/api/grave-spaces/:id", requireReader, async (request, response, next) => {
   try {
     const grave = await getGraveSpace(pool, request.params.id);
     if (!grave) {
@@ -47,7 +50,7 @@ app.get("/api/grave-spaces/:id", async (request, response, next) => {
   }
 });
 
-app.get("/api/search", async (request, response, next) => {
+app.get("/api/search", requireReader, async (request, response, next) => {
   try {
     const query = typeof request.query.q === "string" ? request.query.q : "";
     const statuses = typeof request.query.status === "string" ? request.query.status.split(",").filter(Boolean) : [];

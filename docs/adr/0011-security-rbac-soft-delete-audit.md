@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-05-20
 - Owners: Project maintainers
-- Related changes: PR #15, Phase 2 security schema
+- Related changes: PR #15, Phase 2 security schema, Phase 3 API authorization foundation
 
 ## Context
 
@@ -70,7 +70,7 @@ Audit records should not be edited by normal application workflows.
 
 Production authentication should use standards-based tokens from the selected identity provider, preferably OpenID Connect and JWT access tokens. The Express API should validate tokens server-side and map the authenticated subject to an application user and role.
 
-Local development and automated tests can use a controlled test authentication mode, but it must be clearly separated from production configuration and documented in environment files.
+Local development and automated tests can use a controlled test authentication mode, but it must be clearly separated from production configuration and documented.
 
 ## Rationale
 
@@ -82,12 +82,17 @@ Keeping the initial roles simple matches the current need while leaving a path f
 
 Before building admin editing screens, the project needs:
 
-- API middleware for authentication and authorization.
-- Query updates so normal reads exclude soft-deleted rows.
-- Tests for reader and admin access.
+- Production identity-provider selection and token validation.
 - Documentation for local, test, stage, and production auth configuration.
 
 Existing public or unauthenticated read behavior must be explicitly reviewed before production deployment. If public map access is desired, that should be documented separately from the authenticated `reader` role.
+
+The first API security implementation supports:
+
+- `AUTH_MODE=disabled` for local development and tests.
+- `AUTH_MODE=trusted-header` for controlled integration behind a trusted local proxy.
+- Reader-or-admin authorization on existing read endpoints.
+- Default API reads that exclude soft-deleted cemetery records.
 
 ## Rebuild Notes
 
