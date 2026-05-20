@@ -203,8 +203,11 @@ Current API authorization modes:
 
 - `AUTH_MODE=disabled`: development/test default. Requests are treated as a local admin.
 - `AUTH_MODE=trusted-header`: controlled integration mode. A trusted proxy must provide `x-cemetery-user-subject`, `x-cemetery-user-email`, and `x-cemetery-user-role`.
+- `AUTH_MODE=auth0`: production mode. The API validates Auth0 JWT bearer tokens and loads the local `app_users` record by `external_subject`.
 
 Trusted-header mode is not a production identity-provider replacement.
+
+For Auth0 users, `app_users.external_subject` must match the token `sub` claim, and `app_users.role_name` must be `reader` or `admin`.
 
 ## Spatial import staging
 

@@ -112,10 +112,20 @@ API_PORT=3010 APP_ENV=stage npm run api
 
 Read endpoints are protected by API authorization middleware. Local development and automated tests currently default to `AUTH_MODE=disabled` so the existing map UX still works before the production identity provider is selected.
 
+For production Auth0 JWT validation, use:
+
+```bash
+AUTH_MODE=auth0
+AUTH0_DOMAIN=<tenant>.auth0.com
+AUTH0_AUDIENCE=<api-identifier>
+```
+
+In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader` and `admin` checks.
+
 For controlled integration testing behind a trusted local proxy, use `AUTH_MODE=trusted-header` and send:
 
 - `x-cemetery-user-subject`
 - `x-cemetery-user-email`
 - `x-cemetery-user-role` with `reader` or `admin`
 
-Do not expose trusted-header mode directly to the public internet. Production authentication should be wired to the selected identity provider before deployment.
+Do not expose trusted-header mode directly to the public internet.

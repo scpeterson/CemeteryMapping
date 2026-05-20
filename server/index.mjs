@@ -26,8 +26,8 @@ app.get("/api/health", async (_request, response, next) => {
   }
 });
 
-const requireReader = requireRole(config.auth, "reader");
-const requireAdmin = requireRole(config.auth, "admin");
+const requireReader = requireRole(config.auth, pool, "reader");
+const requireAdmin = requireRole(config.auth, pool, "admin");
 
 app.get("/api/cemetery-map", requireReader, async (_request, response, next) => {
   try {
