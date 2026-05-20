@@ -69,6 +69,8 @@ The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT vali
 
 The React frontend uses the Auth0 React SDK when `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and `VITE_AUTH0_AUDIENCE` are configured. If those variables are absent, the frontend does not show the sign-in flow, which keeps local development and CI compatible with `AUTH_MODE=disabled`.
 
+Local Auth0 testing uses Vite on a strict `http://127.0.0.1:5173` origin. Auth0 callback, logout, and web-origin settings must match that origin exactly.
+
 ## Rebuild Notes
 
 Auth0 tenant setup checklist:
