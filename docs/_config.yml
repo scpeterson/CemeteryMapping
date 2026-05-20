@@ -1,0 +1,4 @@
+title: Cemetery Mapping Documentation
+description: Architecture decisions, rebuild instructions, and data source notes for the Cemetery Mapping application.
+theme: jekyll-theme-minimal
+markdown: kramdown
