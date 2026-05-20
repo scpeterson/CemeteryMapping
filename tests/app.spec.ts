@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 test("loads API-backed cemetery records and supports search", async ({ page }) => {
   const graveDetailRequests: string[] = [];
   page.on("request", (request) => {
@@ -55,4 +57,50 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
       owners: expect.any(Array),
     }),
   );
+});
+
+test("admin soft delete hides a grave space from reads and restore makes it visible again", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("9 results")).toBeVisible();
+
+  const deleteResponse = await page.request.delete("/api/grave-spaces/A-01-02", {
+    data: { reason: "Playwright soft delete test" },
+  });
+  expect(deleteResponse.ok()).toBe(true);
+  const deleteResult = await deleteResponse.json();
+  expect(deleteResult).toEqual(
+    expect.objectContaining({
+      graveSpaceId: "A-01-02",
+      auditEventId: expect.any(String),
+      alreadyDeleted: false,
+    }),
+  );
+
+  const deletedDetailResponse = await page.request.get("/api/grave-spaces/A-01-02");
+  expect(deletedDetailResponse.status()).toBe(404);
+
+  const deletedMapResponse = await page.request.get("/api/cemetery-map");
+  expect(deletedMapResponse.ok()).toBe(true);
+  const deletedMapData = await deletedMapResponse.json();
+  expect(deletedMapData.graves.map((grave: { id: string }) => grave.id)).not.toContain("A-01-02");
+
+  const restoreResponse = await page.request.post("/api/grave-spaces/A-01-02/restore", {
+    data: { reason: "Playwright restore test" },
+  });
+  expect(restoreResponse.ok()).toBe(true);
+  const restoreResult = await restoreResponse.json();
+  expect(restoreResult).toEqual(
+    expect.objectContaining({
+      graveSpaceId: "A-01-02",
+      auditEventId: expect.any(String),
+      alreadyActive: false,
+      restored: true,
+    }),
+  );
+
+  const restoredDetailResponse = await page.request.get("/api/grave-spaces/A-01-02");
+  expect(restoredDetailResponse.ok()).toBe(true);
+  const restoredMapResponse = await page.request.get("/api/cemetery-map");
+  const restoredMapData = await restoredMapResponse.json();
+  expect(restoredMapData.graves.map((grave: { id: string }) => grave.id)).toContain("A-01-02");
 });

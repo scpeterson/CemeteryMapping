@@ -73,6 +73,68 @@ function toGraveSummary(grave) {
   };
 }
 
+function toMutationActor(user) {
+  if (!user) return {};
+  return {
+    actorExternalSubject: user.subject,
+    actorEmail: user.email,
+    actorRole: user.role,
+  };
+}
+
+async function insertAuditEvent(client, { actor, action, targetTable, targetRecordId, previousValues, newValues, reason }) {
+  const result = await client.query(
+    `
+      INSERT INTO audit_events (
+        actor_external_subject,
+        actor_email,
+        actor_role,
+        action,
+        target_table,
+        target_record_id,
+        previous_values,
+        new_values,
+        reason
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)
+      RETURNING id::text
+    `,
+    [
+      actor.actorExternalSubject,
+      actor.actorEmail,
+      actor.actorRole,
+      action,
+      targetTable,
+      targetRecordId,
+      JSON.stringify(previousValues ?? null),
+      JSON.stringify(newValues ?? null),
+      reason,
+    ],
+  );
+
+  return result.rows[0].id;
+}
+
+async function selectGraveMutationState(client, gravesiteId) {
+  const result = await client.query(
+    `
+      SELECT
+        id::text AS uuid,
+        gravesite_id,
+        deleted_at,
+        deleted_by::text,
+        delete_reason,
+        updated_at
+      FROM gravesites
+      WHERE gravesite_id = $1
+      FOR UPDATE
+    `,
+    [gravesiteId],
+  );
+
+  return result.rows[0];
+}
+
 function groupBy(rows, key) {
   return rows.reduce((groups, row) => {
     const value = row[key];
@@ -277,6 +339,120 @@ export async function getGraveSpace(pool, gravesiteId) {
       ownershipHistory: ownersResult.rows.map(toOwnershipEvent),
       notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
     };
+  } finally {
+    client.release();
+  }
+}
+
+export async function softDeleteGraveSpace(pool, gravesiteId, { actorUser, reason } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const existing = await selectGraveMutationState(client, gravesiteId);
+    if (!existing) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    if (existing.deleted_at) {
+      await client.query("COMMIT");
+      return {
+        graveSpaceId: existing.gravesite_id,
+        deletedAt: existing.deleted_at,
+        alreadyDeleted: true,
+      };
+    }
+
+    const updateResult = await client.query(
+      `
+        UPDATE gravesites
+        SET deleted_at = now(),
+            deleted_by = NULL,
+            delete_reason = $2,
+            updated_at = now()
+        WHERE id = $1
+        RETURNING id::text AS uuid, gravesite_id, deleted_at, deleted_by::text, delete_reason, updated_at
+      `,
+      [existing.uuid, reason],
+    );
+    const updated = updateResult.rows[0];
+    const auditEventId = await insertAuditEvent(client, {
+      actor: toMutationActor(actorUser),
+      action: "soft_delete",
+      targetTable: "gravesites",
+      targetRecordId: existing.uuid,
+      previousValues: existing,
+      newValues: updated,
+      reason,
+    });
+
+    await client.query("COMMIT");
+    return {
+      graveSpaceId: updated.gravesite_id,
+      deletedAt: updated.deleted_at,
+      auditEventId,
+      alreadyDeleted: false,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function restoreGraveSpace(pool, gravesiteId, { actorUser, reason } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const existing = await selectGraveMutationState(client, gravesiteId);
+    if (!existing) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    if (!existing.deleted_at) {
+      await client.query("COMMIT");
+      return {
+        graveSpaceId: existing.gravesite_id,
+        restored: true,
+        alreadyActive: true,
+      };
+    }
+
+    const updateResult = await client.query(
+      `
+        UPDATE gravesites
+        SET deleted_at = NULL,
+            deleted_by = NULL,
+            delete_reason = NULL,
+            updated_at = now()
+        WHERE id = $1
+        RETURNING id::text AS uuid, gravesite_id, deleted_at, deleted_by::text, delete_reason, updated_at
+      `,
+      [existing.uuid],
+    );
+    const updated = updateResult.rows[0];
+    const auditEventId = await insertAuditEvent(client, {
+      actor: toMutationActor(actorUser),
+      action: "restore",
+      targetTable: "gravesites",
+      targetRecordId: existing.uuid,
+      previousValues: existing,
+      newValues: updated,
+      reason,
+    });
+
+    await client.query("COMMIT");
+    return {
+      graveSpaceId: updated.gravesite_id,
+      restored: true,
+      auditEventId,
+      alreadyActive: false,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
   } finally {
     client.release();
   }
