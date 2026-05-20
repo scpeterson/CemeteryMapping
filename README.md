@@ -14,6 +14,8 @@ npm run dev
 
 Then open `http://127.0.0.1:5173`. The development command starts the API on `http://127.0.0.1:3001` and the Vite front end on `http://127.0.0.1:5173`.
 
+The Vite development server is pinned to port `5173` with `--strictPort` so Auth0 callback URLs do not accidentally change.
+
 ## Environments
 
 The application supports four environments all the way through the front end, Docker database, and Liquibase:
@@ -85,6 +87,8 @@ Data origins and stewardship placeholders are tracked in `docs/data-sources.md`.
 The initial admin workflow order is tracked in `docs/admin-workflows.md`.
 
 Separate Auth0 test tenant setup is documented in `docs/auth0-test-tenant.md`.
+
+That guide also includes troubleshooting for Auth0 callback mismatches, missing API/audience configuration, SPA-to-API authorization errors, and API `401`/`403` responses.
 
 The `docs/` folder is ready to serve with GitHub Pages using Jekyll and the `jekyll-theme-minimal` theme. In repository settings, configure Pages to deploy from the `main` branch and `/docs` folder.
 
