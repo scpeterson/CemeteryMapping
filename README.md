@@ -84,6 +84,8 @@ Data origins and stewardship placeholders are tracked in `docs/data-sources.md`.
 
 The initial admin workflow order is tracked in `docs/admin-workflows.md`.
 
+Separate Auth0 test tenant setup is documented in `docs/auth0-test-tenant.md`.
+
 The `docs/` folder is ready to serve with GitHub Pages using Jekyll and the `jekyll-theme-minimal` theme. In repository settings, configure Pages to deploy from the `main` branch and `/docs` folder.
 
 Every PR that changes architecture, schema, import behavior, validation policy, deployment/rebuild behavior, or source data assumptions must add or update an ADR.
