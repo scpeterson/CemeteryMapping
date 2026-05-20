@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Cemetery Mapping Documentation Logo</title>
+  <desc id="desc">A simple map pin over a cemetery plot grid.</desc>
+  <rect width="96" height="96" rx="12" fill="#f4f7f4"/>
+  <path d="M18 68h60" stroke="#587466" stroke-width="4" stroke-linecap="round"/>
+  <path d="M25 58h46M30 48h36M36 38h24" stroke="#b8c7be" stroke-width="3" stroke-linecap="round"/>
+  <path d="M48 16c-10 0-18 8-18 18 0 14 18 34 18 34s18-20 18-34c0-10-8-18-18-18z" fill="#2f5d50"/>
+  <circle cx="48" cy="34" r="7" fill="#f4f7f4"/>
+</svg>
