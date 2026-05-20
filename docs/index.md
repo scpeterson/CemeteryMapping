@@ -2,6 +2,8 @@
 
 This site contains the operational and architectural documentation for rebuilding, maintaining, and extending the Cemetery Mapping application.
 
+The site is configured for GitHub Pages using Jekyll and the `jekyll-theme-minimal` theme.
+
 ## Start Here
 
 - [Rebuild Guide](rebuild.md)

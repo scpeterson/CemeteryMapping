@@ -2,3 +2,27 @@ title: Cemetery Mapping Documentation
 description: Architecture decisions, rebuild instructions, and data source notes for the Cemetery Mapping application.
 theme: jekyll-theme-minimal
 markdown: kramdown
+show_downloads: false
+logo: /assets/images/site-logo.svg
+google_analytics:
+
+plugins:
+  - jekyll-seo-tag
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+navigation:
+  - title: Home
+    url: /
+  - title: Rebuild Guide
+    url: /rebuild.html
+  - title: ADRs
+    url: /adr/
+  - title: Data Sources
+    url: /data-sources.html
+  - title: Admin Workflows
+    url: /admin-workflows.html
