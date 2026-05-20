@@ -10,6 +10,7 @@ The site is configured for GitHub Pages using Jekyll and the `jekyll-theme-minim
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
 - [Admin Workflow Roadmap](admin-workflows.md)
+- [Auth0 Test Tenant Setup](auth0-test-tenant.md)
 
 ## Architecture Decisions
 

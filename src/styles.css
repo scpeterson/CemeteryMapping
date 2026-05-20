@@ -35,6 +35,75 @@ button {
   cursor: pointer;
 }
 
+.auth-screen {
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  min-height: 100%;
+  padding: 24px;
+  background: #eef2ea;
+  color: #17201d;
+  text-align: center;
+}
+
+.auth-screen h1 {
+  margin: 0;
+}
+
+.auth-screen p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.auth-screen button,
+.auth-session button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 720;
+}
+
+.auth-screen-error button {
+  justify-self: center;
+}
+
+.auth-session {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(520px, calc(100% - 36px));
+  padding: 7px 8px 7px 12px;
+  border: 1px solid rgba(23, 32, 29, 0.18);
+  border-radius: 8px;
+  background: rgba(251, 252, 247, 0.94);
+  color: #26342d;
+  font-size: 0.82rem;
+  font-weight: 680;
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.auth-session span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-session button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(420px, 1fr) minmax(330px, 420px);

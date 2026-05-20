@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-05-20
 - Owners: Project maintainers
-- Related changes: Identity provider decision phase, Auth0 API validation phase
+- Related changes: Identity provider decision phase, Auth0 API validation phase, Auth0 test tenant frontend phase
 
 ## Context
 
@@ -67,6 +67,8 @@ Development and CI can continue using `AUTH_MODE=disabled` until Auth0 test tena
 
 The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT validation. After validation, the API loads `app_users` using the token `sub` claim and enforces the local `role_name`. Token permissions are useful context from Auth0, but the database remains the final application authorization source.
 
+The React frontend uses the Auth0 React SDK when `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and `VITE_AUTH0_AUDIENCE` are configured. If those variables are absent, the frontend does not show the sign-in flow, which keeps local development and CI compatible with `AUTH_MODE=disabled`.
+
 ## Rebuild Notes
 
 Auth0 tenant setup checklist:
@@ -84,6 +86,9 @@ Auth0 tenant setup checklist:
 11. Configure allowed callback, logout, and web origin URLs for DEV, TEST, STAGE, and PROD.
 12. Create application users and map their Auth0 subjects into `app_users.external_subject`.
 13. Set `AUTH_MODE=auth0`, `AUTH0_DOMAIN`, and `AUTH0_AUDIENCE` in the target deployment environment.
+14. Set `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and `VITE_AUTH0_AUDIENCE` in the frontend environment.
+
+Detailed setup is documented in [Auth0 Test Tenant Setup](../auth0-test-tenant.md).
 
 Validation commands after implementation:
 

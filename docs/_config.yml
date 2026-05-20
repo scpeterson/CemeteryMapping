@@ -26,3 +26,5 @@ navigation:
     url: /data-sources.html
   - title: Admin Workflows
     url: /admin-workflows.html
+  - title: Auth0 Test Tenant
+    url: /auth0-test-tenant.html
