@@ -197,6 +197,8 @@ The security foundation uses:
 
 The application should use soft deletes for cemetery data. Normal read queries should filter `deleted_at IS NULL`; administrative recovery and audit views can explicitly include deleted rows.
 
+The first admin mutation endpoints soft-delete and restore `gravesites` records through `/api/grave-spaces/:id`. These endpoints write `audit_events` records with the actor supplied by the configured API authentication mode.
+
 Current API authorization modes:
 
 - `AUTH_MODE=disabled`: development/test default. Requests are treated as a local admin.

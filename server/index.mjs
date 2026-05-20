@@ -2,7 +2,7 @@ import express from "express";
 import pg from "pg";
 import { loadApiConfig } from "./config.mjs";
 import { requireRole } from "./auth.mjs";
-import { getCemeteryData, getGraveSpace } from "./cemeteryRepository.mjs";
+import { getCemeteryData, getGraveSpace, restoreGraveSpace, softDeleteGraveSpace } from "./cemeteryRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 
 const { Pool } = pg;
@@ -27,6 +27,7 @@ app.get("/api/health", async (_request, response, next) => {
 });
 
 const requireReader = requireRole(config.auth, "reader");
+const requireAdmin = requireRole(config.auth, "admin");
 
 app.get("/api/cemetery-map", requireReader, async (_request, response, next) => {
   try {
@@ -55,6 +56,36 @@ app.get("/api/search", requireReader, async (request, response, next) => {
     const query = typeof request.query.q === "string" ? request.query.q : "";
     const statuses = typeof request.query.status === "string" ? request.query.status.split(",").filter(Boolean) : [];
     response.json(await searchCemetery(pool, { query, statuses }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/api/grave-spaces/:id", requireAdmin, async (request, response, next) => {
+  try {
+    const reason = typeof request.body?.reason === "string" ? request.body.reason.trim() : undefined;
+    const result = await softDeleteGraveSpace(pool, request.params.id, { actorUser: request.user, reason });
+    if (!result) {
+      response.status(404).json({ error: "Grave space not found" });
+      return;
+    }
+
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/grave-spaces/:id/restore", requireAdmin, async (request, response, next) => {
+  try {
+    const reason = typeof request.body?.reason === "string" ? request.body.reason.trim() : undefined;
+    const result = await restoreGraveSpace(pool, request.params.id, { actorUser: request.user, reason });
+    if (!result) {
+      response.status(404).json({ error: "Grave space not found" });
+      return;
+    }
+
+    response.json(result);
   } catch (error) {
     next(error);
   }

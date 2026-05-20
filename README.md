@@ -93,6 +93,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/cemetery-map` for GeoJSON boundary, sections, and summary grave-space geometry used by the map
 - `GET /api/grave-spaces/:id` for full grave details fetched when a grave is selected
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
+- `DELETE /api/grave-spaces/:id` for admin-only soft delete of a grave space
+- `POST /api/grave-spaces/:id/restore` for admin-only restore of a soft-deleted grave space
 
 Run the API by itself when needed:
 

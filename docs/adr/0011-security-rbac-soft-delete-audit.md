@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-05-20
 - Owners: Project maintainers
-- Related changes: PR #15, Phase 2 security schema, Phase 3 API authorization foundation
+- Related changes: PR #15, Phase 2 security schema, Phase 3 API authorization foundation, Phase 4 grave-space soft delete/restore API
 
 ## Context
 
@@ -93,6 +93,8 @@ The first API security implementation supports:
 - `AUTH_MODE=trusted-header` for controlled integration behind a trusted local proxy.
 - Reader-or-admin authorization on existing read endpoints.
 - Default API reads that exclude soft-deleted cemetery records.
+- Admin-only grave-space soft delete and restore endpoints.
+- Audit events for grave-space soft delete and restore operations.
 
 ## Rebuild Notes
 
