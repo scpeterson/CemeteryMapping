@@ -6,17 +6,19 @@ Use a separate Auth0 tenant for non-production authentication testing. This keep
 
 ## Tenant
 
-The current Auth0 test tenant from the application setup is:
+Record the Auth0 test tenant domain locally:
 
 ```text
-dev-wy05rjzb1eqgib5d.us.auth0.com
+<your-auth0-test-tenant>.auth0.com
 ```
 
-The current Auth0 SPA client id is:
+Record the Auth0 SPA client id locally:
 
 ```text
-YUMlsD4RqB9yY5VYLppbSFqmCxOkLvVp
+<your-auth0-spa-client-id>
 ```
+
+Do not commit tenant-specific identifiers unless the project intentionally wants them public. They are not secrets for a SPA, but keeping them in local ignored environment files reduces unwanted probing and configuration noise.
 
 ## API
 
@@ -109,8 +111,8 @@ Assign the `reader` role to the reader test user and the `admin` role to the adm
 For TEST-mode local frontend runs, use `.env.test.local`:
 
 ```bash
-VITE_AUTH0_DOMAIN=dev-wy05rjzb1eqgib5d.us.auth0.com
-VITE_AUTH0_CLIENT_ID=YUMlsD4RqB9yY5VYLppbSFqmCxOkLvVp
+VITE_AUTH0_DOMAIN=<your-auth0-test-tenant>.auth0.com
+VITE_AUTH0_CLIENT_ID=<your-auth0-spa-client-id>
 VITE_AUTH0_AUDIENCE=https://cemetery-mapping.test/api
 VITE_AUTH0_SCOPE=read:cemetery write:cemetery
 ```
@@ -129,7 +131,7 @@ Run the API with Auth0 validation:
 
 ```bash
 AUTH_MODE=auth0 \
-AUTH0_DOMAIN=dev-wy05rjzb1eqgib5d.us.auth0.com \
+AUTH0_DOMAIN=<your-auth0-test-tenant>.auth0.com \
 AUTH0_AUDIENCE=https://cemetery-mapping.test/api \
 APP_ENV=test \
 npm run api
