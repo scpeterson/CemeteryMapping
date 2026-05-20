@@ -197,6 +197,13 @@ The security foundation uses:
 
 The application should use soft deletes for cemetery data. Normal read queries should filter `deleted_at IS NULL`; administrative recovery and audit views can explicitly include deleted rows.
 
+Current API authorization modes:
+
+- `AUTH_MODE=disabled`: development/test default. Requests are treated as a local admin.
+- `AUTH_MODE=trusted-header`: controlled integration mode. A trusted proxy must provide `x-cemetery-user-subject`, `x-cemetery-user-email`, and `x-cemetery-user-role`.
+
+Trusted-header mode is not a production identity-provider replacement.
+
 ## Spatial import staging
 
 Real GIS imports should land in staging before production tables:
