@@ -82,6 +82,14 @@ Promote:
 APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
 ```
 
+If the batch UUID is not visible in the import output, query `spatial_import_batches` in the target environment:
+
+```sql
+SELECT id, source_name, source_path, imported_at, status
+FROM spatial_import_batches
+ORDER BY imported_at DESC;
+```
+
 ## Update Triggers
 
 Update this ADR when the source geodatabase path, data owner, feature dataset, layer mapping, coordinate system, or promotion behavior changes.

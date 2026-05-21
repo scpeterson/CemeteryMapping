@@ -104,6 +104,25 @@ APP_ENV=test npm run db:validate:spatial
 APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
 ```
 
+The geodatabase import prints the batch UUID. To look it up later:
+
+```bash
+docker compose \
+  -p cemeterymapping-test \
+  --env-file db/env/test.env \
+  exec db psql \
+  -U cemetery_app \
+  -d cemetery_mapping_test
+```
+
+```sql
+SELECT id, source_name, source_path, imported_at, status
+FROM spatial_import_batches
+ORDER BY imported_at DESC;
+```
+
+Use the `id` value as `<batch-uuid>`.
+
 ## Import Headstone GPS Spreadsheet Data
 
 Source details are tracked in [ADR 0008](adr/0008-headstone-spreadsheet-import.md).
