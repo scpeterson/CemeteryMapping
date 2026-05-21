@@ -112,6 +112,7 @@ APP_ENV=stage npm run db:seed:demo
 ```
 
 The demo seed command refuses to run when `APP_ENV=prod`.
+The demo fixture intentionally leaves the `blocks` and `lots` tables empty because Trinity Lutheran Church Cemetery does not use block or lot records. Demo gravesites are linked directly to sections.
 
 Stop the local database:
 

@@ -46,37 +46,12 @@ SELECT id, 'Section B', facility_id, 'B',
 FROM cemeteries
 WHERE facility_id = 'DEMO-ST-MARK';
 
-INSERT INTO blocks (cemetery_id, section_uuid, name, facility_id, section_id, block_id, geometry)
-SELECT c.id, s.id, s.name, c.facility_id, s.section_id, '01', s.geometry
-FROM cemeteries c
-JOIN sections s ON s.cemetery_id = c.id
-WHERE c.facility_id = 'DEMO-ST-MARK';
-
-INSERT INTO lots (cemetery_id, section_uuid, block_uuid, name, facility_id, section_id, block_id, lot_id, geometry)
-SELECT c.id, s.id, b.id, s.name, c.facility_id, s.section_id, b.block_id, lot_id,
-  ST_Multi(ST_MakeEnvelope(west, south, east, north, 4326))::geometry(MultiPolygon, 4326)
-FROM cemeteries c
-JOIN sections s ON s.cemetery_id = c.id
-JOIN blocks b ON b.section_uuid = s.id
-JOIN (
-  VALUES
-    ('A', '01', -76.70466, 39.19607, -76.70431, 39.19617),
-    ('A', '02', -76.70466, 39.19593, -76.70443, 39.19603),
-    ('B', '01', -76.70418, 39.19607, -76.70395, 39.19617),
-    ('B', '02', -76.70418, 39.19593, -76.70395, 39.19603)
-) AS lot_seed(section_id, lot_id, west, south, east, north)
-  ON lot_seed.section_id = s.section_id
-WHERE c.facility_id = 'DEMO-ST-MARK';
-
 INSERT INTO gravesites (
   cemetery_id,
   section_uuid,
-  block_uuid,
-  lot_uuid,
   name,
   facility_id,
   section_id,
-  block_id,
   lot_id,
   grave_id,
   gravesite_id,
@@ -84,7 +59,7 @@ INSERT INTO gravesites (
   cost,
   geometry
 )
-SELECT c.id, s.id, b.id, l.id, s.name, c.facility_id, seed.section_id, b.block_id, seed.lot_id, seed.grave_id,
+SELECT c.id, s.id, s.name, c.facility_id, seed.section_id, seed.lot_id, seed.grave_id,
   concat(seed.section_id, '-', seed.lot_id, '-', seed.grave_id),
   seed.status,
   seed.cost,
@@ -104,8 +79,6 @@ JOIN (
 ) AS seed(section_id, lot_id, grave_id, status, cost, west, south, east, north)
   ON true
 JOIN sections s ON s.cemetery_id = c.id AND s.section_id = seed.section_id
-JOIN blocks b ON b.section_uuid = s.id
-JOIN lots l ON l.section_uuid = s.id AND l.lot_id = seed.lot_id
 WHERE c.facility_id = 'DEMO-ST-MARK';
 
 INSERT INTO owners (gravesite_uuid, owner, co_owner, full_address, municipality, state, zip, phone, email, sale_date, notes, gravesite_id)
