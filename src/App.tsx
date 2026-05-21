@@ -5,7 +5,6 @@ import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
-import { statusLabels } from "./lib/format";
 import { searchGraves } from "./lib/search";
 import type { CemeteryData, GraveSpace, GraveSpaceSummary, GraveStatus, Owner, SearchMatch } from "./types";
 
@@ -147,14 +146,6 @@ export default function App() {
           searchResultIds={searchResultIds}
           onSelectGrave={setSelectedGrave}
         />
-        <div className="map-legend" aria-label="Map status legend">
-          {allStatuses.map((status) => (
-            <span key={status}>
-              <i className={`legend-dot legend-${status}`} />
-              {statusLabels[status]}
-            </span>
-          ))}
-        </div>
       </section>
       <DetailPanel
         owners={selectedGraveOwners}

@@ -54,7 +54,7 @@ APP_ENV=prod npm run db:status
 ## What is included
 
 - Interactive cemetery map with all active cemetery boundaries, sections, and summary grave-space geometry
-- Map controls for zooming, fitting the view to all active cemetery data, identifying cemeteries at broad zoom levels, and reading fractional and bar scale
+- Map controls for zooming, fitting the view to all active cemetery data, identifying cemeteries at broad zoom levels, reading fractional and bar scale, and interpreting rendered layers
 - Clickable grave sites that load ownership, burial, and status details on selection
 - Search by deceased name, owner name, birth date, death date, burial date, section, lot, or space
 - Status filters
