@@ -440,8 +440,8 @@ h3 {
   left: 18px;
   bottom: 18px;
   z-index: 1;
-  min-width: 150px;
-  padding: 9px 10px;
+  min-width: 190px;
+  padding: 10px 12px 11px;
   border: 1px solid rgba(53, 67, 57, 0.18);
   border-radius: 8px;
   background: rgba(251, 252, 247, 0.94);
@@ -453,39 +453,67 @@ h3 {
 }
 
 .map-scale-fraction {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   white-space: nowrap;
 }
 
-.map-scale-bar-row {
+.map-scale-labels {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 3px;
   color: #435049;
+  font-size: 0.69rem;
+  font-weight: 760;
 }
 
 .map-scale-bar {
-  position: relative;
-  height: 9px;
-  border-color: #26342d;
-  border-style: solid;
-  border-width: 0 2px 2px;
+  display: flex;
+  height: 14px;
+  border: 1px solid #26342d;
+  border-bottom-width: 2px;
+  background: #fff;
+}
+
+.map-scale-bar span {
+  height: 100%;
+}
+
+.map-scale-bar .is-dark {
+  background: #26342d;
+}
+
+.map-scale-bar .is-light {
+  background: #fbfcf7;
 }
 
 .map-legend {
   position: absolute;
   right: 18px;
   bottom: 18px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  max-width: min(620px, calc(100% - 36px));
-  padding: 10px 12px;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  width: min(340px, calc(100% - 260px));
+  padding: 12px;
   border: 1px solid rgba(53, 67, 57, 0.18);
   border-radius: 8px;
   background: rgba(251, 252, 247, 0.92);
   box-shadow: var(--shadow);
   backdrop-filter: blur(8px);
+}
+
+.map-legend section {
+  display: grid;
+  gap: 7px;
+}
+
+.map-legend h2 {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.76rem;
+  font-weight: 820;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .map-legend span {
@@ -494,6 +522,15 @@ h3 {
   gap: 6px;
   color: #435049;
   font-size: 0.78rem;
+}
+
+.legend-status-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 10px;
+}
+
+.legend-status-grid span {
   text-transform: capitalize;
 }
 
@@ -501,6 +538,36 @@ h3 {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+}
+
+.legend-symbol {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 14px;
+}
+
+.legend-boundary {
+  border: 2px solid #3b4f3d;
+  background: #dfe7d9;
+}
+
+.legend-section {
+  border: 1.5px dashed #77856e;
+  background: rgba(247, 244, 234, 0.78);
+}
+
+.legend-gravesite {
+  border: 1px solid #31413c;
+  background: #6d7f91;
+}
+
+.legend-marker {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fbfcf7;
+  border-radius: 50%;
+  background: #2f5d50;
+  box-shadow: 0 0 0 1px rgba(47, 93, 80, 0.32);
 }
 
 .legend-available {
@@ -706,6 +773,10 @@ h3 {
     grid-column: 1 / -1;
     border-width: 1px 0 0;
   }
+
+  .map-legend {
+    width: min(320px, calc(100% - 36px));
+  }
 }
 
 @media (max-width: 760px) {
@@ -723,6 +794,18 @@ h3 {
 
   .map-region {
     min-height: 460px;
+  }
+
+  .map-scale {
+    bottom: 104px;
+    max-width: calc(100% - 36px);
+  }
+
+  .map-legend {
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    width: auto;
   }
 
   .burial-record dl {

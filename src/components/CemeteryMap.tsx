@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
-import type { CemeteryData, GraveSpaceSummary } from "../types";
+import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
 import { boundariesFeatureCollection, cemeteryMarkersFeatureCollection, gravesFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
-import { statusColors } from "../lib/format";
+import { statusColors, statusLabels } from "../lib/format";
 
 type CemeteryMapProps = {
   data: CemeteryData;
@@ -20,10 +20,18 @@ const metersPerInch = 0.0254;
 const feetPerMeter = 3.28084;
 
 type MapScale = {
-  barWidth: number;
-  barLabel: string;
+  segments: { width: number; label: string }[];
+  totalWidth: number;
+  totalLabel: string;
   representativeFraction: string;
 };
+
+type ScaleSegment = {
+  width: number;
+  label: string;
+};
+
+const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 
 const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
 
@@ -88,11 +96,18 @@ function mapScale(map: Map): MapScale {
   const latitude = map.getCenter().lat;
   const metersPerPixel = (Math.cos((latitude * Math.PI) / 180) * earthCircumferenceMeters) / (512 * 2 ** map.getZoom());
   const denominator = Math.max(1, Math.round((metersPerPixel * cssPixelsPerInch) / metersPerInch));
-  const barDistanceMeters = niceDistance(metersPerPixel * 120);
+  const totalDistanceMeters = niceDistance(metersPerPixel * 180);
+  const totalWidth = Math.max(80, Math.round(totalDistanceMeters / metersPerPixel));
+  const segmentDistances = [0, totalDistanceMeters / 2, totalDistanceMeters];
+  const segments: ScaleSegment[] = segmentDistances.map((distanceMeters, index) => ({
+    width: index === 0 ? 0 : Math.round((distanceMeters - segmentDistances[index - 1]) / metersPerPixel),
+    label: index === 0 ? "0" : formatScaleDistance(distanceMeters),
+  }));
 
   return {
-    barWidth: Math.max(36, Math.round(barDistanceMeters / metersPerPixel)),
-    barLabel: formatScaleDistance(barDistanceMeters),
+    segments,
+    totalWidth,
+    totalLabel: formatScaleDistance(totalDistanceMeters),
     representativeFraction: `1:${denominator.toLocaleString()}`,
   };
 }
@@ -362,12 +377,50 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       {scale ? (
         <div className="map-scale" aria-label="Map scale">
           <div className="map-scale-fraction">Scale {scale.representativeFraction}</div>
-          <div className="map-scale-bar-row">
-            <div className="map-scale-bar" style={{ width: `${scale.barWidth}px` }} aria-hidden="true" />
-            <span>{scale.barLabel}</span>
+          <div className="map-scale-labels" style={{ width: `${scale.totalWidth}px` }} aria-hidden="true">
+            {scale.segments.map((segment) => (
+              <span key={segment.label}>{segment.label}</span>
+            ))}
+          </div>
+          <div className="map-scale-bar" style={{ width: `${scale.totalWidth}px` }} aria-label={`Bar scale ${scale.totalLabel}`}>
+            {scale.segments.slice(1).map((segment, index) => (
+              <span key={segment.label} className={index % 2 === 0 ? "is-dark" : "is-light"} style={{ width: `${segment.width}px` }} />
+            ))}
           </div>
         </div>
       ) : null}
+      <div className="map-legend" aria-label="Map legend">
+        <section>
+          <h2>Layers</h2>
+          <span>
+            <i className="legend-symbol legend-boundary" />
+            Cemetery boundary
+          </span>
+          <span>
+            <i className="legend-symbol legend-section" />
+            Section polygon
+          </span>
+          <span>
+            <i className="legend-symbol legend-gravesite" />
+            Gravesite polygon
+          </span>
+          <span>
+            <i className="legend-symbol legend-marker" />
+            Cemetery marker
+          </span>
+        </section>
+        <section>
+          <h2>Gravesite Status</h2>
+          <div className="legend-status-grid">
+            {statuses.map((status) => (
+              <span key={status}>
+                <i className={`legend-dot legend-${status}`} />
+                {statusLabels[status]}
+              </span>
+            ))}
+          </div>
+        </section>
+      </div>
     </>
   );
 }
