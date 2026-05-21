@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary } from "../types";
-import { gravesFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
+import { boundariesFeatureCollection, cemeteryMarkersFeatureCollection, gravesFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
 
 type CemeteryMapProps = {
@@ -16,25 +17,95 @@ const center: [number, number] = [-76.70431, 39.19604];
 
 const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
 
+function extendGeometryBounds(bounds: maplibregl.LngLatBounds | undefined, geometry: GeoJSON.Geometry): maplibregl.LngLatBounds | undefined {
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates[0].reduce(
+      (nextBounds, coordinate) => nextBounds.extend(coordinate as [number, number]),
+      bounds ?? new maplibregl.LngLatBounds(geometry.coordinates[0][0] as [number, number], geometry.coordinates[0][0] as [number, number]),
+    );
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates.reduce((nextBounds, polygon) => {
+      const ring = polygon[0];
+      if (!ring?.length) return nextBounds;
+      return ring.reduce(
+        (ringBounds, coordinate) => ringBounds.extend(coordinate as [number, number]),
+        nextBounds ?? new maplibregl.LngLatBounds(ring[0] as [number, number], ring[0] as [number, number]),
+      );
+    }, bounds);
+  }
+
+  return bounds;
+}
+
+function dataBounds(data: CemeteryData) {
+  const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
+  const boundaryBounds = boundaries.reduce((bounds, boundary) => extendGeometryBounds(bounds, boundary.geometry), undefined as maplibregl.LngLatBounds | undefined);
+  if (boundaryBounds) return boundaryBounds;
+
+  return data.graves.reduce((bounds, grave) => extendGeometryBounds(bounds, grave.geometry), undefined as maplibregl.LngLatBounds | undefined);
+}
+
+function fitMapToData(map: Map, data: CemeteryData, duration = 350) {
+  const bounds = dataBounds(data);
+  if (bounds) map.fitBounds(bounds, { padding: 90, maxZoom: 19, duration });
+}
+
+function fitMapToGeometry(map: Map, geometry: GeoJSON.Geometry, duration = 350) {
+  const bounds = extendGeometryBounds(undefined, geometry);
+  if (bounds) map.fitBounds(bounds, { padding: 110, maxZoom: 19, duration });
+}
+
+function syncCemeteryMarkers(map: Map, data: CemeteryData, markers: maplibregl.Marker[]) {
+  markers.splice(0).forEach((marker) => marker.remove());
+
+  cemeteryMarkersFeatureCollection(data).features.forEach((feature) => {
+    const element = document.createElement("button");
+    element.type = "button";
+    element.className = "cemetery-map-marker";
+    element.textContent = feature.properties.name;
+    element.setAttribute("aria-label", `Zoom to ${feature.properties.name}`);
+    element.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
+      const boundary = boundaries[feature.properties.index];
+      if (boundary) fitMapToGeometry(map, boundary.geometry);
+    });
+
+    const marker = new maplibregl.Marker({ element }).setLngLat(feature.geometry.coordinates as [number, number]).addTo(map);
+    markers.push(marker);
+  });
+}
+
 export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultIds, onSelectGrave }: CemeteryMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
+  const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const dataRef = useRef(data);
+  const visibleGravesRef = useRef(visibleGraves);
+  const searchResultIdsRef = useRef(searchResultIds);
   const selectedRef = useRef(selectedGrave?.id);
   const onSelectRef = useRef(onSelectGrave);
+  const didSkipInitialSelectionFitRef = useRef(false);
 
   useEffect(() => {
+    dataRef.current = data;
+    visibleGravesRef.current = visibleGraves;
+    searchResultIdsRef.current = searchResultIds;
     selectedRef.current = selectedGrave?.id;
     onSelectRef.current = onSelectGrave;
-  }, [onSelectGrave, selectedGrave?.id]);
+  }, [data, onSelectGrave, searchResultIds, selectedGrave?.id, visibleGraves]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
+    const cemeteryMarkers = cemeteryMarkersRef.current;
     const map = new maplibregl.Map({
       container: containerRef.current,
       center,
       zoom: 18.5,
-      minZoom: 17,
+      minZoom: 5,
       maxZoom: 22,
       pitch: 0,
       attributionControl: false,
@@ -51,26 +122,24 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       },
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
-
     map.on("load", () => {
-      if (data.boundary) {
-        map.addSource("boundary", { type: "geojson", data: data.boundary });
-        map.addLayer({
-          id: "boundary-fill",
-          type: "fill",
-          source: "boundary",
-          paint: { "fill-color": "#dfe7d9", "fill-opacity": 0.9 },
-        });
-        map.addLayer({
-          id: "boundary-line",
-          type: "line",
-          source: "boundary",
-          paint: { "line-color": "#3b4f3d", "line-width": 3 },
-        });
-      }
+      map.addSource("boundary", { type: "geojson", data: boundariesFeatureCollection(dataRef.current) });
+      map.addLayer({
+        id: "boundary-fill",
+        type: "fill",
+        source: "boundary",
+        paint: { "fill-color": "#dfe7d9", "fill-opacity": 0.9 },
+      });
+      map.addLayer({
+        id: "boundary-line",
+        type: "line",
+        source: "boundary",
+        paint: { "line-color": "#3b4f3d", "line-width": 3 },
+      });
 
-      map.addSource("sections", { type: "geojson", data: sectionsFeatureCollection(data) });
+      fitMapToData(map, dataRef.current, 0);
+
+      map.addSource("sections", { type: "geojson", data: sectionsFeatureCollection(dataRef.current) });
       map.addLayer({
         id: "sections-fill",
         type: "fill",
@@ -101,7 +170,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
       map.addSource("graves", {
         type: "geojson",
-        data: gravesFeatureCollection(data.graves, selectedRef.current),
+        data: gravesFeatureCollection(visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current),
       });
 
       map.addLayer({
@@ -152,6 +221,8 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
         },
       });
 
+      syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
+
       map.on("mouseenter", "graves-fill", () => {
         map.getCanvas().style.cursor = "pointer";
       });
@@ -162,7 +233,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
       map.on("click", "graves-fill", (event) => {
         const id = event.features?.[0]?.properties?.id;
-        const grave = data.graves.find((item) => item.id === id);
+        const grave = dataRef.current.graves.find((item) => item.id === id);
         if (grave) onSelectRef.current(grave);
       });
     });
@@ -170,9 +241,26 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     mapRef.current = map;
 
     return () => {
+      cemeteryMarkers.splice(0).forEach((marker) => marker.remove());
       map.remove();
       mapRef.current = null;
     };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const boundarySource = map.getSource("boundary") as GeoJSONSource | undefined;
+    boundarySource?.setData(boundariesFeatureCollection(data));
+
+    const sectionsSource = map.getSource("sections") as GeoJSONSource | undefined;
+    sectionsSource?.setData(sectionsFeatureCollection(data));
+
+    if (boundarySource || sectionsSource) {
+      syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
+      fitMapToData(map, data);
+    }
   }, [data]);
 
   useEffect(() => {
@@ -182,11 +270,44 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
   useEffect(() => {
     if (!selectedGrave || !mapRef.current) return;
+    if (!didSkipInitialSelectionFitRef.current) {
+      didSkipInitialSelectionFitRef.current = true;
+      return;
+    }
+
     const ring = exteriorRing(selectedGrave.geometry);
     if (!ring?.length) return;
     const bounds = ring.reduce((mapBounds, coordinate) => mapBounds.extend(coordinate as [number, number]), new maplibregl.LngLatBounds(ring[0] as [number, number], ring[0] as [number, number]));
     mapRef.current.fitBounds(bounds, { padding: 140, maxZoom: 20.5, duration: 450 });
   }, [selectedGrave]);
 
-  return <div ref={containerRef} className="map-canvas" aria-label="Interactive cemetery map" />;
+  const zoomIn = useCallback(() => {
+    mapRef.current?.zoomIn({ duration: 250 });
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    mapRef.current?.zoomOut({ duration: 250 });
+  }, []);
+
+  const fitAll = useCallback(() => {
+    const map = mapRef.current;
+    if (map) fitMapToData(map, data);
+  }, [data]);
+
+  return (
+    <>
+      <div ref={containerRef} className="map-canvas" aria-label="Interactive cemetery map" />
+      <div className="map-controls" aria-label="Map controls">
+        <button type="button" onClick={zoomIn} aria-label="Zoom in" title="Zoom in">
+          <ZoomIn size={18} aria-hidden="true" />
+        </button>
+        <button type="button" onClick={zoomOut} aria-label="Zoom out" title="Zoom out">
+          <ZoomOut size={18} aria-hidden="true" />
+        </button>
+        <button type="button" onClick={fitAll} aria-label="Fit all cemetery data" title="Fit all cemetery data">
+          <Maximize2 size={18} aria-hidden="true" />
+        </button>
+      </div>
+    </>
+  );
 }

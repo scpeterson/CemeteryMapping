@@ -53,7 +53,8 @@ APP_ENV=prod npm run db:status
 
 ## What is included
 
-- Interactive cemetery map with boundary, sections, and summary grave-space geometry
+- Interactive cemetery map with all active cemetery boundaries, sections, and summary grave-space geometry
+- Map controls for zooming, fitting the view to all active cemetery data, and identifying cemeteries at broad zoom levels
 - Clickable grave sites that load ownership, burial, and status details on selection
 - Search by deceased name, owner name, birth date, death date, burial date, section, lot, or space
 - Status filters
@@ -98,7 +99,7 @@ Every PR that changes architecture, schema, import behavior, validation policy, 
 
 The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a summary-first map flow:
 
-- `GET /api/cemetery-map` for GeoJSON boundary, sections, and summary grave-space geometry used by the map
+- `GET /api/cemetery-map` for GeoJSON cemetery boundaries, sections, and summary grave-space geometry used by the map
 - `GET /api/grave-spaces/:id` for full grave details fetched when a grave is selected
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
 - `DELETE /api/grave-spaces/:id` for admin-only soft delete of a grave space

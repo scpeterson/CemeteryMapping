@@ -362,6 +362,79 @@ h3 {
   color: #8c302d;
 }
 
+.map-controls {
+  position: absolute;
+  top: 68px;
+  left: 18px;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: 8px;
+  background: rgba(251, 252, 247, 0.94);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.map-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #26342d;
+}
+
+.map-controls button:hover {
+  border-color: rgba(53, 67, 57, 0.18);
+  background: #edf2ea;
+}
+
+.map-controls button:focus-visible {
+  outline: 3px solid rgba(47, 104, 79, 0.24);
+  outline-offset: 2px;
+}
+
+.cemetery-map-marker {
+  display: inline-flex;
+  align-items: center;
+  max-width: 180px;
+  min-height: 26px;
+  padding: 5px 8px;
+  border: 1px solid rgba(47, 93, 80, 0.32);
+  border-radius: 7px;
+  background: rgba(251, 252, 247, 0.96);
+  color: #26342d;
+  font-size: 0.72rem;
+  font-weight: 760;
+  line-height: 1.15;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(41, 56, 43, 0.16);
+}
+
+.cemetery-map-marker::before {
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #2f5d50;
+  content: "";
+}
+
+.cemetery-map-marker:hover {
+  border-color: #2f5d50;
+  background: #fff;
+}
+
+.cemetery-map-marker:focus-visible {
+  outline: 3px solid rgba(47, 104, 79, 0.24);
+  outline-offset: 2px;
+}
+
 .map-legend {
   position: absolute;
   right: 18px;
