@@ -302,6 +302,36 @@ npm run db:promote:spatial
 npm run db:promote:spatial -- --batch-id <batch-uuid>
 ```
 
+The geodatabase import prints the batch UUID when it completes. If you need to find it later, query `spatial_import_batches` in the target environment:
+
+```bash
+docker compose \
+  -p cemeterymapping-test \
+  --env-file db/env/test.env \
+  exec db psql \
+  -U cemetery_app \
+  -d cemetery_mapping_test
+```
+
+```sql
+SELECT
+  id,
+  source_name,
+  source_path,
+  source_format,
+  imported_at,
+  status,
+  notes
+FROM spatial_import_batches
+ORDER BY imported_at DESC;
+```
+
+Use the `id` value as `<batch-uuid>`:
+
+```bash
+APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
+```
+
 Promotion currently handles only `Cemeteries` and `Sections`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. The first inspected project geodatabase has populated `Cemeteries` and `Sections` layers, empty `Blocks`, `Lots`, and `Memorials` layers, and no visible `Gravesites` layer. Grave polygon import will need the actual gravesite source layer when it becomes available.
 
 ## Headstone spreadsheet workflow
