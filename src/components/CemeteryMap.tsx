@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary } from "../types";
@@ -14,6 +14,16 @@ type CemeteryMapProps = {
 };
 
 const center: [number, number] = [-76.70431, 39.19604];
+const earthCircumferenceMeters = 40_075_016.686;
+const cssPixelsPerInch = 96;
+const metersPerInch = 0.0254;
+const feetPerMeter = 3.28084;
+
+type MapScale = {
+  barWidth: number;
+  barLabel: string;
+  representativeFraction: string;
+};
 
 const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
 
@@ -57,6 +67,36 @@ function fitMapToGeometry(map: Map, geometry: GeoJSON.Geometry, duration = 350) 
   if (bounds) map.fitBounds(bounds, { padding: 110, maxZoom: 19, duration });
 }
 
+function niceDistance(meters: number) {
+  const exponent = Math.floor(Math.log10(meters));
+  const magnitude = 10 ** exponent;
+  const normalized = meters / magnitude;
+  const niceNormalized = normalized >= 5 ? 5 : normalized >= 2 ? 2 : 1;
+  return niceNormalized * magnitude;
+}
+
+function formatScaleDistance(meters: number) {
+  const feet = meters * feetPerMeter;
+  if (feet < 1_000) return `${Math.round(feet).toLocaleString()} ft`;
+
+  const miles = feet / 5_280;
+  if (miles < 10) return `${Number(miles.toFixed(miles < 2 ? 2 : 1)).toLocaleString()} mi`;
+  return `${Math.round(miles).toLocaleString()} mi`;
+}
+
+function mapScale(map: Map): MapScale {
+  const latitude = map.getCenter().lat;
+  const metersPerPixel = (Math.cos((latitude * Math.PI) / 180) * earthCircumferenceMeters) / (512 * 2 ** map.getZoom());
+  const denominator = Math.max(1, Math.round((metersPerPixel * cssPixelsPerInch) / metersPerInch));
+  const barDistanceMeters = niceDistance(metersPerPixel * 120);
+
+  return {
+    barWidth: Math.max(36, Math.round(barDistanceMeters / metersPerPixel)),
+    barLabel: formatScaleDistance(barDistanceMeters),
+    representativeFraction: `1:${denominator.toLocaleString()}`,
+  };
+}
+
 function syncCemeteryMarkers(map: Map, data: CemeteryData, markers: maplibregl.Marker[]) {
   markers.splice(0).forEach((marker) => marker.remove());
 
@@ -79,6 +119,7 @@ function syncCemeteryMarkers(map: Map, data: CemeteryData, markers: maplibregl.M
 }
 
 export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultIds, onSelectGrave }: CemeteryMapProps) {
+  const [scale, setScale] = useState<MapScale>();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -101,6 +142,9 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     if (!containerRef.current || mapRef.current) return;
 
     const cemeteryMarkers = cemeteryMarkersRef.current;
+    const updateScale = () => {
+      setScale(mapScale(map));
+    };
     const map = new maplibregl.Map({
       container: containerRef.current,
       center,
@@ -123,6 +167,8 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     });
 
     map.on("load", () => {
+      updateScale();
+
       map.addSource("boundary", { type: "geojson", data: boundariesFeatureCollection(dataRef.current) });
       map.addLayer({
         id: "boundary-fill",
@@ -238,9 +284,14 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       });
     });
 
+    map.on("move", updateScale);
+    map.on("zoom", updateScale);
+
     mapRef.current = map;
 
     return () => {
+      map.off("move", updateScale);
+      map.off("zoom", updateScale);
       cemeteryMarkers.splice(0).forEach((marker) => marker.remove());
       map.remove();
       mapRef.current = null;
@@ -308,6 +359,15 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
           <Maximize2 size={18} aria-hidden="true" />
         </button>
       </div>
+      {scale ? (
+        <div className="map-scale" aria-label="Map scale">
+          <div className="map-scale-fraction">Scale {scale.representativeFraction}</div>
+          <div className="map-scale-bar-row">
+            <div className="map-scale-bar" style={{ width: `${scale.barWidth}px` }} aria-hidden="true" />
+            <span>{scale.barLabel}</span>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

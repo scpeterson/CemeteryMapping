@@ -435,6 +435,43 @@ h3 {
   outline-offset: 2px;
 }
 
+.map-scale {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 1;
+  min-width: 150px;
+  padding: 9px 10px;
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: 8px;
+  background: rgba(251, 252, 247, 0.94);
+  color: #26342d;
+  font-size: 0.76rem;
+  font-weight: 720;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.map-scale-fraction {
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.map-scale-bar-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  color: #435049;
+}
+
+.map-scale-bar {
+  position: relative;
+  height: 9px;
+  border-color: #26342d;
+  border-style: solid;
+  border-width: 0 2px 2px;
+}
+
 .map-legend {
   position: absolute;
   right: 18px;

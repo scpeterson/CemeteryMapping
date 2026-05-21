@@ -17,7 +17,7 @@ Use a summary-first API flow:
 - `GET /api/grave-spaces/:id` returns full detail for one selected grave.
 - `GET /api/search` returns search matches with summary grave records.
 
-The frontend fits the map to the full active cemetery dataset on load, allows zooming out far enough to see geographically separated non-production demo and imported cemeteries, exposes map zoom and fit controls, renders broad-zoom cemetery markers, and requests detail only when a grave is selected.
+The frontend fits the map to the full active cemetery dataset on load, allows zooming out far enough to see geographically separated non-production demo and imported cemeteries, exposes map zoom and fit controls, renders broad-zoom cemetery markers, shows fractional and bar scale, and requests detail only when a grave is selected.
 
 ## Rationale
 
