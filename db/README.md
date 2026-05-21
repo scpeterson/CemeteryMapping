@@ -132,6 +132,52 @@ user: cemetery_app
 password: cemetery_app_dev
 ```
 
+The local TEST Docker database uses:
+
+```text
+host: localhost
+port: 5433
+database: cemetery_mapping_test
+user: cemetery_app
+password: cemetery_app_test
+```
+
+This project does not use Docker Compose profiles for environments. Do not use `docker compose --profile test ...` for TEST commands; it will not target the running TEST project.
+
+The npm wrappers translate `APP_ENV=test` into:
+
+```text
+-p cemeterymapping-test --env-file db/env/test.env
+```
+
+Connect to TEST with `psql` through Docker Compose:
+
+```bash
+docker compose \
+  -p cemeterymapping-test \
+  --env-file db/env/test.env \
+  exec db psql \
+  -U cemetery_app \
+  -d cemetery_mapping_test
+```
+
+Or connect directly to the running container:
+
+```bash
+docker exec -it cemetery-mapping-db-test psql \
+  -U cemetery_app \
+  -d cemetery_mapping_test
+```
+
+Check the TEST compose project:
+
+```bash
+docker compose \
+  -p cemeterymapping-test \
+  --env-file db/env/test.env \
+  ps
+```
+
 ## Changelog layout
 
 ```text
