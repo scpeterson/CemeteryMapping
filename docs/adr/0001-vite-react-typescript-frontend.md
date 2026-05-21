@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0001: Use a Vite React TypeScript Frontend
 
 - Status: Accepted

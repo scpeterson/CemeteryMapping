@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0006: Use Staging and Validation for Spatial Imports
 
 - Status: Accepted

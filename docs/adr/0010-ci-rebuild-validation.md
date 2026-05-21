@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0010: Use CI to Validate Rebuildability
 
 - Status: Accepted

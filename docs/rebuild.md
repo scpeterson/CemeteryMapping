@@ -1,3 +1,6 @@
+---
+---
+
 # Rebuild Guide
 
 [Documentation Home](index.md)
@@ -10,6 +13,8 @@ Install:
 
 - Node.js 24 or a compatible current Node.js version for local development
 - npm
+- Ruby 3.4.1
+- Bundler 2.6.2
 - Docker Desktop or Docker Engine with Docker Compose support
 - GDAL/OGR on `PATH` when importing Esri File Geodatabases
 
@@ -75,6 +80,24 @@ http://127.0.0.1:3001
 npm run lint
 npm run build
 APP_ENV=test npm run test:e2e
+```
+
+## Validate the Documentation Site
+
+The GitHub Pages documentation site is built from the `docs/` folder with Jekyll.
+
+```bash
+cd docs
+bundle install
+bundle exec jekyll build
+```
+
+The current documentation bundle pins Jekyll and its plugins in `docs/Gemfile` and `docs/Gemfile.lock`.
+Before running the commands, confirm your shell is using the Ruby 3.4.1 toolchain:
+
+```bash
+ruby --version
+bundle --version
 ```
 
 ## Validate Database Migrations

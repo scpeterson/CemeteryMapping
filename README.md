@@ -91,7 +91,15 @@ Separate Auth0 test tenant setup is documented in `docs/auth0-test-tenant.md`.
 
 That guide also includes troubleshooting for Auth0 callback mismatches, missing API/audience configuration, SPA-to-API authorization errors, and API `401`/`403` responses.
 
-The `docs/` folder is ready to serve with GitHub Pages using Jekyll and the `jekyll-theme-minimal` theme. In repository settings, configure Pages to deploy from the `main` branch and `/docs` folder.
+The `docs/` folder is ready to serve with GitHub Pages using Jekyll, a custom documentation layout, sidebar navigation, and previous/next page links. In repository settings, configure Pages to deploy from the `main` branch and `/docs` folder.
+
+Validate the documentation site locally with:
+
+```bash
+cd docs
+bundle install
+bundle exec jekyll build
+```
 
 Every PR that changes architecture, schema, import behavior, validation policy, deployment/rebuild behavior, or source data assumptions must add or update an ADR.
 

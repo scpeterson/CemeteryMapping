@@ -1,8 +1,11 @@
+---
+---
+
 # Cemetery Mapping Documentation
 
 This site contains the operational and architectural documentation for rebuilding, maintaining, and extending the Cemetery Mapping application.
 
-The site is configured for GitHub Pages using Jekyll and the `jekyll-theme-minimal` theme.
+The site is configured for GitHub Pages using Jekyll, a custom documentation layout, sidebar navigation, and previous/next page links.
 
 ## Start Here
 

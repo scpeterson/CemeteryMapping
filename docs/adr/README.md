@@ -1,3 +1,7 @@
+---
+permalink: /adr/
+---
+
 # Architecture Decision Records
 
 [Documentation Home](../index.md)
@@ -34,6 +38,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0011: Secure Access with RBAC, Soft Deletes, and Audit Logging](0011-security-rbac-soft-delete-audit.md)
 - [ADR 0012: Use Auth0 as the Identity Provider](0012-use-auth0-for-identity-provider.md)
 - [ADR 0013: Prioritize Admin Editing Workflows](0013-prioritize-admin-editing-workflows.md)
+- [ADR 0014: Use a Custom Documentation Layout with Sequential Navigation](0014-documentation-navigation-layout.md)
 
 ## Creating a New ADR
 
@@ -48,7 +53,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 The main software choices are captured in the ADRs. Exact JavaScript dependency versions come from `package-lock.json`; container image versions come from `docker-compose.yml`; CI runtime versions come from `.github/workflows/ci.yml`.
 
-Current core versions as of 2026-05-20:
+Current core versions as of 2026-05-21:
 
 | Component | Version | Source |
 | --- | --- | --- |
@@ -65,6 +70,11 @@ Current core versions as of 2026-05-20:
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
 | Playwright | 1.60.0 | `package-lock.json` |
 | ESLint | 9.39.4 | `package-lock.json` |
+| Ruby for documentation builds | 3.4.1 | local Ruby toolchain and `docs/Gemfile.lock` |
+| Bundler for documentation builds | 2.6.2 | `docs/Gemfile.lock` |
+| Jekyll | 4.4.1 | `docs/Gemfile.lock` |
+| jekyll-relative-links | 0.7.0 | `docs/Gemfile.lock` |
+| jekyll-seo-tag | 2.9.0 | `docs/Gemfile.lock` |
 
 ## Rebuild Checklist
 
@@ -80,6 +90,9 @@ APP_ENV=test npm run db:seed:demo
 npm run lint
 npm run build:test
 APP_ENV=test npm run test:e2e
+cd docs
+bundle install
+bundle exec jekyll build
 ```
 
 For real cemetery data imports, see ADR 0007 and ADR 0008 before running import commands.

@@ -1,3 +1,6 @@
+---
+---
+
 # Auth0 Test Tenant Setup
 
 [Documentation Home](index.md)

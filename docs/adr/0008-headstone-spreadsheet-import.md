@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0008: Generate Gravesites and Headstones from Headstone GPS Spreadsheet Rows
 
 - Status: Accepted

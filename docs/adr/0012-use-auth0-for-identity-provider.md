@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0012: Use Auth0 as the Identity Provider
 
 - Status: Accepted

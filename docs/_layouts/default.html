@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="{{ site.lang | default: 'en-US' }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+    {% seo %}
+  </head>
+  <body>
+    {% assign ordered_pages = site.data.navigation %}
+    {% assign current_url = page.url %}
+    {% assign previous_page = nil %}
+    {% assign next_page = nil %}
+    {% assign last_page = nil %}
+    {% assign capture_next = false %}
+
+    {% for item in ordered_pages %}
+      {% if capture_next %}
+        {% assign next_page = item %}
+        {% assign capture_next = false %}
+      {% endif %}
+
+      {% if item.url == current_url and next_page == nil %}
+        {% assign previous_page = last_page %}
+        {% assign capture_next = true %}
+      {% endif %}
+
+      {% assign last_page = item %}
+    {% endfor %}
+
+    <div class="site-shell">
+      <aside class="site-sidebar" aria-label="Documentation navigation">
+        <a class="site-brand" href="{{ '/' | relative_url }}">
+          {% if site.logo %}
+            <img src="{{ site.logo | relative_url }}" alt="" width="44" height="44">
+          {% endif %}
+          <span>{{ site.title }}</span>
+        </a>
+
+        <nav class="site-nav">
+          {% for item in ordered_pages %}
+            <a href="{{ item.url | relative_url }}" {% if item.url == current_url %}aria-current="page"{% endif %}>
+              {{ item.title }}
+            </a>
+          {% endfor %}
+        </nav>
+      </aside>
+
+      <div class="site-content">
+        <header class="page-header">
+          <a class="home-link" href="{{ '/' | relative_url }}">Documentation Home</a>
+          {% include page-sequence.html previous_page=previous_page next_page=next_page location="header" %}
+        </header>
+
+        <main class="content" id="content">
+          {{ content }}
+        </main>
+
+        <footer class="page-footer">
+          {% include page-sequence.html previous_page=previous_page next_page=next_page location="footer" %}
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>
