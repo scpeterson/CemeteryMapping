@@ -14,6 +14,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Fit all cemetery data" })).toBeVisible();
+  await expect(page.getByLabel("Map scale")).toContainText(/Scale 1:[\d,]+/);
   await expect(page.getByText(/\d+ results/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Loading grave details..." })).toBeHidden();
