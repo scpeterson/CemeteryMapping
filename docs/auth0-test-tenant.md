@@ -153,6 +153,25 @@ http://127.0.0.1:5173
 
 Auth0 proves identity. The application database controls app authorization.
 
+Start the TEST database if needed:
+
+```bash
+APP_ENV=test npm run db:up
+```
+
+Connect to TEST with `psql`:
+
+```bash
+docker compose \
+  -p cemeterymapping-test \
+  --env-file db/env/test.env \
+  exec db psql \
+  -U cemetery_app \
+  -d cemetery_mapping_test
+```
+
+This project does not use `docker compose --profile test`. If that command reports `service "db" is not running`, use the project name and env file shown above.
+
 For each Auth0 test user, find the Auth0 `user_id` value. It usually looks like:
 
 ```text
