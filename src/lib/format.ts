@@ -1,4 +1,4 @@
-import type { GraveStatus } from "../types";
+import type { GraveSpaceSummary, GraveStatus } from "../types";
 
 export const statusLabels: Record<GraveStatus, string> = {
   available: "Available",
@@ -27,6 +27,20 @@ export function formatDate(date?: string) {
 
 export function fullName(person: { firstName: string; middleName?: string; lastName: string }) {
   return [person.firstName, person.middleName, person.lastName].filter(Boolean).join(" ");
+}
+
+export function formatGraveLabel(grave: Pick<GraveSpaceSummary, "section" | "lot" | "space">) {
+  return [grave.section, grave.lot, grave.space].map((value) => value.trim()).filter(Boolean).join("-");
+}
+
+export function formatGraveLocation(grave: Pick<GraveSpaceSummary, "section" | "lot" | "space">) {
+  return [
+    grave.section ? `Section ${grave.section}` : undefined,
+    grave.lot ? `Lot ${grave.lot}` : undefined,
+    grave.space ? `Space ${grave.space}` : undefined,
+  ]
+    .filter(Boolean)
+    .join(", ");
 }
 
 export function normalize(value: string) {

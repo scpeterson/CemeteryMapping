@@ -1,6 +1,6 @@
 import { FileText, History, Landmark, MapPinned, UserRound } from "lucide-react";
 import type { GraveSpace, GraveSpaceSummary, Owner } from "../types";
-import { formatDate, fullName, statusColors, statusLabels } from "../lib/format";
+import { formatDate, formatGraveLabel, fullName, statusColors, statusLabels } from "../lib/format";
 
 type DetailPanelProps = {
   owners: Owner[];
@@ -24,7 +24,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
     );
   }
 
-  const title = `${summary.section}-${summary.lot}-${summary.space}`;
+  const title = formatGraveLabel(summary);
   const status = grave?.status ?? summary.status;
 
   return (

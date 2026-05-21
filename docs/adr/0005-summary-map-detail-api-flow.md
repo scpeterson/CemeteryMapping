@@ -20,7 +20,9 @@ Use a summary-first API flow:
 - `GET /api/grave-spaces/:id` returns full detail for one selected grave.
 - `GET /api/search` returns search matches with summary grave records.
 
-The frontend fits the map to the full active cemetery dataset on load, allows zooming out far enough to see geographically separated non-production demo and imported cemeteries, exposes map zoom and fit controls, renders broad-zoom cemetery markers, shows fractional and segmented bar scale, provides a legend for rendered layers and gravesite statuses, and requests detail only when a grave is selected.
+The frontend fits the map to the full active cemetery dataset on load, allows zooming out far enough to see geographically separated non-production demo and imported cemeteries, supports mouse-wheel zooming, exposes map zoom and fit controls, renders broad-zoom cemetery markers, shows fractional and segmented bar scale, provides a legend for rendered layers and gravesite statuses, and requests detail only when a grave is selected.
+
+Gravesite labels are formatted from the populated hierarchy fields only. Because Trinity Lutheran Church Cemetery does not use lots, UI labels omit the lot segment when `lot_id` is blank instead of rendering an empty placeholder.
 
 ## Rationale
 
@@ -50,4 +52,4 @@ curl -s "http://127.0.0.1:3001/api/search?q=Garcia"
 
 ## Update Triggers
 
-Update this ADR when map payload shape, detail loading behavior, grave selection behavior, or search response structure changes.
+Update this ADR when map payload shape, detail loading behavior, grave selection behavior, map/search label formatting, or search response structure changes.

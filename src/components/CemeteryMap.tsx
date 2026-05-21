@@ -166,6 +166,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       zoom: 18.5,
       minZoom: 5,
       maxZoom: 22,
+      scrollZoom: true,
       pitch: 0,
       attributionControl: false,
       style: {
