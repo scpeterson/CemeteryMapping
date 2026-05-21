@@ -1,5 +1,5 @@
 import type { CemeteryData, GraveStatus, SearchMatch } from "../types";
-import { normalize, statusLabels } from "./format";
+import { formatGraveLabel, normalize, statusLabels } from "./format";
 
 const addReason = (reasons: string[], label: string, value: string | undefined, query: string) => {
   if (!value) return;
@@ -19,7 +19,7 @@ export function searchGraves(data: CemeteryData, query: string, statuses: Set<Gr
         return { grave, reasons };
       }
 
-      addReason(reasons, "Grave", `${grave.section}-${grave.lot}-${grave.space}`, cleaned);
+      addReason(reasons, "Grave", formatGraveLabel(grave), cleaned);
       addReason(reasons, "Status", statusLabels[grave.status], cleaned);
 
       return { grave, reasons };

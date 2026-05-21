@@ -16,6 +16,12 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByRole("button", { name: "Fit all cemetery data" })).toBeVisible();
   await expect(page.getByLabel("Map scale")).toContainText(/Scale 1:[\d,]+/);
   await expect(page.getByLabel("Map scale")).toContainText(/0/);
+  const initialScale = await page.getByLabel("Map scale").innerText();
+  const mapBounds = await page.getByLabel("Interactive cemetery map").boundingBox();
+  expect(mapBounds).not.toBeNull();
+  await page.mouse.move(mapBounds!.x + mapBounds!.width / 2, mapBounds!.y + mapBounds!.height / 2);
+  await page.mouse.wheel(0, -700);
+  await expect.poll(() => page.getByLabel("Map scale").innerText()).not.toBe(initialScale);
   await expect(page.getByLabel("Map legend")).toContainText("Layers");
   await expect(page.getByLabel("Map legend")).toContainText("Cemetery boundary");
   await expect(page.getByLabel("Map legend")).toContainText("Gravesite Status");

@@ -1,4 +1,5 @@
 import type { AreaGeometry, CemeteryData, GraveSpaceSummary } from "../types";
+import { formatGraveLabel } from "./format";
 
 export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedId?: string, searchIds: Set<string> = new Set()) {
   return {
@@ -8,7 +9,7 @@ export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedId?
       properties: {
         id: grave.id,
         status: grave.status,
-        label: `${grave.section}-${grave.lot}-${grave.space}`,
+        label: formatGraveLabel(grave),
         selected: grave.id === selectedId,
         searchMatch: searchIds.has(grave.id),
       },

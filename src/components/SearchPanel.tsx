@@ -1,6 +1,6 @@
 import { CalendarSearch, Filter, Search, X } from "lucide-react";
 import type { GraveStatus, SearchMatch } from "../types";
-import { statusColors, statusLabels } from "../lib/format";
+import { formatGraveLocation, statusColors, statusLabels } from "../lib/format";
 
 type SearchPanelProps = {
   query: string;
@@ -30,7 +30,7 @@ export function SearchPanel({ query, onQueryChange, selectedStatuses, onToggleSt
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Search names, owners, dates, lots"
+          placeholder="Search names, owners, dates, grave IDs"
           aria-label="Search cemetery records"
         />
         {query ? (
@@ -70,9 +70,7 @@ export function SearchPanel({ query, onQueryChange, selectedStatuses, onToggleSt
             className={`result-card ${selectedGraveId === match.grave.id ? "is-selected" : ""}`}
             onClick={() => onSelectMatch(match)}
           >
-            <span className="result-title">
-              Section {match.grave.section}, Lot {match.grave.lot}, Space {match.grave.space}
-            </span>
+            <span className="result-title">{formatGraveLocation(match.grave)}</span>
             <span className="result-meta">{statusLabels[match.grave.status]}</span>
             <span className="result-reason">{match.reasons.slice(0, 2).join(" | ")}</span>
           </button>
