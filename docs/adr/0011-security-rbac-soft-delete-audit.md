@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0011: Secure Access with RBAC, Soft Deletes, and Audit Logging
 
 - Status: Accepted

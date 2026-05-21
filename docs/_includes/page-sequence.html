@@ -1,0 +1,21 @@
+{% if include.previous_page or include.next_page %}
+  <nav class="page-sequence page-sequence-{{ include.location }}" aria-label="Previous and next pages">
+    {% if include.previous_page %}
+      <a class="page-sequence-link previous" href="{{ include.previous_page.url | relative_url }}">
+        <span>Previous</span>
+        {{ include.previous_page.title }}
+      </a>
+    {% else %}
+      <span class="page-sequence-placeholder" aria-hidden="true"></span>
+    {% endif %}
+
+    {% if include.next_page %}
+      <a class="page-sequence-link next" href="{{ include.next_page.url | relative_url }}">
+        <span>Next</span>
+        {{ include.next_page.title }}
+      </a>
+    {% else %}
+      <span class="page-sequence-placeholder" aria-hidden="true"></span>
+    {% endif %}
+  </nav>
+{% endif %}

@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0003: Manage Schema Changes with Liquibase
 
 - Status: Accepted

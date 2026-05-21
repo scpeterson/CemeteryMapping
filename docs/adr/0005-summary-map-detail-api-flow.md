@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0005: Load Summary Map Geometry Before Grave Details
 
 - Status: Accepted

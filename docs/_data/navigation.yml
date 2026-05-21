@@ -1,0 +1,42 @@
+- title: "Home"
+  url: /
+- title: "Rebuild Guide"
+  url: /rebuild.html
+- title: "Data Sources"
+  url: /data-sources.html
+- title: "Admin Workflows"
+  url: /admin-workflows.html
+- title: "Auth0 Test Tenant"
+  url: /auth0-test-tenant.html
+- title: "ADR Index"
+  url: /adr/
+- title: "ADR 0001: Frontend"
+  url: /adr/0001-vite-react-typescript-frontend.html
+- title: "ADR 0002: API and PostGIS"
+  url: /adr/0002-express-postgres-postgis-api.html
+- title: "ADR 0003: Liquibase"
+  url: /adr/0003-liquibase-schema-management.html
+- title: "ADR 0004: Environments"
+  url: /adr/0004-environment-model.html
+- title: "ADR 0005: Map Detail Flow"
+  url: /adr/0005-summary-map-detail-api-flow.html
+- title: "ADR 0006: Spatial Validation"
+  url: /adr/0006-spatial-import-staging-validation.html
+- title: "ADR 0007: File Geodatabase Import"
+  url: /adr/0007-file-geodatabase-cemetery-section-import.html
+- title: "ADR 0008: Headstone Spreadsheet Import"
+  url: /adr/0008-headstone-spreadsheet-import.html
+- title: "ADR 0009: Headstone Model"
+  url: /adr/0009-headstone-marker-model.html
+- title: "ADR 0010: CI Rebuild Validation"
+  url: /adr/0010-ci-rebuild-validation.html
+- title: "ADR 0011: Security and Audit"
+  url: /adr/0011-security-rbac-soft-delete-audit.html
+- title: "ADR 0012: Auth0 Identity Provider"
+  url: /adr/0012-use-auth0-for-identity-provider.html
+- title: "ADR 0013: Admin Editing Workflow Priority"
+  url: /adr/0013-prioritize-admin-editing-workflows.html
+- title: "ADR 0014: Documentation Navigation"
+  url: /adr/0014-documentation-navigation-layout.html
+- title: "ADR Template"
+  url: /adr/0000-template.html
