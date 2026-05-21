@@ -58,6 +58,7 @@ export type CemeterySection = {
 
 export type CemeteryData = {
   boundary?: GeoJSON.Feature<AreaGeometry, { name: string }>;
+  boundaries?: GeoJSON.Feature<AreaGeometry, { name: string }>[];
   sections: CemeterySection[];
   graves: GraveSpaceSummary[];
 };
