@@ -153,6 +153,14 @@ http://127.0.0.1:5173
 
 Auth0 proves identity. The application database controls app authorization.
 
+The setup order is:
+
+1. Create or sign in with the Auth0 test user.
+2. Copy that Auth0 user's `user_id`.
+3. Connect to the TEST database.
+4. Insert or update the matching `app_users` row.
+5. Refresh the application.
+
 Start the TEST database if needed:
 
 ```bash
@@ -172,26 +180,31 @@ docker compose \
 
 This project does not use `docker compose --profile test`. If that command reports `service "db" is not running`, use the project name and env file shown above.
 
-For each Auth0 test user, find the Auth0 `user_id` value. It usually looks like:
+For each Auth0 test user, find the Auth0 `user_id` value:
+
+1. Open Auth0.
+2. Go to **User Management -> Users**.
+3. Open the test user you used to sign in.
+4. Copy the `user_id`.
+
+It usually looks like:
 
 ```text
 auth0|abc123
 ```
 
-Insert matching `app_users` rows:
+The copied Auth0 `user_id` must exactly match `app_users.external_subject`.
+
+Insert or update an admin test user:
 
 ```sql
 INSERT INTO app_users (external_subject, email, display_name, role_name)
-VALUES
-  ('auth0|READER_SUBJECT', 'cemetery.reader.test@example.com', 'Test Reader', 'reader'),
-  ('auth0|ADMIN_SUBJECT', 'cemetery.admin.test@example.com', 'Test Admin', 'admin');
-```
-
-For a single user while testing:
-
-```sql
-INSERT INTO app_users (external_subject, email, display_name, role_name)
-VALUES ('auth0|YOUR_USER_ID', 'your.email@example.com', 'Your Name', 'admin')
+VALUES (
+  'auth0|PASTE_AUTH0_USER_ID_HERE',
+  'cemetery.admin.test@example.com',
+  'Test Admin',
+  'admin'
+)
 ON CONFLICT (external_subject) DO UPDATE
 SET email = EXCLUDED.email,
     display_name = EXCLUDED.display_name,
@@ -200,13 +213,40 @@ SET email = EXCLUDED.email,
     updated_at = now();
 ```
 
+Insert or update a read-only test user:
+
+```sql
+INSERT INTO app_users (external_subject, email, display_name, role_name)
+VALUES (
+  'auth0|PASTE_AUTH0_USER_ID_HERE',
+  'cemetery.reader.test@example.com',
+  'Test Reader',
+  'reader'
+)
+ON CONFLICT (external_subject) DO UPDATE
+SET email = EXCLUDED.email,
+    display_name = EXCLUDED.display_name,
+    role_name = EXCLUDED.role_name,
+    is_active = true,
+    updated_at = now();
+```
+
+Use `admin` for users who should be allowed to call admin mutation endpoints. Use `reader` for users who should only be able to view map, detail, and search data.
+
 Verify mappings:
 
 ```sql
-SELECT external_subject, email, role_name, is_active
+SELECT external_subject, email, display_name, role_name, is_active
 FROM app_users
 ORDER BY email;
 ```
+
+After inserting or updating the row, refresh the browser. If the app still returns `403`, confirm:
+
+- `external_subject` exactly matches the Auth0 `user_id`.
+- `is_active` is `true`.
+- `role_name` is either `reader` or `admin`.
+- The API is connected to the same TEST database where the row was inserted.
 
 If a user should be blocked without deleting the mapping:
 
