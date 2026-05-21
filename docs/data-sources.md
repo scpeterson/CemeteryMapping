@@ -57,6 +57,7 @@ Every real-data import or source change should update this file and the relevant
 | Application command | `APP_ENV=<dev|test|stage> npm run db:seed:demo` |
 | Data owner | Project maintainers |
 | Production use | Not allowed; seed command refuses `APP_ENV=prod` |
+| Known limitations | Demo sections and gravesites are seeded for local UI testing. Demo blocks and lots are intentionally omitted because this cemetery does not use block or lot records. |
 | Related ADR | [ADR 0010](adr/0010-ci-rebuild-validation.md) |
 
 ## Update Requirements
