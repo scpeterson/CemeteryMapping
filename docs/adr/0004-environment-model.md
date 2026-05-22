@@ -14,7 +14,7 @@ The project needs repeatable local and CI workflows while preserving a path towa
 
 ## Decision
 
-Use `APP_ENV=dev|test|stage|prod` as the environment selector. Provide npm convenience scripts for database, API, and frontend commands. Store local prototype database settings in `db/env/<environment>.env`.
+Use `APP_ENV=dev|test|stage|prod` as the environment selector. Provide npm convenience scripts for database, API, and frontend commands. Store local prototype database settings in `db/env/<environment>.env`. Allow gitignored `db/env/<environment>.local.env` files to override those defaults for machine-specific settings.
 
 Current local Docker database ports:
 
@@ -32,6 +32,8 @@ One environment variable keeps scripts simple and makes CI explicit. Separate Do
 ## Consequences
 
 Most scripts default to `DEV`. Maintainers must explicitly set `APP_ENV=test`, `APP_ENV=stage`, or `APP_ENV=prod` when targeting those databases.
+
+Local override files are intentionally untracked. They let a maintainer move the DEV Docker host port away from `5432` when a local PostgreSQL service is already listening there, while keeping the shared DEV default unchanged.
 
 The checked-in `prod.env` is only for local/prototype infrastructure. Real production credentials must come from deployment secrets and must not be committed.
 

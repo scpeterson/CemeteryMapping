@@ -13,3 +13,4 @@ test-results
 .env
 .env.local
 .env*.local
+db/env/*.local.env

@@ -51,6 +51,8 @@ APP_ENV=stage npm run db:migrate
 APP_ENV=prod npm run db:status
 ```
 
+If another local PostgreSQL service already uses port `5432`, create `db/env/dev.local.env` and set `POSTGRES_PORT` to an open port such as `5436`. Local env override files are ignored by git and are loaded by both Docker Compose and the API.
+
 ## What is included
 
 - Interactive cemetery map with all active cemetery boundaries, sections, and summary grave-space geometry
