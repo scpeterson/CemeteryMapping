@@ -1,6 +1,6 @@
 import { FileText, History, Landmark, MapPinned, UserRound } from "lucide-react";
-import type { GraveSpace, GraveSpaceSummary, Owner } from "../types";
-import { formatDate, formatGraveLabel, fullName, statusColors, statusLabels } from "../lib/format";
+import type { Burial, GraveSpace, GraveSpaceSummary, Owner } from "../types";
+import { formatDate, formatGraveLabel, fullName } from "../lib/format";
 
 type DetailPanelProps = {
   owners: Owner[];
@@ -12,6 +12,46 @@ type DetailPanelProps = {
 };
 
 const ownerName = (owners: Owner[], ownerId: string) => owners.find((owner) => owner.id === ownerId)?.displayName ?? "Unknown owner";
+
+function burialNoteItems(notes?: string) {
+  return (notes ?? "")
+    .replace(/\bNorth Hills Guide\b/gu, "North Hills Geneologists")
+    .split(/(?<=\.)\s+(?=[A-Z])/u)
+    .map((note) => note.trim().replace(/\.$/u, ""))
+    .filter((note) => !/^Person column:/iu.test(note))
+    .filter(Boolean);
+}
+
+function BurialRecord({ burial }: { burial: Burial }) {
+  const noteItems = burialNoteItems(burial.notes);
+
+  return (
+    <article className="burial-record">
+      <strong>{fullName(burial.person)}</strong>
+      <dl>
+        <div>
+          <dt>Born</dt>
+          <dd>{formatDate(burial.person.birthDate)}</dd>
+        </div>
+        <div>
+          <dt>Died</dt>
+          <dd>{formatDate(burial.person.deathDate)}</dd>
+        </div>
+        <div>
+          <dt>Buried</dt>
+          <dd>{formatDate(burial.burialDate)}</dd>
+        </div>
+      </dl>
+      {noteItems.length ? (
+        <ul className="burial-notes">
+          {noteItems.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      ) : null}
+    </article>
+  );
+}
 
 export function DetailPanel({ owners, summary, grave, isLoading = false, error, onRetry }: DetailPanelProps) {
   if (!summary) {
@@ -25,7 +65,6 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
   }
 
   const title = formatGraveLabel(summary);
-  const status = grave?.status ?? summary.status;
 
   return (
     <aside className="detail-panel">
@@ -33,10 +72,8 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
         <div>
           <p className="eyebrow">Grave site</p>
           <h2>{title}</h2>
+          <p className="grave-cemetery">{summary.cemeteryName}</p>
         </div>
-        <span className="status-badge" style={{ borderColor: statusColors[status], color: statusColors[status] }}>
-          {statusLabels[status]}
-        </span>
       </div>
 
       {isLoading ? (
@@ -85,24 +122,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
         {grave.burials.length ? (
           <div className="burial-list">
             {grave.burials.map((burial) => (
-              <article key={burial.id} className="burial-record">
-                <strong>{fullName(burial.person)}</strong>
-                <dl>
-                  <div>
-                    <dt>Born</dt>
-                    <dd>{formatDate(burial.person.birthDate)}</dd>
-                  </div>
-                  <div>
-                    <dt>Died</dt>
-                    <dd>{formatDate(burial.person.deathDate)}</dd>
-                  </div>
-                  <div>
-                    <dt>Buried</dt>
-                    <dd>{formatDate(burial.burialDate)}</dd>
-                  </div>
-                </dl>
-                {burial.notes ? <p>{burial.notes}</p> : null}
-              </article>
+              <BurialRecord key={burial.id} burial={burial} />
             ))}
           </div>
         ) : (

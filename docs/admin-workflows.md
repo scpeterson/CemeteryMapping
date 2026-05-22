@@ -76,7 +76,7 @@ Initial fields:
 
 Expected API:
 
-- `PATCH /api/grave-spaces/:id`
+- `PATCH /api/cemeteries/:cemeteryId/grave-spaces/:id`
 
 Expected audit action:
 
