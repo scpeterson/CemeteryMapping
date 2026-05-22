@@ -196,7 +196,7 @@ SELECT g.id, seed.first_name, seed.last_name, concat_ws(' ', seed.first_name, se
 FROM gravesites g
 JOIN (
   VALUES
-    ('A-01-01', 'Helen', 'Rivera', 'F', '1948-08-17', '2022-03-09', 73, '2022-03-14', NULL, NULL, 'No', 'Memorial Grove burial sharing a grave identifier used by St. Mark.')
+    ('A-01-01', 'Helen', 'Rivera', 'F', '1948-08-17', '2022-03-09', 73, '2022-03-14', NULL, NULL, 'No', 'Imported from headstone spreadsheet row 89. Memorial Grove burial sharing a grave identifier used by St. Mark.')
 ) AS seed(gravesite_id, first_name, last_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes)
   ON seed.gravesite_id = g.gravesite_id
 WHERE g.facility_id = 'DEMO-MEMORIAL';
