@@ -28,6 +28,8 @@ The application will not implement its own password storage. Authentication shou
 
 Authorization must be enforced in the Express API, not only in the React UI. The UI can hide unavailable actions, but the API remains the enforcement boundary.
 
+Request input that reaches data access paths must be validated before repository calls. Grave-space route ids are limited to the known application identifier shape, search queries are length-capped, status filters are allowlisted, and administrative mutation reasons are type-checked and length-capped. SQL statements must continue to use PostgreSQL parameter placeholders for request, token, import, and spreadsheet values rather than concatenating dynamic SQL.
+
 ## Roles
 
 Initial roles:
@@ -98,6 +100,7 @@ The first API security implementation supports:
 - Default API reads that exclude soft-deleted cemetery records.
 - Admin-only grave-space soft delete and restore endpoints.
 - Audit events for grave-space soft delete and restore operations.
+- API-edge request validation and SQL-injection regression tests for grave-space ids, search queries, status filters, and mutation reasons.
 
 ## Rebuild Notes
 
@@ -115,6 +118,7 @@ APP_ENV=test npm run db:up
 APP_ENV=test npm run db:validate
 APP_ENV=test npm run db:migrate
 npm run lint
+npm run test:server
 npm run build:test
 APP_ENV=test npm run test:e2e
 ```
@@ -138,4 +142,4 @@ Identity-provider user data source: TBD.
 
 ## Update Triggers
 
-Update this ADR or add a superseding ADR when the identity provider is selected, roles change, public access rules change, hard-delete exceptions are introduced, audit retention rules are defined, or the admin editing workflow is implemented.
+Update this ADR or add a superseding ADR when the identity provider is selected, roles change, public access rules change, request validation policy changes, hard-delete exceptions are introduced, audit retention rules are defined, or the admin editing workflow is implemented.
