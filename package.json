@@ -50,7 +50,7 @@
     "db:tag": "node scripts/db-tag.mjs"
   },
   "dependencies": {
-    "@auth0/auth0-react": "^2.16.2",
+    "@auth0/auth0-react": "^2.17.0",
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.2.1",
     "exceljs": "^4.4.0",
