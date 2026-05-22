@@ -5,6 +5,36 @@ test.describe.configure({ mode: "serial" });
 const scopedGravePath = (grave: { cemeteryId: string; id: string }) =>
   `/api/cemeteries/${encodeURIComponent(grave.cemeteryId)}/grave-spaces/${encodeURIComponent(grave.id)}`;
 
+type TestGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
+type TestGraveSummary = {
+  cemeteryId: string;
+  cemeteryName: string;
+  geometry: TestGeometry;
+  id: string;
+};
+
+function geometryBounds(geometry: TestGeometry) {
+  const rings = geometry.type === "Polygon" ? [geometry.coordinates[0]] : geometry.coordinates.map((polygon) => polygon[0]);
+  const coordinates = rings.flat().filter(Boolean) as [number, number][];
+  return coordinates.reduce(
+    (bounds, [longitude, latitude]) => ({
+      east: Math.max(bounds.east, longitude),
+      north: Math.max(bounds.north, latitude),
+      south: Math.min(bounds.south, latitude),
+      west: Math.min(bounds.west, longitude),
+    }),
+    { east: -Infinity, north: -Infinity, south: Infinity, west: Infinity },
+  );
+}
+
+function geometryCenter(geometry: TestGeometry) {
+  const bounds = geometryBounds(geometry);
+  return {
+    latitude: (bounds.north + bounds.south) / 2,
+    longitude: (bounds.east + bounds.west) / 2,
+  };
+}
+
 test("loads API-backed cemetery records and supports search", async ({ page }) => {
   const graveDetailRequests: string[] = [];
   page.on("request", (request) => {
@@ -14,6 +44,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
+  await expect(page.locator(".panel-heading .eyebrow")).toContainText(/\d+ cemeteries/);
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Fit all cemetery data" })).toBeVisible();
@@ -30,6 +61,10 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByLabel("Map legend")).toContainText("Gravesite Status");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
+  await expect(page.getByText("St. Mark Church Cemetery").first()).toBeVisible();
+  const firstResult = page.locator(".result-card").first();
+  await expect(firstResult.locator(".result-meta")).toHaveCSS("color", "rgb(109, 127, 145)");
+  await expect(firstResult.locator(".result-reason")).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "Loading grave details..." })).toBeHidden();
   await expect.poll(() => graveDetailRequests).toHaveLength(1);
   expect(graveDetailRequests[0]).toMatch(/^\/api\/cemeteries\/[0-9a-f-]+\/grave-spaces\/A-01-01$/);
@@ -56,9 +91,36 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   expect(mapData.graves[0]).not.toHaveProperty("currentOwnerIds");
   expect(mapData.graves[0]).not.toHaveProperty("ownershipHistory");
 
+  const memorialBoundary = mapData.boundaries.find((boundary: GeoJSON.Feature<TestGeometry, { name: string }>) => boundary.properties.name === "Memorial Grove Cemetery");
+  const memorialA0101 = mapData.graves.find((grave: TestGraveSummary) => grave.cemeteryName === "Memorial Grove Cemetery" && grave.id === "A-01-01") as
+    | TestGraveSummary
+    | undefined;
+  expect(memorialBoundary).toBeTruthy();
+  expect(memorialA0101).toBeTruthy();
+
+  await page.getByRole("button", { name: "Zoom to Memorial Grove Cemetery" }).click({ force: true });
+  await page.waitForTimeout(450);
+
+  const memorialMapBounds = await page.getByLabel("Interactive cemetery map").boundingBox();
+  expect(memorialMapBounds).not.toBeNull();
+  const boundaryBounds = geometryBounds(memorialBoundary.geometry);
+  const graveCenter = geometryCenter(memorialA0101.geometry);
+  const mapPadding = 110;
+  const clickableWidth = memorialMapBounds!.width - mapPadding * 2;
+  const clickableHeight = memorialMapBounds!.height - mapPadding * 2;
+  await page.mouse.click(
+    memorialMapBounds!.x + mapPadding + ((graveCenter.longitude - boundaryBounds.west) / (boundaryBounds.east - boundaryBounds.west)) * clickableWidth,
+    memorialMapBounds!.y + mapPadding + ((boundaryBounds.north - graveCenter.latitude) / (boundaryBounds.north - boundaryBounds.south)) * clickableHeight,
+  );
+  await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
+  await expect(page.locator(".detail-panel")).toContainText("Memorial Grove Cemetery");
+  await expect(page.locator(".detail-panel")).toContainText("Helen Rivera");
+  await expect.poll(() => graveDetailRequests.at(-1)).toContain(`/cemeteries/${memorialA0101.cemeteryId}/grave-spaces/A-01-01`);
+
   await page.getByLabel("Search cemetery records").fill("Garcia");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
   await expect(page.getByText("Owner: Garcia Family").first()).toBeVisible();
+  await expect(page.locator(".result-card").filter({ hasText: "St. Mark Church Cemetery" }).first()).toBeVisible();
 
   const response = await page.request.get("/api/search?q=Garcia");
   expect(response.ok()).toBe(true);

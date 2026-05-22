@@ -108,6 +108,12 @@ export default function App() {
   const matches = remoteMatches ?? localMatches;
   const visibleGraves = useMemo(() => data.graves.filter((grave) => selectedStatuses.has(grave.status)), [data, selectedStatuses]);
   const searchResultIds = useMemo(() => new Set(matches.map((match) => graveSelectionKey(match.grave))), [matches]);
+  const cemeteryScopeLabel = useMemo(() => {
+    const cemeteryNames = [...new Set((data.boundaries ?? (data.boundary ? [data.boundary] : [])).map((boundary) => boundary.properties.name))];
+    if (cemeteryNames.length === 0) return "Cemetery records";
+    if (cemeteryNames.length === 1) return cemeteryNames[0];
+    return `${cemeteryNames.length} cemeteries`;
+  }, [data.boundaries, data.boundary]);
 
   const toggleStatus = (status: GraveStatus) => {
     setSelectedStatuses((current) => {
@@ -125,6 +131,7 @@ export default function App() {
   return (
     <main className="app-shell">
       <SearchPanel
+        cemeteryScopeLabel={cemeteryScopeLabel}
         query={query}
         onQueryChange={setQuery}
         selectedStatuses={selectedStatuses}

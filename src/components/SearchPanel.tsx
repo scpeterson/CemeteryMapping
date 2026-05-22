@@ -3,6 +3,7 @@ import type { GraveStatus, SearchMatch } from "../types";
 import { formatGraveLocation, graveSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type SearchPanelProps = {
+  cemeteryScopeLabel: string;
   query: string;
   onQueryChange: (query: string) => void;
   selectedStatuses: Set<GraveStatus>;
@@ -14,12 +15,12 @@ type SearchPanelProps = {
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 
-export function SearchPanel({ query, onQueryChange, selectedStatuses, onToggleStatus, matches, selectedGraveKey, onSelectMatch }: SearchPanelProps) {
+export function SearchPanel({ cemeteryScopeLabel, query, onQueryChange, selectedStatuses, onToggleStatus, matches, selectedGraveKey, onSelectMatch }: SearchPanelProps) {
   return (
     <aside className="search-panel">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">St. Mark Church Cemetery</p>
+          <p className="eyebrow">{cemeteryScopeLabel}</p>
           <h1>Cemetery Map</h1>
         </div>
         <CalendarSearch size={24} aria-hidden="true" />
@@ -65,6 +66,8 @@ export function SearchPanel({ query, onQueryChange, selectedStatuses, onToggleSt
       <div className="results-list">
         {matches.map((match) => {
           const key = graveSelectionKey(match.grave);
+          const statusLabel = statusLabels[match.grave.status];
+          const reasons = match.reasons.filter((reason) => reason !== statusLabel && reason !== `Status: ${statusLabel}`).slice(0, 2);
 
           return (
             <button
@@ -74,8 +77,11 @@ export function SearchPanel({ query, onQueryChange, selectedStatuses, onToggleSt
               onClick={() => onSelectMatch(match)}
             >
               <span className="result-title">{formatGraveLocation(match.grave)}</span>
-              <span className="result-meta">{statusLabels[match.grave.status]}</span>
-              <span className="result-reason">{match.reasons.slice(0, 2).join(" | ")}</span>
+              <span className="result-cemetery">{match.grave.cemeteryName}</span>
+              <span className="result-meta" style={{ color: statusColors[match.grave.status] }}>
+                {statusLabel}
+              </span>
+              {reasons.length ? <span className="result-reason">{reasons.join(" | ")}</span> : null}
             </button>
           );
         })}

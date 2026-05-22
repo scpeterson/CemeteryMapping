@@ -296,10 +296,28 @@ h3 {
   font-weight: 760;
 }
 
+.grave-cemetery,
+.result-cemetery {
+  color: #425149;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.grave-cemetery {
+  margin: 4px 0 0;
+}
+
 .result-meta,
 .result-reason {
-  color: var(--text-muted);
   font-size: 0.83rem;
+}
+
+.result-meta {
+  font-weight: 700;
+}
+
+.result-reason {
+  color: var(--text-muted);
 }
 
 .map-region {
@@ -491,6 +509,7 @@ h3 {
   right: 18px;
   bottom: 18px;
   z-index: 1;
+  pointer-events: none;
   display: grid;
   gap: 10px;
   width: min(340px, calc(100% - 260px));
@@ -588,16 +607,6 @@ h3 {
 
 .legend-unknown {
   background: #c7524f;
-}
-
-.status-badge {
-  flex: 0 0 auto;
-  padding: 6px 10px;
-  border: 1px solid currentColor;
-  border-radius: 7px;
-  background: #fff;
-  font-size: 0.82rem;
-  font-weight: 760;
 }
 
 .detail-message {

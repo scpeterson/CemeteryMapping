@@ -32,6 +32,7 @@ type ScaleSegment = {
 };
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
+const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels"];
 
 const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
 
@@ -285,18 +286,22 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
       syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
 
-      map.on("mouseenter", "graves-fill", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-
-      map.on("mouseleave", "graves-fill", () => {
-        map.getCanvas().style.cursor = "";
-      });
-
-      map.on("click", "graves-fill", (event) => {
+      const selectGraveFeature = (event: maplibregl.MapLayerMouseEvent) => {
         const key = event.features?.[0]?.properties?.key;
         const grave = dataRef.current.graves.find((item) => graveSelectionKey(item) === key);
         if (grave) onSelectRef.current(grave);
+      };
+
+      selectableGraveLayers.forEach((layer) => {
+        map.on("mouseenter", layer, () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+
+        map.on("mouseleave", layer, () => {
+          map.getCanvas().style.cursor = "";
+        });
+
+        map.on("click", layer, selectGraveFeature);
       });
     });
 

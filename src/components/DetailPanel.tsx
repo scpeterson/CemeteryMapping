@@ -1,6 +1,6 @@
 import { FileText, History, Landmark, MapPinned, UserRound } from "lucide-react";
 import type { GraveSpace, GraveSpaceSummary, Owner } from "../types";
-import { formatDate, formatGraveLabel, fullName, statusColors, statusLabels } from "../lib/format";
+import { formatDate, formatGraveLabel, fullName } from "../lib/format";
 
 type DetailPanelProps = {
   owners: Owner[];
@@ -25,7 +25,6 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
   }
 
   const title = formatGraveLabel(summary);
-  const status = grave?.status ?? summary.status;
 
   return (
     <aside className="detail-panel">
@@ -33,10 +32,8 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
         <div>
           <p className="eyebrow">Grave site</p>
           <h2>{title}</h2>
+          <p className="grave-cemetery">{summary.cemeteryName}</p>
         </div>
-        <span className="status-badge" style={{ borderColor: statusColors[status], color: statusColors[status] }}>
-          {statusLabels[status]}
-        </span>
       </div>
 
       {isLoading ? (
