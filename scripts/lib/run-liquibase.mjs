@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const liquibaseDefaults = "/liquibase/changelog/liquibase.properties";
@@ -20,8 +20,13 @@ export function envFilePath(environment = currentEnvironment()) {
   return resolve(`db/env/${environment}.env`);
 }
 
-export function loadDbEnvironment(environment = currentEnvironment()) {
-  const envFile = envFilePath(environment);
+export function localEnvFilePath(environment = currentEnvironment()) {
+  return resolve(`db/env/${environment}.local.env`);
+}
+
+function readEnvFile(envFile, required = true) {
+  if (!required && !existsSync(envFile)) return {};
+
   const values = {};
 
   for (const line of readFileSync(envFile, "utf8").split(/\r?\n/)) {
@@ -37,8 +42,22 @@ export function loadDbEnvironment(environment = currentEnvironment()) {
   return values;
 }
 
+export function loadDbEnvironment(environment = currentEnvironment()) {
+  return {
+    ...readEnvFile(envFilePath(environment)),
+    ...readEnvFile(localEnvFilePath(environment), false),
+  };
+}
+
 export function dockerComposeArgs(environment = currentEnvironment()) {
-  return ["compose", "-p", `cemeterymapping-${environment}`, "--env-file", envFilePath(environment)];
+  const args = ["compose", "-p", `cemeterymapping-${environment}`, "--env-file", envFilePath(environment)];
+  const localEnvFile = localEnvFilePath(environment);
+
+  if (existsSync(localEnvFile)) {
+    args.push("--env-file", localEnvFile);
+  }
+
+  return args;
 }
 
 export function runLiquibase(args) {

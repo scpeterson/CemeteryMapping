@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const environments = new Set(["dev", "test", "stage", "prod"]);
@@ -25,7 +25,11 @@ export function loadApiConfig() {
   }
 
   const envPath = resolve(process.cwd(), "db", "env", `${appEnv}.env`);
-  const fileEnv = parseEnvFile(readFileSync(envPath, "utf8"));
+  const localEnvPath = resolve(process.cwd(), "db", "env", `${appEnv}.local.env`);
+  const fileEnv = {
+    ...parseEnvFile(readFileSync(envPath, "utf8")),
+    ...(existsSync(localEnvPath) ? parseEnvFile(readFileSync(localEnvPath, "utf8")) : {}),
+  };
 
   const postgresPort = Number(process.env.PGPORT ?? fileEnv.POSTGRES_PORT ?? 5432);
   const apiPort = Number(process.env.API_PORT ?? 3001);

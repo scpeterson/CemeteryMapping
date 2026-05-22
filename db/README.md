@@ -15,6 +15,9 @@ db/env/stage.env
 db/env/prod.env
 ```
 
+Each environment can also have a local, gitignored override file named `db/env/<environment>.local.env`.
+Use this for machine-specific settings such as a different DEV host port when another local PostgreSQL service already uses `5432`.
+
 Local Docker ports:
 
 ```text
@@ -22,6 +25,13 @@ DEV:   localhost:5432 / cemetery_mapping_dev
 TEST:  localhost:5433 / cemetery_mapping_test
 STAGE: localhost:5434 / cemetery_mapping_stage
 PROD:  localhost:5435 / cemetery_mapping_prod
+```
+
+For example, this local override keeps the DEV Docker database off a host PostgreSQL install on `5432`:
+
+```text
+# db/env/dev.local.env
+POSTGRES_PORT=5436
 ```
 
 The checked-in PROD file is for local/prototype infrastructure only. Real production deployments should inject database credentials through deployment secrets, not commit them to the repository.
@@ -133,6 +143,8 @@ user: cemetery_app
 password: cemetery_app_dev
 ```
 
+If `db/env/dev.local.env` sets `POSTGRES_PORT`, use that port instead. On this machine DEV is configured to use `5436`.
+
 The local TEST Docker database uses:
 
 ```text
@@ -150,6 +162,8 @@ The npm wrappers translate `APP_ENV=test` into:
 ```text
 -p cemeterymapping-test --env-file db/env/test.env
 ```
+
+When `db/env/<environment>.local.env` exists, the wrappers pass it to Docker Compose after the checked-in env file so local values override the shared defaults.
 
 Connect to TEST with `psql` through Docker Compose:
 
