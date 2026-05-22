@@ -670,7 +670,7 @@ h3 {
 
 .owner-row span,
 .muted,
-.burial-record p {
+.burial-notes {
   color: var(--text-muted);
 }
 
@@ -696,6 +696,14 @@ h3 {
 .burial-record dd {
   margin: 2px 0 0;
   font-size: 0.88rem;
+}
+
+.burial-notes {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding-left: 18px;
+  line-height: 1.35;
 }
 
 .timeline {

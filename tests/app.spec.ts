@@ -63,7 +63,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.getByText("St. Mark Church Cemetery").first()).toBeVisible();
   const firstResult = page.locator(".result-card").first();
-  await expect(firstResult.locator(".result-meta")).toHaveCSS("color", "rgb(109, 127, 145)");
+  await expect(page.locator(".result-card").filter({ hasText: "Reserved" }).first().locator(".result-meta")).toHaveCSS("color", "rgb(217, 164, 65)");
   await expect(firstResult.locator(".result-reason")).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "Loading grave details..." })).toBeHidden();
   await expect.poll(() => graveDetailRequests).toHaveLength(1);
@@ -115,6 +115,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.locator(".detail-panel")).toContainText("Memorial Grove Cemetery");
   await expect(page.locator(".detail-panel")).toContainText("Helen Rivera");
+  await expect(page.locator(".detail-panel")).not.toContainText("Person column:");
   await expect.poll(() => graveDetailRequests.at(-1)).toContain(`/cemeteries/${memorialA0101.cemeteryId}/grave-spaces/A-01-01`);
 
   await page.getByLabel("Search cemetery records").fill("Garcia");

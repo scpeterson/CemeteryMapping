@@ -256,9 +256,9 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
   const section = await findSection(client, cemetery.id, facilityId, imported.sectionId, imported.longitude, imported.latitude);
   const notes = [
     `Imported from headstone spreadsheet row ${imported.rowNumber}.`,
-    imported.sectionId ? `North Hills Guide section: ${imported.sectionId}.` : null,
-    imported.nhgRow ? `North Hills Guide row: ${imported.nhgRow}.` : null,
-    imported.nhgPage ? `North Hills Guide page: ${imported.nhgPage}.` : null,
+    imported.sectionId ? `North Hills Geneologists section: ${imported.sectionId}.` : null,
+    imported.nhgRow ? `North Hills Geneologists row: ${imported.nhgRow}.` : null,
+    imported.nhgPage ? `North Hills Geneologists page: ${imported.nhgPage}.` : null,
     imported.tlcSec ? `Trinity Lutheran Church section: ${imported.tlcSec}.` : null,
     imported.tlcPlot ? `Trinity Lutheran Church plot: ${imported.tlcPlot}.` : null,
     imported.sourceGraveNumber ? `Source grave number: ${imported.sourceGraveNumber}.` : null,

@@ -59,7 +59,7 @@ Known source:
 
 Source naming notes:
 
-- `Nhg` means `North Hills Guide`.
+- `Nhg` means `North Hills Geneologists`.
 - `Tlc` means `Trinity Lutheran Church`.
 - The source previously had a typo `Logitude`; the workbook used by the importer has `Longitude`.
 
