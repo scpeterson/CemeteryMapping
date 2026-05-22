@@ -5,6 +5,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    ignore:
+      # @vitejs/plugin-react 6.x requires Vite 8.x; upgrade them together intentionally.
+      - dependency-name: "@vitejs/plugin-react"
+        versions:
+          - ">=6.0.0"
 
   - package-ecosystem: "bundler"
     directory: "/docs"
@@ -17,6 +22,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    ignore:
+      # Liquibase 5.x images no longer include the PostgreSQL JDBC driver we rely on.
+      - dependency-name: "liquibase/liquibase"
+        versions:
+          - ">=5.0.0"
 
   - package-ecosystem: "github-actions"
     directory: "/"
