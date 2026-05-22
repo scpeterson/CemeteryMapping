@@ -20,7 +20,7 @@ services:
       retries: 12
 
   liquibase:
-    image: liquibase/liquibase:4.33.0
+    image: liquibase/liquibase:5.0.3
     depends_on:
       db:
         condition: service_healthy
