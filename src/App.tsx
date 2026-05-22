@@ -5,6 +5,7 @@ import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
+import { graveSelectionKey } from "./lib/format";
 import { searchGraves } from "./lib/search";
 import type { CemeteryData, GraveSpace, GraveSpaceSummary, GraveStatus, Owner, SearchMatch } from "./types";
 
@@ -31,7 +32,9 @@ export default function App() {
       .then((nextData) => {
         if (!isCurrent) return;
         setData(nextData);
-        setSelectedGrave((current) => (current ? nextData.graves.find((grave) => grave.id === current.id) : nextData.graves[0]));
+        setSelectedGrave((current) =>
+          current ? nextData.graves.find((grave) => graveSelectionKey(grave) === graveSelectionKey(current)) : nextData.graves[0],
+        );
         setLoadError(undefined);
       })
       .catch((error: unknown) => {
@@ -60,7 +63,7 @@ export default function App() {
     let isCurrent = true;
     setIsDetailLoading(true);
 
-    fetchGraveSpace(selectedGrave.id)
+    fetchGraveSpace(selectedGrave.cemeteryId, selectedGrave.id)
       .then((detail) => {
         if (!isCurrent) return;
         setSelectedGraveDetails(detail);
@@ -104,7 +107,7 @@ export default function App() {
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
   const matches = remoteMatches ?? localMatches;
   const visibleGraves = useMemo(() => data.graves.filter((grave) => selectedStatuses.has(grave.status)), [data, selectedStatuses]);
-  const searchResultIds = useMemo(() => new Set(matches.map((match) => match.grave.id)), [matches]);
+  const searchResultIds = useMemo(() => new Set(matches.map((match) => graveSelectionKey(match.grave))), [matches]);
 
   const toggleStatus = (status: GraveStatus) => {
     setSelectedStatuses((current) => {
@@ -127,7 +130,7 @@ export default function App() {
         selectedStatuses={selectedStatuses}
         onToggleStatus={toggleStatus}
         matches={matches}
-        selectedGraveId={selectedGrave?.id}
+        selectedGraveKey={selectedGrave ? graveSelectionKey(selectedGrave) : undefined}
         onSelectMatch={selectMatch}
       />
       <section className="map-region">

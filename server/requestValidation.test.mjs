@@ -3,6 +3,7 @@ import test from "node:test";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
   BadRequestError,
+  validateCemeteryId,
   validateGraveSpaceId,
   validateMutationReason,
   validateSearchQuery,
@@ -47,6 +48,11 @@ test("grave space id validation rejects SQL-like ids", () => {
 test("grave space id validation accepts current demo and imported id shapes", () => {
   assert.equal(validateGraveSpaceId("A-01-01"), "A-01-01");
   assert.equal(validateGraveSpaceId("TLC-GPS-0042"), "TLC-GPS-0042");
+});
+
+test("cemetery id validation requires a UUID", () => {
+  assert.equal(validateCemeteryId("87ab43c8-3281-4e7c-b034-8d5a7b0f8b31"), "87ab43c8-3281-4e7c-b034-8d5a7b0f8b31");
+  assertBadRequest(() => validateCemeteryId("DEMO-ST-MARK"), "Cemetery id must be a valid UUID.");
 });
 
 test("search validation rejects oversized queries", () => {

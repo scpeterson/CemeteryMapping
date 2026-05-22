@@ -43,6 +43,10 @@ export function formatGraveLocation(grave: Pick<GraveSpaceSummary, "section" | "
     .join(", ");
 }
 
+export function graveSelectionKey(grave: Pick<GraveSpaceSummary, "cemeteryId" | "id">) {
+  return `${grave.cemeteryId}:${grave.id}`;
+}
+
 export function normalize(value: string) {
   return value.trim().toLowerCase();
 }

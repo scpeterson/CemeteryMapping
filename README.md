@@ -108,10 +108,10 @@ Every PR that changes architecture, schema, import behavior, validation policy, 
 The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a summary-first map flow:
 
 - `GET /api/cemetery-map` for GeoJSON cemetery boundaries, sections, and summary grave-space geometry used by the map
-- `GET /api/grave-spaces/:id` for full grave details fetched when a grave is selected
+- `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` for full grave details fetched when a grave is selected
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
-- `DELETE /api/grave-spaces/:id` for admin-only soft delete of a grave space
-- `POST /api/grave-spaces/:id/restore` for admin-only restore of a soft-deleted grave space
+- `DELETE /api/cemeteries/:cemeteryId/grave-spaces/:id` for admin-only soft delete of a grave space
+- `POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore` for admin-only restore of a soft-deleted grave space
 
 Run the API by itself when needed:
 

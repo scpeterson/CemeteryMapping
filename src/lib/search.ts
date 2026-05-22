@@ -1,5 +1,5 @@
 import type { CemeteryData, GraveStatus, SearchMatch } from "../types";
-import { formatGraveLabel, normalize, statusLabels } from "./format";
+import { formatGraveLabel, graveSelectionKey, normalize, statusLabels } from "./format";
 
 const addReason = (reasons: string[], label: string, value: string | undefined, query: string) => {
   if (!value) return;
@@ -25,5 +25,5 @@ export function searchGraves(data: CemeteryData, query: string, statuses: Set<Gr
       return { grave, reasons };
     })
     .filter((match) => match.reasons.length > 0)
-    .sort((a, b) => a.grave.id.localeCompare(b.grave.id));
+    .sort((a, b) => graveSelectionKey(a.grave).localeCompare(graveSelectionKey(b.grave)));
 }

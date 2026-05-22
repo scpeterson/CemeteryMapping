@@ -38,8 +38,10 @@ export async function fetchCemeteryData(attempts = 5): Promise<CemeteryData> {
   throw lastError instanceof Error ? lastError : new Error("Unable to load cemetery data");
 }
 
-export async function fetchGraveSpace(id: string): Promise<GraveSpace> {
-  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/grave-spaces/${encodeURIComponent(id)}`);
+export async function fetchGraveSpace(cemeteryId: string, id: string): Promise<GraveSpace> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(id)}`,
+  );
   if (!response.ok) throw new Error(`Grave API returned ${response.status}`);
   return (await response.json()) as GraveSpace;
 }

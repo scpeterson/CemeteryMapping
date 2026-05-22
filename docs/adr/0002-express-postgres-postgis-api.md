@@ -67,7 +67,7 @@ Key routes:
 
 - `GET /api/health`
 - `GET /api/cemetery-map`
-- `GET /api/grave-spaces/:id`
+- `GET /api/cemeteries/:cemeteryId/grave-spaces/:id`
 - `GET /api/search?q=<query>&status=<csv-statuses>`
 
 Database credentials are read from `db/env/<environment>.env`, with optional `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` overrides.

@@ -1,4 +1,5 @@
 const graveSpaceIdPattern = /^[A-Za-z0-9_-]{1,30}$/u;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const allowedStatuses = new Set(["available", "reserved", "occupied", "sold", "unknown"]);
 const maxSearchLength = 120;
 const maxReasonLength = 500;
@@ -15,6 +16,15 @@ export function validateGraveSpaceId(value) {
   const id = typeof value === "string" ? value.trim() : "";
   if (!graveSpaceIdPattern.test(id)) {
     throw new BadRequestError("Grave space id must be 1-30 characters and contain only letters, numbers, underscores, or hyphens.");
+  }
+
+  return id;
+}
+
+export function validateCemeteryId(value) {
+  const id = typeof value === "string" ? value.trim() : "";
+  if (!uuidPattern.test(id)) {
+    throw new BadRequestError("Cemetery id must be a valid UUID.");
   }
 
   return id;

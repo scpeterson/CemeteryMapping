@@ -1,6 +1,6 @@
 import { CalendarSearch, Filter, Search, X } from "lucide-react";
 import type { GraveStatus, SearchMatch } from "../types";
-import { formatGraveLocation, statusColors, statusLabels } from "../lib/format";
+import { formatGraveLocation, graveSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type SearchPanelProps = {
   query: string;
@@ -8,13 +8,13 @@ type SearchPanelProps = {
   selectedStatuses: Set<GraveStatus>;
   onToggleStatus: (status: GraveStatus) => void;
   matches: SearchMatch[];
-  selectedGraveId?: string;
+  selectedGraveKey?: string;
   onSelectMatch: (match: SearchMatch) => void;
 };
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 
-export function SearchPanel({ query, onQueryChange, selectedStatuses, onToggleStatus, matches, selectedGraveId, onSelectMatch }: SearchPanelProps) {
+export function SearchPanel({ query, onQueryChange, selectedStatuses, onToggleStatus, matches, selectedGraveKey, onSelectMatch }: SearchPanelProps) {
   return (
     <aside className="search-panel">
       <div className="panel-heading">
@@ -63,18 +63,22 @@ export function SearchPanel({ query, onQueryChange, selectedStatuses, onToggleSt
       </div>
 
       <div className="results-list">
-        {matches.map((match) => (
-          <button
-            key={match.grave.id}
-            type="button"
-            className={`result-card ${selectedGraveId === match.grave.id ? "is-selected" : ""}`}
-            onClick={() => onSelectMatch(match)}
-          >
-            <span className="result-title">{formatGraveLocation(match.grave)}</span>
-            <span className="result-meta">{statusLabels[match.grave.status]}</span>
-            <span className="result-reason">{match.reasons.slice(0, 2).join(" | ")}</span>
-          </button>
-        ))}
+        {matches.map((match) => {
+          const key = graveSelectionKey(match.grave);
+
+          return (
+            <button
+              key={key}
+              type="button"
+              className={`result-card ${selectedGraveKey === key ? "is-selected" : ""}`}
+              onClick={() => onSelectMatch(match)}
+            >
+              <span className="result-title">{formatGraveLocation(match.grave)}</span>
+              <span className="result-meta">{statusLabels[match.grave.status]}</span>
+              <span className="result-reason">{match.reasons.slice(0, 2).join(" | ")}</span>
+            </button>
+          );
+        })}
       </div>
     </aside>
   );

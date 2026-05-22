@@ -7,6 +7,7 @@ import { getCemeteryData, getGraveSpace, restoreGraveSpace, softDeleteGraveSpace
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
   BadRequestError,
+  validateCemeteryId,
   validateGraveSpaceId,
   validateMutationReason,
   validateSearchQuery,
@@ -45,10 +46,11 @@ export function createApp(config, pool) {
     }
   });
 
-  app.get("/api/grave-spaces/:id", requireReader, async (request, response, next) => {
+  app.get("/api/cemeteries/:cemeteryId/grave-spaces/:id", requireReader, async (request, response, next) => {
     try {
+      const cemeteryId = validateCemeteryId(request.params.cemeteryId);
       const id = validateGraveSpaceId(request.params.id);
-      const grave = await getGraveSpace(pool, id);
+      const grave = await getGraveSpace(pool, cemeteryId, id);
       if (!grave) {
         response.status(404).json({ error: "Grave space not found" });
         return;
@@ -70,11 +72,12 @@ export function createApp(config, pool) {
     }
   });
 
-  app.delete("/api/grave-spaces/:id", requireAdmin, async (request, response, next) => {
+  app.delete("/api/cemeteries/:cemeteryId/grave-spaces/:id", requireAdmin, async (request, response, next) => {
     try {
+      const cemeteryId = validateCemeteryId(request.params.cemeteryId);
       const id = validateGraveSpaceId(request.params.id);
       const reason = validateMutationReason(request.body?.reason);
-      const result = await softDeleteGraveSpace(pool, id, { actorUser: request.user, reason });
+      const result = await softDeleteGraveSpace(pool, cemeteryId, id, { actorUser: request.user, reason });
       if (!result) {
         response.status(404).json({ error: "Grave space not found" });
         return;
@@ -86,11 +89,12 @@ export function createApp(config, pool) {
     }
   });
 
-  app.post("/api/grave-spaces/:id/restore", requireAdmin, async (request, response, next) => {
+  app.post("/api/cemeteries/:cemeteryId/grave-spaces/:id/restore", requireAdmin, async (request, response, next) => {
     try {
+      const cemeteryId = validateCemeteryId(request.params.cemeteryId);
       const id = validateGraveSpaceId(request.params.id);
       const reason = validateMutationReason(request.body?.reason);
-      const result = await restoreGraveSpace(pool, id, { actorUser: request.user, reason });
+      const result = await restoreGraveSpace(pool, cemeteryId, id, { actorUser: request.user, reason });
       if (!result) {
         response.status(404).json({ error: "Grave space not found" });
         return;

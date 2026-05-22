@@ -34,6 +34,8 @@ function addReason(reasons, label, value, query) {
 function toSearchSummary(grave) {
   return {
     id: grave.id,
+    cemeteryId: grave.cemeteryId,
+    cemeteryName: grave.cemeteryName,
     section: grave.section,
     lot: grave.lot,
     space: grave.space,
@@ -85,5 +87,5 @@ export async function searchCemetery(pool, { query = "", statuses = [] } = {}) {
       return { grave: toSearchSummary(grave), reasons };
     })
     .filter((match) => match.reasons.length > 0)
-    .sort((a, b) => a.grave.id.localeCompare(b.grave.id));
+    .sort((a, b) => `${a.grave.cemeteryId}:${a.grave.id}`.localeCompare(`${b.grave.cemeteryId}:${b.grave.id}`));
 }

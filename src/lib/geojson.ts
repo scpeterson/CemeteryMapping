@@ -1,20 +1,26 @@
 import type { AreaGeometry, CemeteryData, GraveSpaceSummary } from "../types";
-import { formatGraveLabel } from "./format";
+import { formatGraveLabel, graveSelectionKey } from "./format";
 
-export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedId?: string, searchIds: Set<string> = new Set()) {
+export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey?: string, searchKeys: Set<string> = new Set()) {
   return {
     type: "FeatureCollection",
-    features: graves.map((grave) => ({
-      type: "Feature",
-      properties: {
-        id: grave.id,
-        status: grave.status,
-        label: formatGraveLabel(grave),
-        selected: grave.id === selectedId,
-        searchMatch: searchIds.has(grave.id),
-      },
-      geometry: grave.geometry,
-    })),
+    features: graves.map((grave) => {
+      const key = graveSelectionKey(grave);
+
+      return {
+        type: "Feature",
+        properties: {
+          key,
+          id: grave.id,
+          cemeteryId: grave.cemeteryId,
+          status: grave.status,
+          label: formatGraveLabel(grave),
+          selected: key === selectedKey,
+          searchMatch: searchKeys.has(key),
+        },
+        geometry: grave.geometry,
+      };
+    }),
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 

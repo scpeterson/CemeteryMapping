@@ -3,7 +3,7 @@ import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
 import { boundariesFeatureCollection, cemeteryMarkersFeatureCollection, gravesFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
-import { statusColors, statusLabels } from "../lib/format";
+import { graveSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type CemeteryMapProps = {
   data: CemeteryData;
@@ -141,7 +141,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
   const dataRef = useRef(data);
   const visibleGravesRef = useRef(visibleGraves);
   const searchResultIdsRef = useRef(searchResultIds);
-  const selectedRef = useRef(selectedGrave?.id);
+  const selectedRef = useRef(selectedGrave ? graveSelectionKey(selectedGrave) : undefined);
   const onSelectRef = useRef(onSelectGrave);
   const didSkipInitialSelectionFitRef = useRef(false);
 
@@ -149,9 +149,9 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     dataRef.current = data;
     visibleGravesRef.current = visibleGraves;
     searchResultIdsRef.current = searchResultIds;
-    selectedRef.current = selectedGrave?.id;
+    selectedRef.current = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
     onSelectRef.current = onSelectGrave;
-  }, [data, onSelectGrave, searchResultIds, selectedGrave?.id, visibleGraves]);
+  }, [data, onSelectGrave, searchResultIds, selectedGrave, visibleGraves]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -294,8 +294,8 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       });
 
       map.on("click", "graves-fill", (event) => {
-        const id = event.features?.[0]?.properties?.id;
-        const grave = dataRef.current.graves.find((item) => item.id === id);
+        const key = event.features?.[0]?.properties?.key;
+        const grave = dataRef.current.graves.find((item) => graveSelectionKey(item) === key);
         if (grave) onSelectRef.current(grave);
       });
     });
@@ -332,8 +332,8 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
   useEffect(() => {
     const source = mapRef.current?.getSource("graves") as GeoJSONSource | undefined;
-    source?.setData(gravesFeatureCollection(visibleGraves, selectedGrave?.id, searchResultIds));
-  }, [searchResultIds, selectedGrave?.id, visibleGraves]);
+    source?.setData(gravesFeatureCollection(visibleGraves, selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds));
+  }, [searchResultIds, selectedGrave, visibleGraves]);
 
   useEffect(() => {
     if (!selectedGrave || !mapRef.current) return;

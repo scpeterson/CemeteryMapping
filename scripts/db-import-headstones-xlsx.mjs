@@ -292,7 +292,7 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
         ST_SetSRID(ST_GeomFromGeoJSON($8), 4326)::geometry(MultiPolygon, 4326),
         now()
       )
-      ON CONFLICT (gravesite_id) DO UPDATE SET
+      ON CONFLICT (cemetery_id, gravesite_id) DO UPDATE SET
         cemetery_id = EXCLUDED.cemetery_id,
         section_uuid = EXCLUDED.section_uuid,
         name = EXCLUDED.name,

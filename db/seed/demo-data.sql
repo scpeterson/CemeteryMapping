@@ -1,7 +1,7 @@
 BEGIN;
 
 DELETE FROM cemeteries
-WHERE facility_id = 'DEMO-ST-MARK';
+WHERE facility_id IN ('DEMO-ST-MARK', 'DEMO-MEMORIAL');
 
 INSERT INTO cemeteries (
   facility_id,
@@ -34,11 +34,48 @@ VALUES (
   ST_Multi(ST_MakeEnvelope(-76.70475, 39.19584, -76.70383, 39.19625, 4326))::geometry(MultiPolygon, 4326)
 );
 
+INSERT INTO cemeteries (
+  facility_id,
+  name,
+  full_address,
+  municipality,
+  agency,
+  owned_by,
+  maintained_by,
+  contact_name,
+  contact_phone,
+  contact_email,
+  earliest_burial_year,
+  notes,
+  geometry
+)
+VALUES (
+  'DEMO-MEMORIAL',
+  'Memorial Grove Cemetery',
+  '200 Grove Road',
+  'Demo Township',
+  'Demo Township',
+  1,
+  1,
+  'Town Clerk',
+  '555-0200',
+  'memorial@example.test',
+  1980,
+  'Second demo cemetery with overlapping grave identifiers.',
+  ST_Multi(ST_MakeEnvelope(-76.70350, 39.19584, -76.70292, 39.19618, 4326))::geometry(MultiPolygon, 4326)
+);
+
 INSERT INTO sections (cemetery_id, name, facility_id, section_id, geometry)
 SELECT id, 'Section A', facility_id, 'A',
   ST_Multi(ST_MakeEnvelope(-76.70470, 39.19588, -76.70425, 39.19621, 4326))::geometry(MultiPolygon, 4326)
 FROM cemeteries
 WHERE facility_id = 'DEMO-ST-MARK';
+
+INSERT INTO sections (cemetery_id, name, facility_id, section_id, geometry)
+SELECT id, 'Section A', facility_id, 'A',
+  ST_Multi(ST_MakeEnvelope(-76.70346, 39.19589, -76.70298, 39.19613, 4326))::geometry(MultiPolygon, 4326)
+FROM cemeteries
+WHERE facility_id = 'DEMO-MEMORIAL';
 
 INSERT INTO sections (cemetery_id, name, facility_id, section_id, geometry)
 SELECT id, 'Section B', facility_id, 'B',
@@ -81,6 +118,34 @@ JOIN (
 JOIN sections s ON s.cemetery_id = c.id AND s.section_id = seed.section_id
 WHERE c.facility_id = 'DEMO-ST-MARK';
 
+INSERT INTO gravesites (
+  cemetery_id,
+  section_uuid,
+  name,
+  facility_id,
+  section_id,
+  lot_id,
+  grave_id,
+  gravesite_id,
+  status,
+  cost,
+  geometry
+)
+SELECT c.id, s.id, s.name, c.facility_id, seed.section_id, seed.lot_id, seed.grave_id,
+  concat(seed.section_id, '-', seed.lot_id, '-', seed.grave_id),
+  seed.status,
+  seed.cost,
+  ST_Multi(ST_MakeEnvelope(seed.west, seed.south, seed.east, seed.north, 4326))::geometry(MultiPolygon, 4326)
+FROM cemeteries c
+JOIN (
+  VALUES
+    ('A', '01', '01', 'Reserved', 950.00, -76.70342, 39.19600, -76.70330, 39.19610),
+    ('A', '01', '02', 'Available', 950.00, -76.70328, 39.19600, -76.70316, 39.19610)
+) AS seed(section_id, lot_id, grave_id, status, cost, west, south, east, north)
+  ON true
+JOIN sections s ON s.cemetery_id = c.id AND s.section_id = seed.section_id
+WHERE c.facility_id = 'DEMO-MEMORIAL';
+
 INSERT INTO owners (gravesite_uuid, owner, co_owner, full_address, municipality, state, zip, phone, email, sale_date, notes, gravesite_id)
 SELECT g.id, seed.owner, seed.co_owner, seed.full_address, seed.municipality, seed.state, seed.zip, seed.phone, seed.email, seed.sale_date::date, seed.notes, seed.gravesite_id
 FROM gravesites g
@@ -99,6 +164,17 @@ JOIN (
   ON seed.gravesite_id = g.gravesite_id
 WHERE g.facility_id = 'DEMO-ST-MARK';
 
+INSERT INTO owners (gravesite_uuid, owner, co_owner, full_address, municipality, state, zip, phone, email, sale_date, notes, gravesite_id)
+SELECT g.id, seed.owner, seed.co_owner, seed.full_address, seed.municipality, seed.state, seed.zip, seed.phone, seed.email, seed.sale_date::date, seed.notes, seed.gravesite_id
+FROM gravesites g
+JOIN (
+  VALUES
+    ('A-01-01', 'Memorial Grove Association', NULL, '200 Grove Road', 'Demo Township', 'MD', '21000', '555-0200', 'memorial@example.test', '2020-02-14', 'Same grave identifier as St. Mark A-01-01, scoped to Memorial Grove.'),
+    ('A-01-02', 'Memorial Grove Association', NULL, '200 Grove Road', 'Demo Township', 'MD', '21000', '555-0200', 'memorial@example.test', '2024-01-12', NULL)
+) AS seed(gravesite_id, owner, co_owner, full_address, municipality, state, zip, phone, email, sale_date, notes)
+  ON seed.gravesite_id = g.gravesite_id
+WHERE g.facility_id = 'DEMO-MEMORIAL';
+
 INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes, gravesite_id)
 SELECT g.id, seed.first_name, seed.last_name, concat_ws(' ', seed.first_name, seed.last_name), seed.sex, seed.birth_date::date, seed.death_date::date,
   seed.age, seed.burial_date::date, seed.funeral_home, seed.monument_type, seed.veteran, seed.notes, seed.gravesite_id
@@ -113,5 +189,16 @@ JOIN (
 ) AS seed(gravesite_id, first_name, last_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes)
   ON seed.gravesite_id = g.gravesite_id
 WHERE g.facility_id = 'DEMO-ST-MARK';
+
+INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes, gravesite_id)
+SELECT g.id, seed.first_name, seed.last_name, concat_ws(' ', seed.first_name, seed.last_name), seed.sex, seed.birth_date::date, seed.death_date::date,
+  seed.age, seed.burial_date::date, seed.funeral_home, seed.monument_type, seed.veteran, seed.notes, seed.gravesite_id
+FROM gravesites g
+JOIN (
+  VALUES
+    ('A-01-01', 'Helen', 'Rivera', 'F', '1948-08-17', '2022-03-09', 73, '2022-03-14', NULL, NULL, 'No', 'Memorial Grove burial sharing a grave identifier used by St. Mark.')
+) AS seed(gravesite_id, first_name, last_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes)
+  ON seed.gravesite_id = g.gravesite_id
+WHERE g.facility_id = 'DEMO-MEMORIAL';
 
 COMMIT;

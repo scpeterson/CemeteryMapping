@@ -17,7 +17,7 @@ The map needs enough geometry to render the cemetery, sections, and grave spaces
 Use a summary-first API flow:
 
 - `GET /api/cemetery-map` returns all active cemetery boundaries, section geometry, and summary gravesite geometry.
-- `GET /api/grave-spaces/:id` returns full detail for one selected grave.
+- `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` returns full detail for one selected grave using the cemetery-scoped gravesite identifier.
 - `GET /api/search` returns search matches with summary grave records.
 
 The frontend fits the map to the full active cemetery dataset on load, allows zooming out far enough to see geographically separated non-production demo and imported cemeteries, supports mouse-wheel zooming, exposes map zoom and fit controls, renders broad-zoom cemetery markers, shows fractional and segmented bar scale, provides a legend for rendered layers and gravesite statuses, and requests detail only when a grave is selected.
@@ -46,7 +46,7 @@ Manual API checks:
 
 ```bash
 curl -s http://127.0.0.1:3001/api/cemetery-map
-curl -s http://127.0.0.1:3001/api/grave-spaces/A-01-01
+curl -s http://127.0.0.1:3001/api/cemeteries/<cemetery-id>/grave-spaces/A-01-01
 curl -s "http://127.0.0.1:3001/api/search?q=Garcia"
 ```
 

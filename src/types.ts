@@ -35,6 +35,8 @@ export type OwnershipEvent = {
 
 export type GraveSpaceSummary = {
   id: string;
+  cemeteryId: string;
+  cemeteryName: string;
   section: string;
   lot: string;
   space: string;

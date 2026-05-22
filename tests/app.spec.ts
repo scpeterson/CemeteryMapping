@@ -2,11 +2,14 @@ import { expect, test } from "@playwright/test";
 
 test.describe.configure({ mode: "serial" });
 
+const scopedGravePath = (grave: { cemeteryId: string; id: string }) =>
+  `/api/cemeteries/${encodeURIComponent(grave.cemeteryId)}/grave-spaces/${encodeURIComponent(grave.id)}`;
+
 test("loads API-backed cemetery records and supports search", async ({ page }) => {
   const graveDetailRequests: string[] = [];
   page.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.pathname.startsWith("/api/grave-spaces/")) graveDetailRequests.push(url.pathname);
+    if (url.pathname.includes("/grave-spaces/")) graveDetailRequests.push(url.pathname);
   });
 
   await page.goto("/");
@@ -28,18 +31,23 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByText(/\d+ results/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Loading grave details..." })).toBeHidden();
-  await expect.poll(() => graveDetailRequests).toEqual(["/api/grave-spaces/A-01-01"]);
+  await expect.poll(() => graveDetailRequests).toHaveLength(1);
+  expect(graveDetailRequests[0]).toMatch(/^\/api\/cemeteries\/[0-9a-f-]+\/grave-spaces\/A-01-01$/);
 
   const mapResponse = await page.request.get("/api/cemetery-map");
   expect(mapResponse.ok()).toBe(true);
   const mapData = await mapResponse.json();
   expect(mapData.boundaries).toEqual(expect.any(Array));
-  expect(mapData.boundaries.length).toBeGreaterThanOrEqual(1);
-  expect(mapData.graves.length).toBeGreaterThanOrEqual(9);
+  expect(mapData.boundaries.length).toBeGreaterThanOrEqual(2);
+  expect(mapData.graves.length).toBeGreaterThanOrEqual(11);
   expect(mapData.graves.map((grave: { id: string }) => grave.id)).toContain("A-01-01");
+  expect(mapData.graves.filter((grave: { id: string }) => grave.id === "A-01-01")).toHaveLength(2);
+  expect(new Set(mapData.graves.map((grave: { cemeteryId: string; id: string }) => `${grave.cemeteryId}:${grave.id}`)).size).toBe(mapData.graves.length);
   expect(mapData.graves[0]).toEqual(
     expect.objectContaining({
       id: expect.any(String),
+      cemeteryId: expect.any(String),
+      cemeteryName: expect.any(String),
       geometry: expect.any(Object),
       status: expect.any(String),
     }),
@@ -60,14 +68,17 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   expect(matches[0]).not.toHaveProperty("grave.burials");
 
   await page.getByText("Owner: Garcia Family").first().click();
-  await expect.poll(() => graveDetailRequests.at(-1)).toContain("/api/grave-spaces/");
+  await expect.poll(() => graveDetailRequests.at(-1)).toContain("/grave-spaces/");
 
-  const detailResponse = await page.request.get("/api/grave-spaces/A-01-01");
+  const stMarkA0101 = mapData.graves.find((grave: { cemeteryName: string; id: string }) => grave.cemeteryName === "St. Mark Church Cemetery" && grave.id === "A-01-01");
+  expect(stMarkA0101).toBeTruthy();
+  const detailResponse = await page.request.get(scopedGravePath(stMarkA0101));
   expect(detailResponse.ok()).toBe(true);
   const grave = await detailResponse.json();
   expect(grave).toEqual(
     expect.objectContaining({
       id: "A-01-01",
+      cemeteryId: stMarkA0101.cemeteryId,
       burials: expect.any(Array),
       currentOwnerIds: expect.any(Array),
       ownershipHistory: expect.any(Array),
@@ -80,7 +91,12 @@ test("admin soft delete hides a grave space from reads and restore makes it visi
   await page.goto("/");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
 
-  const deleteResponse = await page.request.delete("/api/grave-spaces/A-01-02", {
+  const mapResponse = await page.request.get("/api/cemetery-map");
+  const mapData = await mapResponse.json();
+  const graveToDelete = mapData.graves.find((grave: { cemeteryName: string; id: string }) => grave.cemeteryName === "St. Mark Church Cemetery" && grave.id === "A-01-02");
+  expect(graveToDelete).toBeTruthy();
+
+  const deleteResponse = await page.request.delete(scopedGravePath(graveToDelete), {
     data: { reason: "Playwright soft delete test" },
   });
   expect(deleteResponse.ok()).toBe(true);
@@ -88,20 +104,23 @@ test("admin soft delete hides a grave space from reads and restore makes it visi
   expect(deleteResult).toEqual(
     expect.objectContaining({
       graveSpaceId: "A-01-02",
+      cemeteryId: graveToDelete.cemeteryId,
       auditEventId: expect.any(String),
       alreadyDeleted: false,
     }),
   );
 
-  const deletedDetailResponse = await page.request.get("/api/grave-spaces/A-01-02");
+  const deletedDetailResponse = await page.request.get(scopedGravePath(graveToDelete));
   expect(deletedDetailResponse.status()).toBe(404);
 
   const deletedMapResponse = await page.request.get("/api/cemetery-map");
   expect(deletedMapResponse.ok()).toBe(true);
   const deletedMapData = await deletedMapResponse.json();
-  expect(deletedMapData.graves.map((grave: { id: string }) => grave.id)).not.toContain("A-01-02");
+  expect(deletedMapData.graves.map((grave: { cemeteryId: string; id: string }) => `${grave.cemeteryId}:${grave.id}`)).not.toContain(
+    `${graveToDelete.cemeteryId}:A-01-02`,
+  );
 
-  const restoreResponse = await page.request.post("/api/grave-spaces/A-01-02/restore", {
+  const restoreResponse = await page.request.post(`${scopedGravePath(graveToDelete)}/restore`, {
     data: { reason: "Playwright restore test" },
   });
   expect(restoreResponse.ok()).toBe(true);
@@ -109,15 +128,18 @@ test("admin soft delete hides a grave space from reads and restore makes it visi
   expect(restoreResult).toEqual(
     expect.objectContaining({
       graveSpaceId: "A-01-02",
+      cemeteryId: graveToDelete.cemeteryId,
       auditEventId: expect.any(String),
       alreadyActive: false,
       restored: true,
     }),
   );
 
-  const restoredDetailResponse = await page.request.get("/api/grave-spaces/A-01-02");
+  const restoredDetailResponse = await page.request.get(scopedGravePath(graveToDelete));
   expect(restoredDetailResponse.ok()).toBe(true);
   const restoredMapResponse = await page.request.get("/api/cemetery-map");
   const restoredMapData = await restoredMapResponse.json();
-  expect(restoredMapData.graves.map((grave: { id: string }) => grave.id)).toContain("A-01-02");
+  expect(restoredMapData.graves.map((grave: { cemeteryId: string; id: string }) => `${grave.cemeteryId}:${grave.id}`)).toContain(
+    `${graveToDelete.cemeteryId}:A-01-02`,
+  );
 });

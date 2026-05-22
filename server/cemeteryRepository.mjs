@@ -65,6 +65,8 @@ function toOwnershipEvent(owner) {
 function toGraveSummary(grave) {
   return {
     id: grave.gravesite_id,
+    cemeteryId: grave.cemetery_id,
+    cemeteryName: grave.cemetery_name,
     section: grave.section_id ?? "",
     lot: grave.lot_id ?? "",
     space: grave.grave_id,
@@ -115,21 +117,23 @@ async function insertAuditEvent(client, { actor, action, targetTable, targetReco
   return result.rows[0].id;
 }
 
-async function selectGraveMutationState(client, gravesiteId) {
+async function selectGraveMutationState(client, cemeteryId, gravesiteId) {
   const result = await client.query(
     `
       SELECT
         id::text AS uuid,
+        cemetery_id::text,
         gravesite_id,
         deleted_at,
         deleted_by::text,
         delete_reason,
         updated_at
       FROM gravesites
-      WHERE gravesite_id = $1
+      WHERE cemetery_id = $1
+        AND gravesite_id = $2
       FOR UPDATE
     `,
-    [gravesiteId],
+    [cemeteryId, gravesiteId],
   );
 
   return result.rows[0];
@@ -172,11 +176,21 @@ export async function getCemeteryData(pool) {
       ),
       client.query(
         `
-          SELECT section_id, lot_id, grave_id, gravesite_id, status, ST_AsGeoJSON(geometry)::json AS geometry
+          SELECT
+            gravesites.cemetery_id::text,
+            cemeteries.name AS cemetery_name,
+            gravesites.section_id,
+            gravesites.lot_id,
+            gravesites.grave_id,
+            gravesites.gravesite_id,
+            gravesites.status,
+            ST_AsGeoJSON(gravesites.geometry)::json AS geometry
           FROM gravesites
-          WHERE cemetery_id = ANY($1::uuid[])
-            AND deleted_at IS NULL
-          ORDER BY section_id, lot_id, grave_id, gravesite_id
+          JOIN cemeteries
+            ON cemeteries.id = gravesites.cemetery_id
+          WHERE gravesites.cemetery_id = ANY($1::uuid[])
+            AND gravesites.deleted_at IS NULL
+          ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
         `,
         [cemeteryIds],
       ),
@@ -231,11 +245,23 @@ export async function getDetailedCemeteryData(pool) {
       ),
       client.query(
         `
-          SELECT id::text AS uuid, section_id, lot_id, grave_id, gravesite_id, status, cost, ST_AsGeoJSON(geometry)::json AS geometry
+          SELECT
+            gravesites.id::text AS uuid,
+            gravesites.cemetery_id::text,
+            cemeteries.name AS cemetery_name,
+            gravesites.section_id,
+            gravesites.lot_id,
+            gravesites.grave_id,
+            gravesites.gravesite_id,
+            gravesites.status,
+            gravesites.cost,
+            ST_AsGeoJSON(gravesites.geometry)::json AS geometry
           FROM gravesites
-          WHERE cemetery_id = ANY($1::uuid[])
-            AND deleted_at IS NULL
-          ORDER BY section_id, lot_id, grave_id, gravesite_id
+          JOIN cemeteries
+            ON cemeteries.id = gravesites.cemetery_id
+          WHERE gravesites.cemetery_id = ANY($1::uuid[])
+            AND gravesites.deleted_at IS NULL
+          ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
         `,
         [cemeteryIds],
       ),
@@ -299,18 +325,32 @@ export async function getDetailedCemeteryData(pool) {
   }
 }
 
-export async function getGraveSpace(pool, gravesiteId) {
+export async function getGraveSpace(pool, cemeteryId, gravesiteId) {
   const client = await pool.connect();
   try {
     const graveResult = await client.query(
       `
-        SELECT id::text AS uuid, section_id, lot_id, grave_id, gravesite_id, status, cost, ST_AsGeoJSON(geometry)::json AS geometry
+        SELECT
+          gravesites.id::text AS uuid,
+          gravesites.cemetery_id::text,
+          cemeteries.name AS cemetery_name,
+          gravesites.section_id,
+          gravesites.lot_id,
+          gravesites.grave_id,
+          gravesites.gravesite_id,
+          gravesites.status,
+          gravesites.cost,
+          ST_AsGeoJSON(gravesites.geometry)::json AS geometry
         FROM gravesites
-        WHERE gravesite_id = $1
-          AND deleted_at IS NULL
+        JOIN cemeteries
+          ON cemeteries.id = gravesites.cemetery_id
+        WHERE gravesites.cemetery_id = $1
+          AND gravesites.gravesite_id = $2
+          AND gravesites.deleted_at IS NULL
+          AND cemeteries.deleted_at IS NULL
         LIMIT 1
       `,
-      [gravesiteId],
+      [cemeteryId, gravesiteId],
     );
 
     const grave = graveResult.rows[0];
@@ -352,11 +392,11 @@ export async function getGraveSpace(pool, gravesiteId) {
   }
 }
 
-export async function softDeleteGraveSpace(pool, gravesiteId, { actorUser, reason } = {}) {
+export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { actorUser, reason } = {}) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const existing = await selectGraveMutationState(client, gravesiteId);
+    const existing = await selectGraveMutationState(client, cemeteryId, gravesiteId);
     if (!existing) {
       await client.query("ROLLBACK");
       return undefined;
@@ -366,6 +406,7 @@ export async function softDeleteGraveSpace(pool, gravesiteId, { actorUser, reaso
       await client.query("COMMIT");
       return {
         graveSpaceId: existing.gravesite_id,
+        cemeteryId: existing.cemetery_id,
         deletedAt: existing.deleted_at,
         alreadyDeleted: true,
       };
@@ -397,6 +438,7 @@ export async function softDeleteGraveSpace(pool, gravesiteId, { actorUser, reaso
     await client.query("COMMIT");
     return {
       graveSpaceId: updated.gravesite_id,
+      cemeteryId: existing.cemetery_id,
       deletedAt: updated.deleted_at,
       auditEventId,
       alreadyDeleted: false,
@@ -409,11 +451,11 @@ export async function softDeleteGraveSpace(pool, gravesiteId, { actorUser, reaso
   }
 }
 
-export async function restoreGraveSpace(pool, gravesiteId, { actorUser, reason } = {}) {
+export async function restoreGraveSpace(pool, cemeteryId, gravesiteId, { actorUser, reason } = {}) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const existing = await selectGraveMutationState(client, gravesiteId);
+    const existing = await selectGraveMutationState(client, cemeteryId, gravesiteId);
     if (!existing) {
       await client.query("ROLLBACK");
       return undefined;
@@ -423,6 +465,7 @@ export async function restoreGraveSpace(pool, gravesiteId, { actorUser, reason }
       await client.query("COMMIT");
       return {
         graveSpaceId: existing.gravesite_id,
+        cemeteryId: existing.cemetery_id,
         restored: true,
         alreadyActive: true,
       };
@@ -454,6 +497,7 @@ export async function restoreGraveSpace(pool, gravesiteId, { actorUser, reason }
     await client.query("COMMIT");
     return {
       graveSpaceId: updated.gravesite_id,
+      cemeteryId: existing.cemetery_id,
       restored: true,
       auditEventId,
       alreadyActive: false,
