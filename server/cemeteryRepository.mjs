@@ -163,38 +163,36 @@ export async function getCemeteryData(pool) {
     const cemeteryIds = cemeteryResult.rows.map((cemetery) => cemetery.id);
     if (cemeteryIds.length === 0) return { sections: [], graves: [] };
 
-    const [sectionsResult, gravesitesResult] = await Promise.all([
-      client.query(
-        `
-          SELECT id::text, section_id, COALESCE(name, section_id) AS name, ST_AsGeoJSON(geometry)::json AS geometry
-          FROM sections
-          WHERE cemetery_id = ANY($1::uuid[])
-            AND deleted_at IS NULL
-          ORDER BY section_id, name
-        `,
-        [cemeteryIds],
-      ),
-      client.query(
-        `
-          SELECT
-            gravesites.cemetery_id::text,
-            cemeteries.name AS cemetery_name,
-            gravesites.section_id,
-            gravesites.lot_id,
-            gravesites.grave_id,
-            gravesites.gravesite_id,
-            gravesites.status,
-            ST_AsGeoJSON(gravesites.geometry)::json AS geometry
-          FROM gravesites
-          JOIN cemeteries
-            ON cemeteries.id = gravesites.cemetery_id
-          WHERE gravesites.cemetery_id = ANY($1::uuid[])
-            AND gravesites.deleted_at IS NULL
-          ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
-        `,
-        [cemeteryIds],
-      ),
-    ]);
+    const sectionsResult = await client.query(
+      `
+        SELECT id::text, section_id, COALESCE(name, section_id) AS name, ST_AsGeoJSON(geometry)::json AS geometry
+        FROM sections
+        WHERE cemetery_id = ANY($1::uuid[])
+          AND deleted_at IS NULL
+        ORDER BY section_id, name
+      `,
+      [cemeteryIds],
+    );
+    const gravesitesResult = await client.query(
+      `
+        SELECT
+          gravesites.cemetery_id::text,
+          cemeteries.name AS cemetery_name,
+          gravesites.section_id,
+          gravesites.lot_id,
+          gravesites.grave_id,
+          gravesites.gravesite_id,
+          gravesites.status,
+          ST_AsGeoJSON(gravesites.geometry)::json AS geometry
+        FROM gravesites
+        JOIN cemeteries
+          ON cemeteries.id = gravesites.cemetery_id
+        WHERE gravesites.cemetery_id = ANY($1::uuid[])
+          AND gravesites.deleted_at IS NULL
+        ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
+      `,
+      [cemeteryIds],
+    );
 
     return {
       boundaries: cemeteryResult.rows.map((cemetery) => ({
@@ -232,60 +230,58 @@ export async function getDetailedCemeteryData(pool) {
     const cemeteryIds = cemeteryResult.rows.map((cemetery) => cemetery.id);
     if (cemeteryIds.length === 0) return { sections: [], graves: [], owners: [] };
 
-    const [sectionsResult, gravesitesResult, ownersResult, burialsResult] = await Promise.all([
-      client.query(
-        `
-          SELECT id::text, section_id, COALESCE(name, section_id) AS name, ST_AsGeoJSON(geometry)::json AS geometry
-          FROM sections
-          WHERE cemetery_id = ANY($1::uuid[])
-            AND deleted_at IS NULL
-          ORDER BY section_id, name
-        `,
-        [cemeteryIds],
-      ),
-      client.query(
-        `
-          SELECT
-            gravesites.id::text AS uuid,
-            gravesites.cemetery_id::text,
-            cemeteries.name AS cemetery_name,
-            gravesites.section_id,
-            gravesites.lot_id,
-            gravesites.grave_id,
-            gravesites.gravesite_id,
-            gravesites.status,
-            gravesites.cost,
-            ST_AsGeoJSON(gravesites.geometry)::json AS geometry
-          FROM gravesites
-          JOIN cemeteries
-            ON cemeteries.id = gravesites.cemetery_id
-          WHERE gravesites.cemetery_id = ANY($1::uuid[])
-            AND gravesites.deleted_at IS NULL
-          ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
-        `,
-        [cemeteryIds],
-      ),
-      client.query(
-        `
-          SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
-          FROM owners
-          WHERE deleted_at IS NULL
-            AND gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
-          ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
-        `,
-        [cemeteryIds],
-      ),
-      client.query(
-        `
-          SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
-          FROM burials
-          WHERE deleted_at IS NULL
-            AND gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
-          ORDER BY burial_date DESC NULLS LAST, death_date DESC NULLS LAST, last_name, first_name
-        `,
-        [cemeteryIds],
-      ),
-    ]);
+    const sectionsResult = await client.query(
+      `
+        SELECT id::text, section_id, COALESCE(name, section_id) AS name, ST_AsGeoJSON(geometry)::json AS geometry
+        FROM sections
+        WHERE cemetery_id = ANY($1::uuid[])
+          AND deleted_at IS NULL
+        ORDER BY section_id, name
+      `,
+      [cemeteryIds],
+    );
+    const gravesitesResult = await client.query(
+      `
+        SELECT
+          gravesites.id::text AS uuid,
+          gravesites.cemetery_id::text,
+          cemeteries.name AS cemetery_name,
+          gravesites.section_id,
+          gravesites.lot_id,
+          gravesites.grave_id,
+          gravesites.gravesite_id,
+          gravesites.status,
+          gravesites.cost,
+          ST_AsGeoJSON(gravesites.geometry)::json AS geometry
+        FROM gravesites
+        JOIN cemeteries
+          ON cemeteries.id = gravesites.cemetery_id
+        WHERE gravesites.cemetery_id = ANY($1::uuid[])
+          AND gravesites.deleted_at IS NULL
+        ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
+      `,
+      [cemeteryIds],
+    );
+    const ownersResult = await client.query(
+      `
+        SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
+        FROM owners
+        WHERE deleted_at IS NULL
+          AND gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
+        ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
+      `,
+      [cemeteryIds],
+    );
+    const burialsResult = await client.query(
+      `
+        SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
+        FROM burials
+        WHERE deleted_at IS NULL
+          AND gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
+        ORDER BY burial_date DESC NULLS LAST, death_date DESC NULLS LAST, last_name, first_name
+      `,
+      [cemeteryIds],
+    );
 
     const ownersByGrave = groupBy(ownersResult.rows, "gravesite_uuid");
     const burialsByGrave = groupBy(burialsResult.rows, "gravesite_uuid");
@@ -356,28 +352,26 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId) {
     const grave = graveResult.rows[0];
     if (!grave) return undefined;
 
-    const [ownersResult, burialsResult] = await Promise.all([
-      client.query(
-        `
-          SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
-          FROM owners
-          WHERE gravesite_uuid = $1
-            AND deleted_at IS NULL
-          ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
-        `,
-        [grave.uuid],
-      ),
-      client.query(
-        `
-          SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
-          FROM burials
-          WHERE gravesite_uuid = $1
-            AND deleted_at IS NULL
-          ORDER BY burial_date DESC NULLS LAST, death_date DESC NULLS LAST, last_name, first_name
-        `,
-        [grave.uuid],
-      ),
-    ]);
+    const ownersResult = await client.query(
+      `
+        SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
+        FROM owners
+        WHERE gravesite_uuid = $1
+          AND deleted_at IS NULL
+        ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
+      `,
+      [grave.uuid],
+    );
+    const burialsResult = await client.query(
+      `
+        SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
+        FROM burials
+        WHERE gravesite_uuid = $1
+          AND deleted_at IS NULL
+        ORDER BY burial_date DESC NULLS LAST, death_date DESC NULLS LAST, last_name, first_name
+      `,
+      [grave.uuid],
+    );
 
     return {
       ...toGraveSummary(grave),
