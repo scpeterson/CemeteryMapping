@@ -1,5 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import { basename } from "node:path";
+import { pathToFileURL } from "node:url";
 import ExcelJS from "exceljs";
 import pg from "pg";
 import { currentEnvironment, loadDbEnvironment } from "./lib/run-liquibase.mjs";
@@ -8,6 +9,7 @@ const { Pool } = pg;
 const feetToMeters = 0.3048;
 const defaultLengthFeet = 8;
 const defaultWidthFeet = 4;
+const northHillsSourceName = "North Hills Geneologists";
 
 function usage() {
   console.error(
@@ -175,7 +177,7 @@ async function normalizedRows(workbookPath, sheetName) {
   return rows;
 }
 
-function importableRows(rows, options) {
+export function importableRows(rows, options) {
   const lengthFeet = Number(options["length-feet"] ?? defaultLengthFeet);
   const widthFeet = Number(options["width-feet"] ?? defaultWidthFeet);
   const eastWestMeters = lengthFeet * feetToMeters;
@@ -216,6 +218,24 @@ function importableRows(rows, options) {
     .filter(Boolean);
 }
 
+export function buildSourceNotes(imported) {
+  return [
+    `Imported from headstone spreadsheet row ${imported.rowNumber}.`,
+    imported.sectionId ? `${northHillsSourceName} section: ${imported.sectionId}.` : null,
+    imported.nhgRow ? `${northHillsSourceName} row: ${imported.nhgRow}.` : null,
+    imported.nhgPage ? `${northHillsSourceName} page: ${imported.nhgPage}.` : null,
+    imported.tlcSec ? `Trinity Lutheran Church section: ${imported.tlcSec}.` : null,
+    imported.tlcPlot ? `Trinity Lutheran Church plot: ${imported.tlcPlot}.` : null,
+    imported.sourceGraveNumber ? `Source grave number: ${imported.sourceGraveNumber}.` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function buildBurialNotes(sourceNotes, person) {
+  return `${sourceNotes} Person column: ${person.personNumber}.`;
+}
+
 async function findCemetery(client, facilityId) {
   const result = await client.query(
     `
@@ -254,17 +274,7 @@ async function findSection(client, cemeteryId, facilityId, sectionId, longitude,
 
 async function upsertGravesite(client, cemetery, facilityId, imported) {
   const section = await findSection(client, cemetery.id, facilityId, imported.sectionId, imported.longitude, imported.latitude);
-  const notes = [
-    `Imported from headstone spreadsheet row ${imported.rowNumber}.`,
-    imported.sectionId ? `North Hills Geneologists section: ${imported.sectionId}.` : null,
-    imported.nhgRow ? `North Hills Geneologists row: ${imported.nhgRow}.` : null,
-    imported.nhgPage ? `North Hills Geneologists page: ${imported.nhgPage}.` : null,
-    imported.tlcSec ? `Trinity Lutheran Church section: ${imported.tlcSec}.` : null,
-    imported.tlcPlot ? `Trinity Lutheran Church plot: ${imported.tlcPlot}.` : null,
-    imported.sourceGraveNumber ? `Source grave number: ${imported.sourceGraveNumber}.` : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const notes = buildSourceNotes(imported);
 
   const result = await client.query(
     `
@@ -379,7 +389,7 @@ async function replaceBurials(client, imported, gravesiteUuid, headstoneUuid, no
         person.fullName,
         person.birthDate,
         person.deathDate,
-        `${notes} Person column: ${person.personNumber}.`,
+        buildBurialNotes(notes, person),
         imported.gravesiteId,
       ],
     );
@@ -550,7 +560,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}

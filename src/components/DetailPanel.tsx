@@ -1,5 +1,6 @@
 import { FileText, History, Landmark, MapPinned, UserRound } from "lucide-react";
 import type { Burial, GraveSpace, GraveSpaceSummary, Owner } from "../types";
+import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName } from "../lib/format";
 
 type DetailPanelProps = {
@@ -12,16 +13,6 @@ type DetailPanelProps = {
 };
 
 const ownerName = (owners: Owner[], ownerId: string) => owners.find((owner) => owner.id === ownerId)?.displayName ?? "Unknown owner";
-
-function burialNoteItems(notes?: string) {
-  return (notes ?? "")
-    .replace(/\bNorth Hills Guide\b/gu, "North Hills Geneologists")
-    .split(/(?<=\.)\s+(?=[A-Z])/u)
-    .map((note) => note.trim().replace(/\.$/u, ""))
-    .filter((note) => !/^Imported from headstone spreadsheet row\b/iu.test(note))
-    .filter((note) => !/^Person column:/iu.test(note))
-    .filter(Boolean);
-}
 
 function BurialRecord({ burial }: { burial: Burial }) {
   const noteItems = burialNoteItems(burial.notes);
