@@ -33,6 +33,16 @@ type ScaleSegment = {
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels"];
+const mapLayerOrder = [
+  "boundary-fill",
+  "boundary-line",
+  "sections-fill",
+  "sections-line",
+  "sections-label",
+  "graves-fill",
+  "graves-line",
+  "grave-labels",
+];
 
 const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
 
@@ -74,6 +84,12 @@ function fitMapToData(map: Map, data: CemeteryData, duration = 350) {
 function fitMapToGeometry(map: Map, geometry: GeoJSON.Geometry, duration = 350) {
   const bounds = extendGeometryBounds(undefined, geometry);
   if (bounds) map.fitBounds(bounds, { padding: 110, maxZoom: 19, duration });
+}
+
+function enforceMapLayerOrder(map: Map) {
+  mapLayerOrder.forEach((layer) => {
+    if (map.getLayer(layer)) map.moveLayer(layer);
+  });
 }
 
 function niceDistance(meters: number) {
@@ -284,6 +300,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
         },
       });
 
+      enforceMapLayerOrder(map);
       syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
 
       const selectGraveFeature = (event: maplibregl.MapLayerMouseEvent) => {
