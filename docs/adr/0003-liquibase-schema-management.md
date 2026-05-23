@@ -21,7 +21,7 @@ Core software:
 | Software | Version | Purpose |
 | --- | --- | --- |
 | Liquibase container image | `liquibase/liquibase:4.33.0` | Database migration runner |
-| PostgreSQL/PostGIS image | `postgis/postgis:16-3.4` | Migration target |
+| PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | Migration target |
 
 ## Rationale
 
@@ -66,6 +66,10 @@ Current changelog files:
 - `003-spatial-import-staging.sql`
 - `004-spatial-validation-severity.sql`
 - `005-headstones.sql`
+- `006-security-rbac-soft-delete-audit.sql`
+- `007-cemetery-scoped-gravesite-identifiers.sql`
+- `008-correct-north-hills-source-name.sql`
+- `009-correct-north-hills-genealogists-spelling.sql`
 
 ## Update Triggers
 

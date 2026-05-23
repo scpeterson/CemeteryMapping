@@ -22,14 +22,16 @@ Core backend software:
 | --- | --- | --- |
 | Node.js | 24 in CI | JavaScript runtime |
 | Express | 5.2.1 | HTTP API server |
-| pg | 8.20.0 | PostgreSQL client |
-| PostgreSQL/PostGIS image | `postgis/postgis:16-3.4` | Relational and spatial database |
+| pg | 8.21.0 | PostgreSQL client |
+| PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | Relational and spatial database |
 
 ## Rationale
 
 Express is small, direct, and enough for the current API surface. It keeps API routes close to repository logic without a larger framework. PostgreSQL provides transactional relational data for cemetery records. PostGIS adds spatial types, indexes, containment checks, overlap checks, GeoJSON output, and geometry transformations.
 
 The `pg` library is the standard low-level PostgreSQL client for Node.js and works well with explicit SQL, which is useful while the schema is still evolving.
+
+Repository code must not issue overlapping `client.query()` calls on the same checked-out `pg` client. Use sequential `await` calls on one client, or use separate pool queries/clients when true database concurrency is needed.
 
 ## Consequences
 

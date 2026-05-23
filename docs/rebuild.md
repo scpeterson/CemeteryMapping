@@ -20,7 +20,7 @@ Install:
 
 The application containers provide:
 
-- PostgreSQL/PostGIS: `postgis/postgis:16-3.4`
+- PostgreSQL/PostGIS: `postgis/postgis:17-3.5`
 - Liquibase: `liquibase/liquibase:4.33.0`
 
 ## Clean Checkout Setup

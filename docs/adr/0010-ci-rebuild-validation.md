@@ -21,11 +21,11 @@ CI software:
 | Software | Version | Purpose |
 | --- | --- | --- |
 | GitHub Actions runner | `ubuntu-latest` | CI host |
-| `actions/checkout` | v5 | Checkout repository |
-| `actions/setup-node` | v5 | Install Node.js and configure npm cache |
+| `actions/checkout` | v6 | Checkout repository |
+| `actions/setup-node` | v6 | Install Node.js and configure npm cache |
 | Node.js | 24 | Runtime for build, scripts, and tests |
 | Playwright | 1.60.0 | Browser test runner |
-| PostgreSQL/PostGIS image | `postgis/postgis:16-3.4` | Test database |
+| PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | Test database |
 | Liquibase image | `liquibase/liquibase:4.33.0` | Migration validation |
 
 CI steps:

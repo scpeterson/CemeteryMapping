@@ -203,6 +203,9 @@ db/changelog/changes/003-spatial-import-staging.sql
 db/changelog/changes/004-spatial-validation-severity.sql
 db/changelog/changes/005-headstones.sql
 db/changelog/changes/006-security-rbac-soft-delete-audit.sql
+db/changelog/changes/007-cemetery-scoped-gravesite-identifiers.sql
+db/changelog/changes/008-correct-north-hills-source-name.sql
+db/changelog/changes/009-correct-north-hills-genealogists-spelling.sql
 ```
 
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
@@ -354,6 +357,8 @@ Promotion currently handles only `Cemeteries` and `Sections`. It refuses to run 
 Headstone GPS spreadsheets can be imported after cemetery and section polygons exist in the target environment. The importer expects one row per GPS location with `Latitude` and `Longitude` columns and up to six burial people stored in `Person1First` / `Person1Last` through `Person6First` / `Person6Last`. It also supports the legacy second-person headers `Persons26First` and `Persons26Last`.
 
 Each spreadsheet row with coordinates and at least one person becomes one `gravesites` row and one `headstones` row. The importer generates an 8 foot by 4 foot gravesite `MultiPolygon` centered on the coordinate, with the 8 foot length running east-west so it appears left-to-right on the map. It stores the headstone itself as a `Point` at the GPS coordinate with `condition = 'unknown'`, links the gravesite to the matching cemetery and to the section polygon containing the GPS point when available, and replaces the generated gravesite's existing burial rows with one `burials` row per populated person column. It then creates `headstone_burials` join rows connecting the physical headstone to each imported burial. `PersonNYob` and `PersonNYod` become `YYYY-01-01` birth and death dates.
+
+Source note prefixes from the workbook are expanded during import: `Nhg` means `North Hills Genealogists`, and `Tlc` means `Trinity Lutheran Church`. Existing burial notes from earlier imports are normalized by migrations so legacy `North Hills Guide` and typoed `North Hills Geneologists` text display and backfill to the official `North Hills Genealogists` spelling.
 
 Run a dry run first:
 

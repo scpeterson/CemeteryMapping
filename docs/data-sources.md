@@ -39,6 +39,7 @@ Every real-data import or source change should update this file and the relevant
 | Person columns | `Person1First` / `Person1Last` through `Person6First` / `Person6Last` |
 | Year columns | `PersonNYob`, `PersonNYod` |
 | Application import command | `APP_ENV=<env> npm run db:import:headstones -- "/path/to/TLC Gravesite Registry Geo Locations.xlsx"` |
+| Source naming notes | `Nhg` columns refer to `North Hills Genealogists`; `Tlc` columns refer to `Trinity Lutheran Church`. |
 | Data owner | TBD |
 | Date received | TBD |
 | Last source edit/save date | TBD |
