@@ -20,7 +20,7 @@
     "build:prod": "tsc -b && vite build --mode prod",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test:server": "node --test server/*.test.mjs",
+    "test:server": "node --test server/*.test.mjs scripts/*.test.mjs",
     "test:e2e": "playwright test",
     "geodatabase:inspect": "node scripts/geodatabase-inspect.mjs",
     "geodatabase:export": "node scripts/geodatabase-export-layer.mjs",

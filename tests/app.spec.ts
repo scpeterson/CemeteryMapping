@@ -4,6 +4,30 @@ test.describe.configure({ mode: "serial" });
 
 const scopedGravePath = (grave: { cemeteryId: string; id: string }) =>
   `/api/cemeteries/${encodeURIComponent(grave.cemeteryId)}/grave-spaces/${encodeURIComponent(grave.id)}`;
+const mockBoundaryGeometry: TestGeometry = {
+  type: "Polygon",
+  coordinates: [
+    [
+      [-80.001, 39.999],
+      [-79.999, 39.999],
+      [-79.999, 40.001],
+      [-80.001, 40.001],
+      [-80.001, 39.999],
+    ],
+  ],
+};
+const mockGraveGeometry: TestGeometry = {
+  type: "Polygon",
+  coordinates: [
+    [
+      [-80.0002, 39.9998],
+      [-79.9998, 39.9998],
+      [-79.9998, 40.0002],
+      [-80.0002, 40.0002],
+      [-80.0002, 39.9998],
+    ],
+  ],
+};
 
 type TestGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 type TestGraveSummary = {
@@ -34,6 +58,65 @@ function geometryCenter(geometry: TestGeometry) {
     longitude: (bounds.east + bounds.west) / 2,
   };
 }
+
+test("burial notes show the corrected North Hills source name without import-only fragments", async ({ page }) => {
+  const cemeteryId = "11111111-1111-4111-8111-111111111111";
+  const graveSummary = {
+    cemeteryId,
+    cemeteryName: "Mock Cemetery",
+    geometry: mockGraveGeometry,
+    id: "A-TEST",
+    lot: "",
+    section: "A",
+    space: "TEST",
+    status: "occupied",
+  };
+
+  await page.route("**/api/cemetery-map", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        boundaries: [{ type: "Feature", properties: { name: "Mock Cemetery" }, geometry: mockBoundaryGeometry }],
+        sections: [],
+        graves: [graveSummary],
+      }),
+    });
+  });
+  await page.route("**/api/search**", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: "[]" });
+  });
+  await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...graveSummary,
+        owners: [],
+        currentOwnerIds: [],
+        burials: [
+          {
+            id: "burial-1",
+            person: { id: "person-1", firstName: "Mabel", lastName: "Stone" },
+            notes:
+              "Funeral home: Hill & Sons | Imported from headstone spreadsheet row 9. North Hills Guide section: B. Person column: 1. Family requested quiet service.",
+          },
+        ],
+        ownershipHistory: [],
+      }),
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
+  await expect(page.locator(".burial-notes li")).toHaveText([
+    "Funeral home: Hill & Sons",
+    "North Hills Geneologists section: B",
+    "Family requested quiet service",
+  ]);
+  await expect(page.locator(".detail-panel")).not.toContainText("North Hills Guide");
+  await expect(page.locator(".detail-panel")).not.toContainText("Imported from headstone spreadsheet row");
+  await expect(page.locator(".detail-panel")).not.toContainText("Person column:");
+});
 
 test("loads API-backed cemetery records and supports search", async ({ page }) => {
   const graveDetailRequests: string[] = [];
