@@ -9,7 +9,7 @@ const { Pool } = pg;
 const feetToMeters = 0.3048;
 const defaultLengthFeet = 8;
 const defaultWidthFeet = 4;
-const northHillsSourceName = "North Hills Geneologists";
+const northHillsSourceName = "North Hills Genealogists";
 
 function usage() {
   console.error(

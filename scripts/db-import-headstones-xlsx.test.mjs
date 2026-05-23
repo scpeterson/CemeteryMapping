@@ -17,9 +17,10 @@ test("headstone spreadsheet source notes use the corrected North Hills source na
 
   assert.equal(
     notes,
-    "Imported from headstone spreadsheet row 42. North Hills Geneologists section: A. North Hills Geneologists row: 7. North Hills Geneologists page: 12. Trinity Lutheran Church section: Old. Trinity Lutheran Church plot: 3. Source grave number: 99.",
+    "Imported from headstone spreadsheet row 42. North Hills Genealogists section: A. North Hills Genealogists row: 7. North Hills Genealogists page: 12. Trinity Lutheran Church section: Old. Trinity Lutheran Church plot: 3. Source grave number: 99.",
   );
   assert.doesNotMatch(notes, /North Hills Guide/u);
+  assert.doesNotMatch(notes, /North Hills Geneologists/u);
 });
 
 test("importable spreadsheet rows map Nhg columns into corrected source notes", () => {
@@ -42,5 +43,5 @@ test("importable spreadsheet rows map Nhg columns into corrected source notes", 
   );
 
   assert.equal(importedRows.length, 1);
-  assert.equal(buildBurialNotes(buildSourceNotes(importedRows[0]), importedRows[0].people[0]), "Imported from headstone spreadsheet row 9. North Hills Geneologists section: B. North Hills Geneologists row: 4. North Hills Geneologists page: 22. Person column: 1.");
+  assert.equal(buildBurialNotes(buildSourceNotes(importedRows[0]), importedRows[0].people[0]), "Imported from headstone spreadsheet row 9. North Hills Genealogists section: B. North Hills Genealogists row: 4. North Hills Genealogists page: 22. Person column: 1.");
 });

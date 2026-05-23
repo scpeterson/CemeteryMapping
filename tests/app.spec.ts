@@ -110,10 +110,11 @@ test("burial notes show the corrected North Hills source name without import-onl
   await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
   await expect(page.locator(".burial-notes li")).toHaveText([
     "Funeral home: Hill & Sons",
-    "North Hills Geneologists section: B",
+    "North Hills Genealogists section: B",
     "Family requested quiet service",
   ]);
   await expect(page.locator(".detail-panel")).not.toContainText("North Hills Guide");
+  await expect(page.locator(".detail-panel")).not.toContainText("North Hills Geneologists");
   await expect(page.locator(".detail-panel")).not.toContainText("Imported from headstone spreadsheet row");
   await expect(page.locator(".detail-panel")).not.toContainText("Person column:");
 });
