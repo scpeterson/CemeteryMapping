@@ -83,9 +83,53 @@ SELECT id, 'Section B', facility_id, 'B',
 FROM cemeteries
 WHERE facility_id = 'DEMO-ST-MARK';
 
+INSERT INTO lots (
+  cemetery_id,
+  section_uuid,
+  name,
+  facility_id,
+  section_id,
+  lot_id,
+  geometry
+)
+SELECT c.id, s.id, concat('Lot ', seed.lot_id), c.facility_id, seed.section_id, seed.lot_id,
+  ST_Multi(ST_MakeEnvelope(seed.west, seed.south, seed.east, seed.north, 4326))::geometry(MultiPolygon, 4326)
+FROM cemeteries c
+JOIN (
+  VALUES
+    ('A', '01', -76.70468, 39.19605, -76.70429, 39.19619),
+    ('A', '02', -76.70468, 39.19591, -76.70441, 39.19605),
+    ('B', '01', -76.70420, 39.19605, -76.70393, 39.19619),
+    ('B', '02', -76.70420, 39.19591, -76.70393, 39.19605)
+) AS seed(section_id, lot_id, west, south, east, north)
+  ON true
+JOIN sections s ON s.cemetery_id = c.id AND s.section_id = seed.section_id
+WHERE c.facility_id = 'DEMO-ST-MARK';
+
+INSERT INTO lots (
+  cemetery_id,
+  section_uuid,
+  name,
+  facility_id,
+  section_id,
+  lot_id,
+  geometry
+)
+SELECT c.id, s.id, concat('Lot ', seed.lot_id), c.facility_id, seed.section_id, seed.lot_id,
+  ST_Multi(ST_MakeEnvelope(seed.west, seed.south, seed.east, seed.north, 4326))::geometry(MultiPolygon, 4326)
+FROM cemeteries c
+JOIN (
+  VALUES
+    ('A', '01', -76.70344, 39.19598, -76.70314, 39.19612)
+) AS seed(section_id, lot_id, west, south, east, north)
+  ON true
+JOIN sections s ON s.cemetery_id = c.id AND s.section_id = seed.section_id
+WHERE c.facility_id = 'DEMO-MEMORIAL';
+
 INSERT INTO gravesites (
   cemetery_id,
   section_uuid,
+  lot_uuid,
   name,
   facility_id,
   section_id,
@@ -96,7 +140,7 @@ INSERT INTO gravesites (
   cost,
   geometry
 )
-SELECT c.id, s.id, s.name, c.facility_id, seed.section_id, seed.lot_id, seed.grave_id,
+SELECT c.id, s.id, l.id, s.name, c.facility_id, seed.section_id, seed.lot_id, seed.grave_id,
   concat(seed.section_id, '-', seed.lot_id, '-', seed.grave_id),
   seed.status,
   seed.cost,
@@ -116,11 +160,13 @@ JOIN (
 ) AS seed(section_id, lot_id, grave_id, status, cost, west, south, east, north)
   ON true
 JOIN sections s ON s.cemetery_id = c.id AND s.section_id = seed.section_id
+JOIN lots l ON l.cemetery_id = c.id AND l.section_id = seed.section_id AND l.lot_id = seed.lot_id
 WHERE c.facility_id = 'DEMO-ST-MARK';
 
 INSERT INTO gravesites (
   cemetery_id,
   section_uuid,
+  lot_uuid,
   name,
   facility_id,
   section_id,
@@ -131,7 +177,7 @@ INSERT INTO gravesites (
   cost,
   geometry
 )
-SELECT c.id, s.id, s.name, c.facility_id, seed.section_id, seed.lot_id, seed.grave_id,
+SELECT c.id, s.id, l.id, s.name, c.facility_id, seed.section_id, seed.lot_id, seed.grave_id,
   concat(seed.section_id, '-', seed.lot_id, '-', seed.grave_id),
   seed.status,
   seed.cost,
@@ -144,6 +190,7 @@ JOIN (
 ) AS seed(section_id, lot_id, grave_id, status, cost, west, south, east, north)
   ON true
 JOIN sections s ON s.cemetery_id = c.id AND s.section_id = seed.section_id
+JOIN lots l ON l.cemetery_id = c.id AND l.section_id = seed.section_id AND l.lot_id = seed.lot_id
 WHERE c.facility_id = 'DEMO-MEMORIAL';
 
 INSERT INTO owners (gravesite_uuid, owner, co_owner, full_address, municipality, state, zip, phone, email, sale_date, notes, gravesite_id)

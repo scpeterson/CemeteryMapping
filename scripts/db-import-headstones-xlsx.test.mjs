@@ -45,3 +45,33 @@ test("importable spreadsheet rows map Nhg columns into corrected source notes", 
   assert.equal(importedRows.length, 1);
   assert.equal(buildBurialNotes(buildSourceNotes(importedRows[0]), importedRows[0].people[0]), "Imported from headstone spreadsheet row 9. North Hills Genealogists section: B. North Hills Genealogists row: 4. North Hills Genealogists page: 22. Person column: 1.");
 });
+
+test("importable spreadsheet rows generate 10 by 20 foot lots and 4 by 10 foot gravesites", () => {
+  const [imported] = importableRows(
+    [
+      {
+        rowNumber: 11,
+        row: {
+          Latitude: 40,
+          Longitude: -80,
+          Person1First: "Grace",
+          Person1Last: "Hopper",
+          NhgSection: "C",
+          TlcPlot: "17",
+        },
+      },
+    ],
+    {},
+  );
+
+  const graveRing = imported.geometry.coordinates[0][0];
+  const lotRing = imported.lotGeometry.coordinates[0][0];
+  const graveWidth = graveRing[1][0] - graveRing[0][0];
+  const graveHeight = graveRing[2][1] - graveRing[1][1];
+  const lotWidth = lotRing[1][0] - lotRing[0][0];
+  const lotHeight = lotRing[2][1] - lotRing[1][1];
+
+  assert.equal(imported.lotId, "17");
+  assert.equal(Number((lotWidth / graveWidth).toFixed(2)), 5);
+  assert.equal(Number((lotHeight / graveHeight).toFixed(2)), 1);
+});

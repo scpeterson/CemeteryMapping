@@ -161,7 +161,7 @@ export async function getCemeteryData(pool) {
     `);
 
     const cemeteryIds = cemeteryResult.rows.map((cemetery) => cemetery.id);
-    if (cemeteryIds.length === 0) return { sections: [], graves: [] };
+    if (cemeteryIds.length === 0) return { sections: [], lots: [], graves: [] };
 
     const sectionsResult = await client.query(
       `
@@ -170,6 +170,22 @@ export async function getCemeteryData(pool) {
         WHERE cemetery_id = ANY($1::uuid[])
           AND deleted_at IS NULL
         ORDER BY section_id, name
+      `,
+      [cemeteryIds],
+    );
+    const lotsResult = await client.query(
+      `
+        SELECT
+          id::text,
+          lot_id,
+          section_id,
+          block_id,
+          COALESCE(name, lot_id) AS name,
+          ST_AsGeoJSON(geometry)::json AS geometry
+        FROM lots
+        WHERE cemetery_id = ANY($1::uuid[])
+          AND deleted_at IS NULL
+        ORDER BY section_id, block_id, lot_id, name
       `,
       [cemeteryIds],
     );
@@ -210,6 +226,13 @@ export async function getCemeteryData(pool) {
         name: section.name,
         geometry: parseGeometry(section.geometry),
       })),
+      lots: lotsResult.rows.map((lot) => ({
+        id: lot.lot_id,
+        name: lot.name,
+        section: lot.section_id ?? "",
+        block: lot.block_id ?? undefined,
+        geometry: parseGeometry(lot.geometry),
+      })),
       graves: gravesitesResult.rows.map(toGraveSummary),
     };
   } finally {
@@ -228,7 +251,7 @@ export async function getDetailedCemeteryData(pool) {
     `);
 
     const cemeteryIds = cemeteryResult.rows.map((cemetery) => cemetery.id);
-    if (cemeteryIds.length === 0) return { sections: [], graves: [], owners: [] };
+    if (cemeteryIds.length === 0) return { sections: [], lots: [], graves: [], owners: [] };
 
     const sectionsResult = await client.query(
       `
@@ -237,6 +260,22 @@ export async function getDetailedCemeteryData(pool) {
         WHERE cemetery_id = ANY($1::uuid[])
           AND deleted_at IS NULL
         ORDER BY section_id, name
+      `,
+      [cemeteryIds],
+    );
+    const lotsResult = await client.query(
+      `
+        SELECT
+          id::text,
+          lot_id,
+          section_id,
+          block_id,
+          COALESCE(name, lot_id) AS name,
+          ST_AsGeoJSON(geometry)::json AS geometry
+        FROM lots
+        WHERE cemetery_id = ANY($1::uuid[])
+          AND deleted_at IS NULL
+        ORDER BY section_id, block_id, lot_id, name
       `,
       [cemeteryIds],
     );
@@ -301,6 +340,13 @@ export async function getDetailedCemeteryData(pool) {
         id: section.section_id,
         name: section.name,
         geometry: parseGeometry(section.geometry),
+      })),
+      lots: lotsResult.rows.map((lot) => ({
+        id: lot.lot_id,
+        name: lot.name,
+        section: lot.section_id ?? "",
+        block: lot.block_id ?? undefined,
+        geometry: parseGeometry(lot.geometry),
       })),
       graves: gravesitesResult.rows.map((grave) => {
         const graveOwners = ownersByGrave.get(grave.uuid) ?? [];
