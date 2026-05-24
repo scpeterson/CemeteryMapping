@@ -199,10 +199,192 @@ async function main() {
       [batchId],
     );
 
+    const blockResult = await client.query(
+      `
+        WITH staged AS (
+          SELECT
+            block_feature.facility_id,
+            block_feature.section_id,
+            block_feature.block_id,
+            COALESCE(lower_properties.properties ->> 'name', block_feature.block_id) AS name,
+            cemetery.id AS cemetery_id,
+            section.id AS section_uuid,
+            ST_Multi(block_feature.geometry)::geometry(MultiPolygon, 4326) AS geometry
+          FROM spatial_import_features block_feature
+          CROSS JOIN LATERAL (
+            SELECT jsonb_object_agg(lower(entry.key), entry.value) AS properties
+            FROM jsonb_each(block_feature.source_properties) entry
+          ) lower_properties
+          JOIN cemeteries cemetery
+            ON cemetery.facility_id IS NOT DISTINCT FROM block_feature.facility_id
+          LEFT JOIN sections section
+            ON section.cemetery_id = cemetery.id
+           AND section.section_id IS NOT DISTINCT FROM block_feature.section_id
+          WHERE block_feature.batch_id = $1
+            AND block_feature.feature_type = 'block'
+            AND block_feature.block_id IS NOT NULL
+        )
+        INSERT INTO blocks (
+          cemetery_id,
+          section_uuid,
+          name,
+          facility_id,
+          section_id,
+          block_id,
+          geometry,
+          updated_at
+        )
+        SELECT
+          staged.cemetery_id,
+          staged.section_uuid,
+          staged.name,
+          staged.facility_id,
+          staged.section_id,
+          staged.block_id,
+          staged.geometry,
+          now()
+        FROM staged
+        ON CONFLICT (facility_id, section_id, block_id) DO UPDATE SET
+          cemetery_id = EXCLUDED.cemetery_id,
+          section_uuid = EXCLUDED.section_uuid,
+          name = EXCLUDED.name,
+          geometry = EXCLUDED.geometry,
+          updated_at = now()
+      `,
+      [batchId],
+    );
+
+    const lotWithBlockResult = await client.query(
+      `
+        WITH staged AS (
+          SELECT
+            lot_feature.facility_id,
+            lot_feature.section_id,
+            lot_feature.block_id,
+            lot_feature.lot_id,
+            COALESCE(lower_properties.properties ->> 'name', lot_feature.lot_id) AS name,
+            cemetery.id AS cemetery_id,
+            section.id AS section_uuid,
+            block.id AS block_uuid,
+            ST_Multi(lot_feature.geometry)::geometry(MultiPolygon, 4326) AS geometry
+          FROM spatial_import_features lot_feature
+          CROSS JOIN LATERAL (
+            SELECT jsonb_object_agg(lower(entry.key), entry.value) AS properties
+            FROM jsonb_each(lot_feature.source_properties) entry
+          ) lower_properties
+          JOIN cemeteries cemetery
+            ON cemetery.facility_id IS NOT DISTINCT FROM lot_feature.facility_id
+          LEFT JOIN sections section
+            ON section.cemetery_id = cemetery.id
+           AND section.section_id IS NOT DISTINCT FROM lot_feature.section_id
+          LEFT JOIN blocks block
+            ON block.cemetery_id = cemetery.id
+           AND block.section_id IS NOT DISTINCT FROM lot_feature.section_id
+           AND block.block_id IS NOT DISTINCT FROM lot_feature.block_id
+          WHERE lot_feature.batch_id = $1
+            AND lot_feature.feature_type = 'lot'
+            AND lot_feature.block_id IS NOT NULL
+            AND lot_feature.lot_id IS NOT NULL
+        )
+        INSERT INTO lots (
+          cemetery_id,
+          section_uuid,
+          block_uuid,
+          name,
+          facility_id,
+          section_id,
+          block_id,
+          lot_id,
+          geometry,
+          updated_at
+        )
+        SELECT
+          staged.cemetery_id,
+          staged.section_uuid,
+          staged.block_uuid,
+          staged.name,
+          staged.facility_id,
+          staged.section_id,
+          staged.block_id,
+          staged.lot_id,
+          staged.geometry,
+          now()
+        FROM staged
+        ON CONFLICT ON CONSTRAINT lots_identifier_unique DO UPDATE SET
+          cemetery_id = EXCLUDED.cemetery_id,
+          section_uuid = EXCLUDED.section_uuid,
+          block_uuid = EXCLUDED.block_uuid,
+          name = EXCLUDED.name,
+          geometry = EXCLUDED.geometry,
+          updated_at = now()
+      `,
+      [batchId],
+    );
+
+    const sectionScopedLotResult = await client.query(
+      `
+        WITH staged AS (
+          SELECT
+            lot_feature.facility_id,
+            lot_feature.section_id,
+            lot_feature.lot_id,
+            COALESCE(lower_properties.properties ->> 'name', lot_feature.lot_id) AS name,
+            cemetery.id AS cemetery_id,
+            section.id AS section_uuid,
+            ST_Multi(lot_feature.geometry)::geometry(MultiPolygon, 4326) AS geometry
+          FROM spatial_import_features lot_feature
+          CROSS JOIN LATERAL (
+            SELECT jsonb_object_agg(lower(entry.key), entry.value) AS properties
+            FROM jsonb_each(lot_feature.source_properties) entry
+          ) lower_properties
+          JOIN cemeteries cemetery
+            ON cemetery.facility_id IS NOT DISTINCT FROM lot_feature.facility_id
+          LEFT JOIN sections section
+            ON section.cemetery_id = cemetery.id
+           AND section.section_id IS NOT DISTINCT FROM lot_feature.section_id
+          WHERE lot_feature.batch_id = $1
+            AND lot_feature.feature_type = 'lot'
+            AND lot_feature.block_id IS NULL
+            AND lot_feature.lot_id IS NOT NULL
+        )
+        INSERT INTO lots (
+          cemetery_id,
+          section_uuid,
+          name,
+          facility_id,
+          section_id,
+          block_id,
+          lot_id,
+          geometry,
+          updated_at
+        )
+        SELECT
+          staged.cemetery_id,
+          staged.section_uuid,
+          staged.name,
+          staged.facility_id,
+          staged.section_id,
+          NULL,
+          staged.lot_id,
+          staged.geometry,
+          now()
+        FROM staged
+        ON CONFLICT (facility_id, section_id, lot_id) WHERE block_id IS NULL DO UPDATE SET
+          cemetery_id = EXCLUDED.cemetery_id,
+          section_uuid = EXCLUDED.section_uuid,
+          name = EXCLUDED.name,
+          geometry = EXCLUDED.geometry,
+          updated_at = now()
+      `,
+      [batchId],
+    );
+
     await client.query("COMMIT");
     console.log(`Promoted batch ${batchId}.`);
     console.log(`Cemeteries affected: ${cemeteryResult.rowCount}.`);
     console.log(`Sections affected: ${sectionResult.rowCount}.`);
+    console.log(`Blocks affected: ${blockResult.rowCount}.`);
+    console.log(`Lots affected: ${lotWithBlockResult.rowCount + sectionScopedLotResult.rowCount}.`);
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

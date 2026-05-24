@@ -7,6 +7,7 @@ function queryRows(sql) {
     return [{ id: "11111111-1111-4111-8111-111111111111", name: "Sequential Cemetery", geometry: "{}" }];
   }
   if (sql.includes("FROM sections")) return [];
+  if (sql.includes("FROM lots")) return [];
   if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
     return [
       {

@@ -122,7 +122,7 @@ APP_ENV=stage npm run db:seed:demo
 ```
 
 The demo seed command refuses to run when `APP_ENV=prod`.
-The demo fixture intentionally leaves the `blocks` and `lots` tables empty because Trinity Lutheran Church Cemetery does not use block or lot records. Demo gravesites are linked directly to sections.
+The demo fixture now seeds section-scoped lots and links demo gravesites through `lot_uuid` so the map and API exercise the cemetery/section/lot/gravesite hierarchy. Blocks remain empty because they are still optional.
 
 Stop the local database:
 
@@ -313,7 +313,7 @@ Use the inspection output to map Esri layer and field names to the staging hiera
 npm run db:validate:spatial
 ```
 
-Promote a validated staging batch into production cemetery and section tables:
+Promote a validated staging batch into production cemetery, section, block, and lot tables:
 
 ```bash
 npm run db:promote:spatial
@@ -350,13 +350,15 @@ Use the `id` value as `<batch-uuid>`:
 APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
 ```
 
-Promotion currently handles only `Cemeteries` and `Sections`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. The first inspected project geodatabase has populated `Cemeteries` and `Sections` layers, empty `Blocks`, `Lots`, and `Memorials` layers, and no visible `Gravesites` layer. Grave polygon import will need the actual gravesite source layer when it becomes available.
+Promotion currently handles `Cemeteries`, `Sections`, `Blocks`, and `Lots`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. Lots may be section-scoped when no block identifier is present, and a partial unique index keeps those section-scoped lot identifiers idempotent. Grave polygon import will need the actual gravesite source layer when it becomes available.
 
 ## Headstone spreadsheet workflow
 
 Headstone GPS spreadsheets can be imported after cemetery and section polygons exist in the target environment. The importer expects one row per GPS location with `Latitude` and `Longitude` columns and up to six burial people stored in `Person1First` / `Person1Last` through `Person6First` / `Person6Last`. It also supports the legacy second-person headers `Persons26First` and `Persons26Last`.
 
-Each spreadsheet row with coordinates and at least one person becomes one `gravesites` row and one `headstones` row. The importer generates an 8 foot by 4 foot gravesite `MultiPolygon` centered on the coordinate, with the 8 foot length running east-west so it appears left-to-right on the map. It stores the headstone itself as a `Point` at the GPS coordinate with `condition = 'unknown'`, links the gravesite to the matching cemetery and to the section polygon containing the GPS point when available, and replaces the generated gravesite's existing burial rows with one `burials` row per populated person column. It then creates `headstone_burials` join rows connecting the physical headstone to each imported burial. `PersonNYob` and `PersonNYod` become `YYYY-01-01` birth and death dates.
+Each spreadsheet row with coordinates and at least one person becomes one `lots` row, one `gravesites` row, and one `headstones` row. The importer generates a 10 foot by 20 foot lot `MultiPolygon` centered on the coordinate by default, with the 20 foot length running east-west, then generates a 4 foot by 10 foot gravesite `MultiPolygon` inside it. The database prevents more than five active gravesites from being linked to one lot. It stores the headstone itself as a `Point` at the GPS coordinate with `condition = 'unknown'`, links the gravesite to the matching cemetery, section polygon, and generated section-scoped lot when available, and replaces the generated gravesite's existing burial rows with one `burials` row per populated person column. It then creates `headstone_burials` join rows connecting the physical headstone to each imported burial. `PersonNYob` and `PersonNYod` become `YYYY-01-01` birth and death dates.
+
+Lot ownership is tracked at the lot level with `lot_owner_parties`, `lot_ownership_events`, and `lot_ownership_event_parties`. Supported event types are `deed`, `sale`, `gift`, `church_council_action`, `correction`, and `release`; `current_lot_owners` exposes the latest non-release ownership state for each lot.
 
 Source note prefixes from the workbook are expanded during import: `Nhg` means `North Hills Genealogists`, and `Tlc` means `Trinity Lutheran Church`. Existing burial notes from earlier imports are normalized by migrations so legacy `North Hills Guide` and typoed `North Hills Geneologists` text display and backfill to the official `North Hills Genealogists` spelling.
 
@@ -375,7 +377,7 @@ APP_ENV=test npm run db:import:headstones -- "/path/to/TLC Gravesite Registry Ge
 Useful options:
 
 ```bash
-APP_ENV=test npm run db:import:headstones -- "/path/to/headstones.xlsx" --facility-id 1 --length-feet 8 --width-feet 4
+APP_ENV=test npm run db:import:headstones -- "/path/to/headstones.xlsx" --facility-id 1 --lot-length-feet 20 --lot-width-feet 10 --length-feet 4 --width-feet 10
 ```
 
 The generated `gravesite_id` values use the stable source row shape `TLC-GPS-<row-number>`. After import, run:

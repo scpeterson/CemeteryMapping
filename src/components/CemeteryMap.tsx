@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
-import { boundariesFeatureCollection, cemeteryMarkersFeatureCollection, gravesFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
+import { boundariesFeatureCollection, cemeteryMarkersFeatureCollection, gravesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type CemeteryMapProps = {
@@ -62,6 +62,9 @@ function dataBounds(data: CemeteryData) {
   const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
   const boundaryBounds = boundaries.reduce((bounds, boundary) => extendGeometryBounds(bounds, boundary.geometry), undefined as maplibregl.LngLatBounds | undefined);
   if (boundaryBounds) return boundaryBounds;
+
+  const lotBounds = data.lots.reduce((bounds, lot) => extendGeometryBounds(bounds, lot.geometry), undefined as maplibregl.LngLatBounds | undefined);
+  if (lotBounds) return lotBounds;
 
   return data.graves.reduce((bounds, grave) => extendGeometryBounds(bounds, grave.geometry), undefined as maplibregl.LngLatBounds | undefined);
 }
@@ -231,6 +234,35 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
         },
       });
 
+      map.addSource("lots", { type: "geojson", data: lotsFeatureCollection(dataRef.current) });
+      map.addLayer({
+        id: "lots-fill",
+        type: "fill",
+        source: "lots",
+        paint: { "fill-color": "#f3ead2", "fill-opacity": 0.38 },
+      });
+      map.addLayer({
+        id: "lots-line",
+        type: "line",
+        source: "lots",
+        paint: { "line-color": "#a07738", "line-width": 1.2 },
+      });
+      map.addLayer({
+        id: "lots-label",
+        type: "symbol",
+        source: "lots",
+        layout: {
+          "text-field": ["get", "name"],
+          "text-size": 12,
+          "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        },
+        paint: {
+          "text-color": "#5b4630",
+          "text-halo-color": "#fbf8ee",
+          "text-halo-width": 1,
+        },
+      });
+
       map.addSource("graves", {
         type: "geojson",
         data: gravesFeatureCollection(visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current),
@@ -329,7 +361,10 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     const sectionsSource = map.getSource("sections") as GeoJSONSource | undefined;
     sectionsSource?.setData(sectionsFeatureCollection(data));
 
-    if (boundarySource || sectionsSource) {
+    const lotsSource = map.getSource("lots") as GeoJSONSource | undefined;
+    lotsSource?.setData(lotsFeatureCollection(data));
+
+    if (boundarySource || sectionsSource || lotsSource) {
       syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
       fitMapToData(map, data);
     }
@@ -405,6 +440,10 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
           <span>
             <i className="legend-symbol legend-section" />
             Section polygon
+          </span>
+          <span>
+            <i className="legend-symbol legend-lot" />
+            Lot polygon
           </span>
           <span>
             <i className="legend-symbol legend-gravesite" />

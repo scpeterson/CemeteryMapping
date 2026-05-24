@@ -78,6 +78,7 @@ test("burial notes show the corrected North Hills source name without import-onl
       body: JSON.stringify({
         boundaries: [{ type: "Feature", properties: { name: "Mock Cemetery" }, geometry: mockBoundaryGeometry }],
         sections: [],
+        lots: [],
         graves: [graveSummary],
       }),
     });
@@ -142,6 +143,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect.poll(() => page.getByLabel("Map scale").innerText()).not.toBe(initialScale);
   await expect(page.getByLabel("Map legend")).toContainText("Layers");
   await expect(page.getByLabel("Map legend")).toContainText("Cemetery boundary");
+  await expect(page.getByLabel("Map legend")).toContainText("Lot polygon");
   await expect(page.getByLabel("Map legend")).toContainText("Gravesite Status");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
@@ -158,7 +160,17 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   const mapData = await mapResponse.json();
   expect(mapData.boundaries).toEqual(expect.any(Array));
   expect(mapData.boundaries.length).toBeGreaterThanOrEqual(2);
+  expect(mapData.lots).toEqual(expect.any(Array));
+  expect(mapData.lots.length).toBeGreaterThanOrEqual(5);
   expect(mapData.graves.length).toBeGreaterThanOrEqual(11);
+  expect(mapData.lots[0]).toEqual(
+    expect.objectContaining({
+      id: expect.any(String),
+      name: expect.any(String),
+      section: expect.any(String),
+      geometry: expect.any(Object),
+    }),
+  );
   expect(mapData.graves.map((grave: { id: string }) => grave.id)).toContain("A-01-01");
   expect(mapData.graves.filter((grave: { id: string }) => grave.id === "A-01-01")).toHaveLength(2);
   expect(new Set(mapData.graves.map((grave: { cemeteryId: string; id: string }) => `${grave.cemeteryId}:${grave.id}`)).size).toBe(mapData.graves.length);
