@@ -567,7 +567,19 @@ h3 {
 
 .legend-boundary {
   border: 2px solid #3b4f3d;
-  background: #dfe7d9;
+  background: rgba(223, 231, 217, 0.25);
+}
+
+.legend-imagery {
+  border: 1px solid #72806b;
+  background:
+    linear-gradient(135deg, rgba(88, 112, 68, 0.72), rgba(184, 172, 126, 0.72)),
+    linear-gradient(45deg, rgba(44, 78, 58, 0.85) 25%, transparent 25% 50%, rgba(44, 78, 58, 0.85) 50% 75%, transparent 75%);
+}
+
+.legend-parcel {
+  border: 3px solid #ff0000;
+  background: transparent;
 }
 
 .legend-section {

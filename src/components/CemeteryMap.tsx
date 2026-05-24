@@ -33,6 +33,37 @@ type ScaleSegment = {
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels"];
+const pasdaImageryExportUrl = "https://imagery.pasda.psu.edu/arcgis/rest/services/pasda/AlleghenyCountyImagery2017/MapServer/export";
+const pasdaImageryTileUrl = `${pasdaImageryExportUrl}?f=image&format=jpg&transparent=false&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&layers=show:4`;
+const alleghenyParcelsExportUrl = "https://gisdata.alleghenycounty.us/arcgis/rest/services/EGIS/Web_Parcels/MapServer/export";
+const alleghenyParcelsDynamicLayers = encodeURIComponent(
+  JSON.stringify([
+    {
+      id: 0,
+      source: {
+        type: "mapLayer",
+        mapLayerId: 0,
+      },
+      drawingInfo: {
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "esriSFS",
+            style: "esriSFSSolid",
+            color: [0, 0, 0, 0],
+            outline: {
+              type: "esriSLS",
+              style: "esriSLSSolid",
+              color: [255, 0, 0, 255],
+              width: 3,
+            },
+          },
+        },
+      },
+    },
+  ]),
+);
+const alleghenyParcelsTileUrl = `${alleghenyParcelsExportUrl}?f=image&format=png32&transparent=true&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&dynamicLayers=${alleghenyParcelsDynamicLayers}`;
 
 const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
 
@@ -189,12 +220,37 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     map.on("load", () => {
       updateScale();
 
+      map.addSource("pasda-imagery-2017", {
+        type: "raster",
+        tiles: [pasdaImageryTileUrl],
+        tileSize: 256,
+        attribution: "PASDA Allegheny County Imagery 2017",
+      });
+      map.addLayer({
+        id: "pasda-imagery-2017",
+        type: "raster",
+        source: "pasda-imagery-2017",
+      });
+
+      map.addSource("allegheny-parcels", {
+        type: "raster",
+        tiles: [alleghenyParcelsTileUrl],
+        tileSize: 256,
+        attribution: "Allegheny County",
+      });
+      map.addLayer({
+        id: "allegheny-parcels",
+        type: "raster",
+        source: "allegheny-parcels",
+        paint: { "raster-opacity": 1 },
+      });
+
       map.addSource("boundary", { type: "geojson", data: boundariesFeatureCollection(dataRef.current) });
       map.addLayer({
         id: "boundary-fill",
         type: "fill",
         source: "boundary",
-        paint: { "fill-color": "#dfe7d9", "fill-opacity": 0.9 },
+        paint: { "fill-color": "#dfe7d9", "fill-opacity": 0.25 },
       });
       map.addLayer({
         id: "boundary-line",
@@ -210,7 +266,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
         id: "sections-fill",
         type: "fill",
         source: "sections",
-        paint: { "fill-color": "#f7f4ea", "fill-opacity": 0.28 },
+        paint: { "fill-color": "#f7f4ea", "fill-opacity": 0.25 },
       });
       map.addLayer({
         id: "sections-line",
@@ -434,8 +490,16 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
         <section>
           <h2>Layers</h2>
           <span>
+            <i className="legend-symbol legend-imagery" />
+            PASDA imagery
+          </span>
+          <span>
             <i className="legend-symbol legend-boundary" />
             Cemetery boundary
+          </span>
+          <span>
+            <i className="legend-symbol legend-parcel" />
+            Parcel boundary
           </span>
           <span>
             <i className="legend-symbol legend-section" />
