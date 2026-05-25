@@ -9,13 +9,24 @@ type SearchPanelProps = {
   selectedStatuses: Set<GraveStatus>;
   onToggleStatus: (status: GraveStatus) => void;
   matches: SearchMatch[];
+  canViewOwnership: boolean;
   selectedGraveKey?: string;
   onSelectMatch: (match: SearchMatch) => void;
 };
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 
-export function SearchPanel({ cemeteryScopeLabel, query, onQueryChange, selectedStatuses, onToggleStatus, matches, selectedGraveKey, onSelectMatch }: SearchPanelProps) {
+export function SearchPanel({
+  cemeteryScopeLabel,
+  query,
+  onQueryChange,
+  selectedStatuses,
+  onToggleStatus,
+  matches,
+  canViewOwnership,
+  selectedGraveKey,
+  onSelectMatch,
+}: SearchPanelProps) {
   return (
     <aside className="search-panel">
       <div className="panel-heading">
@@ -31,7 +42,7 @@ export function SearchPanel({ cemeteryScopeLabel, query, onQueryChange, selected
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Search names, owners, dates, grave IDs"
+          placeholder={canViewOwnership ? "Search names, owners, dates, grave IDs" : "Search names, dates, grave IDs"}
           aria-label="Search cemetery records"
         />
         {query ? (

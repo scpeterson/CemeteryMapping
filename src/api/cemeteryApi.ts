@@ -1,5 +1,5 @@
 import { apiBaseUrl } from "../config/environment";
-import type { CemeteryData, GraveSpace, GraveStatus, SearchMatch } from "../types";
+import type { AppRole, AppUser, CemeteryData, CurrentUser, GraveSpace, GraveStatus, SearchMatch } from "../types";
 
 type AccessTokenProvider = () => Promise<string | undefined>;
 
@@ -18,6 +18,19 @@ async function authorizedFetch(url: string, init?: RequestInit) {
   const headers = new Headers(init?.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
   return fetch(url, { ...init, headers });
+}
+
+async function jsonResponse<T>(response: Response, label: string): Promise<T> {
+  if (!response.ok) throw new Error(`${label} returned ${response.status}`);
+  return (await response.json()) as T;
+}
+
+function jsonRequest(method: string, body: unknown): RequestInit {
+  return {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
 }
 
 export async function fetchCemeteryData(attempts = 5): Promise<CemeteryData> {
@@ -42,8 +55,7 @@ export async function fetchGraveSpace(cemeteryId: string, id: string): Promise<G
   const response = await authorizedFetch(
     `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(id)}`,
   );
-  if (!response.ok) throw new Error(`Grave API returned ${response.status}`);
-  return (await response.json()) as GraveSpace;
+  return jsonResponse<GraveSpace>(response, "Grave API");
 }
 
 export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>): Promise<SearchMatch[]> {
@@ -52,6 +64,32 @@ export async function fetchSearchMatches(query: string, statuses: Set<GraveStatu
   params.set("status", [...statuses].join(","));
 
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/search?${params.toString()}`);
-  if (!response.ok) throw new Error(`Search API returned ${response.status}`);
-  return (await response.json()) as SearchMatch[];
+  return jsonResponse<SearchMatch[]>(response, "Search API");
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUser> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/me`);
+  return jsonResponse<CurrentUser>(response, "Current user API");
+}
+
+export async function fetchAdminRoles(): Promise<AppRole[]> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/roles`);
+  return jsonResponse<AppRole[]>(response, "Roles API");
+}
+
+export async function fetchAdminUsers(): Promise<AppUser[]> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users`);
+  return jsonResponse<AppUser[]>(response, "Users API");
+}
+
+export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "isActive">;
+
+export async function createAdminUser(user: SaveUserInput): Promise<AppUser> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users`, jsonRequest("POST", user));
+  return jsonResponse<AppUser>(response, "Create user API");
+}
+
+export async function updateAdminUser(id: string, user: SaveUserInput): Promise<AppUser> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users/${encodeURIComponent(id)}`, jsonRequest("PUT", user));
+  return jsonResponse<AppUser>(response, "Update user API");
 }

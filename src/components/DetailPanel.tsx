@@ -7,6 +7,7 @@ type DetailPanelProps = {
   owners: Owner[];
   summary?: GraveSpaceSummary;
   grave?: GraveSpace;
+  canViewOwnership: boolean;
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
@@ -45,13 +46,13 @@ function BurialRecord({ burial }: { burial: Burial }) {
   );
 }
 
-export function DetailPanel({ owners, summary, grave, isLoading = false, error, onRetry }: DetailPanelProps) {
+export function DetailPanel({ owners, summary, grave, canViewOwnership, isLoading = false, error, onRetry }: DetailPanelProps) {
   if (!summary) {
     return (
       <aside className="detail-panel empty-state">
         <MapPinned size={28} aria-hidden="true" />
         <h2>Select a grave site</h2>
-        <p>Click a mapped grave space or choose a search result to view ownership, burial status, and record history.</p>
+        <p>Click a mapped grave space or choose a search result to view burial status and record history.</p>
       </aside>
     );
   }
@@ -88,6 +89,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
       {!grave || isLoading || error ? null : (
         <>
 
+      {canViewOwnership ? (
       <section className="detail-section">
         <div className="section-title">
           <Landmark size={17} aria-hidden="true" />
@@ -105,6 +107,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
           })}
         </div>
       </section>
+      ) : null}
 
       <section className="detail-section">
         <div className="section-title">
@@ -122,6 +125,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
         )}
       </section>
 
+      {canViewOwnership ? (
       <section className="detail-section">
         <div className="section-title">
           <History size={17} aria-hidden="true" />
@@ -147,6 +151,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
             ))}
         </ol>
       </section>
+      ) : null}
 
       {grave.notes ? (
         <section className="detail-section">

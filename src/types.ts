@@ -1,4 +1,5 @@
 export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "unknown";
+export type AppRoleName = "reader" | "power-user" | "admin";
 export type AreaGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 
 export type Person = {
@@ -77,4 +78,36 @@ export type CemeteryData = {
 export type SearchMatch = {
   grave: GraveSpaceSummary;
   reasons: string[];
+};
+
+export type CurrentUser = {
+  subject: string;
+  email?: string;
+  displayName?: string;
+  role: AppRoleName;
+  permissions: {
+    canViewOwnership: boolean;
+    canManageUsers: boolean;
+    canCreateCemeteryRecords: boolean;
+    canUpdateCemeteryRecords: boolean;
+    canDeleteCemeteryRecords: boolean;
+  };
+};
+
+export type AppRole = {
+  name: AppRoleName;
+  description: string;
+  userCount: number;
+};
+
+export type AppUser = {
+  id: string;
+  externalSubject: string;
+  email: string;
+  displayName: string;
+  role: AppRoleName;
+  isActive: boolean;
+  lastAuthenticatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 };

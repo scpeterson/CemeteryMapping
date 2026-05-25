@@ -6,7 +6,7 @@
 - Status: Accepted
 - Date: 2026-05-20
 - Owners: Project maintainers
-- Related changes: PR #15, Phase 2 security schema, Phase 3 API authorization foundation, Phase 4 grave-space soft delete/restore API
+- Related changes: PR #15, Phase 2 security schema, Phase 3 API authorization foundation, Phase 4 grave-space soft delete/restore API, power-user role and admin user management UI
 
 ## Context
 
@@ -20,7 +20,7 @@ Adopt a phased security model built around these parts:
 
 - External identity provider for sign-in.
 - Server-side role-based access control.
-- `admin` and `reader` application roles.
+- `admin`, `power-user`, and `reader` application roles.
 - Soft deletes for application data.
 - Append-only audit logging for data changes.
 
@@ -32,12 +32,13 @@ Request input that reaches data access paths must be validated before repository
 
 ## Roles
 
-Initial roles:
+Application roles:
 
-- `admin`: can view, create, update, and soft-delete cemetery data.
-- `reader`: can view cemetery data but cannot create, update, or delete it.
+- `reader`: can view the map, gravesites, and burial information, but cannot view deed/owner information.
+- `power-user`: can do everything a `reader` can do, plus view and edit deed/owner information and update existing burials, gravesites, lots, and sections.
+- `admin`: can manage users and roles, view and edit all cemetery data, add burials, gravesites, lots, and sections, and soft-delete records.
 
-Future roles can be added with a new ADR or an update if the access model changes materially. Examples might include `data_steward`, `inspector`, or `import_operator`.
+Authorization is ranked as `reader` < `power-user` < `admin`. Deed and owner fields must be omitted from API responses for `reader` requests, not merely hidden in the UI. Future roles can be added with a new ADR or an update if the access model changes materially.
 
 ## Soft Delete Model
 
@@ -99,6 +100,8 @@ The first API security implementation supports:
 - Reader-or-admin authorization on existing read endpoints.
 - Default API reads that exclude soft-deleted cemetery records.
 - Admin-only grave-space soft delete and restore endpoints.
+- Admin-only user management endpoints and a dedicated admin drawer for user access management.
+- Reader redaction of owner/deed sections in grave details and owner/deed search reasons.
 - Audit events for grave-space soft delete and restore operations.
 - API-edge request validation and SQL-injection regression tests for grave-space ids, search queries, status filters, and mutation reasons.
 

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchCemeteryData, fetchGraveSpace, fetchSearchMatches } from "./api/cemeteryApi";
+import { ShieldCheck } from "lucide-react";
+import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchSearchMatches } from "./api/cemeteryApi";
+import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
@@ -7,7 +9,7 @@ import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { graveSelectionKey } from "./lib/format";
 import { searchGraves } from "./lib/search";
-import type { CemeteryData, GraveSpace, GraveSpaceSummary, GraveStatus, Owner, SearchMatch } from "./types";
+import type { CemeteryData, CurrentUser, GraveSpace, GraveSpaceSummary, GraveStatus, Owner, SearchMatch } from "./types";
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 
@@ -24,6 +26,28 @@ export default function App() {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailRequestVersion, setDetailRequestVersion] = useState(0);
   const [remoteMatches, setRemoteMatches] = useState<SearchMatch[]>();
+  const [currentUser, setCurrentUser] = useState<CurrentUser>();
+  const [userError, setUserError] = useState<string>();
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    fetchCurrentUser()
+      .then((user) => {
+        if (!isCurrent) return;
+        setCurrentUser(user);
+        setUserError(undefined);
+      })
+      .catch((error: unknown) => {
+        if (!isCurrent) return;
+        setUserError(error instanceof Error ? error.message : "Unable to load user permissions");
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isCurrent = true;
@@ -137,6 +161,7 @@ export default function App() {
         selectedStatuses={selectedStatuses}
         onToggleStatus={toggleStatus}
         matches={matches}
+        canViewOwnership={currentUser?.permissions.canViewOwnership ?? false}
         selectedGraveKey={selectedGrave ? graveSelectionKey(selectedGrave) : undefined}
         onSelectMatch={selectMatch}
       />
@@ -144,9 +169,21 @@ export default function App() {
         <div className={`environment-badge environment-${appEnvironment.toLowerCase()}`} title={`API: ${apiBaseUrl}`}>
           {appEnvironment}
         </div>
+        {currentUser?.permissions.canManageUsers ? (
+          <button type="button" className="admin-open-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin user management">
+            <ShieldCheck size={16} aria-hidden="true" />
+            Admin
+          </button>
+        ) : null}
+        {isAdminPanelOpen ? <AdminPanel onClose={() => setIsAdminPanelOpen(false)} /> : null}
         {isLoading || loadError ? (
           <div className={`data-status ${loadError ? "is-error" : ""}`} role="status">
             {loadError ? `API unavailable: ${loadError}` : "Loading cemetery records..."}
+          </div>
+        ) : null}
+        {userError ? (
+          <div className="data-status is-error" role="status">
+            Permissions unavailable: {userError}
           </div>
         ) : null}
         <CemeteryMap
@@ -161,6 +198,7 @@ export default function App() {
         owners={selectedGraveOwners}
         summary={selectedGrave}
         grave={selectedGraveDetails}
+        canViewOwnership={currentUser?.permissions.canViewOwnership ?? false}
         isLoading={isDetailLoading}
         error={detailError}
         onRetry={() => setDetailRequestVersion((version) => version + 1)}

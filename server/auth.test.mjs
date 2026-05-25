@@ -115,6 +115,21 @@ test("trusted-header auth mode blocks reader access to admin routes", async () =
   assert.deepEqual(result.response.body, { error: "Forbidden" });
 });
 
+test("trusted-header auth mode allows power users to access power-user routes but not admin routes", async () => {
+  const powerUserHeaders = {
+    "x-cemetery-user-subject": "user-3",
+    "x-cemetery-user-email": "power@example.test",
+    "x-cemetery-user-role": "power-user",
+  };
+  const powerUserResult = await runMiddleware(requireRole(trustedHeaderConfig, "power-user"), powerUserHeaders);
+  const adminResult = await runMiddleware(requireRole(trustedHeaderConfig, "admin"), powerUserHeaders);
+
+  assert.equal(powerUserResult.nextCalled, true);
+  assert.equal(powerUserResult.request.user.role, "power-user");
+  assert.equal(adminResult.nextCalled, false);
+  assert.equal(adminResult.response.statusCode, 403);
+});
+
 test("trusted-header auth mode allows admin access to reader routes", async () => {
   const result = await runMiddleware(requireRole(trustedHeaderConfig, "reader"), {
     "x-cemetery-user-subject": "user-2",

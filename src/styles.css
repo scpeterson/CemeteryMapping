@@ -27,7 +27,8 @@ body,
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -359,6 +360,29 @@ h3 {
   color: #795316;
 }
 
+.admin-open-button {
+  position: absolute;
+  top: 18px;
+  right: 90px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(23, 32, 29, 0.18);
+  border-radius: 7px;
+  background: rgba(251, 252, 247, 0.94);
+  color: #26342d;
+  font-size: 0.78rem;
+  font-weight: 780;
+  box-shadow: var(--shadow);
+}
+
+.admin-open-button:hover {
+  background: #edf2ea;
+}
+
 .data-status {
   position: absolute;
   top: 18px;
@@ -415,6 +439,38 @@ h3 {
 .map-controls button:focus-visible {
   outline: 3px solid rgba(47, 104, 79, 0.24);
   outline-offset: 2px;
+}
+
+.north-arrow {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  min-height: 54px;
+  color: #17201d;
+  user-select: none;
+}
+
+.north-arrow span {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.north-arrow svg {
+  width: 28px;
+  height: 28px;
+  overflow: visible;
+}
+
+.north-arrow-needle {
+  fill: #17201d;
+}
+
+.north-arrow-cutout {
+  fill: #fbfcf7;
+  opacity: 0.86;
 }
 
 .cemetery-map-marker {
@@ -778,6 +834,185 @@ h3 {
   color: #4c5a51;
 }
 
+.admin-panel {
+  position: absolute;
+  top: 64px;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(560px, calc(100% - 36px));
+  padding: 18px;
+  overflow: auto;
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: 8px;
+  background: rgba(251, 252, 247, 0.97);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.admin-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-panel-header h2 {
+  margin-bottom: 0;
+}
+
+.admin-message {
+  padding: 10px 12px;
+  border: 1px solid #d6ded1;
+  border-radius: 8px;
+  background: #fff;
+  color: #4d5a50;
+  font-weight: 680;
+}
+
+.admin-message.is-error {
+  border-color: rgba(199, 82, 79, 0.45);
+  color: #8c302d;
+}
+
+.admin-section {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #e0e7dc;
+}
+
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-form label {
+  display: grid;
+  gap: 5px;
+  color: #4f5d52;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.admin-form input,
+.admin-form select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+  color: #18211d;
+  padding: 7px 9px;
+}
+
+.checkbox-row {
+  align-content: center;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-form-actions button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 720;
+}
+
+.admin-form-actions button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.admin-form-actions .secondary-button {
+  border-color: #c8d1c3;
+  background: #fff;
+  color: #405048;
+}
+
+.admin-table,
+.role-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-user-row,
+.role-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(96px, 0.6fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+  color: #26342d;
+  text-align: left;
+}
+
+.admin-user-row:hover {
+  border-color: #b9c6b4;
+  background: #f4f8f1;
+}
+
+.admin-user-row span:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-user-row small,
+.role-row small,
+.role-row p {
+  color: var(--text-muted);
+}
+
+.admin-user-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-active,
+.status-inactive {
+  justify-self: end;
+  font-weight: 780;
+}
+
+.status-active {
+  color: #2f684f;
+}
+
+.status-inactive {
+  color: #8c302d;
+}
+
+.role-row {
+  grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
+}
+
+.role-row p {
+  margin-bottom: 0;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -811,6 +1046,11 @@ h3 {
   .map-legend {
     width: min(320px, calc(100% - 36px));
   }
+
+  .admin-panel {
+    left: 18px;
+    width: auto;
+  }
 }
 
 @media (max-width: 760px) {
@@ -840,6 +1080,21 @@ h3 {
     right: 18px;
     bottom: 18px;
     width: auto;
+  }
+
+  .admin-open-button {
+    right: 86px;
+  }
+
+  .admin-form,
+  .admin-user-row,
+  .role-row {
+    grid-template-columns: 1fr;
+  }
+
+  .status-active,
+  .status-inactive {
+    justify-self: start;
   }
 
   .burial-record dl {

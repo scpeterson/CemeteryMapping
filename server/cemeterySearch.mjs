@@ -44,8 +44,8 @@ function toSearchSummary(grave) {
   };
 }
 
-export async function searchCemetery(pool, { query = "", statuses = [] } = {}) {
-  const data = await getDetailedCemeteryData(pool);
+export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true } = {}) {
+  const data = await getDetailedCemeteryData(pool, { includeOwnership });
   const cleaned = normalize(query);
   const allowedStatuses = new Set(statuses.length ? statuses : Object.keys(statusLabels));
 

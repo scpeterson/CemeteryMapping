@@ -10,12 +10,25 @@ This page records the first administrative editing workflows for Cemetery Mappin
 ## Guiding Rules
 
 - Admin workflows require authenticated `admin` access.
-- Reader workflows remain read-only.
+- Reader workflows remain read-only and must not expose deed/owner information.
+- Power-user workflows can view and edit deed/owner information and update existing cemetery records, but cannot add structural records, delete records, or manage users.
 - Deletes are soft deletes and must create audit events.
 - Creates and updates should create audit events before they are exposed in the UI.
 - Spatial geometry edits should be handled carefully and should not be the first editing workflow unless the source data workflow is also defined.
 
 ## Workflow Priority
+
+### 0. User and Role Management
+
+Implemented admin foundation.
+
+Only admins can manage application users and roles. User management lives in a dedicated admin drawer rather than the left search panel or right grave-detail panel, so map workflows remain focused on cemetery records.
+
+Current role behavior:
+
+- `reader`: map, gravesites, and burial information; no deed/owner sections.
+- `power-user`: reader access plus deed/owner visibility and update access for existing cemetery records.
+- `admin`: full access, including user management, adding structural records, and soft deletes.
 
 ### 1. Headstone Condition Updates
 
@@ -110,7 +123,7 @@ Geometry editing has higher risk because existing data originates from an Esri F
 - Editing cemetery or section polygons in the web UI.
 - Creating surveyed gravesite polygons.
 - Bulk import approval screens.
-- Owner/contact editing.
+- Full deed/owner editing forms beyond access-control visibility and user-role setup.
 - Hard delete operations.
 
 ## Validation Expectations
