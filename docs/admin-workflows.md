@@ -28,7 +28,7 @@ The Admin UI stores the Auth0 `user_id` as the local Auth0 user ID. When Managem
 
 Existing users can be edited from the Users list. Each row also has a direct Deactivate or Reactivate action. Deactivation changes only the local `app_users.is_active` flag; it blocks CemeteryMapping access after Auth0 token validation but does not delete or disable the Auth0 account.
 
-The Admin UI also has a Cemetery Records tab for text-only cemetery hierarchy edits. Admins can update cemetery names and notes, section names and alternate names, and lot names. Section alternate names are stored as a normalized text array; sections `B` and `D` are initially backfilled with `OC` and `Original Cemetery`.
+The Admin UI also has a Cemetery Records tab for text-only cemetery hierarchy edits. Admins first search for and select a cemetery, then the section picker is limited to that cemetery, and the lot picker is limited to the selected section. Admins can update cemetery names and notes, section names and alternate names, and lot names. Section alternate names are stored as a normalized text array; sections `B` and `D` are initially backfilled with `OC` and `Original Cemetery`.
 
 Current role behavior:
 
