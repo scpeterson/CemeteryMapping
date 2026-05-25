@@ -926,6 +926,7 @@ h3 {
 
 .admin-form input,
 .admin-form select,
+.record-picker input,
 .record-editor-row input,
 .record-editor-row textarea {
   width: 100%;
@@ -1004,6 +1005,32 @@ h3 {
 .record-editor-list {
   display: grid;
   gap: 8px;
+}
+
+.record-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.record-picker {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.record-editor-empty {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px dashed #cfd9ca;
+  border-radius: 8px;
+  background: #f8faf6;
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .admin-user-row,
@@ -1233,6 +1260,7 @@ h3 {
   }
 
   .admin-form,
+  .record-picker-grid,
   .admin-user-row,
   .role-row,
   .record-editor-row,
