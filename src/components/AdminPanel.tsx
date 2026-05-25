@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Landmark, Layers3, Map as MapIcon, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { Landmark, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
   fetchAdminRoles,
@@ -76,6 +76,9 @@ const emptyCemeteryRecords: CemeteryAdminRecords = {
 const alternateNamesText = (alternateNames: string[]) => alternateNames.join("\n");
 const parseAlternateNames = (value: string) =>
   [...new Set(value.split(/\r?\n|,/u).map((item) => item.trim()).filter(Boolean))];
+const cemeteryPickerLabel = (cemetery: CemeteryTextRecord) => cemetery.name;
+const sectionPickerLabel = (section: SectionTextRecord) => `Section ${section.sectionId} - ${section.name}`;
+const lotPickerLabel = (lot: LotTextRecord) => `Lot ${lot.lotId} - ${lot.name}`;
 
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
@@ -83,6 +86,12 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [cemeteryRecords, setCemeteryRecords] = useState<CemeteryAdminRecords>(emptyCemeteryRecords);
   const [form, setForm] = useState<UserFormState>(blankUser);
+  const [selectedCemeteryId, setSelectedCemeteryId] = useState("");
+  const [selectedSectionId, setSelectedSectionId] = useState("");
+  const [selectedLotId, setSelectedLotId] = useState("");
+  const [cemeteryPickerValue, setCemeteryPickerValue] = useState("");
+  const [sectionPickerValue, setSectionPickerValue] = useState("");
+  const [lotPickerValue, setLotPickerValue] = useState("");
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +104,26 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const cemeteryNamesById = useMemo(
     () => new globalThis.Map(cemeteryRecords.cemeteries.map((cemetery) => [cemetery.id, cemetery.name])),
     [cemeteryRecords.cemeteries],
+  );
+  const selectedCemetery = useMemo(
+    () => cemeteryRecords.cemeteries.find((cemetery) => cemetery.id === selectedCemeteryId),
+    [cemeteryRecords.cemeteries, selectedCemeteryId],
+  );
+  const sectionsForSelectedCemetery = useMemo(
+    () => cemeteryRecords.sections.filter((section) => section.cemeteryId === selectedCemeteryId),
+    [cemeteryRecords.sections, selectedCemeteryId],
+  );
+  const selectedSection = useMemo(
+    () => sectionsForSelectedCemetery.find((section) => section.id === selectedSectionId),
+    [sectionsForSelectedCemetery, selectedSectionId],
+  );
+  const lotsForSelectedSection = useMemo(
+    () => cemeteryRecords.lots.filter((lot) => lot.cemeteryId === selectedCemeteryId && lot.sectionId === selectedSection?.sectionId),
+    [cemeteryRecords.lots, selectedCemeteryId, selectedSection?.sectionId],
+  );
+  const selectedLot = useMemo(
+    () => lotsForSelectedSection.find((lot) => lot.id === selectedLotId),
+    [lotsForSelectedSection, selectedLotId],
   );
 
   useEffect(() => {
@@ -243,6 +272,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     try {
       const saved = await updateCemeteryText(cemetery.id, { name: cemetery.name, notes: cemetery.notes });
       updateCemeteryRecord(saved.id, saved);
+      if (saved.id === selectedCemeteryId) setCemeteryPickerValue(cemeteryPickerLabel(saved));
       setMessage(`${saved.name} saved.`);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save cemetery.");
@@ -260,6 +290,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     try {
       const saved = await updateSectionText(section.id, { name: section.name, alternateNames: section.alternateNames });
       updateSectionRecord(saved.id, saved);
+      if (saved.id === selectedSectionId) setSectionPickerValue(sectionPickerLabel(saved));
       setMessage(`Section ${saved.sectionId} saved.`);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save section.");
@@ -277,12 +308,37 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     try {
       const saved = await updateLotText(lot.id, { name: lot.name });
       updateLotRecord(saved.id, saved);
+      if (saved.id === selectedLotId) setLotPickerValue(lotPickerLabel(saved));
       setMessage(`Lot ${saved.lotId} saved.`);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save lot.");
     } finally {
       setSavingRecordKey(undefined);
     }
+  };
+
+  const selectCemeteryByPickerValue = (value: string) => {
+    setCemeteryPickerValue(value);
+    const match = cemeteryRecords.cemeteries.find((cemetery) => cemeteryPickerLabel(cemetery) === value);
+    setSelectedCemeteryId(match?.id ?? "");
+    setSelectedSectionId("");
+    setSelectedLotId("");
+    setSectionPickerValue("");
+    setLotPickerValue("");
+  };
+
+  const selectSectionByPickerValue = (value: string) => {
+    setSectionPickerValue(value);
+    const match = sectionsForSelectedCemetery.find((section) => sectionPickerLabel(section) === value);
+    setSelectedSectionId(match?.id ?? "");
+    setSelectedLotId("");
+    setLotPickerValue("");
+  };
+
+  const selectLotByPickerValue = (value: string) => {
+    setLotPickerValue(value);
+    const match = lotsForSelectedSection.find((lot) => lotPickerLabel(lot) === value);
+    setSelectedLotId(match?.id ?? "");
   };
 
   return (
@@ -470,116 +526,169 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           <section className="admin-section">
             <div className="section-title">
               <Landmark size={17} aria-hidden="true" />
-              <h3>Cemeteries</h3>
+              <h3>Cemetery Records</h3>
             </div>
+
+            <div className="record-picker-grid">
+              <label className="record-picker">
+                Cemetery
+                <input
+                  value={cemeteryPickerValue}
+                  onChange={(event) => selectCemeteryByPickerValue(event.target.value)}
+                  list="cemetery-record-cemetery-options"
+                  placeholder="Search cemeteries"
+                  title="Search for and select the cemetery record to edit."
+                />
+                <datalist id="cemetery-record-cemetery-options">
+                  {cemeteryRecords.cemeteries.map((cemetery) => (
+                    <option key={cemetery.id} value={cemeteryPickerLabel(cemetery)} />
+                  ))}
+                </datalist>
+              </label>
+
+              {selectedCemetery ? (
+                <label className="record-picker">
+                  Section
+                  <input
+                    value={sectionPickerValue}
+                    onChange={(event) => selectSectionByPickerValue(event.target.value)}
+                    list="cemetery-record-section-options"
+                    placeholder="Search sections"
+                    title="Search for and select a section in the selected cemetery."
+                  />
+                  <datalist id="cemetery-record-section-options">
+                    {sectionsForSelectedCemetery.map((section) => (
+                      <option key={section.id} value={sectionPickerLabel(section)} />
+                    ))}
+                  </datalist>
+                </label>
+              ) : null}
+
+              {selectedSection ? (
+                <label className="record-picker">
+                  Lot
+                  <input
+                    value={lotPickerValue}
+                    onChange={(event) => selectLotByPickerValue(event.target.value)}
+                    list="cemetery-record-lot-options"
+                    placeholder="Search lots"
+                    title="Search for and select a lot in the selected section."
+                  />
+                  <datalist id="cemetery-record-lot-options">
+                    {lotsForSelectedSection.map((lot) => (
+                      <option key={lot.id} value={lotPickerLabel(lot)} />
+                    ))}
+                  </datalist>
+                </label>
+              ) : null}
+            </div>
+
             <div className="record-editor-list">
-              {cemeteryRecords.cemeteries.map((cemetery) => (
-                <article key={cemetery.id} className="record-editor-row">
+              {selectedCemetery ? (
+                <article className="record-editor-row">
+                  <div className="record-editor-context">
+                    <strong>{selectedCemetery.name}</strong>
+                    <small>Cemetery</small>
+                  </div>
                   <label>
                     Name
                     <input
-                      value={cemetery.name}
-                      onChange={(event) => updateCemeteryRecord(cemetery.id, { name: event.target.value })}
+                      value={selectedCemetery.name}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { name: event.target.value })}
                       title="The cemetery name shown on the map, search results, and cemetery marker."
                     />
                   </label>
                   <label>
                     Notes
                     <textarea
-                      value={cemetery.notes}
-                      onChange={(event) => updateCemeteryRecord(cemetery.id, { notes: event.target.value })}
+                      value={selectedCemetery.notes}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { notes: event.target.value })}
                       rows={2}
                       title="Administrative notes stored with the cemetery record."
                     />
                   </label>
                   <button
                     type="button"
-                    onClick={() => void saveCemeteryRecord(cemetery)}
-                    disabled={savingRecordKey === `cemetery:${cemetery.id}` || !cemetery.name.trim()}
+                    onClick={() => void saveCemeteryRecord(selectedCemetery)}
+                    disabled={savingRecordKey === `cemetery:${selectedCemetery.id}` || !selectedCemetery.name.trim()}
                     title="Save this cemetery text."
                   >
-                    {savingRecordKey === `cemetery:${cemetery.id}` ? "Saving..." : "Save cemetery"}
+                    {savingRecordKey === `cemetery:${selectedCemetery.id}` ? "Saving..." : "Save cemetery"}
                   </button>
                 </article>
-              ))}
-            </div>
-          </section>
+              ) : (
+                <p className="record-editor-empty">Select a cemetery to edit its text records.</p>
+              )}
 
-          <section className="admin-section">
-            <div className="section-title">
-              <Layers3 size={17} aria-hidden="true" />
-              <h3>Sections</h3>
-            </div>
-            <div className="record-editor-list">
-              {cemeteryRecords.sections.map((section) => (
-                <article key={section.id} className="record-editor-row">
+              {selectedCemetery && sectionsForSelectedCemetery.length === 0 ? (
+                <p className="record-editor-empty">No sections are available for this cemetery.</p>
+              ) : null}
+
+              {selectedSection ? (
+                <article className="record-editor-row">
                   <div className="record-editor-context">
-                    <strong>Section {section.sectionId}</strong>
-                    <small>{cemeteryNamesById.get(section.cemeteryId) ?? "Unknown cemetery"}</small>
+                    <strong>Section {selectedSection.sectionId}</strong>
+                    <small>{cemeteryNamesById.get(selectedSection.cemeteryId) ?? "Unknown cemetery"}</small>
                   </div>
                   <label>
                     Name
                     <input
-                      value={section.name}
-                      onChange={(event) => updateSectionRecord(section.id, { name: event.target.value })}
+                      value={selectedSection.name}
+                      onChange={(event) => updateSectionRecord(selectedSection.id, { name: event.target.value })}
                       title="The section display name shown on the map label."
                     />
                   </label>
                   <label>
                     Alternate names
                     <textarea
-                      value={alternateNamesText(section.alternateNames)}
-                      onChange={(event) => updateSectionRecord(section.id, { alternateNames: parseAlternateNames(event.target.value) })}
+                      value={alternateNamesText(selectedSection.alternateNames)}
+                      onChange={(event) => updateSectionRecord(selectedSection.id, { alternateNames: parseAlternateNames(event.target.value) })}
                       rows={3}
                       title="Alternate section names, one per line or separated by commas. For example: OC and Original Cemetery."
                     />
                   </label>
                   <button
                     type="button"
-                    onClick={() => void saveSectionRecord(section)}
-                    disabled={savingRecordKey === `section:${section.id}`}
+                    onClick={() => void saveSectionRecord(selectedSection)}
+                    disabled={savingRecordKey === `section:${selectedSection.id}`}
                     title="Save this section name and alternate names."
                   >
-                    {savingRecordKey === `section:${section.id}` ? "Saving..." : "Save section"}
+                    {savingRecordKey === `section:${selectedSection.id}` ? "Saving..." : "Save section"}
                   </button>
                 </article>
-              ))}
-            </div>
-          </section>
+              ) : null}
 
-          <section className="admin-section">
-            <div className="section-title">
-              <MapIcon size={17} aria-hidden="true" />
-              <h3>Lots</h3>
-            </div>
-            <div className="record-editor-list">
-              {cemeteryRecords.lots.map((lot) => (
-                <article key={lot.id} className="record-editor-row">
+              {selectedSection && lotsForSelectedSection.length === 0 ? (
+                <p className="record-editor-empty">No lots are available for this section.</p>
+              ) : null}
+
+              {selectedLot ? (
+                <article className="record-editor-row">
                   <div className="record-editor-context">
-                    <strong>Lot {lot.lotId}</strong>
+                    <strong>Lot {selectedLot.lotId}</strong>
                     <small>
-                      {cemeteryNamesById.get(lot.cemeteryId) ?? "Unknown cemetery"}
-                      {lot.sectionId ? ` · Section ${lot.sectionId}` : ""}
+                      {cemeteryNamesById.get(selectedLot.cemeteryId) ?? "Unknown cemetery"}
+                      {selectedLot.sectionId ? ` · Section ${selectedLot.sectionId}` : ""}
                     </small>
                   </div>
                   <label>
                     Name
                     <input
-                      value={lot.name}
-                      onChange={(event) => updateLotRecord(lot.id, { name: event.target.value })}
+                      value={selectedLot.name}
+                      onChange={(event) => updateLotRecord(selectedLot.id, { name: event.target.value })}
                       title="The lot display name shown on the map label."
                     />
                   </label>
                   <button
                     type="button"
-                    onClick={() => void saveLotRecord(lot)}
-                    disabled={savingRecordKey === `lot:${lot.id}`}
+                    onClick={() => void saveLotRecord(selectedLot)}
+                    disabled={savingRecordKey === `lot:${selectedLot.id}`}
                     title="Save this lot text."
                   >
-                    {savingRecordKey === `lot:${lot.id}` ? "Saving..." : "Save lot"}
+                    {savingRecordKey === `lot:${selectedLot.id}` ? "Saving..." : "Save lot"}
                   </button>
                 </article>
-              ))}
+              ) : null}
             </div>
           </section>
         </>

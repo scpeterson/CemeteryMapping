@@ -381,7 +381,11 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Users" })).toBeVisible();
 
   await page.getByRole("tab", { name: "Cemetery Records" }).click();
-  await expect(page.getByRole("heading", { name: "Sections" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cemetery Records" })).toBeVisible();
+
+  await page.getByRole("combobox", { name: "Cemetery" }).fill("St. Mark Church Cemetery");
+  await expect(page.getByRole("combobox", { name: "Section" })).toBeVisible();
+  await page.getByRole("combobox", { name: "Section" }).fill("Section B - Section B");
 
   const sectionRow = page.locator(".record-editor-row").filter({ hasText: "Section B" }).first();
   await expect(sectionRow).toBeVisible();
