@@ -1,8 +1,9 @@
 import express from "express";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
+import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
 import { loadApiConfig } from "./config.mjs";
-import { requireRole } from "./auth.mjs";
+import { canViewOwnership, requireRole } from "./auth.mjs";
 import { getCemeteryData, getGraveSpace, restoreGraveSpace, softDeleteGraveSpace } from "./cemeteryRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
@@ -15,6 +16,40 @@ import {
 } from "./requestValidation.mjs";
 
 const { Pool } = pg;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
+function requiredText(value, label, maxLength) {
+  const text = String(value ?? "").trim();
+  if (!text) throw new BadRequestError(`${label} is required.`);
+  if (text.length > maxLength) throw new BadRequestError(`${label} is too long.`);
+  return text;
+}
+
+function optionalText(value, label, maxLength) {
+  if (value === undefined || value === null) return "";
+  const text = String(value).trim();
+  if (text.length > maxLength) throw new BadRequestError(`${label} is too long.`);
+  return text;
+}
+
+function validateUuid(value, label) {
+  const text = String(value ?? "").trim();
+  if (!uuidPattern.test(text)) throw new BadRequestError(`${label} must be a UUID.`);
+  return text;
+}
+
+function validateAdminUserPayload(body, roles) {
+  const role = requiredText(body?.role, "Role", 50);
+  if (!roles.includes(role)) throw new BadRequestError(`Unsupported role: ${role}.`);
+
+  return {
+    externalSubject: requiredText(body?.externalSubject, "External subject", 300),
+    email: requiredText(body?.email, "Email", 320),
+    displayName: optionalText(body?.displayName, "Display name", 250),
+    role,
+    isActive: body?.isActive !== false,
+  };
+}
 
 export function createApp(config, pool) {
   const app = express();
@@ -38,6 +73,23 @@ export function createApp(config, pool) {
   const requireReader = requireRole(config.auth, pool, "reader");
   const requireAdmin = requireRole(config.auth, pool, "admin");
 
+  app.get("/api/me", requireReader, async (request, response) => {
+    const role = request.user.role;
+    response.json({
+      subject: request.user.subject,
+      email: request.user.email,
+      displayName: request.user.displayName,
+      role,
+      permissions: {
+        canViewOwnership: canViewOwnership(role),
+        canManageUsers: role === "admin",
+        canCreateCemeteryRecords: role === "admin",
+        canUpdateCemeteryRecords: role === "admin" || role === "power-user",
+        canDeleteCemeteryRecords: role === "admin",
+      },
+    });
+  });
+
   app.get("/api/cemetery-map", requireReader, async (_request, response, next) => {
     try {
       response.json(await getCemeteryData(pool));
@@ -50,7 +102,7 @@ export function createApp(config, pool) {
     try {
       const cemeteryId = validateCemeteryId(request.params.cemeteryId);
       const id = validateGraveSpaceId(request.params.id);
-      const grave = await getGraveSpace(pool, cemeteryId, id);
+      const grave = await getGraveSpace(pool, cemeteryId, id, { includeOwnership: canViewOwnership(request.user.role) });
       if (!grave) {
         response.status(404).json({ error: "Grave space not found" });
         return;
@@ -66,7 +118,7 @@ export function createApp(config, pool) {
     try {
       const query = validateSearchQuery(request.query.q);
       const statuses = validateStatuses(request.query.status);
-      response.json(await searchCemetery(pool, { query, statuses }));
+      response.json(await searchCemetery(pool, { query, statuses, includeOwnership: canViewOwnership(request.user.role) }));
     } catch (error) {
       next(error);
     }
@@ -84,6 +136,48 @@ export function createApp(config, pool) {
       }
 
       response.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/roles", requireAdmin, async (_request, response, next) => {
+    try {
+      response.json(await listRoles(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/users", requireAdmin, async (_request, response, next) => {
+    try {
+      response.json(await listUsers(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/users", requireAdmin, async (request, response, next) => {
+    try {
+      const roles = await listAssignableRoles(pool);
+      const user = validateAdminUserPayload(request.body, roles);
+      response.status(201).json(await createUser(pool, user));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/users/:id", requireAdmin, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "User id");
+      const roles = await listAssignableRoles(pool);
+      const user = validateAdminUserPayload(request.body, roles);
+      const updated = await updateUser(pool, id, user);
+      if (!updated) {
+        response.status(404).json({ error: "User not found" });
+        return;
+      }
+      response.json(updated);
     } catch (error) {
       next(error);
     }

@@ -461,6 +461,13 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     <>
       <div ref={containerRef} className="map-canvas" aria-label="Interactive cemetery map" />
       <div className="map-controls" aria-label="Map controls">
+        <div className="north-arrow" role="img" aria-label="North arrow" title="North">
+          <span>N</span>
+          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+            <path className="north-arrow-needle" d="M20 3 L32 37 L20 30 L8 37 Z" />
+            <path className="north-arrow-cutout" d="M20 14 L25 29 L20 26 L15 29 Z" />
+          </svg>
+        </div>
         <button type="button" onClick={zoomIn} aria-label="Zoom in" title="Zoom in">
           <ZoomIn size={18} aria-hidden="true" />
         </button>

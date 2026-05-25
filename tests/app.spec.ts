@@ -120,6 +120,72 @@ test("burial notes show the corrected North Hills source name without import-onl
   await expect(page.locator(".detail-panel")).not.toContainText("Person column:");
 });
 
+test("read-only users do not see owner or deed sections", async ({ page }) => {
+  const cemeteryId = "11111111-1111-4111-8111-111111111111";
+  const graveSummary = {
+    cemeteryId,
+    cemeteryName: "Mock Cemetery",
+    geometry: mockGraveGeometry,
+    id: "A-TEST",
+    lot: "1",
+    section: "A",
+    space: "TEST",
+    status: "occupied",
+  };
+
+  await page.route("**/api/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        subject: "reader",
+        email: "reader@example.test",
+        role: "reader",
+        permissions: {
+          canViewOwnership: false,
+          canManageUsers: false,
+          canCreateCemeteryRecords: false,
+          canUpdateCemeteryRecords: false,
+          canDeleteCemeteryRecords: false,
+        },
+      }),
+    });
+  });
+  await page.route("**/api/cemetery-map", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        boundaries: [{ type: "Feature", properties: { name: "Mock Cemetery" }, geometry: mockBoundaryGeometry }],
+        sections: [],
+        lots: [],
+        graves: [graveSummary],
+      }),
+    });
+  });
+  await page.route("**/api/search**", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: "[]" });
+  });
+  await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...graveSummary,
+        owners: [{ id: "owner-1", displayName: "Hidden Owner", contactNote: "Deed 100" }],
+        currentOwnerIds: ["owner-1"],
+        burials: [{ id: "burial-1", person: { id: "person-1", firstName: "Mabel", lastName: "Stone" } }],
+        ownershipHistory: [{ id: "event-1", ownerIds: ["owner-1"], eventType: "purchase", effectiveDate: "2020-01-01", recordedBy: "Deed book" }],
+      }),
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
+  await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
+  await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");
+  await expect(page.locator(".detail-panel")).not.toContainText("Hidden Owner");
+  await expect(page.getByLabel("Open admin user management")).toHaveCount(0);
+});
+
 test("loads API-backed cemetery records and supports search", async ({ page }) => {
   const graveDetailRequests: string[] = [];
   page.on("request", (request) => {
@@ -130,6 +196,8 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
   await expect(page.locator(".panel-heading .eyebrow")).toContainText(/\d+ cemeteries/);
+  await expect(page.getByLabel("North arrow")).toBeVisible();
+  await expect(page.getByLabel("Open admin user management")).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Fit all cemetery data" })).toBeVisible();

@@ -54,3 +54,25 @@ test("repository read queries do not overlap on the same pg client", async () =>
   await getDetailedCemeteryData(pool);
   await getGraveSpace(pool, "11111111-1111-4111-8111-111111111111", "A-01-01");
 });
+
+test("repository can redact ownership data from grave detail reads", async () => {
+  let ownerQueryCount = 0;
+  const pool = {
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes("FROM owners")) ownerQueryCount += 1;
+          return { rows: queryRows(sql) };
+        },
+        release() {},
+      };
+    },
+  };
+
+  const grave = await getGraveSpace(pool, "11111111-1111-4111-8111-111111111111", "A-01-01", { includeOwnership: false });
+
+  assert.equal(ownerQueryCount, 0);
+  assert.deepEqual(grave.owners, []);
+  assert.deepEqual(grave.currentOwnerIds, []);
+  assert.deepEqual(grave.ownershipHistory, []);
+});

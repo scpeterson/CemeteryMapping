@@ -75,6 +75,15 @@ function toGraveSummary(grave) {
   };
 }
 
+function ownershipRedactedGrave(grave) {
+  return {
+    ...grave,
+    owners: [],
+    currentOwnerIds: [],
+    ownershipHistory: [],
+  };
+}
+
 function toMutationActor(user) {
   if (!user) return {};
   return {
@@ -240,7 +249,7 @@ export async function getCemeteryData(pool) {
   }
 }
 
-export async function getDetailedCemeteryData(pool) {
+export async function getDetailedCemeteryData(pool, { includeOwnership = true } = {}) {
   const client = await pool.connect();
   try {
     const cemeteryResult = await client.query(`
@@ -301,16 +310,18 @@ export async function getDetailedCemeteryData(pool) {
       `,
       [cemeteryIds],
     );
-    const ownersResult = await client.query(
-      `
-        SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
-        FROM owners
-        WHERE deleted_at IS NULL
-          AND gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
-        ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
-      `,
-      [cemeteryIds],
-    );
+    const ownersResult = includeOwnership
+      ? await client.query(
+          `
+            SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
+            FROM owners
+            WHERE deleted_at IS NULL
+              AND gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
+            ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
+          `,
+          [cemeteryIds],
+        )
+      : { rows: [] };
     const burialsResult = await client.query(
       `
         SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
@@ -351,7 +362,7 @@ export async function getDetailedCemeteryData(pool) {
       graves: gravesitesResult.rows.map((grave) => {
         const graveOwners = ownersByGrave.get(grave.uuid) ?? [];
 
-        return {
+        const detailedGrave = {
           ...toGraveSummary(grave),
           owners: graveOwners.map(toOwner),
           currentOwnerIds: graveOwners.map((owner) => owner.id),
@@ -359,6 +370,7 @@ export async function getDetailedCemeteryData(pool) {
           ownershipHistory: graveOwners.map(toOwnershipEvent),
           notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
         };
+        return includeOwnership ? detailedGrave : ownershipRedactedGrave(detailedGrave);
       }),
       owners: ownersResult.rows.map(toOwner),
     };
@@ -367,7 +379,7 @@ export async function getDetailedCemeteryData(pool) {
   }
 }
 
-export async function getGraveSpace(pool, cemeteryId, gravesiteId) {
+export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwnership = true } = {}) {
   const client = await pool.connect();
   try {
     const graveResult = await client.query(
@@ -398,16 +410,18 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId) {
     const grave = graveResult.rows[0];
     if (!grave) return undefined;
 
-    const ownersResult = await client.query(
-      `
-        SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
-        FROM owners
-        WHERE gravesite_uuid = $1
-          AND deleted_at IS NULL
-        ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
-      `,
-      [grave.uuid],
-    );
+    const ownersResult = includeOwnership
+      ? await client.query(
+          `
+            SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
+            FROM owners
+            WHERE gravesite_uuid = $1
+              AND deleted_at IS NULL
+            ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
+          `,
+          [grave.uuid],
+        )
+      : { rows: [] };
     const burialsResult = await client.query(
       `
         SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
@@ -419,7 +433,7 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId) {
       [grave.uuid],
     );
 
-    return {
+    const detailedGrave = {
       ...toGraveSummary(grave),
       owners: ownersResult.rows.map(toOwner),
       currentOwnerIds: ownersResult.rows.map((owner) => owner.id),
@@ -427,6 +441,7 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId) {
       ownershipHistory: ownersResult.rows.map(toOwnershipEvent),
       notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
     };
+    return includeOwnership ? detailedGrave : ownershipRedactedGrave(detailedGrave);
   } finally {
     client.release();
   }
