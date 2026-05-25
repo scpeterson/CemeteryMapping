@@ -170,7 +170,7 @@ export default function App() {
           {appEnvironment}
         </div>
         {currentUser?.permissions.canManageUsers ? (
-          <button type="button" className="admin-open-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin user management">
+          <button type="button" className="admin-open-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin management">
             <ShieldCheck size={16} aria-hidden="true" />
             Admin
           </button>

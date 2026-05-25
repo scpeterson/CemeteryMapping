@@ -878,6 +878,31 @@ h3 {
   color: #8c302d;
 }
 
+.admin-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #eef4eb;
+}
+
+.admin-tabs button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #405048;
+  font-weight: 760;
+}
+
+.admin-tabs button.is-active {
+  background: #fff;
+  color: #23372f;
+  box-shadow: 0 1px 3px rgba(35, 55, 47, 0.12);
+}
+
 .admin-section {
   display: grid;
   gap: 12px;
@@ -900,7 +925,9 @@ h3 {
 }
 
 .admin-form input,
-.admin-form select {
+.admin-form select,
+.record-editor-row input,
+.record-editor-row textarea {
   width: 100%;
   min-height: 38px;
   border: 1px solid #c8d1c3;
@@ -908,6 +935,11 @@ h3 {
   background: #fff;
   color: #18211d;
   padding: 7px 9px;
+}
+
+.record-editor-row textarea {
+  resize: vertical;
+  line-height: 1.35;
 }
 
 .auth0-user-id-row {
@@ -968,13 +1000,15 @@ h3 {
 }
 
 .admin-table,
-.role-list {
+.role-list,
+.record-editor-list {
   display: grid;
   gap: 8px;
 }
 
 .admin-user-row,
-.role-row {
+.role-row,
+.record-editor-row {
   display: grid;
   align-items: center;
   gap: 12px;
@@ -992,6 +1026,53 @@ h3 {
 
 .role-row {
   grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
+}
+
+.record-editor-row {
+  grid-template-columns: minmax(110px, 0.55fr) minmax(0, 1fr) auto;
+}
+
+.record-editor-row:has(textarea) {
+  grid-template-columns: minmax(110px, 0.5fr) minmax(0, 1fr) minmax(0, 1.2fr) auto;
+}
+
+.record-editor-row label,
+.record-editor-context {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.record-editor-context strong {
+  color: #26342d;
+  font-size: 0.92rem;
+}
+
+.record-editor-context small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-editor-row button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.record-editor-row button:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .admin-user-row:hover {
@@ -1153,7 +1234,9 @@ h3 {
 
   .admin-form,
   .admin-user-row,
-  .role-row {
+  .role-row,
+  .record-editor-row,
+  .record-editor-row:has(textarea) {
     grid-template-columns: 1fr;
   }
 

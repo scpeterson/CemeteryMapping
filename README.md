@@ -65,6 +65,7 @@ If another local PostgreSQL service already uses port `5432`, create `db/env/dev
 - Spatial import staging and topology-style validation checks
 - Esri File Geodatabase inspection, GeoJSON export, staging import, and cemetery/section promotion helpers
 - Excel headstone coordinate import that generates gravesite polygons, headstone points, and linked burials
+- Admin-only cemetery record editor for cemetery names/notes, section names and alternate names, and lot names
 - Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
 - Express API backed by PostgreSQL/PostGIS
 
@@ -112,6 +113,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/cemetery-map` for GeoJSON cemetery boundaries, sections, and summary grave-space geometry used by the map
 - `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` for full grave details fetched when a grave is selected
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
+- `GET /api/admin/cemetery-records` for admin-only cemetery, section, and lot text records
+- `PUT /api/admin/cemetery-records/cemeteries/:id`, `/sections/:id`, and `/lots/:id` for admin-only text updates
 - `DELETE /api/cemeteries/:cemeteryId/grave-spaces/:id` for admin-only soft delete of a grave space
 - `POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore` for admin-only restore of a soft-deleted grave space
 

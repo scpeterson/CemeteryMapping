@@ -32,6 +32,7 @@ export function sectionsFeatureCollection(data: CemeteryData) {
       properties: {
         id: section.id,
         name: section.name,
+        alternateNames: section.alternateNames,
       },
       geometry: section.geometry,
     })),

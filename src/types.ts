@@ -56,6 +56,7 @@ export type GraveSpace = GraveSpaceSummary & {
 export type CemeterySection = {
   id: string;
   name: string;
+  alternateNames: string[];
   geometry: AreaGeometry;
 };
 
@@ -118,4 +119,32 @@ export type Auth0ResolvedUser = {
   displayName: string;
   created: boolean;
   invitationSent: boolean;
+};
+
+export type CemeteryTextRecord = {
+  id: string;
+  name: string;
+  notes: string;
+};
+
+export type SectionTextRecord = {
+  id: string;
+  cemeteryId: string;
+  sectionId: string;
+  name: string;
+  alternateNames: string[];
+};
+
+export type LotTextRecord = {
+  id: string;
+  cemeteryId: string;
+  sectionId: string;
+  lotId: string;
+  name: string;
+};
+
+export type CemeteryAdminRecords = {
+  cemeteries: CemeteryTextRecord[];
+  sections: SectionTextRecord[];
+  lots: LotTextRecord[];
 };
