@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
-import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
+import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, statusLabels } from "../lib/format";
@@ -21,12 +21,17 @@ const center: [number, number] = [-76.70431, 39.19604];
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
 
+function graveSelectionIndex(graves: GraveSpaceSummary[]) {
+  return new Map(graves.map((grave) => [graveSelectionKey(grave), grave]));
+}
+
 export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultIds, onSelectGrave }: CemeteryMapProps) {
   const [scale, setScale] = useState<MapScale>();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<Map | null>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
   const dataRef = useRef(data);
+  const gravesBySelectionKeyRef = useRef(graveSelectionIndex(data.graves));
   const visibleGravesRef = useRef(visibleGraves);
   const searchResultIdsRef = useRef(searchResultIds);
   const selectedRef = useRef(selectedGrave ? graveSelectionKey(selectedGrave) : undefined);
@@ -35,6 +40,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
   useEffect(() => {
     dataRef.current = data;
+    gravesBySelectionKeyRef.current = graveSelectionIndex(data.graves);
     visibleGravesRef.current = visibleGraves;
     searchResultIdsRef.current = searchResultIds;
     selectedRef.current = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
@@ -86,7 +92,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
       const selectGraveFeature = (event: maplibregl.MapLayerMouseEvent) => {
         const key = event.features?.[0]?.properties?.key;
-        const grave = dataRef.current.graves.find((item) => graveSelectionKey(item) === key);
+        const grave = typeof key === "string" ? gravesBySelectionKeyRef.current.get(key) : undefined;
         if (grave) onSelectRef.current(grave);
       };
 
