@@ -976,7 +976,6 @@ h3 {
 .admin-user-row,
 .role-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(96px, 0.6fr) auto;
   align-items: center;
   gap: 12px;
   padding: 11px 12px;
@@ -987,26 +986,78 @@ h3 {
   text-align: left;
 }
 
+.admin-user-row {
+  grid-template-columns: minmax(0, 1fr) 126px;
+}
+
+.role-row {
+  grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
+}
+
 .admin-user-row:hover {
   border-color: #b9c6b4;
   background: #f4f8f1;
 }
 
-.admin-user-row span:first-child {
+.admin-user-edit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(96px, 0.6fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.admin-user-edit span:first-child {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.admin-user-row small,
+.admin-user-edit small,
 .role-row small,
 .role-row p {
   color: var(--text-muted);
 }
 
-.admin-user-row small {
+.admin-user-edit small {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.user-status-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+  color: #405048;
+  font-weight: 720;
+}
+
+.user-status-action:hover {
+  border-color: #b9c6b4;
+  background: #eef4eb;
+}
+
+.user-status-action.is-deactivate {
+  color: #8c302d;
+}
+
+.user-status-action.is-reactivate {
+  color: #2f684f;
+}
+
+.user-status-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .status-active,
@@ -1021,10 +1072,6 @@ h3 {
 
 .status-inactive {
   color: #8c302d;
-}
-
-.role-row {
-  grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
 }
 
 .role-row p {

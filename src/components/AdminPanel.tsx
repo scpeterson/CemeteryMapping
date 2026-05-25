@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ShieldCheck, UserCog, UserPlus, X } from "lucide-react";
+import { ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import { createAdminUser, fetchAdminRoles, fetchAdminUsers, resolveAuth0User, type SaveUserInput, updateAdminUser } from "../api/cemeteryApi";
 import type { AppRole, AppRoleName, AppUser } from "../types";
 
@@ -63,6 +63,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
+  const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(() => new Set());
 
   const roleOptions = useMemo(() => roles.map((role) => role.name), [roles]);
 
@@ -147,6 +148,37 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save user.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const replaceUser = (saved: AppUser) => {
+    setUsers((current) => current.map((user) => (user.id === saved.id ? saved : user)));
+    setForm((current) => (current.id === saved.id ? userFormFromUser(saved) : current));
+  };
+
+  const toggleUserActive = async (user: AppUser) => {
+    setTogglingUserIds((current) => new Set(current).add(user.id));
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const saved = await updateAdminUser(user.id, {
+        externalSubject: user.externalSubject,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        isActive: !user.isActive,
+      });
+      replaceUser(saved);
+      setMessage(`${saved.email} ${saved.isActive ? "reactivated" : "deactivated"}.`);
+    } catch (toggleError) {
+      setError(toggleError instanceof Error ? toggleError.message : "Unable to update user status.");
+    } finally {
+      setTogglingUserIds((current) => {
+        const next = new Set(current);
+        next.delete(user.id);
+        return next;
+      });
     }
   };
 
@@ -253,19 +285,36 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
         </div>
         <div className="admin-table" role="table" aria-label="Application users">
           {users.map((user) => (
-            <button key={user.id} type="button" className="admin-user-row" onClick={() => setForm(userFormFromUser(user))} title={userTitle(user)}>
-              <span>
-                <strong>{user.displayName || user.email}</strong>
-                <small>{user.email}</small>
-              </span>
-              <span title={roleDescriptions[user.role]}>{roleLabel(user.role)}</span>
-              <span
-                className={user.isActive ? "status-active" : "status-inactive"}
-                title={user.isActive ? "This user can currently access the application." : "This user is blocked from application access."}
+            <article key={user.id} className="admin-user-row" title={userTitle(user)}>
+              <button type="button" className="admin-user-edit" onClick={() => setForm(userFormFromUser(user))} title={userTitle(user)}>
+                <span>
+                  <strong>{user.displayName || user.email}</strong>
+                  <small>{user.email}</small>
+                </span>
+                <span title={roleDescriptions[user.role]}>{roleLabel(user.role)}</span>
+                <span
+                  className={user.isActive ? "status-active" : "status-inactive"}
+                  title={user.isActive ? "This user can currently access the application." : "This user is blocked from application access."}
+                >
+                  {user.isActive ? "Active" : "Inactive"}
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`user-status-action ${user.isActive ? "is-deactivate" : "is-reactivate"}`}
+                onClick={() => void toggleUserActive(user)}
+                disabled={togglingUserIds.has(user.id)}
+                aria-label={`${user.isActive ? "Deactivate" : "Reactivate"} ${user.displayName || user.email}`}
+                title={
+                  user.isActive
+                    ? "Deactivate this user. The local account remains in the database, but access is blocked."
+                    : "Reactivate this user so they can access the application again."
+                }
               >
-                {user.isActive ? "Active" : "Inactive"}
-              </span>
-            </button>
+                {user.isActive ? <UserX size={15} /> : <UserCheck size={15} />}
+                <span>{user.isActive ? "Deactivate" : "Reactivate"}</span>
+              </button>
+            </article>
           ))}
         </div>
       </section>
