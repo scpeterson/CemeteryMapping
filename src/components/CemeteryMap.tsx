@@ -2,8 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
-import { boundariesFeatureCollection, cemeteryMarkersFeatureCollection, gravesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
-import { graveSelectionKey, statusColors, statusLabels } from "../lib/format";
+import { boundariesFeatureCollection, gravesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
+import { graveSelectionKey, statusLabels } from "../lib/format";
+import { exteriorRing, fitMapToData } from "./cemeteryMapBounds";
+import { addBoundaryLayers, addGraveLayers, addLotLayers, addRasterLayers, addSectionLayers, selectableGraveLayers } from "./cemeteryMapLayers";
+import { syncCemeteryMarkers } from "./cemeteryMapMarkers";
+import { mapScale, type MapScale } from "./cemeteryMapScale";
 
 type CemeteryMapProps = {
   data: CemeteryData;
@@ -14,159 +18,8 @@ type CemeteryMapProps = {
 };
 
 const center: [number, number] = [-76.70431, 39.19604];
-const earthCircumferenceMeters = 40_075_016.686;
-const cssPixelsPerInch = 96;
-const metersPerInch = 0.0254;
-const feetPerMeter = 3.28084;
-
-type MapScale = {
-  segments: { width: number; label: string }[];
-  totalWidth: number;
-  totalLabel: string;
-  representativeFraction: string;
-};
-
-type ScaleSegment = {
-  width: number;
-  label: string;
-};
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
-const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels"];
-const pasdaImageryExportUrl = "https://imagery.pasda.psu.edu/arcgis/rest/services/pasda/AlleghenyCountyImagery2017/MapServer/export";
-const pasdaImageryTileUrl = `${pasdaImageryExportUrl}?f=image&format=jpg&transparent=false&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&layers=show:4`;
-const alleghenyParcelsExportUrl = "https://gisdata.alleghenycounty.us/arcgis/rest/services/EGIS/Web_Parcels/MapServer/export";
-const alleghenyParcelsDynamicLayers = encodeURIComponent(
-  JSON.stringify([
-    {
-      id: 0,
-      source: {
-        type: "mapLayer",
-        mapLayerId: 0,
-      },
-      drawingInfo: {
-        renderer: {
-          type: "simple",
-          symbol: {
-            type: "esriSFS",
-            style: "esriSFSSolid",
-            color: [0, 0, 0, 0],
-            outline: {
-              type: "esriSLS",
-              style: "esriSLSSolid",
-              color: [255, 0, 0, 255],
-              width: 3,
-            },
-          },
-        },
-      },
-    },
-  ]),
-);
-const alleghenyParcelsTileUrl = `${alleghenyParcelsExportUrl}?f=image&format=png32&transparent=true&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&dynamicLayers=${alleghenyParcelsDynamicLayers}`;
-
-const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
-
-function extendGeometryBounds(bounds: maplibregl.LngLatBounds | undefined, geometry: GeoJSON.Geometry): maplibregl.LngLatBounds | undefined {
-  if (geometry.type === "Polygon") {
-    return geometry.coordinates[0].reduce(
-      (nextBounds, coordinate) => nextBounds.extend(coordinate as [number, number]),
-      bounds ?? new maplibregl.LngLatBounds(geometry.coordinates[0][0] as [number, number], geometry.coordinates[0][0] as [number, number]),
-    );
-  }
-
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates.reduce((nextBounds, polygon) => {
-      const ring = polygon[0];
-      if (!ring?.length) return nextBounds;
-      return ring.reduce(
-        (ringBounds, coordinate) => ringBounds.extend(coordinate as [number, number]),
-        nextBounds ?? new maplibregl.LngLatBounds(ring[0] as [number, number], ring[0] as [number, number]),
-      );
-    }, bounds);
-  }
-
-  return bounds;
-}
-
-function dataBounds(data: CemeteryData) {
-  const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
-  const boundaryBounds = boundaries.reduce((bounds, boundary) => extendGeometryBounds(bounds, boundary.geometry), undefined as maplibregl.LngLatBounds | undefined);
-  if (boundaryBounds) return boundaryBounds;
-
-  const lotBounds = data.lots.reduce((bounds, lot) => extendGeometryBounds(bounds, lot.geometry), undefined as maplibregl.LngLatBounds | undefined);
-  if (lotBounds) return lotBounds;
-
-  return data.graves.reduce((bounds, grave) => extendGeometryBounds(bounds, grave.geometry), undefined as maplibregl.LngLatBounds | undefined);
-}
-
-function fitMapToData(map: Map, data: CemeteryData, duration = 350) {
-  const bounds = dataBounds(data);
-  if (bounds) map.fitBounds(bounds, { padding: 90, maxZoom: 19, duration });
-}
-
-function fitMapToGeometry(map: Map, geometry: GeoJSON.Geometry, duration = 350) {
-  const bounds = extendGeometryBounds(undefined, geometry);
-  if (bounds) map.fitBounds(bounds, { padding: 110, maxZoom: 19, duration });
-}
-
-function niceDistance(meters: number) {
-  const exponent = Math.floor(Math.log10(meters));
-  const magnitude = 10 ** exponent;
-  const normalized = meters / magnitude;
-  const niceNormalized = normalized >= 5 ? 5 : normalized >= 2 ? 2 : 1;
-  return niceNormalized * magnitude;
-}
-
-function formatScaleDistance(meters: number) {
-  const feet = meters * feetPerMeter;
-  if (feet < 1_000) return `${Math.round(feet).toLocaleString()} ft`;
-
-  const miles = feet / 5_280;
-  if (miles < 10) return `${Number(miles.toFixed(miles < 2 ? 2 : 1)).toLocaleString()} mi`;
-  return `${Math.round(miles).toLocaleString()} mi`;
-}
-
-function mapScale(map: Map): MapScale {
-  const latitude = map.getCenter().lat;
-  const metersPerPixel = (Math.cos((latitude * Math.PI) / 180) * earthCircumferenceMeters) / (512 * 2 ** map.getZoom());
-  const denominator = Math.max(1, Math.round((metersPerPixel * cssPixelsPerInch) / metersPerInch));
-  const totalDistanceMeters = niceDistance(metersPerPixel * 180);
-  const totalWidth = Math.max(80, Math.round(totalDistanceMeters / metersPerPixel));
-  const segmentDistances = [0, totalDistanceMeters / 2, totalDistanceMeters];
-  const segments: ScaleSegment[] = segmentDistances.map((distanceMeters, index) => ({
-    width: index === 0 ? 0 : Math.round((distanceMeters - segmentDistances[index - 1]) / metersPerPixel),
-    label: index === 0 ? "0" : formatScaleDistance(distanceMeters),
-  }));
-
-  return {
-    segments,
-    totalWidth,
-    totalLabel: formatScaleDistance(totalDistanceMeters),
-    representativeFraction: `1:${denominator.toLocaleString()}`,
-  };
-}
-
-function syncCemeteryMarkers(map: Map, data: CemeteryData, markers: maplibregl.Marker[]) {
-  markers.splice(0).forEach((marker) => marker.remove());
-
-  cemeteryMarkersFeatureCollection(data).features.forEach((feature) => {
-    const element = document.createElement("button");
-    element.type = "button";
-    element.className = "cemetery-map-marker";
-    element.textContent = feature.properties.name;
-    element.setAttribute("aria-label", `Zoom to ${feature.properties.name}`);
-    element.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
-      const boundary = boundaries[feature.properties.index];
-      if (boundary) fitMapToGeometry(map, boundary.geometry);
-    });
-
-    const marker = new maplibregl.Marker({ element }).setLngLat(feature.geometry.coordinates as [number, number]).addTo(map);
-    markers.push(marker);
-  });
-}
 
 export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultIds, onSelectGrave }: CemeteryMapProps) {
   const [scale, setScale] = useState<MapScale>();
@@ -220,157 +73,14 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     map.on("load", () => {
       updateScale();
 
-      map.addSource("pasda-imagery-2017", {
-        type: "raster",
-        tiles: [pasdaImageryTileUrl],
-        tileSize: 256,
-        attribution: "PASDA Allegheny County Imagery 2017",
-      });
-      map.addLayer({
-        id: "pasda-imagery-2017",
-        type: "raster",
-        source: "pasda-imagery-2017",
-      });
-
-      map.addSource("allegheny-parcels", {
-        type: "raster",
-        tiles: [alleghenyParcelsTileUrl],
-        tileSize: 256,
-        attribution: "Allegheny County",
-      });
-      map.addLayer({
-        id: "allegheny-parcels",
-        type: "raster",
-        source: "allegheny-parcels",
-        paint: { "raster-opacity": 1 },
-      });
-
-      map.addSource("boundary", { type: "geojson", data: boundariesFeatureCollection(dataRef.current) });
-      map.addLayer({
-        id: "boundary-fill",
-        type: "fill",
-        source: "boundary",
-        paint: { "fill-color": "#dfe7d9", "fill-opacity": 0.25 },
-      });
-      map.addLayer({
-        id: "boundary-line",
-        type: "line",
-        source: "boundary",
-        paint: { "line-color": "#3b4f3d", "line-width": 3 },
-      });
+      addRasterLayers(map);
+      addBoundaryLayers(map, dataRef.current);
 
       fitMapToData(map, dataRef.current, 0);
 
-      map.addSource("sections", { type: "geojson", data: sectionsFeatureCollection(dataRef.current) });
-      map.addLayer({
-        id: "sections-fill",
-        type: "fill",
-        source: "sections",
-        paint: { "fill-color": "#f7f4ea", "fill-opacity": 0.25 },
-      });
-      map.addLayer({
-        id: "sections-line",
-        type: "line",
-        source: "sections",
-        paint: { "line-color": "#77856e", "line-width": 1.4, "line-dasharray": [2, 2] },
-      });
-      map.addLayer({
-        id: "sections-label",
-        type: "symbol",
-        source: "sections",
-        layout: {
-          "text-field": ["get", "name"],
-          "text-size": 14,
-          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-        },
-        paint: {
-          "text-color": "#3d473c",
-          "text-halo-color": "#f4f6ee",
-          "text-halo-width": 1,
-        },
-      });
-
-      map.addSource("lots", { type: "geojson", data: lotsFeatureCollection(dataRef.current) });
-      map.addLayer({
-        id: "lots-fill",
-        type: "fill",
-        source: "lots",
-        paint: { "fill-color": "#f3ead2", "fill-opacity": 0.38 },
-      });
-      map.addLayer({
-        id: "lots-line",
-        type: "line",
-        source: "lots",
-        paint: { "line-color": "#a07738", "line-width": 1.2 },
-      });
-      map.addLayer({
-        id: "lots-label",
-        type: "symbol",
-        source: "lots",
-        layout: {
-          "text-field": ["get", "name"],
-          "text-size": 12,
-          "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-        },
-        paint: {
-          "text-color": "#5b4630",
-          "text-halo-color": "#fbf8ee",
-          "text-halo-width": 1,
-        },
-      });
-
-      map.addSource("graves", {
-        type: "geojson",
-        data: gravesFeatureCollection(visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current),
-      });
-
-      map.addLayer({
-        id: "graves-fill",
-        type: "fill",
-        source: "graves",
-        paint: {
-          "fill-color": [
-            "match",
-            ["get", "status"],
-            "available",
-            statusColors.available,
-            "reserved",
-            statusColors.reserved,
-            "occupied",
-            statusColors.occupied,
-            "sold",
-            statusColors.sold,
-            statusColors.unknown,
-          ],
-          "fill-opacity": ["case", ["boolean", ["get", "searchMatch"], false], 0.9, 0.72],
-        },
-      });
-
-      map.addLayer({
-        id: "graves-line",
-        type: "line",
-        source: "graves",
-        paint: {
-          "line-color": ["case", ["boolean", ["get", "selected"], false], "#111827", ["boolean", ["get", "searchMatch"], false], "#f9fafb", "#31413c"],
-          "line-width": ["case", ["boolean", ["get", "selected"], false], 4, ["boolean", ["get", "searchMatch"], false], 2.8, 1.1],
-        },
-      });
-
-      map.addLayer({
-        id: "grave-labels",
-        type: "symbol",
-        source: "graves",
-        layout: {
-          "text-field": ["get", "label"],
-          "text-size": 11,
-          "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-        },
-        paint: {
-          "text-color": "#17201d",
-          "text-halo-color": "#f8faf5",
-          "text-halo-width": 1,
-        },
-      });
+      addSectionLayers(map, dataRef.current);
+      addLotLayers(map, dataRef.current);
+      addGraveLayers(map, visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current);
 
       syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
 
