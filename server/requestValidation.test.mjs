@@ -20,20 +20,16 @@ function assertBadRequest(fn, message) {
 }
 
 function emptyCemeteryPool() {
-  let connectCount = 0;
+  let queryCount = 0;
   return {
-    get connectCount() {
-      return connectCount;
+    get queryCount() {
+      return queryCount;
     },
-    async connect() {
-      connectCount += 1;
-      return {
-        async query(sql) {
-          if (sql.includes("FROM cemeteries")) return { rows: [] };
-          throw new Error(`Unexpected client query: ${sql}`);
-        },
-        release() {},
-      };
+    async query(sql, values) {
+      queryCount += 1;
+      assert.match(sql, /WITH status_labels/);
+      assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true]);
+      return { rows: [] };
     },
   };
 }
@@ -87,5 +83,5 @@ test("search runs SQL-like text without expanding results or building dynamic SQ
   const matches = await searchCemetery(pool, { query: validateSearchQuery("Garcia'; DROP TABLE gravesites; --"), statuses: [] });
 
   assert.deepEqual(matches, []);
-  assert.equal(pool.connectCount, 1);
+  assert.equal(pool.queryCount, 1);
 });
