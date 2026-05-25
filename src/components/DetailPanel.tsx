@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { FileText, History, Landmark, MapPinned, UserRound } from "lucide-react";
 import type { Burial, GraveSpace, GraveSpaceSummary, Owner } from "../types";
 import { burialNoteItems } from "../lib/burialNotes";
@@ -13,7 +14,7 @@ type DetailPanelProps = {
   onRetry?: () => void;
 };
 
-const ownerName = (owners: Owner[], ownerId: string) => owners.find((owner) => owner.id === ownerId)?.displayName ?? "Unknown owner";
+const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
 
 function BurialRecord({ burial }: { burial: Burial }) {
   const noteItems = burialNoteItems(burial.notes);
@@ -47,6 +48,8 @@ function BurialRecord({ burial }: { burial: Burial }) {
 }
 
 export function DetailPanel({ owners, summary, grave, canViewOwnership, isLoading = false, error, onRetry }: DetailPanelProps) {
+  const ownersById = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
+
   if (!summary) {
     return (
       <aside className="detail-panel empty-state">
@@ -97,7 +100,7 @@ export function DetailPanel({ owners, summary, grave, canViewOwnership, isLoadin
         </div>
         <div className="owner-list">
           {grave.currentOwnerIds.map((id) => {
-            const owner = owners.find((item) => item.id === id);
+            const owner = ownersById.get(id);
             return (
               <div key={id} className="owner-row">
                 <strong>{owner?.displayName ?? "Unknown owner"}</strong>
@@ -138,7 +141,7 @@ export function DetailPanel({ owners, summary, grave, canViewOwnership, isLoadin
               <li key={event.id}>
                 <time>{formatDate(event.effectiveDate)}</time>
                 <strong>{event.eventType}</strong>
-                <span>{event.ownerIds.map((id) => ownerName(owners, id)).join(", ")}</span>
+                <span>{event.ownerIds.map((id) => ownerName(ownersById, id)).join(", ")}</span>
                 <small>{event.recordedBy}</small>
                 {event.documentReference ? (
                   <span className="document-ref">
