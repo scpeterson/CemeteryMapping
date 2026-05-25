@@ -40,7 +40,7 @@ function roleTitle(role: AppRole) {
 }
 
 function userTitle(user: AppUser) {
-  return `Edit ${user.displayName || user.email}. Role: ${roleLabel(user.role)}. Status: ${user.isActive ? "active" : "inactive"}. Auth0 user ID: ${user.externalSubject}.`;
+  return `Edit ${user.displayName || user.email}. Role: ${roleLabel(user.role)}. Status: ${user.isActive ? "active" : "inactive"}.`;
 }
 
 function userFormFromUser(user: AppUser): UserFormState {
