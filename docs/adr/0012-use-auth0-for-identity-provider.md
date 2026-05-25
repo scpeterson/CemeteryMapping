@@ -43,6 +43,8 @@ Initial API permissions:
 
 - `read:cemetery`
 - `write:cemetery`
+- `read:deeds`
+- `write:deeds`
 
 The application database remains the system of record for application role assignment after token validation. Auth0 is the sign-in and token issuer. The API should map a validated token subject and email to `app_users`, then enforce the local role from `app_users`.
 
@@ -91,10 +93,10 @@ Auth0 tenant setup checklist:
 3. Set the API identifier, which becomes `AUTH0_AUDIENCE`.
 4. Enable RBAC for the API.
 5. Enable adding permissions to access tokens.
-6. Add permissions `read:cemetery` and `write:cemetery`.
+6. Add permissions `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`.
 7. Create roles `reader`, `power-user`, and `admin`.
 8. Assign `read:cemetery` to `reader`.
-9. Assign `read:cemetery` and `write:cemetery` to `power-user` and `admin`.
+9. Assign `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds` to `power-user` and `admin`.
 10. Create a Single Page Application for the React frontend.
 11. Configure allowed callback, logout, and web origin URLs for DEV, TEST, STAGE, and PROD.
 12. Create application users and map their Auth0 subjects into `app_users.external_subject`.

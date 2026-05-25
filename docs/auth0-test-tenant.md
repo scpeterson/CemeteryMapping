@@ -42,6 +42,8 @@ Add permissions:
 
 - `read:cemetery`
 - `write:cemetery`
+- `read:deeds`
+- `write:deeds`
 
 ## Frontend Application
 
@@ -89,6 +91,8 @@ Enable these scopes for that application/API connection:
 
 - `read:cemetery`
 - `write:cemetery`
+- `read:deeds`
+- `write:deeds`
 
 ## Roles and Users
 
@@ -101,15 +105,16 @@ Create roles:
 Assign API permissions:
 
 - `reader`: `read:cemetery`
-- `power-user`: `read:cemetery`, `write:cemetery`
-- `admin`: `read:cemetery`, `write:cemetery`
+- `power-user`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
+- `admin`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
 
 Create test users:
 
 - `cemetery.reader.test@example.com`
+- `cemetery.power.test@example.com`
 - `cemetery.admin.test@example.com`
 
-Assign the `reader` role to the reader test user and the `admin` role to the admin test user. Auth0 roles are useful for token/API permission context, but the application database remains the source of truth for the app role enforced by CemeteryMapping.
+Assign the `reader` role to the reader test user, the `power-user` role to the power-user test user, and the `admin` role to the admin test user. Auth0 roles are useful for token/API permission context, but the application database remains the source of truth for the app role enforced by CemeteryMapping.
 
 ## Optional Admin User Provisioning
 
@@ -141,7 +146,7 @@ For TEST-mode local frontend runs, use `.env.test.local`:
 VITE_AUTH0_DOMAIN=<your-auth0-test-tenant>.auth0.com
 VITE_AUTH0_CLIENT_ID=<your-auth0-spa-client-id>
 VITE_AUTH0_AUDIENCE=https://cemetery-mapping.test/api
-VITE_AUTH0_SCOPE=read:cemetery write:cemetery
+VITE_AUTH0_SCOPE=read:cemetery write:cemetery read:deeds write:deeds
 ```
 
 Vite reads `.env.test.local` when running:
@@ -381,12 +386,16 @@ Fix:
 4. Enable scopes:
    - `read:cemetery`
    - `write:cemetery`
+   - `read:deeds`
+   - `write:deeds`
 5. Save.
 
 Also confirm the API has RBAC enabled and permissions added:
 
 - `read:cemetery`
 - `write:cemetery`
+- `read:deeds`
+- `write:deeds`
 
 ### UI Shows `API unavailable: Cemetery API returned 403`
 
