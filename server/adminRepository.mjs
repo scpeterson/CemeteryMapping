@@ -1,3 +1,18 @@
+const systemRoles = [
+  {
+    name: "reader",
+    description: "Can view the map, gravesites, and burial information, but cannot view deed/owner information.",
+  },
+  {
+    name: "power-user",
+    description: "Can view cemetery records, view and edit deed/owner information, and update existing cemetery records.",
+  },
+  {
+    name: "admin",
+    description: "Can manage users and roles, view and edit all cemetery records, add structural records, and soft-delete records.",
+  },
+];
+
 function toRole(row) {
   return {
     name: row.role_name,
@@ -20,7 +35,20 @@ function toUser(row) {
   };
 }
 
+export async function ensureSystemRoles(pool) {
+  await pool.query(`
+    INSERT INTO app_roles (role_name, description)
+    VALUES
+      ('reader', 'Can view the map, gravesites, and burial information, but cannot view deed/owner information.'),
+      ('power-user', 'Can view cemetery records, view and edit deed/owner information, and update existing cemetery records.'),
+      ('admin', 'Can manage users and roles, view and edit all cemetery records, add structural records, and soft-delete records.')
+    ON CONFLICT (role_name) DO UPDATE
+    SET description = EXCLUDED.description
+  `);
+}
+
 export async function listRoles(pool) {
+  await ensureSystemRoles(pool);
   const result = await pool.query(`
     SELECT
       app_roles.role_name,
@@ -39,7 +67,8 @@ export async function listRoles(pool) {
       END,
       app_roles.role_name
   `);
-  return result.rows.map(toRole);
+  const rolesByName = new Map(result.rows.map((row) => [row.role_name, toRole(row)]));
+  return systemRoles.map((role) => rolesByName.get(role.name) ?? { ...role, userCount: 0 });
 }
 
 export async function listUsers(pool) {

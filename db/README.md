@@ -254,7 +254,7 @@ Foreign keys connect the hierarchy directly in PostgreSQL, so Esri-specific rela
 
 The security foundation uses:
 
-- `app_roles` for application roles. Initial values are `admin` and `reader`.
+- `app_roles` for application roles. Initial values are `reader`, `power-user`, and `admin`.
 - `app_users` for identity-provider subjects mapped to application roles.
 - `audit_events` for append-only administrative change history.
 - `deleted_at`, `deleted_by`, and `delete_reason` columns on cemetery business tables.
