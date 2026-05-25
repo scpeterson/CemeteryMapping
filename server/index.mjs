@@ -2,6 +2,7 @@ import express from "express";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
+import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from "./auth0Management.mjs";
 import { loadApiConfig } from "./config.mjs";
 import { canViewOwnership, requireRole } from "./auth.mjs";
 import { getCemeteryData, getGraveSpace, restoreGraveSpace, softDeleteGraveSpace } from "./cemeteryRepository.mjs";
@@ -43,7 +44,7 @@ function validateAdminUserPayload(body, roles) {
   if (!roles.includes(role)) throw new BadRequestError(`Unsupported role: ${role}.`);
 
   return {
-    externalSubject: requiredText(body?.externalSubject, "External subject", 300),
+    externalSubject: requiredText(body?.externalSubject, "Auth0 user ID", 300),
     email: requiredText(body?.email, "Email", 320),
     displayName: optionalText(body?.displayName, "Display name", 250),
     role,
@@ -51,8 +52,19 @@ function validateAdminUserPayload(body, roles) {
   };
 }
 
+function validateAuth0UserResolutionPayload(body) {
+  return {
+    email: requiredText(body?.email, "Email", 320),
+    displayName: optionalText(body?.displayName, "Display name", 250),
+  };
+}
+
 export function createApp(config, pool) {
   const app = express();
+  const auth0ManagementClient = createAuth0ManagementClient({
+    domain: config.auth.auth0.domain,
+    ...config.auth.auth0.management,
+  });
 
   app.use(express.json());
 
@@ -153,6 +165,19 @@ export function createApp(config, pool) {
     try {
       response.json(await listUsers(pool));
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/auth0-users/resolve", requireAdmin, async (request, response, next) => {
+    try {
+      const user = validateAuth0UserResolutionPayload(request.body);
+      response.json(await auth0ManagementClient.resolveOrCreateUser(user));
+    } catch (error) {
+      if (error instanceof Auth0ProvisioningNotConfiguredError) {
+        response.status(400).json({ error: error.message });
+        return;
+      }
       next(error);
     }
   });

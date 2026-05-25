@@ -95,11 +95,13 @@ Enable these scopes for that application/API connection:
 Create roles:
 
 - `reader`
+- `power-user`
 - `admin`
 
 Assign API permissions:
 
 - `reader`: `read:cemetery`
+- `power-user`: `read:cemetery`, `write:cemetery`
 - `admin`: `read:cemetery`, `write:cemetery`
 
 Create test users:
@@ -107,7 +109,29 @@ Create test users:
 - `cemetery.reader.test@example.com`
 - `cemetery.admin.test@example.com`
 
-Assign the `reader` role to the reader test user and the `admin` role to the admin test user.
+Assign the `reader` role to the reader test user and the `admin` role to the admin test user. Auth0 roles are useful for token/API permission context, but the application database remains the source of truth for the app role enforced by CemeteryMapping.
+
+## Optional Admin User Provisioning
+
+The Admin UI can find an Auth0 user by email or create one in the configured database connection, then save the returned Auth0 `user_id` as the local Auth0 user ID.
+
+Create a machine-to-machine application authorized for the Auth0 Management API with:
+
+- `read:users`
+- `create:users`
+
+Add these server-only environment variables when running the API:
+
+```bash
+AUTH0_MANAGEMENT_CLIENT_ID=<machine-to-machine-client-id>
+AUTH0_MANAGEMENT_CLIENT_SECRET=<machine-to-machine-client-secret>
+AUTH0_MANAGEMENT_CONNECTION=Username-Password-Authentication
+AUTH0_PASSWORD_RESET_CLIENT_ID=<your-auth0-spa-client-id>
+```
+
+When a new Admin UI user is saved without an Auth0 user ID, the API searches Auth0 by email first. If no user exists, it creates one in `AUTH0_MANAGEMENT_CONNECTION` with a generated temporary password and asks Auth0 to send the verification email. When `AUTH0_PASSWORD_RESET_CLIENT_ID` is configured, it also asks Auth0 to send a password reset email so the user can set their own password. The local role is still stored only in `app_users.role_name`.
+
+The Admin UI can also deactivate or reactivate existing application users. This updates only `app_users.is_active`; it does not delete the local mapping and does not delete or disable the Auth0 account.
 
 ## Application Environment
 
@@ -248,7 +272,7 @@ After inserting or updating the row, refresh the browser. If the app still retur
 
 - `external_subject` exactly matches the Auth0 `user_id`.
 - `is_active` is `true`.
-- `role_name` is either `reader` or `admin`.
+- `role_name` is `reader`, `power-user`, or `admin`.
 - The API is connected to the same TEST database where the row was inserted.
 
 If a user should be blocked without deleting the mapping:
@@ -258,6 +282,8 @@ UPDATE app_users
 SET is_active = false
 WHERE external_subject = 'auth0|SUBJECT';
 ```
+
+The Admin UI Deactivate button performs the same local access block. Use Reactivate in the Admin UI, or set `is_active = true`, to restore application access.
 
 ## Manual Security Checks
 

@@ -271,7 +271,7 @@ Current API authorization modes:
 
 Trusted-header mode is not a production identity-provider replacement.
 
-For Auth0 users, `app_users.external_subject` must match the token `sub` claim, and `app_users.role_name` must be `reader` or `admin`.
+For Auth0 users, `app_users.external_subject` must match the token `sub` claim, `app_users.role_name` must be `reader`, `power-user`, or `admin`, and `app_users.is_active` must be `true`. Deactivating a user sets `is_active` to `false`, blocking application access without deleting the Auth0 account or local mapping.
 
 ## Spatial import staging
 
