@@ -111,3 +111,11 @@ export type AppUser = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Auth0ResolvedUser = {
+  externalSubject: string;
+  email: string;
+  displayName: string;
+  created: boolean;
+  invitationSent: boolean;
+};

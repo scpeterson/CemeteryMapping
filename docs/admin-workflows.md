@@ -24,6 +24,8 @@ Implemented admin foundation.
 
 Only admins can manage application users and roles. User management lives in a dedicated admin drawer rather than the left search panel or right grave-detail panel, so map workflows remain focused on cemetery records.
 
+The Admin UI stores the Auth0 `user_id` as the local Auth0 user ID. When Management API credentials are configured, adding a new user can search Auth0 by email or create a database-connection Auth0 user before saving the local role assignment.
+
 Current role behavior:
 
 - `reader`: map, gravesites, and burial information; no deed/owner sections.

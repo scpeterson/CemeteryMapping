@@ -13,6 +13,7 @@
 ADR 0011 established that the application should not store passwords and should use an external identity provider. The application needs:
 
 - A highest-level `admin` role.
+- A `power-user` role for deed/owner access and existing-record updates.
 - A broadly usable `reader` role.
 - Standards-based login for the React frontend.
 - Verifiable access tokens for the Express API.
@@ -35,6 +36,7 @@ Auth0 will provide:
 Initial Auth0 roles:
 
 - `admin`
+- `power-user`
 - `reader`
 
 Initial API permissions:
@@ -59,8 +61,10 @@ Required configuration placeholders:
 - `AUTH_MODE=auth0`
 - `AUTH0_DOMAIN`
 - `AUTH0_AUDIENCE`
-- `AUTH0_CLIENT_ID`
-- `AUTH0_CLIENT_SECRET` if a confidential server-side flow is later needed
+- `AUTH0_MANAGEMENT_CLIENT_ID` for optional Admin UI Auth0 user provisioning
+- `AUTH0_MANAGEMENT_CLIENT_SECRET` for optional Admin UI Auth0 user provisioning
+- `AUTH0_MANAGEMENT_CONNECTION` for optional Admin UI Auth0 user provisioning
+- `AUTH0_PASSWORD_RESET_CLIENT_ID` for optional Admin UI invitation emails
 - Frontend Auth0 application client id
 - Frontend Auth0 authorization domain
 
@@ -69,6 +73,8 @@ The repository must not commit Auth0 secrets. Local, stage, and production deplo
 Development and CI can continue using `AUTH_MODE=disabled` until Auth0 test tenant credentials are available.
 
 The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT validation. After validation, the API loads `app_users` using the token `sub` claim and enforces the local `role_name`. Token permissions are useful context from Auth0, but the database remains the final application authorization source.
+
+When Management API credentials are configured, the Admin UI can find an Auth0 user by email or create an Auth0 database-connection user before saving the local `app_users` row. If `AUTH0_PASSWORD_RESET_CLIENT_ID` is also configured, newly created users receive Auth0's password reset email so they can set their own password. This keeps Auth0 responsible for identity while keeping application roles local.
 
 The React frontend uses the Auth0 React SDK when `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and `VITE_AUTH0_AUDIENCE` are configured. If those variables are absent, the frontend does not show the sign-in flow, which keeps local development and CI compatible with `AUTH_MODE=disabled`.
 
@@ -84,14 +90,15 @@ Auth0 tenant setup checklist:
 4. Enable RBAC for the API.
 5. Enable adding permissions to access tokens.
 6. Add permissions `read:cemetery` and `write:cemetery`.
-7. Create roles `reader` and `admin`.
+7. Create roles `reader`, `power-user`, and `admin`.
 8. Assign `read:cemetery` to `reader`.
-9. Assign `read:cemetery` and `write:cemetery` to `admin`.
+9. Assign `read:cemetery` and `write:cemetery` to `power-user` and `admin`.
 10. Create a Single Page Application for the React frontend.
 11. Configure allowed callback, logout, and web origin URLs for DEV, TEST, STAGE, and PROD.
 12. Create application users and map their Auth0 subjects into `app_users.external_subject`.
 13. Set `AUTH_MODE=auth0`, `AUTH0_DOMAIN`, and `AUTH0_AUDIENCE` in the target deployment environment.
 14. Set `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and `VITE_AUTH0_AUDIENCE` in the frontend environment.
+15. Optionally create a machine-to-machine Management API client with `read:users` and `create:users`, then set `AUTH0_MANAGEMENT_CLIENT_ID`, `AUTH0_MANAGEMENT_CLIENT_SECRET`, `AUTH0_MANAGEMENT_CONNECTION`, and `AUTH0_PASSWORD_RESET_CLIENT_ID` for Admin UI user provisioning and invitation emails.
 
 Detailed setup is documented in [Auth0 Test Tenant Setup](../auth0-test-tenant.md).
 
@@ -110,6 +117,7 @@ APP_ENV=test npm run test:e2e
 
 - [Auth0 API RBAC documentation](https://auth0.com/docs/manage-users/access-control/configure-core-rbac/enable-role-based-access-control-for-apis)
 - [Auth0 access token profiles](https://auth0.com/docs/secure/tokens/access-tokens/access-token-profiles)
+- [Auth0 Management API user management](https://dev.auth0.com/docs/manage-users/user-accounts/manage-users-using-the-management-api)
 - [Microsoft Entra External ID documentation](https://learn.microsoft.com/en-us/entra/external-id/)
 - [Clerk roles and permissions documentation](https://clerk.com/docs/organizations/create-roles-permissions)
 

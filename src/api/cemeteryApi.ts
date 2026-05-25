@@ -1,5 +1,5 @@
 import { apiBaseUrl } from "../config/environment";
-import type { AppRole, AppUser, CemeteryData, CurrentUser, GraveSpace, GraveStatus, SearchMatch } from "../types";
+import type { AppRole, AppUser, Auth0ResolvedUser, CemeteryData, CurrentUser, GraveSpace, GraveStatus, SearchMatch } from "../types";
 
 type AccessTokenProvider = () => Promise<string | undefined>;
 
@@ -83,6 +83,13 @@ export async function fetchAdminUsers(): Promise<AppUser[]> {
 }
 
 export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "isActive">;
+
+export type ResolveAuth0UserInput = Pick<AppUser, "email" | "displayName">;
+
+export async function resolveAuth0User(user: ResolveAuth0UserInput): Promise<Auth0ResolvedUser> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/auth0-users/resolve`, jsonRequest("POST", user));
+  return jsonResponse<Auth0ResolvedUser>(response, "Auth0 user API");
+}
 
 export async function createAdminUser(user: SaveUserInput): Promise<AppUser> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users`, jsonRequest("POST", user));

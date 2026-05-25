@@ -137,12 +137,23 @@ AUTH0_DOMAIN=<tenant>.auth0.com
 AUTH0_AUDIENCE=<api-identifier>
 ```
 
-In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader` and `admin` checks.
+In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, and `admin` checks.
+
+The Admin UI can find or create Auth0 database-connection users before saving the local application role when these server-only Management API settings are configured:
+
+```bash
+AUTH0_MANAGEMENT_CLIENT_ID=<machine-to-machine-client-id>
+AUTH0_MANAGEMENT_CLIENT_SECRET=<machine-to-machine-client-secret>
+AUTH0_MANAGEMENT_CONNECTION=Username-Password-Authentication
+AUTH0_PASSWORD_RESET_CLIENT_ID=<spa-client-id>
+```
+
+The Management API client needs `read:users` and `create:users`. `AUTH0_PASSWORD_RESET_CLIENT_ID` is optional; when present, newly created Auth0 database users also receive Auth0's password reset email so they can set their own password. Auth0 remains the identity provider; the application database remains the source of truth for application roles.
 
 For controlled integration testing behind a trusted local proxy, use `AUTH_MODE=trusted-header` and send:
 
 - `x-cemetery-user-subject`
 - `x-cemetery-user-email`
-- `x-cemetery-user-role` with `reader` or `admin`
+- `x-cemetery-user-role` with `reader`, `power-user`, or `admin`
 
 Do not expose trusted-header mode directly to the public internet.

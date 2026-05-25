@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ShieldCheck, UserCog, X } from "lucide-react";
-import { createAdminUser, fetchAdminRoles, fetchAdminUsers, type SaveUserInput, updateAdminUser } from "../api/cemeteryApi";
+import { ShieldCheck, UserCog, UserPlus, X } from "lucide-react";
+import { createAdminUser, fetchAdminRoles, fetchAdminUsers, resolveAuth0User, type SaveUserInput, updateAdminUser } from "../api/cemeteryApi";
 import type { AppRole, AppRoleName, AppUser } from "../types";
 
 type AdminPanelProps = {
@@ -48,6 +48,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
 
   const roleOptions = useMemo(() => roles.map((role) => role.name), [roles]);
 
@@ -80,6 +81,38 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     setError(undefined);
   };
 
+  const resolveAuth0Subject = async (user: UserFormState) => {
+    const resolved = await resolveAuth0User({ email: user.email, displayName: user.displayName });
+    setForm((current) => ({
+      ...current,
+      externalSubject: resolved.externalSubject,
+      email: resolved.email,
+      displayName: current.displayName || resolved.displayName,
+    }));
+    const invitationStatus = resolved.invitationSent ? " and sent an invitation email" : "";
+    setMessage(`${resolved.email} ${resolved.created ? `created in Auth0${invitationStatus}` : "found in Auth0"}.`);
+    return {
+      ...user,
+      externalSubject: resolved.externalSubject,
+      email: resolved.email,
+      displayName: user.displayName || resolved.displayName,
+    };
+  };
+
+  const resolveAuth0SubjectFromForm = async () => {
+    setIsResolvingAuth0User(true);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      await resolveAuth0Subject(form);
+    } catch (resolveError) {
+      setError(resolveError instanceof Error ? resolveError.message : "Unable to find or create Auth0 user.");
+    } finally {
+      setIsResolvingAuth0User(false);
+    }
+  };
+
   const saveUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSaving(true);
@@ -87,7 +120,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     setError(undefined);
 
     try {
-      const saved = form.id ? await updateAdminUser(form.id, form) : await createAdminUser(form);
+      const userToSave = form.id || form.externalSubject.trim() ? form : await resolveAuth0Subject(form);
+      const saved = form.id ? await updateAdminUser(form.id, userToSave) : await createAdminUser(userToSave);
       setUsers((current) => {
         const existingIndex = current.findIndex((user) => user.id === saved.id);
         if (existingIndex === -1) return [...current, saved].sort((a, b) => a.email.localeCompare(b.email));
@@ -133,8 +167,23 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             <input value={form.displayName} onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))} />
           </label>
           <label>
-            External subject
-            <input value={form.externalSubject} onChange={(event) => setForm((current) => ({ ...current, externalSubject: event.target.value }))} required />
+            Auth0 user ID
+            <span className="auth0-user-id-row">
+              <input
+                value={form.externalSubject}
+                onChange={(event) => setForm((current) => ({ ...current, externalSubject: event.target.value }))}
+              />
+              <button
+                type="button"
+                className="icon-button auth0-resolve-button"
+                onClick={() => void resolveAuth0SubjectFromForm()}
+                disabled={isResolvingAuth0User || !form.email.trim()}
+                aria-label="Find or create Auth0 user"
+                title="Find or create Auth0 user"
+              >
+                <UserPlus size={17} />
+              </button>
+            </span>
           </label>
           <label>
             Role

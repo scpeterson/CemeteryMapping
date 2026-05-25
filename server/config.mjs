@@ -55,6 +55,12 @@ export function loadApiConfig() {
         domain: auth0Domain,
         audience: auth0Audience,
         issuerBaseUrl: auth0Domain ? `https://${auth0Domain.replace(/^https?:\/\//u, "").replace(/\/$/u, "")}` : undefined,
+        management: {
+          clientId: process.env.AUTH0_MANAGEMENT_CLIENT_ID,
+          clientSecret: process.env.AUTH0_MANAGEMENT_CLIENT_SECRET,
+          connection: process.env.AUTH0_MANAGEMENT_CONNECTION,
+          passwordResetClientId: process.env.AUTH0_PASSWORD_RESET_CLIENT_ID,
+        },
       },
     },
     database: {
