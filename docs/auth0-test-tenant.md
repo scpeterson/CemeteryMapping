@@ -47,6 +47,18 @@ Add permissions:
 
 These permissions are Auth0 tenant configuration. CemeteryMapping requests and validates tokens, but it does not create Auth0 API permissions or assign them to Auth0 roles automatically.
 
+You can configure these API permissions and role assignments from the command line instead of clicking through the dashboard:
+
+```bash
+AUTH0_DOMAIN=<your-auth0-test-tenant>.auth0.com \
+AUTH0_AUDIENCE=https://cemetery-mapping.test/api \
+AUTH0_MANAGEMENT_CLIENT_ID=<machine-to-machine-client-id> \
+AUTH0_MANAGEMENT_CLIENT_SECRET=<machine-to-machine-client-secret> \
+npm run auth0:configure
+```
+
+Use the same script for each environment by changing the Auth0 tenant, API audience, and Management API credentials. The machine-to-machine client needs `read:resource_servers`, `update:resource_servers`, `read:roles`, `create:roles`, and `update:roles`.
+
 ## Frontend Application
 
 Create an Auth0 application:

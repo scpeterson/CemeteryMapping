@@ -104,6 +104,8 @@ Auth0 tenant setup checklist:
 14. Set `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and `VITE_AUTH0_AUDIENCE` in the frontend environment.
 15. Optionally create a machine-to-machine Management API client with `read:users` and `create:users`, then set `AUTH0_MANAGEMENT_CLIENT_ID`, `AUTH0_MANAGEMENT_CLIENT_SECRET`, `AUTH0_MANAGEMENT_CONNECTION`, and `AUTH0_PASSWORD_RESET_CLIENT_ID` for Admin UI user provisioning and invitation emails.
 
+Steps 6 through 9 can be applied with `npm run auth0:configure`. Run the same script once per Auth0 environment with that environment's tenant domain, API audience, and Management API credentials.
+
 Detailed setup is documented in [Auth0 Test Tenant Setup](../auth0-test-tenant.md).
 
 Validation commands after implementation:

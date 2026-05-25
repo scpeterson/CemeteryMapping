@@ -141,6 +141,18 @@ In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loa
 
 Auth0 API permissions must be configured in Auth0 manually. The API should include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user` and `admin`, then have affected users sign out and back in so their access tokens are refreshed.
 
+To configure those Auth0 API permissions and role assignments through the Auth0 Management API, run the environment-aware setup script with the target tenant values:
+
+```bash
+AUTH0_DOMAIN=<tenant>.auth0.com \
+AUTH0_AUDIENCE=<api-identifier> \
+AUTH0_MANAGEMENT_CLIENT_ID=<machine-to-machine-client-id> \
+AUTH0_MANAGEMENT_CLIENT_SECRET=<machine-to-machine-client-secret> \
+npm run auth0:configure
+```
+
+Use the same script for each environment by changing the Auth0 tenant, audience, and Management API credentials. The machine-to-machine client needs `read:resource_servers`, `update:resource_servers`, `read:roles`, `create:roles`, and `update:roles`.
+
 The Admin UI can find or create Auth0 database-connection users before saving the local application role when these server-only Management API settings are configured:
 
 ```bash

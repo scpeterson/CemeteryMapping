@@ -22,6 +22,7 @@
     "lint": "eslint .",
     "test:server": "node --test server/*.test.mjs scripts/*.test.mjs",
     "test:e2e": "playwright test",
+    "auth0:configure": "node scripts/auth0-configure.mjs",
     "geodatabase:inspect": "node scripts/geodatabase-inspect.mjs",
     "geodatabase:export": "node scripts/geodatabase-export-layer.mjs",
     "db:up": "node scripts/db-compose.mjs up",
