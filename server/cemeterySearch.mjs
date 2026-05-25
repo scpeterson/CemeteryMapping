@@ -1,5 +1,3 @@
-import { getDetailedCemeteryData } from "./cemeteryRepository.mjs";
-
 const statusLabels = {
   available: "Available",
   reserved: "Reserved",
@@ -15,77 +13,186 @@ function normalize(value) {
     .replace(/[\u0300-\u036f]/gu, "");
 }
 
-function formatDate(value) {
+function normalizeStatus(status) {
+  return Object.hasOwn(statusLabels, status) ? status : "unknown";
+}
+
+function parseGeometry(value) {
   if (!value) return undefined;
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(date);
+  return typeof value === "string" ? JSON.parse(value) : value;
 }
 
-function fullName(person) {
-  return [person.firstName, person.middleName, person.lastName].filter(Boolean).join(" ");
-}
-
-function addReason(reasons, label, value, query) {
-  if (!value) return;
-  if (normalize(value).includes(query)) reasons.push(`${label}: ${value}`);
-}
-
-function toSearchSummary(grave) {
+function toSearchSummary(row) {
   return {
-    id: grave.id,
-    cemeteryId: grave.cemeteryId,
-    cemeteryName: grave.cemeteryName,
-    section: grave.section,
-    lot: grave.lot,
-    space: grave.space,
-    status: grave.status,
-    geometry: grave.geometry,
+    id: row.gravesite_id,
+    cemeteryId: row.cemetery_id,
+    cemeteryName: row.cemetery_name,
+    section: row.section_id ?? "",
+    lot: row.lot_id ?? "",
+    space: row.grave_id,
+    status: normalizeStatus(row.status),
+    geometry: parseGeometry(row.geometry),
   };
 }
 
+function reasonText(row, cleanedQuery) {
+  if (!cleanedQuery && row.reason_label === "Status") return row.reason_value;
+  return `${row.reason_label}: ${row.reason_value}`;
+}
+
+function groupSearchRows(rows, cleanedQuery) {
+  const matchesByGrave = new Map();
+
+  for (const row of rows) {
+    const key = `${row.cemetery_id}:${row.gravesite_id}`;
+    const match = matchesByGrave.get(key) ?? { grave: toSearchSummary(row), reasons: [] };
+    const reason = reasonText(row, cleanedQuery);
+    if (!match.reasons.includes(reason)) match.reasons.push(reason);
+    matchesByGrave.set(key, match);
+  }
+
+  return [...matchesByGrave.values()];
+}
+
 export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true } = {}) {
-  const data = await getDetailedCemeteryData(pool, { includeOwnership });
-  const cleaned = normalize(query);
-  const allowedStatuses = new Set(statuses.length ? statuses : Object.keys(statusLabels));
+  const cleanedQuery = normalize(query.trim());
+  const result = await pool.query(
+    `
+      WITH status_labels(status, label) AS (
+        VALUES
+          ('available', 'Available'),
+          ('reserved', 'Reserved'),
+          ('occupied', 'Occupied'),
+          ('sold', 'Sold'),
+          ('unknown', 'Needs review')
+      ),
+      base_graves AS (
+        SELECT
+          gravesites.id AS grave_uuid,
+          gravesites.cemetery_id::text,
+          cemeteries.name AS cemetery_name,
+          gravesites.section_id,
+          gravesites.lot_id,
+          gravesites.grave_id,
+          gravesites.gravesite_id,
+          COALESCE(status_labels.status, 'unknown') AS status,
+          COALESCE(status_labels.label, 'Needs review') AS status_label,
+          ST_AsGeoJSON(gravesites.geometry)::json AS geometry
+        FROM gravesites
+        JOIN cemeteries
+          ON cemeteries.id = gravesites.cemetery_id
+        LEFT JOIN status_labels
+          ON status_labels.status = lower(gravesites.status)
+        WHERE gravesites.deleted_at IS NULL
+          AND cemeteries.deleted_at IS NULL
+          AND (cardinality($2::text[]) = 0 OR COALESCE(status_labels.status, 'unknown') = ANY($2::text[]))
+      )
+      SELECT
+        base_graves.cemetery_id,
+        base_graves.cemetery_name,
+        base_graves.section_id,
+        base_graves.lot_id,
+        base_graves.grave_id,
+        base_graves.gravesite_id,
+        base_graves.status,
+        base_graves.geometry,
+        reasons.reason_label,
+        reasons.reason_value
+      FROM base_graves
+      JOIN LATERAL (
+        SELECT 'Status' AS reason_label, base_graves.status_label AS reason_value
+        WHERE $1 = ''
 
-  return data.graves
-    .filter((grave) => allowedStatuses.has(grave.status))
-    .map((grave) => {
-      const owners = grave.currentOwnerIds.map((id) => data.owners.find((owner) => owner.id === id)?.displayName).filter(Boolean);
-      const reasons = [];
+        UNION ALL
+        SELECT 'Grave', concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)
+        WHERE $1 <> ''
+          AND lower(concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)) LIKE '%' || $1 || '%'
 
-      if (!cleaned) {
-        reasons.push(statusLabels[grave.status]);
-        return { grave: toSearchSummary(grave), reasons };
-      }
+        UNION ALL
+        SELECT 'Status', base_graves.status_label
+        WHERE $1 <> ''
+          AND lower(base_graves.status_label) LIKE '%' || $1 || '%'
 
-      addReason(reasons, "Grave", `${grave.section}-${grave.lot}-${grave.space}`, cleaned);
-      addReason(reasons, "Status", statusLabels[grave.status], cleaned);
-      owners.forEach((owner) => addReason(reasons, "Owner", owner, cleaned));
+        UNION ALL
+        SELECT 'Owner', owner_names.display_name
+        FROM owners
+        CROSS JOIN LATERAL (
+          SELECT COALESCE(NULLIF(concat_ws(' and ', NULLIF(owners.owner, ''), NULLIF(owners.co_owner, '')), ''), 'Unknown owner') AS display_name
+        ) owner_names
+        WHERE $3::boolean
+          AND $1 <> ''
+          AND owners.gravesite_uuid = base_graves.grave_uuid
+          AND owners.deleted_at IS NULL
+          AND lower(owner_names.display_name) LIKE '%' || $1 || '%'
 
-      grave.burials.forEach((burial) => {
-        addReason(reasons, "Burial", fullName(burial.person), cleaned);
-        addReason(reasons, "Birth", burial.person.birthDate, cleaned);
-        addReason(reasons, "Birth", formatDate(burial.person.birthDate), cleaned);
-        addReason(reasons, "Death", burial.person.deathDate, cleaned);
-        addReason(reasons, "Death", formatDate(burial.person.deathDate), cleaned);
-        addReason(reasons, "Burial date", burial.burialDate, cleaned);
-        addReason(reasons, "Burial date", formatDate(burial.burialDate), cleaned);
-      });
+        UNION ALL
+        SELECT 'Historical owner', owner_names.display_name
+        FROM owners
+        CROSS JOIN LATERAL (
+          SELECT COALESCE(NULLIF(concat_ws(' and ', NULLIF(owners.owner, ''), NULLIF(owners.co_owner, '')), ''), 'Unknown owner') AS display_name
+        ) owner_names
+        WHERE $3::boolean
+          AND $1 <> ''
+          AND owners.gravesite_uuid = base_graves.grave_uuid
+          AND owners.deleted_at IS NULL
+          AND lower(owner_names.display_name) LIKE '%' || $1 || '%'
 
-      grave.ownershipHistory.forEach((event) => {
-        event.ownerIds
-          .map((id) => data.owners.find((owner) => owner.id === id)?.displayName)
-          .filter(Boolean)
-          .forEach((owner) => addReason(reasons, "Historical owner", owner, cleaned));
-        addReason(reasons, "Ownership date", event.effectiveDate, cleaned);
-        addReason(reasons, "Ownership date", formatDate(event.effectiveDate), cleaned);
-        addReason(reasons, "Document", event.documentReference, cleaned);
-      });
+        UNION ALL
+        SELECT 'Ownership date', owners.sale_date::text
+        FROM owners
+        WHERE $3::boolean
+          AND $1 <> ''
+          AND owners.gravesite_uuid = base_graves.grave_uuid
+          AND owners.deleted_at IS NULL
+          AND owners.sale_date IS NOT NULL
+          AND owners.sale_date::text LIKE '%' || $1 || '%'
 
-      return { grave: toSearchSummary(grave), reasons };
-    })
-    .filter((match) => match.reasons.length > 0)
-    .sort((a, b) => `${a.grave.cemeteryId}:${a.grave.id}`.localeCompare(`${b.grave.cemeteryId}:${b.grave.id}`));
+        UNION ALL
+        SELECT 'Burial', COALESCE(NULLIF(concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, '')), ''), burials.full_name)
+        FROM burials
+        WHERE $1 <> ''
+          AND burials.gravesite_uuid = base_graves.grave_uuid
+          AND burials.deleted_at IS NULL
+          AND lower(COALESCE(NULLIF(concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, '')), ''), burials.full_name, '')) LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Birth', burials.birth_date::text
+        FROM burials
+        WHERE $1 <> ''
+          AND burials.gravesite_uuid = base_graves.grave_uuid
+          AND burials.deleted_at IS NULL
+          AND burials.birth_date IS NOT NULL
+          AND burials.birth_date::text LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Death', burials.death_date::text
+        FROM burials
+        WHERE $1 <> ''
+          AND burials.gravesite_uuid = base_graves.grave_uuid
+          AND burials.deleted_at IS NULL
+          AND burials.death_date IS NOT NULL
+          AND burials.death_date::text LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Burial date', burials.burial_date::text
+        FROM burials
+        WHERE $1 <> ''
+          AND burials.gravesite_uuid = base_graves.grave_uuid
+          AND burials.deleted_at IS NULL
+          AND burials.burial_date IS NOT NULL
+          AND burials.burial_date::text LIKE '%' || $1 || '%'
+      ) reasons ON reasons.reason_value IS NOT NULL
+      ORDER BY
+        base_graves.cemetery_name,
+        base_graves.section_id,
+        base_graves.lot_id,
+        base_graves.grave_id,
+        base_graves.gravesite_id,
+        reasons.reason_label,
+        reasons.reason_value
+    `,
+    [cleanedQuery, statuses, includeOwnership],
+  );
+
+  return groupSearchRows(result.rows, cleanedQuery);
 }
