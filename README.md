@@ -148,7 +148,9 @@ AUTH0_MANAGEMENT_CONNECTION=Username-Password-Authentication
 AUTH0_PASSWORD_RESET_CLIENT_ID=<spa-client-id>
 ```
 
-The Management API client needs `read:users` and `create:users`. `AUTH0_PASSWORD_RESET_CLIENT_ID` is optional; when present, newly created Auth0 database users also receive Auth0's password reset email so they can set their own password. Auth0 remains the identity provider; the application database remains the source of truth for application roles.
+The Management API client needs `read:users` and `create:users`. `AUTH0_PASSWORD_RESET_CLIENT_ID` is optional; when present, newly created Auth0 database users also receive Auth0's password reset email so they can set their own password. Auth0 remains the identity provider; the application database remains the source of truth for application roles and active/inactive access.
+
+Admins can deactivate or reactivate users in the Admin UI. Deactivation sets the local `app_users.is_active` flag to `false`, which blocks application access after token validation without deleting the Auth0 account or the local mapping.
 
 For controlled integration testing behind a trusted local proxy, use `AUTH_MODE=trusted-header` and send:
 

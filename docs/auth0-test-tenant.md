@@ -131,6 +131,8 @@ AUTH0_PASSWORD_RESET_CLIENT_ID=<your-auth0-spa-client-id>
 
 When a new Admin UI user is saved without an Auth0 user ID, the API searches Auth0 by email first. If no user exists, it creates one in `AUTH0_MANAGEMENT_CONNECTION` with a generated temporary password and asks Auth0 to send the verification email. When `AUTH0_PASSWORD_RESET_CLIENT_ID` is configured, it also asks Auth0 to send a password reset email so the user can set their own password. The local role is still stored only in `app_users.role_name`.
 
+The Admin UI can also deactivate or reactivate existing application users. This updates only `app_users.is_active`; it does not delete the local mapping and does not delete or disable the Auth0 account.
+
 ## Application Environment
 
 For TEST-mode local frontend runs, use `.env.test.local`:
@@ -280,6 +282,8 @@ UPDATE app_users
 SET is_active = false
 WHERE external_subject = 'auth0|SUBJECT';
 ```
+
+The Admin UI Deactivate button performs the same local access block. Use Reactivate in the Admin UI, or set `is_active = true`, to restore application access.
 
 ## Manual Security Checks
 

@@ -26,11 +26,15 @@ Only admins can manage application users and roles. User management lives in a d
 
 The Admin UI stores the Auth0 `user_id` as the local Auth0 user ID. When Management API credentials are configured, adding a new user can search Auth0 by email or create a database-connection Auth0 user before saving the local role assignment.
 
+Existing users can be edited from the Users list. Each row also has a direct Deactivate or Reactivate action. Deactivation changes only the local `app_users.is_active` flag; it blocks CemeteryMapping access after Auth0 token validation but does not delete or disable the Auth0 account.
+
 Current role behavior:
 
 - `reader`: map, gravesites, and burial information; no deed/owner sections.
 - `power-user`: reader access plus deed/owner visibility and update access for existing cemetery records.
 - `admin`: full access, including user management, adding structural records, and soft deletes.
+
+Admin UI hover explanations should avoid exposing Auth0 user IDs in list-row tooltips. The Auth0 user ID is shown only when intentionally editing a user record.
 
 ### 1. Headstone Condition Updates
 

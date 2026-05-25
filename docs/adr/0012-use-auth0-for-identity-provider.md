@@ -76,6 +76,8 @@ The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT vali
 
 When Management API credentials are configured, the Admin UI can find an Auth0 user by email or create an Auth0 database-connection user before saving the local `app_users` row. If `AUTH0_PASSWORD_RESET_CLIENT_ID` is also configured, newly created users receive Auth0's password reset email so they can set their own password. This keeps Auth0 responsible for identity while keeping application roles local.
 
+Admins can deactivate and reactivate application users by updating `app_users.is_active`. Deactivation blocks CemeteryMapping access after Auth0 token validation without deleting or disabling the Auth0 identity.
+
 The React frontend uses the Auth0 React SDK when `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and `VITE_AUTH0_AUDIENCE` are configured. If those variables are absent, the frontend does not show the sign-in flow, which keeps local development and CI compatible with `AUTH_MODE=disabled`.
 
 Local Auth0 testing uses Vite on a strict `http://127.0.0.1:5173` origin. Auth0 callback, logout, and web-origin settings must match that origin exactly.
