@@ -170,10 +170,25 @@ async function selectActiveCemeteries(client) {
   return result.rows;
 }
 
+async function sectionAlternateNamesSelect(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'sections'
+        AND column_name = 'alternate_names'
+    ) AS exists
+  `);
+
+  return result.rows[0]?.exists ? "alternate_names" : "'{}'::text[] AS alternate_names";
+}
+
 async function selectSectionsForCemeteries(client, cemeteryIds) {
+  const alternateNamesSelect = await sectionAlternateNamesSelect(client);
   const result = await client.query(
     `
-      SELECT id::text, section_id, COALESCE(name, section_id) AS name, ST_AsGeoJSON(geometry)::json AS geometry
+      SELECT id::text, section_id, COALESCE(name, section_id) AS name, ${alternateNamesSelect}, ST_AsGeoJSON(geometry)::json AS geometry
       FROM sections
       WHERE cemetery_id = ANY($1::uuid[])
         AND deleted_at IS NULL
@@ -334,6 +349,7 @@ function toSection(section) {
   return {
     id: section.section_id,
     name: section.name,
+    alternateNames: section.alternate_names ?? [],
     geometry: parseGeometry(section.geometry),
   };
 }

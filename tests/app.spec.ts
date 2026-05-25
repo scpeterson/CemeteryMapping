@@ -183,7 +183,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
   await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");
   await expect(page.locator(".detail-panel")).not.toContainText("Hidden Owner");
-  await expect(page.getByLabel("Open admin user management")).toHaveCount(0);
+  await expect(page.getByLabel("Open admin management")).toHaveCount(0);
 });
 
 test("loads API-backed cemetery records and supports search", async ({ page }) => {
@@ -197,7 +197,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
   await expect(page.locator(".panel-heading .eyebrow")).toContainText(/\d+ cemeteries/);
   await expect(page.getByLabel("North arrow")).toBeVisible();
-  await expect(page.getByLabel("Open admin user management")).toBeVisible();
+  await expect(page.getByLabel("Open admin management")).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Fit all cemetery data" })).toBeVisible();
@@ -373,4 +373,26 @@ test("admin soft delete hides a grave space from reads and restore makes it visi
   expect(restoredMapData.graves.map((grave: { cemeteryId: string; id: string }) => `${grave.cemeteryId}:${grave.id}`)).toContain(
     `${graveToDelete.cemeteryId}:A-01-02`,
   );
+});
+
+test("admin can edit cemetery section alternate names", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Open admin management").click();
+  await expect(page.getByRole("tab", { name: "Users" })).toBeVisible();
+
+  await page.getByRole("tab", { name: "Cemetery Records" }).click();
+  await expect(page.getByRole("heading", { name: "Sections" })).toBeVisible();
+
+  const sectionRow = page.locator(".record-editor-row").filter({ hasText: "Section B" }).first();
+  await expect(sectionRow).toBeVisible();
+  await expect(sectionRow.getByLabel("Alternate names")).toHaveValue(/Original Cemetery/u);
+
+  await sectionRow.getByLabel("Alternate names").fill("OC\nOriginal Cemetery\nOld Churchyard");
+  await sectionRow.getByRole("button", { name: "Save section" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Section B saved." })).toBeVisible();
+
+  const recordsResponse = await page.request.get("/api/admin/cemetery-records");
+  expect(recordsResponse.ok()).toBe(true);
+  const records = await recordsResponse.json();
+  expect(records.sections.some((item: { sectionId: string; alternateNames: string[] }) => item.sectionId === "B" && item.alternateNames.includes("Old Churchyard"))).toBe(true);
 });

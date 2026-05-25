@@ -1,7 +1,18 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
-import { createAdminUser, fetchAdminRoles, fetchAdminUsers, resolveAuth0User, type SaveUserInput, updateAdminUser } from "../api/cemeteryApi";
-import type { AppRole, AppRoleName, AppUser } from "../types";
+import { Landmark, Layers3, Map as MapIcon, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import {
+  createAdminUser,
+  fetchAdminRoles,
+  fetchAdminUsers,
+  fetchCemeteryAdminRecords,
+  resolveAuth0User,
+  type SaveUserInput,
+  updateAdminUser,
+  updateCemeteryText,
+  updateLotText,
+  updateSectionText,
+} from "../api/cemeteryApi";
+import type { AppRole, AppRoleName, AppUser, CemeteryAdminRecords, CemeteryTextRecord, LotTextRecord, SectionTextRecord } from "../types";
 
 type AdminPanelProps = {
   onClose: () => void;
@@ -10,6 +21,8 @@ type AdminPanelProps = {
 type UserFormState = SaveUserInput & {
   id?: string;
 };
+
+type AdminTab = "users" | "records";
 
 const blankUser: UserFormState = {
   externalSubject: "",
@@ -54,9 +67,21 @@ function userFormFromUser(user: AppUser): UserFormState {
   };
 }
 
+const emptyCemeteryRecords: CemeteryAdminRecords = {
+  cemeteries: [],
+  sections: [],
+  lots: [],
+};
+
+const alternateNamesText = (alternateNames: string[]) => alternateNames.join("\n");
+const parseAlternateNames = (value: string) =>
+  [...new Set(value.split(/\r?\n|,/u).map((item) => item.trim()).filter(Boolean))];
+
 export function AdminPanel({ onClose }: AdminPanelProps) {
+  const [activeTab, setActiveTab] = useState<AdminTab>("users");
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [cemeteryRecords, setCemeteryRecords] = useState<CemeteryAdminRecords>(emptyCemeteryRecords);
   const [form, setForm] = useState<UserFormState>(blankUser);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
@@ -64,18 +89,24 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
   const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(() => new Set());
+  const [savingRecordKey, setSavingRecordKey] = useState<string>();
 
   const roleOptions = useMemo(() => roles.map((role) => role.name), [roles]);
+  const cemeteryNamesById = useMemo(
+    () => new globalThis.Map(cemeteryRecords.cemeteries.map((cemetery) => [cemetery.id, cemetery.name])),
+    [cemeteryRecords.cemeteries],
+  );
 
   useEffect(() => {
     let isCurrent = true;
     setIsLoading(true);
 
-    Promise.all([fetchAdminRoles(), fetchAdminUsers()])
-      .then(([nextRoles, nextUsers]) => {
+    Promise.all([fetchAdminRoles(), fetchAdminUsers(), fetchCemeteryAdminRecords()])
+      .then(([nextRoles, nextUsers, nextCemeteryRecords]) => {
         if (!isCurrent) return;
         setRoles(nextRoles);
         setUsers(nextUsers);
+        setCemeteryRecords(nextCemeteryRecords);
         setError(undefined);
       })
       .catch((loadError: unknown) => {
@@ -182,22 +213,119 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
+  const updateCemeteryRecord = (id: string, patch: Partial<CemeteryTextRecord>) => {
+    setCemeteryRecords((current) => ({
+      ...current,
+      cemeteries: current.cemeteries.map((cemetery) => (cemetery.id === id ? { ...cemetery, ...patch } : cemetery)),
+    }));
+  };
+
+  const updateSectionRecord = (id: string, patch: Partial<SectionTextRecord>) => {
+    setCemeteryRecords((current) => ({
+      ...current,
+      sections: current.sections.map((section) => (section.id === id ? { ...section, ...patch } : section)),
+    }));
+  };
+
+  const updateLotRecord = (id: string, patch: Partial<LotTextRecord>) => {
+    setCemeteryRecords((current) => ({
+      ...current,
+      lots: current.lots.map((lot) => (lot.id === id ? { ...lot, ...patch } : lot)),
+    }));
+  };
+
+  const saveCemeteryRecord = async (cemetery: CemeteryTextRecord) => {
+    const key = `cemetery:${cemetery.id}`;
+    setSavingRecordKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const saved = await updateCemeteryText(cemetery.id, { name: cemetery.name, notes: cemetery.notes });
+      updateCemeteryRecord(saved.id, saved);
+      setMessage(`${saved.name} saved.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save cemetery.");
+    } finally {
+      setSavingRecordKey(undefined);
+    }
+  };
+
+  const saveSectionRecord = async (section: SectionTextRecord) => {
+    const key = `section:${section.id}`;
+    setSavingRecordKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const saved = await updateSectionText(section.id, { name: section.name, alternateNames: section.alternateNames });
+      updateSectionRecord(saved.id, saved);
+      setMessage(`Section ${saved.sectionId} saved.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save section.");
+    } finally {
+      setSavingRecordKey(undefined);
+    }
+  };
+
+  const saveLotRecord = async (lot: LotTextRecord) => {
+    const key = `lot:${lot.id}`;
+    setSavingRecordKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const saved = await updateLotText(lot.id, { name: lot.name });
+      updateLotRecord(saved.id, saved);
+      setMessage(`Lot ${saved.lotId} saved.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save lot.");
+    } finally {
+      setSavingRecordKey(undefined);
+    }
+  };
+
   return (
     <aside className="admin-panel" aria-label="Admin management">
       <div className="admin-panel-header">
         <div>
           <p className="eyebrow">Admin</p>
-          <h2>User Access</h2>
+          <h2>Administration</h2>
         </div>
-        <button type="button" className="icon-button" onClick={onClose} aria-label="Close admin panel" title="Close the user access panel.">
+        <button type="button" className="icon-button" onClick={onClose} aria-label="Close admin panel" title="Close the admin panel.">
           <X size={18} />
         </button>
       </div>
 
-      {isLoading ? <div className="admin-message" role="status">Loading users and roles...</div> : null}
+      {isLoading ? <div className="admin-message" role="status">Loading admin records...</div> : null}
       {error ? <div className="admin-message is-error" role="alert">{error}</div> : null}
       {message ? <div className="admin-message" role="status">{message}</div> : null}
 
+      <div className="admin-tabs" role="tablist" aria-label="Admin sections">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "users"}
+          className={activeTab === "users" ? "is-active" : undefined}
+          onClick={() => setActiveTab("users")}
+          title="Manage application users and role assignments."
+        >
+          Users
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "records"}
+          className={activeTab === "records" ? "is-active" : undefined}
+          onClick={() => setActiveTab("records")}
+          title="Edit cemetery, section, and lot text records."
+        >
+          Cemetery Records
+        </button>
+      </div>
+
+      {activeTab === "users" ? (
+        <>
       <section className="admin-section">
         <div className="section-title">
           <UserCog size={17} aria-hidden="true" />
@@ -336,6 +464,126 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           ))}
         </div>
       </section>
+        </>
+      ) : (
+        <>
+          <section className="admin-section">
+            <div className="section-title">
+              <Landmark size={17} aria-hidden="true" />
+              <h3>Cemeteries</h3>
+            </div>
+            <div className="record-editor-list">
+              {cemeteryRecords.cemeteries.map((cemetery) => (
+                <article key={cemetery.id} className="record-editor-row">
+                  <label>
+                    Name
+                    <input
+                      value={cemetery.name}
+                      onChange={(event) => updateCemeteryRecord(cemetery.id, { name: event.target.value })}
+                      title="The cemetery name shown on the map, search results, and cemetery marker."
+                    />
+                  </label>
+                  <label>
+                    Notes
+                    <textarea
+                      value={cemetery.notes}
+                      onChange={(event) => updateCemeteryRecord(cemetery.id, { notes: event.target.value })}
+                      rows={2}
+                      title="Administrative notes stored with the cemetery record."
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void saveCemeteryRecord(cemetery)}
+                    disabled={savingRecordKey === `cemetery:${cemetery.id}` || !cemetery.name.trim()}
+                    title="Save this cemetery text."
+                  >
+                    {savingRecordKey === `cemetery:${cemetery.id}` ? "Saving..." : "Save cemetery"}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="admin-section">
+            <div className="section-title">
+              <Layers3 size={17} aria-hidden="true" />
+              <h3>Sections</h3>
+            </div>
+            <div className="record-editor-list">
+              {cemeteryRecords.sections.map((section) => (
+                <article key={section.id} className="record-editor-row">
+                  <div className="record-editor-context">
+                    <strong>Section {section.sectionId}</strong>
+                    <small>{cemeteryNamesById.get(section.cemeteryId) ?? "Unknown cemetery"}</small>
+                  </div>
+                  <label>
+                    Name
+                    <input
+                      value={section.name}
+                      onChange={(event) => updateSectionRecord(section.id, { name: event.target.value })}
+                      title="The section display name shown on the map label."
+                    />
+                  </label>
+                  <label>
+                    Alternate names
+                    <textarea
+                      value={alternateNamesText(section.alternateNames)}
+                      onChange={(event) => updateSectionRecord(section.id, { alternateNames: parseAlternateNames(event.target.value) })}
+                      rows={3}
+                      title="Alternate section names, one per line or separated by commas. For example: OC and Original Cemetery."
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void saveSectionRecord(section)}
+                    disabled={savingRecordKey === `section:${section.id}`}
+                    title="Save this section name and alternate names."
+                  >
+                    {savingRecordKey === `section:${section.id}` ? "Saving..." : "Save section"}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="admin-section">
+            <div className="section-title">
+              <MapIcon size={17} aria-hidden="true" />
+              <h3>Lots</h3>
+            </div>
+            <div className="record-editor-list">
+              {cemeteryRecords.lots.map((lot) => (
+                <article key={lot.id} className="record-editor-row">
+                  <div className="record-editor-context">
+                    <strong>Lot {lot.lotId}</strong>
+                    <small>
+                      {cemeteryNamesById.get(lot.cemeteryId) ?? "Unknown cemetery"}
+                      {lot.sectionId ? ` · Section ${lot.sectionId}` : ""}
+                    </small>
+                  </div>
+                  <label>
+                    Name
+                    <input
+                      value={lot.name}
+                      onChange={(event) => updateLotRecord(lot.id, { name: event.target.value })}
+                      title="The lot display name shown on the map label."
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void saveLotRecord(lot)}
+                    disabled={savingRecordKey === `lot:${lot.id}`}
+                    title="Save this lot text."
+                  >
+                    {savingRecordKey === `lot:${lot.id}` ? "Saving..." : "Save lot"}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </aside>
   );
 }

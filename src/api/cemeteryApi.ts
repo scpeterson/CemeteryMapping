@@ -1,5 +1,18 @@
 import { apiBaseUrl } from "../config/environment";
-import type { AppRole, AppUser, Auth0ResolvedUser, CemeteryData, CurrentUser, GraveSpace, GraveStatus, SearchMatch } from "../types";
+import type {
+  AppRole,
+  AppUser,
+  Auth0ResolvedUser,
+  CemeteryAdminRecords,
+  CemeteryData,
+  CemeteryTextRecord,
+  CurrentUser,
+  GraveSpace,
+  GraveStatus,
+  LotTextRecord,
+  SearchMatch,
+  SectionTextRecord,
+} from "../types";
 
 type AccessTokenProvider = () => Promise<string | undefined>;
 
@@ -99,4 +112,28 @@ export async function createAdminUser(user: SaveUserInput): Promise<AppUser> {
 export async function updateAdminUser(id: string, user: SaveUserInput): Promise<AppUser> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users/${encodeURIComponent(id)}`, jsonRequest("PUT", user));
   return jsonResponse<AppUser>(response, "Update user API");
+}
+
+export type SaveCemeteryTextInput = Pick<CemeteryTextRecord, "name" | "notes">;
+export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames">;
+export type SaveLotTextInput = Pick<LotTextRecord, "name">;
+
+export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records`);
+  return jsonResponse<CemeteryAdminRecords>(response, "Cemetery admin records API");
+}
+
+export async function updateCemeteryText(id: string, cemetery: SaveCemeteryTextInput): Promise<CemeteryTextRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records/cemeteries/${encodeURIComponent(id)}`, jsonRequest("PUT", cemetery));
+  return jsonResponse<CemeteryTextRecord>(response, "Update cemetery API");
+}
+
+export async function updateSectionText(id: string, section: SaveSectionTextInput): Promise<SectionTextRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records/sections/${encodeURIComponent(id)}`, jsonRequest("PUT", section));
+  return jsonResponse<SectionTextRecord>(response, "Update section API");
+}
+
+export async function updateLotText(id: string, lot: SaveLotTextInput): Promise<LotTextRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records/lots/${encodeURIComponent(id)}`, jsonRequest("PUT", lot));
+  return jsonResponse<LotTextRecord>(response, "Update lot API");
 }

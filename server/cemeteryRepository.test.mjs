@@ -3,6 +3,7 @@ import test from "node:test";
 import { getCemeteryData, getDetailedCemeteryData, getGraveSpace } from "./cemeteryRepository.mjs";
 
 function queryRows(sql) {
+  if (sql.includes("information_schema.columns")) return [{ exists: true }];
   if (sql.includes("FROM cemeteries")) {
     return [{ id: "11111111-1111-4111-8111-111111111111", name: "Sequential Cemetery", geometry: "{}" }];
   }

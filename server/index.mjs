@@ -5,6 +5,7 @@ import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } fro
 import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from "./auth0Management.mjs";
 import { loadApiConfig } from "./config.mjs";
 import { canViewOwnership, requireRole } from "./auth.mjs";
+import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 import { getCemeteryData, getGraveSpace, restoreGraveSpace, softDeleteGraveSpace } from "./cemeteryRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
@@ -56,6 +57,32 @@ function validateAuth0UserResolutionPayload(body) {
   return {
     email: requiredText(body?.email, "Email", 320),
     displayName: optionalText(body?.displayName, "Display name", 250),
+  };
+}
+
+function validateCemeteryTextPayload(body) {
+  return {
+    name: requiredText(body?.name, "Cemetery name", 255),
+    notes: optionalText(body?.notes, "Cemetery notes", 4000),
+  };
+}
+
+function validateSectionTextPayload(body) {
+  const alternateNames = Array.isArray(body?.alternateNames)
+    ? body.alternateNames.map((value, index) => optionalText(value, `Alternate name ${index + 1}`, 255)).filter(Boolean)
+    : [];
+
+  if (alternateNames.length > 25) throw new BadRequestError("Sections can have at most 25 alternate names.");
+
+  return {
+    name: optionalText(body?.name, "Section name", 255),
+    alternateNames,
+  };
+}
+
+function validateLotTextPayload(body) {
+  return {
+    name: optionalText(body?.name, "Lot name", 255),
   };
 }
 
@@ -200,6 +227,56 @@ export function createApp(config, pool) {
       const updated = await updateUser(pool, id, user);
       if (!updated) {
         response.status(404).json({ error: "User not found" });
+        return;
+      }
+      response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/cemetery-records", requireAdmin, async (_request, response, next) => {
+    try {
+      response.json(await listCemeteryAdminRecords(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/cemetery-records/cemeteries/:id", requireAdmin, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Cemetery id");
+      const updated = await updateCemeteryText(pool, id, validateCemeteryTextPayload(request.body));
+      if (!updated) {
+        response.status(404).json({ error: "Cemetery not found" });
+        return;
+      }
+      response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/cemetery-records/sections/:id", requireAdmin, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Section id");
+      const updated = await updateSectionText(pool, id, validateSectionTextPayload(request.body));
+      if (!updated) {
+        response.status(404).json({ error: "Section not found" });
+        return;
+      }
+      response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/cemetery-records/lots/:id", requireAdmin, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Lot id");
+      const updated = await updateLotText(pool, id, validateLotTextPayload(request.body));
+      if (!updated) {
+        response.status(404).json({ error: "Lot not found" });
         return;
       }
       response.json(updated);

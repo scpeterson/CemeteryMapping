@@ -243,6 +243,8 @@ Hierarchical GIS identifiers mirror the template fields using snake_case names:
 
 - `facility_id`
 - `section_id`
+
+Sections also include `alternate_names text[]` for locally used names that differ from the primary section label. The current migration backfills active sections `B` and `D` with `OC` and `Original Cemetery`. Admin users can edit these aliases from the Admin UI Cemetery Records tab.
 - `block_id`
 - `lot_id`
 - `grave_id`
