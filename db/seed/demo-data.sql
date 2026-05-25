@@ -83,6 +83,11 @@ SELECT id, 'Section B', facility_id, 'B',
 FROM cemeteries
 WHERE facility_id = 'DEMO-ST-MARK';
 
+UPDATE sections
+SET alternate_names = ARRAY['OC', 'Original Cemetery']::text[]
+WHERE facility_id = 'DEMO-ST-MARK'
+  AND section_id = 'B';
+
 INSERT INTO lots (
   cemetery_id,
   section_uuid,
