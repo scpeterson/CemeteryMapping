@@ -45,6 +45,8 @@ Add permissions:
 - `read:deeds`
 - `write:deeds`
 
+These permissions are Auth0 tenant configuration. CemeteryMapping requests and validates tokens, but it does not create Auth0 API permissions or assign them to Auth0 roles automatically.
+
 ## Frontend Application
 
 Create an Auth0 application:
@@ -107,6 +109,8 @@ Assign API permissions:
 - `reader`: `read:cemetery`
 - `power-user`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
 - `admin`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
+
+After adding or changing Auth0 permissions, sign out and sign back in so Auth0 issues a fresh access token with the updated permission set.
 
 Create test users:
 
@@ -396,6 +400,8 @@ Also confirm the API has RBAC enabled and permissions added:
 - `write:cemetery`
 - `read:deeds`
 - `write:deeds`
+
+If the API or role permissions were just changed, sign out and sign back in before retesting. Existing access tokens keep their original permissions until they expire or are replaced.
 
 ### UI Shows `API unavailable: Cemetery API returned 403`
 

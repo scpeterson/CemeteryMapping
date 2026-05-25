@@ -139,6 +139,8 @@ AUTH0_AUDIENCE=<api-identifier>
 
 In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, and `admin` checks.
 
+Auth0 API permissions must be configured in Auth0 manually. The API should include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user` and `admin`, then have affected users sign out and back in so their access tokens are refreshed.
+
 The Admin UI can find or create Auth0 database-connection users before saving the local application role when these server-only Management API settings are configured:
 
 ```bash
