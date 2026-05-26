@@ -101,10 +101,6 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [savingRecordKey, setSavingRecordKey] = useState<string>();
 
   const roleOptions = useMemo(() => roles.map((role) => role.name), [roles]);
-  const cemeteryNamesById = useMemo(
-    () => new globalThis.Map(cemeteryRecords.cemeteries.map((cemetery) => [cemetery.id, cemetery.name])),
-    [cemeteryRecords.cemeteries],
-  );
   const selectedCemetery = useMemo(
     () => cemeteryRecords.cemeteries.find((cemetery) => cemetery.id === selectedCemeteryId),
     [cemeteryRecords.cemeteries, selectedCemeteryId],
@@ -585,12 +581,9 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
             <div className="record-editor-list">
               {selectedCemetery ? (
-                <article className="record-editor-row">
-                  <div className="record-editor-context">
-                    <strong>{selectedCemetery.name}</strong>
-                    <small>Cemetery</small>
-                  </div>
-                  <label>
+                <article className="record-editor-row record-editor-row-cemetery">
+                  <h4>Cemetery</h4>
+                  <label className="record-editor-name">
                     Name
                     <input
                       value={selectedCemetery.name}
@@ -603,7 +596,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                     <textarea
                       value={selectedCemetery.notes}
                       onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { notes: event.target.value })}
-                      rows={2}
+                      rows={5}
                       title="Administrative notes stored with the cemetery record."
                     />
                   </label>
@@ -625,11 +618,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
               ) : null}
 
               {selectedSection ? (
-                <article className="record-editor-row">
-                  <div className="record-editor-context">
-                    <strong>Section {selectedSection.sectionId}</strong>
-                    <small>{cemeteryNamesById.get(selectedSection.cemeteryId) ?? "Unknown cemetery"}</small>
-                  </div>
+                <article className="record-editor-row record-editor-row-section">
+                  <h4>Section</h4>
                   <label>
                     Name
                     <input
@@ -663,14 +653,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
               ) : null}
 
               {selectedLot ? (
-                <article className="record-editor-row">
-                  <div className="record-editor-context">
-                    <strong>Lot {selectedLot.lotId}</strong>
-                    <small>
-                      {cemeteryNamesById.get(selectedLot.cemeteryId) ?? "Unknown cemetery"}
-                      {selectedLot.sectionId ? ` · Section ${selectedLot.sectionId}` : ""}
-                    </small>
-                  </div>
+                <article className="record-editor-row record-editor-row-lot">
+                  <h4>Lot</h4>
                   <label>
                     Name
                     <input
