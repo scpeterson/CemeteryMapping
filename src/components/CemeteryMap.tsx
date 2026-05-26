@@ -5,7 +5,7 @@ import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, statusLabels } from "../lib/format";
 import { exteriorRing, fitMapToData } from "./cemeteryMapBounds";
-import { addBoundaryLayers, addGraveLayers, addLotLayers, addRasterLayers, addSectionLayers, selectableGraveLayers } from "./cemeteryMapLayers";
+import { addBoundaryLayers, addGraveLayers, addLotLayers, addRasterLayers, addSectionLabelLayer, addSectionLayers, selectableGraveLayers } from "./cemeteryMapLayers";
 import { syncCemeteryMarkers } from "./cemeteryMapMarkers";
 import { mapScale, type MapScale } from "./cemeteryMapScale";
 
@@ -87,6 +87,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       addSectionLayers(map, dataRef.current);
       addLotLayers(map, dataRef.current);
       addGraveLayers(map, visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current);
+      addSectionLabelLayer(map);
 
       syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
 

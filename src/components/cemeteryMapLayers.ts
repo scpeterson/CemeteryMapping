@@ -94,19 +94,25 @@ export function addSectionLayers(map: Map, data: CemeteryData) {
     source: "sections",
     paint: { "line-color": "#77856e", "line-width": 1.4, "line-dasharray": [2, 2] },
   });
+}
+
+export function addSectionLabelLayer(map: Map) {
   map.addLayer({
     id: "sections-label",
     type: "symbol",
     source: "sections",
     layout: {
       "text-field": ["get", "name"],
-      "text-size": 14,
+      "text-size": 15,
       "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+      "text-allow-overlap": false,
+      "text-ignore-placement": false,
+      "symbol-sort-key": 1,
     },
     paint: {
-      "text-color": "#3d473c",
-      "text-halo-color": "#f4f6ee",
-      "text-halo-width": 1,
+      "text-color": "#24342d",
+      "text-halo-color": "#fffdf5",
+      "text-halo-width": 1.6,
     },
   });
 }
@@ -175,7 +181,7 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
     type: "line",
     source: "graves",
     paint: {
-      "line-color": ["case", ["boolean", ["get", "selected"], false], "#111827", ["boolean", ["get", "searchMatch"], false], "#f9fafb", "#31413c"],
+      "line-color": ["case", ["boolean", ["get", "selected"], false], "#ff1493", ["boolean", ["get", "searchMatch"], false], "#f9fafb", "#31413c"],
       "line-width": ["case", ["boolean", ["get", "selected"], false], 4, ["boolean", ["get", "searchMatch"], false], 2.8, 1.1],
     },
   });
