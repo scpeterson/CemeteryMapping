@@ -137,8 +137,7 @@ export async function updateCemeteryText(
             contact_phone = NULLIF($9, ''),
             contact_email = NULLIF($10, ''),
             image_url = NULLIF($11, ''),
-            notes = NULLIF($12, ''),
-            updated_at = now()
+            notes = NULLIF($12, '')
         WHERE id = $1
           AND deleted_at IS NULL
         RETURNING
@@ -174,8 +173,7 @@ export async function updateSectionText(pool, id, { name, alternateNames }, { ac
       `
         UPDATE sections
         SET name = NULLIF($2, ''),
-            alternate_names = $3::text[],
-            updated_at = now()
+            alternate_names = $3::text[]
         WHERE section_id = $1
           AND deleted_at IS NULL
         RETURNING section_id::text AS id, cemetery_id::text, name, alternate_names
@@ -192,8 +190,7 @@ export async function updateLotText(pool, id, { name }, { actorUser } = {}) {
     const result = await client.query(
       `
         UPDATE lots
-        SET name = NULLIF($2, ''),
-            updated_at = now()
+        SET name = NULLIF($2, '')
         WHERE id = $1
           AND deleted_at IS NULL
         RETURNING id::text, cemetery_id::text, section_id, lot_id, name

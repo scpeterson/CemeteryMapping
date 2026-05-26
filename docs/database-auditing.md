@@ -25,6 +25,8 @@ Migration `014-database-audit-triggers.sql` attaches row-level audit triggers to
 
 Each insert, update, soft delete, restore, and hard delete creates an `audit_events` row. Update events store only the changed fields in `previous_values` and `new_values`; create and hard-delete events store the full new or old row.
 
+Row lifecycle timestamps remain on the source tables. Migration `015-updated-at-triggers.sql` maintains `updated_at` in PostgreSQL with `BEFORE UPDATE` triggers, so application write paths do not need to set it manually. The audit log remains the historical record of who changed what.
+
 ## Actor Identity
 
 Application writes set transaction-local audit context before changing data:
