@@ -346,28 +346,28 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
-  const selectCemeteryByPickerValue = (value: string) => {
-    setCemeteryPickerValue(value);
-    const match = cemeteryRecords.cemeteries.find((cemetery) => cemeteryPickerLabel(cemetery) === value);
+  const selectCemeteryById = (id: string) => {
+    const match = cemeteryRecords.cemeteries.find((cemetery) => cemetery.id === id);
     setSelectedCemeteryId(match?.id ?? "");
+    setCemeteryPickerValue(match ? cemeteryPickerLabel(match) : "");
     setSelectedSectionId("");
     setSelectedLotId("");
     setSectionPickerValue("");
     setLotPickerValue("");
   };
 
-  const selectSectionByPickerValue = (value: string) => {
-    setSectionPickerValue(value);
-    const match = sectionsForSelectedCemetery.find((section) => sectionPickerLabel(section) === value || section.name === value || section.sectionId === value);
+  const selectSectionById = (id: string) => {
+    const match = sectionsForSelectedCemetery.find((section) => section.id === id);
     setSelectedSectionId(match?.id ?? "");
+    setSectionPickerValue(match ? sectionPickerLabel(match) : "");
     setSelectedLotId("");
     setLotPickerValue("");
   };
 
-  const selectLotByPickerValue = (value: string) => {
-    setLotPickerValue(value);
-    const match = lotsForSelectedSection.find((lot) => lotPickerLabel(lot) === value || lot.name === value || lot.lotId === value);
+  const selectLotById = (id: string) => {
+    const match = lotsForSelectedSection.find((lot) => lot.id === id);
     setSelectedLotId(match?.id ?? "");
+    setLotPickerValue(match ? lotPickerLabel(match) : "");
   };
 
   return (
@@ -561,53 +561,53 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             <div className="record-picker-grid">
               <label className="record-picker">
                 Cemetery
-                <input
-                  value={cemeteryPickerValue}
-                  onChange={(event) => selectCemeteryByPickerValue(event.target.value)}
-                  list="cemetery-record-cemetery-options"
-                  placeholder="Search cemeteries"
+                <select
+                  value={selectedCemeteryId}
+                  onChange={(event) => selectCemeteryById(event.target.value)}
                   title="Search for and select the cemetery record to edit."
-                />
-                <datalist id="cemetery-record-cemetery-options">
+                >
+                  <option value="">Select cemetery</option>
                   {cemeteryRecords.cemeteries.map((cemetery) => (
-                    <option key={cemetery.id} value={cemeteryPickerLabel(cemetery)} />
+                    <option key={cemetery.id} value={cemetery.id}>
+                      {cemeteryPickerLabel(cemetery)}
+                    </option>
                   ))}
-                </datalist>
+                </select>
               </label>
 
               {selectedCemetery ? (
                 <label className="record-picker">
                   Section
-                  <input
-                    value={sectionPickerValue}
-                    onChange={(event) => selectSectionByPickerValue(event.target.value)}
-                    list="cemetery-record-section-options"
-                    placeholder="Search sections"
+                  <select
+                    value={selectedSectionId}
+                    onChange={(event) => selectSectionById(event.target.value)}
                     title="Search for and select a section in the selected cemetery."
-                  />
-                  <datalist id="cemetery-record-section-options">
+                  >
+                    <option value="">Select section</option>
                     {sectionsForSelectedCemetery.map((section) => (
-                      <option key={section.id} value={sectionPickerLabel(section)} />
+                      <option key={section.id} value={section.id}>
+                        {sectionPickerLabel(section)}
+                      </option>
                     ))}
-                  </datalist>
+                  </select>
                 </label>
               ) : null}
 
               {selectedSection ? (
                 <label className="record-picker">
                   Lot
-                  <input
-                    value={lotPickerValue}
-                    onChange={(event) => selectLotByPickerValue(event.target.value)}
-                    list="cemetery-record-lot-options"
-                    placeholder="Search lots"
+                  <select
+                    value={selectedLotId}
+                    onChange={(event) => selectLotById(event.target.value)}
                     title="Search for and select a lot in the selected section."
-                  />
-                  <datalist id="cemetery-record-lot-options">
+                  >
+                    <option value="">Select lot</option>
                     {lotsForSelectedSection.map((lot) => (
-                      <option key={lot.id} value={lotPickerLabel(lot)} />
+                      <option key={lot.id} value={lot.id}>
+                        {lotPickerLabel(lot)}
+                      </option>
                     ))}
-                  </datalist>
+                  </select>
                 </label>
               ) : null}
             </div>
@@ -752,6 +752,16 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                       title="Alternate section names, one per line or separated by commas. For example: OC and Original Cemetery."
                     />
                   </label>
+                  <dl className="record-audit-fields" aria-label="Section audit timestamps">
+                    <div title="When this section record was created. This field cannot be edited here.">
+                      <dt>Created</dt>
+                      <dd>{formatAdminTimestamp(selectedSection.createdAt)}</dd>
+                    </div>
+                    <div title="When this section record was last updated. This field cannot be edited here.">
+                      <dt>Updated</dt>
+                      <dd>{formatAdminTimestamp(selectedSection.updatedAt)}</dd>
+                    </div>
+                  </dl>
                   <button
                     type="button"
                     onClick={() => void saveSectionRecord(selectedSection)}
@@ -778,6 +788,16 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                       title="The lot display name shown on the map label."
                     />
                   </label>
+                  <dl className="record-audit-fields" aria-label="Lot audit timestamps">
+                    <div title="When this lot record was created. This field cannot be edited here.">
+                      <dt>Created</dt>
+                      <dd>{formatAdminTimestamp(selectedLot.createdAt)}</dd>
+                    </div>
+                    <div title="When this lot record was last updated. This field cannot be edited here.">
+                      <dt>Updated</dt>
+                      <dd>{formatAdminTimestamp(selectedLot.updatedAt)}</dd>
+                    </div>
+                  </dl>
                   <button
                     type="button"
                     onClick={() => void saveLotRecord(selectedLot)}

@@ -144,6 +144,8 @@ export type SectionTextRecord = {
   sectionId: string;
   name: string;
   alternateNames: string[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type LotTextRecord = {
@@ -152,6 +154,8 @@ export type LotTextRecord = {
   sectionId: string;
   lotId: string;
   name: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type CemeteryAdminRecords = {

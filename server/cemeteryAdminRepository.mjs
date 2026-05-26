@@ -30,6 +30,8 @@ function toSectionRecord(row) {
     sectionId: row.name,
     name: row.name ?? "",
     alternateNames: row.alternate_names ?? [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -40,6 +42,8 @@ function toLotRecord(row) {
     sectionId: row.section_id ?? "",
     lotId: row.lot_id,
     name: row.name ?? "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -87,7 +91,7 @@ export async function listCemeteryAdminRecords(pool) {
     const alternateNamesSelect = (await hasSectionAlternateNamesColumn(client)) ? "alternate_names" : "'{}'::text[] AS alternate_names";
     const sectionsResult = await client.query(
       `
-        SELECT section_id::text AS id, cemetery_id::text, name, ${alternateNamesSelect}
+        SELECT section_id::text AS id, cemetery_id::text, name, ${alternateNamesSelect}, created_at, updated_at
         FROM sections
         WHERE cemetery_id = ANY($1::uuid[])
           AND deleted_at IS NULL
@@ -98,7 +102,7 @@ export async function listCemeteryAdminRecords(pool) {
 
     const lotsResult = await client.query(
       `
-        SELECT id::text, cemetery_id::text, section_id, lot_id, name
+        SELECT id::text, cemetery_id::text, section_id, lot_id, name, created_at, updated_at
         FROM lots
         WHERE cemetery_id = ANY($1::uuid[])
           AND deleted_at IS NULL
@@ -176,7 +180,7 @@ export async function updateSectionText(pool, id, { name, alternateNames }, { ac
             alternate_names = $3::text[]
         WHERE section_id = $1
           AND deleted_at IS NULL
-        RETURNING section_id::text AS id, cemetery_id::text, name, alternate_names
+        RETURNING section_id::text AS id, cemetery_id::text, name, alternate_names, created_at, updated_at
       `,
       [id, name, normalizeTextArray(alternateNames)],
     );
@@ -193,7 +197,7 @@ export async function updateLotText(pool, id, { name }, { actorUser } = {}) {
         SET name = NULLIF($2, '')
         WHERE id = $1
           AND deleted_at IS NULL
-        RETURNING id::text, cemetery_id::text, section_id, lot_id, name
+        RETURNING id::text, cemetery_id::text, section_id, lot_id, name, created_at, updated_at
       `,
       [id, name],
     );

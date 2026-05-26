@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { listCemeteryAdminRecords, updateCemeteryText, updateSectionText } from "./cemeteryAdminRepository.mjs";
+import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 
 function transactionPool(queryHandler) {
   return {
@@ -53,12 +53,26 @@ test("listCemeteryAdminRecords returns editable cemetery, section, and lot text"
                   cemetery_id: "cemetery-1",
                   name: "B",
                   alternate_names: ["OC", "Original Cemetery"],
+                  created_at: "2026-01-01T12:30:00.000Z",
+                  updated_at: "2026-01-02T12:30:00.000Z",
                 },
               ],
             };
           }
           if (sql.includes("FROM lots")) {
-            return { rows: [{ id: "lot-1", cemetery_id: "cemetery-1", section_id: "B", lot_id: "12", name: "Lot 12" }] };
+            return {
+              rows: [
+                {
+                  id: "lot-1",
+                  cemetery_id: "cemetery-1",
+                  section_id: "B",
+                  lot_id: "12",
+                  name: "Lot 12",
+                  created_at: "2026-01-01T13:00:00.000Z",
+                  updated_at: "2026-01-02T13:00:00.000Z",
+                },
+              ],
+            };
           }
           throw new Error(`Unexpected query: ${sql}`);
         },
@@ -86,8 +100,28 @@ test("listCemeteryAdminRecords returns editable cemetery, section, and lot text"
         updatedAt: "2026-01-02T12:00:00.000Z",
       },
     ],
-    sections: [{ id: "section-1", cemeteryId: "cemetery-1", sectionId: "B", name: "B", alternateNames: ["OC", "Original Cemetery"] }],
-    lots: [{ id: "lot-1", cemeteryId: "cemetery-1", sectionId: "B", lotId: "12", name: "Lot 12" }],
+    sections: [
+      {
+        id: "section-1",
+        cemeteryId: "cemetery-1",
+        sectionId: "B",
+        name: "B",
+        alternateNames: ["OC", "Original Cemetery"],
+        createdAt: "2026-01-01T12:30:00.000Z",
+        updatedAt: "2026-01-02T12:30:00.000Z",
+      },
+    ],
+    lots: [
+      {
+        id: "lot-1",
+        cemeteryId: "cemetery-1",
+        sectionId: "B",
+        lotId: "12",
+        name: "Lot 12",
+        createdAt: "2026-01-01T13:00:00.000Z",
+        updatedAt: "2026-01-02T13:00:00.000Z",
+      },
+    ],
   });
 });
 
@@ -161,6 +195,8 @@ test("updateSectionText deduplicates and trims alternate names", async () => {
           cemetery_id: "cemetery-1",
           name: "B",
           alternate_names: values[2],
+          created_at: "2026-01-01T12:30:00.000Z",
+          updated_at: "2026-01-03T12:30:00.000Z",
         },
       ],
     };
@@ -173,6 +209,33 @@ test("updateSectionText deduplicates and trims alternate names", async () => {
 
   assert.deepEqual(queryValues, ["section-1", "Section B", ["OC", "Original Cemetery"]]);
   assert.deepEqual(section.alternateNames, ["OC", "Original Cemetery"]);
+  assert.equal(section.updatedAt, "2026-01-03T12:30:00.000Z");
+});
+
+test("updateLotText returns lot audit timestamps", async () => {
+  let queryValues;
+  const pool = transactionPool((_sql, values) => {
+    queryValues = values;
+    return {
+      rows: [
+        {
+          id: values[0],
+          cemetery_id: "cemetery-1",
+          section_id: "B",
+          lot_id: "12",
+          name: values[1],
+          created_at: "2026-01-01T13:00:00.000Z",
+          updated_at: "2026-01-03T13:00:00.000Z",
+        },
+      ],
+    };
+  });
+
+  const lot = await updateLotText(pool, "lot-1", { name: "Lot 12" });
+
+  assert.deepEqual(queryValues, ["lot-1", "Lot 12"]);
+  assert.equal(lot.createdAt, "2026-01-01T13:00:00.000Z");
+  assert.equal(lot.updatedAt, "2026-01-03T13:00:00.000Z");
 });
 
 test("listCemeteryAdminRecords tolerates databases before the alternate names migration", async () => {
@@ -186,7 +249,18 @@ test("listCemeteryAdminRecords tolerates databases before the alternate names mi
           if (sql.includes("information_schema.columns")) return { rows: [{ exists: false }] };
           if (sql.includes("FROM sections")) {
             assert.match(sql, /'\{\}'::text\[\] AS alternate_names/);
-            return { rows: [{ id: "section-1", cemetery_id: "cemetery-1", name: "B", alternate_names: [] }] };
+            return {
+              rows: [
+                {
+                  id: "section-1",
+                  cemetery_id: "cemetery-1",
+                  name: "B",
+                  alternate_names: [],
+                  created_at: "2026-01-01T12:30:00.000Z",
+                  updated_at: "2026-01-02T12:30:00.000Z",
+                },
+              ],
+            };
           }
           if (sql.includes("FROM lots")) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
