@@ -130,7 +130,7 @@ export type SaveCemeteryTextInput = Pick<
   | "imageUrl"
   | "notes"
 >;
-export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames">;
+export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames" | "notes">;
 export type SaveLotTextInput = Pick<LotTextRecord, "name">;
 
 export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords> {

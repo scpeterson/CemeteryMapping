@@ -71,11 +71,21 @@ SELECT id, 'A', facility_id,
 FROM cemeteries
 WHERE facility_id = 'DEMO-ST-MARK';
 
+UPDATE sections
+SET alternate_names = ARRAY['NA', 'New Annex']::text[]
+WHERE facility_id = 'DEMO-ST-MARK'
+  AND name = 'A';
+
 INSERT INTO sections (cemetery_id, name, facility_id, geometry)
 SELECT id, 'A', facility_id,
   ST_Multi(ST_MakeEnvelope(-76.70346, 39.19589, -76.70298, 39.19613, 4326))::geometry(MultiPolygon, 4326)
 FROM cemeteries
 WHERE facility_id = 'DEMO-MEMORIAL';
+
+UPDATE sections
+SET alternate_names = ARRAY['NA', 'New Annex']::text[]
+WHERE facility_id = 'DEMO-MEMORIAL'
+  AND name = 'A';
 
 INSERT INTO sections (cemetery_id, name, facility_id, geometry)
 SELECT id, 'B', facility_id,

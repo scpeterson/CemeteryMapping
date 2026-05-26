@@ -255,7 +255,7 @@ Hierarchical GIS identifiers mirror the template fields using snake_case names:
 
 The `sections` table now uses `section_id uuid` as its primary key. Imported section labels such as `B` or `D` live in `sections.name`; sections do not retain a separate source `section_id` text column. Downstream lot and gravesite rows still keep source hierarchy text such as `section_id`, `lot_id`, and `grave_id` for import correlation and human-readable grave identifiers, while `section_uuid` and related UUID fields preserve relational links.
 
-Sections also include `alternate_names text[]` for locally used names that differ from the primary section label. The current migration backfills active sections `B` and `D` with `OC` and `Original Cemetery`. Admin users can edit these aliases from the Admin UI Cemetery Records tab.
+Sections also include `alternate_names text[]` for locally used names that differ from the primary section label. The current migrations backfill active sections `B` and `D` with `OC` and `Original Cemetery`, and active sections `A` and `C` with `NA` and `New Annex`. Sections also include `notes varchar(4000)` for administrative context. Section geometry is nullable so known sections can be recorded before surveyed spatial boundaries are available; map queries only render sections that already have geometry. Admin users can edit these aliases and notes from the Admin UI Cemetery Records tab.
 
 ## Security schema
 
@@ -396,3 +396,40 @@ APP_ENV=test npm run db:validate:spatial
 ```
 
 The importer validates generated center points before commit. A center point outside the cemetery is an error. A row whose GPS point does not fall inside a section polygon is imported with the source section text but no `section_uuid`, and is reported as a warning for review.
+
+## Deed registry staging workflow
+
+The 2022 Trinity deed registry is ownership evidence, not a spatial source. Import it into staging tables before creating real lot, gravesite, or ownership rows:
+
+- `deed_registry_import_batches` records the workbook, sheet, target cemetery, and import notes.
+- `deed_registry_entries` preserves one raw spreadsheet row per registry row, including owner text, raw lot text, raw section text, remarks, deed flags, parsed lot/plot/grave hints, confidence, and review status.
+- `deed_registry_entry_allocations` stores one or more candidate allocations parsed from each row, such as Section G plots, standard lot identifiers, passage records, specific grave numbers, or grave-count-only hints.
+
+The staging importer deliberately does not write to `lots`, `gravesites`, `lot_owner_parties`, `lot_ownership_events`, or the legacy `owners` table. Rows marked `low` or `review` confidence need human review before promotion. `NA` and `OC` are stored as aliases because they can map to more than one section; passageway records are also staged for manual spatial interpretation.
+
+Run a dry run first:
+
+```bash
+APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --dry-run
+```
+
+Import into a target environment:
+
+```bash
+APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --source-name "Trinity Cemetery Registry 2022" --imported-by "Scott Peterson"
+```
+
+Useful review query:
+
+```sql
+SELECT
+  source_row_number,
+  owner_display_name,
+  raw_lot_text,
+  raw_section_text,
+  ownership_scope,
+  parse_confidence,
+  parse_notes
+FROM deed_registry_entries
+ORDER BY source_row_number;
+```

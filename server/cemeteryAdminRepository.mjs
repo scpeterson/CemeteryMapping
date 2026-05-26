@@ -30,6 +30,7 @@ function toSectionRecord(row) {
     sectionId: row.name,
     name: row.name ?? "",
     alternateNames: row.alternate_names ?? [],
+    notes: row.notes ?? "",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -55,6 +56,20 @@ async function hasSectionAlternateNamesColumn(clientOrPool) {
       WHERE table_schema = current_schema()
         AND table_name = 'sections'
         AND column_name = 'alternate_names'
+    ) AS exists
+  `);
+
+  return result.rows[0]?.exists === true;
+}
+
+async function hasSectionNotesColumn(clientOrPool) {
+  const result = await clientOrPool.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'sections'
+        AND column_name = 'notes'
     ) AS exists
   `);
 
@@ -89,9 +104,10 @@ export async function listCemeteryAdminRecords(pool) {
     if (cemeteryIds.length === 0) return { cemeteries: [], sections: [], lots: [] };
 
     const alternateNamesSelect = (await hasSectionAlternateNamesColumn(client)) ? "alternate_names" : "'{}'::text[] AS alternate_names";
+    const sectionNotesSelect = (await hasSectionNotesColumn(client)) ? "notes" : "NULL::text AS notes";
     const sectionsResult = await client.query(
       `
-        SELECT section_id::text AS id, cemetery_id::text, name, ${alternateNamesSelect}, created_at, updated_at
+        SELECT section_id::text AS id, cemetery_id::text, name, ${alternateNamesSelect}, ${sectionNotesSelect}, created_at, updated_at
         FROM sections
         WHERE cemetery_id = ANY($1::uuid[])
           AND deleted_at IS NULL
@@ -167,22 +183,26 @@ export async function updateCemeteryText(
   });
 }
 
-export async function updateSectionText(pool, id, { name, alternateNames }, { actorUser } = {}) {
+export async function updateSectionText(pool, id, { name, alternateNames, notes }, { actorUser } = {}) {
   return withAuditContext(pool, { actorUser }, async (client) => {
     if (!(await hasSectionAlternateNamesColumn(client))) {
       throw new Error("Section alternate names require database migration 012-section-alternate-names. Run npm run db:migrate before saving section aliases.");
+    }
+    if (!(await hasSectionNotesColumn(client))) {
+      throw new Error("Section notes require database migration 017-section-notes-and-trinity-f-g. Run npm run db:migrate before saving section notes.");
     }
 
     const result = await client.query(
       `
         UPDATE sections
         SET name = NULLIF($2, ''),
-            alternate_names = $3::text[]
+            alternate_names = $3::text[],
+            notes = NULLIF($4, '')
         WHERE section_id = $1
           AND deleted_at IS NULL
-        RETURNING section_id::text AS id, cemetery_id::text, name, alternate_names, created_at, updated_at
+        RETURNING section_id::text AS id, cemetery_id::text, name, alternate_names, notes, created_at, updated_at
       `,
-      [id, name, normalizeTextArray(alternateNames)],
+      [id, name, normalizeTextArray(alternateNames), notes],
     );
 
     return result.rows[0] ? toSectionRecord(result.rows[0]) : undefined;

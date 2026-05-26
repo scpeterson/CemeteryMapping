@@ -216,6 +216,7 @@ async function selectSectionsForCemeteries(client, cemeteryIds) {
       FROM sections
       WHERE cemetery_id = ANY($1::uuid[])
         AND deleted_at IS NULL
+        AND geometry IS NOT NULL
       ORDER BY name, section_id
     `,
     [cemeteryIds],

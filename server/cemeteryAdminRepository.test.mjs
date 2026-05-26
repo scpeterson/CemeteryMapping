@@ -53,6 +53,7 @@ test("listCemeteryAdminRecords returns editable cemetery, section, and lot text"
                   cemetery_id: "cemetery-1",
                   name: "B",
                   alternate_names: ["OC", "Original Cemetery"],
+                  notes: "Section notes",
                   created_at: "2026-01-01T12:30:00.000Z",
                   updated_at: "2026-01-02T12:30:00.000Z",
                 },
@@ -107,6 +108,7 @@ test("listCemeteryAdminRecords returns editable cemetery, section, and lot text"
         sectionId: "B",
         name: "B",
         alternateNames: ["OC", "Original Cemetery"],
+        notes: "Section notes",
         createdAt: "2026-01-01T12:30:00.000Z",
         updatedAt: "2026-01-02T12:30:00.000Z",
       },
@@ -195,6 +197,7 @@ test("updateSectionText deduplicates and trims alternate names", async () => {
           cemetery_id: "cemetery-1",
           name: "B",
           alternate_names: values[2],
+          notes: values[3],
           created_at: "2026-01-01T12:30:00.000Z",
           updated_at: "2026-01-03T12:30:00.000Z",
         },
@@ -205,10 +208,12 @@ test("updateSectionText deduplicates and trims alternate names", async () => {
   const section = await updateSectionText(pool, "section-1", {
     name: "Section B",
     alternateNames: ["OC", " Original Cemetery ", "OC", ""],
+    notes: "Section notes",
   });
 
-  assert.deepEqual(queryValues, ["section-1", "Section B", ["OC", "Original Cemetery"]]);
+  assert.deepEqual(queryValues, ["section-1", "Section B", ["OC", "Original Cemetery"], "Section notes"]);
   assert.deepEqual(section.alternateNames, ["OC", "Original Cemetery"]);
+  assert.equal(section.notes, "Section notes");
   assert.equal(section.updatedAt, "2026-01-03T12:30:00.000Z");
 });
 
@@ -256,6 +261,7 @@ test("listCemeteryAdminRecords tolerates databases before the alternate names mi
                   cemetery_id: "cemetery-1",
                   name: "B",
                   alternate_names: [],
+                  notes: null,
                   created_at: "2026-01-01T12:30:00.000Z",
                   updated_at: "2026-01-02T12:30:00.000Z",
                 },

@@ -144,6 +144,7 @@ export type SectionTextRecord = {
   sectionId: string;
   name: string;
   alternateNames: string[];
+  notes: string;
   createdAt: string;
   updatedAt: string;
 };

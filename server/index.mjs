@@ -87,6 +87,7 @@ function validateSectionTextPayload(body) {
   return {
     name: optionalText(body?.name, "Section name", 255),
     alternateNames,
+    notes: optionalText(body?.notes, "Section notes", 4000),
   };
 }
 
