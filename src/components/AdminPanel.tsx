@@ -77,7 +77,7 @@ const alternateNamesText = (alternateNames: string[]) => alternateNames.join("\n
 const parseAlternateNames = (value: string) =>
   [...new Set(value.split(/\r?\n|,/u).map((item) => item.trim()).filter(Boolean))];
 const cemeteryPickerLabel = (cemetery: CemeteryTextRecord) => cemetery.name;
-const sectionPickerLabel = (section: SectionTextRecord) => `Section ${section.sectionId} - ${section.name}`;
+const sectionPickerLabel = (section: SectionTextRecord) => `Section ${section.name}`;
 const lotPickerLabel = (lot: LotTextRecord) => `Lot ${lot.lotId} - ${lot.name}`;
 
 export function AdminPanel({ onClose }: AdminPanelProps) {
@@ -145,6 +145,26 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
       isCurrent = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!cemeteryPickerValue || selectedCemeteryId) return;
+    const match = cemeteryRecords.cemeteries.find((cemetery) => cemeteryPickerLabel(cemetery) === cemeteryPickerValue);
+    if (match) setSelectedCemeteryId(match.id);
+  }, [cemeteryPickerValue, cemeteryRecords.cemeteries, selectedCemeteryId]);
+
+  useEffect(() => {
+    if (!sectionPickerValue || selectedSectionId) return;
+    const match = sectionsForSelectedCemetery.find(
+      (section) => sectionPickerLabel(section) === sectionPickerValue || section.name === sectionPickerValue || section.sectionId === sectionPickerValue,
+    );
+    if (match) setSelectedSectionId(match.id);
+  }, [sectionPickerValue, sectionsForSelectedCemetery, selectedSectionId]);
+
+  useEffect(() => {
+    if (!lotPickerValue || selectedLotId) return;
+    const match = lotsForSelectedSection.find((lot) => lotPickerLabel(lot) === lotPickerValue || lot.name === lotPickerValue || lot.lotId === lotPickerValue);
+    if (match) setSelectedLotId(match.id);
+  }, [lotPickerValue, lotsForSelectedSection, selectedLotId]);
 
   const resetForm = () => {
     setForm(blankUser);
@@ -325,7 +345,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
   const selectSectionByPickerValue = (value: string) => {
     setSectionPickerValue(value);
-    const match = sectionsForSelectedCemetery.find((section) => sectionPickerLabel(section) === value);
+    const match = sectionsForSelectedCemetery.find((section) => sectionPickerLabel(section) === value || section.name === value || section.sectionId === value);
     setSelectedSectionId(match?.id ?? "");
     setSelectedLotId("");
     setLotPickerValue("");
@@ -333,7 +353,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
   const selectLotByPickerValue = (value: string) => {
     setLotPickerValue(value);
-    const match = lotsForSelectedSection.find((lot) => lotPickerLabel(lot) === value);
+    const match = lotsForSelectedSection.find((lot) => lotPickerLabel(lot) === value || lot.name === value || lot.lotId === value);
     setSelectedLotId(match?.id ?? "");
   };
 

@@ -14,7 +14,7 @@ function toSectionRecord(row) {
   return {
     id: row.id,
     cemeteryId: row.cemetery_id,
-    sectionId: row.section_id,
+    sectionId: row.name,
     name: row.name ?? "",
     alternateNames: row.alternate_names ?? [],
   };
@@ -60,11 +60,11 @@ export async function listCemeteryAdminRecords(pool) {
     const alternateNamesSelect = (await hasSectionAlternateNamesColumn(client)) ? "alternate_names" : "'{}'::text[] AS alternate_names";
     const sectionsResult = await client.query(
       `
-        SELECT id::text, cemetery_id::text, section_id, name, ${alternateNamesSelect}
+        SELECT section_id::text AS id, cemetery_id::text, name, ${alternateNamesSelect}
         FROM sections
         WHERE cemetery_id = ANY($1::uuid[])
           AND deleted_at IS NULL
-        ORDER BY section_id, name, id
+        ORDER BY name, section_id
       `,
       [cemeteryIds],
     );
@@ -118,9 +118,9 @@ export async function updateSectionText(pool, id, { name, alternateNames }) {
       SET name = NULLIF($2, ''),
           alternate_names = $3::text[],
           updated_at = now()
-      WHERE id = $1
+      WHERE section_id = $1
         AND deleted_at IS NULL
-      RETURNING id::text, cemetery_id::text, section_id, name, alternate_names
+      RETURNING section_id::text AS id, cemetery_id::text, name, alternate_names
     `,
     [id, name, normalizeTextArray(alternateNames)],
   );

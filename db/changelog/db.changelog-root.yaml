@@ -35,3 +35,6 @@ databaseChangeLog:
   - include:
       file: changes/012-section-alternate-names.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/013-section-primary-key-name.sql
+      relativeToChangelogFile: true

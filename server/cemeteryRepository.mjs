@@ -188,11 +188,11 @@ async function selectSectionsForCemeteries(client, cemeteryIds) {
   const alternateNamesSelect = await sectionAlternateNamesSelect(client);
   const result = await client.query(
     `
-      SELECT id::text, section_id, COALESCE(name, section_id) AS name, ${alternateNamesSelect}, ST_AsGeoJSON(geometry)::json AS geometry
+      SELECT section_id::text AS uuid, name AS section_id, name, ${alternateNamesSelect}, ST_AsGeoJSON(geometry)::json AS geometry
       FROM sections
       WHERE cemetery_id = ANY($1::uuid[])
         AND deleted_at IS NULL
-      ORDER BY section_id, name
+      ORDER BY name, section_id
     `,
     [cemeteryIds],
   );

@@ -269,14 +269,14 @@ async function findCemetery(client, facilityId) {
 async function findSection(client, cemeteryId, facilityId, sectionId, longitude, latitude) {
   const result = await client.query(
     `
-      SELECT id, section_id
+      SELECT section_id, name
       FROM sections
       WHERE cemetery_id = $1
         AND facility_id IS NOT DISTINCT FROM $2
         AND ST_Covers(geometry, ST_SetSRID(ST_MakePoint($3, $4), 4326))
       ORDER BY
-        CASE WHEN section_id IS NOT DISTINCT FROM $5 THEN 0 ELSE 1 END,
-        id
+        CASE WHEN name IS NOT DISTINCT FROM $5 THEN 0 ELSE 1 END,
+        section_id
       LIMIT 1
     `,
     [cemeteryId, facilityId, longitude, latitude, sectionId],
@@ -320,10 +320,10 @@ async function upsertLot(client, cemetery, facilityId, imported, section) {
     `,
     [
       cemetery.id,
-      section?.id ?? null,
+      section?.section_id ?? null,
       `Lot ${imported.lotId}`,
       facilityId,
-      section?.section_id ?? imported.sectionId,
+      section?.name ?? imported.sectionId,
       imported.lotId,
       JSON.stringify(imported.lotGeometry),
     ],
@@ -383,11 +383,11 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
     `,
     [
       cemetery.id,
-      section?.id ?? null,
+      section?.section_id ?? null,
       lot.id,
       imported.name,
       facilityId,
-      section?.section_id ?? imported.sectionId,
+      section?.name ?? imported.sectionId,
       imported.lotId,
       imported.graveId,
       imported.gravesiteId,
@@ -503,7 +503,7 @@ async function validateImportedGravesites(client, gravesiteUuids) {
           section.geometry AS section_geometry
         FROM gravesites grave
         JOIN cemeteries cemetery ON cemetery.id = grave.cemetery_id
-        LEFT JOIN sections section ON section.id = grave.section_uuid
+        LEFT JOIN sections section ON section.section_id = grave.section_uuid
         WHERE grave.id = ANY($1::uuid[])
       ),
       cemetery_containment AS (
