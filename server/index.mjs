@@ -2,6 +2,7 @@ import express from "express";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
+import { listAuditEvents } from "./auditRepository.mjs";
 import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from "./auth0Management.mjs";
 import { loadApiConfig } from "./config.mjs";
 import { canViewOwnership, requireRole } from "./auth.mjs";
@@ -247,6 +248,14 @@ export function createApp(config, pool) {
   app.get("/api/admin/cemetery-records", requireAdmin, async (_request, response, next) => {
     try {
       response.json(await listCemeteryAdminRecords(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/audit-events", requireAdmin, async (request, response, next) => {
+    try {
+      response.json(await listAuditEvents(pool, request.query));
     } catch (error) {
       next(error);
     }

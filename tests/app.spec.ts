@@ -376,6 +376,32 @@ test("admin soft delete hides a grave space from reads and restore makes it visi
 });
 
 test("admin can edit cemetery section alternate names", async ({ page }) => {
+  await page.route("**/api/admin/audit-events**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([
+        {
+          id: "audit-1",
+          occurredAt: "2026-05-26T14:00:00.000Z",
+          action: "update",
+          targetTable: "sections",
+          targetRecordId: "section-b",
+          actorEmail: "admin@example.test",
+          actorRole: "admin",
+          actorExternalSubject: "auth0|admin",
+          actorDatabaseUser: "cemetery_app",
+          actorSessionUser: "cemetery_app",
+          source: "api",
+          reason: "Correct section alias",
+          changedFields: ["alternate_names"],
+          previousValues: { alternate_names: ["OC"] },
+          newValues: { alternate_names: ["OC", "Original Cemetery"] },
+          metadata: {},
+        },
+      ]),
+    });
+  });
+
   await page.goto("/");
   await page.getByLabel("Open admin management").click();
   await expect(page.getByRole("tab", { name: "Users" })).toBeVisible();
@@ -411,4 +437,11 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   expect(recordsResponse.ok()).toBe(true);
   const records = await recordsResponse.json();
   expect(records.sections.some((item: { sectionId: string; alternateNames: string[] }) => item.sectionId === "B" && item.alternateNames.includes("Old Churchyard"))).toBe(true);
+
+  await page.getByRole("tab", { name: "Audit Log" }).click();
+  await expect(page.getByRole("heading", { name: "Audit Log" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Audit events" })).toContainText("admin@example.test");
+  await expect(page.getByRole("table", { name: "Audit events" })).toContainText("Updated");
+  await expect(page.getByLabel("Selected audit event detail")).toContainText("alternate_names");
+  await expect(page.getByLabel("Selected audit event detail")).toContainText("Original Cemetery");
 });

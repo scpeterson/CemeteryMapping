@@ -880,7 +880,7 @@ h3 {
 
 .admin-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   padding: 4px;
   border: 1px solid #d9e0d5;
@@ -926,6 +926,8 @@ h3 {
 
 .admin-form input,
 .admin-form select,
+.audit-filter-form input,
+.audit-filter-form select,
 .record-picker input,
 .record-picker select,
 .record-editor-row input,
@@ -1001,6 +1003,24 @@ h3 {
   color: #405048;
 }
 
+.audit-filter-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.audit-filter-form label {
+  display: grid;
+  gap: 5px;
+  color: #4f5d52;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.audit-filter-actions {
+  align-self: end;
+}
+
 .admin-table,
 .role-list,
 .record-editor-list {
@@ -1054,6 +1074,119 @@ h3 {
 
 .role-row {
   grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
+}
+
+.audit-log-layout {
+  display: grid;
+  gap: 12px;
+}
+
+.audit-event-list {
+  display: grid;
+  gap: 7px;
+}
+
+.audit-event-row {
+  display: grid;
+  grid-template-columns: minmax(135px, 1fr) minmax(80px, 0.45fr) minmax(145px, 0.85fr) minmax(0, 1.2fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+  color: #26342d;
+  text-align: left;
+}
+
+.audit-event-row.is-selected,
+.audit-event-row:hover {
+  border-color: #9fb29a;
+  background: #f4f8f1;
+}
+
+.audit-event-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.audit-event-row strong,
+.audit-event-row small {
+  display: block;
+}
+
+.audit-event-row small {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.audit-event-detail {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.audit-event-detail h4,
+.audit-event-detail h5 {
+  margin: 0;
+  color: #26342d;
+}
+
+.audit-detail-grid,
+.audit-value-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.audit-detail-grid {
+  margin: 0;
+}
+
+.audit-detail-grid div,
+.audit-value-grid section {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+}
+
+.audit-detail-grid dt {
+  color: #4f5d52;
+  font-size: 0.74rem;
+  font-weight: 760;
+}
+
+.audit-detail-grid dd {
+  margin: 4px 0 0;
+  color: #26342d;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.audit-value-grid {
+  align-items: start;
+}
+
+.audit-value-grid section {
+  display: grid;
+  gap: 8px;
+}
+
+.audit-value-grid pre {
+  max-height: 240px;
+  margin: 0;
+  overflow: auto;
+  color: #26342d;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
 }
 
 .record-editor-row {
@@ -1328,11 +1461,15 @@ h3 {
   }
 
   .admin-form,
+  .audit-filter-form,
   .record-picker-grid,
   .admin-user-row,
   .role-row,
   .record-editor-row,
-  .record-editor-row:has(textarea) {
+  .record-editor-row:has(textarea),
+  .audit-event-row,
+  .audit-detail-grid,
+  .audit-value-grid {
     grid-template-columns: 1fr;
   }
 
