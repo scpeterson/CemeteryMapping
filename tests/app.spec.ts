@@ -385,12 +385,12 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
 
   await page.getByRole("combobox", { name: "Cemetery" }).fill("St. Mark Church Cemetery");
   await expect(page.getByRole("combobox", { name: "Section" })).toBeVisible();
-  await page.getByRole("combobox", { name: "Section" }).fill("Section B - Section B");
+  await page.getByRole("combobox", { name: "Section" }).fill("Section B");
 
   const sectionRow = page.locator(".record-editor-row").filter({ has: page.getByLabel("Alternate names") }).first();
   await expect(sectionRow).toBeVisible();
   await expect(sectionRow).toContainText("Section");
-  await expect(sectionRow.getByLabel("Name", { exact: true })).toHaveValue("Section B");
+  await expect(sectionRow.getByLabel("Name", { exact: true })).toHaveValue("B");
   await expect(sectionRow.getByLabel("Alternate names")).toHaveValue(/Original Cemetery/u);
 
   await sectionRow.getByLabel("Alternate names").fill("OC\nOriginal Cemetery\nOld Churchyard");

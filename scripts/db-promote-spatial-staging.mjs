@@ -160,8 +160,7 @@ async function main() {
         WITH staged AS (
           SELECT
             section_feature.facility_id,
-            section_feature.section_id,
-            COALESCE(lower_properties.properties ->> 'name', section_feature.section_id) AS name,
+            COALESCE(section_feature.section_id, lower_properties.properties ->> 'name') AS name,
             cemetery.id AS cemetery_id,
             ST_Multi(section_feature.geometry)::geometry(MultiPolygon, 4326) AS geometry
           FROM spatial_import_features section_feature
@@ -178,7 +177,6 @@ async function main() {
           cemetery_id,
           name,
           facility_id,
-          section_id,
           geometry,
           updated_at
         )
@@ -186,13 +184,13 @@ async function main() {
           staged.cemetery_id,
           staged.name,
           staged.facility_id,
-          staged.section_id,
           staged.geometry,
           now()
         FROM staged
-        ON CONFLICT (facility_id, section_id) DO UPDATE SET
+        WHERE staged.name IS NOT NULL
+        ON CONFLICT (cemetery_id, name) DO UPDATE SET
           cemetery_id = EXCLUDED.cemetery_id,
-          name = EXCLUDED.name,
+          facility_id = EXCLUDED.facility_id,
           geometry = EXCLUDED.geometry,
           updated_at = now()
       `,
@@ -208,7 +206,7 @@ async function main() {
             block_feature.block_id,
             COALESCE(lower_properties.properties ->> 'name', block_feature.block_id) AS name,
             cemetery.id AS cemetery_id,
-            section.id AS section_uuid,
+            section.section_id AS section_uuid,
             ST_Multi(block_feature.geometry)::geometry(MultiPolygon, 4326) AS geometry
           FROM spatial_import_features block_feature
           CROSS JOIN LATERAL (
@@ -219,7 +217,7 @@ async function main() {
             ON cemetery.facility_id IS NOT DISTINCT FROM block_feature.facility_id
           LEFT JOIN sections section
             ON section.cemetery_id = cemetery.id
-           AND section.section_id IS NOT DISTINCT FROM block_feature.section_id
+           AND section.name IS NOT DISTINCT FROM block_feature.section_id
           WHERE block_feature.batch_id = $1
             AND block_feature.feature_type = 'block'
             AND block_feature.block_id IS NOT NULL
@@ -264,7 +262,7 @@ async function main() {
             lot_feature.lot_id,
             COALESCE(lower_properties.properties ->> 'name', lot_feature.lot_id) AS name,
             cemetery.id AS cemetery_id,
-            section.id AS section_uuid,
+            section.section_id AS section_uuid,
             block.id AS block_uuid,
             ST_Multi(lot_feature.geometry)::geometry(MultiPolygon, 4326) AS geometry
           FROM spatial_import_features lot_feature
@@ -276,7 +274,7 @@ async function main() {
             ON cemetery.facility_id IS NOT DISTINCT FROM lot_feature.facility_id
           LEFT JOIN sections section
             ON section.cemetery_id = cemetery.id
-           AND section.section_id IS NOT DISTINCT FROM lot_feature.section_id
+           AND section.name IS NOT DISTINCT FROM lot_feature.section_id
           LEFT JOIN blocks block
             ON block.cemetery_id = cemetery.id
            AND block.section_id IS NOT DISTINCT FROM lot_feature.section_id
@@ -330,7 +328,7 @@ async function main() {
             lot_feature.lot_id,
             COALESCE(lower_properties.properties ->> 'name', lot_feature.lot_id) AS name,
             cemetery.id AS cemetery_id,
-            section.id AS section_uuid,
+            section.section_id AS section_uuid,
             ST_Multi(lot_feature.geometry)::geometry(MultiPolygon, 4326) AS geometry
           FROM spatial_import_features lot_feature
           CROSS JOIN LATERAL (
@@ -341,7 +339,7 @@ async function main() {
             ON cemetery.facility_id IS NOT DISTINCT FROM lot_feature.facility_id
           LEFT JOIN sections section
             ON section.cemetery_id = cemetery.id
-           AND section.section_id IS NOT DISTINCT FROM lot_feature.section_id
+           AND section.name IS NOT DISTINCT FROM lot_feature.section_id
           WHERE lot_feature.batch_id = $1
             AND lot_feature.feature_type = 'lot'
             AND lot_feature.block_id IS NULL

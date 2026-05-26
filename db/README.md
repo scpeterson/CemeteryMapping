@@ -242,15 +242,14 @@ The spatial columns are:
 Hierarchical GIS identifiers mirror the template fields using snake_case names:
 
 - `facility_id`
-- `section_id`
-
-Sections also include `alternate_names text[]` for locally used names that differ from the primary section label. The current migration backfills active sections `B` and `D` with `OC` and `Original Cemetery`. Admin users can edit these aliases from the Admin UI Cemetery Records tab.
 - `block_id`
 - `lot_id`
 - `grave_id`
 - `gravesite_id`
 
-Foreign keys connect the hierarchy directly in PostgreSQL, so Esri-specific relationship key fields are not needed.
+The `sections` table now uses `section_id uuid` as its primary key. Imported section labels such as `B` or `D` live in `sections.name`; sections do not retain a separate source `section_id` text column. Downstream lot and gravesite rows still keep source hierarchy text such as `section_id`, `lot_id`, and `grave_id` for import correlation and human-readable grave identifiers, while `section_uuid` and related UUID fields preserve relational links.
+
+Sections also include `alternate_names text[]` for locally used names that differ from the primary section label. The current migration backfills active sections `B` and `D` with `OC` and `Original Cemetery`. Admin users can edit these aliases from the Admin UI Cemetery Records tab.
 
 ## Security schema
 
