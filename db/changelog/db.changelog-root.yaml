@@ -44,3 +44,18 @@ databaseChangeLog:
   - include:
       file: changes/015-updated-at-triggers.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/016-section-new-annex-alternate-names.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/017-section-notes-and-trinity-f-g.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/018-deed-registry-staging.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/019-deed-registry-staging-raw-widths.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/020-deed-registry-staging-identifier-widths.sql
+      relativeToChangelogFile: true

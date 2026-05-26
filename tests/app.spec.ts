@@ -426,10 +426,12 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   await expect(sectionRow).toContainText("Section");
   await expect(sectionRow.getByLabel("Name", { exact: true })).toHaveValue("B");
   await expect(sectionRow.getByLabel("Alternate names")).toHaveValue(/Original Cemetery/u);
+  await expect(sectionRow.getByLabel("Notes")).toBeVisible();
   await expect(sectionRow.getByLabel("Section audit timestamps")).toContainText("Created");
   await expect(sectionRow.getByLabel("Section audit timestamps")).toContainText("Updated");
 
   await sectionRow.getByLabel("Alternate names").fill("OC\nOriginal Cemetery\nOld Churchyard");
+  await sectionRow.getByLabel("Notes").fill("Section B admin note");
   await sectionRow.getByRole("button", { name: "Save section" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Section B saved." })).toBeVisible();
 
@@ -437,6 +439,7 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   expect(recordsResponse.ok()).toBe(true);
   const records = await recordsResponse.json();
   expect(records.sections.some((item: { sectionId: string; alternateNames: string[] }) => item.sectionId === "B" && item.alternateNames.includes("Old Churchyard"))).toBe(true);
+  expect(records.sections.some((item: { sectionId: string; notes: string }) => item.sectionId === "B" && item.notes === "Section B admin note")).toBe(true);
 
   await page.getByRole("tab", { name: "Audit Log" }).click();
   await expect(page.getByRole("heading", { name: "Audit Log" })).toBeVisible();

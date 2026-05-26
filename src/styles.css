@@ -1250,6 +1250,7 @@ h3 {
 
 .record-editor-row-cemetery .record-editor-name,
 .record-editor-row-cemetery label:has(textarea),
+.record-editor-notes,
 .record-audit-fields {
   grid-column: 1 / -1;
 }

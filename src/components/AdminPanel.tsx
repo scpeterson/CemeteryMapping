@@ -99,6 +99,9 @@ const auditTableLabels: Record<string, string> = {
   blocks: "Blocks",
   burials: "Burials",
   cemeteries: "Cemeteries",
+  deed_registry_entries: "Deed registry entries",
+  deed_registry_entry_allocations: "Deed registry allocations",
+  deed_registry_import_batches: "Deed registry imports",
   gravesites: "Gravesites",
   headstone_burials: "Headstone burials",
   headstones: "Headstones",
@@ -400,7 +403,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     setError(undefined);
 
     try {
-      const saved = await updateSectionText(section.id, { name: section.name, alternateNames: section.alternateNames });
+      const saved = await updateSectionText(section.id, { name: section.name, alternateNames: section.alternateNames, notes: section.notes });
       updateSectionRecord(saved.id, saved);
       if (saved.id === selectedSectionId) setSectionPickerValue(sectionPickerLabel(saved));
       setMessage(`Section ${saved.sectionId} saved.`);
@@ -843,6 +846,15 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                       onChange={(event) => updateSectionRecord(selectedSection.id, { alternateNames: parseAlternateNames(event.target.value) })}
                       rows={3}
                       title="Alternate section names, one per line or separated by commas. For example: OC and Original Cemetery."
+                    />
+                  </label>
+                  <label className="record-editor-notes">
+                    Notes
+                    <textarea
+                      value={selectedSection.notes}
+                      onChange={(event) => updateSectionRecord(selectedSection.id, { notes: event.target.value })}
+                      rows={6}
+                      title="Administrative notes stored with the section record."
                     />
                   </label>
                   <dl className="record-audit-fields" aria-label="Section audit timestamps">
