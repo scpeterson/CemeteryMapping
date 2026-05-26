@@ -6,7 +6,18 @@ function toCemeteryRecord(row) {
   return {
     id: row.id,
     name: row.name,
+    fullAddress: row.full_address ?? "",
+    municipality: row.municipality ?? "",
+    agency: row.agency ?? "",
+    agencyUrl: row.agency_url ?? "",
+    operationalHours: row.operational_hours ?? "",
+    contactName: row.contact_name ?? "",
+    contactPhone: row.contact_phone ?? "",
+    contactEmail: row.contact_email ?? "",
+    imageUrl: row.image_url ?? "",
     notes: row.notes ?? "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -48,7 +59,21 @@ export async function listCemeteryAdminRecords(pool) {
   const client = await pool.connect();
   try {
     const cemeteriesResult = await client.query(`
-      SELECT id::text, name, notes
+      SELECT
+        id::text,
+        name,
+        full_address,
+        municipality,
+        agency,
+        agency_url,
+        operational_hours,
+        contact_name,
+        contact_phone,
+        contact_email,
+        image_url,
+        notes,
+        created_at,
+        updated_at
       FROM cemeteries
       WHERE deleted_at IS NULL
       ORDER BY name, id
@@ -90,18 +115,45 @@ export async function listCemeteryAdminRecords(pool) {
   }
 }
 
-export async function updateCemeteryText(pool, id, { name, notes }) {
+export async function updateCemeteryText(
+  pool,
+  id,
+  { name, fullAddress, municipality, agency, agencyUrl, operationalHours, contactName, contactPhone, contactEmail, imageUrl, notes },
+) {
   const result = await pool.query(
     `
       UPDATE cemeteries
       SET name = $2,
-          notes = NULLIF($3, ''),
+          full_address = NULLIF($3, ''),
+          municipality = NULLIF($4, ''),
+          agency = NULLIF($5, ''),
+          agency_url = NULLIF($6, ''),
+          operational_hours = NULLIF($7, ''),
+          contact_name = NULLIF($8, ''),
+          contact_phone = NULLIF($9, ''),
+          contact_email = NULLIF($10, ''),
+          image_url = NULLIF($11, ''),
+          notes = NULLIF($12, ''),
           updated_at = now()
       WHERE id = $1
         AND deleted_at IS NULL
-      RETURNING id::text, name, notes
+      RETURNING
+        id::text,
+        name,
+        full_address,
+        municipality,
+        agency,
+        agency_url,
+        operational_hours,
+        contact_name,
+        contact_phone,
+        contact_email,
+        image_url,
+        notes,
+        created_at,
+        updated_at
     `,
-    [id, name, notes],
+    [id, name, fullAddress, municipality, agency, agencyUrl, operationalHours, contactName, contactPhone, contactEmail, imageUrl, notes],
   );
 
   return result.rows[0] ? toCemeteryRecord(result.rows[0]) : undefined;

@@ -63,6 +63,15 @@ function validateAuth0UserResolutionPayload(body) {
 function validateCemeteryTextPayload(body) {
   return {
     name: requiredText(body?.name, "Cemetery name", 255),
+    fullAddress: optionalText(body?.fullAddress, "Full address", 250),
+    municipality: optionalText(body?.municipality, "Municipality", 150),
+    agency: optionalText(body?.agency, "Agency", 50),
+    agencyUrl: optionalText(body?.agencyUrl, "Agency URL", 300),
+    operationalHours: optionalText(body?.operationalHours, "Operational hours", 150),
+    contactName: optionalText(body?.contactName, "Contact name", 150),
+    contactPhone: optionalText(body?.contactPhone, "Contact phone", 15),
+    contactEmail: optionalText(body?.contactEmail, "Contact email", 100),
+    imageUrl: optionalText(body?.imageUrl, "Image URL", 300),
     notes: optionalText(body?.notes, "Cemetery notes", 4000),
   };
 }
