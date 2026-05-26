@@ -383,15 +383,25 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   await page.getByRole("tab", { name: "Cemetery Records" }).click();
   await expect(page.getByRole("heading", { name: "Cemetery Records" })).toBeVisible();
 
-  await page.getByRole("combobox", { name: "Cemetery" }).fill("St. Mark Church Cemetery");
+  await page.getByRole("combobox", { name: "Cemetery" }).selectOption({ label: "St. Mark Church Cemetery" });
   await expect(page.getByRole("combobox", { name: "Section" })).toBeVisible();
-  await page.getByRole("combobox", { name: "Section" }).fill("Section B");
+  await page.getByRole("combobox", { name: "Section" }).selectOption({ label: "Section A" });
+  await expect(page.getByRole("combobox", { name: "Lot" })).toBeVisible();
+  await page.getByRole("combobox", { name: "Lot" }).selectOption({ index: 1 });
+  const lotRow = page.locator(".record-editor-row").filter({ has: page.getByRole("heading", { name: "Lot" }) }).first();
+  await expect(lotRow.getByLabel("Lot audit timestamps")).toContainText("Created");
+  await expect(lotRow.getByLabel("Lot audit timestamps")).toContainText("Updated");
+  await page.getByRole("combobox", { name: "Lot" }).click();
+  await page.getByRole("combobox", { name: "Section" }).selectOption({ label: "Section B" });
+  await expect(page.getByRole("combobox", { name: "Lot" })).toHaveValue("");
 
   const sectionRow = page.locator(".record-editor-row").filter({ has: page.getByLabel("Alternate names") }).first();
   await expect(sectionRow).toBeVisible();
   await expect(sectionRow).toContainText("Section");
   await expect(sectionRow.getByLabel("Name", { exact: true })).toHaveValue("B");
   await expect(sectionRow.getByLabel("Alternate names")).toHaveValue(/Original Cemetery/u);
+  await expect(sectionRow.getByLabel("Section audit timestamps")).toContainText("Created");
+  await expect(sectionRow.getByLabel("Section audit timestamps")).toContainText("Updated");
 
   await sectionRow.getByLabel("Alternate names").fill("OC\nOriginal Cemetery\nOld Churchyard");
   await sectionRow.getByRole("button", { name: "Save section" }).click();
