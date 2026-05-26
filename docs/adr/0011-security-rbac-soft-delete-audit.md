@@ -74,6 +74,8 @@ Each audit event should capture:
 
 Audit records should not be edited by normal application workflows. Row-level database triggers enforce auditing across core business and admin tables so direct database changes are captured even when they bypass the application API. Application mutation paths set transaction-local audit context so trigger-generated rows include the authenticated application user where available.
 
+Tables with `updated_at` use database triggers to maintain that lifecycle timestamp on row updates. `created_at`, `updated_at`, `deleted_at`, `deleted_by`, and `delete_reason` stay on business rows for current-state inspection; `audit_events` stores historical old/new values and actor identity.
+
 ## Authentication Direction
 
 Production authentication should use standards-based tokens from the selected identity provider, preferably OpenID Connect and JWT access tokens. The Express API should validate tokens server-side and map the authenticated subject to an application user and role.

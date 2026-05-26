@@ -211,6 +211,7 @@ db/changelog/changes/011-power-user-role.sql
 db/changelog/changes/012-section-alternate-names.sql
 db/changelog/changes/013-section-primary-key-name.sql
 db/changelog/changes/014-database-audit-triggers.sql
+db/changelog/changes/015-updated-at-triggers.sql
 ```
 
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
@@ -268,6 +269,8 @@ The security foundation uses:
 The application should use soft deletes for cemetery data. Normal read queries should filter `deleted_at IS NULL`; administrative recovery and audit views can explicitly include deleted rows.
 
 Database triggers write `audit_events` records for inserts, updates, soft deletes, restores, and hard deletes across the core cemetery and admin tables. API mutation paths set transaction-local audit context so audit rows include the application user, role, identity-provider subject, and email. Direct database changes are also captured with PostgreSQL `current_user` and `session_user`; use unique named database login roles for every person or automation with direct database access. See the [Database Auditing](../docs/database-auditing.md) guide.
+
+Database triggers also maintain `updated_at` on current tables that expose that lifecycle column. Application code should not set `updated_at` manually for normal row updates.
 
 Current API authorization modes:
 

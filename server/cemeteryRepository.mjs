@@ -502,8 +502,7 @@ export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { acto
         UPDATE gravesites
         SET deleted_at = now(),
             deleted_by = $3::uuid,
-            delete_reason = $2,
-            updated_at = now()
+            delete_reason = $2
         WHERE id = $1
         RETURNING id::text AS uuid, gravesite_id, deleted_at, deleted_by::text, delete_reason, updated_at
       `,
@@ -562,8 +561,7 @@ export async function restoreGraveSpace(pool, cemeteryId, gravesiteId, { actorUs
         UPDATE gravesites
         SET deleted_at = NULL,
             deleted_by = NULL,
-            delete_reason = NULL,
-            updated_at = now()
+            delete_reason = NULL
         WHERE id = $1
         RETURNING id::text AS uuid, gravesite_id, deleted_at, deleted_by::text, delete_reason, updated_at
       `,

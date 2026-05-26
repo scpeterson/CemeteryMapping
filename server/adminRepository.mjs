@@ -105,8 +105,7 @@ export async function updateUser(pool, id, user) {
             email = $3,
             display_name = $4,
             role_name = $5,
-            is_active = $6,
-            updated_at = now()
+            is_active = $6
         WHERE id = $1
         RETURNING id::text, external_subject, email, display_name, role_name, is_active, last_authenticated_at, created_at, updated_at
       `,
