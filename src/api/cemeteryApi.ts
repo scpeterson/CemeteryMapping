@@ -2,6 +2,8 @@ import { apiBaseUrl } from "../config/environment";
 import type {
   AppRole,
   AppUser,
+  AuditEvent,
+  AuditEventFilters,
   Auth0ResolvedUser,
   CemeteryAdminRecords,
   CemeteryData,
@@ -134,6 +136,16 @@ export type SaveLotTextInput = Pick<LotTextRecord, "name">;
 export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records`);
   return jsonResponse<CemeteryAdminRecords>(response, "Cemetery admin records API");
+}
+
+export async function fetchAdminAuditEvents(filters: AuditEventFilters = {}): Promise<AuditEvent[]> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/audit-events${query ? `?${query}` : ""}`);
+  return jsonResponse<AuditEvent[]>(response, "Audit events API");
 }
 
 export async function updateCemeteryText(id: string, cemetery: SaveCemeteryTextInput): Promise<CemeteryTextRecord> {

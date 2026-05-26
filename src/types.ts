@@ -163,3 +163,32 @@ export type CemeteryAdminRecords = {
   sections: SectionTextRecord[];
   lots: LotTextRecord[];
 };
+
+export type AuditEvent = {
+  id: string;
+  occurredAt: string;
+  action: string;
+  targetTable: string;
+  targetRecordId: string;
+  actorEmail: string;
+  actorRole: string;
+  actorExternalSubject: string;
+  actorDatabaseUser: string;
+  actorSessionUser: string;
+  source: string;
+  reason: string;
+  changedFields: string[];
+  previousValues: Record<string, unknown>;
+  newValues: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+};
+
+export type AuditEventFilters = {
+  action?: string;
+  targetTable?: string;
+  actor?: string;
+  targetRecordId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  limit?: number;
+};

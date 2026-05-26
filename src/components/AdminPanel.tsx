@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Landmark, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { History, Landmark, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
+  fetchAdminAuditEvents,
   fetchAdminRoles,
   fetchAdminUsers,
   fetchCemeteryAdminRecords,
@@ -12,7 +13,7 @@ import {
   updateLotText,
   updateSectionText,
 } from "../api/cemeteryApi";
-import type { AppRole, AppRoleName, AppUser, CemeteryAdminRecords, CemeteryTextRecord, LotTextRecord, SectionTextRecord } from "../types";
+import type { AppRole, AppRoleName, AppUser, AuditEvent, AuditEventFilters, CemeteryAdminRecords, CemeteryTextRecord, LotTextRecord, SectionTextRecord } from "../types";
 
 type AdminPanelProps = {
   onClose: () => void;
@@ -22,7 +23,7 @@ type UserFormState = SaveUserInput & {
   id?: string;
 };
 
-type AdminTab = "users" | "records";
+type AdminTab = "users" | "records" | "audit";
 
 const blankUser: UserFormState = {
   externalSubject: "",
@@ -73,6 +74,41 @@ const emptyCemeteryRecords: CemeteryAdminRecords = {
   lots: [],
 };
 
+const defaultAuditFilters: AuditEventFilters = {
+  action: "",
+  targetTable: "",
+  actor: "",
+  targetRecordId: "",
+  dateFrom: "",
+  dateTo: "",
+  limit: 50,
+};
+
+const auditActionLabels: Record<string, string> = {
+  create: "Created",
+  update: "Updated",
+  soft_delete: "Deleted",
+  restore: "Restored",
+  delete: "Hard deleted",
+  import_promote: "Imported",
+};
+
+const auditTableLabels: Record<string, string> = {
+  app_roles: "Roles",
+  app_users: "Users",
+  blocks: "Blocks",
+  burials: "Burials",
+  cemeteries: "Cemeteries",
+  gravesites: "Gravesites",
+  headstone_burials: "Headstone burials",
+  headstones: "Headstones",
+  lot_owner_parties: "Lot owners",
+  lots: "Lots",
+  memorials: "Memorials",
+  owners: "Owners",
+  sections: "Sections",
+};
+
 const alternateNamesText = (alternateNames: string[]) => alternateNames.join("\n");
 const parseAlternateNames = (value: string) =>
   [...new Set(value.split(/\r?\n|,/u).map((item) => item.trim()).filter(Boolean))];
@@ -80,11 +116,24 @@ const cemeteryPickerLabel = (cemetery: CemeteryTextRecord) => cemetery.name;
 const sectionPickerLabel = (section: SectionTextRecord) => `Section ${section.name}`;
 const lotPickerLabel = (lot: LotTextRecord) => `Lot ${lot.lotId} - ${lot.name}`;
 const formatAdminTimestamp = (value: string) => (value ? new Date(value).toLocaleString() : "Not recorded");
+const auditActorLabel = (event: AuditEvent) => event.actorEmail || event.actorDatabaseUser || event.actorSessionUser || "Unknown actor";
+const auditActionLabel = (action: string) => auditActionLabels[action] ?? action;
+const auditTableLabel = (targetTable: string) => auditTableLabels[targetTable] ?? targetTable;
+const auditEventSummary = (event: AuditEvent) => {
+  if (event.changedFields.length === 0) return event.reason || "No field-level changes recorded";
+  const fields = event.changedFields.slice(0, 3).join(", ");
+  const suffix = event.changedFields.length > 3 ? ` +${event.changedFields.length - 3} more` : "";
+  return `${fields}${suffix}`;
+};
+const formatAuditJson = (value: Record<string, unknown>) => (Object.keys(value).length ? JSON.stringify(value, null, 2) : "None recorded");
 
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [auditFilters, setAuditFilters] = useState<AuditEventFilters>(defaultAuditFilters);
+  const [selectedAuditEventId, setSelectedAuditEventId] = useState("");
   const [cemeteryRecords, setCemeteryRecords] = useState<CemeteryAdminRecords>(emptyCemeteryRecords);
   const [form, setForm] = useState<UserFormState>(blankUser);
   const [selectedCemeteryId, setSelectedCemeteryId] = useState("");
@@ -96,6 +145,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAuditEvents, setIsLoadingAuditEvents] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
   const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(() => new Set());
@@ -121,6 +171,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const selectedLot = useMemo(
     () => lotsForSelectedSection.find((lot) => lot.id === selectedLotId),
     [lotsForSelectedSection, selectedLotId],
+  );
+  const selectedAuditEvent = useMemo(
+    () => auditEvents.find((event) => event.id === selectedAuditEventId),
+    [auditEvents, selectedAuditEventId],
   );
 
   useEffect(() => {
@@ -166,6 +220,35 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     const match = lotsForSelectedSection.find((lot) => lotPickerLabel(lot) === lotPickerValue || lot.name === lotPickerValue || lot.lotId === lotPickerValue);
     if (match) setSelectedLotId(match.id);
   }, [lotPickerValue, lotsForSelectedSection, selectedLotId]);
+
+  const loadAuditEvents = async (filters = auditFilters) => {
+    setIsLoadingAuditEvents(true);
+    setError(undefined);
+
+    try {
+      const nextAuditEvents = await fetchAdminAuditEvents(filters);
+      setAuditEvents(nextAuditEvents);
+      setSelectedAuditEventId((current) => (nextAuditEvents.some((event) => event.id === current) ? current : (nextAuditEvents[0]?.id ?? "")));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load audit events.");
+    } finally {
+      setIsLoadingAuditEvents(false);
+    }
+  };
+
+  const updateAuditFilter = (patch: Partial<AuditEventFilters>) => {
+    setAuditFilters((current) => ({ ...current, ...patch }));
+  };
+
+  const applyAuditFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void loadAuditEvents(auditFilters);
+  };
+
+  const openAuditTab = () => {
+    setActiveTab("audit");
+    if (auditEvents.length === 0 && !isLoadingAuditEvents) void loadAuditEvents();
+  };
 
   const resetForm = () => {
     setForm(blankUser);
@@ -407,6 +490,16 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
         >
           Cemetery Records
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "audit"}
+          className={activeTab === "audit" ? "is-active" : undefined}
+          onClick={openAuditTab}
+          title="Review create, update, delete, and restore audit events."
+        >
+          Audit Log
+        </button>
       </div>
 
       {activeTab === "users" ? (
@@ -550,7 +643,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
         </div>
       </section>
         </>
-      ) : (
+      ) : activeTab === "records" ? (
         <>
           <section className="admin-section">
             <div className="section-title">
@@ -806,6 +899,182 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                   >
                     {savingRecordKey === `lot:${selectedLot.id}` ? "Saving..." : "Save lot"}
                   </button>
+                </article>
+              ) : null}
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <section className="admin-section">
+            <div className="section-title">
+              <History size={17} aria-hidden="true" />
+              <h3>Audit Log</h3>
+            </div>
+
+            <form className="audit-filter-form" onSubmit={applyAuditFilters}>
+              <label>
+                Date from
+                <input
+                  type="date"
+                  value={auditFilters.dateFrom ?? ""}
+                  onChange={(event) => updateAuditFilter({ dateFrom: event.target.value })}
+                  title="Show audit events that occurred on or after this date."
+                />
+              </label>
+              <label>
+                Date to
+                <input
+                  type="date"
+                  value={auditFilters.dateTo ?? ""}
+                  onChange={(event) => updateAuditFilter({ dateTo: event.target.value })}
+                  title="Show audit events that occurred on or before this date."
+                />
+              </label>
+              <label>
+                Operation
+                <select
+                  value={auditFilters.action ?? ""}
+                  onChange={(event) => updateAuditFilter({ action: event.target.value })}
+                  title="Filter audit events by operation type."
+                >
+                  <option value="">All operations</option>
+                  {Object.entries(auditActionLabels).map(([action, label]) => (
+                    <option key={action} value={action}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Entity
+                <select
+                  value={auditFilters.targetTable ?? ""}
+                  onChange={(event) => updateAuditFilter({ targetTable: event.target.value })}
+                  title="Filter audit events by table or entity type."
+                >
+                  <option value="">All entities</option>
+                  {Object.entries(auditTableLabels).map(([table, label]) => (
+                    <option key={table} value={table}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Actor
+                <input
+                  value={auditFilters.actor ?? ""}
+                  onChange={(event) => updateAuditFilter({ actor: event.target.value })}
+                  placeholder="Email or database user"
+                  title="Filter by application user email, Auth0 subject, database user, or database session user."
+                />
+              </label>
+              <label>
+                Record ID
+                <input
+                  value={auditFilters.targetRecordId ?? ""}
+                  onChange={(event) => updateAuditFilter({ targetRecordId: event.target.value })}
+                  placeholder="Target record ID"
+                  title="Filter by the audited record identifier."
+                />
+              </label>
+              <label>
+                Limit
+                <select
+                  value={auditFilters.limit ?? 50}
+                  onChange={(event) => updateAuditFilter({ limit: Number(event.target.value) })}
+                  title="Limit the number of audit events returned."
+                >
+                  <option value={25}>25 events</option>
+                  <option value={50}>50 events</option>
+                  <option value={100}>100 events</option>
+                </select>
+              </label>
+              <div className="admin-form-actions audit-filter-actions">
+                <button type="submit" disabled={isLoadingAuditEvents} title="Apply audit log filters.">
+                  {isLoadingAuditEvents ? "Loading..." : "Apply filters"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setAuditFilters(defaultAuditFilters);
+                    void loadAuditEvents(defaultAuditFilters);
+                  }}
+                  title="Clear all audit log filters and reload recent events."
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+
+            {isLoadingAuditEvents ? <div className="admin-message" role="status">Loading audit events...</div> : null}
+
+            <div className="audit-log-layout">
+              <div className="audit-event-list" role="table" aria-label="Audit events">
+                {auditEvents.length === 0 && !isLoadingAuditEvents ? <p className="record-editor-empty">No audit events match these filters.</p> : null}
+                {auditEvents.map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    className={event.id === selectedAuditEventId ? "audit-event-row is-selected" : "audit-event-row"}
+                    onClick={() => setSelectedAuditEventId(event.id)}
+                    title="Show the old and new values captured for this audit event."
+                  >
+                    <span>
+                      <strong>{formatAdminTimestamp(event.occurredAt)}</strong>
+                      <small>{auditActorLabel(event)}</small>
+                    </span>
+                    <span>{auditActionLabel(event.action)}</span>
+                    <span>
+                      <strong>{auditTableLabel(event.targetTable)}</strong>
+                      <small>{event.targetRecordId || "No record ID"}</small>
+                    </span>
+                    <span>{auditEventSummary(event)}</span>
+                  </button>
+                ))}
+              </div>
+
+              {selectedAuditEvent ? (
+                <article className="audit-event-detail" aria-label="Selected audit event detail">
+                  <h4>{auditActionLabel(selectedAuditEvent.action)} {auditTableLabel(selectedAuditEvent.targetTable)}</h4>
+                  <dl className="audit-detail-grid">
+                    <div title="The application user or database user responsible for this event.">
+                      <dt>Actor</dt>
+                      <dd>{auditActorLabel(selectedAuditEvent)}</dd>
+                    </div>
+                    <div title="Whether the change came from the API, an import, or direct database access.">
+                      <dt>Source</dt>
+                      <dd>{selectedAuditEvent.source || "Unknown"}</dd>
+                    </div>
+                    <div title="The PostgreSQL current_user captured by the audit trigger.">
+                      <dt>Database user</dt>
+                      <dd>{selectedAuditEvent.actorDatabaseUser || "Not recorded"}</dd>
+                    </div>
+                    <div title="The PostgreSQL session_user captured by the audit trigger.">
+                      <dt>Session user</dt>
+                      <dd>{selectedAuditEvent.actorSessionUser || "Not recorded"}</dd>
+                    </div>
+                    <div title="The changed fields reported by the audit trigger.">
+                      <dt>Changed fields</dt>
+                      <dd>{selectedAuditEvent.changedFields.length ? selectedAuditEvent.changedFields.join(", ") : "None recorded"}</dd>
+                    </div>
+                    <div title="The reason supplied by the application or database session, when available.">
+                      <dt>Reason</dt>
+                      <dd>{selectedAuditEvent.reason || "None recorded"}</dd>
+                    </div>
+                  </dl>
+                  <div className="audit-value-grid">
+                    <section>
+                      <h5>Old values</h5>
+                      <pre>{formatAuditJson(selectedAuditEvent.previousValues)}</pre>
+                    </section>
+                    <section>
+                      <h5>New values</h5>
+                      <pre>{formatAuditJson(selectedAuditEvent.newValues)}</pre>
+                    </section>
+                  </div>
                 </article>
               ) : null}
             </div>

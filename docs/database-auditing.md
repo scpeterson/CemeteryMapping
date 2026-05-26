@@ -83,6 +83,8 @@ For hosted production databases, prefer managed authentication or a database acc
 
 ## Querying The Audit Log
 
+Administrators can review recent audit events in the application under **Admin > Audit Log**. The tab is read-only and supports filtering by date range, actor, entity type, operation, record ID, and result limit. Selecting an audit row shows captured actor details, database user/session user, changed fields, reason, and the old/new JSON values stored in `audit_events`.
+
 Recent changes:
 
 ```sql
