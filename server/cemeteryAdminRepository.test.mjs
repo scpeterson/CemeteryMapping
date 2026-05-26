@@ -2,6 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { listCemeteryAdminRecords, updateCemeteryText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 
+function transactionPool(queryHandler) {
+  return {
+    async connect() {
+      return {
+        async query(sql, values) {
+          if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
+          if (String(sql).includes("set_config")) return { rows: [] };
+          return queryHandler(sql, values);
+        },
+        release() {},
+      };
+    },
+  };
+}
+
 test("listCemeteryAdminRecords returns editable cemetery, section, and lot text", async () => {
   const pool = {
     async connect() {
@@ -78,31 +93,29 @@ test("listCemeteryAdminRecords returns editable cemetery, section, and lot text"
 
 test("updateCemeteryText saves all editable cemetery text fields", async () => {
   let queryValues;
-  const pool = {
-    async query(_sql, values) {
-      queryValues = values;
-      return {
-        rows: [
-          {
-            id: values[0],
-            name: values[1],
-            full_address: values[2],
-            municipality: values[3],
-            agency: values[4],
-            agency_url: values[5],
-            operational_hours: values[6],
-            contact_name: values[7],
-            contact_phone: values[8],
-            contact_email: values[9],
-            image_url: values[10],
-            notes: values[11],
-            created_at: "2026-01-01T12:00:00.000Z",
-            updated_at: "2026-01-03T12:00:00.000Z",
-          },
-        ],
-      };
-    },
-  };
+  const pool = transactionPool((_sql, values) => {
+    queryValues = values;
+    return {
+      rows: [
+        {
+          id: values[0],
+          name: values[1],
+          full_address: values[2],
+          municipality: values[3],
+          agency: values[4],
+          agency_url: values[5],
+          operational_hours: values[6],
+          contact_name: values[7],
+          contact_phone: values[8],
+          contact_email: values[9],
+          image_url: values[10],
+          notes: values[11],
+          created_at: "2026-01-01T12:00:00.000Z",
+          updated_at: "2026-01-03T12:00:00.000Z",
+        },
+      ],
+    };
+  });
 
   const cemetery = await updateCemeteryText(pool, "cemetery-1", {
     name: "St. Mark",
@@ -138,22 +151,20 @@ test("updateCemeteryText saves all editable cemetery text fields", async () => {
 
 test("updateSectionText deduplicates and trims alternate names", async () => {
   let queryValues;
-  const pool = {
-    async query(sql, values) {
-      if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
-      queryValues = values;
-      return {
-        rows: [
-          {
-            id: "section-1",
-            cemetery_id: "cemetery-1",
-            name: "B",
-            alternate_names: values[2],
-          },
-        ],
-      };
-    },
-  };
+  const pool = transactionPool((sql, values) => {
+    if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
+    queryValues = values;
+    return {
+      rows: [
+        {
+          id: "section-1",
+          cemetery_id: "cemetery-1",
+          name: "B",
+          alternate_names: values[2],
+        },
+      ],
+    };
+  });
 
   const section = await updateSectionText(pool, "section-1", {
     name: "Section B",

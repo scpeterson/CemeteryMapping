@@ -206,6 +206,11 @@ db/changelog/changes/006-security-rbac-soft-delete-audit.sql
 db/changelog/changes/007-cemetery-scoped-gravesite-identifiers.sql
 db/changelog/changes/008-correct-north-hills-source-name.sql
 db/changelog/changes/009-correct-north-hills-genealogists-spelling.sql
+db/changelog/changes/010-lot-support.sql
+db/changelog/changes/011-power-user-role.sql
+db/changelog/changes/012-section-alternate-names.sql
+db/changelog/changes/013-section-primary-key-name.sql
+db/changelog/changes/014-database-audit-triggers.sql
 ```
 
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
@@ -257,12 +262,12 @@ The security foundation uses:
 
 - `app_roles` for application roles. Initial values are `reader`, `power-user`, and `admin`.
 - `app_users` for identity-provider subjects mapped to application roles.
-- `audit_events` for append-only administrative change history.
+- `audit_events` for append-only row-level change history.
 - `deleted_at`, `deleted_by`, and `delete_reason` columns on cemetery business tables.
 
 The application should use soft deletes for cemetery data. Normal read queries should filter `deleted_at IS NULL`; administrative recovery and audit views can explicitly include deleted rows.
 
-The first admin mutation endpoints soft-delete and restore `gravesites` records through `/api/cemeteries/:cemeteryId/grave-spaces/:id`. These endpoints write `audit_events` records with the actor supplied by the configured API authentication mode.
+Database triggers write `audit_events` records for inserts, updates, soft deletes, restores, and hard deletes across the core cemetery and admin tables. API mutation paths set transaction-local audit context so audit rows include the application user, role, identity-provider subject, and email. Direct database changes are also captured with PostgreSQL `current_user` and `session_user`; use unique named database login roles for every person or automation with direct database access. See the [Database Auditing](../docs/database-auditing.md) guide.
 
 Current API authorization modes:
 

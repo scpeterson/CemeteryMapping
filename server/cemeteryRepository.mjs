@@ -1,3 +1,5 @@
+import { setAuditContext } from "./auditContext.mjs";
+
 const statusMap = new Map([
   ["available", "available"],
   ["reserved", "reserved"],
@@ -84,36 +86,54 @@ function ownershipRedactedGrave(grave) {
   };
 }
 
-function toMutationActor(user) {
-  if (!user) return {};
-  return {
-    actorExternalSubject: user.subject,
-    actorEmail: user.email,
-    actorRole: user.role,
-  };
+async function selectTriggeredAuditEventId(client, { action, targetTable, targetRecordId }) {
+  const result = await client.query(
+    `
+      SELECT id::text
+      FROM audit_events
+      WHERE transaction_id = txid_current()
+        AND action = $1
+        AND target_table = $2
+        AND target_record_id = $3
+      ORDER BY occurred_at DESC, created_at DESC
+      LIMIT 1
+    `,
+    [action, targetTable, targetRecordId],
+  );
+
+  return result.rows[0]?.id;
 }
 
-async function insertAuditEvent(client, { actor, action, targetTable, targetRecordId, previousValues, newValues, reason }) {
+async function insertCompatibilityAuditEvent(client, { actorUser, action, targetTable, targetRecordId, previousValues, newValues, reason }) {
   const result = await client.query(
     `
       INSERT INTO audit_events (
+        actor_user_id,
+        actor_app_user_id,
         actor_external_subject,
         actor_email,
         actor_role,
+        actor_database_user,
+        actor_session_user,
+        source,
+        transaction_id,
         action,
         target_table,
         target_record_id,
         previous_values,
         new_values,
-        reason
+        changed_fields,
+        reason,
+        occurred_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)
+      VALUES ($1::uuid, $1::uuid, $2, $3, $4, current_user, session_user, 'api', txid_current(), $5, $6, $7, $8::jsonb, $9::jsonb, '{}'::text[], $10, now())
       RETURNING id::text
     `,
     [
-      actor.actorExternalSubject,
-      actor.actorEmail,
-      actor.actorRole,
+      actorUser?.id ?? null,
+      actorUser?.subject ?? null,
+      actorUser?.email ?? null,
+      actorUser?.role ?? null,
       action,
       targetTable,
       targetRecordId,
@@ -124,6 +144,10 @@ async function insertAuditEvent(client, { actor, action, targetTable, targetReco
   );
 
   return result.rows[0].id;
+}
+
+async function auditEventIdForMutation(client, event) {
+  return (await selectTriggeredAuditEventId(client, event)) ?? (await insertCompatibilityAuditEvent(client, event));
 }
 
 async function selectGraveMutationState(client, cemeteryId, gravesiteId) {
@@ -456,6 +480,7 @@ export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { acto
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
     const existing = await selectGraveMutationState(client, cemeteryId, gravesiteId);
     if (!existing) {
       await client.query("ROLLBACK");
@@ -476,17 +501,17 @@ export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { acto
       `
         UPDATE gravesites
         SET deleted_at = now(),
-            deleted_by = NULL,
+            deleted_by = $3::uuid,
             delete_reason = $2,
             updated_at = now()
         WHERE id = $1
         RETURNING id::text AS uuid, gravesite_id, deleted_at, deleted_by::text, delete_reason, updated_at
       `,
-      [existing.uuid, reason],
+      [existing.uuid, reason, actorUser?.id ?? null],
     );
     const updated = updateResult.rows[0];
-    const auditEventId = await insertAuditEvent(client, {
-      actor: toMutationActor(actorUser),
+    const auditEventId = await auditEventIdForMutation(client, {
+      actorUser,
       action: "soft_delete",
       targetTable: "gravesites",
       targetRecordId: existing.uuid,
@@ -515,6 +540,7 @@ export async function restoreGraveSpace(pool, cemeteryId, gravesiteId, { actorUs
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
     const existing = await selectGraveMutationState(client, cemeteryId, gravesiteId);
     if (!existing) {
       await client.query("ROLLBACK");
@@ -544,8 +570,8 @@ export async function restoreGraveSpace(pool, cemeteryId, gravesiteId, { actorUs
       [existing.uuid],
     );
     const updated = updateResult.rows[0];
-    const auditEventId = await insertAuditEvent(client, {
-      actor: toMutationActor(actorUser),
+    const auditEventId = await auditEventIdForMutation(client, {
+      actorUser,
       action: "restore",
       targetTable: "gravesites",
       targetRecordId: existing.uuid,

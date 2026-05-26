@@ -1,3 +1,5 @@
+import { withAuditContext } from "./auditContext.mjs";
+
 const systemRoles = [
   {
     name: "reader",
@@ -81,33 +83,37 @@ export async function listUsers(pool) {
 }
 
 export async function createUser(pool, user) {
-  const result = await pool.query(
-    `
-      INSERT INTO app_users (external_subject, email, display_name, role_name, is_active)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id::text, external_subject, email, display_name, role_name, is_active, last_authenticated_at, created_at, updated_at
-    `,
-    [user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
-  );
-  return toUser(result.rows[0]);
+  return withAuditContext(pool, { actorUser: user.actorUser }, async (client) => {
+    const result = await client.query(
+      `
+        INSERT INTO app_users (external_subject, email, display_name, role_name, is_active)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id::text, external_subject, email, display_name, role_name, is_active, last_authenticated_at, created_at, updated_at
+      `,
+      [user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
+    );
+    return toUser(result.rows[0]);
+  });
 }
 
 export async function updateUser(pool, id, user) {
-  const result = await pool.query(
-    `
-      UPDATE app_users
-      SET external_subject = $2,
-          email = $3,
-          display_name = $4,
-          role_name = $5,
-          is_active = $6,
-          updated_at = now()
-      WHERE id = $1
-      RETURNING id::text, external_subject, email, display_name, role_name, is_active, last_authenticated_at, created_at, updated_at
-    `,
-    [id, user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
-  );
-  return result.rows[0] ? toUser(result.rows[0]) : undefined;
+  return withAuditContext(pool, { actorUser: user.actorUser }, async (client) => {
+    const result = await client.query(
+      `
+        UPDATE app_users
+        SET external_subject = $2,
+            email = $3,
+            display_name = $4,
+            role_name = $5,
+            is_active = $6,
+            updated_at = now()
+        WHERE id = $1
+        RETURNING id::text, external_subject, email, display_name, role_name, is_active, last_authenticated_at, created_at, updated_at
+      `,
+      [id, user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
+    );
+    return result.rows[0] ? toUser(result.rows[0]) : undefined;
+  });
 }
 
 export async function listAssignableRoles(pool) {

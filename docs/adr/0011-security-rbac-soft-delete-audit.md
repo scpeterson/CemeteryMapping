@@ -62,15 +62,17 @@ Each audit event should capture:
 
 - Actor user id or external subject.
 - Actor role at the time of change.
-- Action name, such as `create`, `update`, `soft_delete`, `restore`, or `import_promote`.
+- Database user and session user for direct database accountability.
+- Action name, such as `create`, `update`, `soft_delete`, `restore`, `delete`, or `import_promote`.
 - Target table.
 - Target record id.
 - Previous values when available.
 - New values when available.
+- Changed fields for updates.
 - Reason or note when supplied.
 - Timestamp.
 
-Audit records should not be edited by normal application workflows.
+Audit records should not be edited by normal application workflows. Row-level database triggers enforce auditing across core business and admin tables so direct database changes are captured even when they bypass the application API. Application mutation paths set transaction-local audit context so trigger-generated rows include the authenticated application user where available.
 
 ## Authentication Direction
 
