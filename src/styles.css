@@ -1056,34 +1056,43 @@ h3 {
 }
 
 .record-editor-row {
-  grid-template-columns: minmax(110px, 0.55fr) minmax(0, 1fr) auto;
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .record-editor-row:has(textarea) {
-  grid-template-columns: minmax(110px, 0.5fr) minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
 }
 
-.record-editor-row label,
-.record-editor-context {
+.record-editor-row h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #26342d;
+  font-size: 0.95rem;
+  font-weight: 780;
+}
+
+.record-editor-row-cemetery {
+  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.24fr);
+}
+
+.record-editor-row-cemetery button {
+  grid-column: 2;
+  grid-row: 2 / 4;
+  align-self: center;
+}
+
+.record-editor-row-section {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr) minmax(92px, 0.38fr);
+}
+
+.record-editor-row label {
   display: grid;
   gap: 5px;
   min-width: 0;
   color: #4f5d52;
   font-size: 0.78rem;
   font-weight: 760;
-}
-
-.record-editor-context strong {
-  color: #26342d;
-  font-size: 0.92rem;
-}
-
-.record-editor-context small {
-  overflow: hidden;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .record-editor-row button {
@@ -1094,7 +1103,8 @@ h3 {
   background: #2f5d50;
   color: #fff;
   font-weight: 720;
-  white-space: nowrap;
+  line-height: 1.12;
+  white-space: normal;
 }
 
 .record-editor-row button:disabled {
@@ -1266,6 +1276,11 @@ h3 {
   .record-editor-row,
   .record-editor-row:has(textarea) {
     grid-template-columns: 1fr;
+  }
+
+  .record-editor-row-cemetery button {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .status-active,
