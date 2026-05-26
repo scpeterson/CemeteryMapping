@@ -222,7 +222,7 @@ export function createApp(config, pool) {
     try {
       const roles = await listAssignableRoles(pool);
       const user = validateAdminUserPayload(request.body, roles);
-      response.status(201).json(await createUser(pool, user));
+      response.status(201).json(await createUser(pool, { ...user, actorUser: request.user }));
     } catch (error) {
       next(error);
     }
@@ -233,7 +233,7 @@ export function createApp(config, pool) {
       const id = validateUuid(request.params.id, "User id");
       const roles = await listAssignableRoles(pool);
       const user = validateAdminUserPayload(request.body, roles);
-      const updated = await updateUser(pool, id, user);
+      const updated = await updateUser(pool, id, { ...user, actorUser: request.user });
       if (!updated) {
         response.status(404).json({ error: "User not found" });
         return;
@@ -255,7 +255,7 @@ export function createApp(config, pool) {
   app.put("/api/admin/cemetery-records/cemeteries/:id", requireAdmin, async (request, response, next) => {
     try {
       const id = validateUuid(request.params.id, "Cemetery id");
-      const updated = await updateCemeteryText(pool, id, validateCemeteryTextPayload(request.body));
+      const updated = await updateCemeteryText(pool, id, validateCemeteryTextPayload(request.body), { actorUser: request.user });
       if (!updated) {
         response.status(404).json({ error: "Cemetery not found" });
         return;
@@ -269,7 +269,7 @@ export function createApp(config, pool) {
   app.put("/api/admin/cemetery-records/sections/:id", requireAdmin, async (request, response, next) => {
     try {
       const id = validateUuid(request.params.id, "Section id");
-      const updated = await updateSectionText(pool, id, validateSectionTextPayload(request.body));
+      const updated = await updateSectionText(pool, id, validateSectionTextPayload(request.body), { actorUser: request.user });
       if (!updated) {
         response.status(404).json({ error: "Section not found" });
         return;
@@ -283,7 +283,7 @@ export function createApp(config, pool) {
   app.put("/api/admin/cemetery-records/lots/:id", requireAdmin, async (request, response, next) => {
     try {
       const id = validateUuid(request.params.id, "Lot id");
-      const updated = await updateLotText(pool, id, validateLotTextPayload(request.body));
+      const updated = await updateLotText(pool, id, validateLotTextPayload(request.body), { actorUser: request.user });
       if (!updated) {
         response.status(404).json({ error: "Lot not found" });
         return;

@@ -13,6 +13,7 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
 - [Admin Workflow Roadmap](admin-workflows.md)
+- [Database Auditing](database-auditing.md)
 - [Auth0 Test Tenant Setup](auth0-test-tenant.md)
 
 ## Architecture Decisions
