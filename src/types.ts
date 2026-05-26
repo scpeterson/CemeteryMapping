@@ -124,7 +124,18 @@ export type Auth0ResolvedUser = {
 export type CemeteryTextRecord = {
   id: string;
   name: string;
+  fullAddress: string;
+  municipality: string;
+  agency: string;
+  agencyUrl: string;
+  operationalHours: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  imageUrl: string;
   notes: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type SectionTextRecord = {

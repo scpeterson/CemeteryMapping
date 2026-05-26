@@ -114,7 +114,20 @@ export async function updateAdminUser(id: string, user: SaveUserInput): Promise<
   return jsonResponse<AppUser>(response, "Update user API");
 }
 
-export type SaveCemeteryTextInput = Pick<CemeteryTextRecord, "name" | "notes">;
+export type SaveCemeteryTextInput = Pick<
+  CemeteryTextRecord,
+  | "name"
+  | "fullAddress"
+  | "municipality"
+  | "agency"
+  | "agencyUrl"
+  | "operationalHours"
+  | "contactName"
+  | "contactPhone"
+  | "contactEmail"
+  | "imageUrl"
+  | "notes"
+>;
 export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames">;
 export type SaveLotTextInput = Pick<LotTextRecord, "name">;
 

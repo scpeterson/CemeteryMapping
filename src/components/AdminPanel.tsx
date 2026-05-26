@@ -79,6 +79,7 @@ const parseAlternateNames = (value: string) =>
 const cemeteryPickerLabel = (cemetery: CemeteryTextRecord) => cemetery.name;
 const sectionPickerLabel = (section: SectionTextRecord) => `Section ${section.name}`;
 const lotPickerLabel = (lot: LotTextRecord) => `Lot ${lot.lotId} - ${lot.name}`;
+const formatAdminTimestamp = (value: string) => (value ? new Date(value).toLocaleString() : "Not recorded");
 
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
@@ -286,7 +287,19 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     setError(undefined);
 
     try {
-      const saved = await updateCemeteryText(cemetery.id, { name: cemetery.name, notes: cemetery.notes });
+      const saved = await updateCemeteryText(cemetery.id, {
+        name: cemetery.name,
+        fullAddress: cemetery.fullAddress,
+        municipality: cemetery.municipality,
+        agency: cemetery.agency,
+        agencyUrl: cemetery.agencyUrl,
+        operationalHours: cemetery.operationalHours,
+        contactName: cemetery.contactName,
+        contactPhone: cemetery.contactPhone,
+        contactEmail: cemetery.contactEmail,
+        imageUrl: cemetery.imageUrl,
+        notes: cemetery.notes,
+      });
       updateCemeteryRecord(saved.id, saved);
       if (saved.id === selectedCemeteryId) setCemeteryPickerValue(cemeteryPickerLabel(saved));
       setMessage(`${saved.name} saved.`);
@@ -612,14 +625,96 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                     />
                   </label>
                   <label>
+                    Full address
+                    <input
+                      value={selectedCemetery.fullAddress}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { fullAddress: event.target.value })}
+                      title="The cemetery's street address or full mailing/location address."
+                    />
+                  </label>
+                  <label>
+                    Municipality
+                    <input
+                      value={selectedCemetery.municipality}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { municipality: event.target.value })}
+                      title="The municipality where the cemetery is located."
+                    />
+                  </label>
+                  <label>
+                    Agency
+                    <input
+                      value={selectedCemetery.agency}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { agency: event.target.value })}
+                      title="The agency or organization associated with the cemetery."
+                    />
+                  </label>
+                  <label>
+                    Agency URL
+                    <input
+                      value={selectedCemetery.agencyUrl}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { agencyUrl: event.target.value })}
+                      title="The agency website URL associated with the cemetery."
+                    />
+                  </label>
+                  <label>
+                    Operational hours
+                    <input
+                      value={selectedCemetery.operationalHours}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { operationalHours: event.target.value })}
+                      title="Public or operational hours for the cemetery."
+                    />
+                  </label>
+                  <label>
+                    Contact name
+                    <input
+                      value={selectedCemetery.contactName}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { contactName: event.target.value })}
+                      title="Primary contact person for this cemetery record."
+                    />
+                  </label>
+                  <label>
+                    Contact phone
+                    <input
+                      value={selectedCemetery.contactPhone}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { contactPhone: event.target.value })}
+                      title="Primary contact phone number for this cemetery record."
+                    />
+                  </label>
+                  <label>
+                    Contact email
+                    <input
+                      value={selectedCemetery.contactEmail}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { contactEmail: event.target.value })}
+                      title="Primary contact email address for this cemetery record."
+                    />
+                  </label>
+                  <label>
+                    Image URL
+                    <input
+                      value={selectedCemetery.imageUrl}
+                      onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { imageUrl: event.target.value })}
+                      title="URL for an image associated with this cemetery."
+                    />
+                  </label>
+                  <label>
                     Notes
                     <textarea
                       value={selectedCemetery.notes}
                       onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { notes: event.target.value })}
-                      rows={5}
+                      rows={8}
                       title="Administrative notes stored with the cemetery record."
                     />
                   </label>
+                  <dl className="record-audit-fields" aria-label="Cemetery audit timestamps">
+                    <div title="When this cemetery record was created. This field cannot be edited here.">
+                      <dt>Created</dt>
+                      <dd>{formatAdminTimestamp(selectedCemetery.createdAt)}</dd>
+                    </div>
+                    <div title="When this cemetery record was last updated. This field cannot be edited here.">
+                      <dt>Updated</dt>
+                      <dd>{formatAdminTimestamp(selectedCemetery.updatedAt)}</dd>
+                    </div>
+                  </dl>
                   <button
                     type="button"
                     onClick={() => void saveCemeteryRecord(selectedCemetery)}
