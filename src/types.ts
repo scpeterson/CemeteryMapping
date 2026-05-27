@@ -193,3 +193,68 @@ export type AuditEventFilters = {
   dateTo?: string;
   limit?: number;
 };
+
+export type DeedRegistryImportBatch = {
+  id: string;
+  cemeteryName: string;
+  sourceName: string;
+  worksheetName: string;
+  importedBy: string;
+  notes: string;
+  createdAt: string;
+  entryCount: number;
+  reviewCount: number;
+  lowConfidenceCount: number;
+};
+
+export type DeedRegistrySummaryItem = {
+  ownershipScope: string;
+  parseConfidence: string;
+  count: number;
+};
+
+export type DeedRegistryInvestigationNote = {
+  sourceRowNumber: number;
+  ownerDisplayName: string;
+  rawRemarks: string;
+};
+
+export type DeedRegistryReviewEntry = {
+  id: string;
+  batchId: string;
+  sourceRowNumber: number;
+  rowType: string;
+  ownerDisplayName: string;
+  rawLotText: string;
+  rawSectionText: string;
+  rawRemarks: string;
+  deedOnFile: string;
+  deedRegisterOnFile: string;
+  parsedSectionName: string;
+  parsedSectionAlias: string;
+  parsedLotNumbers: string[];
+  parsedPlotNumbers: string[];
+  parsedGraveNumbers: string[];
+  parsedGraveCount?: number;
+  ownershipScope: string;
+  parseConfidence: string;
+  parseNotes: string[];
+  status: string;
+  allocationCount: number;
+  relatedInvestigationNotes: DeedRegistryInvestigationNote[];
+};
+
+export type DeedRegistryReviewFilters = {
+  batchId?: string;
+  confidence?: string;
+  ownershipScope?: string;
+  q?: string;
+  limit?: number;
+};
+
+export type DeedRegistryReview = {
+  batches: DeedRegistryImportBatch[];
+  selectedBatchId: string;
+  summary: DeedRegistrySummaryItem[];
+  entries: DeedRegistryReviewEntry[];
+};

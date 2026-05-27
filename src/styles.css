@@ -928,6 +928,8 @@ h3 {
 .admin-form select,
 .audit-filter-form input,
 .audit-filter-form select,
+.deed-review-filter-form input,
+.deed-review-filter-form select,
 .record-picker input,
 .record-picker select,
 .record-editor-row input,
@@ -1009,7 +1011,14 @@ h3 {
   gap: 12px;
 }
 
-.audit-filter-form label {
+.deed-review-filter-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.audit-filter-form label,
+.deed-review-filter-form label {
   display: grid;
   gap: 5px;
   color: #4f5d52;
@@ -1017,7 +1026,8 @@ h3 {
   font-weight: 760;
 }
 
-.audit-filter-actions {
+.audit-filter-actions,
+.deed-review-filter-actions {
   align-self: end;
 }
 
@@ -1084,6 +1094,177 @@ h3 {
 .audit-event-list {
   display: grid;
   gap: 7px;
+}
+
+.deed-batch-summary {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.deed-batch-summary strong,
+.deed-batch-summary small {
+  display: block;
+}
+
+.deed-batch-summary small,
+.deed-batch-summary p {
+  color: var(--text-muted);
+}
+
+.deed-batch-summary p {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.deed-batch-summary dl,
+.deed-summary-grid,
+.deed-entry-fields {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.deed-batch-summary dl {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.deed-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.deed-summary-grid article,
+.deed-batch-summary dl div,
+.deed-entry-fields div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+}
+
+.deed-summary-grid strong,
+.deed-summary-grid span,
+.deed-summary-grid small {
+  display: block;
+}
+
+.deed-summary-grid strong {
+  color: #26342d;
+  font-size: 1rem;
+}
+
+.deed-summary-grid span,
+.deed-entry-row strong {
+  overflow-wrap: anywhere;
+}
+
+.deed-summary-grid small,
+.deed-entry-row small,
+.deed-batch-summary dt,
+.deed-entry-fields dt {
+  color: #4f5d52;
+  font-size: 0.74rem;
+  font-weight: 760;
+}
+
+.deed-batch-summary dd,
+.deed-entry-fields dd {
+  margin: 4px 0 0;
+  color: #26342d;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.deed-entry-list {
+  display: grid;
+  gap: 9px;
+}
+
+.deed-entry-row {
+  display: grid;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #d9e0d5;
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.deed-entry-row.confidence-review {
+  border-left-color: #c7524f;
+}
+
+.deed-entry-row.confidence-low {
+  border-left-color: #d9a441;
+}
+
+.deed-entry-row.confidence-medium {
+  border-left-color: #8e6fbb;
+}
+
+.deed-entry-row.confidence-high {
+  border-left-color: #2f684f;
+}
+
+.deed-entry-row header {
+  display: grid;
+  grid-template-columns: minmax(80px, 0.4fr) minmax(0, 1fr) minmax(130px, 0.7fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.deed-entry-row header span,
+.deed-entry-row header strong,
+.deed-entry-row header small {
+  display: block;
+  min-width: 0;
+}
+
+.deed-entry-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.deed-entry-remarks {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.deed-entry-notes {
+  margin: 0;
+  padding-left: 18px;
+  color: #59675d;
+  font-size: 0.82rem;
+}
+
+.deed-investigation-links {
+  display: grid;
+  gap: 7px;
+  padding: 9px 10px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+}
+
+.deed-investigation-links h4,
+.deed-investigation-links p {
+  margin: 0;
+}
+
+.deed-investigation-links h4 {
+  color: #26342d;
+  font-size: 0.82rem;
+}
+
+.deed-investigation-links p {
+  color: #4f5d52;
+  font-size: 0.82rem;
+  line-height: 1.35;
 }
 
 .audit-event-row {

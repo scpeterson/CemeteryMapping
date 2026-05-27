@@ -401,6 +401,60 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
       ]),
     });
   });
+  await page.route("**/api/admin/deed-registry-review**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        batches: [
+          {
+            id: "batch-updated",
+            cemeteryName: "Trinity Lutheran Church Cemetery",
+            sourceName: "Trinity Cemetery Registry 2022 - Updated 2022 final importer",
+            worksheetName: "Updated 2022",
+            importedBy: "Scott Peterson",
+            notes: "Reimport from merged main.",
+            createdAt: "2026-05-27T12:46:57.728Z",
+            entryCount: 258,
+            reviewCount: 3,
+            lowConfidenceCount: 46,
+          },
+        ],
+        selectedBatchId: "batch-updated",
+        summary: [{ ownershipScope: "section_g_gravesite", parseConfidence: "high", count: 18 }],
+        entries: [
+          {
+            id: "entry-1",
+            batchId: "batch-updated",
+            sourceRowNumber: 236,
+            rowType: "owner_record",
+            ownerDisplayName: "Robert & Elizabeth Watenpool",
+            rawLotText: "88",
+            rawSectionText: "",
+            rawRemarks: "Updated to show plot 88 based on investigation.",
+            deedOnFile: "No",
+            deedRegisterOnFile: "No",
+            parsedSectionName: "",
+            parsedSectionAlias: "",
+            parsedLotNumbers: ["88"],
+            parsedPlotNumbers: [],
+            parsedGraveNumbers: [],
+            ownershipScope: "whole_lot",
+            parseConfidence: "review",
+            parseNotes: ["Needs review before promotion."],
+            status: "staged",
+            allocationCount: 1,
+            relatedInvestigationNotes: [
+              {
+                sourceRowNumber: 16,
+                ownerDisplayName: "Robert & Elizabeth Watenpool",
+                rawRemarks: "Margaret Watenpool Blackford is buried in Section NA plot 88.",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+  });
 
   await page.goto("/");
   await page.getByLabel("Open admin management").click();
@@ -447,4 +501,10 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   await expect(page.getByRole("table", { name: "Audit events" })).toContainText("Updated");
   await expect(page.getByLabel("Selected audit event detail")).toContainText("alternate_names");
   await expect(page.getByLabel("Selected audit event detail")).toContainText("Original Cemetery");
+
+  await page.getByRole("tab", { name: "Deed Evidence" }).click();
+  await expect(page.getByRole("heading", { name: "Deed Evidence" })).toBeVisible();
+  await expect(page.getByLabel("Staged deed registry evidence")).toContainText("Robert & Elizabeth Watenpool");
+  await expect(page.getByLabel("Staged deed registry evidence")).toContainText("Needs review before promotion.");
+  await expect(page.getByLabel("Related investigation notes")).toContainText("Section NA plot 88");
 });

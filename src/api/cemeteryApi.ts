@@ -8,6 +8,8 @@ import type {
   CemeteryAdminRecords,
   CemeteryData,
   CemeteryTextRecord,
+  DeedRegistryReview,
+  DeedRegistryReviewFilters,
   CurrentUser,
   GraveSpace,
   GraveStatus,
@@ -146,6 +148,16 @@ export async function fetchAdminAuditEvents(filters: AuditEventFilters = {}): Pr
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/audit-events${query ? `?${query}` : ""}`);
   return jsonResponse<AuditEvent[]>(response, "Audit events API");
+}
+
+export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters = {}): Promise<DeedRegistryReview> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-registry-review${query ? `?${query}` : ""}`);
+  return jsonResponse<DeedRegistryReview>(response, "Deed registry review API");
 }
 
 export async function updateCemeteryText(id: string, cemetery: SaveCemeteryTextInput): Promise<CemeteryTextRecord> {
