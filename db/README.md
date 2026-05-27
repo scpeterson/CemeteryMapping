@@ -361,6 +361,14 @@ APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
 
 Promotion currently handles `Cemeteries`, `Sections`, `Blocks`, and `Lots`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. Lots may be section-scoped when no block identifier is present, and a partial unique index keeps those section-scoped lot identifiers idempotent. Grave polygon import will need the actual gravesite source layer when it becomes available.
 
+For section-boundary corrections where local text fields must be preserved, use the geometry-only section promotion command instead of full spatial promotion. This updates only `sections.geometry` and `sections.updated_at` for the requested facility and section names:
+
+```bash
+npm run db:promote:section-geometry -- --batch-id <batch-uuid> --facility-id 1 --sections B,D,F
+```
+
+Use this when a geodatabase section boundary has been redrawn but cemetery, section, lot, and contact text in the application should remain authoritative.
+
 ## Headstone spreadsheet workflow
 
 Headstone GPS spreadsheets can be imported after cemetery and section polygons exist in the target environment. The importer expects one row per GPS location with `Latitude` and `Longitude` columns and up to six burial people stored in `Person1First` / `Person1Last` through `Person6First` / `Person6Last`. It also supports the legacy second-person headers `Persons26First` and `Persons26Last`.
