@@ -421,6 +421,14 @@ Import into a target environment:
 APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --source-name "Trinity Cemetery Registry 2022" --imported-by "Scott Peterson"
 ```
 
+The same workbook also contains an `Investigated` sheet. Import it as a separate staging batch so its owner rows and interleaved research notes remain traceable to that worksheet:
+
+```bash
+APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --sheet "Investigated" --source-name "Trinity Cemetery Registry 2022 - Investigated" --imported-by "Scott Peterson"
+```
+
+`Investigated` rows with owner data are staged as owner records. Note-only rows are staged as investigation notes: the original cells remain in `source_row`, while the disposition and remarks are combined into `raw_remarks` and left for review instead of being parsed as a lot assignment.
+
 Useful review query:
 
 ```sql
