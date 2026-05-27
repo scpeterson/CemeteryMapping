@@ -8,6 +8,7 @@ import { loadApiConfig } from "./config.mjs";
 import { canViewOwnership, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 import { getCemeteryData, getGraveSpace, restoreGraveSpace, softDeleteGraveSpace } from "./cemeteryRepository.mjs";
+import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
   BadRequestError,
@@ -257,6 +258,14 @@ export function createApp(config, pool) {
   app.get("/api/admin/audit-events", requireAdmin, async (request, response, next) => {
     try {
       response.json(await listAuditEvents(pool, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/deed-registry-review", requireAdmin, async (request, response, next) => {
+    try {
+      response.json(await listDeedRegistryReview(pool, request.query));
     } catch (error) {
       next(error);
     }

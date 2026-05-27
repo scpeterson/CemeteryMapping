@@ -429,7 +429,9 @@ APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/
 
 `Investigated` rows with owner data are staged as owner records. Note-only rows are staged as investigation notes: the original cells remain in `source_row`, while the disposition and remarks are combined into `raw_remarks` and left for review instead of being parsed as a lot assignment.
 
-Useful review query:
+Admins can review staged deed registry evidence in the Admin UI Deed Evidence tab. The view is read-only and supports batch selection, confidence filtering, evidence-type filtering, owner/lot/section/remark search, parser notes, and related notes from the latest `Investigated` import batch.
+
+Useful direct database review query:
 
 ```sql
 SELECT

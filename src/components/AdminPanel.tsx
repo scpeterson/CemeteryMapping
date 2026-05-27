@@ -1,11 +1,12 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { History, Landmark, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { FileSearch, History, Landmark, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
   fetchAdminAuditEvents,
   fetchAdminRoles,
   fetchAdminUsers,
   fetchCemeteryAdminRecords,
+  fetchDeedRegistryReview,
   resolveAuth0User,
   type SaveUserInput,
   updateAdminUser,
@@ -13,7 +14,20 @@ import {
   updateLotText,
   updateSectionText,
 } from "../api/cemeteryApi";
-import type { AppRole, AppRoleName, AppUser, AuditEvent, AuditEventFilters, CemeteryAdminRecords, CemeteryTextRecord, LotTextRecord, SectionTextRecord } from "../types";
+import type {
+  AppRole,
+  AppRoleName,
+  AppUser,
+  AuditEvent,
+  AuditEventFilters,
+  CemeteryAdminRecords,
+  CemeteryTextRecord,
+  DeedRegistryReview,
+  DeedRegistryReviewEntry,
+  DeedRegistryReviewFilters,
+  LotTextRecord,
+  SectionTextRecord,
+} from "../types";
 
 type AdminPanelProps = {
   onClose: () => void;
@@ -23,7 +37,7 @@ type UserFormState = SaveUserInput & {
   id?: string;
 };
 
-type AdminTab = "users" | "records" | "audit";
+type AdminTab = "users" | "records" | "deeds" | "audit";
 
 const blankUser: UserFormState = {
   externalSubject: "",
@@ -84,6 +98,21 @@ const defaultAuditFilters: AuditEventFilters = {
   limit: 50,
 };
 
+const defaultDeedReviewFilters: DeedRegistryReviewFilters = {
+  batchId: "",
+  confidence: "",
+  ownershipScope: "",
+  q: "",
+  limit: 100,
+};
+
+const emptyDeedRegistryReview: DeedRegistryReview = {
+  batches: [],
+  selectedBatchId: "",
+  summary: [],
+  entries: [],
+};
+
 const auditActionLabels: Record<string, string> = {
   create: "Created",
   update: "Updated",
@@ -129,6 +158,26 @@ const auditEventSummary = (event: AuditEvent) => {
   return `${fields}${suffix}`;
 };
 const formatAuditJson = (value: Record<string, unknown>) => (Object.keys(value).length ? JSON.stringify(value, null, 2) : "None recorded");
+const scopeLabels: Record<string, string> = {
+  grave_count_only: "Grave count only",
+  multiple_lots: "Multiple lots",
+  passage: "Passage",
+  section_g_gravesite: "Section G gravesite",
+  specific_graves: "Specific graves",
+  unknown: "Unknown",
+  whole_lot: "Whole lot",
+};
+const confidenceLabels: Record<string, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+  review: "Review",
+};
+const deedScopeLabel = (scope: string) => scopeLabels[scope] ?? scope;
+const deedConfidenceLabel = (confidence: string) => confidenceLabels[confidence] ?? confidence;
+const formatList = (values: string[]) => (values.length ? values.join(", ") : "None");
+const deedEntryTitle = (entry: DeedRegistryReviewEntry) =>
+  `Row ${entry.sourceRowNumber}. ${entry.ownerDisplayName || "No owner"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence.`;
 
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
@@ -137,6 +186,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [auditFilters, setAuditFilters] = useState<AuditEventFilters>(defaultAuditFilters);
   const [selectedAuditEventId, setSelectedAuditEventId] = useState("");
+  const [deedRegistryReview, setDeedRegistryReview] = useState<DeedRegistryReview>(emptyDeedRegistryReview);
+  const [deedReviewFilters, setDeedReviewFilters] = useState<DeedRegistryReviewFilters>(defaultDeedReviewFilters);
   const [cemeteryRecords, setCemeteryRecords] = useState<CemeteryAdminRecords>(emptyCemeteryRecords);
   const [form, setForm] = useState<UserFormState>(blankUser);
   const [selectedCemeteryId, setSelectedCemeteryId] = useState("");
@@ -149,6 +200,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAuditEvents, setIsLoadingAuditEvents] = useState(false);
+  const [isLoadingDeedReview, setIsLoadingDeedReview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
   const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(() => new Set());
@@ -178,6 +230,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const selectedAuditEvent = useMemo(
     () => auditEvents.find((event) => event.id === selectedAuditEventId),
     [auditEvents, selectedAuditEventId],
+  );
+  const selectedDeedBatch = useMemo(
+    () => deedRegistryReview.batches.find((batch) => batch.id === deedRegistryReview.selectedBatchId),
+    [deedRegistryReview.batches, deedRegistryReview.selectedBatchId],
   );
 
   useEffect(() => {
@@ -251,6 +307,35 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const openAuditTab = () => {
     setActiveTab("audit");
     if (auditEvents.length === 0 && !isLoadingAuditEvents) void loadAuditEvents();
+  };
+
+  const loadDeedRegistryReview = async (filters = deedReviewFilters) => {
+    setIsLoadingDeedReview(true);
+    setError(undefined);
+
+    try {
+      const nextReview = await fetchDeedRegistryReview(filters);
+      setDeedRegistryReview(nextReview);
+      setDeedReviewFilters((current) => ({ ...current, batchId: nextReview.selectedBatchId }));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load deed registry evidence.");
+    } finally {
+      setIsLoadingDeedReview(false);
+    }
+  };
+
+  const updateDeedReviewFilter = (patch: Partial<DeedRegistryReviewFilters>) => {
+    setDeedReviewFilters((current) => ({ ...current, ...patch }));
+  };
+
+  const applyDeedReviewFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void loadDeedRegistryReview(deedReviewFilters);
+  };
+
+  const openDeedReviewTab = () => {
+    setActiveTab("deeds");
+    if (deedRegistryReview.batches.length === 0 && !isLoadingDeedReview) void loadDeedRegistryReview();
   };
 
   const resetForm = () => {
@@ -492,6 +577,16 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           title="Edit cemetery, section, and lot text records."
         >
           Cemetery Records
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "deeds"}
+          className={activeTab === "deeds" ? "is-active" : undefined}
+          onClick={openDeedReviewTab}
+          title="Review staged deed registry imports before promotion."
+        >
+          Deed Evidence
         </button>
         <button
           type="button"
@@ -913,6 +1008,208 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                   </button>
                 </article>
               ) : null}
+            </div>
+          </section>
+        </>
+      ) : activeTab === "deeds" ? (
+        <>
+          <section className="admin-section">
+            <div className="section-title">
+              <FileSearch size={17} aria-hidden="true" />
+              <h3>Deed Evidence</h3>
+            </div>
+
+            <form className="deed-review-filter-form" onSubmit={applyDeedReviewFilters}>
+              <label>
+                Import batch
+                <select
+                  value={deedReviewFilters.batchId ?? ""}
+                  onChange={(event) => updateDeedReviewFilter({ batchId: event.target.value })}
+                  title="Choose the staged deed registry import batch to review."
+                >
+                  <option value="">Latest batch</option>
+                  {deedRegistryReview.batches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {batch.worksheetName} - {formatAdminTimestamp(batch.createdAt)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Confidence
+                <select
+                  value={deedReviewFilters.confidence ?? ""}
+                  onChange={(event) => updateDeedReviewFilter({ confidence: event.target.value })}
+                  title="Filter rows by parser confidence."
+                >
+                  <option value="">All confidence levels</option>
+                  {Object.entries(confidenceLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Evidence type
+                <select
+                  value={deedReviewFilters.ownershipScope ?? ""}
+                  onChange={(event) => updateDeedReviewFilter({ ownershipScope: event.target.value })}
+                  title="Filter rows by the staged ownership or allocation interpretation."
+                >
+                  <option value="">All evidence types</option>
+                  {Object.entries(scopeLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Search
+                <input
+                  value={deedReviewFilters.q ?? ""}
+                  onChange={(event) => updateDeedReviewFilter({ q: event.target.value })}
+                  placeholder="Owner, lot, section, or remarks"
+                  title="Search staged owner names, lot text, section text, and remarks."
+                />
+              </label>
+              <label>
+                Limit
+                <select
+                  value={deedReviewFilters.limit ?? 100}
+                  onChange={(event) => updateDeedReviewFilter({ limit: Number(event.target.value) })}
+                  title="Limit the number of evidence rows returned."
+                >
+                  <option value={50}>50 rows</option>
+                  <option value={100}>100 rows</option>
+                  <option value={250}>250 rows</option>
+                </select>
+              </label>
+              <div className="admin-form-actions deed-review-filter-actions">
+                <button type="submit" disabled={isLoadingDeedReview} title="Apply deed evidence filters.">
+                  {isLoadingDeedReview ? "Loading..." : "Apply filters"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setDeedReviewFilters(defaultDeedReviewFilters);
+                    void loadDeedRegistryReview(defaultDeedReviewFilters);
+                  }}
+                  title="Clear deed evidence filters and reload the latest import batch."
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+
+            {isLoadingDeedReview ? <div className="admin-message" role="status">Loading deed evidence...</div> : null}
+
+            {selectedDeedBatch ? (
+              <article className="deed-batch-summary" title="Summary of the selected staged import batch.">
+                <div>
+                  <strong>{selectedDeedBatch.sourceName}</strong>
+                  <small>{selectedDeedBatch.cemeteryName} · {selectedDeedBatch.worksheetName}</small>
+                </div>
+                <dl>
+                  <div>
+                    <dt>Rows</dt>
+                    <dd>{selectedDeedBatch.entryCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Review</dt>
+                    <dd>{selectedDeedBatch.reviewCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Low</dt>
+                    <dd>{selectedDeedBatch.lowConfidenceCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Imported</dt>
+                    <dd>{formatAdminTimestamp(selectedDeedBatch.createdAt)}</dd>
+                  </div>
+                </dl>
+                {selectedDeedBatch.notes ? <p>{selectedDeedBatch.notes}</p> : null}
+              </article>
+            ) : null}
+
+            {deedRegistryReview.summary.length ? (
+              <div className="deed-summary-grid" aria-label="Deed evidence summary">
+                {deedRegistryReview.summary.map((item) => (
+                  <article key={`${item.ownershipScope}:${item.parseConfidence}`} title={`${deedScopeLabel(item.ownershipScope)} rows with ${deedConfidenceLabel(item.parseConfidence)} confidence.`}>
+                    <strong>{item.count}</strong>
+                    <span>{deedScopeLabel(item.ownershipScope)}</span>
+                    <small>{deedConfidenceLabel(item.parseConfidence)}</small>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="deed-entry-list" role="table" aria-label="Staged deed registry evidence">
+              {deedRegistryReview.entries.length === 0 && !isLoadingDeedReview ? <p className="record-editor-empty">No deed evidence rows match these filters.</p> : null}
+              {deedRegistryReview.entries.map((entry) => (
+                <article key={entry.id} className={`deed-entry-row confidence-${entry.parseConfidence}`} title={deedEntryTitle(entry)}>
+                  <header>
+                    <span>
+                      <strong>Row {entry.sourceRowNumber}</strong>
+                      <small>{entry.rowType === "investigation_note" ? "Investigation note" : "Owner record"}</small>
+                    </span>
+                    <span>
+                      <strong>{entry.ownerDisplayName || "No owner"}</strong>
+                      <small>{deedConfidenceLabel(entry.parseConfidence)}</small>
+                    </span>
+                    <span>
+                      <strong>{deedScopeLabel(entry.ownershipScope)}</strong>
+                      <small>{entry.allocationCount} allocation{entry.allocationCount === 1 ? "" : "s"}</small>
+                    </span>
+                  </header>
+                  <dl className="deed-entry-fields">
+                    <div title="Raw lot or plot text from the worksheet.">
+                      <dt>Raw lot</dt>
+                      <dd>{entry.rawLotText || "None"}</dd>
+                    </div>
+                    <div title="Raw section text from the worksheet.">
+                      <dt>Raw section</dt>
+                      <dd>{entry.rawSectionText || "None"}</dd>
+                    </div>
+                    <div title="Parsed lot numbers staged from this row.">
+                      <dt>Lots</dt>
+                      <dd>{formatList(entry.parsedLotNumbers)}</dd>
+                    </div>
+                    <div title="Parsed gravesite numbers staged from this row.">
+                      <dt>Graves</dt>
+                      <dd>{formatList(entry.parsedGraveNumbers)}</dd>
+                    </div>
+                    <div title="Whether a deed was found in the source worksheet.">
+                      <dt>Deed</dt>
+                      <dd>{entry.deedOnFile || "Unknown"}</dd>
+                    </div>
+                    <div title="Whether a deed register entry was found in the source worksheet.">
+                      <dt>Register</dt>
+                      <dd>{entry.deedRegisterOnFile || "Unknown"}</dd>
+                    </div>
+                  </dl>
+                  {entry.rawRemarks ? <p className="deed-entry-remarks">{entry.rawRemarks}</p> : null}
+                  {entry.parseNotes.length ? (
+                    <ul className="deed-entry-notes" aria-label="Parser notes">
+                      {entry.parseNotes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {entry.relatedInvestigationNotes.length ? (
+                    <section className="deed-investigation-links" aria-label="Related investigation notes">
+                      <h4>Related investigation notes</h4>
+                      {entry.relatedInvestigationNotes.map((note) => (
+                        <p key={`${note.sourceRowNumber}:${note.rawRemarks}`}>
+                          <strong>Investigated row {note.sourceRowNumber}:</strong> {note.rawRemarks}
+                        </p>
+                      ))}
+                    </section>
+                  ) : null}
+                </article>
+              ))}
             </div>
           </section>
         </>
