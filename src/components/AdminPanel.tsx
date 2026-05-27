@@ -133,6 +133,7 @@ const auditTableLabels: Record<string, string> = {
   deed_registry_import_batches: "Deed registry imports",
   gravesites: "Gravesites",
   headstone_burials: "Headstone burials",
+  headstone_gravesites: "Headstone gravesites",
   headstones: "Headstones",
   lot_owner_parties: "Lot owners",
   lots: "Lots",

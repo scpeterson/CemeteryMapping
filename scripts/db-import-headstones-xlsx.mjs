@@ -439,6 +439,27 @@ async function upsertHeadstone(client, imported, gravesiteUuid) {
   return result.rows[0].id;
 }
 
+export async function upsertHeadstoneGravesite(client, headstoneUuid, gravesiteUuid, relationshipType = "primary") {
+  await client.query(
+    `
+      INSERT INTO headstone_gravesites (
+        headstone_uuid,
+        gravesite_uuid,
+        relationship_type,
+        updated_at
+      )
+      VALUES ($1, $2, $3, now())
+      ON CONFLICT (headstone_uuid, gravesite_uuid) DO UPDATE SET
+        relationship_type = EXCLUDED.relationship_type,
+        updated_at = now(),
+        deleted_at = NULL,
+        deleted_by = NULL,
+        delete_reason = NULL
+    `,
+    [headstoneUuid, gravesiteUuid, relationshipType],
+  );
+}
+
 async function replaceBurials(client, imported, gravesiteUuid, headstoneUuid, notes) {
   await client.query("DELETE FROM burials WHERE gravesite_uuid = $1", [gravesiteUuid]);
 
@@ -595,6 +616,7 @@ async function main() {
     for (const imported of importedRows) {
       const gravesiteResult = await upsertGravesite(client, cemetery, facilityId, imported);
       const headstoneUuid = await upsertHeadstone(client, imported, gravesiteResult.gravesiteUuid);
+      await upsertHeadstoneGravesite(client, headstoneUuid, gravesiteResult.gravesiteUuid);
       const importedBurialCount = await replaceBurials(client, imported, gravesiteResult.gravesiteUuid, headstoneUuid, gravesiteResult.notes);
       if (gravesiteResult.sectionLinked) linkedSections += 1;
       if (gravesiteResult.lotLinked) linkedLots += 1;

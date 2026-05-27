@@ -25,6 +25,10 @@ test("normalizeAuditFilters clamps limits and ignores unsupported actions or tab
   );
 });
 
+test("normalizeAuditFilters allows headstone gravesite link audit records", () => {
+  assert.equal(normalizeAuditFilters({ targetTable: "headstone_gravesites" }).targetTable, "headstone_gravesites");
+});
+
 test("listAuditEvents returns filtered audit records", async () => {
   let capturedSql = "";
   let capturedValues = [];
