@@ -59,3 +59,9 @@ databaseChangeLog:
   - include:
       file: changes/020-deed-registry-staging-identifier-widths.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/021-section-g-plot-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/022-deed-registry-allocation-raw-text-width.sql
+      relativeToChangelogFile: true

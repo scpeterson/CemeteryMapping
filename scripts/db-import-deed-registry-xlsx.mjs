@@ -106,6 +106,25 @@ function sectionAlias(rawSectionText) {
   return value || null;
 }
 
+function headerKey(value, fallback) {
+  const text = cleanText(value);
+  if (!text) return fallback;
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, "_")
+    .replace(/^_+|_+$/gu, "");
+}
+
+function findHeaderRow(worksheet) {
+  for (let rowNumber = 1; rowNumber <= Math.min(10, worksheet.rowCount); rowNumber += 1) {
+    const row = worksheet.getRow(rowNumber);
+    if (cleanText(row.getCell(1).value)?.toLowerCase() === "last name" && cleanText(row.getCell(6).value)?.toLowerCase() === "lot number") {
+      return rowNumber;
+    }
+  }
+  return 3;
+}
+
 export function parseRegistryRow(row) {
   const rawLotText = cleanText(row.lot);
   const rawSectionText = cleanText(row.section);
@@ -122,23 +141,29 @@ export function parseRegistryRow(row) {
 
   const graveCount = graveCountFromText(combined);
   const graveNumbers = graveNumbersFromText(combined);
+  let parsedGraveNumbers = graveNumbers;
   const isPassage = /\bpassage\b/iu.test(combined);
   const isSectionG = /^G\s*-?/iu.test(rawLotText ?? "") || alias === "G";
 
   if (isSectionG) {
     parsedSectionName = "G";
     parsedPlotNumbers = expandNumbers(rawLotText);
-    ownershipScope = "section_g_plot";
+    parsedGraveNumbers = parsedPlotNumbers;
+    ownershipScope = "section_g_gravesite";
     confidence = parsedPlotNumbers.length > 0 ? "high" : "review";
+    if (parsedPlotNumbers.length > 0) {
+      notes.push("Section G source uses plot numbers for 8 by 4 foot gravesites; north is shown at the bottom of the source plan.");
+    }
     parsedPlotNumbers.forEach((plot) => {
       allocations.push({
-        allocationType: "section_g_plot",
+        allocationType: "section_g_gravesite",
         sectionName: "G",
         sectionAlias: "G",
         plotIdentifier: plot,
+        graveNumber: plot,
         rawText: rawLotText,
         parseConfidence: "high",
-        parseNotes: [],
+        parseNotes: ["Section G plot number is treated as an 8 by 4 foot gravesite number."],
       });
     });
   } else if (isPassage) {
@@ -223,7 +248,7 @@ export function parseRegistryRow(row) {
     normalizedLotText: rawLotText,
     parsedLotNumbers,
     parsedPlotNumbers,
-    parsedGraveNumbers: graveNumbers,
+    parsedGraveNumbers,
     parsedGraveCount: graveCount,
     ownershipScope,
     parseConfidence: confidence,
@@ -232,30 +257,47 @@ export function parseRegistryRow(row) {
   };
 }
 
-async function registryRows(workbookPath, worksheetName = defaultWorksheetName) {
+export async function registryRows(workbookPath, worksheetName = defaultWorksheetName) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(workbookPath);
   const worksheet = workbook.getWorksheet(worksheetName);
   if (!worksheet) throw new Error(`Worksheet not found: ${worksheetName}`);
 
+  const headerRowNumber = findHeaderRow(worksheet);
+  const headerRow = worksheet.getRow(headerRowNumber);
   const rows = [];
   worksheet.eachRow((worksheetRow, rowNumber) => {
-    if (rowNumber < 4) return;
+    if (rowNumber <= headerRowNumber) return;
+    const hasRowData = Array.from({ length: worksheet.columnCount }, (_, index) => worksheetRow.getCell(index + 1).value).some(present);
+    if (!hasRowData) return;
+    const rawLotText = cleanText(worksheetRow.getCell(6).value);
+    const rawRemarks = cleanText(worksheetRow.getCell(8).value);
+    const hasOwnerFields = [1, 2, 3, 4, 5].some((cellNumber) => present(worksheetRow.getCell(cellNumber).value));
+    const rowType = hasOwnerFields ? "owner_record" : "investigation_note";
+    const extraCells = {};
+    for (let cellNumber = 12; cellNumber <= worksheet.columnCount; cellNumber += 1) {
+      const value = cleanText(worksheetRow.getCell(cellNumber).value);
+      if (value) extraCells[headerKey(headerRow.getCell(cellNumber).value, `column_${cellNumber}`)] = value;
+    }
+
     const row = {
       rowNumber,
+      rowType,
       lastName: cleanText(worksheetRow.getCell(1).value),
       firstName: cleanText(worksheetRow.getCell(2).value),
       address: cleanText(worksheetRow.getCell(3).value),
       city: cleanText(worksheetRow.getCell(4).value),
       state: cleanText(worksheetRow.getCell(5).value),
-      lot: cleanText(worksheetRow.getCell(6).value),
+      lot: rowType === "owner_record" ? rawLotText : null,
       section: cleanText(worksheetRow.getCell(7).value),
-      remarks: cleanText(worksheetRow.getCell(8).value),
+      remarks: rowType === "owner_record" ? rawRemarks : [rawLotText, rawRemarks].filter(Boolean).join(" ").trim() || null,
       lastKnownDate: normalizeDate(worksheetRow.getCell(9).value),
       deedOnFile: cleanText(worksheetRow.getCell(10).value),
       deedRegisterOnFile: cleanText(worksheetRow.getCell(11).value),
+      rawLotCell: rawLotText,
+      extraCells,
     };
-    if (Object.entries(row).some(([key, value]) => key !== "rowNumber" && present(value))) rows.push(row);
+    rows.push(row);
   });
 
   return rows;
@@ -439,7 +481,7 @@ async function main() {
     }
 
     const reviewCount = parsedRows.filter(({ parsed }) => parsed.parseConfidence === "review" || parsed.parseConfidence === "low").length;
-    const sectionGCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "section_g_plot").length;
+    const sectionGCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "section_g_gravesite").length;
     const passageCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "passage").length;
 
     if (options["dry-run"]) {
