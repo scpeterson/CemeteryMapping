@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parseRegistryRow } from "./db-import-deed-registry-xlsx.mjs";
 
-test("parseRegistryRow expands Section G plot ranges without promoting to lots", () => {
+test("parseRegistryRow treats Section G plot ranges as gravesite hints without promoting to lots", () => {
   const parsed = parseRegistryRow({
     lot: "G - 47-49",
     section: "",
@@ -10,15 +10,17 @@ test("parseRegistryRow expands Section G plot ranges without promoting to lots",
   });
 
   assert.equal(parsed.parsedSectionName, "G");
-  assert.equal(parsed.ownershipScope, "section_g_plot");
+  assert.equal(parsed.ownershipScope, "section_g_gravesite");
   assert.equal(parsed.parseConfidence, "high");
   assert.deepEqual(parsed.parsedPlotNumbers, ["47", "48", "49"]);
+  assert.deepEqual(parsed.parsedGraveNumbers, ["47", "48", "49"]);
+  assert(parsed.parseNotes.some((note) => note.includes("8 by 4 foot gravesites")));
   assert.deepEqual(
-    parsed.allocations.map((allocation) => [allocation.allocationType, allocation.plotIdentifier]),
+    parsed.allocations.map((allocation) => [allocation.allocationType, allocation.plotIdentifier, allocation.graveNumber]),
     [
-      ["section_g_plot", "47"],
-      ["section_g_plot", "48"],
-      ["section_g_plot", "49"],
+      ["section_g_gravesite", "47", "47"],
+      ["section_g_gravesite", "48", "48"],
+      ["section_g_gravesite", "49", "49"],
     ],
   );
 });

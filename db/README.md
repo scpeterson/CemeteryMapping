@@ -403,9 +403,11 @@ The 2022 Trinity deed registry is ownership evidence, not a spatial source. Impo
 
 - `deed_registry_import_batches` records the workbook, sheet, target cemetery, and import notes.
 - `deed_registry_entries` preserves one raw spreadsheet row per registry row, including owner text, raw lot text, raw section text, remarks, deed flags, parsed lot/plot/grave hints, confidence, and review status.
-- `deed_registry_entry_allocations` stores one or more candidate allocations parsed from each row, such as Section G plots, standard lot identifiers, passage records, specific grave numbers, or grave-count-only hints.
+- `deed_registry_entry_allocations` stores one or more candidate allocations parsed from each row, such as Section G gravesite hints, standard lot identifiers, passage records, specific grave numbers, or grave-count-only hints.
 
 The staging importer deliberately does not write to `lots`, `gravesites`, `lot_owner_parties`, `lot_ownership_events`, or the legacy `owners` table. Rows marked `low` or `review` confidence need human review before promotion. `NA` and `OC` are stored as aliases because they can map to more than one section; passageway records are also staged for manual spatial interpretation.
+
+Section G is handled specially. The Section G plot plan uses the word `plot` for individual gravesites, not standard 10 by 20 foot lots. Section G staged entries therefore preserve source plot numbers in `parsed_plot_numbers`, also copy them into `parsed_grave_numbers`, and create `section_g_gravesite` allocation rows with both `plot_identifier` and `grave_number` populated. These gravesites are 8 by 4 feet, and the source plan shows north at the bottom.
 
 Run a dry run first:
 

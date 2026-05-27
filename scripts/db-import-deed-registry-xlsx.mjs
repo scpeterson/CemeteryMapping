@@ -122,23 +122,29 @@ export function parseRegistryRow(row) {
 
   const graveCount = graveCountFromText(combined);
   const graveNumbers = graveNumbersFromText(combined);
+  let parsedGraveNumbers = graveNumbers;
   const isPassage = /\bpassage\b/iu.test(combined);
   const isSectionG = /^G\s*-?/iu.test(rawLotText ?? "") || alias === "G";
 
   if (isSectionG) {
     parsedSectionName = "G";
     parsedPlotNumbers = expandNumbers(rawLotText);
-    ownershipScope = "section_g_plot";
+    parsedGraveNumbers = parsedPlotNumbers;
+    ownershipScope = "section_g_gravesite";
     confidence = parsedPlotNumbers.length > 0 ? "high" : "review";
+    if (parsedPlotNumbers.length > 0) {
+      notes.push("Section G source uses plot numbers for 8 by 4 foot gravesites; north is shown at the bottom of the source plan.");
+    }
     parsedPlotNumbers.forEach((plot) => {
       allocations.push({
-        allocationType: "section_g_plot",
+        allocationType: "section_g_gravesite",
         sectionName: "G",
         sectionAlias: "G",
         plotIdentifier: plot,
+        graveNumber: plot,
         rawText: rawLotText,
         parseConfidence: "high",
-        parseNotes: [],
+        parseNotes: ["Section G plot number is treated as an 8 by 4 foot gravesite number."],
       });
     });
   } else if (isPassage) {
@@ -223,7 +229,7 @@ export function parseRegistryRow(row) {
     normalizedLotText: rawLotText,
     parsedLotNumbers,
     parsedPlotNumbers,
-    parsedGraveNumbers: graveNumbers,
+    parsedGraveNumbers,
     parsedGraveCount: graveCount,
     ownershipScope,
     parseConfidence: confidence,
@@ -439,7 +445,7 @@ async function main() {
     }
 
     const reviewCount = parsedRows.filter(({ parsed }) => parsed.parseConfidence === "review" || parsed.parseConfidence === "low").length;
-    const sectionGCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "section_g_plot").length;
+    const sectionGCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "section_g_gravesite").length;
     const passageCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "passage").length;
 
     if (options["dry-run"]) {
