@@ -13,6 +13,8 @@ import type {
   CurrentUser,
   GraveSpace,
   GraveStatus,
+  LookupAdminRecords,
+  LookupRecord,
   LotTextRecord,
   SearchMatch,
   SectionTextRecord,
@@ -134,6 +136,7 @@ export type SaveCemeteryTextInput = Pick<
 >;
 export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames" | "notes">;
 export type SaveLotTextInput = Pick<LotTextRecord, "name">;
+export type SaveLookupInput = Pick<LookupRecord, "code" | "label" | "description" | "sortOrder" | "isActive" | "sourceNotes" | "sourceUrl">;
 
 export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records`);
@@ -158,6 +161,21 @@ export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-registry-review${query ? `?${query}` : ""}`);
   return jsonResponse<DeedRegistryReview>(response, "Deed registry review API");
+}
+
+export async function fetchLookupAdminRecords(): Promise<LookupAdminRecords> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/lookups`);
+  return jsonResponse<LookupAdminRecords>(response, "Lookup records API");
+}
+
+export async function createLookupRecord(table: string, lookup: SaveLookupInput): Promise<LookupRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/lookups/${encodeURIComponent(table)}`, jsonRequest("POST", lookup));
+  return jsonResponse<LookupRecord>(response, "Create lookup API");
+}
+
+export async function updateLookupRecord(table: string, code: string, lookup: SaveLookupInput): Promise<LookupRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/lookups/${encodeURIComponent(table)}/${encodeURIComponent(code)}`, jsonRequest("PUT", lookup));
+  return jsonResponse<LookupRecord>(response, "Update lookup API");
 }
 
 export async function updateCemeteryText(id: string, cemetery: SaveCemeteryTextInput): Promise<CemeteryTextRecord> {
