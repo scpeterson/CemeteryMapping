@@ -10,6 +10,7 @@ const allowedAuditTables = new Set([
   "deed_registry_import_batches",
   "gravesites",
   "headstone_burials",
+  "headstone_gravesites",
   "headstones",
   "lot_owner_parties",
   "lots",

@@ -65,3 +65,6 @@ databaseChangeLog:
   - include:
       file: changes/022-deed-registry-allocation-raw-text-width.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/023-headstone-gravesite-links.sql
+      relativeToChangelogFile: true

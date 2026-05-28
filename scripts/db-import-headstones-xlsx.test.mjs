@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildBurialNotes, buildSourceNotes, importableRows } from "./db-import-headstones-xlsx.mjs";
+import { buildBurialNotes, buildSourceNotes, importableRows, upsertHeadstoneGravesite } from "./db-import-headstones-xlsx.mjs";
 
 test("headstone spreadsheet source notes use the corrected North Hills source name", () => {
   const imported = {
@@ -74,4 +74,22 @@ test("importable spreadsheet rows generate 10 by 20 foot lots and 4 by 10 foot g
   assert.equal(imported.lotId, "17");
   assert.equal(Number((lotWidth / graveWidth).toFixed(2)), 5);
   assert.equal(Number((lotHeight / graveHeight).toFixed(2)), 1);
+});
+
+test("upsertHeadstoneGravesite restores soft-deleted marker links", async () => {
+  const calls = [];
+  const client = {
+    async query(sql, values) {
+      calls.push({ sql, values });
+      return { rows: [] };
+    },
+  };
+
+  await upsertHeadstoneGravesite(client, "headstone-uuid", "gravesite-uuid", "spans");
+
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].sql, /INSERT INTO headstone_gravesites/u);
+  assert.match(calls[0].sql, /ON CONFLICT \(headstone_uuid, gravesite_uuid\) DO UPDATE/u);
+  assert.match(calls[0].sql, /deleted_at = NULL/u);
+  assert.deepEqual(calls[0].values, ["headstone-uuid", "gravesite-uuid", "spans"]);
 });
