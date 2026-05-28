@@ -145,6 +145,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
           canManageUsers: false,
           canCreateCemeteryRecords: false,
           canUpdateCemeteryRecords: false,
+          canUpdateHeadstones: false,
           canDeleteCemeteryRecords: false,
         },
       }),
@@ -172,6 +173,22 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
         owners: [{ id: "owner-1", displayName: "Hidden Owner", contactNote: "Deed 100" }],
         currentOwnerIds: ["owner-1"],
         burials: [{ id: "burial-1", person: { id: "person-1", firstName: "Mabel", lastName: "Stone" } }],
+        headstones: [
+          {
+            id: "33333333-3333-4333-8333-333333333333",
+            headstoneId: "HS-1",
+            markerType: { id: "44444444-4444-4444-8444-444444444444", code: "upright_headstone", label: "Upright headstone" },
+            material: { id: "55555555-5555-4555-8555-555555555555", code: "granite", label: "Granite" },
+            condition: { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
+            conditionNotes: "Stable and legible",
+            inscription: "Beloved family marker",
+            photoUrl: "",
+            lastInspectedAt: "2026-05-28",
+            relationshipType: "primary",
+            relationshipNotes: "",
+            burialIds: ["burial-1"],
+          },
+        ],
         ownershipHistory: [{ id: "event-1", ownerIds: ["owner-1"], eventType: "purchase", effectiveDate: "2020-01-01", recordedBy: "Deed book" }],
       }),
     });
@@ -180,10 +197,132 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
+  await expect(page.locator(".detail-panel")).toContainText("Markers");
+  await expect(page.locator(".detail-panel")).toContainText("Upright headstone");
+  await expect(page.locator(".detail-panel")).toContainText("Granite");
+  await expect(page.locator(".detail-panel")).toContainText("Good");
+  await expect(page.getByLabel("Edit marker HS-1")).toHaveCount(0);
   await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
   await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");
   await expect(page.locator(".detail-panel")).not.toContainText("Hidden Owner");
   await expect(page.getByLabel("Open admin management")).toHaveCount(0);
+});
+
+test("power users can edit headstone marker details from grave detail", async ({ page }) => {
+  const cemeteryId = "11111111-1111-4111-8111-111111111111";
+  const graveSummary = {
+    cemeteryId,
+    cemeteryName: "Mock Cemetery",
+    geometry: mockGraveGeometry,
+    id: "A-TEST",
+    lot: "1",
+    section: "A",
+    space: "TEST",
+    status: "occupied",
+  };
+  const headstone = {
+    id: "33333333-3333-4333-8333-333333333333",
+    headstoneId: "HS-1",
+    markerType: { id: "44444444-4444-4444-8444-444444444444", code: "upright_headstone", label: "Upright headstone" },
+    material: { id: "55555555-5555-4555-8555-555555555555", code: "granite", label: "Granite" },
+    condition: { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
+    conditionNotes: "Stable and legible",
+    inscription: "Beloved family marker",
+    photoUrl: "",
+    lastInspectedAt: "2026-05-28",
+    relationshipType: "primary",
+    relationshipNotes: "",
+    burialIds: [],
+  };
+
+  await page.route("**/api/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        subject: "power-user",
+        email: "power@example.test",
+        role: "power-user",
+        permissions: {
+          canViewOwnership: true,
+          canManageUsers: false,
+          canCreateCemeteryRecords: false,
+          canUpdateCemeteryRecords: true,
+          canUpdateHeadstones: true,
+          canDeleteCemeteryRecords: false,
+        },
+      }),
+    });
+  });
+  await page.route("**/api/headstone-lookups", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        markerTypes: [
+          { id: "44444444-4444-4444-8444-444444444444", code: "upright_headstone", label: "Upright headstone" },
+          { id: "44444444-4444-4444-8444-444444444445", code: "flat_marker", label: "Flat marker" },
+        ],
+        materials: [
+          { id: "55555555-5555-4555-8555-555555555555", code: "granite", label: "Granite" },
+          { id: "55555555-5555-4555-8555-555555555556", code: "marble", label: "Marble" },
+        ],
+        conditions: [
+          { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
+          { id: "66666666-6666-4666-8666-666666666667", code: "poor", label: "Poor" },
+        ],
+      }),
+    });
+  });
+  await page.route("**/api/cemetery-map", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        boundaries: [{ type: "Feature", properties: { name: "Mock Cemetery" }, geometry: mockBoundaryGeometry }],
+        sections: [],
+        lots: [],
+        graves: [graveSummary],
+      }),
+    });
+  });
+  await page.route("**/api/search**", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: "[]" });
+  });
+  await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...graveSummary,
+        owners: [],
+        currentOwnerIds: [],
+        burials: [],
+        headstones: [headstone],
+        ownershipHistory: [],
+      }),
+    });
+  });
+  await page.route("**/api/headstones/33333333-3333-4333-8333-333333333333", async (route) => {
+    expect(route.request().method()).toBe("PATCH");
+    const body = route.request().postDataJSON() as { conditionId: string; conditionNotes: string };
+    expect(body.conditionId).toBe("66666666-6666-4666-8666-666666666667");
+    expect(body.conditionNotes).toBe("Leaning and needs inspection");
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...headstone,
+        condition: { id: "66666666-6666-4666-8666-666666666667", code: "poor", label: "Poor" },
+        conditionNotes: "Leaning and needs inspection",
+        auditEventId: "77777777-7777-4777-8777-777777777777",
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Edit marker HS-1").click();
+  await page.getByRole("combobox", { name: "Condition" }).selectOption("66666666-6666-4666-8666-666666666667");
+  await page.getByRole("textbox", { name: "Condition notes" }).fill("Leaning and needs inspection");
+  await page.getByRole("button", { name: "Save marker" }).click();
+
+  await expect(page.locator(".detail-panel")).toContainText("Poor");
+  await expect(page.locator(".detail-panel")).toContainText("Leaning and needs inspection");
 });
 
 test("loads API-backed cemetery records and supports search", async ({ page }) => {

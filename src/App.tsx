@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
-import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchSearchMatches } from "./api/cemeteryApi";
+import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchHeadstoneLookups, fetchSearchMatches, updateHeadstone } from "./api/cemeteryApi";
 import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
@@ -9,9 +9,10 @@ import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { graveSelectionKey } from "./lib/format";
 import { searchGraves } from "./lib/search";
-import type { CemeteryData, CurrentUser, GraveSpace, GraveSpaceSummary, GraveStatus, Owner, SearchMatch } from "./types";
+import type { CemeteryData, CurrentUser, GraveSpace, GraveSpaceSummary, GraveStatus, Headstone, HeadstoneLookups, Owner, SaveHeadstoneInput, SearchMatch } from "./types";
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
+const emptyHeadstoneLookups: HeadstoneLookups = { markerTypes: [], materials: [], conditions: [] };
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -27,6 +28,7 @@ export default function App() {
   const [detailRequestVersion, setDetailRequestVersion] = useState(0);
   const [remoteMatches, setRemoteMatches] = useState<SearchMatch[]>();
   const [currentUser, setCurrentUser] = useState<CurrentUser>();
+  const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
   const [userError, setUserError] = useState<string>();
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
@@ -42,6 +44,22 @@ export default function App() {
       .catch((error: unknown) => {
         if (!isCurrent) return;
         setUserError(error instanceof Error ? error.message : "Unable to load user permissions");
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    fetchHeadstoneLookups()
+      .then((lookups) => {
+        if (isCurrent) setHeadstoneLookups(lookups);
+      })
+      .catch(() => {
+        if (isCurrent) setHeadstoneLookups(emptyHeadstoneLookups);
       });
 
     return () => {
@@ -152,6 +170,19 @@ export default function App() {
     setSelectedGrave(match.grave);
   };
 
+  const saveHeadstone = async (id: string, headstone: SaveHeadstoneInput): Promise<Headstone> => {
+    const saved = await updateHeadstone(id, headstone);
+    setSelectedGraveDetails((current) =>
+      current
+        ? {
+            ...current,
+            headstones: current.headstones.map((candidate) => (candidate.id === saved.id ? saved : candidate)),
+          }
+        : current,
+    );
+    return saved;
+  };
+
   return (
     <main className="app-shell">
       <SearchPanel
@@ -199,6 +230,9 @@ export default function App() {
         summary={selectedGrave}
         grave={selectedGraveDetails}
         canViewOwnership={currentUser?.permissions.canViewOwnership ?? false}
+        canUpdateHeadstones={currentUser?.permissions.canUpdateHeadstones ?? false}
+        headstoneLookups={headstoneLookups}
+        onSaveHeadstone={saveHeadstone}
         isLoading={isDetailLoading}
         error={detailError}
         onRetry={() => setDetailRequestVersion((version) => version + 1)}

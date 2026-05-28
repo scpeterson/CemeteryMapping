@@ -7,7 +7,7 @@ import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from
 import { loadApiConfig } from "./config.mjs";
 import { canViewOwnership, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
-import { getCemeteryData, getGraveSpace, restoreGraveSpace, softDeleteGraveSpace } from "./cemeteryRepository.mjs";
+import { getCemeteryData, getGraveSpace, listHeadstoneLookupOptions, restoreGraveSpace, softDeleteGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
@@ -126,6 +126,22 @@ function validateLookupPayload(body) {
   };
 }
 
+function validateHeadstonePayload(body) {
+  const lastInspectedAt = optionalText(body?.lastInspectedAt, "Last inspected date", 10);
+  if (lastInspectedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(lastInspectedAt)) throw new BadRequestError("Last inspected date must use YYYY-MM-DD format.");
+
+  return {
+    markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
+    materialId: validateUuid(body?.materialId, "Marker material"),
+    conditionId: validateUuid(body?.conditionId, "Condition"),
+    conditionNotes: optionalText(body?.conditionNotes, "Condition notes", 4000),
+    inscription: optionalText(body?.inscription, "Inscription", 20_000),
+    photoUrl: optionalText(body?.photoUrl, "Photo URL", 300),
+    lastInspectedAt,
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
 export function createApp(config, pool) {
   const app = express();
   const auth0ManagementClient = createAuth0ManagementClient({
@@ -150,6 +166,7 @@ export function createApp(config, pool) {
   });
 
   const requireReader = requireRole(config.auth, pool, "reader");
+  const requirePowerUser = requireRole(config.auth, pool, "power-user");
   const requireAdmin = requireRole(config.auth, pool, "admin");
 
   app.get("/api/me", requireReader, async (request, response) => {
@@ -164,6 +181,7 @@ export function createApp(config, pool) {
         canManageUsers: role === "admin",
         canCreateCemeteryRecords: role === "admin",
         canUpdateCemeteryRecords: role === "admin" || role === "power-user",
+        canUpdateHeadstones: role === "admin" || role === "power-user",
         canDeleteCemeteryRecords: role === "admin",
       },
     });
@@ -198,6 +216,29 @@ export function createApp(config, pool) {
       const query = validateSearchQuery(request.query.q);
       const statuses = validateStatuses(request.query.status);
       response.json(await searchCemetery(pool, { query, statuses, includeOwnership: canViewOwnership(request.user.role) }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/headstone-lookups", requireReader, async (_request, response, next) => {
+    try {
+      response.json(await listHeadstoneLookupOptions(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/headstones/:id", requirePowerUser, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Headstone id");
+      const headstone = validateHeadstonePayload(request.body);
+      const updated = await updateHeadstone(pool, id, headstone, { actorUser: request.user, reason: headstone.reason });
+      if (!updated) {
+        response.status(404).json({ error: "Headstone not found" });
+        return;
+      }
+      response.json(updated);
     } catch (error) {
       next(error);
     }

@@ -34,6 +34,45 @@ export type OwnershipEvent = {
   notes?: string;
 };
 
+export type LookupOption = {
+  id: string;
+  code: string;
+  label: string;
+};
+
+export type Headstone = {
+  id: string;
+  headstoneId: string;
+  markerType: LookupOption;
+  material: LookupOption;
+  condition: LookupOption;
+  conditionNotes: string;
+  inscription: string;
+  photoUrl: string;
+  lastInspectedAt?: string;
+  relationshipType: string;
+  relationshipNotes: string;
+  burialIds: string[];
+  auditEventId?: string;
+};
+
+export type HeadstoneLookups = {
+  markerTypes: LookupOption[];
+  materials: LookupOption[];
+  conditions: LookupOption[];
+};
+
+export type SaveHeadstoneInput = {
+  markerTypeId: string;
+  materialId: string;
+  conditionId: string;
+  conditionNotes: string;
+  inscription: string;
+  photoUrl: string;
+  lastInspectedAt: string;
+  reason?: string;
+};
+
 export type GraveSpaceSummary = {
   id: string;
   cemeteryId: string;
@@ -49,6 +88,7 @@ export type GraveSpace = GraveSpaceSummary & {
   owners: Owner[];
   currentOwnerIds: string[];
   burials: Burial[];
+  headstones: Headstone[];
   ownershipHistory: OwnershipEvent[];
   notes?: string;
 };
@@ -89,10 +129,11 @@ export type CurrentUser = {
   permissions: {
     canViewOwnership: boolean;
     canManageUsers: boolean;
-    canCreateCemeteryRecords: boolean;
-    canUpdateCemeteryRecords: boolean;
-    canDeleteCemeteryRecords: boolean;
-  };
+        canCreateCemeteryRecords: boolean;
+        canUpdateCemeteryRecords: boolean;
+        canUpdateHeadstones: boolean;
+        canDeleteCemeteryRecords: boolean;
+      };
 };
 
 export type AppRole = {

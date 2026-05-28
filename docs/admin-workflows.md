@@ -38,28 +38,38 @@ The Admin UI also has a Lookups tab for maintaining controlled values. Admins ca
 
 Current role behavior:
 
-- `reader`: map, gravesites, and burial information; no deed/owner sections.
-- `power-user`: reader access plus deed/owner visibility and update access for existing cemetery records.
+- `reader`: map, gravesites, burial information, and marker/headstone information; no deed/owner sections and no edit controls.
+- `power-user`: reader access plus deed/owner visibility, update access for existing cemetery records, and marker/headstone detail editing.
 - `admin`: full access, including user management, adding structural records, and soft deletes.
 
 Admin UI hover explanations should avoid exposing Auth0 user IDs in list-row tooltips. The Auth0 user ID is shown only when intentionally editing a user record.
 
-### 1. Headstone Condition Updates
+### 1. Headstone Marker Updates
 
-First admin edit workflow.
+First regular record-editing workflow.
 
-Admins need to update the condition of a physical headstone after inspection. This is the safest first edit because the data is scoped to `headstones`, does not reshape cemetery geometry, and matches the current need to track condition.
+Readers can see marker/headstone details in the normal grave detail panel. Power users and admins can edit marker details from that same panel without opening the Admin UI. This keeps operational cemetery record work near the map and leaves Admin focused on users, lookups, audit review, and setup data.
 
-Initial fields:
+Editable fields:
 
-- `condition`
+- `marker_type_id`
+- `material_type_id`
+- `condition_type_id`
 - `condition_notes`
+- `inscription`
 - `last_inspected_at`
 - `photo_url`
 
-Expected API:
+Implemented API:
 
+- `GET /api/headstone-lookups`
 - `PATCH /api/headstones/:id`
+
+Authorization:
+
+- `reader`: can see marker details but cannot update.
+- `power-user`: can update existing marker details.
+- `admin`: can update existing marker details.
 
 Expected audit action:
 
