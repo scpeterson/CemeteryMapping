@@ -18,15 +18,22 @@ Use `scripts/db-import-headstones-xlsx.mjs` to import the spreadsheet.
 
 For each row with coordinates and at least one person, the importer creates or updates:
 
-1. One generated `gravesites` polygon.
-2. One `headstones` point at the GPS coordinate.
-3. One or more `burials`.
-4. `headstone_burials` join rows linking the headstone to each burial.
+1. One generated 10 foot by 20 foot `lots` polygon.
+2. One generated `gravesites` polygon inside that lot.
+3. One `headstones` point at the GPS coordinate.
+4. One or more `burials`.
+5. `headstone_burials` join rows linking the headstone to each burial.
+
+Generated lot polygon dimensions:
+
+- 20 feet east-west
+- 10 feet north-south
+- Centered on the headstone GPS coordinate
 
 Generated grave polygon dimensions:
 
-- 8 feet east-west
-- 4 feet north-south
+- 4 feet east-west
+- 10 feet north-south
 - Centered on the headstone GPS coordinate
 
 Headstone marker geometry:
@@ -36,9 +43,9 @@ Headstone marker geometry:
 
 ## Rationale
 
-The spreadsheet is a flat file without referential integrity, but it is enough to produce useful map placeholders and burial/headstone links. The generated polygon lets the existing gravesite map workflow continue. The headstone point preserves the actual GPS location separately from the approximate grave box.
+The spreadsheet is a flat file without referential integrity, but it is enough to produce useful map placeholders and burial/headstone links. The generated lot polygon gives the map and API a stable cemetery/section/lot/gravesite hierarchy. The headstone point preserves the actual GPS location separately from the approximate grave box.
 
-The 8 foot by 4 foot rectangle is a pragmatic placeholder. The long dimension runs east-west so it appears left-to-right on the current map.
+The 10 foot by 20 foot lot and 4 foot by 10 foot grave rectangles are pragmatic placeholders. Five 4 foot wide gravesites can fit across the 20 foot lot length. The lot's long dimension runs east-west so it appears left-to-right on the current map.
 
 ## Data Origins
 
@@ -65,7 +72,9 @@ Source naming notes:
 
 ## Consequences
 
-Generated grave boxes are not surveyed grave polygons. They can overlap and should be treated as approximate until better spatial data exists.
+Generated lot and grave boxes are not surveyed polygons. They can overlap and should be treated as approximate until better spatial data exists.
+
+The database enforces a maximum of five active gravesites per lot. Lot-level ownership is represented by reusable owner parties and ownership events, with event types for deeds, sales, gifts, church council action, corrections, and releases.
 
 The importer replaces burial rows for generated gravesites when rerun. This makes the spreadsheet import idempotent for the generated `TLC-GPS-*` records, but maintainers should not manually edit those generated burial rows without planning how to preserve edits.
 
@@ -97,14 +106,16 @@ APP_ENV=test npm run db:validate:spatial
 
 Development import results on 2026-05-19:
 
+- 536 generated lots
 - 536 generated gravesites
 - 536 headstones
 - 671 burials
 - 671 headstone-to-burial links
 - 521 gravesites linked to sections
+- 536 gravesites linked to lots
 - 15 section-link warnings
 - 0 generated gravesite spatial errors
 
 ## Update Triggers
 
-Update this ADR when the spreadsheet columns change, source workbook changes, import ID strategy changes, generated grave dimensions change, condition defaults change, or the importer stops replacing generated burial rows.
+Update this ADR when the spreadsheet columns change, source workbook changes, import ID strategy changes, generated lot or grave dimensions change, condition defaults change, or the importer stops replacing generated burial rows.

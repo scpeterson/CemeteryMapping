@@ -122,7 +122,7 @@ APP_ENV=stage npm run db:seed:demo
 ```
 
 The demo seed command refuses to run when `APP_ENV=prod`.
-The demo fixture intentionally leaves the `blocks` and `lots` tables empty because Trinity Lutheran Church Cemetery does not use block or lot records. Demo gravesites are linked directly to sections.
+The demo fixture now seeds section-scoped lots and links demo gravesites through `lot_uuid` so the map and API exercise the cemetery/section/lot/gravesite hierarchy. Blocks remain empty because they are still optional.
 
 Stop the local database:
 
@@ -206,6 +206,12 @@ db/changelog/changes/006-security-rbac-soft-delete-audit.sql
 db/changelog/changes/007-cemetery-scoped-gravesite-identifiers.sql
 db/changelog/changes/008-correct-north-hills-source-name.sql
 db/changelog/changes/009-correct-north-hills-genealogists-spelling.sql
+db/changelog/changes/010-lot-support.sql
+db/changelog/changes/011-power-user-role.sql
+db/changelog/changes/012-section-alternate-names.sql
+db/changelog/changes/013-section-primary-key-name.sql
+db/changelog/changes/014-database-audit-triggers.sql
+db/changelog/changes/015-updated-at-triggers.sql
 ```
 
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
@@ -217,10 +223,16 @@ The schema creates:
 - `blocks`
 - `lots`
 - `gravesites`
+- `gravesite_status_types`
 - `burials`
 - `owners`
+- `headstone_condition_types`
+- `marker_types`
+- `marker_material_types`
 - `headstones`
+- `headstone_gravesites`
 - `headstone_burials`
+- `lot_ownership_event_types`
 - `app_roles`
 - `app_users`
 - `audit_events`
@@ -242,26 +254,31 @@ The spatial columns are:
 Hierarchical GIS identifiers mirror the template fields using snake_case names:
 
 - `facility_id`
-- `section_id`
 - `block_id`
 - `lot_id`
 - `grave_id`
 - `gravesite_id`
 
-Foreign keys connect the hierarchy directly in PostgreSQL, so Esri-specific relationship key fields are not needed.
+The `sections` table now uses `section_id uuid` as its primary key. Imported section labels such as `B` or `D` live in `sections.name`; sections do not retain a separate source `section_id` text column. Downstream lot and gravesite rows still keep source hierarchy text such as `section_id`, `lot_id`, and `grave_id` for import correlation and human-readable grave identifiers, while `section_uuid` and related UUID fields preserve relational links.
+
+Operational gravesite status uses `gravesite_status_types.id` as the canonical UUID lookup key through `gravesites.status_type_id`. The legacy `gravesites.status` lowercase code is retained for map/search compatibility and is synchronized by database trigger. `needs_review` is distinct from `unknown`: use `needs_review` when a known record needs staff review, and `unknown` when the status has not been determined.
+
+Sections also include `alternate_names text[]` for locally used names that differ from the primary section label. The current migrations backfill active sections `B` and `D` with `OC` and `Original Cemetery`, and active sections `A` and `C` with `NA` and `New Annex`. Sections also include `notes varchar(4000)` for administrative context. Section geometry is nullable so known sections can be recorded before surveyed spatial boundaries are available; map queries only render sections that already have geometry. Admin users can edit these aliases and notes from the Admin UI Cemetery Records tab.
 
 ## Security schema
 
 The security foundation uses:
 
-- `app_roles` for application roles. Initial values are `admin` and `reader`.
+- `app_roles` for application roles. Initial values are `reader`, `power-user`, and `admin`.
 - `app_users` for identity-provider subjects mapped to application roles.
-- `audit_events` for append-only administrative change history.
+- `audit_events` for append-only row-level change history.
 - `deleted_at`, `deleted_by`, and `delete_reason` columns on cemetery business tables.
 
 The application should use soft deletes for cemetery data. Normal read queries should filter `deleted_at IS NULL`; administrative recovery and audit views can explicitly include deleted rows.
 
-The first admin mutation endpoints soft-delete and restore `gravesites` records through `/api/cemeteries/:cemeteryId/grave-spaces/:id`. These endpoints write `audit_events` records with the actor supplied by the configured API authentication mode.
+Database triggers write `audit_events` records for inserts, updates, soft deletes, restores, and hard deletes across the core cemetery and admin tables. API mutation paths set transaction-local audit context so audit rows include the application user, role, identity-provider subject, and email. Direct database changes are also captured with PostgreSQL `current_user` and `session_user`; use unique named database login roles for every person or automation with direct database access. See the [Database Auditing](../docs/database-auditing.md) guide.
+
+Database triggers also maintain `updated_at` on current tables that expose that lifecycle column. Application code should not set `updated_at` manually for normal row updates.
 
 Current API authorization modes:
 
@@ -271,7 +288,7 @@ Current API authorization modes:
 
 Trusted-header mode is not a production identity-provider replacement.
 
-For Auth0 users, `app_users.external_subject` must match the token `sub` claim, and `app_users.role_name` must be `reader` or `admin`.
+For Auth0 users, `app_users.external_subject` must match the token `sub` claim, `app_users.role_name` must be `reader`, `power-user`, or `admin`, and `app_users.is_active` must be `true`. Deactivating a user sets `is_active` to `false`, blocking application access without deleting the Auth0 account or local mapping.
 
 ## Spatial import staging
 
@@ -313,7 +330,7 @@ Use the inspection output to map Esri layer and field names to the staging hiera
 npm run db:validate:spatial
 ```
 
-Promote a validated staging batch into production cemetery and section tables:
+Promote a validated staging batch into production cemetery, section, block, and lot tables:
 
 ```bash
 npm run db:promote:spatial
@@ -350,13 +367,23 @@ Use the `id` value as `<batch-uuid>`:
 APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
 ```
 
-Promotion currently handles only `Cemeteries` and `Sections`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. The first inspected project geodatabase has populated `Cemeteries` and `Sections` layers, empty `Blocks`, `Lots`, and `Memorials` layers, and no visible `Gravesites` layer. Grave polygon import will need the actual gravesite source layer when it becomes available.
+Promotion currently handles `Cemeteries`, `Sections`, `Blocks`, and `Lots`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. Lots may be section-scoped when no block identifier is present, and a partial unique index keeps those section-scoped lot identifiers idempotent. Grave polygon import will need the actual gravesite source layer when it becomes available.
+
+For section-boundary corrections where local text fields must be preserved, use the geometry-only section promotion command instead of full spatial promotion. This updates only `sections.geometry` and `sections.updated_at` for the requested facility and section names:
+
+```bash
+npm run db:promote:section-geometry -- --batch-id <batch-uuid> --facility-id 1 --sections B,D,F
+```
+
+Use this when a geodatabase section boundary has been redrawn but cemetery, section, lot, and contact text in the application should remain authoritative.
 
 ## Headstone spreadsheet workflow
 
 Headstone GPS spreadsheets can be imported after cemetery and section polygons exist in the target environment. The importer expects one row per GPS location with `Latitude` and `Longitude` columns and up to six burial people stored in `Person1First` / `Person1Last` through `Person6First` / `Person6Last`. It also supports the legacy second-person headers `Persons26First` and `Persons26Last`.
 
-Each spreadsheet row with coordinates and at least one person becomes one `gravesites` row and one `headstones` row. The importer generates an 8 foot by 4 foot gravesite `MultiPolygon` centered on the coordinate, with the 8 foot length running east-west so it appears left-to-right on the map. It stores the headstone itself as a `Point` at the GPS coordinate with `condition = 'unknown'`, links the gravesite to the matching cemetery and to the section polygon containing the GPS point when available, and replaces the generated gravesite's existing burial rows with one `burials` row per populated person column. It then creates `headstone_burials` join rows connecting the physical headstone to each imported burial. `PersonNYob` and `PersonNYod` become `YYYY-01-01` birth and death dates.
+Each spreadsheet row with coordinates and at least one person becomes one `lots` row, one `gravesites` row, and one `headstones` row. The importer generates a 10 foot by 20 foot lot `MultiPolygon` centered on the coordinate by default, with the 20 foot length running east-west, then generates a 4 foot by 10 foot gravesite `MultiPolygon` inside it. The database prevents more than five active gravesites from being linked to one lot. It stores the headstone itself as a `Point` at the GPS coordinate with `condition = 'unknown'`, `marker_type_code = 'unknown'`, and `material_type_code = 'unknown'`, links the gravesite to the matching cemetery, section polygon, and generated section-scoped lot when available, and replaces the generated gravesite's existing burial rows with one `burials` row per populated person column. It then creates `headstone_gravesites` rows connecting the physical headstone to its primary gravesite, and `headstone_burials` rows connecting the physical headstone to each imported burial. The legacy `headstones.gravesite_uuid` column remains as the current primary anchor for existing code; `headstone_gravesites` is the forward-looking relationship table for markers that span or relate to more than one gravesite. Marker form/style and material are normalized through `marker_types` and `marker_material_types`; the older text columns remain for compatibility during the transition. `PersonNYob` and `PersonNYod` become `YYYY-01-01` birth and death dates.
+
+Lot ownership is tracked at the lot level with `lot_owner_parties`, `lot_ownership_events`, and `lot_ownership_event_parties`. Supported event types are `deed`, `sale`, `gift`, `church_council_action`, `correction`, and `release`; `current_lot_owners` exposes the latest non-release ownership state for each lot.
 
 Source note prefixes from the workbook are expanded during import: `Nhg` means `North Hills Genealogists`, and `Tlc` means `Trinity Lutheran Church`. Existing burial notes from earlier imports are normalized by migrations so legacy `North Hills Guide` and typoed `North Hills Geneologists` text display and backfill to the official `North Hills Genealogists` spelling.
 
@@ -375,7 +402,7 @@ APP_ENV=test npm run db:import:headstones -- "/path/to/TLC Gravesite Registry Ge
 Useful options:
 
 ```bash
-APP_ENV=test npm run db:import:headstones -- "/path/to/headstones.xlsx" --facility-id 1 --length-feet 8 --width-feet 4
+APP_ENV=test npm run db:import:headstones -- "/path/to/headstones.xlsx" --facility-id 1 --lot-length-feet 20 --lot-width-feet 10 --length-feet 4 --width-feet 10
 ```
 
 The generated `gravesite_id` values use the stable source row shape `TLC-GPS-<row-number>`. After import, run:
@@ -385,3 +412,52 @@ APP_ENV=test npm run db:validate:spatial
 ```
 
 The importer validates generated center points before commit. A center point outside the cemetery is an error. A row whose GPS point does not fall inside a section polygon is imported with the source section text but no `section_uuid`, and is reported as a warning for review.
+
+## Deed registry staging workflow
+
+The 2022 Trinity deed registry is ownership evidence, not a spatial source. Import it into staging tables before creating real lot, gravesite, or ownership rows:
+
+- `deed_registry_import_batches` records the workbook, sheet, target cemetery, and import notes.
+- `deed_registry_entries` preserves one raw spreadsheet row per registry row, including owner text, raw lot text, raw section text, remarks, deed flags, parsed lot/plot/grave hints, confidence, and review status.
+- `deed_registry_entry_allocations` stores one or more candidate allocations parsed from each row, such as Section G gravesite hints, standard lot identifiers, passage records, specific grave numbers, or grave-count-only hints.
+
+The staging importer deliberately does not write to `lots`, `gravesites`, `lot_owner_parties`, `lot_ownership_events`, or the legacy `owners` table. Rows marked `low` or `review` confidence need human review before promotion. `NA` and `OC` are stored as aliases because they can map to more than one section; passageway records are also staged for manual spatial interpretation.
+
+Section G is handled specially. The Section G plot plan uses the word `plot` for individual gravesites, not standard 10 by 20 foot lots. Section G staged entries therefore preserve source plot numbers in `parsed_plot_numbers`, also copy them into `parsed_grave_numbers`, and create `section_g_gravesite` allocation rows with both `plot_identifier` and `grave_number` populated. These gravesites are 8 by 4 feet, and the source plan shows north at the bottom.
+
+Run a dry run first:
+
+```bash
+APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --dry-run
+```
+
+Import into a target environment:
+
+```bash
+APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --source-name "Trinity Cemetery Registry 2022" --imported-by "Scott Peterson"
+```
+
+The same workbook also contains an `Investigated` sheet. Import it as a separate staging batch so its owner rows and interleaved research notes remain traceable to that worksheet:
+
+```bash
+APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --sheet "Investigated" --source-name "Trinity Cemetery Registry 2022 - Investigated" --imported-by "Scott Peterson"
+```
+
+`Investigated` rows with owner data are staged as owner records. Note-only rows are staged as investigation notes: the original cells remain in `source_row`, while the disposition and remarks are combined into `raw_remarks` and left for review instead of being parsed as a lot assignment.
+
+Admins can review staged deed registry evidence in the Admin UI Deed Evidence tab. The view is read-only and supports batch selection, confidence filtering, evidence-type filtering, owner/lot/section/remark search, parser notes, and related notes from the latest `Investigated` import batch.
+
+Useful direct database review query:
+
+```sql
+SELECT
+  source_row_number,
+  owner_display_name,
+  raw_lot_text,
+  raw_section_text,
+  ownership_scope,
+  parse_confidence,
+  parse_notes
+FROM deed_registry_entries
+ORDER BY source_row_number;
+```

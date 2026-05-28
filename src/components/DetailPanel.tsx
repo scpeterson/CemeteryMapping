@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { FileText, History, Landmark, MapPinned, UserRound } from "lucide-react";
 import type { Burial, GraveSpace, GraveSpaceSummary, Owner } from "../types";
 import { burialNoteItems } from "../lib/burialNotes";
@@ -7,12 +8,13 @@ type DetailPanelProps = {
   owners: Owner[];
   summary?: GraveSpaceSummary;
   grave?: GraveSpace;
+  canViewOwnership: boolean;
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
 };
 
-const ownerName = (owners: Owner[], ownerId: string) => owners.find((owner) => owner.id === ownerId)?.displayName ?? "Unknown owner";
+const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
 
 function BurialRecord({ burial }: { burial: Burial }) {
   const noteItems = burialNoteItems(burial.notes);
@@ -45,13 +47,15 @@ function BurialRecord({ burial }: { burial: Burial }) {
   );
 }
 
-export function DetailPanel({ owners, summary, grave, isLoading = false, error, onRetry }: DetailPanelProps) {
+export function DetailPanel({ owners, summary, grave, canViewOwnership, isLoading = false, error, onRetry }: DetailPanelProps) {
+  const ownersById = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
+
   if (!summary) {
     return (
       <aside className="detail-panel empty-state">
         <MapPinned size={28} aria-hidden="true" />
         <h2>Select a grave site</h2>
-        <p>Click a mapped grave space or choose a search result to view ownership, burial status, and record history.</p>
+        <p>Click a mapped grave space or choose a search result to view burial status and record history.</p>
       </aside>
     );
   }
@@ -88,6 +92,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
       {!grave || isLoading || error ? null : (
         <>
 
+      {canViewOwnership ? (
       <section className="detail-section">
         <div className="section-title">
           <Landmark size={17} aria-hidden="true" />
@@ -95,7 +100,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
         </div>
         <div className="owner-list">
           {grave.currentOwnerIds.map((id) => {
-            const owner = owners.find((item) => item.id === id);
+            const owner = ownersById.get(id);
             return (
               <div key={id} className="owner-row">
                 <strong>{owner?.displayName ?? "Unknown owner"}</strong>
@@ -105,6 +110,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
           })}
         </div>
       </section>
+      ) : null}
 
       <section className="detail-section">
         <div className="section-title">
@@ -122,6 +128,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
         )}
       </section>
 
+      {canViewOwnership ? (
       <section className="detail-section">
         <div className="section-title">
           <History size={17} aria-hidden="true" />
@@ -134,7 +141,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
               <li key={event.id}>
                 <time>{formatDate(event.effectiveDate)}</time>
                 <strong>{event.eventType}</strong>
-                <span>{event.ownerIds.map((id) => ownerName(owners, id)).join(", ")}</span>
+                <span>{event.ownerIds.map((id) => ownerName(ownersById, id)).join(", ")}</span>
                 <small>{event.recordedBy}</small>
                 {event.documentReference ? (
                   <span className="document-ref">
@@ -147,6 +154,7 @@ export function DetailPanel({ owners, summary, grave, isLoading = false, error, 
             ))}
         </ol>
       </section>
+      ) : null}
 
       {grave.notes ? (
         <section className="detail-section">

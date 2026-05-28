@@ -32,8 +32,25 @@ export function sectionsFeatureCollection(data: CemeteryData) {
       properties: {
         id: section.id,
         name: section.name,
+        alternateNames: section.alternateNames,
       },
       geometry: section.geometry,
+    })),
+  } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
+}
+
+export function lotsFeatureCollection(data: CemeteryData) {
+  return {
+    type: "FeatureCollection",
+    features: data.lots.map((lot) => ({
+      type: "Feature",
+      properties: {
+        id: lot.id,
+        name: lot.name,
+        section: lot.section,
+        block: lot.block,
+      },
+      geometry: lot.geometry,
     })),
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }

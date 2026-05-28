@@ -1,5 +1,24 @@
 import { apiBaseUrl } from "../config/environment";
-import type { CemeteryData, GraveSpace, GraveStatus, SearchMatch } from "../types";
+import type {
+  AppRole,
+  AppUser,
+  AuditEvent,
+  AuditEventFilters,
+  Auth0ResolvedUser,
+  CemeteryAdminRecords,
+  CemeteryData,
+  CemeteryTextRecord,
+  DeedRegistryReview,
+  DeedRegistryReviewFilters,
+  CurrentUser,
+  GraveSpace,
+  GraveStatus,
+  LookupAdminRecords,
+  LookupRecord,
+  LotTextRecord,
+  SearchMatch,
+  SectionTextRecord,
+} from "../types";
 
 type AccessTokenProvider = () => Promise<string | undefined>;
 
@@ -18,6 +37,19 @@ async function authorizedFetch(url: string, init?: RequestInit) {
   const headers = new Headers(init?.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
   return fetch(url, { ...init, headers });
+}
+
+async function jsonResponse<T>(response: Response, label: string): Promise<T> {
+  if (!response.ok) throw new Error(`${label} returned ${response.status}`);
+  return (await response.json()) as T;
+}
+
+function jsonRequest(method: string, body: unknown): RequestInit {
+  return {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
 }
 
 export async function fetchCemeteryData(attempts = 5): Promise<CemeteryData> {
@@ -42,8 +74,7 @@ export async function fetchGraveSpace(cemeteryId: string, id: string): Promise<G
   const response = await authorizedFetch(
     `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(id)}`,
   );
-  if (!response.ok) throw new Error(`Grave API returned ${response.status}`);
-  return (await response.json()) as GraveSpace;
+  return jsonResponse<GraveSpace>(response, "Grave API");
 }
 
 export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>): Promise<SearchMatch[]> {
@@ -52,6 +83,112 @@ export async function fetchSearchMatches(query: string, statuses: Set<GraveStatu
   params.set("status", [...statuses].join(","));
 
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/search?${params.toString()}`);
-  if (!response.ok) throw new Error(`Search API returned ${response.status}`);
-  return (await response.json()) as SearchMatch[];
+  return jsonResponse<SearchMatch[]>(response, "Search API");
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUser> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/me`);
+  return jsonResponse<CurrentUser>(response, "Current user API");
+}
+
+export async function fetchAdminRoles(): Promise<AppRole[]> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/roles`);
+  return jsonResponse<AppRole[]>(response, "Roles API");
+}
+
+export async function fetchAdminUsers(): Promise<AppUser[]> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users`);
+  return jsonResponse<AppUser[]>(response, "Users API");
+}
+
+export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "isActive">;
+
+export type ResolveAuth0UserInput = Pick<AppUser, "email" | "displayName">;
+
+export async function resolveAuth0User(user: ResolveAuth0UserInput): Promise<Auth0ResolvedUser> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/auth0-users/resolve`, jsonRequest("POST", user));
+  return jsonResponse<Auth0ResolvedUser>(response, "Auth0 user API");
+}
+
+export async function createAdminUser(user: SaveUserInput): Promise<AppUser> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users`, jsonRequest("POST", user));
+  return jsonResponse<AppUser>(response, "Create user API");
+}
+
+export async function updateAdminUser(id: string, user: SaveUserInput): Promise<AppUser> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users/${encodeURIComponent(id)}`, jsonRequest("PUT", user));
+  return jsonResponse<AppUser>(response, "Update user API");
+}
+
+export type SaveCemeteryTextInput = Pick<
+  CemeteryTextRecord,
+  | "name"
+  | "fullAddress"
+  | "municipality"
+  | "agency"
+  | "agencyUrl"
+  | "operationalHours"
+  | "contactName"
+  | "contactPhone"
+  | "contactEmail"
+  | "imageUrl"
+  | "notes"
+>;
+export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames" | "notes">;
+export type SaveLotTextInput = Pick<LotTextRecord, "name">;
+export type SaveLookupInput = Pick<LookupRecord, "code" | "label" | "description" | "sortOrder" | "isActive" | "sourceNotes" | "sourceUrl">;
+
+export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records`);
+  return jsonResponse<CemeteryAdminRecords>(response, "Cemetery admin records API");
+}
+
+export async function fetchAdminAuditEvents(filters: AuditEventFilters = {}): Promise<AuditEvent[]> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/audit-events${query ? `?${query}` : ""}`);
+  return jsonResponse<AuditEvent[]>(response, "Audit events API");
+}
+
+export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters = {}): Promise<DeedRegistryReview> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-registry-review${query ? `?${query}` : ""}`);
+  return jsonResponse<DeedRegistryReview>(response, "Deed registry review API");
+}
+
+export async function fetchLookupAdminRecords(): Promise<LookupAdminRecords> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/lookups`);
+  return jsonResponse<LookupAdminRecords>(response, "Lookup records API");
+}
+
+export async function createLookupRecord(table: string, lookup: SaveLookupInput): Promise<LookupRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/lookups/${encodeURIComponent(table)}`, jsonRequest("POST", lookup));
+  return jsonResponse<LookupRecord>(response, "Create lookup API");
+}
+
+export async function updateLookupRecord(table: string, id: string, lookup: SaveLookupInput): Promise<LookupRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/lookups/${encodeURIComponent(table)}/${encodeURIComponent(id)}`, jsonRequest("PUT", lookup));
+  return jsonResponse<LookupRecord>(response, "Update lookup API");
+}
+
+export async function updateCemeteryText(id: string, cemetery: SaveCemeteryTextInput): Promise<CemeteryTextRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records/cemeteries/${encodeURIComponent(id)}`, jsonRequest("PUT", cemetery));
+  return jsonResponse<CemeteryTextRecord>(response, "Update cemetery API");
+}
+
+export async function updateSectionText(id: string, section: SaveSectionTextInput): Promise<SectionTextRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records/sections/${encodeURIComponent(id)}`, jsonRequest("PUT", section));
+  return jsonResponse<SectionTextRecord>(response, "Update section API");
+}
+
+export async function updateLotText(id: string, lot: SaveLotTextInput): Promise<LotTextRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records/lots/${encodeURIComponent(id)}`, jsonRequest("PUT", lot));
+  return jsonResponse<LotTextRecord>(response, "Update lot API");
 }

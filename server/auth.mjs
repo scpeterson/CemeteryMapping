@@ -2,7 +2,8 @@ import { auth as auth0BearerAuth } from "express-oauth2-jwt-bearer";
 
 const roleRank = new Map([
   ["reader", 1],
-  ["admin", 2],
+  ["power-user", 2],
+  ["admin", 3],
 ]);
 
 const auth0ValidatorCache = new WeakMap();
@@ -21,6 +22,14 @@ function getHeader(request, name) {
 
 function normalizeRole(role) {
   return String(role ?? "").trim().toLowerCase();
+}
+
+export function canViewOwnership(role) {
+  return hasRequiredRole(normalizeRole(role), ["power-user"]);
+}
+
+export function canManageUsers(role) {
+  return hasRequiredRole(normalizeRole(role), ["admin"]);
 }
 
 function hasRequiredRole(actualRole, requiredRoles) {

@@ -42,6 +42,22 @@ Add permissions:
 
 - `read:cemetery`
 - `write:cemetery`
+- `read:deeds`
+- `write:deeds`
+
+These permissions are Auth0 tenant configuration. CemeteryMapping requests and validates tokens, but it does not create Auth0 API permissions or assign them to Auth0 roles automatically.
+
+You can configure these API permissions and role assignments from the command line instead of clicking through the dashboard:
+
+```bash
+AUTH0_DOMAIN=<your-auth0-test-tenant>.auth0.com \
+AUTH0_AUDIENCE=https://cemetery-mapping.test/api \
+AUTH0_MANAGEMENT_CLIENT_ID=<machine-to-machine-client-id> \
+AUTH0_MANAGEMENT_CLIENT_SECRET=<machine-to-machine-client-secret> \
+npm run auth0:configure
+```
+
+Use the same script for each environment by changing the Auth0 tenant, API audience, and Management API credentials. The machine-to-machine client needs `read:resource_servers`, `update:resource_servers`, `read:roles`, `create:roles`, and `update:roles`.
 
 ## Frontend Application
 
@@ -89,25 +105,54 @@ Enable these scopes for that application/API connection:
 
 - `read:cemetery`
 - `write:cemetery`
+- `read:deeds`
+- `write:deeds`
 
 ## Roles and Users
 
 Create roles:
 
 - `reader`
+- `power-user`
 - `admin`
 
 Assign API permissions:
 
 - `reader`: `read:cemetery`
-- `admin`: `read:cemetery`, `write:cemetery`
+- `power-user`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
+- `admin`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
+
+After adding or changing Auth0 permissions, sign out and sign back in so Auth0 issues a fresh access token with the updated permission set.
 
 Create test users:
 
 - `cemetery.reader.test@example.com`
+- `cemetery.power.test@example.com`
 - `cemetery.admin.test@example.com`
 
-Assign the `reader` role to the reader test user and the `admin` role to the admin test user.
+Assign the `reader` role to the reader test user, the `power-user` role to the power-user test user, and the `admin` role to the admin test user. Auth0 roles are useful for token/API permission context, but the application database remains the source of truth for the app role enforced by CemeteryMapping.
+
+## Optional Admin User Provisioning
+
+The Admin UI can find an Auth0 user by email or create one in the configured database connection, then save the returned Auth0 `user_id` as the local Auth0 user ID.
+
+Create a machine-to-machine application authorized for the Auth0 Management API with:
+
+- `read:users`
+- `create:users`
+
+Add these server-only environment variables when running the API:
+
+```bash
+AUTH0_MANAGEMENT_CLIENT_ID=<machine-to-machine-client-id>
+AUTH0_MANAGEMENT_CLIENT_SECRET=<machine-to-machine-client-secret>
+AUTH0_MANAGEMENT_CONNECTION=Username-Password-Authentication
+AUTH0_PASSWORD_RESET_CLIENT_ID=<your-auth0-spa-client-id>
+```
+
+When a new Admin UI user is saved without an Auth0 user ID, the API searches Auth0 by email first. If no user exists, it creates one in `AUTH0_MANAGEMENT_CONNECTION` with a generated temporary password and asks Auth0 to send the verification email. When `AUTH0_PASSWORD_RESET_CLIENT_ID` is configured, it also asks Auth0 to send a password reset email so the user can set their own password. The local role is still stored only in `app_users.role_name`.
+
+The Admin UI can also deactivate or reactivate existing application users. This updates only `app_users.is_active`; it does not delete the local mapping and does not delete or disable the Auth0 account.
 
 ## Application Environment
 
@@ -117,7 +162,7 @@ For TEST-mode local frontend runs, use `.env.test.local`:
 VITE_AUTH0_DOMAIN=<your-auth0-test-tenant>.auth0.com
 VITE_AUTH0_CLIENT_ID=<your-auth0-spa-client-id>
 VITE_AUTH0_AUDIENCE=https://cemetery-mapping.test/api
-VITE_AUTH0_SCOPE=read:cemetery write:cemetery
+VITE_AUTH0_SCOPE=read:cemetery write:cemetery read:deeds write:deeds
 ```
 
 Vite reads `.env.test.local` when running:
@@ -248,7 +293,7 @@ After inserting or updating the row, refresh the browser. If the app still retur
 
 - `external_subject` exactly matches the Auth0 `user_id`.
 - `is_active` is `true`.
-- `role_name` is either `reader` or `admin`.
+- `role_name` is `reader`, `power-user`, or `admin`.
 - The API is connected to the same TEST database where the row was inserted.
 
 If a user should be blocked without deleting the mapping:
@@ -258,6 +303,8 @@ UPDATE app_users
 SET is_active = false
 WHERE external_subject = 'auth0|SUBJECT';
 ```
+
+The Admin UI Deactivate button performs the same local access block. Use Reactivate in the Admin UI, or set `is_active = true`, to restore application access.
 
 ## Manual Security Checks
 
@@ -355,12 +402,18 @@ Fix:
 4. Enable scopes:
    - `read:cemetery`
    - `write:cemetery`
+   - `read:deeds`
+   - `write:deeds`
 5. Save.
 
 Also confirm the API has RBAC enabled and permissions added:
 
 - `read:cemetery`
 - `write:cemetery`
+- `read:deeds`
+- `write:deeds`
+
+If the API or role permissions were just changed, sign out and sign back in before retesting. Existing access tokens keep their original permissions until they expire or are replaced.
 
 ### UI Shows `API unavailable: Cemetery API returned 403`
 

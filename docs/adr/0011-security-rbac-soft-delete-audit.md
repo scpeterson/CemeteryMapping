@@ -6,7 +6,7 @@
 - Status: Accepted
 - Date: 2026-05-20
 - Owners: Project maintainers
-- Related changes: PR #15, Phase 2 security schema, Phase 3 API authorization foundation, Phase 4 grave-space soft delete/restore API
+- Related changes: PR #15, Phase 2 security schema, Phase 3 API authorization foundation, Phase 4 grave-space soft delete/restore API, power-user role and admin user management UI
 
 ## Context
 
@@ -20,7 +20,7 @@ Adopt a phased security model built around these parts:
 
 - External identity provider for sign-in.
 - Server-side role-based access control.
-- `admin` and `reader` application roles.
+- `admin`, `power-user`, and `reader` application roles.
 - Soft deletes for application data.
 - Append-only audit logging for data changes.
 
@@ -32,12 +32,13 @@ Request input that reaches data access paths must be validated before repository
 
 ## Roles
 
-Initial roles:
+Application roles:
 
-- `admin`: can view, create, update, and soft-delete cemetery data.
-- `reader`: can view cemetery data but cannot create, update, or delete it.
+- `reader`: can view the map, gravesites, and burial information, but cannot view deed/owner information.
+- `power-user`: can do everything a `reader` can do, plus view and edit deed/owner information and update existing burials, gravesites, lots, and sections.
+- `admin`: can manage users and roles, view and edit all cemetery data, add burials, gravesites, lots, and sections, and soft-delete records.
 
-Future roles can be added with a new ADR or an update if the access model changes materially. Examples might include `data_steward`, `inspector`, or `import_operator`.
+Authorization is ranked as `reader` < `power-user` < `admin`. Deed and owner fields must be omitted from API responses for `reader` requests, not merely hidden in the UI. Future roles can be added with a new ADR or an update if the access model changes materially.
 
 ## Soft Delete Model
 
@@ -61,15 +62,19 @@ Each audit event should capture:
 
 - Actor user id or external subject.
 - Actor role at the time of change.
-- Action name, such as `create`, `update`, `soft_delete`, `restore`, or `import_promote`.
+- Database user and session user for direct database accountability.
+- Action name, such as `create`, `update`, `soft_delete`, `restore`, `delete`, or `import_promote`.
 - Target table.
 - Target record id.
 - Previous values when available.
 - New values when available.
+- Changed fields for updates.
 - Reason or note when supplied.
 - Timestamp.
 
-Audit records should not be edited by normal application workflows.
+Audit records should not be edited by normal application workflows. Row-level database triggers enforce auditing across core business and admin tables so direct database changes are captured even when they bypass the application API. Application mutation paths set transaction-local audit context so trigger-generated rows include the authenticated application user where available.
+
+Tables with `updated_at` use database triggers to maintain that lifecycle timestamp on row updates. `created_at`, `updated_at`, `deleted_at`, `deleted_by`, and `delete_reason` stay on business rows for current-state inspection; `audit_events` stores historical old/new values and actor identity.
 
 ## Authentication Direction
 
@@ -99,6 +104,8 @@ The first API security implementation supports:
 - Reader-or-admin authorization on existing read endpoints.
 - Default API reads that exclude soft-deleted cemetery records.
 - Admin-only grave-space soft delete and restore endpoints.
+- Admin-only user management endpoints and a dedicated admin drawer for user access management.
+- Reader redaction of owner/deed sections in grave details and owner/deed search reasons.
 - Audit events for grave-space soft delete and restore operations.
 - API-edge request validation and SQL-injection regression tests for grave-space ids, search queries, status filters, and mutation reasons.
 

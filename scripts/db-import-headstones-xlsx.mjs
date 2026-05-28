@@ -7,13 +7,15 @@ import { currentEnvironment, loadDbEnvironment } from "./lib/run-liquibase.mjs";
 
 const { Pool } = pg;
 const feetToMeters = 0.3048;
-const defaultLengthFeet = 8;
-const defaultWidthFeet = 4;
+const defaultLengthFeet = 4;
+const defaultWidthFeet = 10;
+const defaultLotLengthFeet = 20;
+const defaultLotWidthFeet = 10;
 const northHillsSourceName = "North Hills Genealogists";
 
 function usage() {
   console.error(
-    "Usage: npm run db:import:headstones -- /path/to/headstones.xlsx [--facility-id 1] [--sheet SheetName] [--length-feet 8] [--width-feet 4] [--allow-spatial-errors] [--dry-run]",
+    "Usage: npm run db:import:headstones -- /path/to/headstones.xlsx [--facility-id 1] [--sheet SheetName] [--length-feet 4] [--width-feet 10] [--lot-length-feet 20] [--lot-width-feet 10] [--allow-spatial-errors] [--dry-run]",
   );
 }
 
@@ -180,11 +182,17 @@ async function normalizedRows(workbookPath, sheetName) {
 export function importableRows(rows, options) {
   const lengthFeet = Number(options["length-feet"] ?? defaultLengthFeet);
   const widthFeet = Number(options["width-feet"] ?? defaultWidthFeet);
+  const lotLengthFeet = Number(options["lot-length-feet"] ?? defaultLotLengthFeet);
+  const lotWidthFeet = Number(options["lot-width-feet"] ?? defaultLotWidthFeet);
   const eastWestMeters = lengthFeet * feetToMeters;
   const northSouthMeters = widthFeet * feetToMeters;
+  const lotEastWestMeters = lotLengthFeet * feetToMeters;
+  const lotNorthSouthMeters = lotWidthFeet * feetToMeters;
 
   if (!Number.isFinite(lengthFeet) || lengthFeet <= 0) throw new Error("--length-feet must be a positive number.");
   if (!Number.isFinite(widthFeet) || widthFeet <= 0) throw new Error("--width-feet must be a positive number.");
+  if (!Number.isFinite(lotLengthFeet) || lotLengthFeet <= 0) throw new Error("--lot-length-feet must be a positive number.");
+  if (!Number.isFinite(lotWidthFeet) || lotWidthFeet <= 0) throw new Error("--lot-width-feet must be a positive number.");
 
   return rows
     .map(({ rowNumber, row }) => {
@@ -196,9 +204,13 @@ export function importableRows(rows, options) {
       if (people.length === 0) return null;
 
       const graveId = String(rowNumber).padStart(4, "0");
+      const tlcPlot = textCell(row, "TlcPlot");
+      const sourceGraveNumber = textCell(row, "GraveNumber");
+      const lotId = [tlcPlot, sourceGraveNumber].find((value) => value && value.length <= 5) ?? graveId;
       return {
         rowNumber,
         graveId,
+        lotId,
         gravesiteId: `TLC-GPS-${graveId}`,
         headstoneId: `TLC-HS-${graveId}`,
         name: people[0]?.fullName ?? `Imported headstone ${graveId}`,
@@ -206,11 +218,12 @@ export function importableRows(rows, options) {
         nhgRow: textCell(row, "NhgRow"),
         nhgPage: textCell(row, "NhgPage"),
         tlcSec: textCell(row, "TlcSec"),
-        tlcPlot: textCell(row, "TlcPlot"),
-        sourceGraveNumber: textCell(row, "GraveNumber"),
+        tlcPlot,
+        sourceGraveNumber,
         latitude,
         longitude,
         geometry: rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters),
+        lotGeometry: rectangleMultiPolygon(longitude, latitude, lotEastWestMeters, lotNorthSouthMeters),
         sourceProperties: row,
         people,
       };
@@ -256,14 +269,14 @@ async function findCemetery(client, facilityId) {
 async function findSection(client, cemeteryId, facilityId, sectionId, longitude, latitude) {
   const result = await client.query(
     `
-      SELECT id, section_id
+      SELECT section_id, name
       FROM sections
       WHERE cemetery_id = $1
         AND facility_id IS NOT DISTINCT FROM $2
         AND ST_Covers(geometry, ST_SetSRID(ST_MakePoint($3, $4), 4326))
       ORDER BY
-        CASE WHEN section_id IS NOT DISTINCT FROM $5 THEN 0 ELSE 1 END,
-        id
+        CASE WHEN name IS NOT DISTINCT FROM $5 THEN 0 ELSE 1 END,
+        section_id
       LIMIT 1
     `,
     [cemeteryId, facilityId, longitude, latitude, sectionId],
@@ -272,8 +285,56 @@ async function findSection(client, cemeteryId, facilityId, sectionId, longitude,
   return result.rows[0] ?? null;
 }
 
+async function upsertLot(client, cemetery, facilityId, imported, section) {
+  const result = await client.query(
+    `
+      INSERT INTO lots (
+        cemetery_id,
+        section_uuid,
+        name,
+        facility_id,
+        section_id,
+        block_id,
+        lot_id,
+        geometry,
+        updated_at
+      )
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        NULL,
+        $6,
+        ST_SetSRID(ST_GeomFromGeoJSON($7), 4326)::geometry(MultiPolygon, 4326),
+        now()
+      )
+      ON CONFLICT (facility_id, section_id, lot_id) WHERE block_id IS NULL DO UPDATE SET
+        cemetery_id = EXCLUDED.cemetery_id,
+        section_uuid = EXCLUDED.section_uuid,
+        name = EXCLUDED.name,
+        geometry = EXCLUDED.geometry,
+        updated_at = now()
+      RETURNING id
+    `,
+    [
+      cemetery.id,
+      section?.section_id ?? null,
+      `Lot ${imported.lotId}`,
+      facilityId,
+      section?.name ?? imported.sectionId,
+      imported.lotId,
+      JSON.stringify(imported.lotGeometry),
+    ],
+  );
+
+  return { id: result.rows[0].id };
+}
+
 async function upsertGravesite(client, cemetery, facilityId, imported) {
   const section = await findSection(client, cemetery.id, facilityId, imported.sectionId, imported.longitude, imported.latitude);
+  const lot = await upsertLot(client, cemetery, facilityId, imported, section);
   const notes = buildSourceNotes(imported);
 
   const result = await client.query(
@@ -281,9 +342,11 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
       INSERT INTO gravesites (
         cemetery_id,
         section_uuid,
+        lot_uuid,
         name,
         facility_id,
         section_id,
+        lot_id,
         grave_id,
         gravesite_id,
         status,
@@ -298,36 +361,53 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
         $5,
         $6,
         $7,
+        $8,
+        $9,
         'occupied',
-        ST_SetSRID(ST_GeomFromGeoJSON($8), 4326)::geometry(MultiPolygon, 4326),
+        ST_SetSRID(ST_GeomFromGeoJSON($10), 4326)::geometry(MultiPolygon, 4326),
         now()
       )
       ON CONFLICT (cemetery_id, gravesite_id) DO UPDATE SET
         cemetery_id = EXCLUDED.cemetery_id,
         section_uuid = EXCLUDED.section_uuid,
+        lot_uuid = EXCLUDED.lot_uuid,
         name = EXCLUDED.name,
         facility_id = EXCLUDED.facility_id,
         section_id = EXCLUDED.section_id,
+        lot_id = EXCLUDED.lot_id,
         grave_id = EXCLUDED.grave_id,
         status = EXCLUDED.status,
         geometry = EXCLUDED.geometry,
         updated_at = now()
       RETURNING id
     `,
-    [cemetery.id, section?.id ?? null, imported.name, facilityId, section?.section_id ?? imported.sectionId, imported.graveId, imported.gravesiteId, JSON.stringify(imported.geometry)],
+    [
+      cemetery.id,
+      section?.section_id ?? null,
+      lot.id,
+      imported.name,
+      facilityId,
+      section?.name ?? imported.sectionId,
+      imported.lotId,
+      imported.graveId,
+      imported.gravesiteId,
+      JSON.stringify(imported.geometry),
+    ],
   );
 
-  return { gravesiteUuid: result.rows[0].id, sectionLinked: Boolean(section), notes };
+  return { gravesiteUuid: result.rows[0].id, sectionLinked: Boolean(section), lotLinked: Boolean(lot), notes };
 }
 
-async function upsertHeadstone(client, imported, gravesiteUuid) {
+export async function upsertHeadstone(client, imported, gravesiteUuid) {
   const result = await client.query(
     `
       INSERT INTO headstones (
         gravesite_uuid,
         headstone_id,
         marker_type,
+        marker_type_code,
         condition,
+        material_type_code,
         latitude,
         longitude,
         geometry,
@@ -339,6 +419,8 @@ async function upsertHeadstone(client, imported, gravesiteUuid) {
         $2,
         'headstone',
         'unknown',
+        'unknown',
+        'unknown',
         $3::numeric,
         $4::numeric,
         ST_SetSRID(ST_MakePoint($4::double precision, $3::double precision), 4326),
@@ -348,6 +430,14 @@ async function upsertHeadstone(client, imported, gravesiteUuid) {
       ON CONFLICT (headstone_id) DO UPDATE SET
         gravesite_uuid = EXCLUDED.gravesite_uuid,
         marker_type = EXCLUDED.marker_type,
+        marker_type_code = CASE
+          WHEN headstones.marker_type_code IS NULL OR headstones.marker_type_code = 'unknown' THEN EXCLUDED.marker_type_code
+          ELSE headstones.marker_type_code
+        END,
+        material_type_code = CASE
+          WHEN headstones.material_type_code IS NULL OR headstones.material_type_code = 'unknown' THEN EXCLUDED.material_type_code
+          ELSE headstones.material_type_code
+        END,
         latitude = EXCLUDED.latitude,
         longitude = EXCLUDED.longitude,
         geometry = EXCLUDED.geometry,
@@ -359,6 +449,27 @@ async function upsertHeadstone(client, imported, gravesiteUuid) {
   );
 
   return result.rows[0].id;
+}
+
+export async function upsertHeadstoneGravesite(client, headstoneUuid, gravesiteUuid, relationshipType = "primary") {
+  await client.query(
+    `
+      INSERT INTO headstone_gravesites (
+        headstone_uuid,
+        gravesite_uuid,
+        relationship_type,
+        updated_at
+      )
+      VALUES ($1, $2, $3, now())
+      ON CONFLICT (headstone_uuid, gravesite_uuid) DO UPDATE SET
+        relationship_type = EXCLUDED.relationship_type,
+        updated_at = now(),
+        deleted_at = NULL,
+        deleted_by = NULL,
+        delete_reason = NULL
+    `,
+    [headstoneUuid, gravesiteUuid, relationshipType],
+  );
 }
 
 async function replaceBurials(client, imported, gravesiteUuid, headstoneUuid, notes) {
@@ -425,7 +536,7 @@ async function validateImportedGravesites(client, gravesiteUuids) {
           section.geometry AS section_geometry
         FROM gravesites grave
         JOIN cemeteries cemetery ON cemetery.id = grave.cemetery_id
-        LEFT JOIN sections section ON section.id = grave.section_uuid
+        LEFT JOIN sections section ON section.section_id = grave.section_uuid
         WHERE grave.id = ANY($1::uuid[])
       ),
       cemetery_containment AS (
@@ -510,14 +621,17 @@ async function main() {
     const cemetery = await findCemetery(client, facilityId);
 
     let linkedSections = 0;
+    let linkedLots = 0;
     let burialCount = 0;
     let headstoneCount = 0;
     const gravesiteUuids = [];
     for (const imported of importedRows) {
       const gravesiteResult = await upsertGravesite(client, cemetery, facilityId, imported);
       const headstoneUuid = await upsertHeadstone(client, imported, gravesiteResult.gravesiteUuid);
+      await upsertHeadstoneGravesite(client, headstoneUuid, gravesiteResult.gravesiteUuid);
       const importedBurialCount = await replaceBurials(client, imported, gravesiteResult.gravesiteUuid, headstoneUuid, gravesiteResult.notes);
       if (gravesiteResult.sectionLinked) linkedSections += 1;
+      if (gravesiteResult.lotLinked) linkedLots += 1;
       burialCount += importedBurialCount;
       headstoneCount += 1;
       gravesiteUuids.push(gravesiteResult.gravesiteUuid);
@@ -547,9 +661,11 @@ async function main() {
     console.log(`Headstones imported: ${headstoneCount}.`);
     console.log(`Burials imported: ${burialCount}.`);
     console.log(`Gravesites linked to sections: ${linkedSections}.`);
+    console.log(`Gravesites linked to lots: ${linkedLots}.`);
     console.log(`Generated gravesite spatial warnings: ${spatialIssues.length - errorCount}.`);
     console.log(`Generated gravesite spatial errors: ${errorCount}.`);
     console.log(`Generated rectangle size: ${options["length-feet"] ?? defaultLengthFeet}ft east-west x ${options["width-feet"] ?? defaultWidthFeet}ft north-south.`);
+    console.log(`Generated lot rectangle size: ${options["lot-length-feet"] ?? defaultLotLengthFeet}ft east-west x ${options["lot-width-feet"] ?? defaultLotWidthFeet}ft north-south.`);
     console.log("Run npm run db:validate:spatial to review generated gravesite geometry.");
   } catch (error) {
     await client.query("ROLLBACK");

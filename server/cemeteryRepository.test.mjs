@@ -3,10 +3,12 @@ import test from "node:test";
 import { getCemeteryData, getDetailedCemeteryData, getGraveSpace } from "./cemeteryRepository.mjs";
 
 function queryRows(sql) {
+  if (sql.includes("information_schema.columns")) return [{ exists: true }];
   if (sql.includes("FROM cemeteries")) {
     return [{ id: "11111111-1111-4111-8111-111111111111", name: "Sequential Cemetery", geometry: "{}" }];
   }
   if (sql.includes("FROM sections")) return [];
+  if (sql.includes("FROM lots")) return [];
   if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
     return [
       {
@@ -52,4 +54,26 @@ test("repository read queries do not overlap on the same pg client", async () =>
   await getCemeteryData(pool);
   await getDetailedCemeteryData(pool);
   await getGraveSpace(pool, "11111111-1111-4111-8111-111111111111", "A-01-01");
+});
+
+test("repository can redact ownership data from grave detail reads", async () => {
+  let ownerQueryCount = 0;
+  const pool = {
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes("FROM owners")) ownerQueryCount += 1;
+          return { rows: queryRows(sql) };
+        },
+        release() {},
+      };
+    },
+  };
+
+  const grave = await getGraveSpace(pool, "11111111-1111-4111-8111-111111111111", "A-01-01", { includeOwnership: false });
+
+  assert.equal(ownerQueryCount, 0);
+  assert.deepEqual(grave.owners, []);
+  assert.deepEqual(grave.currentOwnerIds, []);
+  assert.deepEqual(grave.ownershipHistory, []);
 });

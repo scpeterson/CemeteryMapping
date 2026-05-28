@@ -1,7 +1,7 @@
 ---
 ---
 
-# ADR 0007: Import Cemetery and Section Geometry from an Esri File Geodatabase
+# ADR 0007: Import Cemetery, Section, Block, and Lot Geometry from an Esri File Geodatabase
 
 - Status: Accepted
 - Date: 2026-05-20
@@ -10,7 +10,7 @@
 
 ## Context
 
-The first authoritative cemetery boundary and section geometries are stored in an Esri File Geodatabase. The application needs to inspect that source, import cemetery and section layers, validate them, and promote them into PostGIS.
+The first authoritative cemetery boundary, section, and lot geometries are stored in an Esri File Geodatabase. The application needs to inspect that source, import cemetery hierarchy layers, validate them, and promote them into PostGIS.
 
 ## Decision
 
@@ -32,7 +32,7 @@ Recognized layers:
 - `Lots`
 - `Memorials`
 
-Current real source data only uses cemetery and section geometry for this cemetery.
+Current real source data may omit blocks. Lots can be promoted as section-scoped records when no block identifier is present.
 
 ## Rationale
 
@@ -47,15 +47,15 @@ Known source:
 | Source type | Esri File Geodatabase |
 | Local path used during development | `/Users/scottpeterson/Dropbox/CemeteryDataManagement/Cemetery Data Management.gdb` |
 | Feature dataset | `CemeteryDataManagement` |
-| Layers used | `Cemeteries`, `Sections` |
+| Layers used | `Cemeteries`, `Sections`, `Blocks`, `Lots` when present |
 | Responsible data owner | TBD |
 | Date received or last saved | TBD |
 | Coordinate reference system | Determined by GDAL during export; importer normalizes output to EPSG:4326 |
-| Stewardship notes | Blocks and lots are not used by this cemetery and should remain blank |
+| Stewardship notes | Blocks are optional; lots are 10 feet by 20 feet and may be section-scoped |
 
 ## Consequences
 
-The production `cemeteries` and `sections` tables come from promoted FileGDB staging batches. Blocks and lots remain optional and unused for Trinity Lutheran Church Cemetery.
+The production `cemeteries`, `sections`, `blocks`, and `lots` tables can come from promoted FileGDB staging batches. Blocks remain optional. Lots are now part of the active hierarchy and render between section boundaries and gravesites on the map.
 
 Future grave polygon imports should use an actual gravesite source layer if one becomes available rather than treating headstone points as surveyed grave polygons.
 

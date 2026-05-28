@@ -1,4 +1,5 @@
-export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "unknown";
+export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "needs_review" | "unknown";
+export type AppRoleName = "reader" | "power-user" | "admin";
 export type AreaGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 
 export type Person = {
@@ -55,6 +56,15 @@ export type GraveSpace = GraveSpaceSummary & {
 export type CemeterySection = {
   id: string;
   name: string;
+  alternateNames: string[];
+  geometry: AreaGeometry;
+};
+
+export type CemeteryLot = {
+  id: string;
+  name: string;
+  section: string;
+  block?: string;
   geometry: AreaGeometry;
 };
 
@@ -62,10 +72,215 @@ export type CemeteryData = {
   boundary?: GeoJSON.Feature<AreaGeometry, { name: string }>;
   boundaries?: GeoJSON.Feature<AreaGeometry, { name: string }>[];
   sections: CemeterySection[];
+  lots: CemeteryLot[];
   graves: GraveSpaceSummary[];
 };
 
 export type SearchMatch = {
   grave: GraveSpaceSummary;
   reasons: string[];
+};
+
+export type CurrentUser = {
+  subject: string;
+  email?: string;
+  displayName?: string;
+  role: AppRoleName;
+  permissions: {
+    canViewOwnership: boolean;
+    canManageUsers: boolean;
+    canCreateCemeteryRecords: boolean;
+    canUpdateCemeteryRecords: boolean;
+    canDeleteCemeteryRecords: boolean;
+  };
+};
+
+export type AppRole = {
+  name: AppRoleName;
+  description: string;
+  userCount: number;
+};
+
+export type AppUser = {
+  id: string;
+  externalSubject: string;
+  email: string;
+  displayName: string;
+  role: AppRoleName;
+  isActive: boolean;
+  lastAuthenticatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Auth0ResolvedUser = {
+  externalSubject: string;
+  email: string;
+  displayName: string;
+  created: boolean;
+  invitationSent: boolean;
+};
+
+export type CemeteryTextRecord = {
+  id: string;
+  name: string;
+  fullAddress: string;
+  municipality: string;
+  agency: string;
+  agencyUrl: string;
+  operationalHours: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  imageUrl: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SectionTextRecord = {
+  id: string;
+  cemeteryId: string;
+  sectionId: string;
+  name: string;
+  alternateNames: string[];
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LotTextRecord = {
+  id: string;
+  cemeteryId: string;
+  sectionId: string;
+  lotId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CemeteryAdminRecords = {
+  cemeteries: CemeteryTextRecord[];
+  sections: SectionTextRecord[];
+  lots: LotTextRecord[];
+};
+
+export type LookupTableDefinition = {
+  table: string;
+  label: string;
+  hasSourceFields: boolean;
+};
+
+export type LookupRecord = {
+  id: string;
+  code: string;
+  label: string;
+  description: string;
+  sortOrder: number;
+  isActive: boolean;
+  usageCount: number;
+  usageLabel: string;
+  sourceNotes?: string;
+  sourceUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LookupAdminRecords = {
+  tables: LookupTableDefinition[];
+  lookups: Record<string, LookupRecord[]>;
+};
+
+export type AuditEvent = {
+  id: string;
+  occurredAt: string;
+  action: string;
+  targetTable: string;
+  targetRecordId: string;
+  actorEmail: string;
+  actorRole: string;
+  actorExternalSubject: string;
+  actorDatabaseUser: string;
+  actorSessionUser: string;
+  source: string;
+  reason: string;
+  changedFields: string[];
+  previousValues: Record<string, unknown>;
+  newValues: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+};
+
+export type AuditEventFilters = {
+  action?: string;
+  targetTable?: string;
+  actor?: string;
+  targetRecordId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  limit?: number;
+};
+
+export type DeedRegistryImportBatch = {
+  id: string;
+  cemeteryName: string;
+  sourceName: string;
+  worksheetName: string;
+  importedBy: string;
+  notes: string;
+  createdAt: string;
+  entryCount: number;
+  reviewCount: number;
+  lowConfidenceCount: number;
+};
+
+export type DeedRegistrySummaryItem = {
+  ownershipScope: string;
+  parseConfidence: string;
+  count: number;
+};
+
+export type DeedRegistryInvestigationNote = {
+  sourceRowNumber: number;
+  ownerDisplayName: string;
+  rawRemarks: string;
+};
+
+export type DeedRegistryReviewEntry = {
+  id: string;
+  batchId: string;
+  sourceRowNumber: number;
+  rowType: string;
+  ownerDisplayName: string;
+  rawLotText: string;
+  rawSectionText: string;
+  rawRemarks: string;
+  deedOnFile: string;
+  deedRegisterOnFile: string;
+  parsedSectionName: string;
+  parsedSectionAlias: string;
+  parsedLotNumbers: string[];
+  parsedPlotNumbers: string[];
+  parsedGraveNumbers: string[];
+  parsedGraveCount?: number;
+  ownershipScope: string;
+  parseConfidence: string;
+  parseNotes: string[];
+  status: string;
+  allocationCount: number;
+  relatedInvestigationNotes: DeedRegistryInvestigationNote[];
+};
+
+export type DeedRegistryReviewFilters = {
+  batchId?: string;
+  confidence?: string;
+  ownershipScope?: string;
+  q?: string;
+  limit?: number;
+};
+
+export type DeedRegistryReview = {
+  batches: DeedRegistryImportBatch[];
+  selectedBatchId: string;
+  summary: DeedRegistrySummaryItem[];
+  entries: DeedRegistryReviewEntry[];
 };

@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
-import maplibregl, { type Map, type GeoJSONSource } from "maplibre-gl";
+import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
-import { boundariesFeatureCollection, cemeteryMarkersFeatureCollection, gravesFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
-import { graveSelectionKey, statusColors, statusLabels } from "../lib/format";
+import { boundariesFeatureCollection, gravesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
+import { graveSelectionKey, statusLabels } from "../lib/format";
+import { exteriorRing, fitMapToData } from "./cemeteryMapBounds";
+import { addBoundaryLayers, addGraveLayers, addLotLayers, addRasterLayers, addSectionLabelLayer, addSectionLayers, enforceMapLayerOrder, selectableGraveLayers } from "./cemeteryMapLayers";
+import { syncCemeteryMarkers } from "./cemeteryMapMarkers";
+import { mapScale, type MapScale } from "./cemeteryMapScale";
 
 type CemeteryMapProps = {
   data: CemeteryData;
@@ -14,148 +18,20 @@ type CemeteryMapProps = {
 };
 
 const center: [number, number] = [-76.70431, 39.19604];
-const earthCircumferenceMeters = 40_075_016.686;
-const cssPixelsPerInch = 96;
-const metersPerInch = 0.0254;
-const feetPerMeter = 3.28084;
 
-type MapScale = {
-  segments: { width: number; label: string }[];
-  totalWidth: number;
-  totalLabel: string;
-  representativeFraction: string;
-};
+const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 
-type ScaleSegment = {
-  width: number;
-  label: string;
-};
-
-const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
-const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels"];
-const mapLayerOrder = [
-  "boundary-fill",
-  "boundary-line",
-  "sections-fill",
-  "sections-line",
-  "sections-label",
-  "graves-fill",
-  "graves-line",
-  "grave-labels",
-];
-
-const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);
-
-function extendGeometryBounds(bounds: maplibregl.LngLatBounds | undefined, geometry: GeoJSON.Geometry): maplibregl.LngLatBounds | undefined {
-  if (geometry.type === "Polygon") {
-    return geometry.coordinates[0].reduce(
-      (nextBounds, coordinate) => nextBounds.extend(coordinate as [number, number]),
-      bounds ?? new maplibregl.LngLatBounds(geometry.coordinates[0][0] as [number, number], geometry.coordinates[0][0] as [number, number]),
-    );
-  }
-
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates.reduce((nextBounds, polygon) => {
-      const ring = polygon[0];
-      if (!ring?.length) return nextBounds;
-      return ring.reduce(
-        (ringBounds, coordinate) => ringBounds.extend(coordinate as [number, number]),
-        nextBounds ?? new maplibregl.LngLatBounds(ring[0] as [number, number], ring[0] as [number, number]),
-      );
-    }, bounds);
-  }
-
-  return bounds;
-}
-
-function dataBounds(data: CemeteryData) {
-  const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
-  const boundaryBounds = boundaries.reduce((bounds, boundary) => extendGeometryBounds(bounds, boundary.geometry), undefined as maplibregl.LngLatBounds | undefined);
-  if (boundaryBounds) return boundaryBounds;
-
-  return data.graves.reduce((bounds, grave) => extendGeometryBounds(bounds, grave.geometry), undefined as maplibregl.LngLatBounds | undefined);
-}
-
-function fitMapToData(map: Map, data: CemeteryData, duration = 350) {
-  const bounds = dataBounds(data);
-  if (bounds) map.fitBounds(bounds, { padding: 90, maxZoom: 19, duration });
-}
-
-function fitMapToGeometry(map: Map, geometry: GeoJSON.Geometry, duration = 350) {
-  const bounds = extendGeometryBounds(undefined, geometry);
-  if (bounds) map.fitBounds(bounds, { padding: 110, maxZoom: 19, duration });
-}
-
-function enforceMapLayerOrder(map: Map) {
-  mapLayerOrder.forEach((layer) => {
-    if (map.getLayer(layer)) map.moveLayer(layer);
-  });
-}
-
-function niceDistance(meters: number) {
-  const exponent = Math.floor(Math.log10(meters));
-  const magnitude = 10 ** exponent;
-  const normalized = meters / magnitude;
-  const niceNormalized = normalized >= 5 ? 5 : normalized >= 2 ? 2 : 1;
-  return niceNormalized * magnitude;
-}
-
-function formatScaleDistance(meters: number) {
-  const feet = meters * feetPerMeter;
-  if (feet < 1_000) return `${Math.round(feet).toLocaleString()} ft`;
-
-  const miles = feet / 5_280;
-  if (miles < 10) return `${Number(miles.toFixed(miles < 2 ? 2 : 1)).toLocaleString()} mi`;
-  return `${Math.round(miles).toLocaleString()} mi`;
-}
-
-function mapScale(map: Map): MapScale {
-  const latitude = map.getCenter().lat;
-  const metersPerPixel = (Math.cos((latitude * Math.PI) / 180) * earthCircumferenceMeters) / (512 * 2 ** map.getZoom());
-  const denominator = Math.max(1, Math.round((metersPerPixel * cssPixelsPerInch) / metersPerInch));
-  const totalDistanceMeters = niceDistance(metersPerPixel * 180);
-  const totalWidth = Math.max(80, Math.round(totalDistanceMeters / metersPerPixel));
-  const segmentDistances = [0, totalDistanceMeters / 2, totalDistanceMeters];
-  const segments: ScaleSegment[] = segmentDistances.map((distanceMeters, index) => ({
-    width: index === 0 ? 0 : Math.round((distanceMeters - segmentDistances[index - 1]) / metersPerPixel),
-    label: index === 0 ? "0" : formatScaleDistance(distanceMeters),
-  }));
-
-  return {
-    segments,
-    totalWidth,
-    totalLabel: formatScaleDistance(totalDistanceMeters),
-    representativeFraction: `1:${denominator.toLocaleString()}`,
-  };
-}
-
-function syncCemeteryMarkers(map: Map, data: CemeteryData, markers: maplibregl.Marker[]) {
-  markers.splice(0).forEach((marker) => marker.remove());
-
-  cemeteryMarkersFeatureCollection(data).features.forEach((feature) => {
-    const element = document.createElement("button");
-    element.type = "button";
-    element.className = "cemetery-map-marker";
-    element.textContent = feature.properties.name;
-    element.setAttribute("aria-label", `Zoom to ${feature.properties.name}`);
-    element.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
-      const boundary = boundaries[feature.properties.index];
-      if (boundary) fitMapToGeometry(map, boundary.geometry);
-    });
-
-    const marker = new maplibregl.Marker({ element }).setLngLat(feature.geometry.coordinates as [number, number]).addTo(map);
-    markers.push(marker);
-  });
+function graveSelectionIndex(graves: GraveSpaceSummary[]) {
+  return new Map(graves.map((grave) => [graveSelectionKey(grave), grave]));
 }
 
 export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultIds, onSelectGrave }: CemeteryMapProps) {
   const [scale, setScale] = useState<MapScale>();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<Map | null>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
   const dataRef = useRef(data);
+  const gravesBySelectionKeyRef = useRef(graveSelectionIndex(data.graves));
   const visibleGravesRef = useRef(visibleGraves);
   const searchResultIdsRef = useRef(searchResultIds);
   const selectedRef = useRef(selectedGrave ? graveSelectionKey(selectedGrave) : undefined);
@@ -164,6 +40,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
   useEffect(() => {
     dataRef.current = data;
+    gravesBySelectionKeyRef.current = graveSelectionIndex(data.graves);
     visibleGravesRef.current = visibleGraves;
     searchResultIdsRef.current = searchResultIds;
     selectedRef.current = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
@@ -202,110 +79,22 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     map.on("load", () => {
       updateScale();
 
-      map.addSource("boundary", { type: "geojson", data: boundariesFeatureCollection(dataRef.current) });
-      map.addLayer({
-        id: "boundary-fill",
-        type: "fill",
-        source: "boundary",
-        paint: { "fill-color": "#dfe7d9", "fill-opacity": 0.9 },
-      });
-      map.addLayer({
-        id: "boundary-line",
-        type: "line",
-        source: "boundary",
-        paint: { "line-color": "#3b4f3d", "line-width": 3 },
-      });
+      addRasterLayers(map);
+      addBoundaryLayers(map, dataRef.current);
 
       fitMapToData(map, dataRef.current, 0);
 
-      map.addSource("sections", { type: "geojson", data: sectionsFeatureCollection(dataRef.current) });
-      map.addLayer({
-        id: "sections-fill",
-        type: "fill",
-        source: "sections",
-        paint: { "fill-color": "#f7f4ea", "fill-opacity": 0.28 },
-      });
-      map.addLayer({
-        id: "sections-line",
-        type: "line",
-        source: "sections",
-        paint: { "line-color": "#77856e", "line-width": 1.4, "line-dasharray": [2, 2] },
-      });
-      map.addLayer({
-        id: "sections-label",
-        type: "symbol",
-        source: "sections",
-        layout: {
-          "text-field": ["get", "name"],
-          "text-size": 14,
-          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-        },
-        paint: {
-          "text-color": "#3d473c",
-          "text-halo-color": "#f4f6ee",
-          "text-halo-width": 1,
-        },
-      });
-
-      map.addSource("graves", {
-        type: "geojson",
-        data: gravesFeatureCollection(visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current),
-      });
-
-      map.addLayer({
-        id: "graves-fill",
-        type: "fill",
-        source: "graves",
-        paint: {
-          "fill-color": [
-            "match",
-            ["get", "status"],
-            "available",
-            statusColors.available,
-            "reserved",
-            statusColors.reserved,
-            "occupied",
-            statusColors.occupied,
-            "sold",
-            statusColors.sold,
-            statusColors.unknown,
-          ],
-          "fill-opacity": ["case", ["boolean", ["get", "searchMatch"], false], 0.9, 0.72],
-        },
-      });
-
-      map.addLayer({
-        id: "graves-line",
-        type: "line",
-        source: "graves",
-        paint: {
-          "line-color": ["case", ["boolean", ["get", "selected"], false], "#111827", ["boolean", ["get", "searchMatch"], false], "#f9fafb", "#31413c"],
-          "line-width": ["case", ["boolean", ["get", "selected"], false], 4, ["boolean", ["get", "searchMatch"], false], 2.8, 1.1],
-        },
-      });
-
-      map.addLayer({
-        id: "grave-labels",
-        type: "symbol",
-        source: "graves",
-        layout: {
-          "text-field": ["get", "label"],
-          "text-size": 11,
-          "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-        },
-        paint: {
-          "text-color": "#17201d",
-          "text-halo-color": "#f8faf5",
-          "text-halo-width": 1,
-        },
-      });
+      addSectionLayers(map, dataRef.current);
+      addLotLayers(map, dataRef.current);
+      addGraveLayers(map, visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current);
+      addSectionLabelLayer(map);
 
       enforceMapLayerOrder(map);
       syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
 
       const selectGraveFeature = (event: maplibregl.MapLayerMouseEvent) => {
         const key = event.features?.[0]?.properties?.key;
-        const grave = dataRef.current.graves.find((item) => graveSelectionKey(item) === key);
+        const grave = typeof key === "string" ? gravesBySelectionKeyRef.current.get(key) : undefined;
         if (grave) onSelectRef.current(grave);
       };
 
@@ -346,7 +135,10 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     const sectionsSource = map.getSource("sections") as GeoJSONSource | undefined;
     sectionsSource?.setData(sectionsFeatureCollection(data));
 
-    if (boundarySource || sectionsSource) {
+    const lotsSource = map.getSource("lots") as GeoJSONSource | undefined;
+    lotsSource?.setData(lotsFeatureCollection(data));
+
+    if (boundarySource || sectionsSource || lotsSource) {
       syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
       fitMapToData(map, data);
     }
@@ -387,6 +179,13 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     <>
       <div ref={containerRef} className="map-canvas" aria-label="Interactive cemetery map" />
       <div className="map-controls" aria-label="Map controls">
+        <div className="north-arrow" role="img" aria-label="North arrow" title="North">
+          <span>N</span>
+          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+            <path className="north-arrow-needle" d="M20 3 L32 37 L20 30 L8 37 Z" />
+            <path className="north-arrow-cutout" d="M20 14 L25 29 L20 26 L15 29 Z" />
+          </svg>
+        </div>
         <button type="button" onClick={zoomIn} aria-label="Zoom in" title="Zoom in">
           <ZoomIn size={18} aria-hidden="true" />
         </button>
@@ -416,12 +215,24 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
         <section>
           <h2>Layers</h2>
           <span>
+            <i className="legend-symbol legend-imagery" />
+            PASDA imagery
+          </span>
+          <span>
             <i className="legend-symbol legend-boundary" />
             Cemetery boundary
           </span>
           <span>
+            <i className="legend-symbol legend-parcel" />
+            Parcel boundary
+          </span>
+          <span>
             <i className="legend-symbol legend-section" />
             Section polygon
+          </span>
+          <span>
+            <i className="legend-symbol legend-lot" />
+            Lot polygon
           </span>
           <span>
             <i className="legend-symbol legend-gravesite" />

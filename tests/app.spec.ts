@@ -78,6 +78,7 @@ test("burial notes show the corrected North Hills source name without import-onl
       body: JSON.stringify({
         boundaries: [{ type: "Feature", properties: { name: "Mock Cemetery" }, geometry: mockBoundaryGeometry }],
         sections: [],
+        lots: [],
         graves: [graveSummary],
       }),
     });
@@ -119,6 +120,72 @@ test("burial notes show the corrected North Hills source name without import-onl
   await expect(page.locator(".detail-panel")).not.toContainText("Person column:");
 });
 
+test("read-only users do not see owner or deed sections", async ({ page }) => {
+  const cemeteryId = "11111111-1111-4111-8111-111111111111";
+  const graveSummary = {
+    cemeteryId,
+    cemeteryName: "Mock Cemetery",
+    geometry: mockGraveGeometry,
+    id: "A-TEST",
+    lot: "1",
+    section: "A",
+    space: "TEST",
+    status: "occupied",
+  };
+
+  await page.route("**/api/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        subject: "reader",
+        email: "reader@example.test",
+        role: "reader",
+        permissions: {
+          canViewOwnership: false,
+          canManageUsers: false,
+          canCreateCemeteryRecords: false,
+          canUpdateCemeteryRecords: false,
+          canDeleteCemeteryRecords: false,
+        },
+      }),
+    });
+  });
+  await page.route("**/api/cemetery-map", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        boundaries: [{ type: "Feature", properties: { name: "Mock Cemetery" }, geometry: mockBoundaryGeometry }],
+        sections: [],
+        lots: [],
+        graves: [graveSummary],
+      }),
+    });
+  });
+  await page.route("**/api/search**", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: "[]" });
+  });
+  await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...graveSummary,
+        owners: [{ id: "owner-1", displayName: "Hidden Owner", contactNote: "Deed 100" }],
+        currentOwnerIds: ["owner-1"],
+        burials: [{ id: "burial-1", person: { id: "person-1", firstName: "Mabel", lastName: "Stone" } }],
+        ownershipHistory: [{ id: "event-1", ownerIds: ["owner-1"], eventType: "purchase", effectiveDate: "2020-01-01", recordedBy: "Deed book" }],
+      }),
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
+  await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
+  await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");
+  await expect(page.locator(".detail-panel")).not.toContainText("Hidden Owner");
+  await expect(page.getByLabel("Open admin management")).toHaveCount(0);
+});
+
 test("loads API-backed cemetery records and supports search", async ({ page }) => {
   const graveDetailRequests: string[] = [];
   page.on("request", (request) => {
@@ -129,6 +196,8 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
   await expect(page.locator(".panel-heading .eyebrow")).toContainText(/\d+ cemeteries/);
+  await expect(page.getByLabel("North arrow")).toBeVisible();
+  await expect(page.getByLabel("Open admin management")).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Fit all cemetery data" })).toBeVisible();
@@ -141,7 +210,10 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await page.mouse.wheel(0, -700);
   await expect.poll(() => page.getByLabel("Map scale").innerText()).not.toBe(initialScale);
   await expect(page.getByLabel("Map legend")).toContainText("Layers");
+  await expect(page.getByLabel("Map legend")).toContainText("PASDA imagery");
   await expect(page.getByLabel("Map legend")).toContainText("Cemetery boundary");
+  await expect(page.getByLabel("Map legend")).toContainText("Parcel boundary");
+  await expect(page.getByLabel("Map legend")).toContainText("Lot polygon");
   await expect(page.getByLabel("Map legend")).toContainText("Gravesite Status");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
@@ -158,7 +230,17 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   const mapData = await mapResponse.json();
   expect(mapData.boundaries).toEqual(expect.any(Array));
   expect(mapData.boundaries.length).toBeGreaterThanOrEqual(2);
+  expect(mapData.lots).toEqual(expect.any(Array));
+  expect(mapData.lots.length).toBeGreaterThanOrEqual(5);
   expect(mapData.graves.length).toBeGreaterThanOrEqual(11);
+  expect(mapData.lots[0]).toEqual(
+    expect.objectContaining({
+      id: expect.any(String),
+      name: expect.any(String),
+      section: expect.any(String),
+      geometry: expect.any(Object),
+    }),
+  );
   expect(mapData.graves.map((grave: { id: string }) => grave.id)).toContain("A-01-01");
   expect(mapData.graves.filter((grave: { id: string }) => grave.id === "A-01-01")).toHaveLength(2);
   expect(new Set(mapData.graves.map((grave: { cemeteryId: string; id: string }) => `${grave.cemeteryId}:${grave.id}`)).size).toBe(mapData.graves.length);
@@ -291,4 +373,139 @@ test("admin soft delete hides a grave space from reads and restore makes it visi
   expect(restoredMapData.graves.map((grave: { cemeteryId: string; id: string }) => `${grave.cemeteryId}:${grave.id}`)).toContain(
     `${graveToDelete.cemeteryId}:A-01-02`,
   );
+});
+
+test("admin can edit cemetery section alternate names", async ({ page }) => {
+  await page.route("**/api/admin/audit-events**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([
+        {
+          id: "audit-1",
+          occurredAt: "2026-05-26T14:00:00.000Z",
+          action: "update",
+          targetTable: "sections",
+          targetRecordId: "section-b",
+          actorEmail: "admin@example.test",
+          actorRole: "admin",
+          actorExternalSubject: "auth0|admin",
+          actorDatabaseUser: "cemetery_app",
+          actorSessionUser: "cemetery_app",
+          source: "api",
+          reason: "Correct section alias",
+          changedFields: ["alternate_names"],
+          previousValues: { alternate_names: ["OC"] },
+          newValues: { alternate_names: ["OC", "Original Cemetery"] },
+          metadata: {},
+        },
+      ]),
+    });
+  });
+  await page.route("**/api/admin/deed-registry-review**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        batches: [
+          {
+            id: "batch-updated",
+            cemeteryName: "Trinity Lutheran Church Cemetery",
+            sourceName: "Trinity Cemetery Registry 2022 - Updated 2022 final importer",
+            worksheetName: "Updated 2022",
+            importedBy: "Scott Peterson",
+            notes: "Reimport from merged main.",
+            createdAt: "2026-05-27T12:46:57.728Z",
+            entryCount: 258,
+            reviewCount: 3,
+            lowConfidenceCount: 46,
+          },
+        ],
+        selectedBatchId: "batch-updated",
+        summary: [{ ownershipScope: "section_g_gravesite", parseConfidence: "high", count: 18 }],
+        entries: [
+          {
+            id: "entry-1",
+            batchId: "batch-updated",
+            sourceRowNumber: 236,
+            rowType: "owner_record",
+            ownerDisplayName: "Robert & Elizabeth Watenpool",
+            rawLotText: "88",
+            rawSectionText: "",
+            rawRemarks: "Updated to show plot 88 based on investigation.",
+            deedOnFile: "No",
+            deedRegisterOnFile: "No",
+            parsedSectionName: "",
+            parsedSectionAlias: "",
+            parsedLotNumbers: ["88"],
+            parsedPlotNumbers: [],
+            parsedGraveNumbers: [],
+            ownershipScope: "whole_lot",
+            parseConfidence: "review",
+            parseNotes: ["Needs review before promotion."],
+            status: "staged",
+            allocationCount: 1,
+            relatedInvestigationNotes: [
+              {
+                sourceRowNumber: 16,
+                ownerDisplayName: "Robert & Elizabeth Watenpool",
+                rawRemarks: "Margaret Watenpool Blackford is buried in Section NA plot 88.",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Open admin management").click();
+  const adminSectionsNav = page.getByRole("navigation", { name: "Admin sections" });
+  await expect(adminSectionsNav.getByRole("button", { name: "Users" })).toBeVisible();
+
+  await adminSectionsNav.getByRole("button", { name: "Records" }).click();
+  await expect(page.getByRole("heading", { name: "Cemetery Records" })).toBeVisible();
+
+  await page.getByRole("combobox", { name: "Cemetery" }).selectOption({ label: "St. Mark Church Cemetery" });
+  await expect(page.getByRole("combobox", { name: "Section" })).toBeVisible();
+  await page.getByRole("combobox", { name: "Section" }).selectOption({ label: "Section A" });
+  await expect(page.getByRole("combobox", { name: "Lot" })).toBeVisible();
+  await page.getByRole("combobox", { name: "Lot" }).selectOption({ index: 1 });
+  const lotRow = page.locator(".record-editor-row").filter({ has: page.getByRole("heading", { name: "Lot" }) }).first();
+  await expect(lotRow.getByLabel("Lot audit timestamps")).toContainText("Created");
+  await expect(lotRow.getByLabel("Lot audit timestamps")).toContainText("Updated");
+  await page.getByRole("combobox", { name: "Lot" }).click();
+  await page.getByRole("combobox", { name: "Section" }).selectOption({ label: "Section B" });
+  await expect(page.getByRole("combobox", { name: "Lot" })).toHaveValue("");
+
+  const sectionRow = page.locator(".record-editor-row").filter({ has: page.getByLabel("Alternate names") }).first();
+  await expect(sectionRow).toBeVisible();
+  await expect(sectionRow).toContainText("Section");
+  await expect(sectionRow.getByLabel("Name", { exact: true })).toHaveValue("B");
+  await expect(sectionRow.getByLabel("Alternate names")).toHaveValue(/Original Cemetery/u);
+  await expect(sectionRow.getByLabel("Notes")).toBeVisible();
+  await expect(sectionRow.getByLabel("Section audit timestamps")).toContainText("Created");
+  await expect(sectionRow.getByLabel("Section audit timestamps")).toContainText("Updated");
+
+  await sectionRow.getByLabel("Alternate names").fill("OC\nOriginal Cemetery\nOld Churchyard");
+  await sectionRow.getByLabel("Notes").fill("Section B admin note");
+  await sectionRow.getByRole("button", { name: "Save section" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Section B saved." })).toBeVisible();
+
+  const recordsResponse = await page.request.get("/api/admin/cemetery-records");
+  expect(recordsResponse.ok()).toBe(true);
+  const records = await recordsResponse.json();
+  expect(records.sections.some((item: { sectionId: string; alternateNames: string[] }) => item.sectionId === "B" && item.alternateNames.includes("Old Churchyard"))).toBe(true);
+  expect(records.sections.some((item: { sectionId: string; notes: string }) => item.sectionId === "B" && item.notes === "Section B admin note")).toBe(true);
+
+  await adminSectionsNav.getByRole("button", { name: "Audit" }).click();
+  await expect(page.getByRole("heading", { name: "Audit Log" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Audit events" })).toContainText("admin@example.test");
+  await expect(page.getByRole("table", { name: "Audit events" })).toContainText("Updated");
+  await expect(page.getByLabel("Selected audit event detail")).toContainText("alternate_names");
+  await expect(page.getByLabel("Selected audit event detail")).toContainText("Original Cemetery");
+
+  await adminSectionsNav.getByRole("button", { name: "Deeds" }).click();
+  await expect(page.getByRole("heading", { name: "Deed Evidence" })).toBeVisible();
+  await expect(page.getByLabel("Staged deed registry evidence")).toContainText("Robert & Elizabeth Watenpool");
+  await expect(page.getByLabel("Staged deed registry evidence")).toContainText("Needs review before promotion.");
+  await expect(page.getByLabel("Related investigation notes")).toContainText("Section NA plot 88");
 });

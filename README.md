@@ -65,6 +65,7 @@ If another local PostgreSQL service already uses port `5432`, create `db/env/dev
 - Spatial import staging and topology-style validation checks
 - Esri File Geodatabase inspection, GeoJSON export, staging import, and cemetery/section promotion helpers
 - Excel headstone coordinate import that generates gravesite polygons, headstone points, and linked burials
+- Admin-only cemetery record editor with searchable cemetery, section, and lot pickers for cemetery names/notes, section names and alternate names, and lot names
 - Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
 - Express API backed by PostgreSQL/PostGIS
 
@@ -112,6 +113,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/cemetery-map` for GeoJSON cemetery boundaries, sections, and summary grave-space geometry used by the map
 - `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` for full grave details fetched when a grave is selected
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
+- `GET /api/admin/cemetery-records` for admin-only cemetery, section, and lot text records
+- `PUT /api/admin/cemetery-records/cemeteries/:id`, `/sections/:id`, and `/lots/:id` for admin-only text updates
 - `DELETE /api/cemeteries/:cemeteryId/grave-spaces/:id` for admin-only soft delete of a grave space
 - `POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore` for admin-only restore of a soft-deleted grave space
 
@@ -137,12 +140,39 @@ AUTH0_DOMAIN=<tenant>.auth0.com
 AUTH0_AUDIENCE=<api-identifier>
 ```
 
-In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader` and `admin` checks.
+In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, and `admin` checks.
+
+Auth0 API permissions must be configured in Auth0 manually. The API should include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user` and `admin`, then have affected users sign out and back in so their access tokens are refreshed.
+
+To configure those Auth0 API permissions and role assignments through the Auth0 Management API, run the environment-aware setup script with the target tenant values:
+
+```bash
+AUTH0_DOMAIN=<tenant>.auth0.com \
+AUTH0_AUDIENCE=<api-identifier> \
+AUTH0_MANAGEMENT_CLIENT_ID=<machine-to-machine-client-id> \
+AUTH0_MANAGEMENT_CLIENT_SECRET=<machine-to-machine-client-secret> \
+npm run auth0:configure
+```
+
+Use the same script for each environment by changing the Auth0 tenant, audience, and Management API credentials. The machine-to-machine client needs `read:resource_servers`, `update:resource_servers`, `read:roles`, `create:roles`, and `update:roles`.
+
+The Admin UI can find or create Auth0 database-connection users before saving the local application role when these server-only Management API settings are configured:
+
+```bash
+AUTH0_MANAGEMENT_CLIENT_ID=<machine-to-machine-client-id>
+AUTH0_MANAGEMENT_CLIENT_SECRET=<machine-to-machine-client-secret>
+AUTH0_MANAGEMENT_CONNECTION=Username-Password-Authentication
+AUTH0_PASSWORD_RESET_CLIENT_ID=<spa-client-id>
+```
+
+The Management API client needs `read:users` and `create:users`. `AUTH0_PASSWORD_RESET_CLIENT_ID` is optional; when present, newly created Auth0 database users also receive Auth0's password reset email so they can set their own password. Auth0 remains the identity provider; the application database remains the source of truth for application roles and active/inactive access.
+
+Admins can deactivate or reactivate users in the Admin UI. Deactivation sets the local `app_users.is_active` flag to `false`, which blocks application access after token validation without deleting the Auth0 account or the local mapping.
 
 For controlled integration testing behind a trusted local proxy, use `AUTH_MODE=trusted-header` and send:
 
 - `x-cemetery-user-subject`
 - `x-cemetery-user-email`
-- `x-cemetery-user-role` with `reader` or `admin`
+- `x-cemetery-user-role` with `reader`, `power-user`, or `admin`
 
 Do not expose trusted-header mode directly to the public internet.
