@@ -12,7 +12,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: `concurrently -k -s first -n api,web "APP_ENV=${appEnv} node server/index.mjs" "VITE_AUTH0_DOMAIN= VITE_AUTH0_CLIENT_ID= VITE_AUTH0_AUDIENCE= vite --mode ${mode} --host 127.0.0.1 --port 5173 --strictPort"`,
+    command: `concurrently -k -s first -n api,web "AUTH_MODE=disabled APP_ENV=${appEnv} node server/index.mjs" "VITE_AUTH0_DOMAIN= VITE_AUTH0_CLIENT_ID= VITE_AUTH0_AUDIENCE= vite --mode ${mode} --host 127.0.0.1 --port 5173 --strictPort"`,
     url: "http://127.0.0.1:5173",
     reuseExistingServer: true,
   },

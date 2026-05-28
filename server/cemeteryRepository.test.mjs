@@ -24,6 +24,20 @@ function queryRows(sql) {
       },
     ];
   }
+  if (sql.includes("ST_AsGeoJSON(headstones.geometry)::json")) {
+    return [
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        headstone_id: "HS-1",
+        cemetery_id: "11111111-1111-4111-8111-111111111111",
+        cemetery_name: "Sequential Cemetery",
+        gravesite_id: "A-01-01",
+        marker_type_label: "Upright headstone",
+        condition_code: "good",
+        geometry: '{"type":"Point","coordinates":[-80,40]}',
+      },
+    ];
+  }
   if (sql.includes("FROM gravesites")) return [];
   if (sql.includes("FROM owners")) return [];
   if (sql.includes("FROM burials")) return [];
@@ -78,6 +92,23 @@ test("repository read queries do not overlap on the same pg client", async () =>
   await getCemeteryData(pool);
   await getDetailedCemeteryData(pool);
   await getGraveSpace(pool, "11111111-1111-4111-8111-111111111111", "A-01-01");
+});
+
+test("cemetery map data includes lightweight headstone point summaries", async () => {
+  const data = await getCemeteryData(strictSequentialPool());
+
+  assert.deepEqual(data.headstones[0], {
+    id: "33333333-3333-4333-8333-333333333333",
+    headstoneId: "HS-1",
+    cemeteryId: "11111111-1111-4111-8111-111111111111",
+    cemeteryName: "Sequential Cemetery",
+    gravesiteId: "A-01-01",
+    graveKey: "11111111-1111-4111-8111-111111111111:A-01-01",
+    label: "HS-1",
+    markerType: "Upright headstone",
+    condition: "good",
+    geometry: { type: "Point", coordinates: [-80, 40] },
+  });
 });
 
 test("repository can redact ownership data from grave detail reads", async () => {

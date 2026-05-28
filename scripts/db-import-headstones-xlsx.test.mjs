@@ -46,7 +46,7 @@ test("importable spreadsheet rows map Nhg columns into corrected source notes", 
   assert.equal(buildBurialNotes(buildSourceNotes(importedRows[0]), importedRows[0].people[0]), "Imported from headstone spreadsheet row 9. North Hills Genealogists section: B. North Hills Genealogists row: 4. North Hills Genealogists page: 22. Person column: 1.");
 });
 
-test("importable spreadsheet rows generate 10 by 20 foot lots and 4 by 10 foot gravesites", () => {
+test("importable spreadsheet rows generate 10 by 20 foot lots and 10 by 4 foot gravesites", () => {
   const [imported] = importableRows(
     [
       {
@@ -72,8 +72,53 @@ test("importable spreadsheet rows generate 10 by 20 foot lots and 4 by 10 foot g
   const lotHeight = lotRing[2][1] - lotRing[1][1];
 
   assert.equal(imported.lotId, "17");
-  assert.equal(Number((lotWidth / graveWidth).toFixed(2)), 5);
-  assert.equal(Number((lotHeight / graveHeight).toFixed(2)), 1);
+  assert.equal(Number((lotWidth / graveWidth).toFixed(2)), 2);
+  assert.equal(Number((lotHeight / graveHeight).toFixed(2)), 2.5);
+});
+
+test("section A through D gravesites place the headstone at the center of the left edge", () => {
+  const [sectionC] = importableRows(
+    [
+      {
+        rowNumber: 12,
+        row: {
+          Latitude: 40,
+          Longitude: -80,
+          Person1First: "Katherine",
+          Person1Last: "Johnson",
+          NhgSection: "C",
+        },
+      },
+    ],
+    {},
+  );
+  const [sectionE] = importableRows(
+    [
+      {
+        rowNumber: 13,
+        row: {
+          Latitude: 40,
+          Longitude: -80,
+          Person1First: "Dorothy",
+          Person1Last: "Vaughan",
+          NhgSection: "E",
+        },
+      },
+    ],
+    {},
+  );
+
+  const sectionCRing = sectionC.geometry.coordinates[0][0];
+  const sectionERing = sectionE.geometry.coordinates[0][0];
+  const sectionCWest = sectionCRing[0][0];
+  const sectionCEast = sectionCRing[1][0];
+  const sectionESouthWest = sectionERing[0][0];
+  const sectionENorthEast = sectionERing[2][0];
+
+  assert.equal(Number(sectionCWest.toFixed(10)), -80);
+  assert(sectionCEast > -80);
+  assert.equal(Number(((sectionCRing[0][1] + sectionCRing[3][1]) / 2).toFixed(10)), 40);
+  assert.equal(Number(((sectionESouthWest + sectionENorthEast) / 2).toFixed(10)), -80);
 });
 
 test("upsertHeadstoneGravesite restores soft-deleted marker links", async () => {

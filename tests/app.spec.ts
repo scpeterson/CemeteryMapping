@@ -80,6 +80,7 @@ test("burial notes show the corrected North Hills source name without import-onl
         sections: [],
         lots: [],
         graves: [graveSummary],
+        headstones: [],
       }),
     });
   });
@@ -159,6 +160,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
         sections: [],
         lots: [],
         graves: [graveSummary],
+        headstones: [],
       }),
     });
   });
@@ -280,6 +282,7 @@ test("power users can edit headstone marker details from grave detail", async ({
         sections: [],
         lots: [],
         graves: [graveSummary],
+        headstones: [],
       }),
     });
   });
@@ -354,6 +357,8 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByLabel("Map legend")).toContainText("Parcel boundary");
   await expect(page.getByLabel("Map legend")).toContainText("Lot polygon");
   await expect(page.getByLabel("Map legend")).toContainText("Gravesite Status");
+  await expect(page.getByLabel("Map legend")).toContainText("Headstone marker");
+  await expect(page.getByLabel("Map legend")).toContainText("Cemetery label");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.getByText("St. Mark Church Cemetery").first()).toBeVisible();
@@ -372,6 +377,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   expect(mapData.lots).toEqual(expect.any(Array));
   expect(mapData.lots.length).toBeGreaterThanOrEqual(5);
   expect(mapData.graves.length).toBeGreaterThanOrEqual(11);
+  expect(mapData.headstones).toEqual(expect.any(Array));
   expect(mapData.lots[0]).toEqual(
     expect.objectContaining({
       id: expect.any(String),

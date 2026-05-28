@@ -4,4 +4,5 @@ export const cemeteryData: CemeteryData = {
   sections: [],
   lots: [],
   graves: [],
+  headstones: [],
 };

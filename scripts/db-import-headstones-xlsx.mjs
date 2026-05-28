@@ -7,15 +7,15 @@ import { currentEnvironment, loadDbEnvironment } from "./lib/run-liquibase.mjs";
 
 const { Pool } = pg;
 const feetToMeters = 0.3048;
-const defaultLengthFeet = 4;
-const defaultWidthFeet = 10;
+const defaultLengthFeet = 10;
+const defaultWidthFeet = 4;
 const defaultLotLengthFeet = 20;
 const defaultLotWidthFeet = 10;
 const northHillsSourceName = "North Hills Genealogists";
 
 function usage() {
   console.error(
-    "Usage: npm run db:import:headstones -- /path/to/headstones.xlsx [--facility-id 1] [--sheet SheetName] [--length-feet 4] [--width-feet 10] [--lot-length-feet 20] [--lot-width-feet 10] [--allow-spatial-errors] [--dry-run]",
+    "Usage: npm run db:import:headstones -- /path/to/headstones.xlsx [--facility-id 1] [--sheet SheetName] [--length-feet 10] [--width-feet 4] [--lot-length-feet 20] [--lot-width-feet 10] [--allow-spatial-errors] [--dry-run]",
   );
 }
 
@@ -114,14 +114,26 @@ function peopleFromRow(row) {
   return people;
 }
 
-function rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters) {
+const leftEdgeAnchoredSections = new Set(["A", "B", "C", "D"]);
+
+function normalizedSectionId(sectionId) {
+  return String(sectionId ?? "")
+    .trim()
+    .toUpperCase();
+}
+
+function shouldAnchorGravesiteOnLeftEdge(sectionId) {
+  return leftEdgeAnchoredSections.has(normalizedSectionId(sectionId));
+}
+
+function rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters, { anchor = "center" } = {}) {
   const latMeters = 111_320;
   const lonMeters = latMeters * Math.cos((latitude * Math.PI) / 180);
-  const halfWidthDegrees = eastWestMeters / 2 / lonMeters;
+  const widthDegrees = eastWestMeters / lonMeters;
   const halfHeightDegrees = northSouthMeters / 2 / latMeters;
 
-  const west = longitude - halfWidthDegrees;
-  const east = longitude + halfWidthDegrees;
+  const west = anchor === "left-edge" ? longitude : longitude - widthDegrees / 2;
+  const east = anchor === "left-edge" ? longitude + widthDegrees : longitude + widthDegrees / 2;
   const south = latitude - halfHeightDegrees;
   const north = latitude + halfHeightDegrees;
 
@@ -207,6 +219,8 @@ export function importableRows(rows, options) {
       const tlcPlot = textCell(row, "TlcPlot");
       const sourceGraveNumber = textCell(row, "GraveNumber");
       const lotId = [tlcPlot, sourceGraveNumber].find((value) => value && value.length <= 5) ?? graveId;
+      const sectionId = textCell(row, "NhgSection");
+      const graveAnchor = shouldAnchorGravesiteOnLeftEdge(sectionId) ? "left-edge" : "center";
       return {
         rowNumber,
         graveId,
@@ -214,7 +228,7 @@ export function importableRows(rows, options) {
         gravesiteId: `TLC-GPS-${graveId}`,
         headstoneId: `TLC-HS-${graveId}`,
         name: people[0]?.fullName ?? `Imported headstone ${graveId}`,
-        sectionId: textCell(row, "NhgSection"),
+        sectionId,
         nhgRow: textCell(row, "NhgRow"),
         nhgPage: textCell(row, "NhgPage"),
         tlcSec: textCell(row, "TlcSec"),
@@ -222,7 +236,7 @@ export function importableRows(rows, options) {
         sourceGraveNumber,
         latitude,
         longitude,
-        geometry: rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters),
+        geometry: rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters, { anchor: graveAnchor }),
         lotGeometry: rectangleMultiPolygon(longitude, latitude, lotEastWestMeters, lotNorthSouthMeters),
         sourceProperties: row,
         people,

@@ -91,6 +91,21 @@ function toHeadstone(row) {
   };
 }
 
+function toHeadstoneSummary(row) {
+  return {
+    id: row.id,
+    headstoneId: row.headstone_id,
+    cemeteryId: row.cemetery_id,
+    cemeteryName: row.cemetery_name,
+    gravesiteId: row.gravesite_id,
+    graveKey: `${row.cemetery_id}:${row.gravesite_id}`,
+    label: row.headstone_id,
+    markerType: row.marker_type_label ?? "Unknown",
+    condition: row.condition_code ?? "unknown",
+    geometry: parseGeometry(row.geometry),
+  };
+}
+
 function toGraveSummary(grave) {
   return {
     id: grave.gravesite_id,
@@ -293,6 +308,40 @@ async function selectGravesForCemeteries(client, cemeteryIds, { includeCost = fa
       WHERE gravesites.cemetery_id = ANY($1::uuid[])
         AND gravesites.deleted_at IS NULL
       ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
+    `,
+    [cemeteryIds],
+  );
+
+  return result.rows;
+}
+
+async function selectHeadstoneSummariesForCemeteries(client, cemeteryIds) {
+  const result = await client.query(
+    `
+      SELECT
+        headstones.id::text,
+        headstones.headstone_id,
+        gravesites.cemetery_id::text,
+        cemeteries.name AS cemetery_name,
+        gravesites.gravesite_id,
+        marker_types.label AS marker_type_label,
+        headstone_condition_types.code AS condition_code,
+        ST_AsGeoJSON(headstones.geometry)::json AS geometry
+      FROM headstones
+      JOIN gravesites
+        ON gravesites.id = headstones.gravesite_uuid
+      JOIN cemeteries
+        ON cemeteries.id = gravesites.cemetery_id
+      JOIN marker_types
+        ON marker_types.id = headstones.marker_type_id
+      JOIN headstone_condition_types
+        ON headstone_condition_types.id = headstones.condition_type_id
+      WHERE gravesites.cemetery_id = ANY($1::uuid[])
+        AND headstones.deleted_at IS NULL
+        AND gravesites.deleted_at IS NULL
+        AND cemeteries.deleted_at IS NULL
+        AND headstones.geometry IS NOT NULL
+      ORDER BY cemeteries.name, gravesites.gravesite_id, headstones.headstone_id
     `,
     [cemeteryIds],
   );
@@ -599,6 +648,7 @@ export async function getCemeteryData(pool) {
     const sections = await selectSectionsForCemeteries(client, cemeteryIds);
     const lots = await selectLotsForCemeteries(client, cemeteryIds);
     const graves = await selectGravesForCemeteries(client, cemeteryIds);
+    const headstones = await selectHeadstoneSummariesForCemeteries(client, cemeteryIds);
 
     return {
       boundaries: cemeteries.map(toBoundaryFeature),
@@ -610,6 +660,7 @@ export async function getCemeteryData(pool) {
       sections: sections.map(toSection),
       lots: lots.map(toLot),
       graves: graves.map(toGraveSummary),
+      headstones: headstones.map(toHeadstoneSummary),
     };
   } finally {
     client.release();

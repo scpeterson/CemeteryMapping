@@ -56,6 +56,19 @@ export type Headstone = {
   auditEventId?: string;
 };
 
+export type HeadstoneSummary = {
+  id: string;
+  headstoneId: string;
+  cemeteryId: string;
+  cemeteryName: string;
+  gravesiteId: string;
+  graveKey: string;
+  label: string;
+  markerType: string;
+  condition: string;
+  geometry: GeoJSON.Point;
+};
+
 export type HeadstoneLookups = {
   markerTypes: LookupOption[];
   materials: LookupOption[];
@@ -114,6 +127,7 @@ export type CemeteryData = {
   sections: CemeterySection[];
   lots: CemeteryLot[];
   graves: GraveSpaceSummary[];
+  headstones: HeadstoneSummary[];
 };
 
 export type SearchMatch = {
