@@ -27,6 +27,7 @@ Migration `014-database-audit-triggers.sql` attaches row-level audit triggers to
 - `headstone_gravesites`
 - `headstone_burials`
 - `app_users`
+- `app_user_cemetery_access`
 - `app_roles`
 
 Each insert, update, soft delete, restore, and hard delete creates an `audit_events` row. Update events store only the changed fields in `previous_values` and `new_values`; create and hard-delete events store the full new or old row.

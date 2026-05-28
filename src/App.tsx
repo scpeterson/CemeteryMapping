@@ -150,6 +150,13 @@ export default function App() {
   const matches = remoteMatches ?? localMatches;
   const visibleGraves = useMemo(() => data.graves.filter((grave) => selectedStatuses.has(grave.status)), [data, selectedStatuses]);
   const searchResultIds = useMemo(() => new Set(matches.map((match) => graveSelectionKey(match.grave))), [matches]);
+  const hasScopedEditAccess = currentUser?.role === "power-user" || currentUser?.role === "cemetery-admin";
+  const canViewSelectedOwnership =
+    currentUser?.role === "admin" ||
+    (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
+  const canUpdateSelectedHeadstones =
+    currentUser?.role === "admin" ||
+    (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
   const cemeteryScopeLabel = useMemo(() => {
     const cemeteryNames = [...new Set((data.boundaries ?? (data.boundary ? [data.boundary] : [])).map((boundary) => boundary.properties.name))];
     if (cemeteryNames.length === 0) return "Cemetery records";
@@ -200,13 +207,13 @@ export default function App() {
         <div className={`environment-badge environment-${appEnvironment.toLowerCase()}`} title={`API: ${apiBaseUrl}`}>
           {appEnvironment}
         </div>
-        {currentUser?.permissions.canManageUsers ? (
+        {currentUser?.permissions.canOpenAdminPanel ? (
           <button type="button" className="admin-open-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin management">
             <ShieldCheck size={16} aria-hidden="true" />
             Admin
           </button>
         ) : null}
-        {isAdminPanelOpen ? <AdminPanel onClose={() => setIsAdminPanelOpen(false)} /> : null}
+        {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onClose={() => setIsAdminPanelOpen(false)} /> : null}
         {isLoading || loadError ? (
           <div className={`data-status ${loadError ? "is-error" : ""}`} role="status">
             {loadError ? `API unavailable: ${loadError}` : "Loading cemetery records..."}
@@ -229,8 +236,8 @@ export default function App() {
         owners={selectedGraveOwners}
         summary={selectedGrave}
         grave={selectedGraveDetails}
-        canViewOwnership={currentUser?.permissions.canViewOwnership ?? false}
-        canUpdateHeadstones={currentUser?.permissions.canUpdateHeadstones ?? false}
+        canViewOwnership={canViewSelectedOwnership}
+        canUpdateHeadstones={canUpdateSelectedHeadstones}
         headstoneLookups={headstoneLookups}
         onSaveHeadstone={saveHeadstone}
         isLoading={isDetailLoading}

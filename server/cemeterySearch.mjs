@@ -55,8 +55,9 @@ function groupSearchRows(rows, cleanedQuery) {
   return [...matchesByGrave.values()];
 }
 
-export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true } = {}) {
+export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds } = {}) {
   const cleanedQuery = normalize(query.trim());
+  const scopedOwnershipCemeteryIds = ownershipCemeteryIds?.map((id) => String(id));
   const result = await pool.query(
     `
       WITH status_labels(status, label) AS (
@@ -122,6 +123,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           SELECT COALESCE(NULLIF(concat_ws(' and ', NULLIF(owners.owner, ''), NULLIF(owners.co_owner, '')), ''), 'Unknown owner') AS display_name
         ) owner_names
         WHERE $3::boolean
+          AND ($4::text[] IS NULL OR base_graves.cemetery_id = ANY($4::text[]))
           AND $1 <> ''
           AND owners.gravesite_uuid = base_graves.grave_uuid
           AND owners.deleted_at IS NULL
@@ -134,6 +136,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           SELECT COALESCE(NULLIF(concat_ws(' and ', NULLIF(owners.owner, ''), NULLIF(owners.co_owner, '')), ''), 'Unknown owner') AS display_name
         ) owner_names
         WHERE $3::boolean
+          AND ($4::text[] IS NULL OR base_graves.cemetery_id = ANY($4::text[]))
           AND $1 <> ''
           AND owners.gravesite_uuid = base_graves.grave_uuid
           AND owners.deleted_at IS NULL
@@ -143,6 +146,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         SELECT 'Ownership date', owners.sale_date::text
         FROM owners
         WHERE $3::boolean
+          AND ($4::text[] IS NULL OR base_graves.cemetery_id = ANY($4::text[]))
           AND $1 <> ''
           AND owners.gravesite_uuid = base_graves.grave_uuid
           AND owners.deleted_at IS NULL
@@ -193,7 +197,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         reasons.reason_label,
         reasons.reason_value
     `,
-    [cleanedQuery, statuses, includeOwnership],
+    [cleanedQuery, statuses, includeOwnership, scopedOwnershipCemeteryIds],
   );
 
   return groupSearchRows(result.rows, cleanedQuery);

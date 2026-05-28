@@ -7,11 +7,15 @@ const systemRoles = [
   },
   {
     name: "power-user",
-    description: "Can view cemetery records, view and edit deed/owner information, and update existing cemetery records.",
+    description: "Can view cemetery records, view and edit deed/owner information for assigned cemeteries, and has read-only access to other cemeteries.",
+  },
+  {
+    name: "cemetery-admin",
+    description: "Can administer assigned cemeteries and has read-only access to other cemeteries.",
   },
   {
     name: "admin",
-    description: "Can manage users and roles, view and edit all cemetery records, add structural records, and soft-delete records.",
+    description: "Can manage users and roles, view and edit all cemetery records, add structural records, and soft-delete records across the whole system.",
   },
 ];
 
@@ -30,6 +34,7 @@ function toUser(row) {
     email: row.email,
     displayName: row.display_name ?? "",
     role: row.role_name,
+    assignedCemeteryIds: row.assigned_cemetery_ids ?? [],
     isActive: row.is_active,
     lastAuthenticatedAt: row.last_authenticated_at?.toISOString?.() ?? row.last_authenticated_at ?? undefined,
     createdAt: row.created_at?.toISOString?.() ?? row.created_at,
@@ -42,8 +47,9 @@ export async function ensureSystemRoles(pool) {
     INSERT INTO app_roles (role_name, description)
     VALUES
       ('reader', 'Can view the map, gravesites, and burial information, but cannot view deed/owner information.'),
-      ('power-user', 'Can view cemetery records, view and edit deed/owner information, and update existing cemetery records.'),
-      ('admin', 'Can manage users and roles, view and edit all cemetery records, add structural records, and soft-delete records.')
+      ('power-user', 'Can view cemetery records, view and edit deed/owner information for assigned cemeteries, and has read-only access to other cemeteries.'),
+      ('cemetery-admin', 'Can administer assigned cemeteries and has read-only access to other cemeteries.'),
+      ('admin', 'Can manage users and roles, view and edit all cemetery records, add structural records, and soft-delete records across the whole system.')
     ON CONFLICT (role_name) DO UPDATE
     SET description = EXCLUDED.description
   `);
@@ -64,8 +70,9 @@ export async function listRoles(pool) {
       CASE app_roles.role_name
         WHEN 'reader' THEN 1
         WHEN 'power-user' THEN 2
-        WHEN 'admin' THEN 3
-        ELSE 4
+        WHEN 'cemetery-admin' THEN 3
+        WHEN 'admin' THEN 4
+        ELSE 5
       END,
       app_roles.role_name
   `);
@@ -75,11 +82,67 @@ export async function listRoles(pool) {
 
 export async function listUsers(pool) {
   const result = await pool.query(`
-    SELECT id::text, external_subject, email, display_name, role_name, is_active, last_authenticated_at, created_at, updated_at
+    SELECT
+      app_users.id::text,
+      app_users.external_subject,
+      app_users.email,
+      app_users.display_name,
+      app_users.role_name,
+      app_users.is_active,
+      app_users.last_authenticated_at,
+      app_users.created_at,
+      app_users.updated_at,
+      COALESCE(array_remove(array_agg(app_user_cemetery_access.cemetery_id::text ORDER BY cemeteries.name, app_user_cemetery_access.cemetery_id::text), NULL), '{}'::text[]) AS assigned_cemetery_ids
     FROM app_users
-    ORDER BY is_active DESC, lower(email), id
+    LEFT JOIN app_user_cemetery_access
+      ON app_user_cemetery_access.app_user_id = app_users.id
+    LEFT JOIN cemeteries
+      ON cemeteries.id = app_user_cemetery_access.cemetery_id
+    GROUP BY app_users.id
+    ORDER BY app_users.is_active DESC, lower(app_users.email), app_users.id
   `);
   return result.rows.map(toUser);
+}
+
+async function replaceCemeteryAssignments(client, userId, assignedCemeteryIds) {
+  await client.query("DELETE FROM app_user_cemetery_access WHERE app_user_id = $1", [userId]);
+  const cemeteryIds = [...new Set((assignedCemeteryIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean))];
+  for (const cemeteryId of cemeteryIds) {
+    await client.query(
+      `
+        INSERT INTO app_user_cemetery_access (app_user_id, cemetery_id, can_edit)
+        VALUES ($1, $2, true)
+      `,
+      [userId, cemeteryId],
+    );
+  }
+}
+
+async function selectUserById(client, id) {
+  const result = await client.query(
+    `
+      SELECT
+        app_users.id::text,
+        app_users.external_subject,
+        app_users.email,
+        app_users.display_name,
+        app_users.role_name,
+        app_users.is_active,
+        app_users.last_authenticated_at,
+        app_users.created_at,
+        app_users.updated_at,
+        COALESCE(array_remove(array_agg(app_user_cemetery_access.cemetery_id::text ORDER BY cemeteries.name, app_user_cemetery_access.cemetery_id::text), NULL), '{}'::text[]) AS assigned_cemetery_ids
+      FROM app_users
+      LEFT JOIN app_user_cemetery_access
+        ON app_user_cemetery_access.app_user_id = app_users.id
+      LEFT JOIN cemeteries
+        ON cemeteries.id = app_user_cemetery_access.cemetery_id
+      WHERE app_users.id = $1
+      GROUP BY app_users.id
+    `,
+    [id],
+  );
+  return result.rows[0] ? toUser(result.rows[0]) : undefined;
 }
 
 export async function createUser(pool, user) {
@@ -88,11 +151,12 @@ export async function createUser(pool, user) {
       `
         INSERT INTO app_users (external_subject, email, display_name, role_name, is_active)
         VALUES ($1, $2, $3, $4, $5)
-        RETURNING id::text, external_subject, email, display_name, role_name, is_active, last_authenticated_at, created_at, updated_at
+        RETURNING id::text
       `,
       [user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
     );
-    return toUser(result.rows[0]);
+    await replaceCemeteryAssignments(client, result.rows[0].id, user.assignedCemeteryIds);
+    return selectUserById(client, result.rows[0].id);
   });
 }
 
@@ -107,11 +171,13 @@ export async function updateUser(pool, id, user) {
             role_name = $5,
             is_active = $6
         WHERE id = $1
-        RETURNING id::text, external_subject, email, display_name, role_name, is_active, last_authenticated_at, created_at, updated_at
+        RETURNING id::text
       `,
       [id, user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
     );
-    return result.rows[0] ? toUser(result.rows[0]) : undefined;
+    if (!result.rows[0]) return undefined;
+    await replaceCemeteryAssignments(client, id, user.assignedCemeteryIds);
+    return selectUserById(client, id);
   });
 }
 

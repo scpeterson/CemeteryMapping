@@ -32,9 +32,11 @@ import type {
   LookupRecord,
   LotTextRecord,
   SectionTextRecord,
+  CurrentUser,
 } from "../types";
 
 type AdminPanelProps = {
+  currentUser: CurrentUser;
   onClose: () => void;
 };
 
@@ -49,18 +51,21 @@ const blankUser: UserFormState = {
   email: "",
   displayName: "",
   role: "reader",
+  assignedCemeteryIds: [],
   isActive: true,
 };
 
 const roleLabels: Record<AppRoleName, string> = {
   reader: "Read-only",
   "power-user": "Power user",
+  "cemetery-admin": "Cemetery admin",
   admin: "Admin",
 };
 
 const roleDescriptions: Record<AppRoleName, string> = {
   reader: "Read-only users can view map, gravesite, and burial information, but cannot see deed or owner information.",
-  "power-user": "Power users can view deed and owner information and update existing cemetery records.",
+  "power-user": "Power users can view deed and owner information and update existing records for their assigned cemetery.",
+  "cemetery-admin": "Cemetery admins can administer their assigned cemetery and have read-only access to others.",
   admin: "Admins can manage users, add cemetery records, update records, and soft-delete records.",
 };
 
@@ -83,6 +88,7 @@ function userFormFromUser(user: AppUser): UserFormState {
     email: user.email,
     displayName: user.displayName,
     role: user.role,
+    assignedCemeteryIds: user.assignedCemeteryIds,
     isActive: user.isActive,
   };
 }
@@ -150,6 +156,7 @@ const auditActionLabels: Record<string, string> = {
 const auditTableLabels: Record<string, string> = {
   app_roles: "Roles",
   app_users: "Users",
+  app_user_cemetery_access: "User cemetery assignments",
   blocks: "Blocks",
   burials: "Burials",
   cemeteries: "Cemeteries",
@@ -236,8 +243,8 @@ function lookupDuplicateSortOrders(rows: LookupRecord[]) {
   return new Set([...sortCounts.entries()].filter(([, count]) => count > 1).map(([sortOrder]) => sortOrder));
 }
 
-export function AdminPanel({ onClose }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<AdminTab>("users");
+export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
+  const [activeTab, setActiveTab] = useState<AdminTab>(currentUser.permissions.canManageUsers ? "users" : "records");
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -310,12 +317,19 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     [selectedLookupAllRows, showInactiveLookups],
   );
   const duplicateLookupSortOrders = useMemo(() => lookupDuplicateSortOrders(selectedLookupAllRows), [selectedLookupAllRows]);
+  const canManageUsers = currentUser.permissions.canManageUsers;
+  const canUseSystemAdminTabs = currentUser.role === "admin";
+  const canEditSelectedCemetery = currentUser.role === "admin" || (selectedCemeteryId ? currentUser.assignedCemeteryIds.includes(selectedCemeteryId) : false);
 
   useEffect(() => {
     let isCurrent = true;
     setIsLoading(true);
 
-    Promise.all([fetchAdminRoles(), fetchAdminUsers(), fetchCemeteryAdminRecords()])
+    Promise.all([
+      canManageUsers ? fetchAdminRoles() : Promise.resolve([]),
+      canManageUsers ? fetchAdminUsers() : Promise.resolve([]),
+      fetchCemeteryAdminRecords(),
+    ])
       .then(([nextRoles, nextUsers, nextCemeteryRecords]) => {
         if (!isCurrent) return;
         setRoles(nextRoles);
@@ -333,7 +347,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     return () => {
       isCurrent = false;
     };
-  }, []);
+  }, [canManageUsers]);
 
   useEffect(() => {
     if (!cemeteryPickerValue || selectedCemeteryId) return;
@@ -517,6 +531,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
         email: user.email,
         displayName: user.displayName,
         role: user.role,
+        assignedCemeteryIds: user.assignedCemeteryIds,
         isActive: !user.isActive,
       });
       replaceUser(saved);
@@ -770,7 +785,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
       <div className="admin-workspace">
         <nav className="admin-nav" aria-label="Admin sections">
-          <button
+          {canManageUsers ? <button
             type="button"
             aria-current={activeTab === "users" ? "page" : undefined}
             className={activeTab === "users" ? "is-active" : undefined}
@@ -779,7 +794,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           >
             <UserCog size={16} aria-hidden="true" />
             <span>Users</span>
-          </button>
+          </button> : null}
           <button
             type="button"
             aria-current={activeTab === "records" ? "page" : undefined}
@@ -790,7 +805,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             <Landmark size={16} aria-hidden="true" />
             <span>Records</span>
           </button>
-          <button
+          {canUseSystemAdminTabs ? <button
             type="button"
             aria-current={activeTab === "lookups" ? "page" : undefined}
             className={activeTab === "lookups" ? "is-active" : undefined}
@@ -799,8 +814,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           >
             <ListChecks size={16} aria-hidden="true" />
             <span>Lookups</span>
-          </button>
-          <button
+          </button> : null}
+          {canUseSystemAdminTabs ? <button
             type="button"
             aria-current={activeTab === "deeds" ? "page" : undefined}
             className={activeTab === "deeds" ? "is-active" : undefined}
@@ -809,8 +824,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           >
             <FileSearch size={16} aria-hidden="true" />
             <span>Deeds</span>
-          </button>
-          <button
+          </button> : null}
+          {canUseSystemAdminTabs ? <button
             type="button"
             aria-current={activeTab === "audit" ? "page" : undefined}
             className={activeTab === "audit" ? "is-active" : undefined}
@@ -819,12 +834,12 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           >
             <History size={16} aria-hidden="true" />
             <span>Audit</span>
-          </button>
+          </button> : null}
         </nav>
 
         <div className="admin-content">
 
-      {activeTab === "users" ? (
+      {activeTab === "users" && canManageUsers ? (
         <>
       <section className="admin-section">
         <div className="section-title">
@@ -876,7 +891,14 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             Role
             <select
               value={form.role}
-              onChange={(event) => setForm((current) => ({ ...current, role: event.target.value as AppRoleName }))}
+              onChange={(event) => {
+                const role = event.target.value as AppRoleName;
+                setForm((current) => ({
+                  ...current,
+                  role,
+                  assignedCemeteryIds: role === "power-user" || role === "cemetery-admin" ? current.assignedCemeteryIds : [],
+                }));
+              }}
               title={roleDescriptions[form.role]}
             >
               {roleOptions.map((role) => (
@@ -886,6 +908,29 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
               ))}
             </select>
           </label>
+          {form.role === "power-user" || form.role === "cemetery-admin" ? (
+            <label>
+              Assigned cemetery
+              <select
+                value={form.assignedCemeteryIds[0] ?? ""}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    assignedCemeteryIds: event.target.value ? [event.target.value] : [],
+                  }))
+                }
+                required
+                title="The cemetery this user can edit. They retain read-only access to other cemeteries."
+              >
+                <option value="">Select cemetery</option>
+                {cemeteryRecords.cemeteries.map((cemetery) => (
+                  <option key={cemetery.id} value={cemetery.id}>
+                    {cemeteryPickerLabel(cemetery)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <label className="checkbox-row" title="Inactive users are kept in the database but cannot access the application.">
             <input
               type="checkbox"
@@ -920,6 +965,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                   <small>{user.email}</small>
                 </span>
                 <span title={roleDescriptions[user.role]}>{roleLabel(user.role)}</span>
+                <small>{user.assignedCemeteryIds.length ? `${user.assignedCemeteryIds.length} assigned cemeter${user.assignedCemeteryIds.length === 1 ? "y" : "ies"}` : "No cemetery assignment"}</small>
                 <span
                   className={user.isActive ? "status-active" : "status-inactive"}
                   title={user.isActive ? "This user can currently access the application." : "This user is blocked from application access."}
@@ -1133,8 +1179,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                   <button
                     type="button"
                     onClick={() => void saveCemeteryRecord(selectedCemetery)}
-                    disabled={savingRecordKey === `cemetery:${selectedCemetery.id}` || !selectedCemetery.name.trim()}
-                    title="Save this cemetery text."
+                    disabled={savingRecordKey === `cemetery:${selectedCemetery.id}` || !selectedCemetery.name.trim() || !canEditSelectedCemetery}
+                    title={canEditSelectedCemetery ? "Save this cemetery text." : "You have read-only access to this cemetery."}
                   >
                     {savingRecordKey === `cemetery:${selectedCemetery.id}` ? "Saving..." : "Save cemetery"}
                   </button>
@@ -1189,8 +1235,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                   <button
                     type="button"
                     onClick={() => void saveSectionRecord(selectedSection)}
-                    disabled={savingRecordKey === `section:${selectedSection.id}`}
-                    title="Save this section name and alternate names."
+                    disabled={savingRecordKey === `section:${selectedSection.id}` || !canEditSelectedCemetery}
+                    title={canEditSelectedCemetery ? "Save this section name and alternate names." : "You have read-only access to this cemetery."}
                   >
                     {savingRecordKey === `section:${selectedSection.id}` ? "Saving..." : "Save section"}
                   </button>
@@ -1225,8 +1271,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                   <button
                     type="button"
                     onClick={() => void saveLotRecord(selectedLot)}
-                    disabled={savingRecordKey === `lot:${selectedLot.id}`}
-                    title="Save this lot text."
+                    disabled={savingRecordKey === `lot:${selectedLot.id}` || !canEditSelectedCemetery}
+                    title={canEditSelectedCemetery ? "Save this lot text." : "You have read-only access to this cemetery."}
                   >
                     {savingRecordKey === `lot:${selectedLot.id}` ? "Saving..." : "Save lot"}
                   </button>

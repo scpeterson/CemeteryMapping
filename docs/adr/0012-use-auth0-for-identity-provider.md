@@ -94,9 +94,9 @@ Auth0 tenant setup checklist:
 4. Enable RBAC for the API.
 5. Enable adding permissions to access tokens.
 6. Add permissions `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`.
-7. Create roles `reader`, `power-user`, and `admin`.
+7. Create roles `reader`, `power-user`, `cemetery-admin`, and `admin`.
 8. Assign `read:cemetery` to `reader`.
-9. Assign `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds` to `power-user` and `admin`.
+9. Assign `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds` to `power-user`, `cemetery-admin`, and `admin`.
 10. Create a Single Page Application for the React frontend.
 11. Configure allowed callback, logout, and web origin URLs for DEV, TEST, STAGE, and PROD.
 12. Create application users and map their Auth0 subjects into `app_users.external_subject`.

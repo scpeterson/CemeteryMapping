@@ -114,12 +114,14 @@ Create roles:
 
 - `reader`
 - `power-user`
+- `cemetery-admin`
 - `admin`
 
 Assign API permissions:
 
 - `reader`: `read:cemetery`
 - `power-user`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
+- `cemetery-admin`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
 - `admin`: `read:cemetery`, `write:cemetery`, `read:deeds`, `write:deeds`
 
 After adding or changing Auth0 permissions, sign out and sign back in so Auth0 issues a fresh access token with the updated permission set.
@@ -128,9 +130,10 @@ Create test users:
 
 - `cemetery.reader.test@example.com`
 - `cemetery.power.test@example.com`
+- `cemetery.cemetery-admin.test@example.com`
 - `cemetery.admin.test@example.com`
 
-Assign the `reader` role to the reader test user, the `power-user` role to the power-user test user, and the `admin` role to the admin test user. Auth0 roles are useful for token/API permission context, but the application database remains the source of truth for the app role enforced by CemeteryMapping.
+Assign the matching Auth0 role to each test user. Auth0 roles are useful for token/API permission context, but the application database remains the source of truth for the app role enforced by CemeteryMapping and for cemetery-scoped assignments in `app_user_cemetery_access`.
 
 ## Optional Admin User Provisioning
 
@@ -279,7 +282,7 @@ SET email = EXCLUDED.email,
     updated_at = now();
 ```
 
-Use `admin` for users who should be allowed to call admin mutation endpoints. Use `reader` for users who should only be able to view map, detail, and search data.
+Use `admin` for users who should be allowed to manage the whole system. Use `cemetery-admin` or `power-user` plus an `app_user_cemetery_access` row for users who should update assigned cemetery records and view assigned deed/owner data. Use `reader` for users who should only be able to view non-deed map, detail, and search data.
 
 Verify mappings:
 
@@ -293,7 +296,7 @@ After inserting or updating the row, refresh the browser. If the app still retur
 
 - `external_subject` exactly matches the Auth0 `user_id`.
 - `is_active` is `true`.
-- `role_name` is `reader`, `power-user`, or `admin`.
+- `role_name` is `reader`, `power-user`, `cemetery-admin`, or `admin`.
 - The API is connected to the same TEST database where the row was inserted.
 
 If a user should be blocked without deleting the mapping:
@@ -311,8 +314,9 @@ The Admin UI Deactivate button performs the same local access block. Use Reactiv
 With `AUTH_MODE=auth0`:
 
 - Not signed in: the frontend should show the sign-in screen.
-- Reader test user: can load map, detail, and search data.
+- Reader test user: can load map, detail, and search data without deed/owner fields.
 - Reader test user: cannot call admin mutation endpoints.
+- Power-user and cemetery-admin test users: can update assigned cemetery records and cannot update unassigned cemetery records.
 - Admin test user: can call admin mutation endpoints.
 - Missing `app_users` row: API returns `403`.
 - Inactive `app_users` row: API returns `403`.

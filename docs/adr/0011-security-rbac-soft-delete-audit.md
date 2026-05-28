@@ -35,10 +35,11 @@ Request input that reaches data access paths must be validated before repository
 Application roles:
 
 - `reader`: can view the map, gravesites, and burial information, but cannot view deed/owner information.
-- `power-user`: can do everything a `reader` can do, plus view and edit deed/owner information and update existing burials, gravesites, lots, and sections.
-- `admin`: can manage users and roles, view and edit all cemetery data, add burials, gravesites, lots, and sections, and soft-delete records.
+- `power-user`: can do everything a `reader` can do, plus view and edit deed/owner information and update existing cemetery records for assigned cemeteries. Power users have read-only access to unassigned cemeteries.
+- `cemetery-admin`: can administer assigned cemeteries and has read-only access to unassigned cemeteries. This role sits below the global `admin` role and cannot manage system-wide users, roles, lookups, audit logs, or deed-import evidence.
+- `admin`: can manage users and roles, view and edit all cemetery data, add burials, gravesites, lots, and sections, and soft-delete records across the whole system.
 
-Authorization is ranked as `reader` < `power-user` < `admin`. Deed and owner fields must be omitted from API responses for `reader` requests, not merely hidden in the UI. Future roles can be added with a new ADR or an update if the access model changes materially.
+Authorization is ranked as `reader` < `power-user` < `cemetery-admin` < `admin`. Cemetery-scoped edit access is stored separately from the role in `app_user_cemetery_access`, because one user may eventually need access to more than one cemetery. Deed and owner fields must be omitted from API responses unless the user is a global `admin` or has assigned edit access to that cemetery; they must not merely be hidden in the UI. Future roles can be added with a new ADR or an update if the access model changes materially.
 
 ## Soft Delete Model
 

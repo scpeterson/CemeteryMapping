@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { requireRole } from "./auth.mjs";
+import { assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
 
 const trustedHeaderConfig = {
   mode: "trusted-header",
@@ -100,6 +100,7 @@ test("trusted-header auth mode allows reader access to reader routes", async () 
     subject: "user-1",
     email: "reader@example.test",
     role: "reader",
+    cemeteryAccess: [],
   });
 });
 
@@ -130,6 +131,23 @@ test("trusted-header auth mode allows power users to access power-user routes bu
   assert.equal(adminResult.response.statusCode, 403);
 });
 
+test("trusted-header auth mode allows cemetery admins to access power-user routes but not admin routes", async () => {
+  const cemeteryAdminHeaders = {
+    "x-cemetery-user-subject": "user-4",
+    "x-cemetery-user-email": "cemetery-admin@example.test",
+    "x-cemetery-user-role": "cemetery-admin",
+    "x-cemetery-user-cemetery-ids": "cemetery-1",
+  };
+  const powerUserResult = await runMiddleware(requireRole(trustedHeaderConfig, "power-user"), cemeteryAdminHeaders);
+  const adminResult = await runMiddleware(requireRole(trustedHeaderConfig, "admin"), cemeteryAdminHeaders);
+
+  assert.equal(powerUserResult.nextCalled, true);
+  assert.equal(powerUserResult.request.user.role, "cemetery-admin");
+  assert.deepEqual(powerUserResult.request.user.cemeteryAccess, [{ cemeteryId: "cemetery-1", canEdit: true }]);
+  assert.equal(adminResult.nextCalled, false);
+  assert.equal(adminResult.response.statusCode, 403);
+});
+
 test("trusted-header auth mode allows admin access to reader routes", async () => {
   const result = await runMiddleware(requireRole(trustedHeaderConfig, "reader"), {
     "x-cemetery-user-subject": "user-2",
@@ -139,6 +157,29 @@ test("trusted-header auth mode allows admin access to reader routes", async () =
 
   assert.equal(result.nextCalled, true);
   assert.equal(result.request.user.role, "admin");
+});
+
+test("cemetery scoped helpers allow assigned cemetery edits only", () => {
+  const user = {
+    role: "cemetery-admin",
+    cemeteryAccess: [
+      { cemeteryId: "11111111-1111-4111-8111-111111111111", canEdit: true },
+      { cemeteryId: "22222222-2222-4222-8222-222222222222", canEdit: false },
+    ],
+  };
+
+  assert.deepEqual(assignedEditableCemeteryIds(user), ["11111111-1111-4111-8111-111111111111"]);
+  assert.equal(canEditCemetery(user, "11111111-1111-4111-8111-111111111111"), true);
+  assert.equal(canViewOwnershipForCemetery(user, "11111111-1111-4111-8111-111111111111"), true);
+  assert.equal(canEditCemetery(user, "22222222-2222-4222-8222-222222222222"), false);
+  assert.equal(canViewOwnershipForCemetery(user, "33333333-3333-4333-8333-333333333333"), false);
+});
+
+test("global admins can edit and view ownership for every cemetery", () => {
+  const user = { role: "admin", cemeteryAccess: [] };
+
+  assert.equal(canEditCemetery(user, "11111111-1111-4111-8111-111111111111"), true);
+  assert.equal(canViewOwnershipForCemetery(user, "22222222-2222-4222-8222-222222222222"), true);
 });
 
 test("auth0 mode rejects invalid bearer tokens", async () => {
@@ -232,5 +273,6 @@ test("auth0 mode allows active admin users to access reader routes", async () =>
     email: "admin@example.test",
     displayName: "Admin User",
     role: "admin",
+    cemeteryAccess: [],
   });
 });

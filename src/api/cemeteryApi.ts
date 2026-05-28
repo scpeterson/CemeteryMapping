@@ -114,7 +114,7 @@ export async function fetchAdminUsers(): Promise<AppUser[]> {
   return jsonResponse<AppUser[]>(response, "Users API");
 }
 
-export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "isActive">;
+export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "assignedCemeteryIds" | "isActive">;
 
 export type ResolveAuth0UserInput = Pick<AppUser, "email" | "displayName">;
 

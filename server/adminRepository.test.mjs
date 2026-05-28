@@ -40,7 +40,7 @@ test("listRoles ensures system roles before returning admin UI role data", async
   assert.match(pool.queries[0], /'power-user'/);
   assert.deepEqual(
     roles.map((role) => role.name),
-    ["reader", "power-user", "admin"],
+    ["reader", "power-user", "cemetery-admin", "admin"],
   );
   assert.equal(roles[1].userCount, 1);
 });
@@ -63,13 +63,14 @@ test("listRoles falls back to system role definitions when a database snapshot i
 
   assert.deepEqual(
     roles.map((role) => role.name),
-    ["reader", "power-user", "admin"],
+    ["reader", "power-user", "cemetery-admin", "admin"],
   );
   assert.equal(
     roles[1].description,
-    "Can view cemetery records, view and edit deed/owner information, and update existing cemetery records.",
+    "Can view cemetery records, view and edit deed/owner information for assigned cemeteries, and has read-only access to other cemeteries.",
   );
   assert.equal(roles[1].userCount, 0);
+  assert.equal(roles[2].description, "Can administer assigned cemeteries and has read-only access to other cemeteries.");
 });
 
 test("listAssignableRoles includes power-user for admin user forms", async () => {
@@ -91,5 +92,5 @@ test("listAssignableRoles includes power-user for admin user forms", async () =>
     },
   ]);
 
-  assert.deepEqual(await listAssignableRoles(pool), ["reader", "power-user", "admin"]);
+  assert.deepEqual(await listAssignableRoles(pool), ["reader", "power-user", "cemetery-admin", "admin"]);
 });

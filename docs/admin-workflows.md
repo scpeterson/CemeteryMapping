@@ -39,8 +39,11 @@ The Admin UI also has a Lookups tab for maintaining controlled values. Admins ca
 Current role behavior:
 
 - `reader`: map, gravesites, burial information, and marker/headstone information; no deed/owner sections and no edit controls.
-- `power-user`: reader access plus deed/owner visibility, update access for existing cemetery records, and marker/headstone detail editing.
-- `admin`: full access, including user management, adding structural records, and soft deletes.
+- `power-user`: reader access everywhere, plus deed/owner visibility and update access for assigned cemeteries.
+- `cemetery-admin`: can administer assigned cemeteries and has read-only access to other cemeteries.
+- `admin`: full system access, including user management, lookup maintenance, audit review, adding structural records, and soft deletes.
+
+Power users and cemetery admins receive cemetery assignments through the local `app_user_cemetery_access` table. The Admin UI currently treats this as one assigned cemetery per user, while the database allows multiple assignments if a future workflow needs them.
 
 Admin UI hover explanations should avoid exposing Auth0 user IDs in list-row tooltips. The Auth0 user ID is shown only when intentionally editing a user record.
 
@@ -48,7 +51,7 @@ Admin UI hover explanations should avoid exposing Auth0 user IDs in list-row too
 
 First regular record-editing workflow.
 
-Readers can see marker/headstone details in the normal grave detail panel. Power users and admins can edit marker details from that same panel without opening the Admin UI. This keeps operational cemetery record work near the map and leaves Admin focused on users, lookups, audit review, and setup data.
+Readers can see marker/headstone details in the normal grave detail panel. Power users and cemetery admins can edit marker details for assigned cemeteries from that same panel without opening the Admin UI; global admins can edit marker details anywhere. This keeps operational cemetery record work near the map and leaves Admin focused on users, lookups, audit review, and setup data.
 
 Editable fields:
 
@@ -68,7 +71,8 @@ Implemented API:
 Authorization:
 
 - `reader`: can see marker details but cannot update.
-- `power-user`: can update existing marker details.
+- `power-user`: can update existing marker details for assigned cemeteries.
+- `cemetery-admin`: can update existing marker details for assigned cemeteries.
 - `admin`: can update existing marker details.
 
 Expected audit action:

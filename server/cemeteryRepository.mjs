@@ -271,7 +271,7 @@ async function selectLotsForCemeteries(client, cemeteryIds) {
   const result = await client.query(
     `
       SELECT
-        id::text,
+        lots.id::text,
         lot_id,
         section_id,
         block_id,
@@ -557,21 +557,24 @@ async function selectHeadstoneMutationState(client, id) {
     `
       SELECT
         id::text,
-        headstone_id,
-        marker_type_id::text,
-        marker_type_code,
-        material_type_id::text,
-        material_type_code,
-        condition_type_id::text,
-        condition,
-        condition_notes,
-        inscription,
-        photo_url,
-        last_inspected_at,
-        updated_at
+        gravesite.cemetery_id::text AS cemetery_id,
+        headstones.headstone_id,
+        headstones.marker_type_id::text,
+        headstones.marker_type_code,
+        headstones.material_type_id::text,
+        headstones.material_type_code,
+        headstones.condition_type_id::text,
+        headstones.condition,
+        headstones.condition_notes,
+        headstones.inscription,
+        headstones.photo_url,
+        headstones.last_inspected_at,
+        headstones.updated_at
       FROM headstones
-      WHERE id = $1
-        AND deleted_at IS NULL
+      LEFT JOIN gravesites AS gravesite
+        ON gravesite.id = headstones.gravesite_uuid
+      WHERE headstones.id = $1
+        AND headstones.deleted_at IS NULL
       FOR UPDATE
     `,
     [id],
@@ -716,13 +719,17 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
   }
 }
 
-export async function updateHeadstone(pool, id, headstone, { actorUser, reason } = {}) {
+export async function updateHeadstone(pool, id, headstone, { actorUser, reason, allowedCemeteryIds } = {}) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     await setAuditContext(client, { actorUser, reason });
     const existing = await selectHeadstoneMutationState(client, id);
     if (!existing) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
       await client.query("ROLLBACK");
       return undefined;
     }
