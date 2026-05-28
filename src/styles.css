@@ -847,7 +847,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: min(720px, calc(100vw - 48px));
+  width: min(900px, calc(100vw - 48px));
   padding: 18px;
   overflow: auto;
   border: 1px solid rgba(53, 67, 57, 0.18);
@@ -882,26 +882,45 @@ h3 {
   color: #8c302d;
 }
 
-.admin-tabs {
+.admin-workspace {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 0;
+}
+
+.admin-nav {
+  display: grid;
+  align-content: start;
+  gap: 5px;
   padding: 4px;
   border: 1px solid #d9e0d5;
   border-radius: 8px;
   background: #eef4eb;
 }
 
-.admin-tabs button {
-  min-height: 36px;
+.admin-content {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-nav button {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 9px;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: #405048;
   font-weight: 760;
+  text-align: left;
 }
 
-.admin-tabs button.is-active {
+.admin-nav button.is-active {
   background: #fff;
   color: #23372f;
   box-shadow: 0 1px 3px rgba(35, 55, 47, 0.12);
@@ -934,6 +953,9 @@ h3 {
 .audit-filter-form select,
 .deed-review-filter-form input,
 .deed-review-filter-form select,
+.lookup-toolbar select,
+.lookup-row input,
+.lookup-row textarea,
 .record-picker input,
 .record-picker select,
 .record-editor-row input,
@@ -947,6 +969,7 @@ h3 {
   padding: 7px 9px;
 }
 
+.lookup-row textarea,
 .record-editor-row textarea {
   resize: vertical;
   line-height: 1.35;
@@ -1037,9 +1060,86 @@ h3 {
 
 .admin-table,
 .role-list,
+.lookup-row-list,
 .record-editor-list {
   display: grid;
   gap: 8px;
+}
+
+.lookup-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.lookup-toolbar label,
+.lookup-row label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.lookup-toolbar .secondary-button,
+.lookup-row button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 720;
+}
+
+.lookup-toolbar .secondary-button {
+  border-color: #c8d1c3;
+  background: #fff;
+  color: #405048;
+}
+
+.lookup-row {
+  display: grid;
+  grid-template-columns: minmax(112px, 0.8fr) minmax(140px, 1fr) 84px minmax(0, 1.5fr) minmax(88px, auto) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.lookup-row.is-inactive {
+  background: #f7f8f5;
+  opacity: 0.82;
+}
+
+.lookup-row-new {
+  margin-top: 4px;
+  border-style: dashed;
+  background: #fbfcf8;
+}
+
+.lookup-row h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #26342d;
+  font-size: 0.95rem;
+}
+
+.lookup-description {
+  align-self: stretch;
+}
+
+.lookup-description textarea {
+  min-height: 38px;
+}
+
+.lookup-active {
+  justify-content: start;
+  align-self: center;
 }
 
 .record-picker-grid {
@@ -1647,7 +1747,11 @@ h3 {
   }
 
   .admin-form,
+  .admin-workspace,
+  .admin-nav,
   .audit-filter-form,
+  .lookup-toolbar,
+  .lookup-row,
   .record-picker-grid,
   .admin-user-row,
   .role-row,
@@ -1657,6 +1761,19 @@ h3 {
   .audit-detail-grid,
   .audit-value-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .admin-nav button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 4px;
+    padding: 7px 5px;
+    font-size: 0.72rem;
+    text-align: center;
   }
 
   .record-editor-row-cemetery button {

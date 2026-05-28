@@ -9,6 +9,7 @@ import { canViewOwnership, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 import { getCemeteryData, getGraveSpace, restoreGraveSpace, softDeleteGraveSpace } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
+import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
   BadRequestError,
@@ -95,6 +96,33 @@ function validateSectionTextPayload(body) {
 function validateLotTextPayload(body) {
   return {
     name: optionalText(body?.name, "Lot name", 255),
+  };
+}
+
+function validateLookupCode(value) {
+  const code = requiredText(value, "Lookup code", 50);
+  if (!/^[a-z0-9_]+$/u.test(code)) throw new BadRequestError("Lookup code can contain only lowercase letters, numbers, and underscores.");
+  return code;
+}
+
+function validateLookupTable(value) {
+  const table = requiredText(value, "Lookup table", 100);
+  if (!/^[a-z_]+$/u.test(table)) throw new BadRequestError("Lookup table is invalid.");
+  return table;
+}
+
+function validateLookupPayload(body) {
+  const sortOrder = Number.parseInt(String(body?.sortOrder ?? ""), 10);
+  if (!Number.isFinite(sortOrder)) throw new BadRequestError("Sort order is required.");
+
+  return {
+    code: validateLookupCode(body?.code),
+    label: requiredText(body?.label, "Label", 100),
+    description: requiredText(body?.description, "Description", 500),
+    sortOrder,
+    isActive: body?.isActive !== false,
+    sourceNotes: optionalText(body?.sourceNotes, "Source notes", 500),
+    sourceUrl: optionalText(body?.sourceUrl, "Source URL", 500),
   };
 }
 
@@ -267,6 +295,48 @@ export function createApp(config, pool) {
     try {
       response.json(await listDeedRegistryReview(pool, request.query));
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/lookups", requireAdmin, async (_request, response, next) => {
+    try {
+      response.json(await listLookupRecords(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/lookups/:table", requireAdmin, async (request, response, next) => {
+    try {
+      const table = validateLookupTable(request.params.table);
+      const record = validateLookupPayload(request.body);
+      response.status(201).json(await createLookupRecord(pool, table, record, { actorUser: request.user }));
+    } catch (error) {
+      if (error.message?.startsWith("Unsupported lookup table:")) {
+        response.status(404).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/lookups/:table/:code", requireAdmin, async (request, response, next) => {
+    try {
+      const table = validateLookupTable(request.params.table);
+      const code = validateLookupCode(request.params.code);
+      const record = validateLookupPayload({ ...request.body, code });
+      const updated = await updateLookupRecord(pool, table, code, record, { actorUser: request.user });
+      if (!updated) {
+        response.status(404).json({ error: "Lookup row not found" });
+        return;
+      }
+      response.json(updated);
+    } catch (error) {
+      if (error.message?.startsWith("Unsupported lookup table:")) {
+        response.status(404).json({ error: error.message });
+        return;
+      }
       next(error);
     }
   });

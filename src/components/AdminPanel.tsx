@@ -1,16 +1,19 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { FileSearch, History, Landmark, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { FileSearch, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
+  createLookupRecord,
   fetchAdminAuditEvents,
   fetchAdminRoles,
   fetchAdminUsers,
   fetchCemeteryAdminRecords,
   fetchDeedRegistryReview,
+  fetchLookupAdminRecords,
   resolveAuth0User,
   type SaveUserInput,
   updateAdminUser,
   updateCemeteryText,
+  updateLookupRecord,
   updateLotText,
   updateSectionText,
 } from "../api/cemeteryApi";
@@ -25,6 +28,8 @@ import type {
   DeedRegistryReview,
   DeedRegistryReviewEntry,
   DeedRegistryReviewFilters,
+  LookupAdminRecords,
+  LookupRecord,
   LotTextRecord,
   SectionTextRecord,
 } from "../types";
@@ -37,7 +42,7 @@ type UserFormState = SaveUserInput & {
   id?: string;
 };
 
-type AdminTab = "users" | "records" | "deeds" | "audit";
+type AdminTab = "users" | "records" | "deeds" | "audit" | "lookups";
 
 const blankUser: UserFormState = {
   externalSubject: "",
@@ -113,6 +118,23 @@ const emptyDeedRegistryReview: DeedRegistryReview = {
   entries: [],
 };
 
+const emptyLookupAdminRecords: LookupAdminRecords = {
+  tables: [],
+  lookups: {},
+};
+
+const blankLookupRecord: LookupRecord = {
+  code: "",
+  label: "",
+  description: "",
+  sortOrder: 100,
+  isActive: true,
+  sourceNotes: "",
+  sourceUrl: "",
+  createdAt: "",
+  updatedAt: "",
+};
+
 const auditActionLabels: Record<string, string> = {
   create: "Created",
   update: "Updated",
@@ -184,6 +206,8 @@ const deedConfidenceLabel = (confidence: string) => confidenceLabels[confidence]
 const formatList = (values: string[]) => (values.length ? values.join(", ") : "None");
 const deedEntryTitle = (entry: DeedRegistryReviewEntry) =>
   `Row ${entry.sourceRowNumber}. ${entry.ownerDisplayName || "No owner"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence.`;
+const lookupCodePattern = /^[a-z0-9_]*$/u;
+const lookupRowTitle = (row: LookupRecord) => `${row.label}. ${row.isActive ? "Active" : "Inactive"}. Code: ${row.code}.`;
 
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
@@ -194,6 +218,9 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [selectedAuditEventId, setSelectedAuditEventId] = useState("");
   const [deedRegistryReview, setDeedRegistryReview] = useState<DeedRegistryReview>(emptyDeedRegistryReview);
   const [deedReviewFilters, setDeedReviewFilters] = useState<DeedRegistryReviewFilters>(defaultDeedReviewFilters);
+  const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
+  const [selectedLookupTable, setSelectedLookupTable] = useState("");
+  const [newLookupRecord, setNewLookupRecord] = useState<LookupRecord>(blankLookupRecord);
   const [cemeteryRecords, setCemeteryRecords] = useState<CemeteryAdminRecords>(emptyCemeteryRecords);
   const [form, setForm] = useState<UserFormState>(blankUser);
   const [selectedCemeteryId, setSelectedCemeteryId] = useState("");
@@ -207,10 +234,12 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAuditEvents, setIsLoadingAuditEvents] = useState(false);
   const [isLoadingDeedReview, setIsLoadingDeedReview] = useState(false);
+  const [isLoadingLookups, setIsLoadingLookups] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
   const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(() => new Set());
   const [savingRecordKey, setSavingRecordKey] = useState<string>();
+  const [savingLookupKey, setSavingLookupKey] = useState<string>();
 
   const roleOptions = useMemo(() => roles.map((role) => role.name), [roles]);
   const selectedCemetery = useMemo(
@@ -241,6 +270,11 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     () => deedRegistryReview.batches.find((batch) => batch.id === deedRegistryReview.selectedBatchId),
     [deedRegistryReview.batches, deedRegistryReview.selectedBatchId],
   );
+  const selectedLookupDefinition = useMemo(
+    () => lookupRecords.tables.find((table) => table.table === selectedLookupTable),
+    [lookupRecords.tables, selectedLookupTable],
+  );
+  const selectedLookupRows = useMemo(() => lookupRecords.lookups[selectedLookupTable] ?? [], [lookupRecords.lookups, selectedLookupTable]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -342,6 +376,26 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const openDeedReviewTab = () => {
     setActiveTab("deeds");
     if (deedRegistryReview.batches.length === 0 && !isLoadingDeedReview) void loadDeedRegistryReview();
+  };
+
+  const loadLookupRecords = async () => {
+    setIsLoadingLookups(true);
+    setError(undefined);
+
+    try {
+      const nextLookups = await fetchLookupAdminRecords();
+      setLookupRecords(nextLookups);
+      setSelectedLookupTable((current) => (nextLookups.tables.some((table) => table.table === current) ? current : (nextLookups.tables[0]?.table ?? "")));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load lookup records.");
+    } finally {
+      setIsLoadingLookups(false);
+    }
+  };
+
+  const openLookupsTab = () => {
+    setActiveTab("lookups");
+    if (lookupRecords.tables.length === 0 && !isLoadingLookups) void loadLookupRecords();
   };
 
   const resetForm = () => {
@@ -523,6 +577,68 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
+  const replaceLookupRecord = (table: string, saved: LookupRecord) => {
+    setLookupRecords((current) => {
+      const existingRows = current.lookups[table] ?? [];
+      const exists = existingRows.some((row) => row.code === saved.code);
+      const nextRows = exists ? existingRows.map((row) => (row.code === saved.code ? saved : row)) : [...existingRows, saved];
+
+      return {
+        ...current,
+        lookups: {
+          ...current.lookups,
+          [table]: nextRows.sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label) || a.code.localeCompare(b.code)),
+        },
+      };
+    });
+  };
+
+  const updateLocalLookupRecord = (table: string, code: string, patch: Partial<LookupRecord>) => {
+    setLookupRecords((current) => ({
+      ...current,
+      lookups: {
+        ...current.lookups,
+        [table]: (current.lookups[table] ?? []).map((row) => (row.code === code ? { ...row, ...patch } : row)),
+      },
+    }));
+  };
+
+  const saveLookupRecord = async (table: string, row: LookupRecord) => {
+    const key = `${table}:${row.code}`;
+    setSavingLookupKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const saved = await updateLookupRecord(table, row.code, row);
+      replaceLookupRecord(table, saved);
+      setMessage(`${saved.label} saved.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save lookup row.");
+    } finally {
+      setSavingLookupKey(undefined);
+    }
+  };
+
+  const addLookupRecord = async () => {
+    if (!selectedLookupDefinition) return;
+    const key = `${selectedLookupDefinition.table}:new`;
+    setSavingLookupKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const saved = await createLookupRecord(selectedLookupDefinition.table, newLookupRecord);
+      replaceLookupRecord(selectedLookupDefinition.table, saved);
+      setNewLookupRecord(blankLookupRecord);
+      setMessage(`${saved.label} added.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to add lookup row.");
+    } finally {
+      setSavingLookupKey(undefined);
+    }
+  };
+
   const selectCemeteryById = (id: string) => {
     const match = cemeteryRecords.cemeteries.find((cemetery) => cemetery.id === id);
     setSelectedCemeteryId(match?.id ?? "");
@@ -563,48 +679,61 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
       {error ? <div className="admin-message is-error" role="alert">{error}</div> : null}
       {message ? <div className="admin-message" role="status">{message}</div> : null}
 
-      <div className="admin-tabs" role="tablist" aria-label="Admin sections">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "users"}
-          className={activeTab === "users" ? "is-active" : undefined}
-          onClick={() => setActiveTab("users")}
-          title="Manage application users and role assignments."
-        >
-          Users
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "records"}
-          className={activeTab === "records" ? "is-active" : undefined}
-          onClick={() => setActiveTab("records")}
-          title="Edit cemetery, section, and lot text records."
-        >
-          Cemetery Records
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "deeds"}
-          className={activeTab === "deeds" ? "is-active" : undefined}
-          onClick={openDeedReviewTab}
-          title="Review staged deed registry imports before promotion."
-        >
-          Deed Evidence
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "audit"}
-          className={activeTab === "audit" ? "is-active" : undefined}
-          onClick={openAuditTab}
-          title="Review create, update, delete, and restore audit events."
-        >
-          Audit Log
-        </button>
-      </div>
+      <div className="admin-workspace">
+        <nav className="admin-nav" aria-label="Admin sections">
+          <button
+            type="button"
+            aria-current={activeTab === "users" ? "page" : undefined}
+            className={activeTab === "users" ? "is-active" : undefined}
+            onClick={() => setActiveTab("users")}
+            title="Manage application users and role assignments."
+          >
+            <UserCog size={16} aria-hidden="true" />
+            <span>Users</span>
+          </button>
+          <button
+            type="button"
+            aria-current={activeTab === "records" ? "page" : undefined}
+            className={activeTab === "records" ? "is-active" : undefined}
+            onClick={() => setActiveTab("records")}
+            title="Edit cemetery, section, and lot text records."
+          >
+            <Landmark size={16} aria-hidden="true" />
+            <span>Records</span>
+          </button>
+          <button
+            type="button"
+            aria-current={activeTab === "lookups" ? "page" : undefined}
+            className={activeTab === "lookups" ? "is-active" : undefined}
+            onClick={openLookupsTab}
+            title="Maintain lookup values for statuses, marker types, materials, and ownership event types."
+          >
+            <ListChecks size={16} aria-hidden="true" />
+            <span>Lookups</span>
+          </button>
+          <button
+            type="button"
+            aria-current={activeTab === "deeds" ? "page" : undefined}
+            className={activeTab === "deeds" ? "is-active" : undefined}
+            onClick={openDeedReviewTab}
+            title="Review staged deed registry imports before promotion."
+          >
+            <FileSearch size={16} aria-hidden="true" />
+            <span>Deeds</span>
+          </button>
+          <button
+            type="button"
+            aria-current={activeTab === "audit" ? "page" : undefined}
+            className={activeTab === "audit" ? "is-active" : undefined}
+            onClick={openAuditTab}
+            title="Review create, update, delete, and restore audit events."
+          >
+            <History size={16} aria-hidden="true" />
+            <span>Audit</span>
+          </button>
+        </nav>
+
+        <div className="admin-content">
 
       {activeTab === "users" ? (
         <>
@@ -1017,6 +1146,201 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             </div>
           </section>
         </>
+      ) : activeTab === "lookups" ? (
+        <>
+          <section className="admin-section">
+            <div className="section-title">
+              <ListChecks size={17} aria-hidden="true" />
+              <h3>Lookups</h3>
+            </div>
+
+            <div className="lookup-toolbar">
+              <label>
+                Lookup table
+                <select
+                  value={selectedLookupTable}
+                  onChange={(event) => setSelectedLookupTable(event.target.value)}
+                  title="Choose which controlled lookup list to maintain."
+                >
+                  {lookupRecords.tables.map((table) => (
+                    <option key={table.table} value={table.table}>
+                      {table.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button type="button" className="secondary-button" onClick={() => void loadLookupRecords()} disabled={isLoadingLookups} title="Reload lookup values from the database.">
+                {isLoadingLookups ? "Loading..." : "Refresh"}
+              </button>
+            </div>
+
+            {isLoadingLookups ? <div className="admin-message" role="status">Loading lookup records...</div> : null}
+
+            {selectedLookupDefinition ? (
+              <>
+                <div className="lookup-row-list" role="table" aria-label={`${selectedLookupDefinition.label} lookup values`}>
+                  {selectedLookupRows.map((row) => (
+                    <article key={row.code} className={row.isActive ? "lookup-row" : "lookup-row is-inactive"} title={lookupRowTitle(row)}>
+                      <label>
+                        Code
+                        <input value={row.code} readOnly title="Stable lookup code. Existing codes are read-only to preserve database references." />
+                      </label>
+                      <label>
+                        Label
+                        <input
+                          value={row.label}
+                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { label: event.target.value })}
+                          title="Human-readable label shown in admin screens and future form controls."
+                        />
+                      </label>
+                      <label>
+                        Sort
+                        <input
+                          type="number"
+                          value={row.sortOrder}
+                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { sortOrder: Number(event.target.value) })}
+                          title="Display order for this lookup value."
+                        />
+                      </label>
+                      <label className="lookup-description">
+                        Description
+                        <textarea
+                          value={row.description}
+                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { description: event.target.value })}
+                          rows={2}
+                          title="Admin-facing explanation of when this value should be used."
+                        />
+                      </label>
+                      {selectedLookupDefinition.hasSourceFields ? (
+                        <>
+                          <label>
+                            Source notes
+                            <input
+                              value={row.sourceNotes ?? ""}
+                              onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { sourceNotes: event.target.value })}
+                              title="Optional note describing where this lookup value came from."
+                            />
+                          </label>
+                          <label>
+                            Source URL
+                            <input
+                              value={row.sourceUrl ?? ""}
+                              onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { sourceUrl: event.target.value })}
+                              title="Optional source URL for this lookup value."
+                            />
+                          </label>
+                        </>
+                      ) : null}
+                      <label className="checkbox-row lookup-active" title="Inactive lookup values stay in the database for history but can be hidden from future pickers.">
+                        <input
+                          type="checkbox"
+                          checked={row.isActive}
+                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { isActive: event.target.checked })}
+                          title="Controls whether this lookup value is active."
+                        />
+                        Active
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => void saveLookupRecord(selectedLookupTable, row)}
+                        disabled={savingLookupKey === `${selectedLookupTable}:${row.code}` || !row.label.trim() || !row.description.trim()}
+                        title="Save changes to this lookup value."
+                      >
+                        {savingLookupKey === `${selectedLookupTable}:${row.code}` ? "Saving..." : "Save"}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+
+                <article className="lookup-row lookup-row-new" title={`Add a new value to ${selectedLookupDefinition.label}.`}>
+                  <h4>Add lookup value</h4>
+                  <label>
+                    Code
+                    <input
+                      value={newLookupRecord.code}
+                      onChange={(event) => {
+                        const nextCode = event.target.value.trim().toLowerCase();
+                        if (lookupCodePattern.test(nextCode)) setNewLookupRecord((current) => ({ ...current, code: nextCode }));
+                      }}
+                      placeholder="new_code"
+                      title="Stable lowercase code using letters, numbers, and underscores."
+                    />
+                  </label>
+                  <label>
+                    Label
+                    <input
+                      value={newLookupRecord.label}
+                      onChange={(event) => setNewLookupRecord((current) => ({ ...current, label: event.target.value }))}
+                      title="Human-readable label for the new lookup value."
+                    />
+                  </label>
+                  <label>
+                    Sort
+                    <input
+                      type="number"
+                      value={newLookupRecord.sortOrder}
+                      onChange={(event) => setNewLookupRecord((current) => ({ ...current, sortOrder: Number(event.target.value) }))}
+                      title="Display order for the new lookup value."
+                    />
+                  </label>
+                  <label className="lookup-description">
+                    Description
+                    <textarea
+                      value={newLookupRecord.description}
+                      onChange={(event) => setNewLookupRecord((current) => ({ ...current, description: event.target.value }))}
+                      rows={2}
+                      title="Admin-facing explanation of when this value should be used."
+                    />
+                  </label>
+                  {selectedLookupDefinition.hasSourceFields ? (
+                    <>
+                      <label>
+                        Source notes
+                        <input
+                          value={newLookupRecord.sourceNotes ?? ""}
+                          onChange={(event) => setNewLookupRecord((current) => ({ ...current, sourceNotes: event.target.value }))}
+                          title="Optional note describing where this lookup value came from."
+                        />
+                      </label>
+                      <label>
+                        Source URL
+                        <input
+                          value={newLookupRecord.sourceUrl ?? ""}
+                          onChange={(event) => setNewLookupRecord((current) => ({ ...current, sourceUrl: event.target.value }))}
+                          title="Optional source URL for this lookup value."
+                        />
+                      </label>
+                    </>
+                  ) : null}
+                  <label className="checkbox-row lookup-active" title="New lookup values are active by default.">
+                    <input
+                      type="checkbox"
+                      checked={newLookupRecord.isActive}
+                      onChange={(event) => setNewLookupRecord((current) => ({ ...current, isActive: event.target.checked }))}
+                      title="Controls whether this new lookup value is active."
+                    />
+                    Active
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void addLookupRecord()}
+                    disabled={
+                      savingLookupKey === `${selectedLookupTable}:new` ||
+                      !newLookupRecord.code.trim() ||
+                      !newLookupRecord.label.trim() ||
+                      !newLookupRecord.description.trim()
+                    }
+                    title="Add this lookup value."
+                  >
+                    {savingLookupKey === `${selectedLookupTable}:new` ? "Adding..." : "Add value"}
+                  </button>
+                </article>
+              </>
+            ) : (
+              <p className="record-editor-empty">Lookup records have not been loaded yet.</p>
+            )}
+          </section>
+        </>
       ) : activeTab === "deeds" ? (
         <>
           <section className="admin-section">
@@ -1396,6 +1720,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           </section>
         </>
       )}
+        </div>
+      </div>
     </aside>
   );
 }

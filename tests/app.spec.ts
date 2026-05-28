@@ -458,9 +458,10 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
 
   await page.goto("/");
   await page.getByLabel("Open admin management").click();
-  await expect(page.getByRole("tab", { name: "Users" })).toBeVisible();
+  const adminSectionsNav = page.getByRole("navigation", { name: "Admin sections" });
+  await expect(adminSectionsNav.getByRole("button", { name: "Users" })).toBeVisible();
 
-  await page.getByRole("tab", { name: "Cemetery Records" }).click();
+  await adminSectionsNav.getByRole("button", { name: "Records" }).click();
   await expect(page.getByRole("heading", { name: "Cemetery Records" })).toBeVisible();
 
   await page.getByRole("combobox", { name: "Cemetery" }).selectOption({ label: "St. Mark Church Cemetery" });
@@ -495,14 +496,14 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   expect(records.sections.some((item: { sectionId: string; alternateNames: string[] }) => item.sectionId === "B" && item.alternateNames.includes("Old Churchyard"))).toBe(true);
   expect(records.sections.some((item: { sectionId: string; notes: string }) => item.sectionId === "B" && item.notes === "Section B admin note")).toBe(true);
 
-  await page.getByRole("tab", { name: "Audit Log" }).click();
+  await adminSectionsNav.getByRole("button", { name: "Audit" }).click();
   await expect(page.getByRole("heading", { name: "Audit Log" })).toBeVisible();
   await expect(page.getByRole("table", { name: "Audit events" })).toContainText("admin@example.test");
   await expect(page.getByRole("table", { name: "Audit events" })).toContainText("Updated");
   await expect(page.getByLabel("Selected audit event detail")).toContainText("alternate_names");
   await expect(page.getByLabel("Selected audit event detail")).toContainText("Original Cemetery");
 
-  await page.getByRole("tab", { name: "Deed Evidence" }).click();
+  await adminSectionsNav.getByRole("button", { name: "Deeds" }).click();
   await expect(page.getByRole("heading", { name: "Deed Evidence" })).toBeVisible();
   await expect(page.getByLabel("Staged deed registry evidence")).toContainText("Robert & Elizabeth Watenpool");
   await expect(page.getByLabel("Staged deed registry evidence")).toContainText("Needs review before promotion.");

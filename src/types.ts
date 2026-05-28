@@ -165,6 +165,29 @@ export type CemeteryAdminRecords = {
   lots: LotTextRecord[];
 };
 
+export type LookupTableDefinition = {
+  table: string;
+  label: string;
+  hasSourceFields: boolean;
+};
+
+export type LookupRecord = {
+  code: string;
+  label: string;
+  description: string;
+  sortOrder: number;
+  isActive: boolean;
+  sourceNotes?: string;
+  sourceUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LookupAdminRecords = {
+  tables: LookupTableDefinition[];
+  lookups: Record<string, LookupRecord[]>;
+};
+
 export type AuditEvent = {
   id: string;
   occurredAt: string;

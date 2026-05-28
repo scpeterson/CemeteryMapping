@@ -24,6 +24,8 @@ Implemented admin foundation.
 
 Only admins can manage application users and roles. User management lives in a dedicated admin drawer rather than the left search panel or right grave-detail panel, so map workflows remain focused on cemetery records.
 
+The Admin drawer uses compact left-side navigation instead of large top tabs. This keeps the panel usable as admin areas grow: Users, Cemetery Records, Lookups, Deed Evidence, and Audit Log each get one focused workspace.
+
 The Admin UI stores the Auth0 `user_id` as the local Auth0 user ID. When Management API credentials are configured, adding a new user can search Auth0 by email or create a database-connection Auth0 user before saving the local role assignment.
 
 Existing users can be edited from the Users list. Each row also has a direct Deactivate or Reactivate action. Deactivation changes only the local `app_users.is_active` flag; it blocks CemeteryMapping access after Auth0 token validation but does not delete or disable the Auth0 account.
@@ -31,6 +33,8 @@ Existing users can be edited from the Users list. Each row also has a direct Dea
 The Admin UI also has a Cemetery Records tab for text-only cemetery hierarchy edits. Admins first search for and select a cemetery, then the section picker is limited to that cemetery, and the lot picker is limited to the selected section. Admins can update cemetery name, address, municipality, agency, agency URL, operational hours, contact name, contact phone, contact email, image URL, and notes; the cemetery created and updated timestamps are visible but read-only. Admins can also update section names, alternate names, section notes, and lot names. Section alternate names are stored as a normalized text array; sections `B` and `D` are initially backfilled with `OC` and `Original Cemetery`, and sections `A` and `C` are backfilled with `NA` and `New Annex`. Section geometry may be blank for known sections that have not been spatially mapped yet; those records remain editable in Admin but are omitted from the map until geometry is added.
 
 The Admin UI has a read-only Deed Evidence tab for reviewing staged deed registry imports before any promotion into production lot, gravesite, owner, or ownership-event tables. Admins can select an import batch, filter by parser confidence, filter by staged evidence type, search owner/lot/section/remark text, and review parser notes alongside related `Investigated` worksheet notes. This view is intentionally review-only; promotion remains deferred until the staged evidence rules are approved.
+
+The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Existing lookup codes are read-only because other records may already reference them; obsolete values should be marked inactive instead of deleted.
 
 Current role behavior:
 
