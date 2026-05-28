@@ -5,26 +5,43 @@ const lookupDefinitions = {
     table: "marker_types",
     label: "Marker types",
     hasSourceFields: true,
+    usageTable: "headstones",
+    usageColumn: "marker_type_id",
+    usageLabel: "headstones",
   },
   marker_material_types: {
     table: "marker_material_types",
     label: "Marker materials",
     hasSourceFields: true,
+    usageTable: "headstones",
+    usageColumn: "material_type_id",
+    usageLabel: "headstones",
   },
   headstone_condition_types: {
     table: "headstone_condition_types",
     label: "Headstone conditions",
     hasSourceFields: false,
+    usageTable: "headstones",
+    usageColumn: "condition_type_id",
+    usageLabel: "headstones",
   },
   gravesite_status_types: {
     table: "gravesite_status_types",
     label: "Gravesite statuses",
     hasSourceFields: false,
+    usageTable: "gravesites",
+    usageColumn: "status_type_id",
+    usageLabel: "gravesites",
+    usageWhere: "usage_records.deleted_at IS NULL",
   },
   lot_ownership_event_types: {
     table: "lot_ownership_event_types",
     label: "Lot ownership event types",
     hasSourceFields: false,
+    usageTable: "lot_ownership_events",
+    usageColumn: "event_type_id",
+    usageLabel: "lot ownership events",
+    usageWhere: "usage_records.deleted_at IS NULL",
   },
 };
 
@@ -42,6 +59,8 @@ function toLookupRow(row, definition) {
     description: row.description,
     sortOrder: Number(row.sort_order),
     isActive: row.is_active,
+    usageCount: Number(row.usage_count ?? 0),
+    usageLabel: definition.usageLabel,
     sourceNotes: definition.hasSourceFields ? (row.source_notes ?? "") : undefined,
     sourceUrl: definition.hasSourceFields ? (row.source_url ?? "") : undefined,
     createdAt: row.created_at,
@@ -66,8 +85,22 @@ export async function listLookupRecords(pool) {
     for (const table of tables) {
       const definition = lookupDefinition(table.table);
       const sourceFields = definition.hasSourceFields ? ", source_notes, source_url" : "";
+      const usageWhere = definition.usageWhere ? ` AND ${definition.usageWhere}` : "";
       const result = await client.query(`
-        SELECT id::text, code, label, description, sort_order, is_active, created_at, updated_at${sourceFields}
+        SELECT
+          id::text,
+          code,
+          label,
+          description,
+          sort_order,
+          is_active,
+          created_at,
+          updated_at,
+          (
+            SELECT count(*)
+            FROM ${definition.usageTable} usage_records
+            WHERE usage_records.${definition.usageColumn} = ${definition.table}.id${usageWhere}
+          ) AS usage_count${sourceFields}
         FROM ${definition.table}
         ORDER BY sort_order, label, code
       `);
@@ -92,6 +125,8 @@ export async function updateLookupRecord(pool, table, id, record, { actorUser } 
       : `,
             is_active = $5`;
     const returningSourceFields = definition.hasSourceFields ? ", source_notes, source_url" : "";
+    const usageWhere = definition.usageWhere ? ` AND ${definition.usageWhere}` : "";
+    const usageCountSelect = `(SELECT count(*) FROM ${definition.usageTable} usage_records WHERE usage_records.${definition.usageColumn} = ${definition.table}.id${usageWhere})`;
     const values = definition.hasSourceFields
       ? [id, record.label, record.description, record.sortOrder, record.sourceNotes ?? "", record.sourceUrl ?? "", record.isActive]
       : [id, record.label, record.description, record.sortOrder, record.isActive];
@@ -103,7 +138,7 @@ export async function updateLookupRecord(pool, table, id, record, { actorUser } 
             description = $3,
             sort_order = $4${sourceAssignments}
         WHERE id = $1::uuid
-        RETURNING id::text, code, label, description, sort_order, is_active, created_at, updated_at${returningSourceFields}
+        RETURNING id::text, code, label, description, sort_order, is_active, created_at, updated_at, ${usageCountSelect} AS usage_count${returningSourceFields}
       `,
       values,
     );
@@ -120,6 +155,8 @@ export async function createLookupRecord(pool, table, record, { actorUser } = {}
     const sourceValues = definition.hasSourceFields ? ", NULLIF($5, ''), NULLIF($6, '')" : "";
     const activeIndex = definition.hasSourceFields ? 7 : 5;
     const returningSourceFields = definition.hasSourceFields ? ", source_notes, source_url" : "";
+    const usageWhere = definition.usageWhere ? ` AND ${definition.usageWhere}` : "";
+    const usageCountSelect = `(SELECT count(*) FROM ${definition.usageTable} usage_records WHERE usage_records.${definition.usageColumn} = ${definition.table}.id${usageWhere})`;
     const values = definition.hasSourceFields
       ? [record.code, record.label, record.description, record.sortOrder, record.sourceNotes ?? "", record.sourceUrl ?? "", record.isActive]
       : [record.code, record.label, record.description, record.sortOrder, record.isActive];
@@ -128,7 +165,7 @@ export async function createLookupRecord(pool, table, record, { actorUser } = {}
       `
         INSERT INTO ${definition.table} (code, label, description, sort_order${sourceColumns}, is_active)
         VALUES ($1, $2, $3, $4${sourceValues}, $${activeIndex})
-        RETURNING id::text, code, label, description, sort_order, is_active, created_at, updated_at${returningSourceFields}
+        RETURNING id::text, code, label, description, sort_order, is_active, created_at, updated_at, ${usageCountSelect} AS usage_count${returningSourceFields}
       `,
       values,
     );

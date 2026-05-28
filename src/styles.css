@@ -1068,13 +1068,14 @@ h3 {
 
 .lookup-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: end;
 }
 
 .lookup-toolbar label,
-.lookup-row label {
+.lookup-row label,
+.lookup-row .lookup-field {
   display: grid;
   gap: 5px;
   min-width: 0;
@@ -1102,13 +1103,101 @@ h3 {
 
 .lookup-row {
   display: grid;
-  grid-template-columns: minmax(112px, 0.8fr) minmax(140px, 1fr) 84px minmax(0, 1.5fr) minmax(88px, auto) auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(132px, auto) minmax(220px, 1.5fr) minmax(130px, auto) minmax(88px, auto) auto;
   align-items: end;
   gap: 10px;
   padding: 11px 12px;
   border: 1px solid #d9e0d5;
   border-radius: 8px;
   background: #fff;
+}
+
+.lookup-row.has-source-fields {
+  grid-template-columns: minmax(170px, 0.9fr) minmax(132px, auto) minmax(260px, 1.5fr) minmax(120px, auto);
+  grid-template-areas:
+    "label sort description description"
+    "notes notes notes notes"
+    "active usage url actions";
+  align-items: start;
+}
+
+.lookup-row.has-source-fields .lookup-label {
+  grid-area: label;
+}
+
+.lookup-row.has-source-fields .lookup-sort {
+  grid-area: sort;
+}
+
+.lookup-sort-control {
+  display: grid;
+  gap: 6px;
+}
+
+.lookup-sort-control input {
+  min-width: 0;
+}
+
+.lookup-sort-buttons {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 30px);
+  gap: 4px;
+  justify-content: start;
+}
+
+.lookup-sort-buttons .icon-button {
+  display: inline-grid;
+  width: 30px;
+  min-height: 34px;
+  padding: 0;
+  place-items: center;
+}
+
+.lookup-sort-buttons .icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.lookup-sort.was-reordered input {
+  border-color: #ff1493;
+  background: #fff3fa;
+  box-shadow: 0 0 0 3px rgba(255, 20, 147, 0.18);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.lookup-row.has-source-fields .lookup-description {
+  grid-area: description;
+}
+
+.lookup-row.has-source-fields .lookup-source-notes {
+  grid-area: notes;
+}
+
+.lookup-row.has-source-fields .lookup-source-url {
+  grid-area: url;
+}
+
+.lookup-row.has-source-fields .lookup-active {
+  grid-area: active;
+  align-self: center;
+}
+
+.lookup-row.has-source-fields .lookup-usage {
+  grid-area: usage;
+  align-self: center;
+}
+
+.lookup-row.has-source-fields .lookup-actions {
+  grid-area: actions;
+  align-self: center;
+}
+
+.lookup-row-new.has-source-fields > button {
+  grid-area: actions;
+  align-self: center;
 }
 
 .lookup-row.is-inactive {
@@ -1129,12 +1218,49 @@ h3 {
   font-size: 0.95rem;
 }
 
-.lookup-description {
+.lookup-description,
+.lookup-source-notes {
   align-self: stretch;
 }
 
 .lookup-description textarea {
   min-height: 38px;
+}
+
+.lookup-row.has-source-fields .lookup-description textarea,
+.lookup-row.has-source-fields .lookup-source-notes textarea {
+  min-height: 84px;
+}
+
+.lookup-usage,
+.lookup-warning {
+  color: #657267;
+  font-size: 0.78rem;
+  font-weight: 680;
+}
+
+.lookup-warning {
+  color: #87551c;
+}
+
+.lookup-actions {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 6px;
+}
+
+.lookup-actions .icon-button {
+  display: inline-grid;
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  place-items: center;
+}
+
+.lookup-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .lookup-active {

@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { FileSearch, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, FileSearch, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
   createLookupRecord,
@@ -130,6 +130,8 @@ const blankLookupRecord: LookupRecord = {
   description: "",
   sortOrder: 100,
   isActive: true,
+  usageCount: 0,
+  usageLabel: "",
   sourceNotes: "",
   sourceUrl: "",
   createdAt: "",
@@ -207,8 +209,32 @@ const deedConfidenceLabel = (confidence: string) => confidenceLabels[confidence]
 const formatList = (values: string[]) => (values.length ? values.join(", ") : "None");
 const deedEntryTitle = (entry: DeedRegistryReviewEntry) =>
   `Row ${entry.sourceRowNumber}. ${entry.ownerDisplayName || "No owner"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence.`;
-const lookupCodePattern = /^[a-z0-9_]*$/u;
-const lookupRowTitle = (row: LookupRecord) => `${row.label}. ${row.isActive ? "Active" : "Inactive"}. Code: ${row.code}.`;
+const lookupRowTitle = (row: LookupRecord) => `${row.label}. ${row.isActive ? "Active" : "Inactive"}.`;
+const lookupUsageText = (row: LookupRecord) => `Used by ${row.usageCount} ${row.usageLabel || "records"}.`;
+
+function lookupCodeFromLabel(label: string, existingCodes: Set<string>) {
+  const baseCode =
+    label
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gu, "_")
+      .replace(/^_+|_+$/gu, "")
+      .slice(0, 40) || "lookup_value";
+  let code = baseCode;
+  let suffix = 2;
+
+  while (existingCodes.has(code)) {
+    code = `${baseCode.slice(0, Math.max(1, 49 - String(suffix).length))}_${suffix}`;
+    suffix += 1;
+  }
+
+  return code;
+}
+
+function lookupDuplicateSortOrders(rows: LookupRecord[]) {
+  const sortCounts = rows.reduce((counts, row) => counts.set(row.sortOrder, (counts.get(row.sortOrder) ?? 0) + 1), new Map<number, number>());
+  return new Set([...sortCounts.entries()].filter(([, count]) => count > 1).map(([sortOrder]) => sortOrder));
+}
 
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
@@ -221,6 +247,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [deedReviewFilters, setDeedReviewFilters] = useState<DeedRegistryReviewFilters>(defaultDeedReviewFilters);
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
   const [selectedLookupTable, setSelectedLookupTable] = useState("");
+  const [showInactiveLookups, setShowInactiveLookups] = useState(false);
   const [newLookupRecord, setNewLookupRecord] = useState<LookupRecord>(blankLookupRecord);
   const [cemeteryRecords, setCemeteryRecords] = useState<CemeteryAdminRecords>(emptyCemeteryRecords);
   const [form, setForm] = useState<UserFormState>(blankUser);
@@ -241,6 +268,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(() => new Set());
   const [savingRecordKey, setSavingRecordKey] = useState<string>();
   const [savingLookupKey, setSavingLookupKey] = useState<string>();
+  const [recentlyMovedLookupIds, setRecentlyMovedLookupIds] = useState<Set<string>>(() => new Set());
+  const movedLookupTimeoutRef = useRef<number | undefined>(undefined);
 
   const roleOptions = useMemo(() => roles.map((role) => role.name), [roles]);
   const selectedCemetery = useMemo(
@@ -275,7 +304,12 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     () => lookupRecords.tables.find((table) => table.table === selectedLookupTable),
     [lookupRecords.tables, selectedLookupTable],
   );
-  const selectedLookupRows = useMemo(() => lookupRecords.lookups[selectedLookupTable] ?? [], [lookupRecords.lookups, selectedLookupTable]);
+  const selectedLookupAllRows = useMemo(() => lookupRecords.lookups[selectedLookupTable] ?? [], [lookupRecords.lookups, selectedLookupTable]);
+  const selectedLookupRows = useMemo(
+    () => (showInactiveLookups ? selectedLookupAllRows : selectedLookupAllRows.filter((row) => row.isActive)),
+    [selectedLookupAllRows, showInactiveLookups],
+  );
+  const duplicateLookupSortOrders = useMemo(() => lookupDuplicateSortOrders(selectedLookupAllRows), [selectedLookupAllRows]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -320,6 +354,13 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     const match = lotsForSelectedSection.find((lot) => lotPickerLabel(lot) === lotPickerValue || lot.name === lotPickerValue || lot.lotId === lotPickerValue);
     if (match) setSelectedLotId(match.id);
   }, [lotPickerValue, lotsForSelectedSection, selectedLotId]);
+
+  useEffect(
+    () => () => {
+      if (movedLookupTimeoutRef.current) window.clearTimeout(movedLookupTimeoutRef.current);
+    },
+    [],
+  );
 
   const loadAuditEvents = async (filters = auditFilters) => {
     setIsLoadingAuditEvents(true);
@@ -606,6 +647,11 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
   const saveLookupRecord = async (table: string, row: LookupRecord) => {
     const key = `${table}:${row.id}`;
+    if (!row.isActive && row.usageCount > 0) {
+      const shouldContinue = window.confirm(`${row.label} is ${lookupUsageText(row).toLowerCase()} Deactivate it anyway?`);
+      if (!shouldContinue) return;
+    }
+
     setSavingLookupKey(key);
     setMessage(undefined);
     setError(undefined);
@@ -621,15 +667,57 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
-  const addLookupRecord = async () => {
-    if (!selectedLookupDefinition) return;
-    const key = `${selectedLookupDefinition.table}:new`;
+  const moveLookupRecord = async (table: string, row: LookupRecord, direction: -1 | 1) => {
+    const rows = [...(showInactiveLookups ? lookupRecords.lookups[table] ?? [] : (lookupRecords.lookups[table] ?? []).filter((candidate) => candidate.isActive))].sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label) || a.code.localeCompare(b.code),
+    );
+    const rowIndex = rows.findIndex((candidate) => candidate.id === row.id);
+    const swapWith = rows[rowIndex + direction];
+    if (!swapWith) return;
+
+    const key = `${table}:move:${row.id}`;
+    const nextRow = { ...row, sortOrder: swapWith.sortOrder };
+    const nextSwapWith = { ...swapWith, sortOrder: row.sortOrder };
     setSavingLookupKey(key);
     setMessage(undefined);
     setError(undefined);
 
     try {
-      const saved = await createLookupRecord(selectedLookupDefinition.table, newLookupRecord);
+      const [savedRow, savedSwapWith] = await Promise.all([updateLookupRecord(table, nextRow.id, nextRow), updateLookupRecord(table, nextSwapWith.id, nextSwapWith)]);
+      replaceLookupRecord(table, savedRow);
+      replaceLookupRecord(table, savedSwapWith);
+      setRecentlyMovedLookupIds(new Set([savedRow.id, savedSwapWith.id]));
+      if (movedLookupTimeoutRef.current) window.clearTimeout(movedLookupTimeoutRef.current);
+      movedLookupTimeoutRef.current = window.setTimeout(() => setRecentlyMovedLookupIds(new Set()), 1600);
+      setMessage(`${row.label} moved ${direction < 0 ? "up" : "down"}.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to reorder lookup rows.");
+    } finally {
+      setSavingLookupKey(undefined);
+    }
+  };
+
+  const viewLookupAudit = (table: string, row: LookupRecord) => {
+    const filters = { ...defaultAuditFilters, targetTable: table, targetRecordId: row.id };
+    setAuditFilters(filters);
+    setActiveTab("audit");
+    void loadAuditEvents(filters);
+  };
+
+  const addLookupRecord = async () => {
+    if (!selectedLookupDefinition) return;
+    const key = `${selectedLookupDefinition.table}:new`;
+    const existingCodes = new Set((lookupRecords.lookups[selectedLookupDefinition.table] ?? []).map((row) => row.code));
+    const lookupToCreate = {
+      ...newLookupRecord,
+      code: lookupCodeFromLabel(newLookupRecord.label, existingCodes),
+    };
+    setSavingLookupKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const saved = await createLookupRecord(selectedLookupDefinition.table, lookupToCreate);
       replaceLookupRecord(selectedLookupDefinition.table, saved);
       setNewLookupRecord(blankLookupRecord);
       setMessage(`${saved.label} added.`);
@@ -1173,6 +1261,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
               <button type="button" className="secondary-button" onClick={() => void loadLookupRecords()} disabled={isLoadingLookups} title="Reload lookup values from the database.">
                 {isLoadingLookups ? "Loading..." : "Refresh"}
               </button>
+              <label className="checkbox-row lookup-show-inactive" title="Show inactive lookup values in this maintenance list.">
+                <input type="checkbox" checked={showInactiveLookups} onChange={(event) => setShowInactiveLookups(event.target.checked)} />
+                Show inactive
+              </label>
             </div>
 
             {isLoadingLookups ? <div className="admin-message" role="status">Loading lookup records...</div> : null}
@@ -1180,49 +1272,81 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             {selectedLookupDefinition ? (
               <>
                 <div className="lookup-row-list" role="table" aria-label={`${selectedLookupDefinition.label} lookup values`}>
-                  {selectedLookupRows.map((row) => (
-                    <article key={row.id} className={row.isActive ? "lookup-row" : "lookup-row is-inactive"} title={lookupRowTitle(row)}>
-                      <label>
-                        Code
-                        <input value={row.code} readOnly title="Stable lookup code. Existing codes are read-only to preserve database references." />
-                      </label>
-                      <label>
-                        Label
-                        <input
-                          value={row.label}
-                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { label: event.target.value })}
-                          title="Human-readable label shown in admin screens and future form controls."
-                        />
-                      </label>
-                      <label>
-                        Sort
-                        <input
-                          type="number"
-                          value={row.sortOrder}
-                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sortOrder: Number(event.target.value) })}
-                          title="Display order for this lookup value."
-                        />
-                      </label>
+                  {selectedLookupRows.map((row, rowIndex) => {
+                    const hasDuplicateSortOrder = duplicateLookupSortOrders.has(row.sortOrder);
+                    const moveKey = `${selectedLookupTable}:move:${row.id}`;
+                    const isSavingRow = savingLookupKey === `${selectedLookupTable}:${row.id}` || savingLookupKey === moveKey;
+                    const sortWasRecentlyMoved = recentlyMovedLookupIds.has(row.id);
+
+                    return (
+                      <article
+                        key={row.id}
+                        className={`${row.isActive ? "lookup-row" : "lookup-row is-inactive"} ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""}`}
+                        title={lookupRowTitle(row)}
+                      >
+                        <label className="lookup-label">
+                          Label
+                          <input
+                            value={row.label}
+                            onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { label: event.target.value })}
+                            title="Human-readable label shown in admin screens and future form controls."
+                          />
+                        </label>
+                        <div className={`lookup-sort lookup-field ${sortWasRecentlyMoved ? "was-reordered" : ""}`}>
+                          <span>Sort</span>
+                          <div className="lookup-sort-control">
+                            <input
+                              type="number"
+                              value={row.sortOrder}
+                              onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sortOrder: Number(event.target.value) })}
+                              title="Display order for this lookup value."
+                            />
+                            <span className="lookup-sort-buttons" aria-label={`Change sort order for ${row.label}`}>
+                              <button
+                                type="button"
+                                className="icon-button"
+                                onClick={() => void moveLookupRecord(selectedLookupTable, row, -1)}
+                                disabled={rowIndex === 0 || isSavingRow}
+                                title="Move this lookup value up by swapping sort order with the previous visible value."
+                                aria-label={`Move ${row.label} up`}
+                              >
+                                <ArrowUp size={16} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                className="icon-button"
+                                onClick={() => void moveLookupRecord(selectedLookupTable, row, 1)}
+                                disabled={rowIndex === selectedLookupRows.length - 1 || isSavingRow}
+                                title="Move this lookup value down by swapping sort order with the next visible value."
+                                aria-label={`Move ${row.label} down`}
+                              >
+                                <ArrowDown size={16} aria-hidden="true" />
+                              </button>
+                            </span>
+                          </div>
+                          {hasDuplicateSortOrder ? <small className="lookup-warning">Duplicate sort order</small> : null}
+                        </div>
                       <label className="lookup-description">
                         Description
                         <textarea
                           value={row.description}
                           onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { description: event.target.value })}
-                          rows={2}
+                          rows={selectedLookupDefinition.hasSourceFields ? 3 : 2}
                           title="Admin-facing explanation of when this value should be used."
                         />
                       </label>
                       {selectedLookupDefinition.hasSourceFields ? (
                         <>
-                          <label>
+                          <label className="lookup-source-notes">
                             Source notes
-                            <input
+                            <textarea
                               value={row.sourceNotes ?? ""}
                               onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sourceNotes: event.target.value })}
+                              rows={3}
                               title="Optional note describing where this lookup value came from."
                             />
                           </label>
-                          <label>
+                          <label className="lookup-source-url">
                             Source URL
                             <input
                               value={row.sourceUrl ?? ""}
@@ -1232,7 +1356,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                           </label>
                         </>
                       ) : null}
-                      <label className="checkbox-row lookup-active" title="Inactive lookup values stay in the database for history but can be hidden from future pickers.">
+                      <div className="lookup-usage" title={lookupUsageText(row)}>
+                        {lookupUsageText(row)}
+                      </div>
+                      <label className="checkbox-row lookup-active" title="Inactive lookup values stay in the database for history but are hidden from active-only pickers.">
                         <input
                           type="checkbox"
                           checked={row.isActive}
@@ -1241,33 +1368,36 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                         />
                         Active
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => void saveLookupRecord(selectedLookupTable, row)}
-                        disabled={savingLookupKey === `${selectedLookupTable}:${row.id}` || !row.label.trim() || !row.description.trim()}
-                        title="Save changes to this lookup value."
-                      >
-                        {savingLookupKey === `${selectedLookupTable}:${row.id}` ? "Saving..." : "Save"}
-                      </button>
+                      <div className="lookup-actions">
+                        <button
+                          type="button"
+                          className="icon-button"
+                          onClick={() => viewLookupAudit(selectedLookupTable, row)}
+                          title="Open audit log entries for this lookup value."
+                          aria-label={`View audit log for ${row.label}`}
+                        >
+                          <History size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void saveLookupRecord(selectedLookupTable, row)}
+                          disabled={isSavingRow || !row.label.trim() || !row.description.trim()}
+                          title="Save changes to this lookup value."
+                        >
+                          {savingLookupKey === `${selectedLookupTable}:${row.id}` ? "Saving..." : "Save"}
+                        </button>
+                      </div>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                <article className="lookup-row lookup-row-new" title={`Add a new value to ${selectedLookupDefinition.label}.`}>
+                <article
+                  className={`lookup-row lookup-row-new ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""}`}
+                  title={`Add a new value to ${selectedLookupDefinition.label}.`}
+                >
                   <h4>Add lookup value</h4>
-                  <label>
-                    Code
-                    <input
-                      value={newLookupRecord.code}
-                      onChange={(event) => {
-                        const nextCode = event.target.value.trim().toLowerCase();
-                        if (lookupCodePattern.test(nextCode)) setNewLookupRecord((current) => ({ ...current, code: nextCode }));
-                      }}
-                      placeholder="new_code"
-                      title="Stable lowercase code using letters, numbers, and underscores."
-                    />
-                  </label>
-                  <label>
+                  <label className="lookup-label">
                     Label
                     <input
                       value={newLookupRecord.label}
@@ -1275,7 +1405,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                       title="Human-readable label for the new lookup value."
                     />
                   </label>
-                  <label>
+                  <label className="lookup-sort">
                     Sort
                     <input
                       type="number"
@@ -1289,21 +1419,22 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                     <textarea
                       value={newLookupRecord.description}
                       onChange={(event) => setNewLookupRecord((current) => ({ ...current, description: event.target.value }))}
-                      rows={2}
+                      rows={selectedLookupDefinition.hasSourceFields ? 3 : 2}
                       title="Admin-facing explanation of when this value should be used."
                     />
                   </label>
                   {selectedLookupDefinition.hasSourceFields ? (
                     <>
-                      <label>
+                      <label className="lookup-source-notes">
                         Source notes
-                        <input
+                        <textarea
                           value={newLookupRecord.sourceNotes ?? ""}
                           onChange={(event) => setNewLookupRecord((current) => ({ ...current, sourceNotes: event.target.value }))}
+                          rows={3}
                           title="Optional note describing where this lookup value came from."
                         />
                       </label>
-                      <label>
+                      <label className="lookup-source-url">
                         Source URL
                         <input
                           value={newLookupRecord.sourceUrl ?? ""}
@@ -1327,7 +1458,6 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                     onClick={() => void addLookupRecord()}
                     disabled={
                       savingLookupKey === `${selectedLookupTable}:new` ||
-                      !newLookupRecord.code.trim() ||
                       !newLookupRecord.label.trim() ||
                       !newLookupRecord.description.trim()
                     }
