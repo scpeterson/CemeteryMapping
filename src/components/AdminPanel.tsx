@@ -124,6 +124,7 @@ const emptyLookupAdminRecords: LookupAdminRecords = {
 };
 
 const blankLookupRecord: LookupRecord = {
+  id: "",
   code: "",
   label: "",
   description: "",
@@ -580,8 +581,8 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const replaceLookupRecord = (table: string, saved: LookupRecord) => {
     setLookupRecords((current) => {
       const existingRows = current.lookups[table] ?? [];
-      const exists = existingRows.some((row) => row.code === saved.code);
-      const nextRows = exists ? existingRows.map((row) => (row.code === saved.code ? saved : row)) : [...existingRows, saved];
+      const exists = existingRows.some((row) => row.id === saved.id);
+      const nextRows = exists ? existingRows.map((row) => (row.id === saved.id ? saved : row)) : [...existingRows, saved];
 
       return {
         ...current,
@@ -593,24 +594,24 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     });
   };
 
-  const updateLocalLookupRecord = (table: string, code: string, patch: Partial<LookupRecord>) => {
+  const updateLocalLookupRecord = (table: string, id: string, patch: Partial<LookupRecord>) => {
     setLookupRecords((current) => ({
       ...current,
       lookups: {
         ...current.lookups,
-        [table]: (current.lookups[table] ?? []).map((row) => (row.code === code ? { ...row, ...patch } : row)),
+        [table]: (current.lookups[table] ?? []).map((row) => (row.id === id ? { ...row, ...patch } : row)),
       },
     }));
   };
 
   const saveLookupRecord = async (table: string, row: LookupRecord) => {
-    const key = `${table}:${row.code}`;
+    const key = `${table}:${row.id}`;
     setSavingLookupKey(key);
     setMessage(undefined);
     setError(undefined);
 
     try {
-      const saved = await updateLookupRecord(table, row.code, row);
+      const saved = await updateLookupRecord(table, row.id, row);
       replaceLookupRecord(table, saved);
       setMessage(`${saved.label} saved.`);
     } catch (saveError) {
@@ -1180,7 +1181,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
               <>
                 <div className="lookup-row-list" role="table" aria-label={`${selectedLookupDefinition.label} lookup values`}>
                   {selectedLookupRows.map((row) => (
-                    <article key={row.code} className={row.isActive ? "lookup-row" : "lookup-row is-inactive"} title={lookupRowTitle(row)}>
+                    <article key={row.id} className={row.isActive ? "lookup-row" : "lookup-row is-inactive"} title={lookupRowTitle(row)}>
                       <label>
                         Code
                         <input value={row.code} readOnly title="Stable lookup code. Existing codes are read-only to preserve database references." />
@@ -1189,7 +1190,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                         Label
                         <input
                           value={row.label}
-                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { label: event.target.value })}
+                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { label: event.target.value })}
                           title="Human-readable label shown in admin screens and future form controls."
                         />
                       </label>
@@ -1198,7 +1199,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                         <input
                           type="number"
                           value={row.sortOrder}
-                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { sortOrder: Number(event.target.value) })}
+                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sortOrder: Number(event.target.value) })}
                           title="Display order for this lookup value."
                         />
                       </label>
@@ -1206,7 +1207,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                         Description
                         <textarea
                           value={row.description}
-                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { description: event.target.value })}
+                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { description: event.target.value })}
                           rows={2}
                           title="Admin-facing explanation of when this value should be used."
                         />
@@ -1217,7 +1218,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                             Source notes
                             <input
                               value={row.sourceNotes ?? ""}
-                              onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { sourceNotes: event.target.value })}
+                              onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sourceNotes: event.target.value })}
                               title="Optional note describing where this lookup value came from."
                             />
                           </label>
@@ -1225,7 +1226,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                             Source URL
                             <input
                               value={row.sourceUrl ?? ""}
-                              onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { sourceUrl: event.target.value })}
+                              onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sourceUrl: event.target.value })}
                               title="Optional source URL for this lookup value."
                             />
                           </label>
@@ -1235,7 +1236,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                         <input
                           type="checkbox"
                           checked={row.isActive}
-                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.code, { isActive: event.target.checked })}
+                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { isActive: event.target.checked })}
                           title="Controls whether this lookup value is active."
                         />
                         Active
@@ -1243,10 +1244,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                       <button
                         type="button"
                         onClick={() => void saveLookupRecord(selectedLookupTable, row)}
-                        disabled={savingLookupKey === `${selectedLookupTable}:${row.code}` || !row.label.trim() || !row.description.trim()}
+                        disabled={savingLookupKey === `${selectedLookupTable}:${row.id}` || !row.label.trim() || !row.description.trim()}
                         title="Save changes to this lookup value."
                       >
-                        {savingLookupKey === `${selectedLookupTable}:${row.code}` ? "Saving..." : "Save"}
+                        {savingLookupKey === `${selectedLookupTable}:${row.id}` ? "Saving..." : "Save"}
                       </button>
                     </article>
                   ))}

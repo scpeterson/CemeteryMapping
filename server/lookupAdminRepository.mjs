@@ -36,6 +36,7 @@ function lookupDefinition(table) {
 
 function toLookupRow(row, definition) {
   return {
+    id: row.id,
     code: row.code,
     label: row.label,
     description: row.description,
@@ -66,7 +67,7 @@ export async function listLookupRecords(pool) {
       const definition = lookupDefinition(table.table);
       const sourceFields = definition.hasSourceFields ? ", source_notes, source_url" : "";
       const result = await client.query(`
-        SELECT code, label, description, sort_order, is_active, created_at, updated_at${sourceFields}
+        SELECT id::text, code, label, description, sort_order, is_active, created_at, updated_at${sourceFields}
         FROM ${definition.table}
         ORDER BY sort_order, label, code
       `);
@@ -79,7 +80,7 @@ export async function listLookupRecords(pool) {
   }
 }
 
-export async function updateLookupRecord(pool, table, code, record, { actorUser } = {}) {
+export async function updateLookupRecord(pool, table, id, record, { actorUser } = {}) {
   const definition = lookupDefinition(table);
 
   return withAuditContext(pool, { actorUser }, async (client) => {
@@ -92,8 +93,8 @@ export async function updateLookupRecord(pool, table, code, record, { actorUser 
             is_active = $5`;
     const returningSourceFields = definition.hasSourceFields ? ", source_notes, source_url" : "";
     const values = definition.hasSourceFields
-      ? [code, record.label, record.description, record.sortOrder, record.sourceNotes ?? "", record.sourceUrl ?? "", record.isActive]
-      : [code, record.label, record.description, record.sortOrder, record.isActive];
+      ? [id, record.label, record.description, record.sortOrder, record.sourceNotes ?? "", record.sourceUrl ?? "", record.isActive]
+      : [id, record.label, record.description, record.sortOrder, record.isActive];
 
     const result = await client.query(
       `
@@ -101,8 +102,8 @@ export async function updateLookupRecord(pool, table, code, record, { actorUser 
         SET label = $2,
             description = $3,
             sort_order = $4${sourceAssignments}
-        WHERE code = $1
-        RETURNING code, label, description, sort_order, is_active, created_at, updated_at${returningSourceFields}
+        WHERE id = $1::uuid
+        RETURNING id::text, code, label, description, sort_order, is_active, created_at, updated_at${returningSourceFields}
       `,
       values,
     );
@@ -127,7 +128,7 @@ export async function createLookupRecord(pool, table, record, { actorUser } = {}
       `
         INSERT INTO ${definition.table} (code, label, description, sort_order${sourceColumns}, is_active)
         VALUES ($1, $2, $3, $4${sourceValues}, $${activeIndex})
-        RETURNING code, label, description, sort_order, is_active, created_at, updated_at${returningSourceFields}
+        RETURNING id::text, code, label, description, sort_order, is_active, created_at, updated_at${returningSourceFields}
       `,
       values,
     );

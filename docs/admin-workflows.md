@@ -34,7 +34,7 @@ The Admin UI also has a Cemetery Records tab for text-only cemetery hierarchy ed
 
 The Admin UI has a read-only Deed Evidence tab for reviewing staged deed registry imports before any promotion into production lot, gravesite, owner, or ownership-event tables. Admins can select an import batch, filter by parser confidence, filter by staged evidence type, search owner/lot/section/remark text, and review parser notes alongside related `Investigated` worksheet notes. This view is intentionally review-only; promotion remains deferred until the staged evidence rules are approved.
 
-The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Existing lookup codes are read-only because other records may already reference them; obsolete values should be marked inactive instead of deleted.
+The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Lookup rows use UUID primary keys; lowercase codes remain read-only stable identifiers for imports, seed data, and compatibility. Obsolete values should be marked inactive instead of deleted.
 
 Current role behavior:
 

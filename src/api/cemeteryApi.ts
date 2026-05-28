@@ -173,8 +173,8 @@ export async function createLookupRecord(table: string, lookup: SaveLookupInput)
   return jsonResponse<LookupRecord>(response, "Create lookup API");
 }
 
-export async function updateLookupRecord(table: string, code: string, lookup: SaveLookupInput): Promise<LookupRecord> {
-  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/lookups/${encodeURIComponent(table)}/${encodeURIComponent(code)}`, jsonRequest("PUT", lookup));
+export async function updateLookupRecord(table: string, id: string, lookup: SaveLookupInput): Promise<LookupRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/lookups/${encodeURIComponent(table)}/${encodeURIComponent(id)}`, jsonRequest("PUT", lookup));
   return jsonResponse<LookupRecord>(response, "Update lookup API");
 }
 
