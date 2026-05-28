@@ -68,3 +68,6 @@ databaseChangeLog:
   - include:
       file: changes/023-headstone-gravesite-links.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/024-headstone-marker-lookups.sql
+      relativeToChangelogFile: true

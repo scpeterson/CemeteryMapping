@@ -137,6 +137,8 @@ const auditTableLabels: Record<string, string> = {
   headstones: "Headstones",
   lot_owner_parties: "Lot owners",
   lots: "Lots",
+  marker_material_types: "Marker materials",
+  marker_types: "Marker types",
   memorials: "Memorials",
   owners: "Owners",
   sections: "Sections",

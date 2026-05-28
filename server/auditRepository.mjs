@@ -14,6 +14,8 @@ const allowedAuditTables = new Set([
   "headstones",
   "lot_owner_parties",
   "lots",
+  "marker_material_types",
+  "marker_types",
   "memorials",
   "owners",
   "sections",

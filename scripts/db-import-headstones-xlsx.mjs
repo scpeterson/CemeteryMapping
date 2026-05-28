@@ -398,14 +398,16 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
   return { gravesiteUuid: result.rows[0].id, sectionLinked: Boolean(section), lotLinked: Boolean(lot), notes };
 }
 
-async function upsertHeadstone(client, imported, gravesiteUuid) {
+export async function upsertHeadstone(client, imported, gravesiteUuid) {
   const result = await client.query(
     `
       INSERT INTO headstones (
         gravesite_uuid,
         headstone_id,
         marker_type,
+        marker_type_code,
         condition,
+        material_type_code,
         latitude,
         longitude,
         geometry,
@@ -417,6 +419,8 @@ async function upsertHeadstone(client, imported, gravesiteUuid) {
         $2,
         'headstone',
         'unknown',
+        'unknown',
+        'unknown',
         $3::numeric,
         $4::numeric,
         ST_SetSRID(ST_MakePoint($4::double precision, $3::double precision), 4326),
@@ -426,6 +430,14 @@ async function upsertHeadstone(client, imported, gravesiteUuid) {
       ON CONFLICT (headstone_id) DO UPDATE SET
         gravesite_uuid = EXCLUDED.gravesite_uuid,
         marker_type = EXCLUDED.marker_type,
+        marker_type_code = CASE
+          WHEN headstones.marker_type_code IS NULL OR headstones.marker_type_code = 'unknown' THEN EXCLUDED.marker_type_code
+          ELSE headstones.marker_type_code
+        END,
+        material_type_code = CASE
+          WHEN headstones.material_type_code IS NULL OR headstones.material_type_code = 'unknown' THEN EXCLUDED.material_type_code
+          ELSE headstones.material_type_code
+        END,
         latitude = EXCLUDED.latitude,
         longitude = EXCLUDED.longitude,
         geometry = EXCLUDED.geometry,
