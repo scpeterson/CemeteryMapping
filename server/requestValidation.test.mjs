@@ -67,7 +67,7 @@ test("status validation rejects unsupported SQL-like status filters", () => {
 });
 
 test("status validation accepts comma-separated known statuses", () => {
-  assert.deepEqual(validateStatuses("occupied,reserved,unknown"), ["occupied", "reserved", "unknown"]);
+  assert.deepEqual(validateStatuses("occupied,reserved,needs_review,unknown"), ["occupied", "reserved", "needs_review", "unknown"]);
 });
 
 test("mutation reason validation rejects oversized reasons", () => {

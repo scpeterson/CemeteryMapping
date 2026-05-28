@@ -14,9 +14,12 @@ Migration `014-database-audit-triggers.sql` attaches row-level audit triggers to
 - `blocks`
 - `lots`
 - `gravesites`
+- `gravesite_status_types`
 - `burials`
+- `headstone_condition_types`
 - `owners`
 - `lot_owner_parties`
+- `lot_ownership_event_types`
 - `marker_types`
 - `marker_material_types`
 - `memorials`
@@ -68,9 +71,12 @@ GRANT INSERT, UPDATE ON
   blocks,
   lots,
   gravesites,
+  gravesite_status_types,
   burials,
+  headstone_condition_types,
   owners,
   lot_owner_parties,
+  lot_ownership_event_types,
   marker_types,
   marker_material_types,
   memorials,

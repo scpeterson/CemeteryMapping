@@ -11,7 +11,7 @@ import { graveSelectionKey } from "./lib/format";
 import { searchGraves } from "./lib/search";
 import type { CemeteryData, CurrentUser, GraveSpace, GraveSpaceSummary, GraveStatus, Owner, SearchMatch } from "./types";
 
-const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
+const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 
 export default function App() {
   const [query, setQuery] = useState("");

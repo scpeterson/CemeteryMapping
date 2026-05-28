@@ -34,6 +34,12 @@ test("normalizeAuditFilters allows marker lookup audit records", () => {
   assert.equal(normalizeAuditFilters({ targetTable: "marker_material_types" }).targetTable, "marker_material_types");
 });
 
+test("normalizeAuditFilters allows status and event lookup audit records", () => {
+  assert.equal(normalizeAuditFilters({ targetTable: "headstone_condition_types" }).targetTable, "headstone_condition_types");
+  assert.equal(normalizeAuditFilters({ targetTable: "gravesite_status_types" }).targetTable, "gravesite_status_types");
+  assert.equal(normalizeAuditFilters({ targetTable: "lot_ownership_event_types" }).targetTable, "lot_ownership_event_types");
+});
+
 test("listAuditEvents returns filtered audit records", async () => {
   let capturedSql = "";
   let capturedValues = [];

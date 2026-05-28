@@ -678,8 +678,12 @@ h3 {
   background: #8e6fbb;
 }
 
-.legend-unknown {
+.legend-needs_review {
   background: #c7524f;
+}
+
+.legend-unknown {
+  background: #8b9097;
 }
 
 .detail-message {
