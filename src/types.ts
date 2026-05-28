@@ -178,6 +178,8 @@ export type LookupRecord = {
   description: string;
   sortOrder: number;
   isActive: boolean;
+  usageCount: number;
+  usageLabel: string;
   sourceNotes?: string;
   sourceUrl?: string;
   createdAt: string;

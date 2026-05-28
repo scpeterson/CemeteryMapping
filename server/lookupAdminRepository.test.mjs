@@ -28,7 +28,9 @@ test("listLookupRecords reads source fields only for marker lookup tables", asyn
 
   assert.equal(result.tables.length, 5);
   assert.match(queries[0], /source_notes, source_url/u);
+  assert.match(queries[0], /usage_records\.marker_type_id = marker_types\.id/u);
   assert.doesNotMatch(queries[2], /source_notes, source_url/u);
+  assert.match(queries[3], /usage_records\.status_type_id = gravesite_status_types\.id/u);
 });
 
 test("updateLookupRecord uses an allowlisted table and audit transaction", async () => {
@@ -46,6 +48,7 @@ test("updateLookupRecord uses an allowlisted table and audit transaction", async
               description: "Occupied status",
               sort_order: 30,
               is_active: true,
+              usage_count: "12",
               created_at: "2026-05-28T00:00:00.000Z",
               updated_at: "2026-05-28T00:00:00.000Z",
             },
@@ -75,6 +78,8 @@ test("updateLookupRecord uses an allowlisted table and audit transaction", async
   assert.deepEqual(queries.at(-2).values, ["22222222-2222-4222-8222-222222222222", "Occupied", "Occupied status", 30, true]);
   assert.equal(queries.at(-1).sql, "COMMIT");
   assert.equal(updated.label, "Occupied");
+  assert.equal(updated.usageCount, 12);
+  assert.equal(updated.usageLabel, "gravesites");
 });
 
 test("createLookupRecord rejects unsupported lookup tables before SQL is built", async () => {
