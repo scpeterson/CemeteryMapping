@@ -43,7 +43,7 @@ Add physical marker tables:
 - source properties
 - last inspection date
 
-`marker_types` and `marker_material_types` provide controlled lookup values for marker form and material. The seed values are based on common cemetery/monument categories and VA marker categories, including upright headstones, flat or flush markers, bevel markers, slant markers, ledgers, monuments, footstones, plaques, benches, niche markers, medallions, granite, marble, bronze, limestone, sandstone, slate, concrete, metal, wood, ceramic or porcelain, glass, zinc, unknown, and other.
+`marker_types` and `marker_material_types` provide controlled lookup values for marker form and material. Lookup tables use UUID primary keys, while lowercase `code` values remain unique stable identifiers for seed data, imports, and compatibility. The seed values are based on common cemetery/monument categories and VA marker categories, including upright headstones, flat or flush markers, bevel markers, slant markers, ledgers, monuments, footstones, plaques, benches, niche markers, medallions, granite, marble, bronze, limestone, sandstone, slate, concrete, metal, wood, ceramic or porcelain, glass, zinc, unknown, and other.
 
 `headstone_condition_types` provides controlled lookup values for marker condition: excellent, good, fair, poor, damaged, and unknown.
 

@@ -172,6 +172,7 @@ export type LookupTableDefinition = {
 };
 
 export type LookupRecord = {
+  id: string;
   code: string;
   label: string;
   description: string;

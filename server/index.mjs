@@ -321,12 +321,12 @@ export function createApp(config, pool) {
     }
   });
 
-  app.put("/api/admin/lookups/:table/:code", requireAdmin, async (request, response, next) => {
+  app.put("/api/admin/lookups/:table/:id", requireAdmin, async (request, response, next) => {
     try {
       const table = validateLookupTable(request.params.table);
-      const code = validateLookupCode(request.params.code);
-      const record = validateLookupPayload({ ...request.body, code });
-      const updated = await updateLookupRecord(pool, table, code, record, { actorUser: request.user });
+      const id = validateUuid(request.params.id, "Lookup id");
+      const record = validateLookupPayload(request.body);
+      const updated = await updateLookupRecord(pool, table, id, record, { actorUser: request.user });
       if (!updated) {
         response.status(404).json({ error: "Lookup row not found" });
         return;

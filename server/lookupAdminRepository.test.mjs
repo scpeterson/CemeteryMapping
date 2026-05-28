@@ -36,10 +36,11 @@ test("updateLookupRecord uses an allowlisted table and audit transaction", async
   const client = {
     async query(sql, values) {
       queries.push({ sql, values });
-      if (/RETURNING code/u.test(sql)) {
+      if (/RETURNING id::text/u.test(sql)) {
         return {
           rows: [
             {
+              id: "22222222-2222-4222-8222-222222222222",
               code: "occupied",
               label: "Occupied",
               description: "Occupied status",
@@ -64,14 +65,14 @@ test("updateLookupRecord uses an allowlisted table and audit transaction", async
   const updated = await updateLookupRecord(
     pool,
     "gravesite_status_types",
-    "occupied",
+    "22222222-2222-4222-8222-222222222222",
     { label: "Occupied", description: "Occupied status", sortOrder: 30, isActive: true },
     { actorUser: { id: "11111111-1111-4111-8111-111111111111" } },
   );
 
   assert.equal(queries[0].sql, "BEGIN");
   assert.match(queries.at(-2).sql, /UPDATE gravesite_status_types/u);
-  assert.deepEqual(queries.at(-2).values, ["occupied", "Occupied", "Occupied status", 30, true]);
+  assert.deepEqual(queries.at(-2).values, ["22222222-2222-4222-8222-222222222222", "Occupied", "Occupied status", 30, true]);
   assert.equal(queries.at(-1).sql, "COMMIT");
   assert.equal(updated.label, "Occupied");
 });
