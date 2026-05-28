@@ -23,9 +23,21 @@ Every real-data import or source change should update this file and the relevant
 | Data owner | TBD |
 | Date received | TBD |
 | Last source edit/save date | TBD |
-| Coordinate reference system | TBD; importer exports to EPSG:4326 |
+| Coordinate reference system | Source geodatabase layers are Web Mercator (`EPSG:3857`); importer exports/stores EPSG:4326 |
 | Known limitations | Blocks remain optional. Lots are supported and may be section-scoped when no block identifier exists. Current lot dimensions are 10 feet by 20 feet. |
 | Related ADR | [ADR 0007](adr/0007-file-geodatabase-cemetery-section-import.md) |
+
+## PASDA Imagery
+
+| Field | Value |
+| --- | --- |
+| Source name | pasda/AlleghenyCountyImagery2017 |
+| Source type | ArcGIS Map Service |
+| Service URL | `https://imagery.pasda.psu.edu/arcgis/rest/services/pasda/AlleghenyCountyImagery2017/MapServer` |
+| Native coordinate reference system | NAD83 (`EPSG:4269`) |
+| Application map request | ArcGIS MapServer `export` rendered as one MapLibre image source for the current map viewport, with `bboxSR=3857`, `imageSR=3857`, and Esri datum transformation `108190` (`WGS_1984_(ITRF00)_To_NAD_1983`, inverse) for NAD83 imagery; the image refreshes after map movement or resize |
+| Layer request | Parent mosaic layer `layers=show:1` (`Allegheny County Imagery 2017_3in`) |
+| Known limitations | The service is not cached. The app requests dynamic Web Mercator export images for the visible viewport, while ArcGIS Pro consumes the ArcGIS Map Service natively. |
 
 ## Headstone GPS Coordinates and Burial Names
 

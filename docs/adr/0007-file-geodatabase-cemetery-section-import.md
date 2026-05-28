@@ -50,7 +50,7 @@ Known source:
 | Layers used | `Cemeteries`, `Sections`, `Blocks`, `Lots` when present |
 | Responsible data owner | TBD |
 | Date received or last saved | TBD |
-| Coordinate reference system | Determined by GDAL during export; importer normalizes output to EPSG:4326 |
+| Coordinate reference system | Source geodatabase layers are Web Mercator (`EPSG:3857`); importer declares the source CRS and normalizes output to EPSG:4326 |
 | Stewardship notes | Blocks are optional; lots are 10 feet by 20 feet and may be section-scoped |
 
 ## Consequences
