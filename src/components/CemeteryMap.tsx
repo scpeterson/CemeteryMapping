@@ -19,7 +19,7 @@ type CemeteryMapProps = {
 
 const center: [number, number] = [-76.70431, 39.19604];
 
-const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "unknown"];
+const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 
 function graveSelectionIndex(graves: GraveSpaceSummary[]) {
   return new Map(graves.map((grave) => [graveSelectionKey(grave), grave]));

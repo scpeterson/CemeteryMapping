@@ -5,6 +5,8 @@ const statusMap = new Map([
   ["reserved", "reserved"],
   ["occupied", "occupied"],
   ["sold", "sold"],
+  ["needs_review", "needs_review"],
+  ["needs review", "needs_review"],
 ]);
 
 function normalizeStatus(status) {

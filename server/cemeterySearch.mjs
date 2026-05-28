@@ -3,7 +3,8 @@ const statusLabels = {
   reserved: "Reserved",
   occupied: "Occupied",
   sold: "Sold",
-  unknown: "Needs review",
+  needs_review: "Needs review",
+  unknown: "Unknown",
 };
 
 function normalize(value) {
@@ -64,7 +65,8 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           ('reserved', 'Reserved'),
           ('occupied', 'Occupied'),
           ('sold', 'Sold'),
-          ('unknown', 'Needs review')
+          ('needs_review', 'Needs review'),
+          ('unknown', 'Unknown')
       ),
       base_graves AS (
         SELECT
@@ -76,7 +78,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           gravesites.grave_id,
           gravesites.gravesite_id,
           COALESCE(status_labels.status, 'unknown') AS status,
-          COALESCE(status_labels.label, 'Needs review') AS status_label,
+          COALESCE(status_labels.label, 'Unknown') AS status_label,
           ST_AsGeoJSON(gravesites.geometry)::json AS geometry
         FROM gravesites
         JOIN cemeteries

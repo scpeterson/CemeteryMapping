@@ -170,6 +170,8 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
         statusColors.occupied,
         "sold",
         statusColors.sold,
+        "needs_review",
+        statusColors.needs_review,
         statusColors.unknown,
       ],
       "fill-opacity": ["case", ["boolean", ["get", "searchMatch"], false], 0.9, 0.72],

@@ -20,6 +20,7 @@ Add physical marker tables:
 
 - `marker_types`
 - `marker_material_types`
+- `headstone_condition_types`
 - `headstones`
 - `headstone_gravesites`
 - `headstone_burials`
@@ -31,6 +32,7 @@ Add physical marker tables:
 - marker type
 - normalized marker type code
 - condition
+- normalized condition code
 - condition notes
 - inscription
 - material
@@ -42,6 +44,8 @@ Add physical marker tables:
 - last inspection date
 
 `marker_types` and `marker_material_types` provide controlled lookup values for marker form and material. The seed values are based on common cemetery/monument categories and VA marker categories, including upright headstones, flat or flush markers, bevel markers, slant markers, ledgers, monuments, footstones, plaques, benches, niche markers, medallions, granite, marble, bronze, limestone, sandstone, slate, concrete, metal, wood, ceramic or porcelain, glass, zinc, unknown, and other.
+
+`headstone_condition_types` provides controlled lookup values for marker condition: excellent, good, fair, poor, damaged, and unknown.
 
 `headstone_gravesites` links one physical marker to one or more gravesites. `headstones.gravesite_uuid` remains as a compatibility anchor for the primary gravesite, while `headstone_gravesites` is the relationship table to use when a marker spans, is near, or is inferred to relate to additional gravesites.
 
@@ -79,6 +83,7 @@ Inspect tables:
 SELECT count(*) FROM headstones;
 SELECT count(*) FROM marker_types;
 SELECT count(*) FROM marker_material_types;
+SELECT count(*) FROM headstone_condition_types;
 SELECT count(*) FROM headstone_gravesites;
 SELECT count(*) FROM headstone_burials;
 ```
