@@ -1,4 +1,4 @@
-import { type Map } from "maplibre-gl";
+import { type ImageSource, type Map } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
@@ -25,7 +25,12 @@ const mapLayerOrder = [
 ];
 
 const pasdaImageryExportUrl = "https://imagery.pasda.psu.edu/arcgis/rest/services/pasda/AlleghenyCountyImagery2017/MapServer/export";
-const pasdaImageryTileUrl = `${pasdaImageryExportUrl}?f=image&format=jpg&transparent=false&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&layers=show:4`;
+const maxArcGisExportSize = 2048;
+const pasdaToWebMercatorDatumTransformation = encodeURIComponent(
+  JSON.stringify([{ wkid: 108190, transformForward: false }]),
+);
+const webMercatorEarthRadius = 6378137;
+const webMercatorHalfWorld = 20037508.342789244;
 const alleghenyParcelsExportUrl = "https://gisdata.alleghenycounty.us/arcgis/rest/services/EGIS/Web_Parcels/MapServer/export";
 const alleghenyParcelsDynamicLayers = encodeURIComponent(
   JSON.stringify([
@@ -56,18 +61,62 @@ const alleghenyParcelsDynamicLayers = encodeURIComponent(
 );
 const alleghenyParcelsTileUrl = `${alleghenyParcelsExportUrl}?f=image&format=png32&transparent=true&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&dynamicLayers=${alleghenyParcelsDynamicLayers}`;
 
+function clampWebMercatorLatitude(latitude: number) {
+  return Math.max(-85.05112878, Math.min(85.05112878, latitude));
+}
+
+function longitudeToWebMercatorX(longitude: number) {
+  return (longitude * webMercatorHalfWorld) / 180;
+}
+
+function latitudeToWebMercatorY(latitude: number) {
+  const clampedLatitude = clampWebMercatorLatitude(latitude);
+  return webMercatorEarthRadius * Math.log(Math.tan(Math.PI / 4 + (clampedLatitude * Math.PI) / 360));
+}
+
+function pasdaExportForViewport(map: Map) {
+  const bounds = map.getBounds();
+  const west = bounds.getWest();
+  const east = bounds.getEast();
+  const south = bounds.getSouth();
+  const north = bounds.getNorth();
+  const pixelRatio = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  const canvas = map.getCanvas();
+  const width = Math.max(1, Math.min(maxArcGisExportSize, Math.round(canvas.clientWidth * pixelRatio)));
+  const height = Math.max(1, Math.min(maxArcGisExportSize, Math.round(canvas.clientHeight * pixelRatio)));
+  const bbox = [longitudeToWebMercatorX(west), latitudeToWebMercatorY(south), longitudeToWebMercatorX(east), latitudeToWebMercatorY(north)].join(",");
+
+  return {
+    url: `${pasdaImageryExportUrl}?f=image&format=jpg&transparent=false&bbox=${bbox}&bboxSR=3857&imageSR=3857&size=${width},${height}&layers=show:1&datumTransformations=${pasdaToWebMercatorDatumTransformation}`,
+    coordinates: [
+      [west, north],
+      [east, north],
+      [east, south],
+      [west, south],
+    ] as [[number, number], [number, number], [number, number], [number, number]],
+  };
+}
+
+function updatePasdaImagery(map: Map) {
+  const source = map.getSource("pasda-imagery-2017") as ImageSource | undefined;
+  source?.updateImage(pasdaExportForViewport(map));
+}
+
 export function addRasterLayers(map: Map) {
   map.addSource("pasda-imagery-2017", {
-    type: "raster",
-    tiles: [pasdaImageryTileUrl],
-    tileSize: 256,
-    attribution: "PASDA Allegheny County Imagery 2017",
+    type: "image",
+    ...pasdaExportForViewport(map),
   });
   map.addLayer({
     id: "pasda-imagery-2017",
     type: "raster",
     source: "pasda-imagery-2017",
+    paint: { "raster-fade-duration": 0 },
   });
+
+  map.once("idle", () => updatePasdaImagery(map));
+  map.on("moveend", () => updatePasdaImagery(map));
+  map.on("resize", () => updatePasdaImagery(map));
 
   map.addSource("allegheny-parcels", {
     type: "raster",

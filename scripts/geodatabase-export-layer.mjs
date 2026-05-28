@@ -3,6 +3,8 @@ import { existsSync, mkdirSync, statSync } from "node:fs";
 import { dirname } from "node:path";
 
 const [geodatabasePath, layerName, outputPath] = process.argv.slice(2);
+const sourceSrid = 3857;
+const targetSrid = 4326;
 
 if (!geodatabasePath || !layerName || !outputPath) {
   console.error("Usage: npm run geodatabase:export -- /path/to/source.gdb LayerName /path/to/output.geojson");
@@ -21,8 +23,10 @@ const result = spawnSync(
   [
     "-f",
     "GeoJSON",
+    "-s_srs",
+    `EPSG:${sourceSrid}`,
     "-t_srs",
-    "EPSG:4326",
+    `EPSG:${targetSrid}`,
     "-lco",
     "RFC7946=YES",
     outputPath,

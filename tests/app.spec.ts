@@ -348,8 +348,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   const initialScale = await page.getByLabel("Map scale").innerText();
   const mapBounds = await page.getByLabel("Interactive cemetery map").boundingBox();
   expect(mapBounds).not.toBeNull();
-  await page.mouse.move(mapBounds!.x + mapBounds!.width / 2, mapBounds!.y + mapBounds!.height / 2);
-  await page.mouse.wheel(0, -700);
+  await page.getByRole("button", { name: "Zoom in" }).click();
   await expect.poll(() => page.getByLabel("Map scale").innerText()).not.toBe(initialScale);
   await expect(page.getByLabel("Map legend")).toContainText("Layers");
   await expect(page.getByLabel("Map legend")).toContainText("PASDA imagery");

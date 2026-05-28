@@ -7,6 +7,9 @@ import { currentEnvironment, loadDbEnvironment } from "./lib/run-liquibase.mjs";
 
 const { Pool } = pg;
 
+const sourceSrid = 3857;
+const targetSrid = 4326;
+
 const layerMappings = [
   {
     layerName: "Cemeteries",
@@ -94,8 +97,10 @@ function exportLayer(geodatabasePath, layerName, outputPath) {
     [
       "-f",
       "GeoJSON",
+      "-s_srs",
+      `EPSG:${sourceSrid}`,
       "-t_srs",
-      "EPSG:4326",
+      `EPSG:${targetSrid}`,
       "-lco",
       "RFC7946=YES",
       outputPath,
@@ -154,7 +159,7 @@ async function main() {
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id
       `,
-      [options["source-name"] ?? basename(geodatabasePath), "FileGDB", null, options["imported-by"] ?? null, options.notes ?? null],
+      [options["source-name"] ?? basename(geodatabasePath), "FileGDB", sourceSrid, options["imported-by"] ?? null, options.notes ?? null],
     );
     const batchId = batchResult.rows[0].id;
     let importedCount = 0;

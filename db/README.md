@@ -310,7 +310,7 @@ Inspect available layers:
 npm run geodatabase:inspect -- /path/to/cemetery.gdb
 ```
 
-Export a layer to normalized GeoJSON in EPSG:4326:
+Export a layer to normalized GeoJSON in EPSG:4326. The current Cemetery Data Management geodatabase stores its mapped cemetery layers in Web Mercator (`EPSG:3857`), so the export helper declares `EPSG:3857` as the source CRS before transforming to `EPSG:4326`:
 
 ```bash
 npm run geodatabase:export -- /path/to/cemetery.gdb Gravesites /tmp/cemetery-import/gravesites.geojson
@@ -322,7 +322,7 @@ Import recognized Esri Cemetery Management layers into staging:
 npm run db:import:geodatabase -- /path/to/cemetery.gdb --source-name "Cemetery Data Management"
 ```
 
-The importer currently reads `Cemeteries`, `Sections`, `Blocks`, `Lots`, and `Memorials`, normalizes geometries to EPSG:4326, and preserves original File Geodatabase attributes in `spatial_import_features.source_properties`.
+The importer currently reads `Cemeteries`, `Sections`, `Blocks`, `Lots`, and `Memorials`, treats the source geodatabase geometry as Web Mercator (`EPSG:3857`), normalizes geometries to EPSG:4326, records `source_srid = 3857` on the import batch, and preserves original File Geodatabase attributes in `spatial_import_features.source_properties`.
 
 Use the inspection output to map Esri layer and field names to the staging hierarchy fields (`facility_id`, `section_id`, `block_id`, `lot_id`, `grave_id`, `gravesite_id`). After import, run:
 
@@ -369,7 +369,15 @@ APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
 
 Promotion currently handles `Cemeteries`, `Sections`, `Blocks`, and `Lots`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. Lots may be section-scoped when no block identifier is present, and a partial unique index keeps those section-scoped lot identifiers idempotent. Grave polygon import will need the actual gravesite source layer when it becomes available.
 
-For section-boundary corrections where local text fields must be preserved, use the geometry-only section promotion command instead of full spatial promotion. This updates only `sections.geometry` and `sections.updated_at` for the requested facility and section names:
+For cemetery and section boundary corrections where local text fields must be preserved, use the geometry-only boundary promotion command instead of full spatial promotion. This updates only `cemeteries.geometry`, `sections.geometry`, and their `updated_at` values for the requested facility and section names:
+
+```bash
+npm run db:promote:boundary-geometry -- --batch-id <batch-uuid> --facility-id 1 --sections A,B,C,D,E,F
+```
+
+The command prints old area, new area, and symmetric changed area for each promoted cemetery and section so no-op sanity checks are easy to identify.
+
+For section-only corrections, use the narrower section geometry command. This updates only `sections.geometry` and `sections.updated_at` for the requested facility and section names:
 
 ```bash
 npm run db:promote:section-geometry -- --batch-id <batch-uuid> --facility-id 1 --sections B,D,F
