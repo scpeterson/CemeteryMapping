@@ -5,6 +5,22 @@ import { statusColors } from "../lib/format";
 
 export const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels"];
 
+const mapLayerOrder = [
+  "pasda-imagery-2017",
+  "allegheny-parcels",
+  "boundary-fill",
+  "boundary-line",
+  "sections-fill",
+  "sections-line",
+  "lots-fill",
+  "lots-line",
+  "graves-fill",
+  "graves-line",
+  "sections-label",
+  "lots-label",
+  "grave-labels",
+];
+
 const pasdaImageryExportUrl = "https://imagery.pasda.psu.edu/arcgis/rest/services/pasda/AlleghenyCountyImagery2017/MapServer/export";
 const pasdaImageryTileUrl = `${pasdaImageryExportUrl}?f=image&format=jpg&transparent=false&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&layers=show:4`;
 const alleghenyParcelsExportUrl = "https://gisdata.alleghenycounty.us/arcgis/rest/services/EGIS/Web_Parcels/MapServer/export";
@@ -202,5 +218,11 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
       "text-halo-color": "#f8faf5",
       "text-halo-width": 1,
     },
+  });
+}
+
+export function enforceMapLayerOrder(map: Map) {
+  mapLayerOrder.forEach((layer) => {
+    if (map.getLayer(layer)) map.moveLayer(layer);
   });
 }
