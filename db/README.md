@@ -269,8 +269,9 @@ Sections also include `alternate_names text[]` for locally used names that diffe
 
 The security foundation uses:
 
-- `app_roles` for application roles. Initial values are `reader`, `power-user`, and `admin`.
+- `app_roles` for application roles. Current values are `reader`, `power-user`, `cemetery-admin`, and `admin`.
 - `app_users` for identity-provider subjects mapped to application roles.
+- `app_user_cemetery_access` for cemetery-scoped edit assignments used by `power-user` and `cemetery-admin` users.
 - `audit_events` for append-only row-level change history.
 - `deleted_at`, `deleted_by`, and `delete_reason` columns on cemetery business tables.
 
@@ -288,7 +289,7 @@ Current API authorization modes:
 
 Trusted-header mode is not a production identity-provider replacement.
 
-For Auth0 users, `app_users.external_subject` must match the token `sub` claim, `app_users.role_name` must be `reader`, `power-user`, or `admin`, and `app_users.is_active` must be `true`. Deactivating a user sets `is_active` to `false`, blocking application access without deleting the Auth0 account or local mapping.
+For Auth0 users, `app_users.external_subject` must match the token `sub` claim, `app_users.role_name` must be `reader`, `power-user`, `cemetery-admin`, or `admin`, and `app_users.is_active` must be `true`. Deactivating a user sets `is_active` to `false`, blocking application access without deleting the Auth0 account or local mapping. Cemetery-scoped edit and deed/owner access for `power-user` and `cemetery-admin` users is stored in `app_user_cemetery_access`.
 
 ## Spatial import staging
 

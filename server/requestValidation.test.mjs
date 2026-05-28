@@ -28,7 +28,7 @@ function emptyCemeteryPool() {
     async query(sql, values) {
       queryCount += 1;
       assert.match(sql, /WITH status_labels/);
-      assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true]);
+      assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true, undefined]);
       return { rows: [] };
     },
   };

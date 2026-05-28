@@ -1,5 +1,5 @@
 export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "needs_review" | "unknown";
-export type AppRoleName = "reader" | "power-user" | "admin";
+export type AppRoleName = "reader" | "power-user" | "cemetery-admin" | "admin";
 export type AreaGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 
 export type Person = {
@@ -143,11 +143,13 @@ export type CurrentUser = {
   permissions: {
     canViewOwnership: boolean;
     canManageUsers: boolean;
-        canCreateCemeteryRecords: boolean;
-        canUpdateCemeteryRecords: boolean;
-        canUpdateHeadstones: boolean;
-        canDeleteCemeteryRecords: boolean;
-      };
+    canOpenAdminPanel: boolean;
+    canCreateCemeteryRecords: boolean;
+    canUpdateCemeteryRecords: boolean;
+    canUpdateHeadstones: boolean;
+    canDeleteCemeteryRecords: boolean;
+  };
+  assignedCemeteryIds: string[];
 };
 
 export type AppRole = {
@@ -162,6 +164,7 @@ export type AppUser = {
   email: string;
   displayName: string;
   role: AppRoleName;
+  assignedCemeteryIds: string[];
   isActive: boolean;
   lastAuthenticatedAt?: string;
   createdAt: string;

@@ -5,7 +5,7 @@ import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } fro
 import { listAuditEvents } from "./auditRepository.mjs";
 import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from "./auth0Management.mjs";
 import { loadApiConfig } from "./config.mjs";
-import { canViewOwnership, requireRole } from "./auth.mjs";
+import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 import { getCemeteryData, getGraveSpace, listHeadstoneLookupOptions, restoreGraveSpace, softDeleteGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
@@ -46,12 +46,19 @@ function validateUuid(value, label) {
 function validateAdminUserPayload(body, roles) {
   const role = requiredText(body?.role, "Role", 50);
   if (!roles.includes(role)) throw new BadRequestError(`Unsupported role: ${role}.`);
+  const assignedCemeteryIds = Array.isArray(body?.assignedCemeteryIds)
+    ? [...new Set(body.assignedCemeteryIds.map((id, index) => validateUuid(id, `Assigned cemetery ${index + 1}`)))]
+    : [];
+  if ((role === "power-user" || role === "cemetery-admin") && assignedCemeteryIds.length === 0) {
+    throw new BadRequestError("Assigned cemetery is required for this role.");
+  }
 
   return {
     externalSubject: requiredText(body?.externalSubject, "Auth0 user ID", 300),
     email: requiredText(body?.email, "Email", 320),
     displayName: optionalText(body?.displayName, "Display name", 250),
     role,
+    assignedCemeteryIds,
     isActive: body?.isActive !== false,
   };
 }
@@ -142,6 +149,26 @@ function validateHeadstonePayload(body) {
   };
 }
 
+async function cemeteryIdForSection(pool, sectionId) {
+  const result = await pool.query("SELECT cemetery_id::text FROM sections WHERE section_id = $1 AND deleted_at IS NULL", [sectionId]);
+  return result.rows[0]?.cemetery_id;
+}
+
+async function cemeteryIdForLot(pool, lotId) {
+  const result = await pool.query("SELECT cemetery_id::text FROM lots WHERE id = $1 AND deleted_at IS NULL", [lotId]);
+  return result.rows[0]?.cemetery_id;
+}
+
+async function canEditSection(pool, user, sectionId) {
+  const cemeteryId = await cemeteryIdForSection(pool, sectionId);
+  return cemeteryId ? canEditCemetery(user, cemeteryId) : false;
+}
+
+async function canEditLot(pool, user, lotId) {
+  const cemeteryId = await cemeteryIdForLot(pool, lotId);
+  return cemeteryId ? canEditCemetery(user, cemeteryId) : false;
+}
+
 export function createApp(config, pool) {
   const app = express();
   const auth0ManagementClient = createAuth0ManagementClient({
@@ -171,17 +198,21 @@ export function createApp(config, pool) {
 
   app.get("/api/me", requireReader, async (request, response) => {
     const role = request.user.role;
+    const assignedCemeteryIds = assignedEditableCemeteryIds(request.user);
+    const hasScopedEditAccess = (role === "power-user" || role === "cemetery-admin") && assignedCemeteryIds.length > 0;
     response.json({
       subject: request.user.subject,
       email: request.user.email,
       displayName: request.user.displayName,
       role,
+      assignedCemeteryIds,
       permissions: {
-        canViewOwnership: canViewOwnership(role),
-        canManageUsers: role === "admin",
+        canViewOwnership: role === "admin" || hasScopedEditAccess,
+        canManageUsers: canManageUsers(role),
+        canOpenAdminPanel: role === "admin" || role === "power-user" || role === "cemetery-admin",
         canCreateCemeteryRecords: role === "admin",
-        canUpdateCemeteryRecords: role === "admin" || role === "power-user",
-        canUpdateHeadstones: role === "admin" || role === "power-user",
+        canUpdateCemeteryRecords: role === "admin" || hasScopedEditAccess,
+        canUpdateHeadstones: role === "admin" || hasScopedEditAccess,
         canDeleteCemeteryRecords: role === "admin",
       },
     });
@@ -199,7 +230,7 @@ export function createApp(config, pool) {
     try {
       const cemeteryId = validateCemeteryId(request.params.cemeteryId);
       const id = validateGraveSpaceId(request.params.id);
-      const grave = await getGraveSpace(pool, cemeteryId, id, { includeOwnership: canViewOwnership(request.user.role) });
+      const grave = await getGraveSpace(pool, cemeteryId, id, { includeOwnership: canViewOwnershipForCemetery(request.user, cemeteryId) });
       if (!grave) {
         response.status(404).json({ error: "Grave space not found" });
         return;
@@ -215,7 +246,16 @@ export function createApp(config, pool) {
     try {
       const query = validateSearchQuery(request.query.q);
       const statuses = validateStatuses(request.query.status);
-      response.json(await searchCemetery(pool, { query, statuses, includeOwnership: canViewOwnership(request.user.role) }));
+      const assignedCemeteryIds = assignedEditableCemeteryIds(request.user);
+      const hasScopedOwnershipSearch = (request.user.role === "power-user" || request.user.role === "cemetery-admin") && assignedCemeteryIds.length > 0;
+      response.json(
+        await searchCemetery(pool, {
+          query,
+          statuses,
+          includeOwnership: request.user.role === "admin" || hasScopedOwnershipSearch,
+          ownershipCemeteryIds: request.user.role === "admin" ? undefined : assignedCemeteryIds,
+        }),
+      );
     } catch (error) {
       next(error);
     }
@@ -233,7 +273,11 @@ export function createApp(config, pool) {
     try {
       const id = validateUuid(request.params.id, "Headstone id");
       const headstone = validateHeadstonePayload(request.body);
-      const updated = await updateHeadstone(pool, id, headstone, { actorUser: request.user, reason: headstone.reason });
+      const updated = await updateHeadstone(pool, id, headstone, {
+        actorUser: request.user,
+        reason: headstone.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
       if (!updated) {
         response.status(404).json({ error: "Headstone not found" });
         return;
@@ -316,7 +360,7 @@ export function createApp(config, pool) {
     }
   });
 
-  app.get("/api/admin/cemetery-records", requireAdmin, async (_request, response, next) => {
+  app.get("/api/admin/cemetery-records", requirePowerUser, async (_request, response, next) => {
     try {
       response.json(await listCemeteryAdminRecords(pool));
     } catch (error) {
@@ -382,9 +426,13 @@ export function createApp(config, pool) {
     }
   });
 
-  app.put("/api/admin/cemetery-records/cemeteries/:id", requireAdmin, async (request, response, next) => {
+  app.put("/api/admin/cemetery-records/cemeteries/:id", requirePowerUser, async (request, response, next) => {
     try {
       const id = validateUuid(request.params.id, "Cemetery id");
+      if (!canEditCemetery(request.user, id)) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
       const updated = await updateCemeteryText(pool, id, validateCemeteryTextPayload(request.body), { actorUser: request.user });
       if (!updated) {
         response.status(404).json({ error: "Cemetery not found" });
@@ -396,9 +444,13 @@ export function createApp(config, pool) {
     }
   });
 
-  app.put("/api/admin/cemetery-records/sections/:id", requireAdmin, async (request, response, next) => {
+  app.put("/api/admin/cemetery-records/sections/:id", requirePowerUser, async (request, response, next) => {
     try {
       const id = validateUuid(request.params.id, "Section id");
+      if (!(await canEditSection(pool, request.user, id))) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
       const updated = await updateSectionText(pool, id, validateSectionTextPayload(request.body), { actorUser: request.user });
       if (!updated) {
         response.status(404).json({ error: "Section not found" });
@@ -410,9 +462,13 @@ export function createApp(config, pool) {
     }
   });
 
-  app.put("/api/admin/cemetery-records/lots/:id", requireAdmin, async (request, response, next) => {
+  app.put("/api/admin/cemetery-records/lots/:id", requirePowerUser, async (request, response, next) => {
     try {
       const id = validateUuid(request.params.id, "Lot id");
+      if (!(await canEditLot(pool, request.user, id))) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
       const updated = await updateLotText(pool, id, validateLotTextPayload(request.body), { actorUser: request.user });
       if (!updated) {
         response.status(404).json({ error: "Lot not found" });

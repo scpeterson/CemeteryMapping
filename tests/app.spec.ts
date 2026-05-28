@@ -144,11 +144,13 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
         permissions: {
           canViewOwnership: false,
           canManageUsers: false,
+          canOpenAdminPanel: false,
           canCreateCemeteryRecords: false,
           canUpdateCemeteryRecords: false,
           canUpdateHeadstones: false,
           canDeleteCemeteryRecords: false,
         },
+        assignedCemeteryIds: [],
       }),
     });
   });
@@ -247,11 +249,13 @@ test("power users can edit headstone marker details from grave detail", async ({
         permissions: {
           canViewOwnership: true,
           canManageUsers: false,
+          canOpenAdminPanel: true,
           canCreateCemeteryRecords: false,
           canUpdateCemeteryRecords: true,
           canUpdateHeadstones: true,
           canDeleteCemeteryRecords: false,
         },
+        assignedCemeteryIds: [cemeteryId],
       }),
     });
   });

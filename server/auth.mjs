@@ -3,7 +3,8 @@ import { auth as auth0BearerAuth } from "express-oauth2-jwt-bearer";
 const roleRank = new Map([
   ["reader", 1],
   ["power-user", 2],
-  ["admin", 3],
+  ["cemetery-admin", 3],
+  ["admin", 4],
 ]);
 
 const auth0ValidatorCache = new WeakMap();
@@ -28,6 +29,27 @@ export function canViewOwnership(role) {
   return hasRequiredRole(normalizeRole(role), ["power-user"]);
 }
 
+function cemeteryAssignments(user) {
+  return Array.isArray(user?.cemeteryAccess) ? user.cemeteryAccess : [];
+}
+
+export function assignedEditableCemeteryIds(user) {
+  return cemeteryAssignments(user)
+    .filter((assignment) => assignment.canEdit)
+    .map((assignment) => assignment.cemeteryId);
+}
+
+export function canEditCemetery(user, cemeteryId) {
+  const role = normalizeRole(user?.role);
+  if (role === "admin") return true;
+  if (role !== "power-user" && role !== "cemetery-admin") return false;
+  return assignedEditableCemeteryIds(user).includes(String(cemeteryId));
+}
+
+export function canViewOwnershipForCemetery(user, cemeteryId) {
+  return canEditCemetery(user, cemeteryId);
+}
+
 export function canManageUsers(role) {
   return hasRequiredRole(normalizeRole(role), ["admin"]);
 }
@@ -49,6 +71,11 @@ function readTrustedHeaderUser(request, authConfig) {
     subject,
     email,
     role,
+    cemeteryAccess: String(getHeader(request, "x-cemetery-user-cemetery-ids") ?? "")
+      .split(",")
+      .map((cemeteryId) => cemeteryId.trim())
+      .filter(Boolean)
+      .map((cemeteryId) => ({ cemeteryId, canEdit: true })),
   };
 }
 
@@ -99,9 +126,21 @@ async function loadApplicationUser(pool, subject) {
         email,
         display_name,
         role_name,
-        is_active
+        is_active,
+        COALESCE(
+          jsonb_agg(
+            jsonb_build_object(
+              'cemeteryId', app_user_cemetery_access.cemetery_id::text,
+              'canEdit', app_user_cemetery_access.can_edit
+            )
+          ) FILTER (WHERE app_user_cemetery_access.id IS NOT NULL),
+          '[]'::jsonb
+        ) AS cemetery_access
       FROM app_users
+      LEFT JOIN app_user_cemetery_access
+        ON app_user_cemetery_access.app_user_id = app_users.id
       WHERE external_subject = $1
+      GROUP BY app_users.id
       LIMIT 1
     `,
     [subject],
@@ -116,6 +155,7 @@ function toRequestUser(appUser, tokenUser) {
     email: appUser.email ?? tokenUser.email,
     displayName: appUser.display_name,
     role: normalizeRole(appUser.role_name),
+    cemeteryAccess: appUser.cemetery_access ?? [],
   };
 }
 
