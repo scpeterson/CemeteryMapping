@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildBurialNotes, buildSourceNotes, importableRows, upsertHeadstoneGravesite } from "./db-import-headstones-xlsx.mjs";
+import { buildBurialNotes, buildSourceNotes, importableRows, upsertHeadstone, upsertHeadstoneGravesite } from "./db-import-headstones-xlsx.mjs";
 
 test("headstone spreadsheet source notes use the corrected North Hills source name", () => {
   const imported = {
@@ -92,4 +92,31 @@ test("upsertHeadstoneGravesite restores soft-deleted marker links", async () => 
   assert.match(calls[0].sql, /ON CONFLICT \(headstone_uuid, gravesite_uuid\) DO UPDATE/u);
   assert.match(calls[0].sql, /deleted_at = NULL/u);
   assert.deepEqual(calls[0].values, ["headstone-uuid", "gravesite-uuid", "spans"]);
+});
+
+test("headstone upserts preserve curated marker lookup values", async () => {
+  const calls = [];
+  const client = {
+    async query(sql, values) {
+      calls.push({ sql, values });
+      return { rows: [{ id: "headstone-uuid" }] };
+    },
+  };
+
+  const headstoneUuid = await upsertHeadstone(
+    client,
+    {
+      headstoneId: "TLC-HS-1",
+      latitude: 40,
+      longitude: -80,
+      sourceProperties: { rowNumber: 12 },
+    },
+    "gravesite-uuid",
+  );
+
+  assert.equal(headstoneUuid, "headstone-uuid");
+  assert.match(calls[0].sql, /marker_type_code/u);
+  assert.match(calls[0].sql, /material_type_code/u);
+  assert.match(calls[0].sql, /ELSE headstones\.marker_type_code/u);
+  assert.match(calls[0].sql, /ELSE headstones\.material_type_code/u);
 });

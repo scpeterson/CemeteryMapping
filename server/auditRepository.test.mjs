@@ -29,6 +29,11 @@ test("normalizeAuditFilters allows headstone gravesite link audit records", () =
   assert.equal(normalizeAuditFilters({ targetTable: "headstone_gravesites" }).targetTable, "headstone_gravesites");
 });
 
+test("normalizeAuditFilters allows marker lookup audit records", () => {
+  assert.equal(normalizeAuditFilters({ targetTable: "marker_types" }).targetTable, "marker_types");
+  assert.equal(normalizeAuditFilters({ targetTable: "marker_material_types" }).targetTable, "marker_material_types");
+});
+
 test("listAuditEvents returns filtered audit records", async () => {
   let capturedSql = "";
   let capturedValues = [];
