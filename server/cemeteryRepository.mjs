@@ -66,6 +66,31 @@ function toOwnershipEvent(owner) {
   };
 }
 
+function toLookupValue(row, prefix) {
+  return {
+    id: row[`${prefix}_id`],
+    code: row[`${prefix}_code`],
+    label: row[`${prefix}_label`],
+  };
+}
+
+function toHeadstone(row) {
+  return {
+    id: row.id,
+    headstoneId: row.headstone_id,
+    markerType: toLookupValue(row, "marker_type"),
+    material: toLookupValue(row, "material"),
+    condition: toLookupValue(row, "condition"),
+    conditionNotes: row.condition_notes ?? "",
+    inscription: row.inscription ?? "",
+    photoUrl: row.photo_url ?? "",
+    lastInspectedAt: dateOnly(row.last_inspected_at),
+    relationshipType: row.relationship_type ?? "primary",
+    relationshipNotes: row.relationship_notes ?? "",
+    burialIds: row.burial_ids ?? [],
+  };
+}
+
 function toGraveSummary(grave) {
   return {
     id: grave.gravesite_id,
@@ -364,6 +389,165 @@ async function selectBurialsForGrave(client, graveUuid) {
   return result.rows;
 }
 
+async function selectHeadstonesForGrave(client, graveUuid) {
+  const result = await client.query(
+    `
+      SELECT
+        headstones.id::text,
+        headstones.headstone_id,
+        marker_types.id::text AS marker_type_id,
+        marker_types.code AS marker_type_code,
+        marker_types.label AS marker_type_label,
+        marker_material_types.id::text AS material_id,
+        marker_material_types.code AS material_code,
+        marker_material_types.label AS material_label,
+        headstone_condition_types.id::text AS condition_id,
+        headstone_condition_types.code AS condition_code,
+        headstone_condition_types.label AS condition_label,
+        headstones.condition_notes,
+        headstones.inscription,
+        headstones.photo_url,
+        headstones.last_inspected_at,
+        COALESCE(headstone_gravesites.relationship_type, 'primary') AS relationship_type,
+        headstone_gravesites.notes AS relationship_notes,
+        array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids
+      FROM headstones
+      LEFT JOIN headstone_gravesites
+        ON headstone_gravesites.headstone_uuid = headstones.id
+       AND headstone_gravesites.deleted_at IS NULL
+      LEFT JOIN headstone_burials
+        ON headstone_burials.headstone_uuid = headstones.id
+       AND headstone_burials.deleted_at IS NULL
+      JOIN marker_types
+        ON marker_types.id = headstones.marker_type_id
+      JOIN marker_material_types
+        ON marker_material_types.id = headstones.material_type_id
+      JOIN headstone_condition_types
+        ON headstone_condition_types.id = headstones.condition_type_id
+      WHERE headstones.deleted_at IS NULL
+        AND (
+          headstones.gravesite_uuid = $1
+          OR headstone_gravesites.gravesite_uuid = $1
+        )
+      GROUP BY
+        headstones.id,
+        marker_types.id,
+        marker_types.code,
+        marker_types.label,
+        marker_material_types.id,
+        marker_material_types.code,
+        marker_material_types.label,
+        headstone_condition_types.id,
+        headstone_condition_types.code,
+        headstone_condition_types.label,
+        headstone_gravesites.relationship_type,
+        headstone_gravesites.notes
+      ORDER BY headstones.headstone_id, headstones.id
+    `,
+    [graveUuid],
+  );
+
+  return result.rows;
+}
+
+async function selectHeadstoneById(client, id) {
+  const result = await client.query(
+    `
+      SELECT
+        headstones.id::text,
+        headstones.headstone_id,
+        marker_types.id::text AS marker_type_id,
+        marker_types.code AS marker_type_code,
+        marker_types.label AS marker_type_label,
+        marker_material_types.id::text AS material_id,
+        marker_material_types.code AS material_code,
+        marker_material_types.label AS material_label,
+        headstone_condition_types.id::text AS condition_id,
+        headstone_condition_types.code AS condition_code,
+        headstone_condition_types.label AS condition_label,
+        headstones.condition_notes,
+        headstones.inscription,
+        headstones.photo_url,
+        headstones.last_inspected_at,
+        'primary' AS relationship_type,
+        NULL AS relationship_notes,
+        array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids
+      FROM headstones
+      LEFT JOIN headstone_burials
+        ON headstone_burials.headstone_uuid = headstones.id
+       AND headstone_burials.deleted_at IS NULL
+      JOIN marker_types
+        ON marker_types.id = headstones.marker_type_id
+      JOIN marker_material_types
+        ON marker_material_types.id = headstones.material_type_id
+      JOIN headstone_condition_types
+        ON headstone_condition_types.id = headstones.condition_type_id
+      WHERE headstones.id = $1
+        AND headstones.deleted_at IS NULL
+      GROUP BY
+        headstones.id,
+        marker_types.id,
+        marker_types.code,
+        marker_types.label,
+        marker_material_types.id,
+        marker_material_types.code,
+        marker_material_types.label,
+        headstone_condition_types.id,
+        headstone_condition_types.code,
+        headstone_condition_types.label
+      LIMIT 1
+    `,
+    [id],
+  );
+
+  return result.rows[0];
+}
+
+async function selectHeadstoneMutationState(client, id) {
+  const result = await client.query(
+    `
+      SELECT
+        id::text,
+        headstone_id,
+        marker_type_id::text,
+        marker_type_code,
+        material_type_id::text,
+        material_type_code,
+        condition_type_id::text,
+        condition,
+        condition_notes,
+        inscription,
+        photo_url,
+        last_inspected_at,
+        updated_at
+      FROM headstones
+      WHERE id = $1
+        AND deleted_at IS NULL
+      FOR UPDATE
+    `,
+    [id],
+  );
+
+  return result.rows[0];
+}
+
+export async function listHeadstoneLookupOptions(pool) {
+  const client = await pool.connect();
+  try {
+    const markerTypes = await client.query("SELECT id::text, code, label FROM marker_types WHERE is_active ORDER BY sort_order, label");
+    const materials = await client.query("SELECT id::text, code, label FROM marker_material_types WHERE is_active ORDER BY sort_order, label");
+    const conditions = await client.query("SELECT id::text, code, label FROM headstone_condition_types WHERE is_active ORDER BY sort_order, label");
+
+    return {
+      markerTypes: markerTypes.rows,
+      materials: materials.rows,
+      conditions: conditions.rows,
+    };
+  } finally {
+    client.release();
+  }
+}
+
 function toBoundaryFeature(cemetery) {
   return {
     type: "Feature",
@@ -391,12 +575,13 @@ function toLot(lot) {
   };
 }
 
-function toDetailedGrave(grave, graveOwners, graveBurials, includeOwnership) {
+function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, includeOwnership) {
   const detailedGrave = {
     ...toGraveSummary(grave),
     owners: graveOwners.map(toOwner),
     currentOwnerIds: graveOwners.map((owner) => owner.id),
     burials: graveBurials.map(toBurial),
+    headstones: graveHeadstones.map(toHeadstone),
     ownershipHistory: graveOwners.map(toOwnershipEvent),
     notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
   };
@@ -456,7 +641,7 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
       },
       sections: sections.map(toSection),
       lots: lots.map(toLot),
-      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], includeOwnership)),
+      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], includeOwnership)),
       owners: owners.map(toOwner),
     };
   } finally {
@@ -472,8 +657,79 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
 
     const owners = includeOwnership ? await selectOwnersForGrave(client, grave.uuid) : [];
     const burials = await selectBurialsForGrave(client, grave.uuid);
+    const headstones = await selectHeadstonesForGrave(client, grave.uuid);
 
-    return toDetailedGrave(grave, owners, burials, includeOwnership);
+    return toDetailedGrave(grave, owners, burials, headstones, includeOwnership);
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateHeadstone(pool, id, headstone, { actorUser, reason } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+    const existing = await selectHeadstoneMutationState(client, id);
+    if (!existing) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    const updateResult = await client.query(
+      `
+        UPDATE headstones
+        SET marker_type_id = $2::uuid,
+            material_type_id = $3::uuid,
+            condition_type_id = $4::uuid,
+            condition_notes = $5,
+            inscription = $6,
+            photo_url = $7,
+            last_inspected_at = $8::date
+        WHERE id = $1
+        RETURNING
+          id::text,
+          headstone_id,
+          marker_type_id::text,
+          marker_type_code,
+          material_type_id::text,
+          material_type_code,
+          condition_type_id::text,
+          condition,
+          condition_notes,
+          inscription,
+          photo_url,
+          last_inspected_at,
+          updated_at
+      `,
+      [
+        id,
+        headstone.markerTypeId,
+        headstone.materialId,
+        headstone.conditionId,
+        headstone.conditionNotes || null,
+        headstone.inscription || null,
+        headstone.photoUrl || null,
+        headstone.lastInspectedAt || null,
+      ],
+    );
+    const updatedState = updateResult.rows[0];
+    const auditEventId = await auditEventIdForMutation(client, {
+      actorUser,
+      action: "update",
+      targetTable: "headstones",
+      targetRecordId: id,
+      previousValues: existing,
+      newValues: updatedState,
+      reason,
+    });
+    const updated = await selectHeadstoneById(client, id);
+
+    await client.query("COMMIT");
+    return { ...toHeadstone(updated), auditEventId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
   } finally {
     client.release();
   }

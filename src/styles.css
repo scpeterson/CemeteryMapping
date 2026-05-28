@@ -725,7 +725,8 @@ h3 {
 }
 
 .owner-list,
-.burial-list {
+.burial-list,
+.headstone-list {
   display: grid;
   gap: 10px;
   margin-top: 12px;
@@ -733,6 +734,7 @@ h3 {
 
 .owner-row,
 .burial-record,
+.headstone-record,
 .note-box {
   padding: 12px;
   border: 1px solid #d9e0d5;
@@ -773,6 +775,99 @@ h3 {
 .burial-record dd {
   margin: 2px 0 0;
   font-size: 0.88rem;
+}
+
+.headstone-record {
+  display: grid;
+  gap: 10px;
+}
+
+.headstone-record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.headstone-record dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.headstone-record dt,
+.headstone-form label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.headstone-record dd {
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+}
+
+.headstone-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.headstone-form label {
+  display: grid;
+  gap: 5px;
+  text-transform: none;
+}
+
+.headstone-form select,
+.headstone-form input,
+.headstone-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.headstone-wide-field,
+.headstone-record-header,
+.headstone-form .detail-message,
+.headstone-form-actions {
+  grid-column: 1 / -1;
+}
+
+.headstone-form-actions {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+
+.icon-text-button,
+.headstone-form-actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 760;
+}
+
+.icon-text-button {
+  background: #fff;
+  color: #2f5d50;
+}
+
+.headstone-form-actions .secondary-button {
+  border-color: #c8d1c3;
+  background: #fff;
+  color: #405048;
 }
 
 .burial-notes {
@@ -1876,6 +1971,8 @@ h3 {
   .admin-workspace,
   .admin-nav,
   .audit-filter-form,
+  .headstone-form,
+  .headstone-record dl,
   .lookup-toolbar,
   .lookup-row,
   .record-picker-grid,

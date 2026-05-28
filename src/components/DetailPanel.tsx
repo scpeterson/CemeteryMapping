@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { FileText, History, Landmark, MapPinned, UserRound } from "lucide-react";
-import type { Burial, GraveSpace, GraveSpaceSummary, Owner } from "../types";
+import { FormEvent, useMemo, useState } from "react";
+import { FileText, History, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
+import type { Burial, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneLookups, Owner, SaveHeadstoneInput } from "../types";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName } from "../lib/format";
 
@@ -9,6 +9,9 @@ type DetailPanelProps = {
   summary?: GraveSpaceSummary;
   grave?: GraveSpace;
   canViewOwnership: boolean;
+  canUpdateHeadstones: boolean;
+  headstoneLookups: HeadstoneLookups;
+  onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
@@ -47,8 +50,175 @@ function BurialRecord({ burial }: { burial: Burial }) {
   );
 }
 
-export function DetailPanel({ owners, summary, grave, canViewOwnership, isLoading = false, error, onRetry }: DetailPanelProps) {
+function blankHeadstoneForm(headstone: Headstone): SaveHeadstoneInput {
+  return {
+    markerTypeId: headstone.markerType.id,
+    materialId: headstone.material.id,
+    conditionId: headstone.condition.id,
+    conditionNotes: headstone.conditionNotes,
+    inscription: headstone.inscription,
+    photoUrl: headstone.photoUrl,
+    lastInspectedAt: headstone.lastInspectedAt ?? "",
+    reason: "Headstone detail update",
+  };
+}
+
+function HeadstoneRecord({
+  headstone,
+  lookups,
+  canUpdate,
+  onSave,
+}: {
+  headstone: Headstone;
+  lookups: HeadstoneLookups;
+  canUpdate: boolean;
+  onSave: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone));
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const startEditing = () => {
+    setForm(blankHeadstoneForm(headstone));
+    setError(undefined);
+    setIsEditing(true);
+  };
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setError(undefined);
+    try {
+      await onSave(headstone.id, form);
+      setIsEditing(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save headstone.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <form className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
+        <div className="headstone-record-header">
+          <strong>{headstone.headstoneId}</strong>
+        </div>
+        <label>
+          Marker type
+          <select value={form.markerTypeId} onChange={(event) => setForm((current) => ({ ...current, markerTypeId: event.target.value }))}>
+            {lookups.markerTypes.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Material
+          <select value={form.materialId} onChange={(event) => setForm((current) => ({ ...current, materialId: event.target.value }))}>
+            {lookups.materials.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Condition
+          <select value={form.conditionId} onChange={(event) => setForm((current) => ({ ...current, conditionId: event.target.value }))}>
+            {lookups.conditions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Last inspected
+          <input type="date" value={form.lastInspectedAt} onChange={(event) => setForm((current) => ({ ...current, lastInspectedAt: event.target.value }))} />
+        </label>
+        <label className="headstone-wide-field">
+          Condition notes
+          <textarea value={form.conditionNotes} onChange={(event) => setForm((current) => ({ ...current, conditionNotes: event.target.value }))} rows={3} />
+        </label>
+        <label className="headstone-wide-field">
+          Inscription
+          <textarea value={form.inscription} onChange={(event) => setForm((current) => ({ ...current, inscription: event.target.value }))} rows={3} />
+        </label>
+        <label className="headstone-wide-field">
+          Photo URL
+          <input value={form.photoUrl} onChange={(event) => setForm((current) => ({ ...current, photoUrl: event.target.value }))} />
+        </label>
+        {error ? <p className="detail-message is-error">{error}</p> : null}
+        <div className="headstone-form-actions">
+          <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
+            Cancel
+          </button>
+          <button type="submit" disabled={isSaving || !form.markerTypeId || !form.materialId || !form.conditionId}>
+            {isSaving ? "Saving..." : "Save marker"}
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <article className="headstone-record">
+      <div className="headstone-record-header">
+        <strong>{headstone.headstoneId}</strong>
+        {canUpdate ? (
+          <button type="button" className="icon-text-button" onClick={startEditing} aria-label={`Edit marker ${headstone.headstoneId}`}>
+            <Pencil size={14} aria-hidden="true" />
+            Edit
+          </button>
+        ) : null}
+      </div>
+      <dl>
+        <div>
+          <dt>Type</dt>
+          <dd>{headstone.markerType.label}</dd>
+        </div>
+        <div>
+          <dt>Material</dt>
+          <dd>{headstone.material.label}</dd>
+        </div>
+        <div>
+          <dt>Condition</dt>
+          <dd>{headstone.condition.label}</dd>
+        </div>
+        <div>
+          <dt>Last inspected</dt>
+          <dd>{formatDate(headstone.lastInspectedAt)}</dd>
+        </div>
+      </dl>
+      {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
+      {headstone.inscription ? <p className="note-box">{headstone.inscription}</p> : null}
+      {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
+        <p className="muted">
+          Relationship: {headstone.relationshipType}
+          {headstone.relationshipNotes ? ` - ${headstone.relationshipNotes}` : ""}
+        </p>
+      ) : null}
+    </article>
+  );
+}
+
+export function DetailPanel({
+  owners,
+  summary,
+  grave,
+  canViewOwnership,
+  canUpdateHeadstones,
+  headstoneLookups,
+  onSaveHeadstone,
+  isLoading = false,
+  error,
+  onRetry,
+}: DetailPanelProps) {
   const ownersById = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
+  const headstones = grave?.headstones ?? [];
 
   if (!summary) {
     return (
@@ -125,6 +295,28 @@ export function DetailPanel({ owners, summary, grave, canViewOwnership, isLoadin
           </div>
         ) : (
           <p className="muted">No burials are recorded for this grave site.</p>
+        )}
+      </section>
+
+      <section className="detail-section">
+        <div className="section-title">
+          <Landmark size={17} aria-hidden="true" />
+          <h3>Markers</h3>
+        </div>
+        {headstones.length ? (
+          <div className="headstone-list">
+            {headstones.map((headstone) => (
+              <HeadstoneRecord
+                key={headstone.id}
+                headstone={headstone}
+                lookups={headstoneLookups}
+                canUpdate={canUpdateHeadstones}
+                onSave={onSaveHeadstone}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="muted">No markers are recorded for this grave site.</p>
         )}
       </section>
 

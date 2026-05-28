@@ -13,9 +13,12 @@ import type {
   CurrentUser,
   GraveSpace,
   GraveStatus,
+  Headstone,
+  HeadstoneLookups,
   LookupAdminRecords,
   LookupRecord,
   LotTextRecord,
+  SaveHeadstoneInput,
   SearchMatch,
   SectionTextRecord,
 } from "../types";
@@ -89,6 +92,16 @@ export async function fetchSearchMatches(query: string, statuses: Set<GraveStatu
 export async function fetchCurrentUser(): Promise<CurrentUser> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/me`);
   return jsonResponse<CurrentUser>(response, "Current user API");
+}
+
+export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstone-lookups`);
+  return jsonResponse<HeadstoneLookups>(response, "Headstone lookup API");
+}
+
+export async function updateHeadstone(id: string, headstone: SaveHeadstoneInput): Promise<Headstone> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(id)}`, jsonRequest("PATCH", headstone));
+  return jsonResponse<Headstone>(response, "Update headstone API");
 }
 
 export async function fetchAdminRoles(): Promise<AppRole[]> {
