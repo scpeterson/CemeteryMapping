@@ -121,12 +121,12 @@ async function loadApplicationUser(pool, subject) {
   const result = await pool.query(
     `
       SELECT
-        id::text,
-        external_subject,
-        email,
-        display_name,
-        role_name,
-        is_active,
+        app_users.id::text,
+        app_users.external_subject,
+        app_users.email,
+        app_users.display_name,
+        app_users.role_name,
+        app_users.is_active,
         COALESCE(
           jsonb_agg(
             jsonb_build_object(
@@ -139,7 +139,7 @@ async function loadApplicationUser(pool, subject) {
       FROM app_users
       LEFT JOIN app_user_cemetery_access
         ON app_user_cemetery_access.app_user_id = app_users.id
-      WHERE external_subject = $1
+      WHERE app_users.external_subject = $1
       GROUP BY app_users.id
       LIMIT 1
     `,

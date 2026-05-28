@@ -66,7 +66,10 @@ function auth0ConfigForError(error) {
 
 function poolForUser(user) {
   return {
-    async query(_sql, values) {
+    async query(sql, values) {
+      assert.match(sql, /app_users\.id::text/);
+      assert.match(sql, /app_users\.external_subject = \$1/);
+      assert.doesNotMatch(sql, /SELECT\s+id::text/);
       assert.deepEqual(values, ["auth0|user-1"]);
       return { rows: user ? [user] : [] };
     },
