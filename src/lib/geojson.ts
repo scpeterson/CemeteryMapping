@@ -1,4 +1,4 @@
-import type { AreaGeometry, CemeteryData, GraveSpaceSummary } from "../types";
+import type { AreaGeometry, CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types";
 import { formatGraveLabel, graveSelectionKey } from "./format";
 
 export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey?: string, searchKeys: Set<string> = new Set()) {
@@ -22,6 +22,28 @@ export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey
       };
     }),
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
+}
+
+export function headstonesFeatureCollection(headstones: HeadstoneSummary[], selectedKey?: string, searchKeys: Set<string> = new Set()) {
+  return {
+    type: "FeatureCollection",
+    features: headstones.map((headstone) => ({
+      type: "Feature",
+      properties: {
+        id: headstone.id,
+        headstoneId: headstone.headstoneId,
+        cemeteryId: headstone.cemeteryId,
+        gravesiteId: headstone.gravesiteId,
+        graveKey: headstone.graveKey,
+        label: headstone.label,
+        markerType: headstone.markerType,
+        condition: headstone.condition,
+        selected: headstone.graveKey === selectedKey,
+        searchMatch: searchKeys.has(headstone.graveKey),
+      },
+      geometry: headstone.geometry,
+    })),
+  } satisfies GeoJSON.FeatureCollection<GeoJSON.Point>;
 }
 
 export function sectionsFeatureCollection(data: CemeteryData) {

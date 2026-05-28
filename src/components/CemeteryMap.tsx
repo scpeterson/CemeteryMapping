@@ -2,10 +2,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
-import { boundariesFeatureCollection, gravesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
+import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, statusLabels } from "../lib/format";
 import { exteriorRing, fitMapToData } from "./cemeteryMapBounds";
-import { addBoundaryLayers, addGraveLayers, addLotLayers, addRasterLayers, addSectionLabelLayer, addSectionLayers, enforceMapLayerOrder, selectableGraveLayers } from "./cemeteryMapLayers";
+import {
+  addBoundaryLayers,
+  addGraveLayers,
+  addHeadstoneLayers,
+  addLotLayers,
+  addRasterLayers,
+  addSectionLabelLayer,
+  addSectionLayers,
+  enforceMapLayerOrder,
+  selectableGraveLayers,
+  selectableHeadstoneLayers,
+} from "./cemeteryMapLayers";
 import { syncCemeteryMarkers } from "./cemeteryMapMarkers";
 import { mapScale, type MapScale } from "./cemeteryMapScale";
 
@@ -87,6 +98,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       addSectionLayers(map, dataRef.current);
       addLotLayers(map, dataRef.current);
       addGraveLayers(map, visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current);
+      addHeadstoneLayers(map, dataRef.current.headstones ?? [], selectedRef.current, searchResultIdsRef.current);
       addSectionLabelLayer(map);
 
       enforceMapLayerOrder(map);
@@ -94,6 +106,12 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
 
       const selectGraveFeature = (event: maplibregl.MapLayerMouseEvent) => {
         const key = event.features?.[0]?.properties?.key;
+        const grave = typeof key === "string" ? gravesBySelectionKeyRef.current.get(key) : undefined;
+        if (grave) onSelectRef.current(grave);
+      };
+
+      const selectHeadstoneFeature = (event: maplibregl.MapLayerMouseEvent) => {
+        const key = event.features?.[0]?.properties?.graveKey;
         const grave = typeof key === "string" ? gravesBySelectionKeyRef.current.get(key) : undefined;
         if (grave) onSelectRef.current(grave);
       };
@@ -108,6 +126,18 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
         });
 
         map.on("click", layer, selectGraveFeature);
+      });
+
+      selectableHeadstoneLayers.forEach((layer) => {
+        map.on("mouseenter", layer, () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+
+        map.on("mouseleave", layer, () => {
+          map.getCanvas().style.cursor = "";
+        });
+
+        map.on("click", layer, selectHeadstoneFeature);
       });
     });
 
@@ -138,16 +168,22 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     const lotsSource = map.getSource("lots") as GeoJSONSource | undefined;
     lotsSource?.setData(lotsFeatureCollection(data));
 
+    const headstonesSource = map.getSource("headstones") as GeoJSONSource | undefined;
+    headstonesSource?.setData(headstonesFeatureCollection(data.headstones ?? [], selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds));
+
     if (boundarySource || sectionsSource || lotsSource) {
       syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
       fitMapToData(map, data);
     }
-  }, [data]);
+  }, [data, searchResultIds, selectedGrave]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("graves") as GeoJSONSource | undefined;
     source?.setData(gravesFeatureCollection(visibleGraves, selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds));
-  }, [searchResultIds, selectedGrave, visibleGraves]);
+
+    const headstonesSource = mapRef.current?.getSource("headstones") as GeoJSONSource | undefined;
+    headstonesSource?.setData(headstonesFeatureCollection(data.headstones ?? [], selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds));
+  }, [data.headstones, searchResultIds, selectedGrave, visibleGraves]);
 
   useEffect(() => {
     if (!selectedGrave || !mapRef.current) return;
@@ -240,7 +276,11 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
           </span>
           <span>
             <i className="legend-symbol legend-marker" />
-            Cemetery marker
+            Headstone marker
+          </span>
+          <span>
+            <i className="legend-symbol legend-cemetery-label" />
+            Cemetery label
           </span>
         </section>
         <section>

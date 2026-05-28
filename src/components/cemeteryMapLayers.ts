@@ -1,9 +1,10 @@
 import { type Map } from "maplibre-gl";
-import type { CemeteryData, GraveSpaceSummary } from "../types";
-import { boundariesFeatureCollection, gravesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
+import type { CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types";
+import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
 
 export const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels"];
+export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo"];
 
 const mapLayerOrder = [
   "pasda-imagery-2017",
@@ -16,6 +17,8 @@ const mapLayerOrder = [
   "lots-line",
   "graves-fill",
   "graves-line",
+  "headstones-halo",
+  "headstones-circle",
   "sections-label",
   "lots-label",
   "grave-labels",
@@ -217,6 +220,36 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
       "text-color": "#17201d",
       "text-halo-color": "#f8faf5",
       "text-halo-width": 1,
+    },
+  });
+}
+
+export function addHeadstoneLayers(map: Map, headstones: HeadstoneSummary[], selectedKey: string | undefined, searchResultIds: Set<string>) {
+  map.addSource("headstones", {
+    type: "geojson",
+    data: headstonesFeatureCollection(headstones, selectedKey, searchResultIds),
+  });
+
+  map.addLayer({
+    id: "headstones-halo",
+    type: "circle",
+    source: "headstones",
+    paint: {
+      "circle-radius": ["case", ["boolean", ["get", "selected"], false], 6, ["boolean", ["get", "searchMatch"], false], 5, 4],
+      "circle-color": "#fbfcf7",
+      "circle-opacity": 0.95,
+    },
+  });
+
+  map.addLayer({
+    id: "headstones-circle",
+    type: "circle",
+    source: "headstones",
+    paint: {
+      "circle-radius": ["case", ["boolean", ["get", "selected"], false], 4.3, ["boolean", ["get", "searchMatch"], false], 3.8, 3.2],
+      "circle-color": ["case", ["boolean", ["get", "selected"], false], "#ff1493", ["boolean", ["get", "searchMatch"], false], "#f8d465", "#203a33"],
+      "circle-stroke-color": "#10211c",
+      "circle-stroke-width": 0.7,
     },
   });
 }

@@ -45,7 +45,7 @@ Headstone marker geometry:
 
 The spreadsheet is a flat file without referential integrity, but it is enough to produce useful map placeholders and burial/headstone links. The generated lot polygon gives the map and API a stable cemetery/section/lot/gravesite hierarchy. The headstone point preserves the actual GPS location separately from the approximate grave box.
 
-The 10 foot by 20 foot lot and 4 foot by 10 foot grave rectangles are pragmatic placeholders. Five 4 foot wide gravesites can fit across the 20 foot lot length. The lot's long dimension runs east-west so it appears left-to-right on the current map.
+The 10 foot by 20 foot lot and 10 foot by 4 foot grave rectangles are pragmatic placeholders. Five 4 foot wide gravesites can fit across the 20 foot lot length. The lot's long dimension runs east-west so it appears left-to-right on the current map. For Trinity sections A through D, generated gravesite rectangles use the headstone GPS coordinate as the center of the left/west short edge and extend 10 feet east from that marker point. Other generated gravesites remain centered on the coordinate until section-specific placement rules are known.
 
 ## Data Origins
 
