@@ -1,5 +1,6 @@
 const validConfidence = new Set(["high", "medium", "low", "review"]);
 const validStatuses = new Set(["staged", "reviewed", "promoted", "rejected"]);
+const validSorts = new Set(["review", "page"]);
 
 function compact(value) {
   const text = String(value ?? "").trim();
@@ -109,6 +110,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
   const status = compact(filters.status);
   const section = compact(filters.section);
   const query = compact(filters.q);
+  const sort = validSorts.has(compact(filters.sort)) ? compact(filters.sort) : "review";
 
   if (confidence && validConfidence.has(confidence)) {
     values.push(confidence);
@@ -148,6 +150,26 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
     `,
     [selectedBatchId],
   );
+
+  const orderBy =
+    sort === "page"
+      ? `
+        entry.source_page_number NULLS LAST,
+        entry.source_page_index,
+        entry.source_line_start,
+        entry.id
+      `
+      : `
+        CASE entry.parse_confidence
+          WHEN 'review' THEN 0
+          WHEN 'low' THEN 1
+          WHEN 'medium' THEN 2
+          ELSE 3
+        END,
+        entry.source_page_number NULLS LAST,
+        entry.source_line_start,
+        entry.id
+      `;
 
   const entriesResult = await pool.query(
     `
@@ -239,16 +261,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
         ) candidate
       ) matches ON true
       WHERE ${where.join("\n        AND ")}
-      ORDER BY
-        CASE entry.parse_confidence
-          WHEN 'review' THEN 0
-          WHEN 'low' THEN 1
-          WHEN 'medium' THEN 2
-          ELSE 3
-        END,
-        entry.source_page_number NULLS LAST,
-        entry.source_line_start,
-        entry.id
+      ORDER BY ${orderBy}
       LIMIT ${limitPlaceholder}
     `,
     values,

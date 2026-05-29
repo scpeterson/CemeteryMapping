@@ -404,6 +404,7 @@ export type NorthHillsOcrReviewFilters = {
   confidence?: string;
   status?: string;
   section?: string;
+  sort?: "review" | "page" | "";
   q?: string;
   limit?: number;
 };

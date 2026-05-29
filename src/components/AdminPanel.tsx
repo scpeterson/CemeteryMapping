@@ -133,6 +133,7 @@ const defaultNorthHillsReviewFilters: NorthHillsOcrReviewFilters = {
   confidence: "",
   status: "",
   section: "",
+  sort: "review",
   q: "",
   limit: 100,
 };
@@ -1842,6 +1843,17 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                       Section {section}
                     </option>
                   ))}
+                </select>
+              </label>
+              <label>
+                Sort
+                <select
+                  value={northHillsReviewFilters.sort ?? "review"}
+                  onChange={(event) => updateNorthHillsReviewFilter({ sort: event.target.value as NorthHillsOcrReviewFilters["sort"] })}
+                  title="Choose whether readings use the review-priority order or printed page order."
+                >
+                  <option value="review">Review priority</option>
+                  <option value="page">Page number</option>
                 </select>
               </label>
               <label>
