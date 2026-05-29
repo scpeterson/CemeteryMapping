@@ -29,6 +29,11 @@ test("normalizeAuditFilters allows headstone gravesite link audit records", () =
   assert.equal(normalizeAuditFilters({ targetTable: "headstone_gravesites" }).targetTable, "headstone_gravesites");
 });
 
+test("normalizeAuditFilters allows North Hills evidence link audit records", () => {
+  assert.equal(normalizeAuditFilters({ targetTable: "north_hills_ocr_entry_gravesite_links" }).targetTable, "north_hills_ocr_entry_gravesite_links");
+  assert.equal(normalizeAuditFilters({ targetTable: "north_hills_ocr_entry_headstone_links" }).targetTable, "north_hills_ocr_entry_headstone_links");
+});
+
 test("normalizeAuditFilters allows marker lookup audit records", () => {
   assert.equal(normalizeAuditFilters({ targetTable: "marker_types" }).targetTable, "marker_types");
   assert.equal(normalizeAuditFilters({ targetTable: "marker_material_types" }).targetTable, "marker_material_types");

@@ -53,7 +53,25 @@ export type Headstone = {
   relationshipType: string;
   relationshipNotes: string;
   burialIds: string[];
+  northHillsEvidence: NorthHillsLinkedEvidence[];
   auditEventId?: string;
+};
+
+export type NorthHillsLinkedEvidence = {
+  id: string;
+  entryId: string;
+  targetType: "headstone" | "gravesite";
+  status: NorthHillsOcrEvidenceStatus;
+  confidence: string;
+  sourcePageNumber?: number;
+  nameText: string;
+  parsedSectionName: string;
+  parsedRowNumber?: number;
+  parsedPositionNumber?: number;
+  rawText: string;
+  reviewNotes: string;
+  reviewedByEmail: string;
+  reviewedAt: string;
 };
 
 export type HeadstoneSummary = {
@@ -102,6 +120,7 @@ export type GraveSpace = GraveSpaceSummary & {
   currentOwnerIds: string[];
   burials: Burial[];
   headstones: Headstone[];
+  northHillsEvidence: NorthHillsLinkedEvidence[];
   ownershipHistory: OwnershipEvent[];
   notes?: string;
 };
@@ -364,12 +383,40 @@ export type NorthHillsOcrSummaryItem = {
 
 export type NorthHillsOcrCandidateMatch = {
   burialId: string;
+  gravesiteUuid: string;
   gravesiteId: string;
   sectionId: string;
   fullName: string;
   birthDate?: string;
   deathDate?: string;
   score: number;
+  notes: string;
+  gravesiteEvidence: NorthHillsOcrEvidenceLink[];
+  headstoneCandidates: NorthHillsOcrHeadstoneCandidate[];
+};
+
+export type NorthHillsOcrEvidenceStatus = "linked" | "rejected" | "needs_field_check";
+
+export type NorthHillsOcrEvidenceLink = {
+  id: string;
+  status: NorthHillsOcrEvidenceStatus;
+  confidence: string;
+  notes: string;
+  reviewedByEmail: string;
+  reviewedAt: string;
+};
+
+export type NorthHillsOcrHeadstoneCandidate = {
+  id: string;
+  headstoneId: string;
+  evidence: NorthHillsOcrEvidenceLink[];
+};
+
+export type SaveNorthHillsOcrEvidenceInput = {
+  targetType: "headstone" | "gravesite";
+  targetId: string;
+  status: NorthHillsOcrEvidenceStatus;
+  confidence: "high" | "medium" | "low" | "review";
   notes: string;
 };
 

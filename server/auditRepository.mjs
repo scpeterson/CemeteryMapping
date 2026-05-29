@@ -20,6 +20,8 @@ const allowedAuditTables = new Set([
   "marker_material_types",
   "marker_types",
   "memorials",
+  "north_hills_ocr_entry_gravesite_links",
+  "north_hills_ocr_entry_headstone_links",
   "owners",
   "sections",
 ]);

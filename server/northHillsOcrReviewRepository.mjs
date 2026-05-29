@@ -1,6 +1,10 @@
+import { withAuditContext } from "./auditContext.mjs";
+
 const validConfidence = new Set(["high", "medium", "low", "review"]);
 const validStatuses = new Set(["staged", "reviewed", "promoted", "rejected"]);
 const validSorts = new Set(["review", "page"]);
+const validEvidenceTargetTypes = new Set(["headstone", "gravesite"]);
+const validEvidenceStatuses = new Set(["linked", "rejected", "needs_field_check"]);
 
 function compact(value) {
   const text = String(value ?? "").trim();
@@ -61,6 +65,20 @@ function toEntry(row) {
     status: row.status,
     candidateMatchCount: Number(row.candidate_match_count ?? 0),
     candidateMatches: row.candidate_matches ?? [],
+  };
+}
+
+function toEvidenceLink(row) {
+  return {
+    id: row.id,
+    entryId: row.entry_id,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    status: row.status,
+    confidence: row.confidence,
+    notes: row.notes ?? "",
+    reviewedByEmail: row.reviewed_by_email ?? "",
+    reviewedAt: row.reviewed_at,
   };
 }
 
@@ -203,25 +221,31 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
                jsonb_agg(
                  jsonb_build_object(
                    'burialId', candidate.burial_id,
+                   'gravesiteUuid', candidate.gravesite_uuid,
                    'gravesiteId', candidate.gravesite_id,
                    'sectionId', candidate.section_id,
                    'fullName', candidate.full_name,
                    'birthDate', candidate.birth_date,
                    'deathDate', candidate.death_date,
                    'score', candidate.score,
-                   'notes', candidate.notes
+                   'notes', candidate.notes,
+                   'gravesiteEvidence', candidate.gravesite_evidence,
+                   'headstoneCandidates', candidate.headstone_candidates
                  )
                  ORDER BY candidate.score DESC, candidate.full_name
                ) AS candidate_matches
         FROM (
           SELECT
             burial.id::text AS burial_id,
+            gravesite.id::text AS gravesite_uuid,
             gravesite.gravesite_id,
             gravesite.section_id,
             burial.full_name,
             burial.birth_date,
             burial.death_date,
             burial.notes,
+            COALESCE(gravesite_evidence.evidence, '[]'::jsonb) AS gravesite_evidence,
+            COALESCE(headstone_candidates.candidates, '[]'::jsonb) AS headstone_candidates,
             (
               CASE
                 WHEN entry.source_page_number IS NOT NULL
@@ -246,6 +270,61 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
             ) AS score
           FROM burials burial
           JOIN gravesites gravesite ON gravesite.id = burial.gravesite_uuid
+          LEFT JOIN LATERAL (
+            SELECT jsonb_agg(
+              jsonb_build_object(
+                'id', gravesite_link.id::text,
+                'status', gravesite_link.status,
+                'confidence', gravesite_link.confidence,
+                'notes', gravesite_link.notes,
+                'reviewedByEmail', gravesite_link.reviewed_by_email,
+                'reviewedAt', gravesite_link.reviewed_at
+              )
+              ORDER BY gravesite_link.reviewed_at DESC, gravesite_link.id
+            ) AS evidence
+            FROM north_hills_ocr_entry_gravesite_links gravesite_link
+            WHERE gravesite_link.entry_id = entry.id
+              AND gravesite_link.gravesite_uuid = gravesite.id
+          ) gravesite_evidence ON true
+          LEFT JOIN LATERAL (
+            SELECT jsonb_agg(
+              jsonb_build_object(
+                'id', candidate_headstone.id::text,
+                'headstoneId', candidate_headstone.headstone_id,
+                'evidence', COALESCE(headstone_evidence.evidence, '[]'::jsonb)
+              )
+              ORDER BY candidate_headstone.headstone_id, candidate_headstone.id
+            ) AS candidates
+            FROM headstones candidate_headstone
+            LEFT JOIN headstone_gravesites candidate_headstone_grave
+              ON candidate_headstone_grave.headstone_uuid = candidate_headstone.id
+             AND candidate_headstone_grave.deleted_at IS NULL
+            LEFT JOIN headstone_burials candidate_headstone_burial
+              ON candidate_headstone_burial.headstone_uuid = candidate_headstone.id
+             AND candidate_headstone_burial.deleted_at IS NULL
+            LEFT JOIN LATERAL (
+              SELECT jsonb_agg(
+                jsonb_build_object(
+                  'id', headstone_link.id::text,
+                  'status', headstone_link.status,
+                  'confidence', headstone_link.confidence,
+                  'notes', headstone_link.notes,
+                  'reviewedByEmail', headstone_link.reviewed_by_email,
+                  'reviewedAt', headstone_link.reviewed_at
+                )
+                ORDER BY headstone_link.reviewed_at DESC, headstone_link.id
+              ) AS evidence
+              FROM north_hills_ocr_entry_headstone_links headstone_link
+              WHERE headstone_link.entry_id = entry.id
+                AND headstone_link.headstone_uuid = candidate_headstone.id
+            ) headstone_evidence ON true
+            WHERE candidate_headstone.deleted_at IS NULL
+              AND (
+                candidate_headstone.gravesite_uuid = gravesite.id
+                OR candidate_headstone_grave.gravesite_uuid = gravesite.id
+                OR candidate_headstone_burial.burial_uuid = burial.id
+              )
+          ) headstone_candidates ON true
           WHERE gravesite.cemetery_id = entry.cemetery_id
             AND burial.deleted_at IS NULL
             AND (
@@ -273,4 +352,59 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
     summary: summaryResult.rows.map(toSummary),
     entries: entriesResult.rows.map(toEntry),
   };
+}
+
+export async function saveNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser } = {}) {
+  const targetType = String(evidence?.targetType ?? "").trim();
+  const targetId = String(evidence?.targetId ?? "").trim();
+  const status = String(evidence?.status ?? "").trim();
+  const confidence = String(evidence?.confidence ?? "review").trim() || "review";
+  const notes = String(evidence?.notes ?? "").trim();
+
+  if (!validEvidenceTargetTypes.has(targetType)) throw new Error(`Unsupported North Hills evidence target type: ${targetType}`);
+  if (!validEvidenceStatuses.has(status)) throw new Error(`Unsupported North Hills evidence status: ${status}`);
+  if (!validConfidence.has(confidence)) throw new Error(`Unsupported North Hills evidence confidence: ${confidence}`);
+
+  const table = targetType === "headstone" ? "north_hills_ocr_entry_headstone_links" : "north_hills_ocr_entry_gravesite_links";
+  const targetColumn = targetType === "headstone" ? "headstone_uuid" : "gravesite_uuid";
+
+  const result = await withAuditContext(pool, { actorUser, reason: `North Hills OCR ${status} ${targetType}` }, (client) =>
+    client.query(
+      `
+        INSERT INTO ${table} (
+          entry_id,
+          ${targetColumn},
+          status,
+          confidence,
+          notes,
+          reviewed_by_app_user_id,
+          reviewed_by_external_subject,
+          reviewed_by_email
+        )
+        VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, $7, $8)
+        ON CONFLICT (entry_id, ${targetColumn})
+        DO UPDATE SET
+          status = EXCLUDED.status,
+          confidence = EXCLUDED.confidence,
+          notes = EXCLUDED.notes,
+          reviewed_by_app_user_id = EXCLUDED.reviewed_by_app_user_id,
+          reviewed_by_external_subject = EXCLUDED.reviewed_by_external_subject,
+          reviewed_by_email = EXCLUDED.reviewed_by_email,
+          reviewed_at = now()
+        RETURNING
+          id::text,
+          entry_id::text,
+          '${targetType}' AS target_type,
+          ${targetColumn}::text AS target_id,
+          status,
+          confidence,
+          notes,
+          reviewed_by_email,
+          reviewed_at
+      `,
+      [entryId, targetId, status, confidence, notes, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
+    ),
+  );
+
+  return result.rows[0] ? toEvidenceLink(result.rows[0]) : undefined;
 }

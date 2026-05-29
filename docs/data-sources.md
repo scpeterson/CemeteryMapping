@@ -70,10 +70,11 @@ Every real-data import or source change should update this file and the relevant
 | Source coverage | Trinity German Evangelical Lutheran Church narrative and cemetery readings, printed pages 180-236 |
 | Application import command | `APP_ENV=<env> npm run db:import:north-hills-ocr -- "/path/to/FedEx Scan 2026-05-29_10-13-35.pdf"` |
 | Staging tables | `north_hills_ocr_import_batches`, `north_hills_ocr_entries` |
-| Review UI | Admin -> Readings |
+| Evidence link tables | `north_hills_ocr_entry_gravesite_links`, `north_hills_ocr_entry_headstone_links` |
+| Review UI | Admin -> Readings; admins can link, reject, or flag candidate gravesite/headstone matches |
 | Data owner | North Hills Genealogists |
 | Date received | 2026-05-29 |
-| Known limitations | OCR contains normal scan artifacts such as `lA` for `1A`, punctuation drift, and occasional word/name errors. The importer stages entries for review and candidate matching only; it does not overwrite burials, headstones, lots, owners, or deeds. |
+| Known limitations | OCR contains normal scan artifacts such as `lA` for `1A`, punctuation drift, and occasional word/name errors. The importer stages entries for review and candidate matching only. Reviewed links surface as evidence in the detail panel, but they do not overwrite burials, headstones, lots, owners, or deeds. |
 | Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
 
 ## Demo Seed Data

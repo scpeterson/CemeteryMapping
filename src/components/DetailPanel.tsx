@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { FileText, History, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
-import type { Burial, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneLookups, LookupOption, Owner, SaveHeadstoneInput } from "../types";
+import type { Burial, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneLookups, LookupOption, NorthHillsLinkedEvidence, Owner, SaveHeadstoneInput } from "../types";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName } from "../lib/format";
 
@@ -47,6 +47,34 @@ function BurialRecord({ burial }: { burial: Burial }) {
         </ul>
       ) : null}
     </article>
+  );
+}
+
+function northHillsLocation(evidence: NorthHillsLinkedEvidence) {
+  return [
+    evidence.sourcePageNumber ? `page ${evidence.sourcePageNumber}` : undefined,
+    evidence.parsedSectionName ? `Section ${evidence.parsedSectionName}` : undefined,
+    evidence.parsedRowNumber ? `row ${evidence.parsedRowNumber}` : undefined,
+    evidence.parsedPositionNumber ? `#${evidence.parsedPositionNumber}` : undefined,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function NorthHillsEvidenceList({ evidence }: { evidence: NorthHillsLinkedEvidence[] }) {
+  if (!evidence.length) return null;
+
+  return (
+    <div className="north-hills-evidence-list">
+      {evidence.map((item) => (
+        <article key={item.id} className="north-hills-evidence">
+          <strong>{item.nameText || "North Hills reading"}</strong>
+          <small>{northHillsLocation(item)}</small>
+          <p>{item.rawText}</p>
+          {item.reviewNotes ? <small>Review notes: {item.reviewNotes}</small> : null}
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -208,6 +236,7 @@ function HeadstoneRecord({
           {headstone.relationshipNotes ? ` - ${headstone.relationshipNotes}` : ""}
         </p>
       ) : null}
+      <NorthHillsEvidenceList evidence={headstone.northHillsEvidence ?? []} />
     </article>
   );
 }
@@ -226,6 +255,7 @@ export function DetailPanel({
 }: DetailPanelProps) {
   const ownersById = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
   const headstones = grave?.headstones ?? [];
+  const northHillsEvidence = grave?.northHillsEvidence ?? [];
 
   if (!summary) {
     return (
@@ -327,6 +357,16 @@ export function DetailPanel({
           <p className="muted">No markers are recorded for this grave site.</p>
         )}
       </section>
+
+      {northHillsEvidence.length ? (
+        <section className="detail-section">
+          <div className="section-title">
+            <FileText size={17} aria-hidden="true" />
+            <h3>North Hills Evidence</h3>
+          </div>
+          <NorthHillsEvidenceList evidence={northHillsEvidence} />
+        </section>
+      ) : null}
 
       {canViewOwnership ? (
       <section className="detail-section">

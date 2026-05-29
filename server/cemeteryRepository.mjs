@@ -88,6 +88,26 @@ function toHeadstone(row) {
     relationshipType: row.relationship_type ?? "primary",
     relationshipNotes: row.relationship_notes ?? "",
     burialIds: row.burial_ids ?? [],
+    northHillsEvidence: row.north_hills_evidence ?? [],
+  };
+}
+
+function toNorthHillsEvidence(row) {
+  return {
+    id: row.id,
+    entryId: row.entry_id,
+    targetType: row.target_type,
+    status: row.status,
+    confidence: row.confidence,
+    sourcePageNumber: row.source_page_number,
+    nameText: row.name_text ?? "",
+    parsedSectionName: row.parsed_section_name ?? "",
+    parsedRowNumber: row.parsed_row_number,
+    parsedPositionNumber: row.parsed_position_number,
+    rawText: row.raw_text ?? "",
+    reviewNotes: row.review_notes ?? "",
+    reviewedByEmail: row.reviewed_by_email ?? "",
+    reviewedAt: row.reviewed_at,
   };
 }
 
@@ -459,7 +479,8 @@ async function selectHeadstonesForGrave(client, graveUuid) {
         headstones.last_inspected_at,
         COALESCE(headstone_gravesites.relationship_type, 'primary') AS relationship_type,
         headstone_gravesites.notes AS relationship_notes,
-        array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids
+        array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
+        COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence
       FROM headstones
       LEFT JOIN headstone_gravesites
         ON headstone_gravesites.headstone_uuid = headstones.id
@@ -473,6 +494,32 @@ async function selectHeadstonesForGrave(client, graveUuid) {
         ON marker_material_types.id = headstones.material_type_id
       JOIN headstone_condition_types
         ON headstone_condition_types.id = headstones.condition_type_id
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', headstone_link.id::text,
+            'entryId', entry.id::text,
+            'targetType', 'headstone',
+            'status', headstone_link.status,
+            'confidence', headstone_link.confidence,
+            'sourcePageNumber', entry.source_page_number,
+            'nameText', entry.name_text,
+            'parsedSectionName', entry.parsed_section_name,
+            'parsedRowNumber', entry.parsed_row_number,
+            'parsedPositionNumber', entry.parsed_position_number,
+            'rawText', entry.raw_text,
+            'reviewNotes', headstone_link.notes,
+            'reviewedByEmail', headstone_link.reviewed_by_email,
+            'reviewedAt', headstone_link.reviewed_at
+          )
+          ORDER BY entry.source_page_number NULLS LAST, entry.source_line_start, entry.id
+        ) AS evidence
+        FROM north_hills_ocr_entry_headstone_links headstone_link
+        JOIN north_hills_ocr_entries entry
+          ON entry.id = headstone_link.entry_id
+        WHERE headstone_link.headstone_uuid = headstones.id
+          AND headstone_link.status = 'linked'
+      ) headstone_evidence ON true
       WHERE headstones.deleted_at IS NULL
         AND (
           headstones.gravesite_uuid = $1
@@ -490,7 +537,8 @@ async function selectHeadstonesForGrave(client, graveUuid) {
         headstone_condition_types.code,
         headstone_condition_types.label,
         headstone_gravesites.relationship_type,
-        headstone_gravesites.notes
+        headstone_gravesites.notes,
+        headstone_evidence.evidence
       ORDER BY headstones.headstone_id, headstones.id
     `,
     [graveUuid],
@@ -520,7 +568,8 @@ async function selectHeadstoneById(client, id) {
         headstones.last_inspected_at,
         'primary' AS relationship_type,
         NULL AS relationship_notes,
-        array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids
+        array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
+        COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence
       FROM headstones
       LEFT JOIN headstone_burials
         ON headstone_burials.headstone_uuid = headstones.id
@@ -531,6 +580,32 @@ async function selectHeadstoneById(client, id) {
         ON marker_material_types.id = headstones.material_type_id
       JOIN headstone_condition_types
         ON headstone_condition_types.id = headstones.condition_type_id
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', headstone_link.id::text,
+            'entryId', entry.id::text,
+            'targetType', 'headstone',
+            'status', headstone_link.status,
+            'confidence', headstone_link.confidence,
+            'sourcePageNumber', entry.source_page_number,
+            'nameText', entry.name_text,
+            'parsedSectionName', entry.parsed_section_name,
+            'parsedRowNumber', entry.parsed_row_number,
+            'parsedPositionNumber', entry.parsed_position_number,
+            'rawText', entry.raw_text,
+            'reviewNotes', headstone_link.notes,
+            'reviewedByEmail', headstone_link.reviewed_by_email,
+            'reviewedAt', headstone_link.reviewed_at
+          )
+          ORDER BY entry.source_page_number NULLS LAST, entry.source_line_start, entry.id
+        ) AS evidence
+        FROM north_hills_ocr_entry_headstone_links headstone_link
+        JOIN north_hills_ocr_entries entry
+          ON entry.id = headstone_link.entry_id
+        WHERE headstone_link.headstone_uuid = headstones.id
+          AND headstone_link.status = 'linked'
+      ) headstone_evidence ON true
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
       GROUP BY
@@ -543,13 +618,45 @@ async function selectHeadstoneById(client, id) {
         marker_material_types.label,
         headstone_condition_types.id,
         headstone_condition_types.code,
-        headstone_condition_types.label
+        headstone_condition_types.label,
+        headstone_evidence.evidence
       LIMIT 1
     `,
     [id],
   );
 
   return result.rows[0];
+}
+
+async function selectNorthHillsEvidenceForGrave(client, graveUuid) {
+  const result = await client.query(
+    `
+      SELECT
+        gravesite_link.id::text,
+        entry.id::text AS entry_id,
+        'gravesite' AS target_type,
+        gravesite_link.status,
+        gravesite_link.confidence,
+        entry.source_page_number,
+        entry.name_text,
+        entry.parsed_section_name,
+        entry.parsed_row_number,
+        entry.parsed_position_number,
+        entry.raw_text,
+        gravesite_link.notes AS review_notes,
+        gravesite_link.reviewed_by_email,
+        gravesite_link.reviewed_at
+      FROM north_hills_ocr_entry_gravesite_links gravesite_link
+      JOIN north_hills_ocr_entries entry
+        ON entry.id = gravesite_link.entry_id
+      WHERE gravesite_link.gravesite_uuid = $1
+        AND gravesite_link.status = 'linked'
+      ORDER BY entry.source_page_number NULLS LAST, entry.source_line_start, entry.id
+    `,
+    [graveUuid],
+  );
+
+  return result.rows;
 }
 
 async function selectHeadstoneMutationState(client, id) {
@@ -627,13 +734,14 @@ function toLot(lot) {
   };
 }
 
-function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, includeOwnership) {
+function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, includeOwnership) {
   const detailedGrave = {
     ...toGraveSummary(grave),
     owners: graveOwners.map(toOwner),
     currentOwnerIds: graveOwners.map((owner) => owner.id),
     burials: graveBurials.map(toBurial),
     headstones: graveHeadstones.map(toHeadstone),
+    northHillsEvidence: northHillsEvidence.map(toNorthHillsEvidence),
     ownershipHistory: graveOwners.map(toOwnershipEvent),
     notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
   };
@@ -695,7 +803,7 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
       },
       sections: sections.map(toSection),
       lots: lots.map(toLot),
-      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], includeOwnership)),
+      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], [], includeOwnership)),
       owners: owners.map(toOwner),
     };
   } finally {
@@ -712,8 +820,9 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
     const owners = includeOwnership ? await selectOwnersForGrave(client, grave.uuid) : [];
     const burials = await selectBurialsForGrave(client, grave.uuid);
     const headstones = await selectHeadstonesForGrave(client, grave.uuid);
+    const northHillsEvidence = await selectNorthHillsEvidenceForGrave(client, grave.uuid);
 
-    return toDetailedGrave(grave, owners, burials, headstones, includeOwnership);
+    return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, includeOwnership);
   } finally {
     client.release();
   }

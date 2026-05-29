@@ -10,7 +10,7 @@ import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSect
 import { getCemeteryData, getGraveSpace, listHeadstoneLookupOptions, restoreGraveSpace, softDeleteGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
-import { listNorthHillsOcrReview } from "./northHillsOcrReviewRepository.mjs";
+import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
   BadRequestError,
@@ -147,6 +147,27 @@ function validateHeadstonePayload(body) {
     photoUrl: optionalText(body?.photoUrl, "Photo URL", 300),
     lastInspectedAt,
     reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateNorthHillsEvidencePayload(body) {
+  const targetType = requiredText(body?.targetType, "Evidence target type", 50);
+  if (!["headstone", "gravesite"].includes(targetType)) throw new BadRequestError("Evidence target type must be headstone or gravesite.");
+  const status = requiredText(body?.status, "Evidence status", 50);
+  if (!["linked", "rejected", "needs_field_check"].includes(status)) {
+    throw new BadRequestError("Evidence status must be linked, rejected, or needs_field_check.");
+  }
+  const confidence = optionalText(body?.confidence, "Evidence confidence", 50) || "review";
+  if (!["high", "medium", "low", "review"].includes(confidence)) {
+    throw new BadRequestError("Evidence confidence must be high, medium, low, or review.");
+  }
+
+  return {
+    targetType,
+    targetId: validateUuid(body?.targetId, "Evidence target"),
+    status,
+    confidence,
+    notes: optionalText(body?.notes, "Evidence notes", 4000),
   };
 }
 
@@ -420,6 +441,16 @@ export function createApp(config, pool) {
   app.get("/api/admin/north-hills-ocr-review", requireAdmin, async (request, response, next) => {
     try {
       response.json(await listNorthHillsOcrReview(pool, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/north-hills-ocr-review/:entryId/evidence", requireAdmin, async (request, response, next) => {
+    try {
+      const entryId = validateUuid(request.params.entryId, "North Hills reading");
+      const evidence = validateNorthHillsEvidencePayload(request.body);
+      response.status(201).json(await saveNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser: request.user }));
     } catch (error) {
       next(error);
     }

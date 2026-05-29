@@ -20,6 +20,7 @@ import type {
   LotTextRecord,
   NorthHillsOcrReview,
   NorthHillsOcrReviewFilters,
+  SaveNorthHillsOcrEvidenceInput,
   SaveHeadstoneInput,
   SearchMatch,
   SectionTextRecord,
@@ -186,6 +187,11 @@ export async function fetchNorthHillsOcrReview(filters: NorthHillsOcrReviewFilte
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-ocr-review${query ? `?${query}` : ""}`);
   return jsonResponse<NorthHillsOcrReview>(response, "North Hills readings review API");
+}
+
+export async function saveNorthHillsOcrEvidence(entryId: string, evidence: SaveNorthHillsOcrEvidenceInput): Promise<void> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-ocr-review/${encodeURIComponent(entryId)}/evidence`, jsonRequest("POST", evidence));
+  await jsonResponse<unknown>(response, "North Hills evidence API");
 }
 
 export async function fetchLookupAdminRecords(): Promise<LookupAdminRecords> {
