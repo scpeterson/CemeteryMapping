@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { listNorthHillsOcrReview } from "./northHillsOcrReviewRepository.mjs";
+import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
 
 test("listNorthHillsOcrReview returns batches, summaries, staged readings, and candidate matches", async () => {
   const pool = {
@@ -105,4 +105,85 @@ test("listNorthHillsOcrReview can sort staged readings by printed page order", a
   };
 
   await listNorthHillsOcrReview(pool, { sort: "page" });
+});
+
+test("saveNorthHillsOcrEvidenceLink stores reviewed gravesite evidence with audit context", async () => {
+  const queries = [];
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql.includes("RETURNING")) {
+            return {
+              rows: [
+                {
+                  id: "link-1",
+                  entry_id: "11111111-1111-4111-8111-111111111111",
+                  target_type: "gravesite",
+                  target_id: "22222222-2222-4222-8222-222222222222",
+                  status: "linked",
+                  confidence: "high",
+                  notes: "Looks right",
+                  reviewed_by_email: "admin@example.test",
+                  reviewed_at: "2026-05-29T12:00:00.000Z",
+                },
+              ],
+            };
+          }
+
+          return { rows: [] };
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const link = await saveNorthHillsOcrEvidenceLink(
+    pool,
+    "11111111-1111-4111-8111-111111111111",
+    {
+      targetType: "gravesite",
+      targetId: "22222222-2222-4222-8222-222222222222",
+      status: "linked",
+      confidence: "high",
+      notes: "Looks right",
+    },
+    {
+      actorUser: {
+        id: "33333333-3333-4333-8333-333333333333",
+        subject: "auth0|admin",
+        email: "admin@example.test",
+        role: "admin",
+      },
+    },
+  );
+
+  assert.deepEqual(link, {
+    id: "link-1",
+    entryId: "11111111-1111-4111-8111-111111111111",
+    targetType: "gravesite",
+    targetId: "22222222-2222-4222-8222-222222222222",
+    status: "linked",
+    confidence: "high",
+    notes: "Looks right",
+    reviewedByEmail: "admin@example.test",
+    reviewedAt: "2026-05-29T12:00:00.000Z",
+  });
+  assert.equal(queries[0].sql, "BEGIN");
+  assert.equal(queries.at(-2).sql, "COMMIT");
+  assert.equal(queries.at(-1).sql, "RELEASE");
+  assert.match(queries.find((query) => query.sql.includes("RETURNING"))?.sql ?? "", /north_hills_ocr_entry_gravesite_links/u);
+  assert.deepEqual(queries.find((query) => query.sql.includes("RETURNING"))?.values, [
+    "11111111-1111-4111-8111-111111111111",
+    "22222222-2222-4222-8222-222222222222",
+    "linked",
+    "high",
+    "Looks right",
+    "33333333-3333-4333-8333-333333333333",
+    "auth0|admin",
+    "admin@example.test",
+  ]);
 });

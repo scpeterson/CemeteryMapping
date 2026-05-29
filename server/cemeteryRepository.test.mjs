@@ -41,6 +41,7 @@ function queryRows(sql) {
   if (sql.includes("FROM gravesites")) return [];
   if (sql.includes("FROM owners")) return [];
   if (sql.includes("FROM burials")) return [];
+  if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return [];
   if (sql.includes("FROM headstones")) {
     return [
       {

@@ -309,7 +309,7 @@ Searchable North Hills Genealogists PDFs can be staged for review without changi
 APP_ENV=dev npm run db:import:north-hills-ocr -- "/path/to/FedEx Scan 2026-05-29_10-13-35.pdf" --imported-by "Name"
 ```
 
-The importer uses `pdftotext -layout` for searchable PDFs, preserves the raw OCR entry text, parses the visible North Hills section/row/position coordinate, marker descriptors, surnames, inscription text, and detected years, then writes to `north_hills_ocr_import_batches` and `north_hills_ocr_entries`. The Admin -> Readings screen compares staged OCR entries to existing burials using source page references, surnames, and birth/death years. This review workflow is intentionally non-promoting: maintainers must inspect matches before any future correction or promotion tool updates production records.
+The importer uses `pdftotext -layout` for searchable PDFs, preserves the raw OCR entry text, parses the visible North Hills section/row/position coordinate, marker descriptors, surnames, inscription text, and detected years, then writes to `north_hills_ocr_import_batches` and `north_hills_ocr_entries`. The Admin -> Readings screen compares staged OCR entries to existing burials using source page references, surnames, and birth/death years. Reviewed assignments are stored in `north_hills_ocr_entry_gravesite_links` and `north_hills_ocr_entry_headstone_links` with status, confidence, reviewer identity, timestamp, and optional notes. This review workflow is intentionally non-promoting: evidence links can appear in the regular detail panel, but maintainers must still inspect matches before any future correction or promotion tool updates production records.
 
 ## File Geodatabase workflow
 

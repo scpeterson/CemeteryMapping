@@ -11,6 +11,7 @@ import {
   fetchLookupAdminRecords,
   fetchNorthHillsOcrReview,
   resolveAuth0User,
+  saveNorthHillsOcrEvidence,
   type SaveUserInput,
   updateAdminUser,
   updateCemeteryText,
@@ -33,6 +34,7 @@ import type {
   LookupRecord,
   LotTextRecord,
   NorthHillsOcrReview,
+  NorthHillsOcrEvidenceStatus,
   NorthHillsOcrReviewEntry,
   NorthHillsOcrReviewFilters,
   SectionTextRecord,
@@ -197,6 +199,8 @@ const auditTableLabels: Record<string, string> = {
   marker_types: "Marker types",
   memorials: "Memorials",
   north_hills_ocr_entries: "North Hills OCR readings",
+  north_hills_ocr_entry_gravesite_links: "North Hills gravesite evidence links",
+  north_hills_ocr_entry_headstone_links: "North Hills headstone evidence links",
   north_hills_ocr_import_batches: "North Hills OCR imports",
   owners: "Owners",
   sections: "Sections",
@@ -241,6 +245,11 @@ const deedEntryTitle = (entry: DeedRegistryReviewEntry) =>
   `Row ${entry.sourceRowNumber}. ${entry.ownerDisplayName || "No owner"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence.`;
 const readingEntryTitle = (entry: NorthHillsOcrReviewEntry) =>
   `Page ${entry.sourcePageNumber ?? entry.sourcePageIndex}. ${entry.nameText || "Unnamed reading"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence. ${entry.candidateMatchCount} possible match${entry.candidateMatchCount === 1 ? "" : "es"}.`;
+const evidenceStatusLabels: Record<NorthHillsOcrEvidenceStatus, string> = {
+  linked: "Linked",
+  rejected: "Rejected",
+  needs_field_check: "Needs field check",
+};
 const lookupRowTitle = (row: LookupRecord) => `${row.label}. ${row.isActive ? "Active" : "Inactive"}.`;
 const lookupUsageText = (row: LookupRecord) => `Used by ${row.usageCount} ${row.usageLabel || "records"}.`;
 
@@ -303,6 +312,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(() => new Set());
   const [savingRecordKey, setSavingRecordKey] = useState<string>();
   const [savingLookupKey, setSavingLookupKey] = useState<string>();
+  const [savingEvidenceKey, setSavingEvidenceKey] = useState<string>();
   const [recentlyMovedLookupIds, setRecentlyMovedLookupIds] = useState<Set<string>>(() => new Set());
   const movedLookupTimeoutRef = useRef<number | undefined>(undefined);
 
@@ -493,6 +503,37 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const openNorthHillsReviewTab = () => {
     setActiveTab("readings");
     if (northHillsOcrReview.batches.length === 0 && !isLoadingNorthHillsReview) void loadNorthHillsOcrReview();
+  };
+
+  const saveNorthHillsEvidence = async (
+    entryId: string,
+    targetType: "headstone" | "gravesite",
+    targetId: string,
+    status: NorthHillsOcrEvidenceStatus,
+    label: string,
+  ) => {
+    const notes = window.prompt(`Optional notes for ${evidenceStatusLabels[status].toLowerCase()} ${label}:`, "");
+    if (notes === null) return;
+    const key = `${entryId}:${targetType}:${targetId}:${status}`;
+    setSavingEvidenceKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      await saveNorthHillsOcrEvidence(entryId, {
+        targetType,
+        targetId,
+        status,
+        confidence: status === "linked" ? "high" : status === "rejected" ? "low" : "review",
+        notes,
+      });
+      setMessage(`${label} marked ${evidenceStatusLabels[status].toLowerCase()}.`);
+      await loadNorthHillsOcrReview(northHillsReviewFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save North Hills evidence review.");
+    } finally {
+      setSavingEvidenceKey(undefined);
+    }
   };
 
   const loadLookupRecords = async () => {
@@ -1997,9 +2038,83 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                     <section className="deed-investigation-links" aria-label="Possible existing burial matches">
                       <h4>Possible existing matches</h4>
                       {entry.candidateMatches.map((match) => (
-                        <p key={`${entry.id}:${match.burialId}`}>
-                          <strong>{match.fullName || "Unnamed burial"}:</strong> {match.gravesiteId} · Section {match.sectionId} · score {match.score}
-                        </p>
+                        <article key={`${entry.id}:${match.burialId}`} className="reading-match-review">
+                          <p>
+                            <strong>{match.fullName || "Unnamed burial"}:</strong> {match.gravesiteId} · Section {match.sectionId} · score {match.score}
+                          </p>
+                          {match.gravesiteEvidence.length ? (
+                            <small>
+                              Gravesite review:{" "}
+                              {match.gravesiteEvidence.map((evidence) => evidenceStatusLabels[evidence.status] ?? evidence.status).join(", ")}
+                            </small>
+                          ) : null}
+                          <div className="reading-match-actions">
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              disabled={Boolean(savingEvidenceKey)}
+                              onClick={() => void saveNorthHillsEvidence(entry.id, "gravesite", match.gravesiteUuid, "linked", `gravesite ${match.gravesiteId}`)}
+                              title="Confirm this North Hills reading belongs to this gravesite."
+                            >
+                              Link gravesite
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              disabled={Boolean(savingEvidenceKey)}
+                              onClick={() => void saveNorthHillsEvidence(entry.id, "gravesite", match.gravesiteUuid, "rejected", `gravesite ${match.gravesiteId}`)}
+                              title="Reject this possible gravesite match."
+                            >
+                              Reject match
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              disabled={Boolean(savingEvidenceKey)}
+                              onClick={() => void saveNorthHillsEvidence(entry.id, "gravesite", match.gravesiteUuid, "needs_field_check", `gravesite ${match.gravesiteId}`)}
+                              title="Mark this possible match for field review."
+                            >
+                              Needs field check
+                            </button>
+                          </div>
+                          {match.headstoneCandidates.length ? (
+                            <div className="reading-headstone-candidates">
+                              {match.headstoneCandidates.map((headstone) => (
+                                <span key={headstone.id}>
+                                  <strong>{headstone.headstoneId}</strong>
+                                  {headstone.evidence.length ? ` (${headstone.evidence.map((evidence) => evidenceStatusLabels[evidence.status] ?? evidence.status).join(", ")})` : ""}
+                                  <button
+                                    type="button"
+                                    className="secondary-button"
+                                    disabled={Boolean(savingEvidenceKey)}
+                                    onClick={() => void saveNorthHillsEvidence(entry.id, "headstone", headstone.id, "linked", `headstone ${headstone.headstoneId}`)}
+                                    title="Confirm this North Hills reading belongs to this headstone."
+                                  >
+                                    Link headstone
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="secondary-button"
+                                    disabled={Boolean(savingEvidenceKey)}
+                                    onClick={() => void saveNorthHillsEvidence(entry.id, "headstone", headstone.id, "rejected", `headstone ${headstone.headstoneId}`)}
+                                    title="Reject this possible headstone match."
+                                  >
+                                    Reject headstone
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="secondary-button"
+                                    disabled={Boolean(savingEvidenceKey)}
+                                    onClick={() => void saveNorthHillsEvidence(entry.id, "headstone", headstone.id, "needs_field_check", `headstone ${headstone.headstoneId}`)}
+                                    title="Mark this possible headstone match for field review."
+                                  >
+                                    Field check
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </article>
                       ))}
                     </section>
                   ) : null}
