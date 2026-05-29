@@ -10,6 +10,7 @@ import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSect
 import { getCemeteryData, getGraveSpace, listHeadstoneLookupOptions, restoreGraveSpace, softDeleteGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
+import { listNorthHillsOcrReview } from "./northHillsOcrReviewRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
   BadRequestError,
@@ -149,6 +150,37 @@ function validateHeadstonePayload(body) {
   };
 }
 
+async function markerTypeCodeForId(pool, markerTypeId) {
+  const result = await pool.query("SELECT code FROM marker_types WHERE id = $1", [markerTypeId]);
+  return result.rows[0]?.code;
+}
+
+async function sectionNameForHeadstone(pool, headstoneId) {
+  const result = await pool.query(
+    `
+      SELECT COALESCE(sections.name, gravesites.section_id) AS section_name
+      FROM headstones
+      LEFT JOIN gravesites
+        ON gravesites.id = headstones.gravesite_uuid
+      LEFT JOIN sections
+        ON sections.section_id = gravesites.section_uuid
+      WHERE headstones.id = $1
+        AND headstones.deleted_at IS NULL
+      LIMIT 1
+    `,
+    [headstoneId],
+  );
+  return result.rows[0]?.section_name;
+}
+
+async function validateHeadstoneBusinessRules(pool, headstoneId, headstone) {
+  const [markerTypeCode, sectionName] = await Promise.all([markerTypeCodeForId(pool, headstone.markerTypeId), sectionNameForHeadstone(pool, headstoneId)]);
+  if (!markerTypeCode) throw new BadRequestError("Marker type is invalid.");
+  if (String(sectionName ?? "").toUpperCase() === "G" && markerTypeCode !== "flat_marker") {
+    throw new BadRequestError("Section G can contain only flat markers.");
+  }
+}
+
 async function cemeteryIdForSection(pool, sectionId) {
   const result = await pool.query("SELECT cemetery_id::text FROM sections WHERE section_id = $1 AND deleted_at IS NULL", [sectionId]);
   return result.rows[0]?.cemetery_id;
@@ -273,6 +305,7 @@ export function createApp(config, pool) {
     try {
       const id = validateUuid(request.params.id, "Headstone id");
       const headstone = validateHeadstonePayload(request.body);
+      await validateHeadstoneBusinessRules(pool, id, headstone);
       const updated = await updateHeadstone(pool, id, headstone, {
         actorUser: request.user,
         reason: headstone.reason,
@@ -379,6 +412,14 @@ export function createApp(config, pool) {
   app.get("/api/admin/deed-registry-review", requireAdmin, async (request, response, next) => {
     try {
       response.json(await listDeedRegistryReview(pool, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/north-hills-ocr-review", requireAdmin, async (request, response, next) => {
+    try {
+      response.json(await listNorthHillsOcrReview(pool, request.query));
     } catch (error) {
       next(error);
     }

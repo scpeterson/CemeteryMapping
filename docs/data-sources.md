@@ -60,6 +60,22 @@ Every real-data import or source change should update this file and the relevant
 | Known limitations | Spreadsheet rows are flat and do not enforce referential integrity. Generated lot and gravesite polygons are approximate placeholders around GPS headstone points. |
 | Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
 
+## North Hills Genealogists Trinity OCR
+
+| Field | Value |
+| --- | --- |
+| Source name | North Hills Genealogists Trinity OCR |
+| Source type | Searchable PDF generated from a scanned North Hills Genealogists Trinity excerpt |
+| Source path used during development | `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/FedEx Scan 2026-05-29_10-13-35.pdf` |
+| Source coverage | Trinity German Evangelical Lutheran Church narrative and cemetery readings, printed pages 180-236 |
+| Application import command | `APP_ENV=<env> npm run db:import:north-hills-ocr -- "/path/to/FedEx Scan 2026-05-29_10-13-35.pdf"` |
+| Staging tables | `north_hills_ocr_import_batches`, `north_hills_ocr_entries` |
+| Review UI | Admin -> Readings |
+| Data owner | North Hills Genealogists |
+| Date received | 2026-05-29 |
+| Known limitations | OCR contains normal scan artifacts such as `lA` for `1A`, punctuation drift, and occasional word/name errors. The importer stages entries for review and candidate matching only; it does not overwrite burials, headstones, lots, owners, or deeds. |
+| Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
+
 ## Demo Seed Data
 
 | Field | Value |

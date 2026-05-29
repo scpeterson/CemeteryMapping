@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, FileSearch, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { ArrowDown, ArrowUp, FileSearch, FileText, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
   createLookupRecord,
@@ -9,6 +9,7 @@ import {
   fetchCemeteryAdminRecords,
   fetchDeedRegistryReview,
   fetchLookupAdminRecords,
+  fetchNorthHillsOcrReview,
   resolveAuth0User,
   type SaveUserInput,
   updateAdminUser,
@@ -31,6 +32,9 @@ import type {
   LookupAdminRecords,
   LookupRecord,
   LotTextRecord,
+  NorthHillsOcrReview,
+  NorthHillsOcrReviewEntry,
+  NorthHillsOcrReviewFilters,
   SectionTextRecord,
   CurrentUser,
 } from "../types";
@@ -44,7 +48,7 @@ type UserFormState = SaveUserInput & {
   id?: string;
 };
 
-type AdminTab = "users" | "records" | "deeds" | "audit" | "lookups";
+type AdminTab = "users" | "records" | "deeds" | "readings" | "audit" | "lookups";
 
 const blankUser: UserFormState = {
   externalSubject: "",
@@ -124,6 +128,22 @@ const emptyDeedRegistryReview: DeedRegistryReview = {
   entries: [],
 };
 
+const defaultNorthHillsReviewFilters: NorthHillsOcrReviewFilters = {
+  batchId: "",
+  confidence: "",
+  status: "",
+  section: "",
+  q: "",
+  limit: 100,
+};
+
+const emptyNorthHillsOcrReview: NorthHillsOcrReview = {
+  batches: [],
+  selectedBatchId: "",
+  summary: [],
+  entries: [],
+};
+
 const emptyLookupAdminRecords: LookupAdminRecords = {
   tables: [],
   lookups: {},
@@ -175,6 +195,8 @@ const auditTableLabels: Record<string, string> = {
   marker_material_types: "Marker materials",
   marker_types: "Marker types",
   memorials: "Memorials",
+  north_hills_ocr_entries: "North Hills OCR readings",
+  north_hills_ocr_import_batches: "North Hills OCR imports",
   owners: "Owners",
   sections: "Sections",
 };
@@ -216,6 +238,8 @@ const deedConfidenceLabel = (confidence: string) => confidenceLabels[confidence]
 const formatList = (values: string[]) => (values.length ? values.join(", ") : "None");
 const deedEntryTitle = (entry: DeedRegistryReviewEntry) =>
   `Row ${entry.sourceRowNumber}. ${entry.ownerDisplayName || "No owner"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence.`;
+const readingEntryTitle = (entry: NorthHillsOcrReviewEntry) =>
+  `Page ${entry.sourcePageNumber ?? entry.sourcePageIndex}. ${entry.nameText || "Unnamed reading"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence. ${entry.candidateMatchCount} possible match${entry.candidateMatchCount === 1 ? "" : "es"}.`;
 const lookupRowTitle = (row: LookupRecord) => `${row.label}. ${row.isActive ? "Active" : "Inactive"}.`;
 const lookupUsageText = (row: LookupRecord) => `Used by ${row.usageCount} ${row.usageLabel || "records"}.`;
 
@@ -252,6 +276,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [selectedAuditEventId, setSelectedAuditEventId] = useState("");
   const [deedRegistryReview, setDeedRegistryReview] = useState<DeedRegistryReview>(emptyDeedRegistryReview);
   const [deedReviewFilters, setDeedReviewFilters] = useState<DeedRegistryReviewFilters>(defaultDeedReviewFilters);
+  const [northHillsOcrReview, setNorthHillsOcrReview] = useState<NorthHillsOcrReview>(emptyNorthHillsOcrReview);
+  const [northHillsReviewFilters, setNorthHillsReviewFilters] = useState<NorthHillsOcrReviewFilters>(defaultNorthHillsReviewFilters);
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
   const [selectedLookupTable, setSelectedLookupTable] = useState("");
   const [showInactiveLookups, setShowInactiveLookups] = useState(false);
@@ -269,6 +295,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAuditEvents, setIsLoadingAuditEvents] = useState(false);
   const [isLoadingDeedReview, setIsLoadingDeedReview] = useState(false);
+  const [isLoadingNorthHillsReview, setIsLoadingNorthHillsReview] = useState(false);
   const [isLoadingLookups, setIsLoadingLookups] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
@@ -306,6 +333,10 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const selectedDeedBatch = useMemo(
     () => deedRegistryReview.batches.find((batch) => batch.id === deedRegistryReview.selectedBatchId),
     [deedRegistryReview.batches, deedRegistryReview.selectedBatchId],
+  );
+  const selectedNorthHillsBatch = useMemo(
+    () => northHillsOcrReview.batches.find((batch) => batch.id === northHillsOcrReview.selectedBatchId),
+    [northHillsOcrReview.batches, northHillsOcrReview.selectedBatchId],
   );
   const selectedLookupDefinition = useMemo(
     () => lookupRecords.tables.find((table) => table.table === selectedLookupTable),
@@ -432,6 +463,35 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const openDeedReviewTab = () => {
     setActiveTab("deeds");
     if (deedRegistryReview.batches.length === 0 && !isLoadingDeedReview) void loadDeedRegistryReview();
+  };
+
+  const loadNorthHillsOcrReview = async (filters = northHillsReviewFilters) => {
+    setIsLoadingNorthHillsReview(true);
+    setError(undefined);
+
+    try {
+      const nextReview = await fetchNorthHillsOcrReview(filters);
+      setNorthHillsOcrReview(nextReview);
+      setNorthHillsReviewFilters((current) => ({ ...current, batchId: nextReview.selectedBatchId }));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load North Hills readings.");
+    } finally {
+      setIsLoadingNorthHillsReview(false);
+    }
+  };
+
+  const updateNorthHillsReviewFilter = (patch: Partial<NorthHillsOcrReviewFilters>) => {
+    setNorthHillsReviewFilters((current) => ({ ...current, ...patch }));
+  };
+
+  const applyNorthHillsReviewFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void loadNorthHillsOcrReview(northHillsReviewFilters);
+  };
+
+  const openNorthHillsReviewTab = () => {
+    setActiveTab("readings");
+    if (northHillsOcrReview.batches.length === 0 && !isLoadingNorthHillsReview) void loadNorthHillsOcrReview();
   };
 
   const loadLookupRecords = async () => {
@@ -824,6 +884,16 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
           >
             <FileSearch size={16} aria-hidden="true" />
             <span>Deeds</span>
+          </button> : null}
+          {canUseSystemAdminTabs ? <button
+            type="button"
+            aria-current={activeTab === "readings" ? "page" : undefined}
+            className={activeTab === "readings" ? "is-active" : undefined}
+            onClick={openNorthHillsReviewTab}
+            title="Review staged North Hills Genealogists OCR readings against existing burials."
+          >
+            <FileText size={16} aria-hidden="true" />
+            <span>Readings</span>
           </button> : null}
           {canUseSystemAdminTabs ? <button
             type="button"
@@ -1711,6 +1781,212 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                       {entry.relatedInvestigationNotes.map((note) => (
                         <p key={`${note.sourceRowNumber}:${note.rawRemarks}`}>
                           <strong>Investigated row {note.sourceRowNumber}:</strong> {note.rawRemarks}
+                        </p>
+                      ))}
+                    </section>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          </section>
+        </>
+      ) : activeTab === "readings" ? (
+        <>
+          <section className="admin-section">
+            <div className="section-title">
+              <FileText size={17} aria-hidden="true" />
+              <h3>North Hills Readings</h3>
+            </div>
+
+            <form className="deed-review-filter-form" onSubmit={applyNorthHillsReviewFilters}>
+              <label>
+                Import batch
+                <select
+                  value={northHillsReviewFilters.batchId ?? ""}
+                  onChange={(event) => updateNorthHillsReviewFilter({ batchId: event.target.value })}
+                  title="Choose the staged North Hills OCR import batch to review."
+                >
+                  <option value="">Latest batch</option>
+                  {northHillsOcrReview.batches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {batch.sourceName} - {formatAdminTimestamp(batch.createdAt)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Confidence
+                <select
+                  value={northHillsReviewFilters.confidence ?? ""}
+                  onChange={(event) => updateNorthHillsReviewFilter({ confidence: event.target.value })}
+                  title="Filter OCR rows by parser confidence."
+                >
+                  <option value="">All confidence levels</option>
+                  {Object.entries(confidenceLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Section
+                <select
+                  value={northHillsReviewFilters.section ?? ""}
+                  onChange={(event) => updateNorthHillsReviewFilter({ section: event.target.value })}
+                  title="Filter OCR readings by parsed cemetery section."
+                >
+                  <option value="">All sections</option>
+                  {["A", "B", "C", "D", "E"].map((section) => (
+                    <option key={section} value={section}>
+                      Section {section}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Search
+                <input
+                  value={northHillsReviewFilters.q ?? ""}
+                  onChange={(event) => updateNorthHillsReviewFilter({ q: event.target.value })}
+                  placeholder="Name, inscription, or OCR text"
+                  title="Search staged names, inscriptions, and raw OCR text."
+                />
+              </label>
+              <label>
+                Limit
+                <select
+                  value={northHillsReviewFilters.limit ?? 100}
+                  onChange={(event) => updateNorthHillsReviewFilter({ limit: Number(event.target.value) })}
+                  title="Limit the number of OCR reading rows returned."
+                >
+                  <option value={50}>50 rows</option>
+                  <option value={100}>100 rows</option>
+                  <option value={250}>250 rows</option>
+                </select>
+              </label>
+              <div className="admin-form-actions deed-review-filter-actions">
+                <button type="submit" disabled={isLoadingNorthHillsReview} title="Apply North Hills reading filters.">
+                  {isLoadingNorthHillsReview ? "Loading..." : "Apply filters"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setNorthHillsReviewFilters(defaultNorthHillsReviewFilters);
+                    void loadNorthHillsOcrReview(defaultNorthHillsReviewFilters);
+                  }}
+                  title="Clear North Hills reading filters and reload the latest import batch."
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+
+            {isLoadingNorthHillsReview ? <div className="admin-message" role="status">Loading North Hills readings...</div> : null}
+
+            {selectedNorthHillsBatch ? (
+              <article className="deed-batch-summary" title="Summary of the selected staged OCR import batch.">
+                <div>
+                  <strong>{selectedNorthHillsBatch.sourceName}</strong>
+                  <small>{selectedNorthHillsBatch.cemeteryName}</small>
+                </div>
+                <dl>
+                  <div>
+                    <dt>Rows</dt>
+                    <dd>{selectedNorthHillsBatch.entryCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Review</dt>
+                    <dd>{selectedNorthHillsBatch.reviewCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Candidates</dt>
+                    <dd>{selectedNorthHillsBatch.matchedCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Imported</dt>
+                    <dd>{formatAdminTimestamp(selectedNorthHillsBatch.createdAt)}</dd>
+                  </div>
+                </dl>
+                {selectedNorthHillsBatch.notes ? <p>{selectedNorthHillsBatch.notes}</p> : null}
+              </article>
+            ) : null}
+
+            {northHillsOcrReview.summary.length ? (
+              <div className="deed-summary-grid" aria-label="North Hills readings summary">
+                {northHillsOcrReview.summary.map((item) => (
+                  <article key={`${item.status}:${item.parseConfidence}`} title={`${item.status} rows with ${deedConfidenceLabel(item.parseConfidence)} confidence.`}>
+                    <strong>{item.count}</strong>
+                    <span>{item.status}</span>
+                    <small>{deedConfidenceLabel(item.parseConfidence)}</small>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="deed-entry-list" role="table" aria-label="Staged North Hills readings">
+              {northHillsOcrReview.entries.length === 0 && !isLoadingNorthHillsReview ? <p className="record-editor-empty">No North Hills readings match these filters.</p> : null}
+              {northHillsOcrReview.entries.map((entry) => (
+                <article key={entry.id} className={`deed-entry-row confidence-${entry.parseConfidence}`} title={readingEntryTitle(entry)}>
+                  <header>
+                    <span>
+                      <strong>Page {entry.sourcePageNumber ?? entry.sourcePageIndex}</strong>
+                      <small>Lines {entry.sourceLineStart}-{entry.sourceLineEnd}</small>
+                    </span>
+                    <span>
+                      <strong>{entry.nameText || "Unnamed reading"}</strong>
+                      <small>{deedConfidenceLabel(entry.parseConfidence)}</small>
+                    </span>
+                    <span>
+                      <strong>{entry.candidateMatchCount} possible match{entry.candidateMatchCount === 1 ? "" : "es"}</strong>
+                      <small>{entry.status}</small>
+                    </span>
+                  </header>
+                  <dl className="deed-entry-fields">
+                    <div title="Parsed section, row, and position from the North Hills coordinate.">
+                      <dt>Location</dt>
+                      <dd>
+                        {entry.parsedSectionName ? `Section ${entry.parsedSectionName}` : "Unknown"}
+                        {entry.parsedRowNumber ? `, row ${entry.parsedRowNumber}` : ""}
+                        {entry.parsedPositionNumber ? `, #${entry.parsedPositionNumber}` : ""}
+                      </dd>
+                    </div>
+                    <div title="Marker type text parsed from the OCR descriptor.">
+                      <dt>Marker</dt>
+                      <dd>{entry.markerTypeText || "Unknown"}</dd>
+                    </div>
+                    <div title="Material text parsed from the OCR descriptor.">
+                      <dt>Material</dt>
+                      <dd>{entry.materialText || "Unknown"}</dd>
+                    </div>
+                    <div title="Condition text parsed from the OCR descriptor.">
+                      <dt>Condition</dt>
+                      <dd>{entry.conditionText || "Unknown"}</dd>
+                    </div>
+                    <div title="Four-digit years detected in the OCR reading.">
+                      <dt>Years</dt>
+                      <dd>{entry.parsedYears.length ? entry.parsedYears.join(", ") : "None"}</dd>
+                    </div>
+                    <div title="Surnames parsed from the reading heading.">
+                      <dt>Surnames</dt>
+                      <dd>{formatList(entry.surnames)}</dd>
+                    </div>
+                  </dl>
+                  {entry.rawText ? <p className="deed-entry-remarks">{entry.rawText}</p> : null}
+                  {entry.parseNotes.length ? (
+                    <ul className="deed-entry-notes" aria-label="Parser notes">
+                      {entry.parseNotes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {entry.candidateMatches.length ? (
+                    <section className="deed-investigation-links" aria-label="Possible existing burial matches">
+                      <h4>Possible existing matches</h4>
+                      {entry.candidateMatches.map((match) => (
+                        <p key={`${entry.id}:${match.burialId}`}>
+                          <strong>{match.fullName || "Unnamed burial"}:</strong> {match.gravesiteId} · Section {match.sectionId} · score {match.score}
                         </p>
                       ))}
                     </section>

@@ -18,6 +18,8 @@ import type {
   LookupAdminRecords,
   LookupRecord,
   LotTextRecord,
+  NorthHillsOcrReview,
+  NorthHillsOcrReviewFilters,
   SaveHeadstoneInput,
   SearchMatch,
   SectionTextRecord,
@@ -174,6 +176,16 @@ export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-registry-review${query ? `?${query}` : ""}`);
   return jsonResponse<DeedRegistryReview>(response, "Deed registry review API");
+}
+
+export async function fetchNorthHillsOcrReview(filters: NorthHillsOcrReviewFilters = {}): Promise<NorthHillsOcrReview> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-ocr-review${query ? `?${query}` : ""}`);
+  return jsonResponse<NorthHillsOcrReview>(response, "North Hills readings review API");
 }
 
 export async function fetchLookupAdminRecords(): Promise<LookupAdminRecords> {

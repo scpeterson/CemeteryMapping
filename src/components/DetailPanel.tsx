@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { FileText, History, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
-import type { Burial, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneLookups, Owner, SaveHeadstoneInput } from "../types";
+import type { Burial, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneLookups, LookupOption, Owner, SaveHeadstoneInput } from "../types";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName } from "../lib/format";
 
@@ -50,9 +50,11 @@ function BurialRecord({ burial }: { burial: Burial }) {
   );
 }
 
-function blankHeadstoneForm(headstone: Headstone): SaveHeadstoneInput {
+function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOption[]): SaveHeadstoneInput {
+  const markerTypeId = markerTypeOptions?.some((option) => option.id === headstone.markerType.id) ? headstone.markerType.id : (markerTypeOptions?.[0]?.id ?? headstone.markerType.id);
+
   return {
-    markerTypeId: headstone.markerType.id,
+    markerTypeId,
     materialId: headstone.material.id,
     conditionId: headstone.condition.id,
     conditionNotes: headstone.conditionNotes,
@@ -68,19 +70,23 @@ function HeadstoneRecord({
   lookups,
   canUpdate,
   onSave,
+  sectionName,
 }: {
   headstone: Headstone;
   lookups: HeadstoneLookups;
   canUpdate: boolean;
   onSave: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  sectionName: string;
 }) {
+  const isSectionG = sectionName.toUpperCase() === "G";
+  const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone));
+  const [form, setForm] = useState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone, markerTypeOptions));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
 
   const startEditing = () => {
-    setForm(blankHeadstoneForm(headstone));
+    setForm(blankHeadstoneForm(headstone, markerTypeOptions));
     setError(undefined);
     setIsEditing(true);
   };
@@ -108,13 +114,14 @@ function HeadstoneRecord({
         <label>
           Marker type
           <select value={form.markerTypeId} onChange={(event) => setForm((current) => ({ ...current, markerTypeId: event.target.value }))}>
-            {lookups.markerTypes.map((option) => (
+            {markerTypeOptions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
             ))}
           </select>
         </label>
+        {isSectionG ? <p className="muted headstone-wide-field">Section G allows only flat markers.</p> : null}
         <label>
           Material
           <select value={form.materialId} onChange={(event) => setForm((current) => ({ ...current, materialId: event.target.value }))}>
@@ -156,7 +163,7 @@ function HeadstoneRecord({
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
             Cancel
           </button>
-          <button type="submit" disabled={isSaving || !form.markerTypeId || !form.materialId || !form.conditionId}>
+          <button type="submit" disabled={isSaving || !form.markerTypeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
             {isSaving ? "Saving..." : "Save marker"}
           </button>
         </div>
@@ -312,6 +319,7 @@ export function DetailPanel({
                 lookups={headstoneLookups}
                 canUpdate={canUpdateHeadstones}
                 onSave={onSaveHeadstone}
+                sectionName={summary.section}
               />
             ))}
           </div>

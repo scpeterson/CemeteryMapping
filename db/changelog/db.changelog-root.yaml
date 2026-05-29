@@ -86,3 +86,9 @@ databaseChangeLog:
   - include:
       file: changes/029-cemetery-scoped-roles.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/030-section-marker-business-rules.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/031-north-hills-ocr-staging.sql
+      relativeToChangelogFile: true

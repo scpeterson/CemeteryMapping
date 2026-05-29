@@ -1,0 +1,392 @@
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { extname, join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
+import pg from "pg";
+import { currentEnvironment, loadDbEnvironment } from "./lib/run-liquibase.mjs";
+
+const { Pool } = pg;
+const sourceName = "North Hills Genealogists Trinity OCR";
+
+function usage() {
+  console.error(
+    "Usage: npm run db:import:north-hills-ocr -- /path/to/north-hills.pdf|txt [--cemetery-id uuid] [--facility-id 1] [--source-name \"Name\"] [--imported-by \"Name\"] [--notes \"Text\"] [--dry-run]",
+  );
+}
+
+function parseArgs(args) {
+  const [sourcePath, ...rest] = args;
+  const options = {};
+
+  for (let index = 0; index < rest.length; index += 1) {
+    const arg = rest[index];
+    if (!arg.startsWith("--")) {
+      usage();
+      process.exit(1);
+    }
+
+    const key = arg.slice(2);
+    if (key === "dry-run") {
+      options[key] = true;
+      continue;
+    }
+
+    const value = rest[index + 1];
+    if (!value || value.startsWith("--")) {
+      console.error(`Missing value for --${key}`);
+      process.exit(1);
+    }
+
+    options[key] = value;
+    index += 1;
+  }
+
+  return { sourcePath, options };
+}
+
+function cleanText(value) {
+  return String(value ?? "").replace(/\s+/gu, " ").trim();
+}
+
+function normalizeNumber(value) {
+  const text = String(value ?? "")
+    .trim()
+    .replace(/[lI]/gu, "1")
+    .replace(/S/gu, "5")
+    .replace(/O/gu, "0");
+  const number = Number.parseInt(text, 10);
+  return Number.isInteger(number) ? number : null;
+}
+
+function normalizeScope(value) {
+  if (value === "s") return "single";
+  if (value === "c") return "couple";
+  return "unknown";
+}
+
+function surnameList(nameText) {
+  return [
+    ...new Set(
+      cleanText(nameText)
+        .replace(/^\[|\]$/gu, "")
+        .split("/")
+        .map((item) => item.replace(/[^A-Za-z'-]/gu, "").trim())
+        .filter((item) => item.length > 1),
+    ),
+  ];
+}
+
+function yearsFromText(text) {
+  return [...new Set([...String(text ?? "").matchAll(/\b(17|18|19|20)\d{2}\b/gu)].map((match) => Number.parseInt(match[0], 10)))].sort(
+    (left, right) => left - right,
+  );
+}
+
+function quotedText(text) {
+  const matches = [...String(text ?? "").matchAll(/"([^"]+)"/gu)].map((match) => cleanText(match[1])).filter(Boolean);
+  return matches.join(" ");
+}
+
+function descriptorText(text) {
+  const afterMarker = String(text ?? "").replace(/^[^(]+\([^)]*\)\s*/u, "");
+  return cleanText(afterMarker.split('"')[0]);
+}
+
+function markerMaterial(text) {
+  const value = text.toLowerCase();
+  const materials = ["granite", "marble", "bronze", "sandstone", "concrete", "metal", "slate", "limestone"];
+  return materials.filter((material) => value.includes(material)).join(", ") || null;
+}
+
+function markerCondition(text) {
+  const value = text.toLowerCase();
+  if (/\bexc(?:ellent)?\s+cond\b/u.test(value) || /\bexcellent\b/u.test(value)) return "excellent";
+  if (/\bgood\s+cond\b/u.test(value) || /\bgood\b/u.test(value)) return "good";
+  if (/\bfair\s+cond\b/u.test(value) || /\bfair\b/u.test(value)) return "fair";
+  if (/\bpoor\s+cond\b/u.test(value) || /\bpoor\b/u.test(value)) return "poor";
+  return null;
+}
+
+function markerType(text) {
+  const value = text.toLowerCase();
+  const types = ["pillow", "upright", "flat", "monolith", "ledger", "obelisk", "marker", "stone"];
+  return types.filter((type) => value.includes(type)).join(", ") || null;
+}
+
+function entryConfidence(entry) {
+  if (entry.surnames.length && entry.parsedSectionName && entry.parsedRowNumber && entry.parsedPositionNumber && entry.parsedYears.length) return "high";
+  if (entry.surnames.length && entry.parsedSectionName && entry.parsedRowNumber) return "medium";
+  if (entry.surnames.length) return "low";
+  return "review";
+}
+
+function entryNotes(entry) {
+  const notes = [];
+  if (!entry.sourcePageNumber) notes.push("Printed source page number was not detected.");
+  if (!entry.surnames.length) notes.push("No surname could be parsed from the entry heading.");
+  if (!entry.parsedYears.length) notes.push("No four-digit years were detected in the entry text.");
+  if (!entry.parsedSectionName || !entry.parsedRowNumber || !entry.parsedPositionNumber) notes.push("Section, row, or position is incomplete.");
+  return notes;
+}
+
+function printedPageNumber(pageText) {
+  const match = String(pageText ?? "").match(/Franklin Park Borough\s+(\d{3})\s+Allegheny County/iu);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
+const entryStartPattern = /^\s*([A-Z][A-Z0-9/[\]()? .,'&-]{1,90}?)\s+\(([0-9lISOS?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOS?]{1,3})\s*,\s*([sc])\)/u;
+
+function isNonEntryBoundary(line) {
+  return (
+    sectionRowPattern.test(line) ||
+    /^\s*Franklin Park Borough\b/u.test(line) ||
+    /^\s*Trinity German Evangelical Lutheran Church\b/u.test(line) ||
+    /^\s*Gap,?\s+about\b/iu.test(line)
+  );
+}
+
+export function parseNorthHillsOcrText(text) {
+  const entries = [];
+  const pages = String(text ?? "").split("\f");
+  let currentEntry;
+
+  const flushEntry = () => {
+    if (!currentEntry) return;
+    const rawText = cleanText(currentEntry.lines.join(" "));
+    const descriptor = descriptorText(rawText);
+    const entry = {
+      sourcePageIndex: currentEntry.sourcePageIndex,
+      sourcePageNumber: currentEntry.sourcePageNumber,
+      sourceLineStart: currentEntry.sourceLineStart,
+      sourceLineEnd: currentEntry.sourceLineEnd,
+      rawText,
+      nameText: cleanText(currentEntry.nameText),
+      surnames: surnameList(currentEntry.nameText),
+      parsedSectionName: currentEntry.parsedSectionName,
+      parsedRowNumber: currentEntry.parsedRowNumber,
+      parsedPositionNumber: currentEntry.parsedPositionNumber,
+      parsedMarkerScope: currentEntry.parsedMarkerScope,
+      markerTypeText: markerType(descriptor),
+      materialText: markerMaterial(descriptor),
+      conditionText: markerCondition(descriptor),
+      inscriptionText: quotedText(rawText),
+      parsedYears: yearsFromText(rawText),
+      sourceEntry: {
+        heading: currentEntry.heading,
+        descriptor,
+      },
+    };
+    entry.parseConfidence = entryConfidence(entry);
+    entry.parseNotes = entryNotes(entry);
+    entries.push(entry);
+    currentEntry = undefined;
+  };
+
+  pages.forEach((pageText, pageIndex) => {
+    const pageNumber = printedPageNumber(pageText);
+    const lines = pageText.split(/\r?\n/u);
+    let currentSectionName;
+    let currentRowNumber;
+
+    lines.forEach((line, lineIndex) => {
+      const sectionMatch = line.match(sectionRowPattern);
+      if (sectionMatch) {
+        flushEntry();
+        currentSectionName = sectionMatch[1].toUpperCase();
+        currentRowNumber = normalizeNumber(sectionMatch[2]);
+        return;
+      }
+
+      const entryMatch = line.match(entryStartPattern);
+      if (entryMatch) {
+        flushEntry();
+        const parsedRowNumber = normalizeNumber(entryMatch[2]) ?? currentRowNumber;
+        const parsedSectionName = entryMatch[3].toUpperCase() === "O" ? currentSectionName : entryMatch[3].toUpperCase();
+        currentEntry = {
+          sourcePageIndex: pageIndex + 1,
+          sourcePageNumber: pageNumber,
+          sourceLineStart: lineIndex + 1,
+          sourceLineEnd: lineIndex + 1,
+          heading: cleanText(line),
+          lines: [line],
+          nameText: entryMatch[1],
+          parsedSectionName,
+          parsedRowNumber,
+          parsedPositionNumber: normalizeNumber(entryMatch[4]),
+          parsedMarkerScope: normalizeScope(entryMatch[5]),
+        };
+        return;
+      }
+
+      if (currentEntry) {
+        if (isNonEntryBoundary(line)) {
+          flushEntry();
+          return;
+        }
+        if (cleanText(line)) {
+          currentEntry.lines.push(line);
+          currentEntry.sourceLineEnd = lineIndex + 1;
+        }
+      }
+    });
+
+    flushEntry();
+  });
+
+  return entries;
+}
+
+function textFromSource(sourcePath) {
+  const extension = extname(sourcePath).toLowerCase();
+  if (extension === ".txt") return readFileSync(sourcePath, "utf8");
+  if (extension !== ".pdf") throw new Error("North Hills OCR import expects a searchable PDF or a pdftotext output file.");
+
+  const tempDirectory = mkdtempSync(join(tmpdir(), "north-hills-ocr-"));
+  const outputPath = join(tempDirectory, "source.txt");
+  try {
+    const result = spawnSync("pdftotext", ["-layout", sourcePath, outputPath], { encoding: "utf8" });
+    if (result.status !== 0) throw new Error(result.stderr || "pdftotext failed.");
+    return readFileSync(outputPath, "utf8");
+  } finally {
+    rmSync(tempDirectory, { recursive: true, force: true });
+  }
+}
+
+async function findCemetery(client, options) {
+  if (options["cemetery-id"]) {
+    const result = await client.query("SELECT id, name FROM cemeteries WHERE id = $1", [options["cemetery-id"]]);
+    if (!result.rows[0]) throw new Error(`No cemetery found for id ${options["cemetery-id"]}.`);
+    return result.rows[0];
+  }
+
+  const values = [];
+  const where = ["lower(name) LIKE '%trinity%'"];
+  if (options["facility-id"]) {
+    values.push(options["facility-id"]);
+    where.push(`facility_id = $${values.length}`);
+  }
+  const result = await client.query(`SELECT id, name FROM cemeteries WHERE ${where.join(" AND ")} ORDER BY name LIMIT 1`, values);
+  if (!result.rows[0]) throw new Error("No Trinity cemetery record found. Pass --cemetery-id to choose one explicitly.");
+  return result.rows[0];
+}
+
+async function importEntries(client, cemetery, sourcePath, options, entries) {
+  const batchResult = await client.query(
+    `
+      INSERT INTO north_hills_ocr_import_batches (cemetery_id, source_name, source_path, imported_by, notes)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id::text
+    `,
+    [cemetery.id, options["source-name"] ?? sourceName, sourcePath, options["imported-by"] ?? null, options.notes ?? null],
+  );
+  const batchId = batchResult.rows[0].id;
+
+  for (const entry of entries) {
+    await client.query(
+      `
+        INSERT INTO north_hills_ocr_entries (
+          batch_id,
+          cemetery_id,
+          source_page_index,
+          source_page_number,
+          source_line_start,
+          source_line_end,
+          raw_text,
+          name_text,
+          surnames,
+          parsed_section_name,
+          parsed_row_number,
+          parsed_position_number,
+          parsed_marker_scope,
+          marker_type_text,
+          material_text,
+          condition_text,
+          inscription_text,
+          parsed_years,
+          parse_confidence,
+          parse_notes,
+          source_entry
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9::text[], $10, $11, $12, $13, $14, $15, $16, $17, $18::integer[], $19, $20::text[], $21::jsonb
+        )
+      `,
+      [
+        batchId,
+        cemetery.id,
+        entry.sourcePageIndex,
+        entry.sourcePageNumber,
+        entry.sourceLineStart,
+        entry.sourceLineEnd,
+        entry.rawText,
+        entry.nameText,
+        entry.surnames,
+        entry.parsedSectionName,
+        entry.parsedRowNumber,
+        entry.parsedPositionNumber,
+        entry.parsedMarkerScope,
+        entry.markerTypeText,
+        entry.materialText,
+        entry.conditionText,
+        entry.inscriptionText,
+        entry.parsedYears,
+        entry.parseConfidence,
+        entry.parseNotes,
+        JSON.stringify(entry.sourceEntry),
+      ],
+    );
+  }
+
+  return batchId;
+}
+
+export async function importNorthHillsOcr(sourcePath, options = {}) {
+  if (!sourcePath || !existsSync(sourcePath) || !statSync(sourcePath).isFile()) {
+    throw new Error("Provide a readable North Hills OCR PDF or text file.");
+  }
+
+  const text = textFromSource(sourcePath);
+  const entries = parseNorthHillsOcrText(text);
+  if (entries.length === 0) throw new Error("No North Hills reading entries were parsed. Confirm the PDF contains searchable OCR text.");
+
+  const dbEnv = loadDbEnvironment(currentEnvironment());
+  const pool = new Pool({
+    host: process.env.PGHOST ?? "127.0.0.1",
+    port: Number(process.env.PGPORT ?? dbEnv.POSTGRES_PORT),
+    database: process.env.PGDATABASE ?? dbEnv.POSTGRES_DB,
+    user: process.env.PGUSER ?? dbEnv.POSTGRES_USER,
+    password: process.env.PGPASSWORD ?? dbEnv.POSTGRES_PASSWORD,
+  });
+  const client = await pool.connect();
+
+  try {
+    const cemetery = await findCemetery(client, options);
+    if (options["dry-run"]) {
+      console.log(`Parsed ${entries.length} North Hills OCR entries for ${cemetery.name}.`);
+      console.log("Dry run only; no staging rows were written.");
+      return { batchId: null, cemetery, entries };
+    }
+
+    await client.query("BEGIN");
+    const batchId = await importEntries(client, cemetery, sourcePath, options, entries);
+    await client.query("COMMIT");
+    console.log(`Imported ${entries.length} North Hills OCR entries into review batch ${batchId} for ${cemetery.name}.`);
+    return { batchId, cemetery, entries };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const { sourcePath, options } = parseArgs(process.argv.slice(2));
+  importNorthHillsOcr(sourcePath, options).catch((error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+}
