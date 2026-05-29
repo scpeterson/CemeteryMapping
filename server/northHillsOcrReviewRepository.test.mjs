@@ -29,6 +29,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
         return { rows: [{ parse_confidence: "high", status: "staged", count: "2" }] };
       }
 
+      assert.match(sql, /CASE entry\.parse_confidence/u);
       assert.deepEqual(values, ["batch-1", "high", "A", "%burgess%", 50]);
       return {
         rows: [
@@ -68,4 +69,40 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
   assert.equal(review.batches[0].matchedCount, 2);
   assert.deepEqual(review.summary[0], { parseConfidence: "high", status: "staged", count: 2 });
   assert.equal(review.entries[0].candidateMatches[0].gravesiteId, "TLC-GPS-0009");
+});
+
+test("listNorthHillsOcrReview can sort staged readings by printed page order", async () => {
+  const pool = {
+    async query(sql, values) {
+      if (sql.includes("FROM north_hills_ocr_import_batches batch")) {
+        return {
+          rows: [
+            {
+              id: "batch-1",
+              cemetery_name: "Trinity Lutheran Church Cemetery",
+              source_name: "North Hills Genealogists Trinity OCR",
+              imported_by: "Scott Peterson",
+              notes: "Searchable PDF",
+              created_at: "2026-05-29T16:40:36.000Z",
+              entry_count: "2",
+              review_count: "0",
+              low_confidence_count: "0",
+              matched_count: "2",
+            },
+          ],
+        };
+      }
+
+      if (sql.includes("SELECT entry.parse_confidence, entry.status")) {
+        return { rows: [] };
+      }
+
+      assert.doesNotMatch(sql, /CASE entry\.parse_confidence/u);
+      assert.match(sql, /ORDER BY\s+[\s\S]*entry\.source_page_number NULLS LAST,\s+entry\.source_page_index,\s+entry\.source_line_start/u);
+      assert.deepEqual(values, ["batch-1", 100]);
+      return { rows: [] };
+    },
+  };
+
+  await listNorthHillsOcrReview(pool, { sort: "page" });
 });
