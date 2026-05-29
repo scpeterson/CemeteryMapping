@@ -56,6 +56,9 @@ jobs:
       - name: Run server unit tests
         run: npm run test:server
 
+      - name: Run database business rule tests
+        run: npm run test:db-rules
+
       - name: Build
         run: npm run build:test
 

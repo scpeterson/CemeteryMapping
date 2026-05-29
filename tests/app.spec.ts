@@ -332,6 +332,120 @@ test("power users can edit headstone marker details from grave detail", async ({
   await expect(page.locator(".detail-panel")).toContainText("Leaning and needs inspection");
 });
 
+test("section G marker edits are limited to flat markers", async ({ page }) => {
+  const cemeteryId = "11111111-1111-4111-8111-111111111111";
+  const graveSummary = {
+    cemeteryId,
+    cemeteryName: "Mock Cemetery",
+    geometry: mockGraveGeometry,
+    id: "G-47",
+    lot: "",
+    section: "G",
+    space: "47",
+    status: "occupied",
+  };
+  const headstone = {
+    id: "33333333-3333-4333-8333-333333333333",
+    headstoneId: "HS-G-47",
+    markerType: { id: "44444444-4444-4444-8444-444444444444", code: "upright_headstone", label: "Upright headstone" },
+    material: { id: "55555555-5555-4555-8555-555555555555", code: "granite", label: "Granite" },
+    condition: { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
+    conditionNotes: "",
+    inscription: "",
+    photoUrl: "",
+    lastInspectedAt: "2026-05-28",
+    relationshipType: "primary",
+    relationshipNotes: "",
+    burialIds: [],
+  };
+
+  await page.route("**/api/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        subject: "power-user",
+        email: "power@example.test",
+        role: "power-user",
+        permissions: {
+          canViewOwnership: true,
+          canManageUsers: false,
+          canOpenAdminPanel: true,
+          canCreateCemeteryRecords: false,
+          canUpdateCemeteryRecords: true,
+          canUpdateHeadstones: true,
+          canDeleteCemeteryRecords: false,
+        },
+        assignedCemeteryIds: [cemeteryId],
+      }),
+    });
+  });
+  await page.route("**/api/headstone-lookups", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        markerTypes: [
+          { id: "44444444-4444-4444-8444-444444444444", code: "upright_headstone", label: "Upright headstone" },
+          { id: "44444444-4444-4444-8444-444444444445", code: "flat_marker", label: "Flat marker" },
+        ],
+        materials: [{ id: "55555555-5555-4555-8555-555555555555", code: "granite", label: "Granite" }],
+        conditions: [{ id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" }],
+      }),
+    });
+  });
+  await page.route("**/api/cemetery-map", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        boundaries: [{ type: "Feature", properties: { name: "Mock Cemetery" }, geometry: mockBoundaryGeometry }],
+        sections: [],
+        lots: [],
+        graves: [graveSummary],
+        headstones: [],
+      }),
+    });
+  });
+  await page.route("**/api/search**", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: "[]" });
+  });
+  await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...graveSummary,
+        owners: [],
+        currentOwnerIds: [],
+        burials: [],
+        headstones: [headstone],
+        ownershipHistory: [],
+      }),
+    });
+  });
+  await page.route("**/api/headstones/33333333-3333-4333-8333-333333333333", async (route) => {
+    const body = route.request().postDataJSON() as { markerTypeId: string };
+    expect(body.markerTypeId).toBe("44444444-4444-4444-8444-444444444445");
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...headstone,
+        markerType: { id: "44444444-4444-4444-8444-444444444445", code: "flat_marker", label: "Flat marker" },
+        auditEventId: "77777777-7777-4777-8777-777777777777",
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Edit marker HS-G-47").click();
+
+  const markerType = page.getByRole("combobox", { name: "Marker type" });
+  await expect(markerType.locator("option")).toHaveCount(1);
+  await expect(markerType.locator("option")).toHaveText("Flat marker");
+  await expect(page.locator(".headstone-form")).toContainText("Section G allows only flat markers.");
+
+  await page.getByRole("button", { name: "Save marker" }).click();
+
+  await expect(page.locator(".detail-panel")).toContainText("Flat marker");
+});
+
 test("loads API-backed cemetery records and supports search", async ({ page }) => {
   const graveDetailRequests: string[] = [];
   page.on("request", (request) => {

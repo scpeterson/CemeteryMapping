@@ -34,6 +34,8 @@ The Admin UI also has a Cemetery Records tab for text-only cemetery hierarchy ed
 
 The Admin UI has a read-only Deed Evidence tab for reviewing staged deed registry imports before any promotion into production lot, gravesite, owner, or ownership-event tables. Admins can select an import batch, filter by parser confidence, filter by staged evidence type, search owner/lot/section/remark text, and review parser notes alongside related `Investigated` worksheet notes. This view is intentionally review-only; promotion remains deferred until the staged evidence rules are approved.
 
+The Admin UI also has a read-only Readings tab for staged North Hills Genealogists OCR imports. The OCR importer preserves each raw reading entry, parsed section/row/position, marker descriptor text, surnames, inscription text, detected years, parser confidence, and parser notes. The review screen compares staged readings to existing burial rows by source page, surname, and birth/death years. It is a comparison workflow only; it does not update burials, headstones, lots, owners, or deeds.
+
 The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Lookup rows use UUID primary keys; lowercase codes remain hidden stable identifiers for imports, seed data, and compatibility. Obsolete values should be marked inactive instead of deleted. The lookup editor hides inactive values by default, shows reference counts, confirms deactivation of values that are already in use, supports move up/down sort-order controls, warns about duplicate sort orders, and can jump to the Audit Log filtered to a lookup row.
 
 Current role behavior:
@@ -74,6 +76,8 @@ Authorization:
 - `power-user`: can update existing marker details for assigned cemeteries.
 - `cemetery-admin`: can update existing marker details for assigned cemeteries.
 - `admin`: can update existing marker details.
+
+Section-specific cemetery rules are enforced below the UI as database triggers. Section F cannot contain gravesites because of underground utility lines. Section G can contain only flat markers, so the marker edit form filters the marker type list to `Flat marker` for Section G and the API rejects non-flat marker updates before the database trigger would fail.
 
 Expected audit action:
 

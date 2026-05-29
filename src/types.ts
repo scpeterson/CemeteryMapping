@@ -342,3 +342,75 @@ export type DeedRegistryReview = {
   summary: DeedRegistrySummaryItem[];
   entries: DeedRegistryReviewEntry[];
 };
+
+export type NorthHillsOcrImportBatch = {
+  id: string;
+  cemeteryName: string;
+  sourceName: string;
+  importedBy: string;
+  notes: string;
+  createdAt: string;
+  entryCount: number;
+  reviewCount: number;
+  lowConfidenceCount: number;
+  matchedCount: number;
+};
+
+export type NorthHillsOcrSummaryItem = {
+  parseConfidence: string;
+  status: string;
+  count: number;
+};
+
+export type NorthHillsOcrCandidateMatch = {
+  burialId: string;
+  gravesiteId: string;
+  sectionId: string;
+  fullName: string;
+  birthDate?: string;
+  deathDate?: string;
+  score: number;
+  notes: string;
+};
+
+export type NorthHillsOcrReviewEntry = {
+  id: string;
+  batchId: string;
+  sourcePageNumber?: number;
+  sourcePageIndex: number;
+  sourceLineStart: number;
+  sourceLineEnd: number;
+  nameText: string;
+  surnames: string[];
+  rawText: string;
+  parsedSectionName: string;
+  parsedRowNumber?: number;
+  parsedPositionNumber?: number;
+  parsedMarkerScope: string;
+  markerTypeText: string;
+  materialText: string;
+  conditionText: string;
+  inscriptionText: string;
+  parsedYears: number[];
+  parseConfidence: string;
+  parseNotes: string[];
+  status: string;
+  candidateMatchCount: number;
+  candidateMatches: NorthHillsOcrCandidateMatch[];
+};
+
+export type NorthHillsOcrReviewFilters = {
+  batchId?: string;
+  confidence?: string;
+  status?: string;
+  section?: string;
+  q?: string;
+  limit?: number;
+};
+
+export type NorthHillsOcrReview = {
+  batches: NorthHillsOcrImportBatch[];
+  selectedBatchId: string;
+  summary: NorthHillsOcrSummaryItem[];
+  entries: NorthHillsOcrReviewEntry[];
+};

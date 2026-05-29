@@ -301,6 +301,16 @@ Real GIS imports should land in staging before production tables:
 
 The first staging model intentionally preserves source metadata as `jsonb`. Importers load into staging first, validation separates errors from warnings, and promotion refuses batches that still have staging errors.
 
+## North Hills OCR reading staging
+
+Searchable North Hills Genealogists PDFs can be staged for review without changing production burial or headstone rows:
+
+```bash
+APP_ENV=dev npm run db:import:north-hills-ocr -- "/path/to/FedEx Scan 2026-05-29_10-13-35.pdf" --imported-by "Name"
+```
+
+The importer uses `pdftotext -layout` for searchable PDFs, preserves the raw OCR entry text, parses the visible North Hills section/row/position coordinate, marker descriptors, surnames, inscription text, and detected years, then writes to `north_hills_ocr_import_batches` and `north_hills_ocr_entries`. The Admin -> Readings screen compares staged OCR entries to existing burials using source page references, surnames, and birth/death years. This review workflow is intentionally non-promoting: maintainers must inspect matches before any future correction or promotion tool updates production records.
+
 ## File Geodatabase workflow
 
 The first real source format is expected to be an Esri File Geodatabase folder ending in `.gdb`. The local inspection/export commands require GDAL/OGR on your PATH.
@@ -432,7 +442,7 @@ The 2022 Trinity deed registry is ownership evidence, not a spatial source. Impo
 
 The staging importer deliberately does not write to `lots`, `gravesites`, `lot_owner_parties`, `lot_ownership_events`, or the legacy `owners` table. Rows marked `low` or `review` confidence need human review before promotion. `NA` and `OC` are stored as aliases because they can map to more than one section; passageway records are also staged for manual spatial interpretation.
 
-Section G is handled specially. The Section G plot plan uses the word `plot` for individual gravesites, not standard 10 by 20 foot lots. Section G staged entries therefore preserve source plot numbers in `parsed_plot_numbers`, also copy them into `parsed_grave_numbers`, and create `section_g_gravesite` allocation rows with both `plot_identifier` and `grave_number` populated. These gravesites are 8 by 4 feet, and the source plan shows north at the bottom.
+Section F and Section G have explicit business rules. Section F cannot contain gravesites because of underground utility lines. Section G uses the word `plot` for individual gravesites, not standard 10 by 20 foot lots; those gravesites are 8 by 4 feet, the source plan shows north at the bottom, and Section G can contain only flat markers. Migration `030-section-marker-business-rules.sql` enforces these rules with database triggers so imports, scripts, and direct database edits cannot bypass them. Section G staged entries therefore preserve source plot numbers in `parsed_plot_numbers`, also copy them into `parsed_grave_numbers`, and create `section_g_gravesite` allocation rows with both `plot_identifier` and `grave_number` populated.
 
 Run a dry run first:
 
