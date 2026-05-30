@@ -9,10 +9,12 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 
 ## Start Here
 
+- [Getting Started](getting-started.md)
 - [Rebuild Guide](rebuild.md)
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
 - [Admin Workflow Roadmap](admin-workflows.md)
+- [Operator Workflows](operator-workflows.md)
 - [Database Auditing](database-auditing.md)
 - [Auth0 Test Tenant Setup](auth0-test-tenant.md)
 

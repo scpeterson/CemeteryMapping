@@ -7,6 +7,8 @@
 
 This guide describes how to rebuild the Cemetery Mapping system from a clean checkout. For design decisions and rationale, start with [Architecture Decision Records](adr/README.md).
 
+If this is your first time setting up the project, start with [Getting Started](getting-started.md). That guide explains what to install on Mac and Windows, how to check each tool, and how to run the local demo. This rebuild guide is a more technical validation checklist.
+
 ## Prerequisites
 
 Install:
