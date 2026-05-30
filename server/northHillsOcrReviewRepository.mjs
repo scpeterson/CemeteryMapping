@@ -146,12 +146,18 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
   }
 
   if (query) {
-    values.push(`%${query.toLowerCase()}%`);
-    where.push(`(
-      lower(coalesce(entry.name_text, '')) LIKE $${values.length}
-      OR lower(coalesce(entry.raw_text, '')) LIKE $${values.length}
-      OR lower(coalesce(entry.inscription_text, '')) LIKE $${values.length}
-    )`);
+    const pageNumber = /^\d+$/u.test(query) ? Number.parseInt(query, 10) : undefined;
+    if (pageNumber) {
+      values.push(pageNumber);
+      where.push(`entry.source_page_number = $${values.length}`);
+    } else {
+      values.push(`%${query.toLowerCase()}%`);
+      where.push(`(
+        lower(coalesce(entry.name_text, '')) LIKE $${values.length}
+        OR lower(coalesce(entry.raw_text, '')) LIKE $${values.length}
+        OR lower(coalesce(entry.inscription_text, '')) LIKE $${values.length}
+      )`);
+    }
   }
 
   const limit = normalizeLimit(filters.limit);

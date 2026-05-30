@@ -107,6 +107,42 @@ test("listNorthHillsOcrReview can sort staged readings by printed page order", a
   await listNorthHillsOcrReview(pool, { sort: "page" });
 });
 
+test("listNorthHillsOcrReview search matches printed page numbers", async () => {
+  const pool = {
+    async query(sql, values) {
+      if (sql.includes("FROM north_hills_ocr_import_batches batch")) {
+        return {
+          rows: [
+            {
+              id: "batch-1",
+              cemetery_name: "Trinity Lutheran Church Cemetery",
+              source_name: "North Hills Genealogists Trinity OCR",
+              imported_by: "Scott Peterson",
+              notes: "Searchable PDF",
+              created_at: "2026-05-29T16:40:36.000Z",
+              entry_count: "2",
+              review_count: "0",
+              low_confidence_count: "0",
+              matched_count: "2",
+            },
+          ],
+        };
+      }
+
+      if (sql.includes("SELECT entry.parse_confidence, entry.status")) {
+        return { rows: [] };
+      }
+
+      assert.match(sql, /WHERE entry\.batch_id = \$1\s+AND entry\.source_page_number = \$2/u);
+      assert.doesNotMatch(sql, /lower\(coalesce\(entry\.raw_text/u);
+      assert.deepEqual(values, ["batch-1", 183, 100]);
+      return { rows: [] };
+    },
+  };
+
+  await listNorthHillsOcrReview(pool, { q: "183" });
+});
+
 test("saveNorthHillsOcrEvidenceLink stores reviewed gravesite evidence with audit context", async () => {
   const queries = [];
   const pool = {
