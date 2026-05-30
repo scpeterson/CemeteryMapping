@@ -1,11 +1,15 @@
 - title: "Home"
   url: /
+- title: "Getting Started"
+  url: /getting-started.html
 - title: "Rebuild Guide"
   url: /rebuild.html
 - title: "Data Sources"
   url: /data-sources.html
 - title: "Admin Workflows"
   url: /admin-workflows.html
+- title: "Operator Workflows"
+  url: /operator-workflows.html
 - title: "Database Auditing"
   url: /database-auditing.html
 - title: "Auth0 Test Tenant"

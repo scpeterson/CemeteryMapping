@@ -4,6 +4,8 @@ A WebStorm-friendly Vite, React, TypeScript, and MapLibre GL JS prototype for ma
 
 ## Run locally
 
+For a beginner-friendly setup guide with Mac and Windows notes, see `docs/getting-started.md`.
+
 ```bash
 npm install
 npm run db:up
@@ -84,11 +86,15 @@ More database details are in `db/README.md`.
 
 Design decisions are documented as Architecture Decision Records in `docs/adr`. Start with `docs/adr/README.md` for the ADR index, software inventory, and ADR update rules.
 
+A beginner-friendly setup guide is available in `docs/getting-started.md`.
+
 A clean rebuild guide is available in `docs/rebuild.md`.
 
 Data origins and stewardship placeholders are tracked in `docs/data-sources.md`.
 
 The initial admin workflow order is tracked in `docs/admin-workflows.md`.
+
+Practical click-by-click and command-oriented workflows are tracked in `docs/operator-workflows.md`.
 
 Separate Auth0 test tenant setup is documented in `docs/auth0-test-tenant.md`.
 

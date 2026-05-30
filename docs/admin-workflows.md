@@ -36,6 +36,21 @@ The Admin UI has a read-only Deed Evidence tab for reviewing staged deed registr
 
 The Admin UI also has a Readings tab for staged North Hills Genealogists OCR imports. The OCR importer preserves each raw reading entry, parsed section/row/position, marker descriptor text, surnames, inscription text, detected years, parser confidence, and parser notes. The review screen compares staged readings to existing burial rows by source page, surname, and birth/death years. Admins can link a reading to a candidate gravesite, link it to a candidate headstone, reject a candidate match, or flag a candidate for field checking. These review actions write evidence-link rows with reviewer identity, timestamp, confidence, status, and optional notes; they do not overwrite burials, headstones, lots, owners, or deeds. Linked North Hills evidence appears in the regular grave-detail panel for the associated gravesite or headstone.
 
+How to use the Readings tab:
+
+1. Open `Admin -> Readings`.
+2. Select the North Hills OCR import batch to review.
+3. Use the confidence, status, section, search, and sort controls to narrow the staged readings. The page-order sort is useful when reviewing against the original printed source.
+4. Open a staged reading and compare its raw OCR text, parsed section/row/position, marker details, detected years, and parser notes against the possible existing matches.
+5. Use `Link gravesite` when the reading belongs to the candidate gravesite. This creates a linked gravesite evidence record.
+6. Use `Link headstone` when the reading belongs to a candidate physical marker/headstone. This creates a linked headstone evidence record.
+7. Use `Reject match` or `Reject headstone` when the candidate appears incorrect. This records the review decision without deleting the staged reading or changing production cemetery records.
+8. Use `Needs field check` or `Field check` when the source and database do not provide enough certainty. This keeps the candidate visible as reviewed but unresolved for later field verification.
+9. Add optional reviewer notes when prompted. Notes should capture why the match was linked, rejected, or deferred.
+10. After linking evidence, open the normal grave-detail panel for the gravesite or headstone to confirm that the North Hills evidence appears where regular users review cemetery records.
+
+Readings review is an evidence workflow, not a promotion workflow. A linked reading supports interpretation of a gravesite or headstone, but it does not change burial names, dates, marker condition, owner/deed data, geometry, or lot/gravesite structure.
+
 The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Lookup rows use UUID primary keys; lowercase codes remain hidden stable identifiers for imports, seed data, and compatibility. Obsolete values should be marked inactive instead of deleted. The lookup editor hides inactive values by default, shows reference counts, confirms deactivation of values that are already in use, supports move up/down sort-order controls, warns about duplicate sort orders, and can jump to the Audit Log filtered to a lookup row.
 
 Current role behavior:
