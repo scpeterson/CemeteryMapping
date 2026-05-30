@@ -6,7 +6,7 @@ import { loadApiConfig } from "../server/config.mjs";
 const { Pool } = pg;
 
 function uniqueSuffix() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${Date.now().toString(36).slice(-6)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
 async function lookupId(client, table, code) {
