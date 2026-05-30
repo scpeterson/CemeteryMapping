@@ -131,12 +131,13 @@ function entryNotes(entry) {
 }
 
 function printedPageNumber(pageText) {
-  const match = String(pageText ?? "").match(/Franklin Park Borough\s+(\d{3})\s+Allegheny County/iu);
+  const match = String(pageText ?? "").match(/Franklin\s+Park\.?\s+Borough\s+(\d{3})\s+Allegheny\s+County/iu);
   return match ? Number.parseInt(match[1], 10) : null;
 }
 
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
-const entryStartPattern = /^\s*([A-Z][A-Z0-9/[\]()? .,'&-]{1,90}?)\s+\(([0-9lISOS?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOS?]{1,3})\s*,\s*([sc])\)/u;
+const entryStartPattern = /^\s*([A-Z][A-Z0-9/[\]()? .,'&-]{1,90}?)\s+\(\s*([0-9lISOS?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOS?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\)/u;
+const embeddedEntryStartPattern = /([A-Z][A-Z0-9/[\]()? .,'&-]{1,90}?)\s+\(\s*[0-9lISOS?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOS?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\)/gu;
 
 function isNonEntryBoundary(line) {
   return (
@@ -145,6 +146,18 @@ function isNonEntryBoundary(line) {
     /^\s*Trinity German Evangelical Lutheran Church\b/u.test(line) ||
     /^\s*Gap,?\s+about\b/iu.test(line)
   );
+}
+
+function entryLineSegments(line) {
+  const starts = [...String(line ?? "").matchAll(embeddedEntryStartPattern)].map((match) => match.index ?? 0);
+  if (starts.length <= 1) return [line];
+
+  const segments = [];
+  if (starts[0] > 0) segments.push(line.slice(0, starts[0]));
+  for (let index = 0; index < starts.length; index += 1) {
+    segments.push(line.slice(starts[index], starts[index + 1]));
+  }
+  return segments.filter((segment) => cleanText(segment));
 }
 
 export function parseNorthHillsOcrText(text) {
@@ -199,35 +212,37 @@ export function parseNorthHillsOcrText(text) {
         return;
       }
 
-      const entryMatch = line.match(entryStartPattern);
-      if (entryMatch) {
-        flushEntry();
-        const parsedRowNumber = normalizeNumber(entryMatch[2]) ?? currentRowNumber;
-        const parsedSectionName = entryMatch[3].toUpperCase() === "O" ? currentSectionName : entryMatch[3].toUpperCase();
-        currentEntry = {
-          sourcePageIndex: pageIndex + 1,
-          sourcePageNumber: pageNumber,
-          sourceLineStart: lineIndex + 1,
-          sourceLineEnd: lineIndex + 1,
-          heading: cleanText(line),
-          lines: [line],
-          nameText: entryMatch[1],
-          parsedSectionName,
-          parsedRowNumber,
-          parsedPositionNumber: normalizeNumber(entryMatch[4]),
-          parsedMarkerScope: normalizeScope(entryMatch[5]),
-        };
-        return;
-      }
-
-      if (currentEntry) {
-        if (isNonEntryBoundary(line)) {
+      for (const segment of entryLineSegments(line)) {
+        const entryMatch = segment.match(entryStartPattern);
+        if (entryMatch) {
           flushEntry();
-          return;
+          const parsedRowNumber = normalizeNumber(entryMatch[2]) ?? currentRowNumber;
+          const parsedSectionName = entryMatch[3].toUpperCase() === "O" ? currentSectionName : entryMatch[3].toUpperCase();
+          currentEntry = {
+            sourcePageIndex: pageIndex + 1,
+            sourcePageNumber: pageNumber,
+            sourceLineStart: lineIndex + 1,
+            sourceLineEnd: lineIndex + 1,
+            heading: cleanText(segment),
+            lines: [segment],
+            nameText: entryMatch[1],
+            parsedSectionName,
+            parsedRowNumber,
+            parsedPositionNumber: normalizeNumber(entryMatch[4]),
+            parsedMarkerScope: normalizeScope(entryMatch[5]),
+          };
+          continue;
         }
-        if (cleanText(line)) {
-          currentEntry.lines.push(line);
-          currentEntry.sourceLineEnd = lineIndex + 1;
+
+        if (currentEntry) {
+          if (isNonEntryBoundary(segment)) {
+            flushEntry();
+            continue;
+          }
+          if (cleanText(segment)) {
+            currentEntry.lines.push(segment);
+            currentEntry.sourceLineEnd = lineIndex + 1;
+          }
         }
       }
     });

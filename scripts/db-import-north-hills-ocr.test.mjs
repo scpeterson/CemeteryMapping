@@ -51,3 +51,26 @@ Franklin Park Borough                   184                Allegheny County, PA`
   assert.deepEqual(entries[2].parsedYears, [1874, 1876, 1951]);
   assert.equal(entries[2].parsedMarkerScope, "couple");
 });
+
+test("parseNorthHillsOcrText splits same-line readings and accepts period before marker scope", () => {
+  const text = `Section A, Row 4
+SCHRAMM (4A, 1, s) pillow, gray granite, exc cond "John W. Schramm/ 1886-1948" CR: d. May 3, 1948, 62y 2m 2da SCHRAMM/PFEIFFER (4A, 2. s) pillow, gray granite, exc cond "Lillian O. Schramm/ 1884-1968-" HARRIS/ POWELL ( 4A, 3, s) pillow, gray granite, exc cond "George Powell Harris/ 1909-1965"
+Franklin Park. Borough                   185                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 3);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["SCHRAMM", "A", 4, 1, "single"],
+      ["SCHRAMM/PFEIFFER", "A", 4, 2, "single"],
+      ["HARRIS/ POWELL", "A", 4, 3, "single"],
+    ],
+  );
+  assert.equal(entries[1].rawText, 'SCHRAMM/PFEIFFER (4A, 2. s) pillow, gray granite, exc cond "Lillian O. Schramm/ 1884-1968-"');
+  assert.deepEqual(
+    entries.map((entry) => entry.sourcePageNumber),
+    [185, 185, 185],
+  );
+});

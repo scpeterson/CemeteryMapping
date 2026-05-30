@@ -1902,8 +1902,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                 <input
                   value={northHillsReviewFilters.q ?? ""}
                   onChange={(event) => updateNorthHillsReviewFilter({ q: event.target.value })}
-                  placeholder="Name, inscription, or OCR text"
-                  title="Search staged names, inscriptions, and raw OCR text."
+                  placeholder="Name, page number, inscription, or OCR text"
+                  title="Search staged names, printed page numbers, inscriptions, and raw OCR text."
                 />
               </label>
               <label>
