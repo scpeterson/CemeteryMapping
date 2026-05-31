@@ -20,11 +20,14 @@ export const statusColors: Record<GraveStatus, string> = {
 
 export function formatDate(date?: string) {
   if (!date) return "Unknown";
+  const normalizedDate = /^\d{4}-\d{2}-\d{2}$/u.test(date) ? `${date}T00:00:00` : date;
+  const parsedDate = new Date(normalizedDate);
+  if (Number.isNaN(parsedDate.getTime())) return "Unknown";
   return new Intl.DateTimeFormat("en", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  }).format(new Date(`${date}T00:00:00`));
+  }).format(parsedDate);
 }
 
 export function fullName(person: { firstName: string; middleName?: string; lastName: string }) {

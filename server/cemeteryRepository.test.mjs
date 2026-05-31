@@ -42,6 +42,7 @@ function queryRows(sql) {
   if (sql.includes("FROM owners")) return [];
   if (sql.includes("FROM burials")) return [];
   if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return [];
+  if (sql.includes("FROM gravesite_media_assets")) return [];
   if (sql.includes("FROM headstones")) {
     return [
       {
@@ -63,6 +64,7 @@ function queryRows(sql) {
         relationship_type: "primary",
         relationship_notes: "",
         burial_ids: [],
+        media_assets: [],
       },
     ];
   }
@@ -133,4 +135,5 @@ test("repository can redact ownership data from grave detail reads", async () =>
   assert.deepEqual(grave.currentOwnerIds, []);
   assert.deepEqual(grave.ownershipHistory, []);
   assert.equal(grave.headstones[0].condition.label, "Good");
+  assert.deepEqual(grave.mediaAssets, []);
 });

@@ -89,6 +89,31 @@ function toHeadstone(row) {
     relationshipNotes: row.relationship_notes ?? "",
     burialIds: row.burial_ids ?? [],
     northHillsEvidence: row.north_hills_evidence ?? [],
+    mediaAssets: row.media_assets ?? [],
+  };
+}
+
+function toMediaAsset(row) {
+  return {
+    id: row.id,
+    cemeteryId: row.cemetery_id,
+    assetType: row.asset_type,
+    fileUrl: row.file_url,
+    thumbnailUrl: row.thumbnail_url ?? "",
+    originalFilename: row.original_filename ?? "",
+    contentType: row.content_type ?? "",
+    byteSize: row.byte_size ?? 0,
+    capturedAt: row.captured_at,
+    uploadedAt: row.uploaded_at,
+    capturedByEmail: row.captured_by_email ?? "",
+    latitude: row.latitude === null || row.latitude === undefined ? undefined : Number(row.latitude),
+    longitude: row.longitude === null || row.longitude === undefined ? undefined : Number(row.longitude),
+    gpsAccuracy: row.gps_accuracy === null || row.gps_accuracy === undefined ? undefined : Number(row.gps_accuracy),
+    deviceMake: row.device_make ?? "",
+    deviceModel: row.device_model ?? "",
+    notes: row.notes ?? "",
+    source: row.source,
+    status: row.status,
   };
 }
 
@@ -480,7 +505,8 @@ async function selectHeadstonesForGrave(client, graveUuid) {
         COALESCE(headstone_gravesites.relationship_type, 'primary') AS relationship_type,
         headstone_gravesites.notes AS relationship_notes,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
-        COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence
+        COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence,
+        COALESCE(headstone_media.media_assets, '[]'::jsonb) AS media_assets
       FROM headstones
       LEFT JOIN headstone_gravesites
         ON headstone_gravesites.headstone_uuid = headstones.id
@@ -520,6 +546,40 @@ async function selectHeadstonesForGrave(client, graveUuid) {
         WHERE headstone_link.headstone_uuid = headstones.id
           AND headstone_link.status = 'linked'
       ) headstone_evidence ON true
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', media_assets.id::text,
+            'cemeteryId', media_assets.cemetery_id::text,
+            'assetType', media_assets.asset_type,
+            'fileUrl', media_assets.file_url,
+            'thumbnailUrl', COALESCE(media_assets.thumbnail_url, ''),
+            'originalFilename', COALESCE(media_assets.original_filename, ''),
+            'contentType', COALESCE(media_assets.content_type, ''),
+            'byteSize', COALESCE(media_assets.byte_size, 0),
+            'capturedAt', media_assets.captured_at,
+            'uploadedAt', media_assets.uploaded_at,
+            'capturedByEmail', COALESCE(media_assets.captured_by_email, ''),
+            'latitude', media_assets.latitude,
+            'longitude', media_assets.longitude,
+            'gpsAccuracy', media_assets.gps_accuracy,
+            'deviceMake', COALESCE(media_assets.device_make, ''),
+            'deviceModel', COALESCE(media_assets.device_model, ''),
+            'notes', COALESCE(media_assets.notes, ''),
+            'source', media_assets.source,
+            'status', media_assets.status
+          )
+          ORDER BY media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
+        ) AS media_assets
+        FROM headstone_media_assets
+        JOIN media_assets
+          ON media_assets.id = headstone_media_assets.media_asset_id
+        WHERE headstone_media_assets.headstone_uuid = headstones.id
+          AND headstone_media_assets.deleted_at IS NULL
+          AND headstone_media_assets.status = 'linked'
+          AND media_assets.deleted_at IS NULL
+          AND media_assets.status = 'linked'
+      ) headstone_media ON true
       WHERE headstones.deleted_at IS NULL
         AND (
           headstones.gravesite_uuid = $1
@@ -538,7 +598,8 @@ async function selectHeadstonesForGrave(client, graveUuid) {
         headstone_condition_types.label,
         headstone_gravesites.relationship_type,
         headstone_gravesites.notes,
-        headstone_evidence.evidence
+        headstone_evidence.evidence,
+        headstone_media.media_assets
       ORDER BY headstones.headstone_id, headstones.id
     `,
     [graveUuid],
@@ -569,7 +630,8 @@ async function selectHeadstoneById(client, id) {
         'primary' AS relationship_type,
         NULL AS relationship_notes,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
-        COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence
+        COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence,
+        COALESCE(headstone_media.media_assets, '[]'::jsonb) AS media_assets
       FROM headstones
       LEFT JOIN headstone_burials
         ON headstone_burials.headstone_uuid = headstones.id
@@ -606,6 +668,40 @@ async function selectHeadstoneById(client, id) {
         WHERE headstone_link.headstone_uuid = headstones.id
           AND headstone_link.status = 'linked'
       ) headstone_evidence ON true
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', media_assets.id::text,
+            'cemeteryId', media_assets.cemetery_id::text,
+            'assetType', media_assets.asset_type,
+            'fileUrl', media_assets.file_url,
+            'thumbnailUrl', COALESCE(media_assets.thumbnail_url, ''),
+            'originalFilename', COALESCE(media_assets.original_filename, ''),
+            'contentType', COALESCE(media_assets.content_type, ''),
+            'byteSize', COALESCE(media_assets.byte_size, 0),
+            'capturedAt', media_assets.captured_at,
+            'uploadedAt', media_assets.uploaded_at,
+            'capturedByEmail', COALESCE(media_assets.captured_by_email, ''),
+            'latitude', media_assets.latitude,
+            'longitude', media_assets.longitude,
+            'gpsAccuracy', media_assets.gps_accuracy,
+            'deviceMake', COALESCE(media_assets.device_make, ''),
+            'deviceModel', COALESCE(media_assets.device_model, ''),
+            'notes', COALESCE(media_assets.notes, ''),
+            'source', media_assets.source,
+            'status', media_assets.status
+          )
+          ORDER BY media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
+        ) AS media_assets
+        FROM headstone_media_assets
+        JOIN media_assets
+          ON media_assets.id = headstone_media_assets.media_asset_id
+        WHERE headstone_media_assets.headstone_uuid = headstones.id
+          AND headstone_media_assets.deleted_at IS NULL
+          AND headstone_media_assets.status = 'linked'
+          AND media_assets.deleted_at IS NULL
+          AND media_assets.status = 'linked'
+      ) headstone_media ON true
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
       GROUP BY
@@ -619,7 +715,8 @@ async function selectHeadstoneById(client, id) {
         headstone_condition_types.id,
         headstone_condition_types.code,
         headstone_condition_types.label,
-        headstone_evidence.evidence
+        headstone_evidence.evidence,
+        headstone_media.media_assets
       LIMIT 1
     `,
     [id],
@@ -652,6 +749,45 @@ async function selectNorthHillsEvidenceForGrave(client, graveUuid) {
       WHERE gravesite_link.gravesite_uuid = $1
         AND gravesite_link.status = 'linked'
       ORDER BY entry.source_page_number NULLS LAST, entry.source_line_start, entry.id
+    `,
+    [graveUuid],
+  );
+
+  return result.rows;
+}
+
+async function selectMediaAssetsForGrave(client, graveUuid) {
+  const result = await client.query(
+    `
+      SELECT
+        media_assets.id::text,
+        media_assets.cemetery_id::text,
+        media_assets.asset_type,
+        media_assets.file_url,
+        media_assets.thumbnail_url,
+        media_assets.original_filename,
+        media_assets.content_type,
+        media_assets.byte_size,
+        media_assets.captured_at,
+        media_assets.uploaded_at,
+        media_assets.captured_by_email,
+        media_assets.latitude,
+        media_assets.longitude,
+        media_assets.gps_accuracy,
+        media_assets.device_make,
+        media_assets.device_model,
+        media_assets.notes,
+        media_assets.source,
+        media_assets.status
+      FROM gravesite_media_assets
+      JOIN media_assets
+        ON media_assets.id = gravesite_media_assets.media_asset_id
+      WHERE gravesite_media_assets.gravesite_uuid = $1
+        AND gravesite_media_assets.deleted_at IS NULL
+        AND gravesite_media_assets.status = 'linked'
+        AND media_assets.deleted_at IS NULL
+        AND media_assets.status = 'linked'
+      ORDER BY media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
     `,
     [graveUuid],
   );
@@ -734,7 +870,7 @@ function toLot(lot) {
   };
 }
 
-function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, includeOwnership) {
+function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, mediaAssets, includeOwnership) {
   const detailedGrave = {
     ...toGraveSummary(grave),
     owners: graveOwners.map(toOwner),
@@ -742,6 +878,7 @@ function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, nort
     burials: graveBurials.map(toBurial),
     headstones: graveHeadstones.map(toHeadstone),
     northHillsEvidence: northHillsEvidence.map(toNorthHillsEvidence),
+    mediaAssets: mediaAssets.map(toMediaAsset),
     ownershipHistory: graveOwners.map(toOwnershipEvent),
     notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
   };
@@ -803,7 +940,7 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
       },
       sections: sections.map(toSection),
       lots: lots.map(toLot),
-      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], [], includeOwnership)),
+      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], [], [], includeOwnership)),
       owners: owners.map(toOwner),
     };
   } finally {
@@ -821,8 +958,9 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
     const burials = await selectBurialsForGrave(client, grave.uuid);
     const headstones = await selectHeadstonesForGrave(client, grave.uuid);
     const northHillsEvidence = await selectNorthHillsEvidenceForGrave(client, grave.uuid);
+    const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
 
-    return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, includeOwnership);
+    return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, includeOwnership);
   } finally {
     client.release();
   }

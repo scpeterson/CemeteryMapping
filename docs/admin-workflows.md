@@ -53,6 +53,8 @@ Readings review is an evidence workflow, not a promotion workflow. A linked read
 
 The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Lookup rows use UUID primary keys; lowercase codes remain hidden stable identifiers for imports, seed data, and compatibility. Obsolete values should be marked inactive instead of deleted. The lookup editor hides inactive values by default, shows reference counts, confirms deactivation of values that are already in use, supports move up/down sort-order controls, warns about duplicate sort orders, and can jump to the Audit Log filtered to a lookup row.
 
+The regular detail panel has a Photos section for field collection. Editors can upload an image from a phone or desktop, link it to the selected gravesite, and optionally link it to a specific marker/headstone. Uploaded files are represented by `media_assets` rows and related through `gravesite_media_assets` and `headstone_media_assets`; the image files themselves are stored outside Postgres. In local environments, the files live under `uploads/media` unless `MEDIA_UPLOAD_DIR` points somewhere else. Readers can view linked photos but cannot upload them.
+
 Current role behavior:
 
 - `reader`: map, gravesites, burial information, and marker/headstone information; no deed/owner sections and no edit controls.

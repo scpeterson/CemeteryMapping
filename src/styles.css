@@ -715,6 +715,11 @@ h3 {
   color: #8c302d;
 }
 
+.detail-message.is-success {
+  border-color: rgba(47, 93, 80, 0.35);
+  color: #2f5d50;
+}
+
 .detail-message button {
   justify-self: start;
   min-height: 34px;
@@ -876,6 +881,82 @@ h3 {
   border-color: #c8d1c3;
   background: #fff;
   color: #405048;
+}
+
+.media-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.media-gallery-item {
+  display: grid;
+  gap: 6px;
+  color: #405048;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.media-gallery-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #eef3eb;
+}
+
+.photo-upload-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px dashed #cbd6c7;
+  border-radius: 8px;
+  background: #f8faf6;
+}
+
+.photo-upload-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.photo-upload-form input,
+.photo-upload-form select,
+.photo-upload-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.photo-upload-form button {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 760;
+}
+
+.photo-upload-form .detail-message {
+  grid-column: 1 / -1;
+  margin-top: 0;
 }
 
 .burial-notes {
@@ -2044,6 +2125,8 @@ h3 {
   .audit-filter-form,
   .headstone-form,
   .headstone-record dl,
+  .media-gallery,
+  .photo-upload-form,
   .lookup-toolbar,
   .lookup-row,
   .record-picker-grid,

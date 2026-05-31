@@ -1,6 +1,7 @@
-import { FormEvent, useMemo, useState } from "react";
-import { FileText, History, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
-import type { Burial, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneLookups, LookupOption, NorthHillsLinkedEvidence, Owner, SaveHeadstoneInput } from "../types";
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { Camera, FileText, History, Images, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
+import type { Burial, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneLookups, LookupOption, MediaAsset, NorthHillsLinkedEvidence, Owner, SaveHeadstoneInput } from "../types";
+import { apiBaseUrl } from "../config/environment";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName } from "../lib/format";
 
@@ -12,6 +13,7 @@ type DetailPanelProps = {
   canUpdateHeadstones: boolean;
   headstoneLookups: HeadstoneLookups;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
@@ -75,6 +77,105 @@ function NorthHillsEvidenceList({ evidence }: { evidence: NorthHillsLinkedEviden
         </article>
       ))}
     </div>
+  );
+}
+
+function mediaUrl(asset: MediaAsset) {
+  if (/^https?:\/\//u.test(asset.fileUrl)) return asset.fileUrl;
+  if (/^https?:\/\//u.test(apiBaseUrl)) return `${new URL(apiBaseUrl).origin}${asset.fileUrl}`;
+  return asset.fileUrl;
+}
+
+function newestMediaAsset(assets: MediaAsset[]) {
+  return [...assets].sort((left, right) => {
+    const leftDate = Date.parse(left.capturedAt ?? left.uploadedAt ?? "");
+    const rightDate = Date.parse(right.capturedAt ?? right.uploadedAt ?? "");
+    return (Number.isNaN(rightDate) ? 0 : rightDate) - (Number.isNaN(leftDate) ? 0 : leftDate);
+  })[0];
+}
+
+function MediaGallery({ assets }: { assets: MediaAsset[] }) {
+  const asset = newestMediaAsset(assets);
+  if (!asset) return <p className="muted">No photos are linked yet.</p>;
+
+  return (
+    <div className="media-gallery">
+      <a className="media-gallery-item" href={mediaUrl(asset)} target="_blank" rel="noreferrer">
+        <img src={mediaUrl(asset)} alt={asset.notes || asset.originalFilename || "Cemetery record photo"} loading="lazy" />
+        <span>{asset.capturedAt ? formatDate(asset.capturedAt) : formatDate(asset.uploadedAt)}</span>
+      </a>
+    </div>
+  );
+}
+
+function PhotoUploadForm({
+  headstones,
+  onUpload,
+}: {
+  headstones: Headstone[];
+  onUpload: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
+}) {
+  const [file, setFile] = useState<File>();
+  const [headstoneId, setHeadstoneId] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string>();
+  const [error, setError] = useState<string>();
+
+  const chooseFile = (event: ChangeEvent<HTMLInputElement>) => {
+    setFile(event.target.files?.[0]);
+    setMessage(undefined);
+    setError(undefined);
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!file) return;
+    setIsSaving(true);
+    setError(undefined);
+    setMessage(undefined);
+    try {
+      await onUpload({ file, headstoneId: headstoneId || undefined, notes });
+      setFile(undefined);
+      setHeadstoneId("");
+      setNotes("");
+      setMessage("Photo uploaded and linked.");
+      (event.currentTarget as HTMLFormElement).reset();
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Unable to upload photo.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <form className="photo-upload-form" onSubmit={(event) => void submit(event)}>
+      <label>
+        Photo
+        <input type="file" accept="image/*" capture="environment" onChange={chooseFile} />
+      </label>
+      <label>
+        Link marker
+        <select value={headstoneId} onChange={(event) => setHeadstoneId(event.target.value)}>
+          <option value="">Gravesite overview</option>
+          {headstones.map((headstone) => (
+            <option key={headstone.id} value={headstone.id}>
+              {headstone.headstoneId}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="headstone-wide-field">
+        Notes
+        <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} />
+      </label>
+      {message ? <p className="detail-message is-success">{message}</p> : null}
+      {error ? <p className="detail-message is-error">{error}</p> : null}
+      <button type="submit" disabled={!file || isSaving}>
+        <Camera size={15} aria-hidden="true" />
+        {isSaving ? "Uploading..." : "Upload photo"}
+      </button>
+    </form>
   );
 }
 
@@ -230,6 +331,7 @@ function HeadstoneRecord({
       </dl>
       {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
       {headstone.inscription ? <p className="note-box">{headstone.inscription}</p> : null}
+      {headstone.mediaAssets?.length ? <MediaGallery assets={headstone.mediaAssets} /> : null}
       {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
         <p className="muted">
           Relationship: {headstone.relationshipType}
@@ -249,13 +351,16 @@ export function DetailPanel({
   canUpdateHeadstones,
   headstoneLookups,
   onSaveHeadstone,
+  onUploadPhoto,
   isLoading = false,
   error,
   onRetry,
 }: DetailPanelProps) {
   const ownersById = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
-  const headstones = grave?.headstones ?? [];
+  const headstones = useMemo(() => grave?.headstones ?? [], [grave?.headstones]);
   const northHillsEvidence = grave?.northHillsEvidence ?? [];
+  const headstoneMediaIds = useMemo(() => new Set(headstones.flatMap((headstone) => (headstone.mediaAssets ?? []).map((asset) => asset.id))), [headstones]);
+  const mediaAssets = useMemo(() => (grave?.mediaAssets ?? []).filter((asset) => !headstoneMediaIds.has(asset.id)), [grave?.mediaAssets, headstoneMediaIds]);
 
   if (!summary) {
     return (
@@ -356,6 +461,15 @@ export function DetailPanel({
         ) : (
           <p className="muted">No markers are recorded for this grave site.</p>
         )}
+      </section>
+
+      <section className="detail-section">
+        <div className="section-title">
+          <Images size={17} aria-hidden="true" />
+          <h3>Photos</h3>
+        </div>
+        <MediaGallery assets={mediaAssets} />
+        {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} onUpload={onUploadPhoto} /> : null}
       </section>
 
       {northHillsEvidence.length ? (
