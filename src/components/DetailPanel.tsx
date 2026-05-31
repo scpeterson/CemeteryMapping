@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { Camera, FileText, History, Images, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
-import type { Burial, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneLookups, LookupOption, MediaAsset, NorthHillsLinkedEvidence, Owner, SaveHeadstoneInput } from "../types";
+import type { Burial, GraveSpace, GraveSpaceSummary, GraveStatus, Headstone, HeadstoneLookups, LookupOption, MediaAsset, NorthHillsLinkedEvidence, Owner, SaveBurialInput, SaveGraveSpaceInput, SaveHeadstoneInput } from "../types";
 import { apiBaseUrl } from "../config/environment";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName } from "../lib/format";
@@ -10,8 +10,12 @@ type DetailPanelProps = {
   summary?: GraveSpaceSummary;
   grave?: GraveSpace;
   canViewOwnership: boolean;
+  canUpdateGravesites: boolean;
+  canUpdateBurials: boolean;
   canUpdateHeadstones: boolean;
   headstoneLookups: HeadstoneLookups;
+  onSaveGraveSpace: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
+  onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
   isLoading?: boolean;
@@ -20,13 +24,110 @@ type DetailPanelProps = {
 };
 
 const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
+const graveStatusOptions: { value: GraveStatus; label: string }[] = [
+  { value: "available", label: "Available" },
+  { value: "reserved", label: "Reserved" },
+  { value: "occupied", label: "Occupied" },
+  { value: "sold", label: "Sold" },
+  { value: "needs_review", label: "Needs review" },
+  { value: "unknown", label: "Unknown" },
+];
 
-function BurialRecord({ burial }: { burial: Burial }) {
+function blankBurialForm(burial: Burial): SaveBurialInput {
+  return {
+    firstName: burial.person.firstName,
+    lastName: burial.person.lastName === "Unknown" ? "" : burial.person.lastName,
+    birthDate: burial.person.birthDate ?? "",
+    deathDate: burial.person.deathDate ?? "",
+    burialDate: burial.burialDate ?? "",
+    funeralHome: burial.funeralHome ?? "",
+    notes: burial.recordNotes ?? "",
+    reason: "Burial detail update",
+  };
+}
+
+function BurialRecord({ burial, canUpdate, onSave }: { burial: Burial; canUpdate: boolean; onSave: (id: string, burial: SaveBurialInput) => Promise<Burial> }) {
   const noteItems = burialNoteItems(burial.notes);
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState<SaveBurialInput>(() => blankBurialForm(burial));
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const startEditing = () => {
+    setForm(blankBurialForm(burial));
+    setError(undefined);
+    setIsEditing(true);
+  };
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setError(undefined);
+    try {
+      await onSave(burial.id, form);
+      setIsEditing(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save burial.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <form className="burial-record burial-form" onSubmit={(event) => void save(event)}>
+        <label>
+          First name
+          <input value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))} />
+        </label>
+        <label>
+          Last name
+          <input value={form.lastName} onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))} />
+        </label>
+        <label>
+          Birth date
+          <input type="date" value={form.birthDate} onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value }))} />
+        </label>
+        <label>
+          Death date
+          <input type="date" value={form.deathDate} onChange={(event) => setForm((current) => ({ ...current, deathDate: event.target.value }))} />
+        </label>
+        <label>
+          Burial date
+          <input type="date" value={form.burialDate} onChange={(event) => setForm((current) => ({ ...current, burialDate: event.target.value }))} />
+        </label>
+        <label className="burial-wide-field">
+          Funeral home
+          <input value={form.funeralHome} onChange={(event) => setForm((current) => ({ ...current, funeralHome: event.target.value }))} />
+        </label>
+        <label className="burial-wide-field">
+          Notes
+          <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={4} />
+        </label>
+        {error ? <p className="detail-message is-error">{error}</p> : null}
+        <div className="burial-form-actions">
+          <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
+            Cancel
+          </button>
+          <button type="submit" disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save burial"}
+          </button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <article className="burial-record">
-      <strong>{fullName(burial.person)}</strong>
+      <div className="burial-record-header">
+        <strong>{fullName(burial.person)}</strong>
+        {canUpdate ? (
+          <button type="button" className="icon-text-button" onClick={startEditing} aria-label={`Edit burial ${fullName(burial.person)}`}>
+            <Pencil size={14} aria-hidden="true" />
+            Edit
+          </button>
+        ) : null}
+      </div>
       <dl>
         <div>
           <dt>Born</dt>
@@ -48,6 +149,114 @@ function BurialRecord({ burial }: { burial: Burial }) {
           ))}
         </ul>
       ) : null}
+    </article>
+  );
+}
+
+function blankGraveSpaceForm(grave: GraveSpace): SaveGraveSpaceInput {
+  return {
+    name: grave.name,
+    status: grave.status,
+    cost: grave.cost === undefined ? "" : String(grave.cost),
+    reason: "Gravesite detail update",
+  };
+}
+
+function GraveSpaceRecord({ grave, canUpdate, onSave }: { grave: GraveSpace; canUpdate: boolean; onSave: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace> }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState<SaveGraveSpaceInput>(() => blankGraveSpaceForm(grave));
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const startEditing = () => {
+    setForm(blankGraveSpaceForm(grave));
+    setError(undefined);
+    setIsEditing(true);
+  };
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setError(undefined);
+    try {
+      await onSave(form);
+      setIsEditing(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save gravesite.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <form className="grave-record grave-form" onSubmit={(event) => void save(event)}>
+        <label className="grave-wide-field">
+          Name
+          <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+        </label>
+        <label>
+          Status
+          <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as GraveStatus }))}>
+            {graveStatusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Cost
+          <input inputMode="decimal" value={form.cost} onChange={(event) => setForm((current) => ({ ...current, cost: event.target.value }))} />
+        </label>
+        {error ? <p className="detail-message is-error">{error}</p> : null}
+        <div className="grave-form-actions">
+          <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
+            Cancel
+          </button>
+          <button type="submit" disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save gravesite"}
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <article className="grave-record">
+      <div className="grave-record-header">
+        <strong>{grave.name || formatGraveLabel(grave)}</strong>
+        {canUpdate ? (
+          <button type="button" className="icon-text-button" onClick={startEditing} aria-label={`Edit gravesite ${formatGraveLabel(grave)}`}>
+            <Pencil size={14} aria-hidden="true" />
+            Edit
+          </button>
+        ) : null}
+      </div>
+      <dl>
+        <div>
+          <dt>Section</dt>
+          <dd>{grave.section || "Unknown"}</dd>
+        </div>
+        <div>
+          <dt>Lot</dt>
+          <dd>{grave.lot || "Unknown"}</dd>
+        </div>
+        <div>
+          <dt>Space</dt>
+          <dd>{grave.space || "Unknown"}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>{graveStatusOptions.find((option) => option.value === grave.status)?.label ?? "Unknown"}</dd>
+        </div>
+        {grave.cost !== undefined ? (
+          <div>
+            <dt>Cost</dt>
+            <dd>${grave.cost.toFixed(2)}</dd>
+          </div>
+        ) : null}
+      </dl>
     </article>
   );
 }
@@ -94,9 +303,9 @@ function newestMediaAsset(assets: MediaAsset[]) {
   })[0];
 }
 
-function MediaGallery({ assets }: { assets: MediaAsset[] }) {
+function MediaGallery({ assets, emptyMessage = "No photos are linked yet." }: { assets: MediaAsset[]; emptyMessage?: string }) {
   const asset = newestMediaAsset(assets);
-  if (!asset) return <p className="muted">No photos are linked yet.</p>;
+  if (!asset) return <p className="muted">{emptyMessage}</p>;
 
   return (
     <div className="media-gallery">
@@ -283,10 +492,6 @@ function HeadstoneRecord({
           Inscription
           <textarea value={form.inscription} onChange={(event) => setForm((current) => ({ ...current, inscription: event.target.value }))} rows={3} />
         </label>
-        <label className="headstone-wide-field">
-          Photo URL
-          <input value={form.photoUrl} onChange={(event) => setForm((current) => ({ ...current, photoUrl: event.target.value }))} />
-        </label>
         {error ? <p className="detail-message is-error">{error}</p> : null}
         <div className="headstone-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
@@ -330,7 +535,7 @@ function HeadstoneRecord({
         </div>
       </dl>
       {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
-      {headstone.inscription ? <p className="note-box">{headstone.inscription}</p> : null}
+      {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
       {headstone.mediaAssets?.length ? <MediaGallery assets={headstone.mediaAssets} /> : null}
       {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
         <p className="muted">
@@ -348,8 +553,12 @@ export function DetailPanel({
   summary,
   grave,
   canViewOwnership,
+  canUpdateGravesites,
+  canUpdateBurials,
   canUpdateHeadstones,
   headstoneLookups,
+  onSaveGraveSpace,
+  onSaveBurial,
   onSaveHeadstone,
   onUploadPhoto,
   isLoading = false,
@@ -403,6 +612,13 @@ export function DetailPanel({
 
       {!grave || isLoading || error ? null : (
         <>
+      <section className="detail-section">
+        <div className="section-title">
+          <MapPinned size={17} aria-hidden="true" />
+          <h3>Gravesite</h3>
+        </div>
+        <GraveSpaceRecord grave={grave} canUpdate={canUpdateGravesites} onSave={onSaveGraveSpace} />
+      </section>
 
       {canViewOwnership ? (
       <section className="detail-section">
@@ -432,7 +648,7 @@ export function DetailPanel({
         {grave.burials.length ? (
           <div className="burial-list">
             {grave.burials.map((burial) => (
-              <BurialRecord key={burial.id} burial={burial} />
+              <BurialRecord key={burial.id} burial={burial} canUpdate={canUpdateBurials} onSave={onSaveBurial} />
             ))}
           </div>
         ) : (
@@ -466,9 +682,9 @@ export function DetailPanel({
       <section className="detail-section">
         <div className="section-title">
           <Images size={17} aria-hidden="true" />
-          <h3>Photos</h3>
+          <h3>Gravesite Photos</h3>
         </div>
-        <MediaGallery assets={mediaAssets} />
+        <MediaGallery assets={mediaAssets} emptyMessage="No gravesite overview photos are linked yet." />
         {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} onUpload={onUploadPhoto} /> : null}
       </section>
 

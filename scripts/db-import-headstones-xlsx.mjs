@@ -63,6 +63,12 @@ function textCell(row, columnName) {
   return present(value) ? String(value).trim() : null;
 }
 
+function optionalPositiveTextCell(row, columnName) {
+  const value = textCell(row, columnName);
+  if (!value || value === "0") return null;
+  return value;
+}
+
 function numberCell(row, columnName) {
   const value = cell(row, columnName);
   if (!present(value)) return null;
@@ -153,6 +159,41 @@ function rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMe
   };
 }
 
+function sharedMarkerGravesites(longitude, latitude, eastWestMeters, northSouthMeters) {
+  const halfHeightDegrees = northSouthMeters / 2 / 111_320;
+  return [
+    rectangleMultiPolygon(longitude, latitude + halfHeightDegrees, eastWestMeters, northSouthMeters, { anchor: "left-edge" }),
+    rectangleMultiPolygon(longitude, latitude - halfHeightDegrees, eastWestMeters, northSouthMeters, { anchor: "left-edge" }),
+  ];
+}
+
+function generatedGravesites({ graveId, people, name, longitude, latitude, eastWestMeters, northSouthMeters, graveAnchor }) {
+  if (graveAnchor === "left-edge" && people.length === 2) {
+    return sharedMarkerGravesites(longitude, latitude, eastWestMeters, northSouthMeters).map((geometry, index) => {
+      const slot = String(index + 1).padStart(2, "0");
+      const graveSlot = String.fromCharCode("A".charCodeAt(0) + index);
+      const person = people[people.length - index - 1];
+      return {
+        graveId: `${graveId}${graveSlot}`,
+        gravesiteId: `TLC-GPS-${graveId}-${slot}`,
+        name: person?.fullName ?? `${name} grave ${slot}`,
+        geometry,
+        people: person ? [person] : [],
+      };
+    });
+  }
+
+  return [
+    {
+      graveId,
+      gravesiteId: `TLC-GPS-${graveId}`,
+      name,
+      geometry: rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters, { anchor: graveAnchor }),
+      people,
+    },
+  ];
+}
+
 function cellValue(value) {
   if (value && typeof value === "object" && "text" in value) return value.text;
   if (value && typeof value === "object" && "result" in value) return value.result;
@@ -219,24 +260,30 @@ export function importableRows(rows, options) {
       const tlcPlot = textCell(row, "TlcPlot");
       const sourceGraveNumber = textCell(row, "GraveNumber");
       const lotId = [tlcPlot, sourceGraveNumber].find((value) => value && value.length <= 5) ?? graveId;
-      const sectionId = textCell(row, "NhgSection");
-      const graveAnchor = shouldAnchorGravesiteOnLeftEdge(sectionId) ? "left-edge" : "center";
+      const nhgPage = optionalPositiveTextCell(row, "NhgPage");
+      const hasNorthHillsEntry = Boolean(nhgPage);
+      const sectionId = hasNorthHillsEntry ? textCell(row, "NhgSection") : null;
+      const geometrySectionHint = sectionId ?? textCell(row, "NhgSection");
+      const graveAnchor = shouldAnchorGravesiteOnLeftEdge(geometrySectionHint) ? "left-edge" : "center";
+      const name = people[0]?.fullName ?? `Imported headstone ${graveId}`;
+      const gravesites = generatedGravesites({ graveId, people, name, longitude, latitude, eastWestMeters, northSouthMeters, graveAnchor });
       return {
         rowNumber,
         graveId,
         lotId,
-        gravesiteId: `TLC-GPS-${graveId}`,
+        gravesiteId: gravesites[0].gravesiteId,
         headstoneId: `TLC-HS-${graveId}`,
-        name: people[0]?.fullName ?? `Imported headstone ${graveId}`,
+        name,
         sectionId,
-        nhgRow: textCell(row, "NhgRow"),
-        nhgPage: textCell(row, "NhgPage"),
+        nhgRow: hasNorthHillsEntry ? optionalPositiveTextCell(row, "NhgRow") : null,
+        nhgPage,
         tlcSec: textCell(row, "TlcSec"),
         tlcPlot,
         sourceGraveNumber,
         latitude,
         longitude,
-        geometry: rectangleMultiPolygon(longitude, latitude, eastWestMeters, northSouthMeters, { anchor: graveAnchor }),
+        geometry: gravesites[0].geometry,
+        gravesites,
         lotGeometry: rectangleMultiPolygon(longitude, latitude, lotEastWestMeters, lotNorthSouthMeters),
         sourceProperties: row,
         people,
@@ -346,7 +393,7 @@ async function upsertLot(client, cemetery, facilityId, imported, section) {
   return { id: result.rows[0].id };
 }
 
-async function upsertGravesite(client, cemetery, facilityId, imported) {
+async function upsertGravesite(client, cemetery, facilityId, imported, generatedGravesite = imported.gravesites[0]) {
   const section = await findSection(client, cemetery.id, facilityId, imported.sectionId, imported.longitude, imported.latitude);
   const lot = await upsertLot(client, cemetery, facilityId, imported, section);
   const notes = buildSourceNotes(imported);
@@ -399,17 +446,17 @@ async function upsertGravesite(client, cemetery, facilityId, imported) {
       cemetery.id,
       section?.section_id ?? null,
       lot.id,
-      imported.name,
+      generatedGravesite.name,
       facilityId,
       section?.name ?? imported.sectionId,
       imported.lotId,
-      imported.graveId,
-      imported.gravesiteId,
-      JSON.stringify(imported.geometry),
+      generatedGravesite.graveId,
+      generatedGravesite.gravesiteId,
+      JSON.stringify(generatedGravesite.geometry),
     ],
   );
 
-  return { gravesiteUuid: result.rows[0].id, sectionLinked: Boolean(section), lotLinked: Boolean(lot), notes };
+  return { gravesiteUuid: result.rows[0].id, sectionLinked: Boolean(section), lotLinked: Boolean(lot), notes, generatedGravesite };
 }
 
 export async function upsertHeadstone(client, imported, gravesiteUuid) {
@@ -486,11 +533,11 @@ export async function upsertHeadstoneGravesite(client, headstoneUuid, gravesiteU
   );
 }
 
-async function replaceBurials(client, imported, gravesiteUuid, headstoneUuid, notes) {
+async function replaceBurials(client, imported, generatedGravesite, gravesiteUuid, headstoneUuid, notes) {
   await client.query("DELETE FROM burials WHERE gravesite_uuid = $1", [gravesiteUuid]);
 
   let burialCount = 0;
-  for (const person of imported.people) {
+  for (const person of generatedGravesite.people) {
     const result = await client.query(
       `
         INSERT INTO burials (
@@ -515,7 +562,7 @@ async function replaceBurials(client, imported, gravesiteUuid, headstoneUuid, no
         person.birthDate,
         person.deathDate,
         buildBurialNotes(notes, person),
-        imported.gravesiteId,
+        generatedGravesite.gravesiteId,
       ],
     );
 
@@ -640,15 +687,18 @@ async function main() {
     let headstoneCount = 0;
     const gravesiteUuids = [];
     for (const imported of importedRows) {
-      const gravesiteResult = await upsertGravesite(client, cemetery, facilityId, imported);
-      const headstoneUuid = await upsertHeadstone(client, imported, gravesiteResult.gravesiteUuid);
-      await upsertHeadstoneGravesite(client, headstoneUuid, gravesiteResult.gravesiteUuid);
-      const importedBurialCount = await replaceBurials(client, imported, gravesiteResult.gravesiteUuid, headstoneUuid, gravesiteResult.notes);
-      if (gravesiteResult.sectionLinked) linkedSections += 1;
-      if (gravesiteResult.lotLinked) linkedLots += 1;
-      burialCount += importedBurialCount;
+      let headstoneUuid;
+      for (const generatedGravesite of imported.gravesites) {
+        const gravesiteResult = await upsertGravesite(client, cemetery, facilityId, imported, generatedGravesite);
+        headstoneUuid ??= await upsertHeadstone(client, imported, gravesiteResult.gravesiteUuid);
+        await upsertHeadstoneGravesite(client, headstoneUuid, gravesiteResult.gravesiteUuid, imported.gravesites.length > 1 ? "spans" : "primary");
+        const importedBurialCount = await replaceBurials(client, imported, generatedGravesite, gravesiteResult.gravesiteUuid, headstoneUuid, gravesiteResult.notes);
+        if (gravesiteResult.sectionLinked) linkedSections += 1;
+        if (gravesiteResult.lotLinked) linkedLots += 1;
+        burialCount += importedBurialCount;
+        gravesiteUuids.push(gravesiteResult.gravesiteUuid);
+      }
       headstoneCount += 1;
-      gravesiteUuids.push(gravesiteResult.gravesiteUuid);
     }
 
     const spatialIssues = await validateImportedGravesites(client, gravesiteUuids);
@@ -666,7 +716,7 @@ async function main() {
       console.log("Dry run complete. No data was written.");
     } else {
       await client.query("COMMIT");
-      console.log(`Imported ${importedRows.length} gravesites, ${headstoneCount} headstones, and ${burialCount} burials into ${cemetery.name}.`);
+      console.log(`Imported ${gravesiteUuids.length} gravesites, ${headstoneCount} headstones, and ${burialCount} burials into ${cemetery.name}.`);
     }
 
     console.log(`Workbook: ${basename(workbookPath)}`);

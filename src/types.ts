@@ -21,7 +21,10 @@ export type Burial = {
   id: string;
   person: Person;
   burialDate?: string;
+  funeralHome?: string;
+  recordNotes?: string;
   notes?: string;
+  auditEventId?: string;
 };
 
 export type OwnershipEvent = {
@@ -139,6 +142,8 @@ export type GraveSpaceSummary = {
 };
 
 export type GraveSpace = GraveSpaceSummary & {
+  name: string;
+  cost?: number;
   owners: Owner[];
   currentOwnerIds: string[];
   burials: Burial[];
@@ -147,6 +152,24 @@ export type GraveSpace = GraveSpaceSummary & {
   mediaAssets: MediaAsset[];
   ownershipHistory: OwnershipEvent[];
   notes?: string;
+};
+
+export type SaveGraveSpaceInput = {
+  name: string;
+  status: GraveStatus;
+  cost: string;
+  reason?: string;
+};
+
+export type SaveBurialInput = {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  deathDate: string;
+  burialDate: string;
+  funeralHome: string;
+  notes: string;
+  reason?: string;
 };
 
 export type CemeterySection = {
@@ -190,6 +213,8 @@ export type CurrentUser = {
     canCreateCemeteryRecords: boolean;
     canUpdateCemeteryRecords: boolean;
     canUpdateHeadstones: boolean;
+    canUpdateGravesites: boolean;
+    canUpdateBurials: boolean;
     canDeleteCemeteryRecords: boolean;
   };
   assignedCemeteryIds: string[];

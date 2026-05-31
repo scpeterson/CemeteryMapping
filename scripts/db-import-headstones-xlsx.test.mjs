@@ -46,6 +46,35 @@ test("importable spreadsheet rows map Nhg columns into corrected source notes", 
   assert.equal(buildBurialNotes(buildSourceNotes(importedRows[0]), importedRows[0].people[0]), "Imported from headstone spreadsheet row 9. North Hills Genealogists section: B. North Hills Genealogists row: 4. North Hills Genealogists page: 22. Person column: 1.");
 });
 
+test("importable spreadsheet rows omit North Hills fields when page is absent", () => {
+  const [imported] = importableRows(
+    [
+      {
+        rowNumber: 10,
+        row: {
+          Latitude: 40,
+          Longitude: -80,
+          Person1First: "Ida",
+          Person1Last: "Wells",
+          NhgSection: "C",
+          NhgRow: "0",
+          NhgPage: "0",
+        },
+      },
+    ],
+    {},
+  );
+
+  const notes = buildSourceNotes(imported);
+
+  assert.equal(imported.nhgRow, null);
+  assert.equal(imported.nhgPage, null);
+  assert.equal(imported.sectionId, null);
+  assert.doesNotMatch(notes, /North Hills Genealogists section/u);
+  assert.doesNotMatch(notes, /North Hills Genealogists row/u);
+  assert.doesNotMatch(notes, /North Hills Genealogists page/u);
+});
+
 test("importable spreadsheet rows generate 10 by 20 foot lots and 10 by 4 foot gravesites", () => {
   const [imported] = importableRows(
     [
@@ -119,6 +148,43 @@ test("section A through D gravesites place the headstone at the center of the le
   assert(sectionCEast > -80);
   assert.equal(Number(((sectionCRing[0][1] + sectionCRing[3][1]) / 2).toFixed(10)), 40);
   assert.equal(Number(((sectionESouthWest + sectionENorthEast) / 2).toFixed(10)), -80);
+});
+
+test("two-person left-edge markers generate side-by-side gravesites around the headstone", () => {
+  const [imported] = importableRows(
+    [
+      {
+        rowNumber: 166,
+        row: {
+          Latitude: 40,
+          Longitude: -80,
+          Person1First: "Charles",
+          Person1Last: "Soergel",
+          Person2First: "Ruth",
+          Person2Last: "Soergel",
+          NhgSection: "B",
+        },
+      },
+    ],
+    {},
+  );
+
+  assert.equal(imported.gravesites.length, 2);
+  assert.equal(imported.gravesites[0].graveId, "0166A");
+  assert.equal(imported.gravesites[1].graveId, "0166B");
+  assert.equal(imported.gravesites[0].gravesiteId, "TLC-GPS-0166-01");
+  assert.equal(imported.gravesites[1].gravesiteId, "TLC-GPS-0166-02");
+  assert.equal(imported.gravesites[0].people[0].fullName, "Ruth Soergel");
+  assert.equal(imported.gravesites[1].people[0].fullName, "Charles Soergel");
+
+  const northRing = imported.gravesites[0].geometry.coordinates[0][0];
+  const southRing = imported.gravesites[1].geometry.coordinates[0][0];
+
+  assert.equal(Number(northRing[0][0].toFixed(10)), -80);
+  assert.equal(Number(southRing[0][0].toFixed(10)), -80);
+  assert.equal(Number(northRing[0][1].toFixed(10)), 40);
+  assert.equal(Number(southRing[3][1].toFixed(10)), 40);
+  assert(northRing[3][1] > southRing[0][1]);
 });
 
 test("upsertHeadstoneGravesite restores soft-deleted marker links", async () => {

@@ -5,6 +5,7 @@ import type {
   AuditEvent,
   AuditEventFilters,
   Auth0ResolvedUser,
+  Burial,
   CemeteryAdminRecords,
   CemeteryData,
   CemeteryTextRecord,
@@ -22,6 +23,8 @@ import type {
   NorthHillsOcrReview,
   NorthHillsOcrReviewFilters,
   SaveNorthHillsOcrEvidenceInput,
+  SaveBurialInput,
+  SaveGraveSpaceInput,
   SaveHeadstoneInput,
   SearchMatch,
   SectionTextRecord,
@@ -82,6 +85,19 @@ export async function fetchGraveSpace(cemeteryId: string, id: string): Promise<G
     `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(id)}`,
   );
   return jsonResponse<GraveSpace>(response, "Grave API");
+}
+
+export async function updateGraveSpace(cemeteryId: string, id: string, graveSpace: SaveGraveSpaceInput): Promise<GraveSpace> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(id)}`,
+    jsonRequest("PATCH", graveSpace),
+  );
+  return jsonResponse<GraveSpace>(response, "Update grave space API");
+}
+
+export async function updateBurial(id: string, burial: SaveBurialInput): Promise<Burial> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/burials/${encodeURIComponent(id)}`, jsonRequest("PATCH", burial));
+  return jsonResponse<Burial>(response, "Update burial API");
 }
 
 export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>): Promise<SearchMatch[]> {

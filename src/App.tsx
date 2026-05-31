@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
-import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchHeadstoneLookups, fetchSearchMatches, updateHeadstone, uploadGravePhoto } from "./api/cemeteryApi";
+import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchHeadstoneLookups, fetchSearchMatches, updateBurial, updateGraveSpace, updateHeadstone, uploadGravePhoto } from "./api/cemeteryApi";
 import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
@@ -9,7 +9,7 @@ import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { graveSelectionKey } from "./lib/format";
 import { searchGraves } from "./lib/search";
-import type { CemeteryData, CurrentUser, GraveSpace, GraveSpaceSummary, GraveStatus, Headstone, HeadstoneLookups, Owner, SaveHeadstoneInput, SearchMatch } from "./types";
+import type { Burial, CemeteryData, CurrentUser, GraveSpace, GraveSpaceSummary, GraveStatus, Headstone, HeadstoneLookups, Owner, SaveBurialInput, SaveGraveSpaceInput, SaveHeadstoneInput, SearchMatch } from "./types";
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 const emptyHeadstoneLookups: HeadstoneLookups = { markerTypes: [], materials: [], conditions: [] };
@@ -157,6 +157,8 @@ export default function App() {
   const canUpdateSelectedHeadstones =
     currentUser?.role === "admin" ||
     (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
+  const canUpdateSelectedGravesites = canUpdateSelectedHeadstones;
+  const canUpdateSelectedBurials = canUpdateSelectedHeadstones;
   const cemeteryScopeLabel = useMemo(() => {
     const cemeteryNames = [...new Set((data.boundaries ?? (data.boundary ? [data.boundary] : [])).map((boundary) => boundary.properties.name))];
     if (cemeteryNames.length === 0) return "Cemetery records";
@@ -184,6 +186,31 @@ export default function App() {
         ? {
             ...current,
             headstones: current.headstones.map((candidate) => (candidate.id === saved.id ? saved : candidate)),
+          }
+        : current,
+    );
+    return saved;
+  };
+
+  const saveGraveSpace = async (graveSpace: SaveGraveSpaceInput): Promise<GraveSpace> => {
+    if (!selectedGrave) throw new Error("Select a grave site before saving.");
+    const saved = await updateGraveSpace(selectedGrave.cemeteryId, selectedGrave.id, graveSpace);
+    setSelectedGraveDetails(saved);
+    setSelectedGrave(saved);
+    setData((current) => ({
+      ...current,
+      graves: current.graves.map((candidate) => (graveSelectionKey(candidate) === graveSelectionKey(saved) ? saved : candidate)),
+    }));
+    return saved;
+  };
+
+  const saveBurial = async (id: string, burial: SaveBurialInput): Promise<Burial> => {
+    const saved = await updateBurial(id, burial);
+    setSelectedGraveDetails((current) =>
+      current
+        ? {
+            ...current,
+            burials: current.burials.map((candidate) => (candidate.id === saved.id ? saved : candidate)),
           }
         : current,
     );
@@ -250,8 +277,12 @@ export default function App() {
         summary={selectedGrave}
         grave={selectedGraveDetails}
         canViewOwnership={canViewSelectedOwnership}
+        canUpdateGravesites={canUpdateSelectedGravesites}
+        canUpdateBurials={canUpdateSelectedBurials}
         canUpdateHeadstones={canUpdateSelectedHeadstones}
         headstoneLookups={headstoneLookups}
+        onSaveGraveSpace={saveGraveSpace}
+        onSaveBurial={saveBurial}
         onSaveHeadstone={saveHeadstone}
         onUploadPhoto={saveGravePhoto}
         isLoading={isDetailLoading}

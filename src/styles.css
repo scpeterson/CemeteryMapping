@@ -747,6 +747,7 @@ h3 {
 
 .owner-row,
 .burial-record,
+.grave-record,
 .headstone-record,
 .note-box {
   padding: 12px;
@@ -766,8 +767,16 @@ h3 {
   color: var(--text-muted);
 }
 
-.burial-record strong {
+.burial-record > strong {
   display: block;
+  margin-bottom: 10px;
+}
+
+.burial-record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 10px;
 }
 
@@ -785,16 +794,56 @@ h3 {
   text-transform: uppercase;
 }
 
+.burial-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.burial-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.burial-form input,
+.burial-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.burial-wide-field,
+.burial-form .detail-message,
+.burial-form-actions {
+  grid-column: 1 / -1;
+}
+
+.burial-form-actions {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+
 .burial-record dd {
   margin: 2px 0 0;
   font-size: 0.88rem;
 }
 
+.grave-record,
 .headstone-record {
   display: grid;
   gap: 10px;
 }
 
+.grave-record-header,
 .headstone-record-header {
   display: flex;
   align-items: center;
@@ -802,6 +851,7 @@ h3 {
   gap: 10px;
 }
 
+.grave-record dl,
 .headstone-record dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -809,6 +859,8 @@ h3 {
   margin: 0;
 }
 
+.grave-record dt,
+.grave-form label,
 .headstone-record dt,
 .headstone-form label {
   color: var(--text-muted);
@@ -817,21 +869,27 @@ h3 {
   text-transform: uppercase;
 }
 
+.grave-record dd,
 .headstone-record dd {
   margin: 2px 0 0;
   font-size: 0.88rem;
 }
 
+.grave-form,
 .headstone-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.grave-form label,
 .headstone-form label {
   display: grid;
   gap: 5px;
   text-transform: none;
 }
 
+.grave-form select,
+.grave-form input,
+.grave-form textarea,
 .headstone-form select,
 .headstone-form input,
 .headstone-form textarea {
@@ -845,13 +903,18 @@ h3 {
   font: inherit;
 }
 
+.grave-wide-field,
 .headstone-wide-field,
+.grave-record-header,
 .headstone-record-header,
+.grave-form .detail-message,
 .headstone-form .detail-message,
+.grave-form-actions,
 .headstone-form-actions {
   grid-column: 1 / -1;
 }
 
+.grave-form-actions,
 .headstone-form-actions {
   display: flex;
   justify-content: end;
@@ -859,6 +922,8 @@ h3 {
 }
 
 .icon-text-button,
+.burial-form-actions button,
+.grave-form-actions button,
 .headstone-form-actions button {
   display: inline-flex;
   min-height: 34px;
@@ -1020,6 +1085,11 @@ h3 {
 .note-box {
   margin-bottom: 0;
   color: #4c5a51;
+}
+
+.inscription-box {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .north-hills-evidence-list {
