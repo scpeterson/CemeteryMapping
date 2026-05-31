@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
-import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchHeadstoneLookups, fetchSearchMatches, updateHeadstone } from "./api/cemeteryApi";
+import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchHeadstoneLookups, fetchSearchMatches, updateHeadstone, uploadGravePhoto } from "./api/cemeteryApi";
 import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
@@ -190,6 +190,19 @@ export default function App() {
     return saved;
   };
 
+  const saveGravePhoto = async ({ file, headstoneId, notes }: { file: File; headstoneId?: string; notes?: string }) => {
+    if (!selectedGrave) throw new Error("Select a grave site before uploading a photo.");
+    await uploadGravePhoto({
+      cemeteryId: selectedGrave.cemeteryId,
+      graveSpaceId: selectedGrave.id,
+      file,
+      headstoneId,
+      notes,
+      source: /iPhone|iPad|iPod/u.test(navigator.userAgent) ? "iphone" : "field_upload",
+    });
+    setDetailRequestVersion((version) => version + 1);
+  };
+
   return (
     <main className="app-shell">
       <SearchPanel
@@ -240,6 +253,7 @@ export default function App() {
         canUpdateHeadstones={canUpdateSelectedHeadstones}
         headstoneLookups={headstoneLookups}
         onSaveHeadstone={saveHeadstone}
+        onUploadPhoto={saveGravePhoto}
         isLoading={isDetailLoading}
         error={detailError}
         onRetry={() => setDetailRequestVersion((version) => version + 1)}

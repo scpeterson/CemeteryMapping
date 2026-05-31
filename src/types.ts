@@ -54,7 +54,30 @@ export type Headstone = {
   relationshipNotes: string;
   burialIds: string[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
+  mediaAssets: MediaAsset[];
   auditEventId?: string;
+};
+
+export type MediaAsset = {
+  id: string;
+  cemeteryId: string;
+  assetType: "photo" | "document" | "scan" | "map" | "other";
+  fileUrl: string;
+  thumbnailUrl: string;
+  originalFilename: string;
+  contentType: string;
+  byteSize: number;
+  capturedAt?: string;
+  uploadedAt: string;
+  capturedByEmail: string;
+  latitude?: number;
+  longitude?: number;
+  gpsAccuracy?: number;
+  deviceMake: string;
+  deviceModel: string;
+  notes: string;
+  source: string;
+  status: "staged" | "linked" | "needs_review" | "rejected";
 };
 
 export type NorthHillsLinkedEvidence = {
@@ -121,6 +144,7 @@ export type GraveSpace = GraveSpaceSummary & {
   burials: Burial[];
   headstones: Headstone[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
+  mediaAssets: MediaAsset[];
   ownershipHistory: OwnershipEvent[];
   notes?: string;
 };

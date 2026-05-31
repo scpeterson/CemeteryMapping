@@ -131,6 +131,24 @@ Use the normal grave-detail panel, not the Admin drawer, for operational marker/
 
 Linked North Hills evidence supports interpretation of a headstone or gravesite, but editing marker condition/material/type does not alter the linked reading evidence.
 
+### Photo Collection
+
+Use the normal grave-detail panel for field photo collection. Photos are stored as media evidence and linked to the selected gravesite, with an optional marker/headstone link.
+
+1. On the iPhone, open the application and select the gravesite on the map or from search results.
+2. Open the `Photos` section in the detail panel.
+3. Tap the photo file control. On iPhone this should offer the camera or photo library.
+4. Choose `Gravesite overview` when the image documents the full grave space.
+5. Choose a marker/headstone when the image documents a specific physical marker.
+6. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty.
+7. Upload the photo and confirm it appears in the photo gallery.
+
+The gallery shows the latest linked photo for that gravesite or marker. If a photo is linked to a marker/headstone, it appears under that marker rather than being duplicated in the gravesite overview `Photos` section.
+
+Readers can view linked photos. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
+
+In local DEV and TEST environments, uploaded image files are written under `/Users/scottpeterson/Dev/CemeteryMapping/uploads/media` unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the gravesite/headstone links, but not the image bytes.
+
 ### Soft Delete And Restore
 
 Deletes in Cemetery Mapping are soft deletes unless a technical maintenance task explicitly says otherwise.

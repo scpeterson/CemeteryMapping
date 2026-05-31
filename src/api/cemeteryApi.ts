@@ -18,6 +18,7 @@ import type {
   LookupAdminRecords,
   LookupRecord,
   LotTextRecord,
+  MediaAsset,
   NorthHillsOcrReview,
   NorthHillsOcrReviewFilters,
   SaveNorthHillsOcrEvidenceInput,
@@ -105,6 +106,41 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
 export async function updateHeadstone(id: string, headstone: SaveHeadstoneInput): Promise<Headstone> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(id)}`, jsonRequest("PATCH", headstone));
   return jsonResponse<Headstone>(response, "Update headstone API");
+}
+
+export type UploadGravePhotoInput = {
+  cemeteryId: string;
+  graveSpaceId: string;
+  file: File;
+  headstoneId?: string;
+  notes?: string;
+  latitude?: number;
+  longitude?: number;
+  gpsAccuracy?: number;
+  capturedAt?: string;
+  source?: string;
+};
+
+export async function uploadGravePhoto(input: UploadGravePhotoInput): Promise<MediaAsset> {
+  const params = new URLSearchParams();
+  params.set("filename", input.file.name);
+  params.set("notes", input.notes ?? "");
+  params.set("capturedAt", input.capturedAt ?? new Date(input.file.lastModified || Date.now()).toISOString());
+  params.set("source", input.source ?? "field_upload");
+  if (input.headstoneId) params.set("headstoneId", input.headstoneId);
+  if (input.latitude !== undefined) params.set("latitude", String(input.latitude));
+  if (input.longitude !== undefined) params.set("longitude", String(input.longitude));
+  if (input.gpsAccuracy !== undefined) params.set("gpsAccuracy", String(input.gpsAccuracy));
+
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(input.cemeteryId)}/grave-spaces/${encodeURIComponent(input.graveSpaceId)}/media-assets?${params.toString()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": input.file.type || "image/jpeg" },
+      body: input.file,
+    },
+  );
+  return jsonResponse<MediaAsset>(response, "Photo upload API");
 }
 
 export async function fetchAdminRoles(): Promise<AppRole[]> {

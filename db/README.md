@@ -311,6 +311,27 @@ APP_ENV=dev npm run db:import:north-hills-ocr -- "/path/to/FedEx Scan 2026-05-29
 
 The importer uses `pdftotext -layout` for searchable PDFs, preserves the raw OCR entry text, parses the visible North Hills section/row/position coordinate, marker descriptors, surnames, inscription text, and detected years, then writes to `north_hills_ocr_import_batches` and `north_hills_ocr_entries`. The Admin -> Readings screen compares staged OCR entries to existing burials using source page references, surnames, and birth/death years. Reviewed assignments are stored in `north_hills_ocr_entry_gravesite_links` and `north_hills_ocr_entry_headstone_links` with status, confidence, reviewer identity, timestamp, and optional notes. This review workflow is intentionally non-promoting: evidence links can appear in the regular detail panel, but maintainers must still inspect matches before any future correction or promotion tool updates production records.
 
+## Media asset tracking
+
+Photos and future document scans are tracked as media evidence rather than embedded in a cemetery, gravesite, or headstone row. The database stores metadata in `media_assets` and relationships in link tables:
+
+- `gravesite_media_assets`
+- `headstone_media_assets`
+
+This allows one photo to document a gravesite overview, a specific marker, or both. It also allows a marker photo to remain linked when a headstone spans more than one gravesite.
+
+The application stores local upload files under `uploads/media` by default and serves them from `/media/<storage_key>`. In this workspace, that default resolves to:
+
+```text
+/Users/scottpeterson/Dev/CemeteryMapping/uploads/media
+```
+
+The file name on disk is generated from the `media_assets.id` UUID plus the detected extension, such as `fdb26c81-0878-4520-8f1b-69242bc7b049.jpg`. The original Apple Photos filename, for example `IMG_5151.jpeg`, is preserved in `media_assets.original_filename`. Postgres stores metadata, the public `file_url`, and link-table relationships; it does not store the image bytes.
+
+Set `MEDIA_UPLOAD_DIR=/absolute/path` for another local storage location. Production deployments should replace local disk with durable object storage or a backed-up shared volume; Postgres should keep only metadata, URLs, and relationships.
+
+Media rows and link rows are audited by database triggers. Uploads performed through the API include application-user audit context, while direct database changes still capture database user/session fields.
+
 ## File Geodatabase workflow
 
 The first real source format is expected to be an Esri File Geodatabase folder ending in `.gdb`. The local inspection/export commands require GDAL/OGR on your PATH.

@@ -10,6 +10,7 @@ import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSect
 import { getCemeteryData, getGraveSpace, listHeadstoneLookupOptions, restoreGraveSpace, softDeleteGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
+import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
 import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
@@ -171,6 +172,23 @@ function validateNorthHillsEvidencePayload(body) {
   };
 }
 
+function validateMediaUploadMetadata(query) {
+  const source = optionalText(query?.source, "Photo source", 50) || "field_upload";
+  if (!["iphone", "admin_upload", "field_upload", "import", "other"].includes(source)) throw new BadRequestError("Photo source is invalid.");
+  return {
+    originalFilename: optionalText(query?.filename, "Filename", 255),
+    headstoneId: query?.headstoneId ? validateUuid(query.headstoneId, "Headstone id") : "",
+    notes: optionalText(query?.notes, "Photo notes", 4000),
+    latitude: optionalText(query?.latitude, "Latitude", 30),
+    longitude: optionalText(query?.longitude, "Longitude", 30),
+    gpsAccuracy: optionalText(query?.gpsAccuracy, "GPS accuracy", 30),
+    capturedAt: optionalText(query?.capturedAt, "Captured at", 40),
+    deviceMake: optionalText(query?.deviceMake, "Device make", 100),
+    deviceModel: optionalText(query?.deviceModel, "Device model", 100),
+    source,
+  };
+}
+
 async function markerTypeCodeForId(pool, markerTypeId) {
   const result = await pool.query("SELECT code FROM marker_types WHERE id = $1", [markerTypeId]);
   return result.rows[0]?.code;
@@ -230,6 +248,7 @@ export function createApp(config, pool) {
   });
 
   app.use(express.json());
+  app.use("/media", express.static(mediaUploadRoot()));
 
   app.get("/api/health", async (_request, response, next) => {
     try {
@@ -341,6 +360,49 @@ export function createApp(config, pool) {
       next(error);
     }
   });
+
+  app.post(
+    "/api/cemeteries/:cemeteryId/grave-spaces/:id/media-assets",
+    requirePowerUser,
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"], limit: "25mb" }),
+    async (request, response, next) => {
+      try {
+        const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+        if (!canEditCemetery(request.user, cemeteryId)) {
+          response.status(403).json({ error: "Forbidden" });
+          return;
+        }
+        const id = validateGraveSpaceId(request.params.id);
+        const metadata = validateMediaUploadMetadata(request.query);
+        const created = await createGraveSpacePhoto(
+          pool,
+          cemeteryId,
+          id,
+          {
+            bytes: request.body,
+            contentType: request.headers["content-type"],
+            originalFilename: metadata.originalFilename,
+          },
+          metadata,
+          {
+            actorUser: request.user,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          },
+        );
+        if (!created) {
+          response.status(404).json({ error: "Grave space or headstone not found" });
+          return;
+        }
+        response.status(201).json(created);
+      } catch (error) {
+        if (error.message === "Unsupported photo type." || error.message === "Photo file is required.") {
+          response.status(400).json({ error: error.message });
+          return;
+        }
+        next(error);
+      }
+    },
+  );
 
   app.delete("/api/cemeteries/:cemeteryId/grave-spaces/:id", requireAdmin, async (request, response, next) => {
     try {
