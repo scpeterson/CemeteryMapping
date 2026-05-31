@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getCemeteryData, getDetailedCemeteryData, getGraveSpace } from "./cemeteryRepository.mjs";
+import { getCemeteryData, getDetailedCemeteryData, getGraveSpace, updateBurial, updateGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 
 function queryRows(sql) {
   if (sql.includes("information_schema.columns")) return [{ exists: true }];
@@ -136,4 +136,207 @@ test("repository can redact ownership data from grave detail reads", async () =>
   assert.deepEqual(grave.ownershipHistory, []);
   assert.equal(grave.headstones[0].condition.label, "Good");
   assert.deepEqual(grave.mediaAssets, []);
+});
+
+test("updateHeadstone mutation state query qualifies joined id columns", async () => {
+  const queries = [];
+  const headstoneRow = {
+    id: "33333333-3333-4333-8333-333333333333",
+    cemetery_id: "11111111-1111-4111-8111-111111111111",
+    headstone_id: "HS-1",
+    marker_type_id: "44444444-4444-4444-8444-444444444444",
+    marker_type_code: "upright_headstone",
+    marker_type_label: "Upright headstone",
+    material_id: "55555555-5555-4555-8555-555555555555",
+    material_type_id: "55555555-5555-4555-8555-555555555555",
+    material_type_code: "granite",
+    material_code: "granite",
+    material_label: "Granite",
+    condition_id: "66666666-6666-4666-8666-666666666666",
+    condition_type_id: "66666666-6666-4666-8666-666666666666",
+    condition_type_code: "good",
+    condition_code: "good",
+    condition_label: "Good",
+    condition: "good",
+    condition_notes: "Stable and legible",
+    inscription: "In memory",
+    photo_url: "",
+    last_inspected_at: "2026-05-28",
+    updated_at: "2026-05-31T12:00:00.000Z",
+    relationship_type: "primary",
+    relationship_notes: "",
+    burial_ids: [],
+    north_hills_evidence: [],
+    media_assets: [],
+  };
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
+          if (sql.includes("SELECT set_config")) return { rows: [] };
+          if (sql.includes("FOR UPDATE")) return { rows: [headstoneRow] };
+          if (sql.includes("UPDATE headstones")) return { rows: [headstoneRow] };
+          if (sql.includes("FROM audit_events") && sql.includes("transaction_id")) return { rows: [] };
+          if (sql.includes("INSERT INTO audit_events")) return { rows: [{ id: "77777777-7777-4777-8777-777777777777" }] };
+          if (sql.includes("FROM headstones") && sql.includes("WHERE headstones.id = $1")) return { rows: [headstoneRow] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const updated = await updateHeadstone(pool, "33333333-3333-4333-8333-333333333333", {
+    markerTypeId: "44444444-4444-4444-8444-444444444444",
+    materialId: "55555555-5555-4555-8555-555555555555",
+    conditionId: "66666666-6666-4666-8666-666666666666",
+    conditionNotes: "Stable and legible",
+    inscription: "In memory",
+    photoUrl: "",
+    lastInspectedAt: "2026-05-28",
+  });
+
+  const mutationStateQuery = queries.find((query) => query.sql.includes("FOR UPDATE"))?.sql ?? "";
+  assert.match(mutationStateQuery, /headstones\.id::text/u);
+  assert.match(mutationStateQuery, /FOR UPDATE OF headstones/u);
+  assert.doesNotMatch(mutationStateQuery, /SELECT\s+id::text,/u);
+  assert.equal(updated?.id, "33333333-3333-4333-8333-333333333333");
+});
+
+test("updateGraveSpace updates editable gravesite fields with cemetery scope", async () => {
+  const queries = [];
+  const graveRow = {
+    uuid: "22222222-2222-4222-8222-222222222222",
+    cemetery_id: "11111111-1111-4111-8111-111111111111",
+    cemetery_name: "Trinity Lutheran Church Cemetery",
+    section_id: "C",
+    lot_id: "166",
+    grave_id: "0166A",
+    gravesite_id: "TLC-GPS-0166-01",
+    name: "Ruth M. Soergel",
+    status: "occupied",
+    cost: "1200.00",
+    geometry: { type: "MultiPolygon", coordinates: [] },
+    updated_at: "2026-05-31T12:00:00.000Z",
+  };
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
+          if (sql.includes("SELECT set_config")) return { rows: [] };
+          if (sql.includes("FOR UPDATE")) return { rows: [graveRow] };
+          if (sql.includes("UPDATE gravesites")) return { rows: [graveRow] };
+          if (sql.includes("FROM audit_events") && sql.includes("transaction_id")) return { rows: [] };
+          if (sql.includes("INSERT INTO audit_events")) return { rows: [{ id: "77777777-7777-4777-8777-777777777777" }] };
+          if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) return { rows: [graveRow] };
+          if (sql.includes("FROM owners")) return { rows: [] };
+          if (sql.includes("FROM burials")) return { rows: [] };
+          if (sql.includes("FROM headstones")) return { rows: [] };
+          if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return { rows: [] };
+          if (sql.includes("FROM gravesite_media_assets")) return { rows: [] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const updated = await updateGraveSpace(
+    pool,
+    "11111111-1111-4111-8111-111111111111",
+    "TLC-GPS-0166-01",
+    {
+      name: "Ruth M. Soergel",
+      status: "occupied",
+      cost: 1200,
+    },
+    { allowedCemeteryIds: ["11111111-1111-4111-8111-111111111111"] },
+  );
+
+  const updateQuery = queries.find((query) => query.sql.includes("UPDATE gravesites"));
+  assert.match(updateQuery?.sql ?? "", /SET name = \$2/u);
+  assert.deepEqual(updateQuery?.values, ["22222222-2222-4222-8222-222222222222", "Ruth M. Soergel", "occupied", 1200]);
+  assert.equal(updated?.name, "Ruth M. Soergel");
+  assert.equal(updated?.status, "occupied");
+  assert.equal(updated?.cost, 1200);
+});
+
+test("updateBurial updates person and date fields with cemetery scope", async () => {
+  const queries = [];
+  const burialRow = {
+    id: "88888888-8888-4888-8888-888888888888",
+    cemetery_id: "11111111-1111-4111-8111-111111111111",
+    gravesite_uuid: "22222222-2222-4222-8222-222222222222",
+    first_name: "Ruth M.",
+    last_name: "Soergel",
+    full_name: "Ruth M. Soergel",
+    birth_date: "1925-10-04",
+    death_date: "2017-10-22",
+    burial_date: null,
+    funeral_home: null,
+    notes: "Imported note",
+    updated_at: "2026-05-31T12:00:00.000Z",
+  };
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
+          if (sql.includes("SELECT set_config")) return { rows: [] };
+          if (sql.includes("FOR UPDATE OF burials")) return { rows: [burialRow] };
+          if (sql.includes("UPDATE burials")) return { rows: [burialRow] };
+          if (sql.includes("FROM audit_events") && sql.includes("transaction_id")) return { rows: [] };
+          if (sql.includes("INSERT INTO audit_events")) return { rows: [{ id: "77777777-7777-4777-8777-777777777777" }] };
+          if (sql.includes("FROM burials") && sql.includes("LIMIT 1")) return { rows: [burialRow] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const updated = await updateBurial(
+    pool,
+    "88888888-8888-4888-8888-888888888888",
+    {
+      firstName: "Ruth M.",
+      lastName: "Soergel",
+      birthDate: "1925-10-04",
+      deathDate: "2017-10-22",
+      burialDate: "",
+      funeralHome: "Brandt Funeral Home",
+      notes: "Confirmed from marker photo.",
+    },
+    { allowedCemeteryIds: ["11111111-1111-4111-8111-111111111111"] },
+  );
+
+  const updateQuery = queries.find((query) => query.sql.includes("UPDATE burials"));
+  assert.match(updateQuery?.sql ?? "", /SET first_name = \$2/u);
+  assert.deepEqual(updateQuery?.values, [
+    "88888888-8888-4888-8888-888888888888",
+    "Ruth M.",
+    "Soergel",
+    "Ruth M. Soergel",
+    "1925-10-04",
+    "2017-10-22",
+    null,
+    "Brandt Funeral Home",
+    "Confirmed from marker photo.",
+  ]);
+  assert.equal(updated?.person.firstName, "Ruth M.");
+  assert.equal(updated?.person.lastName, "Soergel");
+  assert.equal(updated?.person.birthDate, "1925-10-04");
+  assert.equal(updated?.person.deathDate, "2017-10-22");
+  assert.equal(updated?.recordNotes, "Imported note");
 });

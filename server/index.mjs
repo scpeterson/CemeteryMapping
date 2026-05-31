@@ -7,7 +7,7 @@ import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from
 import { loadApiConfig } from "./config.mjs";
 import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
-import { getCemeteryData, getGraveSpace, listHeadstoneLookupOptions, restoreGraveSpace, softDeleteGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
+import { getCemeteryData, getGraveSpace, listHeadstoneLookupOptions, restoreGraveSpace, softDeleteGraveSpace, updateBurial, updateGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
 import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
@@ -151,6 +151,42 @@ function validateHeadstonePayload(body) {
   };
 }
 
+function validateGraveSpacePayload(body) {
+  const status = optionalText(body?.status, "Gravesite status", 30) || "unknown";
+  if (!["available", "reserved", "occupied", "sold", "needs_review", "unknown"].includes(status)) {
+    throw new BadRequestError("Gravesite status is invalid.");
+  }
+  const costText = optionalText(body?.cost, "Cost", 30);
+  const cost = costText ? Number(costText) : null;
+  if (costText && (!Number.isFinite(cost) || cost < 0)) throw new BadRequestError("Cost must be a non-negative number.");
+
+  return {
+    name: optionalText(body?.name, "Name", 255) ?? "",
+    status,
+    cost,
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function optionalDate(value, label) {
+  const date = optionalText(value, label, 10);
+  if (date && !/^\d{4}-\d{2}-\d{2}$/u.test(date)) throw new BadRequestError(`${label} must use YYYY-MM-DD format.`);
+  return date;
+}
+
+function validateBurialPayload(body) {
+  return {
+    firstName: optionalText(body?.firstName, "First name", 100) ?? "",
+    lastName: optionalText(body?.lastName, "Last name", 100) ?? "",
+    birthDate: optionalDate(body?.birthDate, "Birth date") ?? "",
+    deathDate: optionalDate(body?.deathDate, "Death date") ?? "",
+    burialDate: optionalDate(body?.burialDate, "Burial date") ?? "",
+    funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
+    notes: optionalText(body?.notes, "Burial notes", 4000) ?? "",
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
 function validateNorthHillsEvidencePayload(body) {
   const targetType = requiredText(body?.targetType, "Evidence target type", 50);
   if (!["headstone", "gravesite"].includes(targetType)) throw new BadRequestError("Evidence target type must be headstone or gravesite.");
@@ -285,6 +321,8 @@ export function createApp(config, pool) {
         canCreateCemeteryRecords: role === "admin",
         canUpdateCemeteryRecords: role === "admin" || hasScopedEditAccess,
         canUpdateHeadstones: role === "admin" || hasScopedEditAccess,
+        canUpdateGravesites: role === "admin" || hasScopedEditAccess,
+        canUpdateBurials: role === "admin" || hasScopedEditAccess,
         canDeleteCemeteryRecords: role === "admin",
       },
     });
@@ -309,6 +347,45 @@ export function createApp(config, pool) {
       }
 
       response.json(grave);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/cemeteries/:cemeteryId/grave-spaces/:id", requirePowerUser, async (request, response, next) => {
+    try {
+      const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+      const id = validateGraveSpaceId(request.params.id);
+      const graveSpace = validateGraveSpacePayload(request.body);
+      const updated = await updateGraveSpace(pool, cemeteryId, id, graveSpace, {
+        actorUser: request.user,
+        reason: graveSpace.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!updated) {
+        response.status(404).json({ error: "Grave space not found" });
+        return;
+      }
+      response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/burials/:id", requirePowerUser, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Burial id");
+      const burial = validateBurialPayload(request.body);
+      const updated = await updateBurial(pool, id, burial, {
+        actorUser: request.user,
+        reason: burial.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!updated) {
+        response.status(404).json({ error: "Burial not found" });
+        return;
+      }
+      response.json(updated);
     } catch (error) {
       next(error);
     }

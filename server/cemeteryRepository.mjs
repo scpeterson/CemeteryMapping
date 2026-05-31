@@ -51,6 +51,8 @@ function toBurial(burial) {
       deathDate: dateOnly(burial.death_date),
     },
     burialDate: dateOnly(burial.burial_date),
+    funeralHome: burial.funeral_home ?? "",
+    recordNotes: burial.notes ?? "",
     notes: compactJoin([burial.funeral_home ? `Funeral home: ${burial.funeral_home}` : undefined, burial.notes]),
   };
 }
@@ -344,6 +346,7 @@ async function selectGravesForCemeteries(client, cemeteryIds, { includeCost = fa
         gravesites.lot_id,
         gravesites.grave_id,
         gravesites.gravesite_id,
+        gravesites.name,
         gravesites.status,
         ${includeCost ? "gravesites.cost," : ""}
         ST_AsGeoJSON(gravesites.geometry)::json AS geometry
@@ -418,6 +421,74 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
       LIMIT 1
     `,
     [cemeteryId, gravesiteId],
+  );
+
+  return result.rows[0];
+}
+
+async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
+  const result = await client.query(
+    `
+      SELECT
+        gravesites.id::text AS uuid,
+        gravesites.cemetery_id::text,
+        gravesites.name,
+        gravesites.gravesite_id,
+        gravesites.status,
+        gravesites.cost,
+        gravesites.updated_at
+      FROM gravesites
+      WHERE gravesites.cemetery_id = $1
+        AND gravesites.gravesite_id = $2
+        AND gravesites.deleted_at IS NULL
+      FOR UPDATE
+    `,
+    [cemeteryId, gravesiteId],
+  );
+
+  return result.rows[0];
+}
+
+async function selectBurialMutationState(client, id) {
+  const result = await client.query(
+    `
+      SELECT
+        burials.id::text,
+        gravesites.cemetery_id::text,
+        burials.gravesite_uuid::text,
+        burials.first_name,
+        burials.last_name,
+        burials.full_name,
+        burials.birth_date,
+        burials.death_date,
+        burials.burial_date,
+        burials.funeral_home,
+        burials.notes,
+        burials.updated_at
+      FROM burials
+      JOIN gravesites
+        ON gravesites.id = burials.gravesite_uuid
+      WHERE burials.id = $1
+        AND burials.deleted_at IS NULL
+        AND gravesites.deleted_at IS NULL
+      FOR UPDATE OF burials
+    `,
+    [id],
+  );
+
+  return result.rows[0];
+}
+
+async function selectBurialById(client, id) {
+  const result = await client.query(
+    `
+      SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
+      FROM burials
+      WHERE id = $1
+        AND deleted_at IS NULL
+      LIMIT 1
+    `,
+    [id],
   );
 
   return result.rows[0];
@@ -799,7 +870,7 @@ async function selectHeadstoneMutationState(client, id) {
   const result = await client.query(
     `
       SELECT
-        id::text,
+        headstones.id::text,
         gravesite.cemetery_id::text AS cemetery_id,
         headstones.headstone_id,
         headstones.marker_type_id::text,
@@ -818,7 +889,7 @@ async function selectHeadstoneMutationState(client, id) {
         ON gravesite.id = headstones.gravesite_uuid
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
-      FOR UPDATE
+      FOR UPDATE OF headstones
     `,
     [id],
   );
@@ -873,6 +944,8 @@ function toLot(lot) {
 function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, mediaAssets, includeOwnership) {
   const detailedGrave = {
     ...toGraveSummary(grave),
+    name: grave.name ?? "",
+    cost: grave.cost === null || grave.cost === undefined ? undefined : Number(grave.cost),
     owners: graveOwners.map(toOwner),
     currentOwnerIds: graveOwners.map((owner) => owner.id),
     burials: graveBurials.map(toBurial),
@@ -961,6 +1034,142 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
     const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
 
     return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, includeOwnership);
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateGraveSpace(pool, cemeteryId, gravesiteId, graveSpace, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+    const existing = await selectGraveUpdateState(client, cemeteryId, gravesiteId);
+    if (!existing) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    const updateResult = await client.query(
+      `
+        UPDATE gravesites
+        SET name = $2,
+            status = $3,
+            cost = $4::numeric
+        WHERE id = $1
+        RETURNING
+          id::text AS uuid,
+          cemetery_id::text,
+          name,
+          gravesite_id,
+          status,
+          cost,
+          updated_at
+      `,
+      [existing.uuid, graveSpace.name || null, graveSpace.status, graveSpace.cost ?? null],
+    );
+    const updatedState = updateResult.rows[0];
+    const auditEventId = await auditEventIdForMutation(client, {
+      actorUser,
+      action: "update",
+      targetTable: "gravesites",
+      targetRecordId: existing.uuid,
+      previousValues: existing,
+      newValues: updatedState,
+      reason,
+    });
+
+    const grave = await selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId);
+    const owners = await selectOwnersForGrave(client, grave.uuid);
+    const burials = await selectBurialsForGrave(client, grave.uuid);
+    const headstones = await selectHeadstonesForGrave(client, grave.uuid);
+    const northHillsEvidence = await selectNorthHillsEvidenceForGrave(client, grave.uuid);
+    const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
+
+    await client.query("COMMIT");
+    return { ...toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, true), auditEventId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateBurial(pool, id, burial, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+    const existing = await selectBurialMutationState(client, id);
+    if (!existing) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    const fullName = [burial.firstName, burial.lastName].filter(Boolean).join(" ") || null;
+    const updateResult = await client.query(
+      `
+        UPDATE burials
+        SET first_name = $2,
+            last_name = $3,
+            full_name = $4,
+            birth_date = $5::date,
+            death_date = $6::date,
+            burial_date = $7::date,
+            funeral_home = $8,
+            notes = $9
+        WHERE id = $1
+        RETURNING
+          id::text,
+          gravesite_uuid::text,
+          first_name,
+          last_name,
+          full_name,
+          birth_date,
+          death_date,
+          burial_date,
+          funeral_home,
+          notes,
+          updated_at
+      `,
+      [
+        id,
+        burial.firstName || null,
+        burial.lastName || null,
+        fullName,
+        burial.birthDate || null,
+        burial.deathDate || null,
+        burial.burialDate || null,
+        burial.funeralHome || null,
+        burial.notes || null,
+      ],
+    );
+    const updatedState = updateResult.rows[0];
+    const auditEventId = await auditEventIdForMutation(client, {
+      actorUser,
+      action: "update",
+      targetTable: "burials",
+      targetRecordId: id,
+      previousValues: existing,
+      newValues: updatedState,
+      reason,
+    });
+    const updated = await selectBurialById(client, id);
+
+    await client.query("COMMIT");
+    return { ...toBurial(updated), auditEventId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
   } finally {
     client.release();
   }
