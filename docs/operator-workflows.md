@@ -393,19 +393,21 @@ Use the map's admin-only `Control` tool to collect paired control points for his
 Before you collect points:
 
 1. Open the app as an admin user.
-2. Convert TIFF scans to PNG or JPEG if the browser cannot display the TIFF directly. Keep the original TIFF filename in the `Source name` field so exported points still reference the archival source.
-3. Choose control points that are visible on both the scan and the map, such as cemetery/section corners, passage or drive intersections, lot-grid corners, or clearly matching headstone clusters.
-4. Spread points across the scan. Avoid using only one corner or one row of lots.
+2. Convert TIFF scans to PNG or JPEG if the browser cannot display the TIFF directly.
+3. Pick the archival file being georeferenced in the `Georeferencing file` selector, such as `TIFF2042-01.tif` or `TIFF2043-01.tif`. If you load a converted PNG/JPEG, keep the selector on the original TIFF so exported points still reference the archival source.
+4. Choose control points that are visible on both the scan and the map, such as cemetery/section corners, passage or drive intersections, lot-grid corners, or clearly matching headstone clusters.
+5. Spread points across the scan. Avoid using only one corner or one row of lots.
 
 Collect:
 
 1. Click `Control` on the map.
-2. Load the scan or converted image.
-3. Click a feature on the source image.
-4. Click the same feature on the map.
-5. Add a note such as `Lot 42 southwest corner` and set confidence to `High`, `Medium`, or `Low`.
-6. Repeat until there are enough points to evaluate alignment.
-7. Export JSON or CSV.
+2. Select the georeferencing file and load the scan or converted image.
+3. Use the source-image zoom controls and map zoom controls to inspect the same feature on both panes.
+4. Click a feature on the source image.
+5. Click the same feature on the map.
+6. Add a note such as `Lot 42 southwest corner` and set confidence to `High`, `Medium`, or `Low`.
+7. Repeat until there are enough points to evaluate alignment.
+8. Export JSON or CSV.
 
 Use exported points as review evidence for a later lot georeferencing/import step. Do not treat the historic scan as survey-grade geometry. It should help build a best-guess lot layer that is consistent with known lot dimensions, gravesite orientation, headstone-derived gravesite polygons, and reviewed deed-holder/lot-number text.
 

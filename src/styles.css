@@ -1266,6 +1266,39 @@ h3 {
   box-shadow: 0 0 0 3px rgba(47, 104, 79, 0.14);
 }
 
+.control-point-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  color: #46564b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.control-point-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+  color: #26342d;
+}
+
+.control-point-toolbar button:hover {
+  background: #edf2ea;
+}
+
+.control-point-source-note {
+  margin: -3px 0 0;
+  color: #687469;
+  font-size: 0.8rem;
+  font-weight: 680;
+}
+
 .control-point-image-frame {
   position: relative;
   display: grid;
@@ -1275,6 +1308,12 @@ h3 {
   border: 1px dashed #c8d1c3;
   border-radius: 8px;
   background: #f1f5ef;
+}
+
+.control-point-image-layer {
+  position: relative;
+  min-width: 100%;
+  transform-origin: top left;
 }
 
 .control-point-image-frame img {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { Download, Image as ImageIcon, MapPinned, MousePointer2, Trash2, X } from "lucide-react";
+import { Download, Image as ImageIcon, MapPinned, Maximize2, MousePointer2, Trash2, X, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { FeatureCollection, Point } from "geojson";
 import type { CemeteryData } from "../types";
@@ -48,6 +48,10 @@ type ControlPoint = PendingImagePoint &
 
 const center: [number, number] = [-76.70431, 39.19604];
 const storageKey = "cemetery-mapping-control-points-v1";
+const sourceFileOptions = ["TIFF2042-01.tif", "TIFF2043-01.tif", "Other source"] as const;
+const minImageZoom = 0.5;
+const maxImageZoom = 4;
+const imageZoomStep = 0.25;
 
 function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -99,11 +103,14 @@ function downloadText(filename: string, contentType: string, text: string) {
 
 export function ControlPointCollector({ data, onClose }: ControlPointCollectorProps) {
   const [imageUrl, setImageUrl] = useState<string>();
-  const [sourceImageName, setSourceImageName] = useState("");
+  const [sourceImageName, setSourceImageName] = useState<(typeof sourceFileOptions)[number]>("TIFF2042-01.tif");
+  const [customSourceImageName, setCustomSourceImageName] = useState("");
+  const [displayImageName, setDisplayImageName] = useState("");
   const [imageError, setImageError] = useState<string>();
   const [pendingImagePoint, setPendingImagePoint] = useState<PendingImagePoint>();
   const [pendingMapPoint, setPendingMapPoint] = useState<PendingMapPoint>();
   const [imageDimensions, setImageDimensions] = useState<ImageDimensions>();
+  const [imageZoom, setImageZoom] = useState(1);
   const [defaultDescription, setDefaultDescription] = useState("");
   const [defaultConfidence, setDefaultConfidence] = useState<ControlPointConfidence>("medium");
   const [points, setPoints] = useState<ControlPoint[]>(loadStoredControlPoints);
@@ -114,7 +121,8 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   const pendingMapPointRef = useRef<PendingMapPoint | undefined>(undefined);
   const defaultDescriptionRef = useRef(defaultDescription);
   const defaultConfidenceRef = useRef(defaultConfidence);
-  const sourceImageNameRef = useRef(sourceImageName);
+  const exportSourceName = sourceImageName === "Other source" ? customSourceImageName.trim() : sourceImageName;
+  const sourceImageNameRef = useRef(exportSourceName);
 
   useEffect(() => {
     return () => {
@@ -127,8 +135,8 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
     pendingMapPointRef.current = pendingMapPoint;
     defaultDescriptionRef.current = defaultDescription;
     defaultConfidenceRef.current = defaultConfidence;
-    sourceImageNameRef.current = sourceImageName;
-  }, [defaultConfidence, defaultDescription, pendingImagePoint, pendingMapPoint, sourceImageName]);
+    sourceImageNameRef.current = exportSourceName;
+  }, [defaultConfidence, defaultDescription, exportSourceName, pendingImagePoint, pendingMapPoint]);
 
   const addPoint = useCallback((imagePoint: PendingImagePoint, mapPoint: PendingMapPoint) => {
     setPoints((current) => [
@@ -262,12 +270,15 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
     setImageError(undefined);
     setPendingImagePoint(undefined);
     setImageDimensions(undefined);
+    setImageZoom(1);
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     if (!file) {
       setImageUrl(undefined);
+      setDisplayImageName("");
       return;
     }
-    setSourceImageName(file.name);
+    setDisplayImageName(file.name);
+    if (file.name === "TIFF2042-01.tif" || file.name === "TIFF2043-01.tif") setSourceImageName(file.name);
     setImageUrl(URL.createObjectURL(file));
   };
 
@@ -293,6 +304,31 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
     setPoints((current) => current.filter((point) => point.id !== id));
   };
 
+  const zoomImageIn = () => {
+    setImageZoom((current) => Math.min(maxImageZoom, current + imageZoomStep));
+  };
+
+  const zoomImageOut = () => {
+    setImageZoom((current) => Math.max(minImageZoom, current - imageZoomStep));
+  };
+
+  const resetImageZoom = () => {
+    setImageZoom(1);
+  };
+
+  const zoomMapIn = () => {
+    mapRef.current?.zoomIn({ duration: 220 });
+  };
+
+  const zoomMapOut = () => {
+    mapRef.current?.zoomOut({ duration: 220 });
+  };
+
+  const fitMap = () => {
+    const map = mapRef.current;
+    if (map) fitMapToData(map, data);
+  };
+
   return (
     <aside className="control-point-panel" aria-label="Control point collector">
       <div className="control-point-header">
@@ -315,16 +351,45 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
             {pendingImagePoint ? <span className="control-point-pending">Image point pending</span> : null}
           </div>
           <label className="control-point-field">
-            <span>Image file</span>
+            <span>Display image</span>
             <input type="file" accept="image/*,.tif,.tiff" onChange={(event) => onImageFileChange(event.target.files?.[0])} />
           </label>
           <label className="control-point-field">
-            <span>Source name</span>
-            <input value={sourceImageName} onChange={(event) => setSourceImageName(event.target.value)} placeholder="TIFF2042-01.tif" />
+            <span>Georeferencing file</span>
+            <select value={sourceImageName} onChange={(event) => setSourceImageName(event.target.value as (typeof sourceFileOptions)[number])}>
+              {sourceFileOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
+          {sourceImageName === "Other source" ? (
+            <label className="control-point-field">
+              <span>Other source filename</span>
+              <input value={customSourceImageName} onChange={(event) => setCustomSourceImageName(event.target.value)} placeholder="Historic lot map filename" />
+            </label>
+          ) : null}
+          <div className="control-point-toolbar" aria-label="Source image zoom controls">
+            <button type="button" onClick={zoomImageOut} aria-label="Zoom source image out" title="Zoom source image out">
+              <ZoomOut size={16} aria-hidden="true" />
+            </button>
+            <span>{Math.round(imageZoom * 100)}%</span>
+            <button type="button" onClick={zoomImageIn} aria-label="Zoom source image in" title="Zoom source image in">
+              <ZoomIn size={16} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={resetImageZoom} aria-label="Reset source image zoom" title="Reset source image zoom">
+              <Maximize2 size={16} aria-hidden="true" />
+            </button>
+          </div>
+          {displayImageName && exportSourceName && displayImageName !== exportSourceName ? (
+            <p className="control-point-source-note">
+              Displaying {displayImageName}; exporting points for {exportSourceName}.
+            </p>
+          ) : null}
           <div className="control-point-image-frame">
             {imageUrl ? (
-              <>
+              <div className="control-point-image-layer" style={{ width: `${imageZoom * 100}%` }}>
                 <img
                   ref={imageRef}
                   src={imageUrl}
@@ -344,7 +409,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
                   />
                 ) : null}
                 {imageDimensions ? points
-                  .filter((point) => point.sourceImageName === sourceImageName)
+                  .filter((point) => point.sourceImageName === exportSourceName)
                   .map((point, index) => (
                     <span
                       key={point.id}
@@ -357,7 +422,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
                       {index + 1}
                     </span>
                   )) : null}
-              </>
+              </div>
             ) : (
               <div className="control-point-empty">
                 <MousePointer2 size={24} aria-hidden="true" />
@@ -375,6 +440,17 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
               Map
             </h3>
             {pendingMapPoint ? <span className="control-point-pending">Map point pending</span> : null}
+          </div>
+          <div className="control-point-toolbar" aria-label="Map zoom controls">
+            <button type="button" onClick={zoomMapOut} aria-label="Zoom map out" title="Zoom map out">
+              <ZoomOut size={16} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={zoomMapIn} aria-label="Zoom map in" title="Zoom map in">
+              <ZoomIn size={16} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={fitMap} aria-label="Fit map to cemetery data" title="Fit map to cemetery data">
+              <Maximize2 size={16} aria-hidden="true" />
+            </button>
           </div>
           <div ref={containerRef} className="control-point-map" />
         </section>
