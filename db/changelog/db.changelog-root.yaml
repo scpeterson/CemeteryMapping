@@ -98,3 +98,6 @@ databaseChangeLog:
   - include:
       file: changes/033-media-assets.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/034-drop-burial-monument-type.sql
+      relativeToChangelogFile: true
