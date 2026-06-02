@@ -124,6 +124,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   const [points, setPoints] = useState<ControlPoint[]>(loadStoredControlPoints);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const initialPointsRef = useRef(points);
   const imageFrameRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const imagePanStartRef = useRef<ImagePanStart | undefined>(undefined);
@@ -207,7 +208,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
       addHeadstoneLayers(map, data.headstones ?? [], undefined, new Set());
       addSectionLabelLayer(map);
 
-      map.addSource("control-points", { type: "geojson", data: controlPointFeatureCollection(points) });
+      map.addSource("control-points", { type: "geojson", data: controlPointFeatureCollection(initialPointsRef.current) });
       map.addLayer({
         id: "control-points-circle",
         type: "circle",
@@ -258,7 +259,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
       map.remove();
       mapRef.current = null;
     };
-  }, [addPoint, data, points]);
+  }, [addPoint, data]);
 
   const pointJson = useMemo(() => JSON.stringify({ generatedAt: new Date().toISOString(), points }, null, 2), [points]);
   const pointCsv = useMemo(() => {
