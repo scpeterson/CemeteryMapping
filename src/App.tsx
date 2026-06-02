@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShieldCheck } from "lucide-react";
+import { MapPinned, ShieldCheck } from "lucide-react";
 import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchHeadstoneLookups, fetchSearchMatches, updateBurial, updateGraveSpace, updateHeadstone, uploadGravePhoto } from "./api/cemeteryApi";
 import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
+import { ControlPointCollector } from "./components/ControlPointCollector";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment } from "./config/environment";
@@ -31,6 +32,7 @@ export default function App() {
   const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
   const [userError, setUserError] = useState<string>();
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
@@ -248,12 +250,21 @@ export default function App() {
           {appEnvironment}
         </div>
         {currentUser?.permissions.canOpenAdminPanel ? (
-          <button type="button" className="admin-open-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin management">
-            <ShieldCheck size={16} aria-hidden="true" />
-            Admin
-          </button>
+          <div className="map-tool-buttons">
+            <button type="button" className="map-tool-button" onClick={() => setIsControlPointCollectorOpen(true)} aria-label="Open control point collector">
+              <MapPinned size={16} aria-hidden="true" />
+              Control
+            </button>
+            <button type="button" className="map-tool-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin management">
+              <ShieldCheck size={16} aria-hidden="true" />
+              Admin
+            </button>
+          </div>
         ) : null}
         {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onClose={() => setIsAdminPanelOpen(false)} /> : null}
+        {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
+          <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
+        ) : null}
         {isLoading || loadError ? (
           <div className={`data-status ${loadError ? "is-error" : ""}`} role="status">
             {loadError ? `API unavailable: ${loadError}` : "Loading cemetery records..."}
