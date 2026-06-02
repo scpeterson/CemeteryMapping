@@ -237,29 +237,29 @@ JOIN (
   ON seed.gravesite_id = g.gravesite_id
 WHERE g.facility_id = 'DEMO-MEMORIAL';
 
-INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes, gravesite_id)
+INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, funeral_home, veteran, notes, gravesite_id)
 SELECT g.id, seed.first_name, seed.last_name, concat_ws(' ', seed.first_name, seed.last_name), seed.sex, seed.birth_date::date, seed.death_date::date,
-  seed.age, seed.burial_date::date, seed.funeral_home, seed.monument_type, seed.veteran, seed.notes, seed.gravesite_id
+  seed.age, seed.burial_date::date, seed.funeral_home, seed.veteran, seed.notes, seed.gravesite_id
 FROM gravesites g
 JOIN (
   VALUES
-    ('A-01-01', 'Mary', 'Harris', 'F', '1931-04-12', '2011-09-02', 80, '2011-09-06', NULL, NULL, 'No', 'Interred beside spouse per family deed.'),
-    ('A-02-01', 'Samuel', 'Miller', 'M', '1926-01-08', '1998-11-22', 72, '1998-11-26', NULL, NULL, 'No', NULL),
-    ('A-02-01', 'Ruth', 'Miller', 'F', '1930-06-19', '2019-02-15', 88, '2019-02-20', NULL, NULL, 'No', NULL),
-    ('B-01-01', 'Luis', 'Garcia', 'M', '1944-10-03', '2020-12-28', 76, '2021-01-04', NULL, NULL, 'No', NULL),
-    ('B-02-01', 'Edward', 'Green', 'M', NULL, '1976-05-30', NULL, '1976-06-02', NULL, NULL, 'No', 'Birth date not present in ledger.')
-) AS seed(gravesite_id, first_name, last_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes)
+    ('A-01-01', 'Mary', 'Harris', 'F', '1931-04-12', '2011-09-02', 80, '2011-09-06', NULL, 'No', 'Interred beside spouse per family deed.'),
+    ('A-02-01', 'Samuel', 'Miller', 'M', '1926-01-08', '1998-11-22', 72, '1998-11-26', NULL, 'No', NULL),
+    ('A-02-01', 'Ruth', 'Miller', 'F', '1930-06-19', '2019-02-15', 88, '2019-02-20', NULL, 'No', NULL),
+    ('B-01-01', 'Luis', 'Garcia', 'M', '1944-10-03', '2020-12-28', 76, '2021-01-04', NULL, 'No', NULL),
+    ('B-02-01', 'Edward', 'Green', 'M', NULL, '1976-05-30', NULL, '1976-06-02', NULL, 'No', 'Birth date not present in ledger.')
+) AS seed(gravesite_id, first_name, last_name, sex, birth_date, death_date, age, burial_date, funeral_home, veteran, notes)
   ON seed.gravesite_id = g.gravesite_id
 WHERE g.facility_id = 'DEMO-ST-MARK';
 
-INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes, gravesite_id)
+INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, funeral_home, veteran, notes, gravesite_id)
 SELECT g.id, seed.first_name, seed.last_name, concat_ws(' ', seed.first_name, seed.last_name), seed.sex, seed.birth_date::date, seed.death_date::date,
-  seed.age, seed.burial_date::date, seed.funeral_home, seed.monument_type, seed.veteran, seed.notes, seed.gravesite_id
+  seed.age, seed.burial_date::date, seed.funeral_home, seed.veteran, seed.notes, seed.gravesite_id
 FROM gravesites g
 JOIN (
   VALUES
-    ('A-01-01', 'Helen', 'Rivera', 'F', '1948-08-17', '2022-03-09', 73, '2022-03-14', NULL, NULL, 'No', 'Imported from headstone spreadsheet row 89. Memorial Grove burial sharing a grave identifier used by St. Mark.')
-) AS seed(gravesite_id, first_name, last_name, sex, birth_date, death_date, age, burial_date, funeral_home, monument_type, veteran, notes)
+    ('A-01-01', 'Helen', 'Rivera', 'F', '1948-08-17', '2022-03-09', 73, '2022-03-14', NULL, 'No', 'Imported from headstone spreadsheet row 89. Memorial Grove burial sharing a grave identifier used by St. Mark.')
+) AS seed(gravesite_id, first_name, last_name, sex, birth_date, death_date, age, burial_date, funeral_home, veteran, notes)
   ON seed.gravesite_id = g.gravesite_id
 WHERE g.facility_id = 'DEMO-MEMORIAL';
 
