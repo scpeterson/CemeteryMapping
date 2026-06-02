@@ -360,11 +360,16 @@ h3 {
   color: #795316;
 }
 
-.admin-open-button {
+.map-tool-buttons {
   position: absolute;
   top: 18px;
   right: 90px;
   z-index: 2;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.map-tool-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -379,7 +384,7 @@ h3 {
   box-shadow: var(--shadow);
 }
 
-.admin-open-button:hover {
+.map-tool-button:hover {
   background: #edf2ea;
 }
 
@@ -1162,6 +1167,257 @@ h3 {
   background: #fff;
   color: #4d5a50;
   font-weight: 680;
+}
+
+.control-point-panel {
+  position: fixed;
+  inset: 24px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: 8px;
+  background: rgba(251, 252, 247, 0.98);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.control-point-header,
+.control-point-card-header,
+.control-point-row-heading,
+.control-point-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.control-point-header h2,
+.control-point-card h3 {
+  margin: 0;
+}
+
+.control-point-card h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #26342d;
+  font-size: 1rem;
+}
+
+.control-point-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.25fr) minmax(300px, 0.85fr);
+  gap: 14px;
+  min-height: 0;
+  flex: 1;
+}
+
+.control-point-card {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid #d8e0d4;
+  border-radius: 8px;
+  background: #fffef9;
+}
+
+.control-point-image-card,
+.control-point-map-card {
+  min-height: 500px;
+}
+
+.control-point-field {
+  display: grid;
+  gap: 5px;
+  color: #46564b;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.control-point-field input,
+.control-point-field select {
+  min-width: 0;
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+  color: #17201c;
+  font: inherit;
+  font-weight: 650;
+}
+
+.control-point-field input[type="file"] {
+  padding: 6px;
+}
+
+.control-point-field input:focus,
+.control-point-field select:focus {
+  border-color: var(--focus);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(47, 104, 79, 0.14);
+}
+
+.control-point-image-frame {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  border: 1px dashed #c8d1c3;
+  border-radius: 8px;
+  background: #f1f5ef;
+}
+
+.control-point-image-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  user-select: none;
+}
+
+.control-point-empty {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 280px;
+  padding: 24px;
+  color: #687469;
+  text-align: center;
+  font-weight: 700;
+}
+
+.control-point-image-dot,
+.control-point-image-pending-dot {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fffdf5;
+  border-radius: 999px;
+  background: #ff1493;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 1px 5px rgba(23, 32, 29, 0.28);
+  pointer-events: none;
+}
+
+.control-point-image-pending-dot {
+  width: 16px;
+  height: 16px;
+  background: #f4b63f;
+}
+
+.control-point-map {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid #c8d1c3;
+  border-radius: 8px;
+}
+
+.control-point-pending {
+  padding: 4px 7px;
+  border: 1px solid rgba(244, 182, 63, 0.42);
+  border-radius: 999px;
+  background: #fff7df;
+  color: #6f4d0c;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.control-point-error {
+  margin: 0;
+  color: #8c302d;
+  font-size: 0.84rem;
+  font-weight: 720;
+}
+
+.control-point-defaults {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  gap: 10px;
+}
+
+.control-point-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.control-point-actions button,
+.control-point-row-heading button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+  color: #26342d;
+  font-weight: 780;
+}
+
+.control-point-actions button:hover,
+.control-point-row-heading button:hover {
+  background: #edf2ea;
+}
+
+.control-point-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.control-point-list {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.control-point-list li {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d8e0d4;
+  border-radius: 8px;
+  background: #fbfcf7;
+}
+
+.control-point-list dl {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 3px 8px;
+  margin: 0;
+  color: #46564b;
+  font-size: 0.8rem;
+}
+
+.control-point-list dt {
+  font-weight: 800;
+}
+
+.control-point-list dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .admin-message.is-error {
@@ -2155,6 +2411,19 @@ h3 {
     left: 24px;
     width: auto;
   }
+
+  .control-point-workspace {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .control-point-card {
+    min-height: 440px;
+  }
+
+  .control-point-list-card {
+    min-height: 360px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -2186,8 +2455,19 @@ h3 {
     width: auto;
   }
 
-  .admin-open-button {
+  .map-tool-buttons {
     right: 86px;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .control-point-panel {
+    inset: 12px;
+    padding: 12px;
+  }
+
+  .control-point-defaults {
+    grid-template-columns: 1fr;
   }
 
   .admin-form,

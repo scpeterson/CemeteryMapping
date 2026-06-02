@@ -386,6 +386,29 @@ Verify:
 
 Do not use full spatial promotion when the source geodatabase contains stale names, notes, contact fields, or other text values that should not replace application-maintained text.
 
+### Historic Lot Map Control Points
+
+Use the map's admin-only `Control` tool to collect paired control points for historic lot maps such as scanned TIFF deed-holder plans. The tool does not write to Postgres; it stores points in browser local storage and exports JSON or CSV for later georeferencing and lot-staging work.
+
+Before you collect points:
+
+1. Open the app as an admin user.
+2. Convert TIFF scans to PNG or JPEG if the browser cannot display the TIFF directly. Keep the original TIFF filename in the `Source name` field so exported points still reference the archival source.
+3. Choose control points that are visible on both the scan and the map, such as cemetery/section corners, passage or drive intersections, lot-grid corners, or clearly matching headstone clusters.
+4. Spread points across the scan. Avoid using only one corner or one row of lots.
+
+Collect:
+
+1. Click `Control` on the map.
+2. Load the scan or converted image.
+3. Click a feature on the source image.
+4. Click the same feature on the map.
+5. Add a note such as `Lot 42 southwest corner` and set confidence to `High`, `Medium`, or `Low`.
+6. Repeat until there are enough points to evaluate alignment.
+7. Export JSON or CSV.
+
+Use exported points as review evidence for a later lot georeferencing/import step. Do not treat the historic scan as survey-grade geometry. It should help build a best-guess lot layer that is consistent with known lot dimensions, gravesite orientation, headstone-derived gravesite polygons, and reviewed deed-holder/lot-number text.
+
 ### Headstone Spreadsheet Import Checklist
 
 Before you run:
