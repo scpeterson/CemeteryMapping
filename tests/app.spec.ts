@@ -543,7 +543,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.locator(".detail-panel")).toContainText("Memorial Grove Cemetery");
   await expect(page.locator(".detail-panel")).toContainText("Helen Rivera");
-  await expect(page.locator(".detail-panel")).toContainText("Memorial Grove burial sharing a grave identifier");
+  await expect(page.locator(".detail-panel")).toContainText("Memorial Grove burial sharing a grave identifier used by St. Mark");
   await expect(page.locator(".detail-panel")).not.toContainText("Imported from headstone spreadsheet row");
   await expect(page.locator(".detail-panel")).not.toContainText("Person column:");
   await expect.poll(() => graveDetailRequests.at(-1)).toContain(`/cemeteries/${memorialA0101.cemeteryId}/grave-spaces/A-01-01`);
