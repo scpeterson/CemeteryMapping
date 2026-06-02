@@ -51,6 +51,7 @@ function toBurial(burial) {
       deathDate: dateOnly(burial.death_date),
     },
     burialDate: dateOnly(burial.burial_date),
+    intermentType: burial.interment_type ?? "casket",
     funeralHome: burial.funeral_home ?? "",
     recordNotes: burial.notes ?? "",
     notes: compactJoin([burial.funeral_home ? `Funeral home: ${burial.funeral_home}` : undefined, burial.notes]),
@@ -462,6 +463,7 @@ async function selectBurialMutationState(client, id) {
         burials.birth_date,
         burials.death_date,
         burials.burial_date,
+        burials.interment_type,
         burials.funeral_home,
         burials.notes,
         burials.updated_at
@@ -482,7 +484,7 @@ async function selectBurialMutationState(client, id) {
 async function selectBurialById(client, id) {
   const result = await client.query(
     `
-      SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
+      SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, interment_type, funeral_home, notes
       FROM burials
       WHERE id = $1
         AND deleted_at IS NULL
@@ -512,7 +514,7 @@ async function selectOwnersForCemeteries(client, cemeteryIds) {
 async function selectBurialsForCemeteries(client, cemeteryIds) {
   const result = await client.query(
     `
-      SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
+      SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, interment_type, funeral_home, notes
       FROM burials
       WHERE deleted_at IS NULL
         AND gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
@@ -542,7 +544,7 @@ async function selectOwnersForGrave(client, graveUuid) {
 async function selectBurialsForGrave(client, graveUuid) {
   const result = await client.query(
     `
-      SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, funeral_home, notes
+      SELECT id::text, gravesite_uuid::text, first_name, last_name, full_name, birth_date, death_date, burial_date, interment_type, funeral_home, notes
       FROM burials
       WHERE gravesite_uuid = $1
         AND deleted_at IS NULL
@@ -1125,8 +1127,9 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
             birth_date = $5::date,
             death_date = $6::date,
             burial_date = $7::date,
-            funeral_home = $8,
-            notes = $9
+            interment_type = $8,
+            funeral_home = $9,
+            notes = $10
         WHERE id = $1
         RETURNING
           id::text,
@@ -1137,6 +1140,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           birth_date,
           death_date,
           burial_date,
+          interment_type,
           funeral_home,
           notes,
           updated_at
@@ -1149,6 +1153,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
         burial.birthDate || null,
         burial.deathDate || null,
         burial.burialDate || null,
+        burial.intermentType || "casket",
         burial.funeralHome || null,
         burial.notes || null,
       ],

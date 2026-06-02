@@ -40,6 +40,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     birthDate: burial.person.birthDate ?? "",
     deathDate: burial.person.deathDate ?? "",
     burialDate: burial.burialDate ?? "",
+    intermentType: burial.intermentType ?? "casket",
     funeralHome: burial.funeralHome ?? "",
     notes: burial.recordNotes ?? "",
     reason: "Burial detail update",
@@ -96,6 +97,13 @@ function BurialRecord({ burial, canUpdate, onSave }: { burial: Burial; canUpdate
           Burial date
           <input type="date" value={form.burialDate} onChange={(event) => setForm((current) => ({ ...current, burialDate: event.target.value }))} />
         </label>
+        <label>
+          Interment
+          <select value={form.intermentType} onChange={(event) => setForm((current) => ({ ...current, intermentType: event.target.value as "casket" | "urn" }))}>
+            <option value="casket">Casket</option>
+            <option value="urn">Funeral urn</option>
+          </select>
+        </label>
         <label className="burial-wide-field">
           Funeral home
           <input value={form.funeralHome} onChange={(event) => setForm((current) => ({ ...current, funeralHome: event.target.value }))} />
@@ -140,6 +148,10 @@ function BurialRecord({ burial, canUpdate, onSave }: { burial: Burial; canUpdate
         <div>
           <dt>Buried</dt>
           <dd>{formatDate(burial.burialDate)}</dd>
+        </div>
+        <div>
+          <dt>Interment</dt>
+          <dd>{burial.intermentType === "urn" ? "Funeral urn" : "Casket"}</dd>
         </div>
       </dl>
       {noteItems.length ? (

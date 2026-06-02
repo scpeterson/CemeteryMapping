@@ -809,6 +809,7 @@ h3 {
 }
 
 .burial-form input,
+.burial-form select,
 .burial-form textarea {
   width: 100%;
   min-width: 0;

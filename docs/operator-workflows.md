@@ -125,9 +125,10 @@ Use the normal grave-detail panel, not the Admin drawer, for operational marker/
 3. Users with `reader` access can view marker information but cannot edit it.
 4. `power-user` and `cemetery-admin` users can edit marker details for assigned cemeteries.
 5. `admin` users can edit marker details for any cemetery.
-6. Edit marker type, material, condition, condition notes, inscription, last inspected date, or photo URL.
+6. Edit marker type, material, condition, condition notes, inscription, or last inspected date.
 7. For Section G, expect the marker type list to be restricted to flat markers. The API and database also enforce this rule.
-8. Save the marker and confirm the detail panel reflects the update.
+8. Section G gravesites can contain either one casket burial or up to two funeral urn burials. The database enforces this capacity rule when burial rows are created, restored, or updated.
+9. Save the marker and confirm the detail panel reflects the update.
 
 Linked North Hills evidence supports interpretation of a headstone or gravesite, but editing marker condition/material/type does not alter the linked reading evidence.
 
