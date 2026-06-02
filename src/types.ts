@@ -21,6 +21,7 @@ export type Burial = {
   id: string;
   person: Person;
   burialDate?: string;
+  intermentType?: "casket" | "urn";
   funeralHome?: string;
   recordNotes?: string;
   notes?: string;
@@ -167,6 +168,7 @@ export type SaveBurialInput = {
   birthDate: string;
   deathDate: string;
   burialDate: string;
+  intermentType: "casket" | "urn";
   funeralHome: string;
   notes: string;
   reason?: string;

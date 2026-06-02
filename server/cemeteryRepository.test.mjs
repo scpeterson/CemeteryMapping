@@ -281,6 +281,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     birth_date: "1925-10-04",
     death_date: "2017-10-22",
     burial_date: null,
+    interment_type: "urn",
     funeral_home: null,
     notes: "Imported note",
     updated_at: "2026-05-31T12:00:00.000Z",
@@ -315,6 +316,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
       birthDate: "1925-10-04",
       deathDate: "2017-10-22",
       burialDate: "",
+      intermentType: "urn",
       funeralHome: "Brandt Funeral Home",
       notes: "Confirmed from marker photo.",
     },
@@ -331,6 +333,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "1925-10-04",
     "2017-10-22",
     null,
+    "urn",
     "Brandt Funeral Home",
     "Confirmed from marker photo.",
   ]);
@@ -338,5 +341,6 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
   assert.equal(updated?.person.lastName, "Soergel");
   assert.equal(updated?.person.birthDate, "1925-10-04");
   assert.equal(updated?.person.deathDate, "2017-10-22");
+  assert.equal(updated?.intermentType, "urn");
   assert.equal(updated?.recordNotes, "Imported note");
 });

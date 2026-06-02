@@ -89,6 +89,24 @@ async function insertHeadstone(client, { gravesiteId, headstoneId, markerTypeId,
   return result.rows[0].id;
 }
 
+async function insertBurial(client, { gravesiteId, firstName, lastName, intermentType }) {
+  const result = await client.query(
+    `
+      INSERT INTO burials (
+        gravesite_uuid,
+        first_name,
+        last_name,
+        full_name,
+        interment_type
+      )
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id::text
+    `,
+    [gravesiteId, firstName, lastName, [firstName, lastName].filter(Boolean).join(" "), intermentType],
+  );
+  return result.rows[0].id;
+}
+
 test("database enforces Section F and Section G marker business rules", async () => {
   const pool = new Pool(loadApiConfig().database);
   const client = await pool.connect();
@@ -155,6 +173,24 @@ test("database enforces Section F and Section G marker business rules", async ()
       statusId: availableStatusId,
       offset: 0.0005,
     });
+    const sectionGUrnGravesiteId = await insertGravesite(client, {
+      cemeteryId,
+      sectionUuid: sectionGId,
+      sectionName: "G",
+      suffix,
+      graveId: "48",
+      statusId: availableStatusId,
+      offset: 0.00055,
+    });
+    const sectionGCasketGravesiteId = await insertGravesite(client, {
+      cemeteryId,
+      sectionUuid: sectionGId,
+      sectionName: "G",
+      suffix,
+      graveId: "49",
+      statusId: availableStatusId,
+      offset: 0.0006,
+    });
 
     await insertHeadstone(client, {
       gravesiteId: sectionAGravesiteId,
@@ -190,6 +226,56 @@ test("database enforces Section F and Section G marker business rules", async ()
       conditionId: goodConditionId,
       offset: 0.0005,
     });
+
+    await insertBurial(client, {
+      gravesiteId: sectionGUrnGravesiteId,
+      firstName: "First",
+      lastName: "Urn",
+      intermentType: "urn",
+    });
+    await insertBurial(client, {
+      gravesiteId: sectionGUrnGravesiteId,
+      firstName: "Second",
+      lastName: "Urn",
+      intermentType: "urn",
+    });
+    await expectRuleViolation(
+      client,
+      `
+        INSERT INTO burials (
+          gravesite_uuid,
+          first_name,
+          last_name,
+          full_name,
+          interment_type
+        )
+        VALUES ($1, 'Third', 'Urn', 'Third Urn', 'urn')
+      `,
+      [sectionGUrnGravesiteId],
+      /Section G gravesites can contain either one casket burial or up to two funeral urn burials/u,
+    );
+
+    await insertBurial(client, {
+      gravesiteId: sectionGCasketGravesiteId,
+      firstName: "Only",
+      lastName: "Casket",
+      intermentType: "casket",
+    });
+    await expectRuleViolation(
+      client,
+      `
+        INSERT INTO burials (
+          gravesite_uuid,
+          first_name,
+          last_name,
+          full_name,
+          interment_type
+        )
+        VALUES ($1, 'Additional', 'Urn', 'Additional Urn', 'urn')
+      `,
+      [sectionGCasketGravesiteId],
+      /Section G gravesites can contain either one casket burial or up to two funeral urn burials/u,
+    );
 
     await client.query("ROLLBACK");
   } catch (error) {

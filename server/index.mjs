@@ -175,12 +175,16 @@ function optionalDate(value, label) {
 }
 
 function validateBurialPayload(body) {
+  const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "casket";
+  if (!["casket", "urn"].includes(intermentType)) throw new BadRequestError("Interment type must be casket or urn.");
+
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
     lastName: optionalText(body?.lastName, "Last name", 100) ?? "",
     birthDate: optionalDate(body?.birthDate, "Birth date") ?? "",
     deathDate: optionalDate(body?.deathDate, "Death date") ?? "",
     burialDate: optionalDate(body?.burialDate, "Burial date") ?? "",
+    intermentType,
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
     notes: optionalText(body?.notes, "Burial notes", 4000) ?? "",
     reason: validateMutationReason(body?.reason),
