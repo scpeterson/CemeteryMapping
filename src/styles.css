@@ -1301,17 +1301,25 @@ h3 {
 
 .control-point-image-frame {
   position: relative;
-  display: grid;
+  display: block;
   min-height: 0;
   flex: 1;
   overflow: auto;
   border: 1px dashed #c8d1c3;
   border-radius: 8px;
   background: #f1f5ef;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.control-point-image-frame:active {
+  cursor: grabbing;
 }
 
 .control-point-image-layer {
   position: relative;
+  display: block;
   min-width: 100%;
   transform-origin: top left;
 }
@@ -1320,7 +1328,7 @@ h3 {
   display: block;
   width: 100%;
   height: auto;
-  cursor: crosshair;
+  cursor: inherit;
   user-select: none;
 }
 

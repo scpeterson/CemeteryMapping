@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Download, Image as ImageIcon, MapPinned, Maximize2, MousePointer2, Trash2, X, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { FeatureCollection, Point } from "geojson";
@@ -33,6 +33,14 @@ type PendingMapPoint = {
 type ImageDimensions = {
   width: number;
   height: number;
+};
+
+type ImagePanStart = {
+  clientX: number;
+  clientY: number;
+  scrollLeft: number;
+  scrollTop: number;
+  hasMoved: boolean;
 };
 
 type ControlPointConfidence = "high" | "medium" | "low";
@@ -116,7 +124,9 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   const [points, setPoints] = useState<ControlPoint[]>(loadStoredControlPoints);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const imageFrameRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const imagePanStartRef = useRef<ImagePanStart | undefined>(undefined);
   const pendingImagePointRef = useRef<PendingImagePoint | undefined>(undefined);
   const pendingMapPointRef = useRef<PendingMapPoint | undefined>(undefined);
   const defaultDescriptionRef = useRef(defaultDescription);
@@ -282,7 +292,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
     setImageUrl(URL.createObjectURL(file));
   };
 
-  const onImageClick = (event: MouseEvent<HTMLImageElement>) => {
+  const recordImagePoint = (event: PointerEvent<HTMLElement>) => {
     const image = imageRef.current;
     if (!image || image.naturalWidth === 0 || image.naturalHeight === 0) return;
 
@@ -296,6 +306,59 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
     else setPendingImagePoint(imagePoint);
   };
 
+  const onImagePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    const frame = imageFrameRef.current;
+    if (!frame || event.button !== 0) return;
+    imagePanStartRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      scrollLeft: frame.scrollLeft,
+      scrollTop: frame.scrollTop,
+      hasMoved: false,
+    };
+    frame.setPointerCapture(event.pointerId);
+  };
+
+  const onImagePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const frame = imageFrameRef.current;
+    const start = imagePanStartRef.current;
+    if (!frame || !start) return;
+
+    const deltaX = event.clientX - start.clientX;
+    const deltaY = event.clientY - start.clientY;
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) start.hasMoved = true;
+    if (!start.hasMoved) return;
+
+    frame.scrollLeft = start.scrollLeft - deltaX;
+    frame.scrollTop = start.scrollTop - deltaY;
+  };
+
+  const onImagePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const frame = imageFrameRef.current;
+    const start = imagePanStartRef.current;
+    imagePanStartRef.current = undefined;
+    if (frame?.hasPointerCapture(event.pointerId)) frame.releasePointerCapture(event.pointerId);
+
+    if (!start?.hasMoved && imageUrl) recordImagePoint(event);
+  };
+
+  const setImageZoomWithCenter = (nextZoom: number) => {
+    const frame = imageFrameRef.current;
+    if (!frame) {
+      setImageZoom(nextZoom);
+      return;
+    }
+
+    const centerXRatio = frame.scrollWidth > 0 ? (frame.scrollLeft + frame.clientWidth / 2) / frame.scrollWidth : 0.5;
+    const centerYRatio = frame.scrollHeight > 0 ? (frame.scrollTop + frame.clientHeight / 2) / frame.scrollHeight : 0.5;
+    setImageZoom(nextZoom);
+
+    window.requestAnimationFrame(() => {
+      frame.scrollLeft = Math.max(0, centerXRatio * frame.scrollWidth - frame.clientWidth / 2);
+      frame.scrollTop = Math.max(0, centerYRatio * frame.scrollHeight - frame.clientHeight / 2);
+    });
+  };
+
   const updatePoint = (id: string, patch: Partial<Pick<ControlPoint, "description" | "confidence">>) => {
     setPoints((current) => current.map((point) => (point.id === id ? { ...point, ...patch } : point)));
   };
@@ -305,15 +368,15 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   };
 
   const zoomImageIn = () => {
-    setImageZoom((current) => Math.min(maxImageZoom, current + imageZoomStep));
+    setImageZoomWithCenter(Math.min(maxImageZoom, imageZoom + imageZoomStep));
   };
 
   const zoomImageOut = () => {
-    setImageZoom((current) => Math.max(minImageZoom, current - imageZoomStep));
+    setImageZoomWithCenter(Math.max(minImageZoom, imageZoom - imageZoomStep));
   };
 
   const resetImageZoom = () => {
-    setImageZoom(1);
+    setImageZoomWithCenter(1);
   };
 
   const zoomMapIn = () => {
@@ -387,14 +450,22 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
               Displaying {displayImageName}; exporting points for {exportSourceName}.
             </p>
           ) : null}
-          <div className="control-point-image-frame">
+          <div
+            ref={imageFrameRef}
+            className="control-point-image-frame"
+            onPointerDown={onImagePointerDown}
+            onPointerMove={onImagePointerMove}
+            onPointerUp={onImagePointerUp}
+            onPointerCancel={() => {
+              imagePanStartRef.current = undefined;
+            }}
+          >
             {imageUrl ? (
-              <div className="control-point-image-layer" style={{ width: `${imageZoom * 100}%` }}>
+              <div className="control-point-image-layer" style={{ width: `${Math.round(imageZoom * 100)}%` }}>
                 <img
                   ref={imageRef}
                   src={imageUrl}
                   alt="Source scan for control point collection"
-                  onClick={onImageClick}
                   onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}
                   onError={() => setImageError("This browser could not display the selected image. Convert TIFF scans to PNG or JPEG and try again.")}
                   draggable={false}

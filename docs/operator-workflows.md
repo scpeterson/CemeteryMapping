@@ -402,7 +402,7 @@ Collect:
 
 1. Click `Control` on the map.
 2. Select the georeferencing file and load the scan or converted image.
-3. Use the source-image zoom controls and map zoom controls to inspect the same feature on both panes.
+3. Use the source-image zoom controls and map zoom controls to inspect the same feature on both panes. Drag inside the source image pane to pan around a zoomed scan.
 4. Click a feature on the source image.
 5. Click the same feature on the map.
 6. Add a note such as `Lot 42 southwest corner` and set confidence to `High`, `Medium`, or `Low`.
