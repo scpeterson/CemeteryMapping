@@ -149,6 +149,120 @@ Readers can view linked photos. Power users, cemetery admins, and admins can upl
 
 In local DEV and TEST environments, uploaded image files are written under `/Users/scottpeterson/Dev/CemeteryMapping/uploads/media` unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the gravesite/headstone links, but not the image bytes.
 
+### Future Field Collection Workflow Concept
+
+This concept captures a future mobile-first field workflow for collecting and correcting cemetery data while standing in front of a headstone or gravesite. It is not fully implemented yet. Treat it as a product/design note for future planning.
+
+The future workflow should use a dedicated `Field Collection` mode or route, such as `/field`, instead of adding more controls to the Admin drawer. Field collection needs large touch targets, clear upload status, minimal navigation, and a checklist that shows which parts of the record have been captured.
+
+The desired iPhone workflow is:
+
+1. Find or create the field target by searching for a headstone ID, gravesite ID, name, section/row, or nearby map position.
+2. Capture a headstone photo and store it as linked media evidence, including upload time, app user, selected cemetery, optional GPS metadata, and notes.
+3. Capture a gravesite overview photo separately from the marker photo.
+4. Transcribe the marker inscription with line breaks preserved exactly as they appear on the marker.
+5. Capture names, birth dates, death dates, burial dates when known, and any other marker text.
+6. Identify whether the marker is shared by multiple people.
+7. Link the headstone to one or more gravesites.
+8. Link each burial to the correct gravesite, allowing the rare case where more than one burial belongs to the same gravesite.
+9. Update marker details such as marker type, material, condition, condition notes, inscription, and last inspected date.
+10. Use guided geometry choices for field estimates, such as single gravesite, two side-by-side gravesites, marker spans existing gravesites, shift, rotate, or needs review.
+11. Review a final checklist before saving the field record as complete or `needs_review`.
+
+The first implementation should avoid freehand polygon editing on the phone. Preset geometry actions and small nudges are safer for field use. Examples include:
+
+- create a single `4' x 10'` gravesite from a marker point;
+- create two side-by-side gravesites for a shared marker;
+- link a marker to existing gravesites without changing geometry;
+- mark the geometry as `field_estimate` or `needs_review`.
+
+Recommended review statuses for future field changes are:
+
+- `confirmed`: the field user is confident the relationship or geometry is correct;
+- `field_estimate`: the record was adjusted in the field without survey-grade certainty;
+- `needs_review`: the record needs office review before being treated as authoritative;
+- `conflicting_source`: the field observation conflicts with an imported spreadsheet, deed registry, OCR reading, or map source.
+
+Permissions should follow the existing cemetery-scoped editing model. Readers can view field photos and data. Power users, cemetery admins, and admins can collect and edit field data only for cemeteries they are allowed to edit, while global admins can work across all cemeteries.
+
+The recommended minimum viable field collection feature is photo capture, inscription transcription, marker detail editing, people/burial editing, and linking to existing gravesites/headstones. Geometry presets for shared markers and side-by-side gravesites can follow after the record-linking workflow is stable.
+
+### Future Hosting Options
+
+This concept captures future hosting considerations for Cemetery Mapping. It is not an accepted deployment decision yet. Re-check current provider pricing before making a final choice because hosting plans and included quotas change over time.
+
+The application is expected to have low public traffic, but it has a real database, uploaded media, authentication, audit history, and import/rebuild needs. Hosting should therefore optimize for predictable cost, backups, maintainability, and a simple recovery path rather than raw scale.
+
+Options to compare:
+
+1. **Single low-cost virtual server**: run the Node API, built React frontend, PostgreSQL/PostGIS, reverse proxy, TLS, backups, and media storage on one VPS.
+   - Typical examples include a DigitalOcean Droplet or similar VPS.
+   - This is usually the cheapest predictable option.
+   - It also creates the most maintenance responsibility: operating system updates, database upgrades, firewall rules, backup verification, TLS renewal, monitoring, and restore drills.
+   - It may be appropriate if a technical maintainer is comfortable owning server operations.
+
+2. **Managed application platform plus managed Postgres**: host the app on a platform such as Render, Railway, Fly.io, or DigitalOcean App Platform, and use hosted PostgreSQL where possible.
+   - This reduces server maintenance and can simplify deploys from GitHub.
+   - It usually costs more than one small VPS once a persistent production database is included.
+   - Check whether the hosted database supports required PostgreSQL/PostGIS behavior before committing.
+   - File/photo storage may need object storage or a persistent disk, depending on provider.
+
+3. **Hybrid approach**: host the static frontend cheaply or free, run the API on a small app service, and use a managed Postgres database.
+   - This can lower operational work while keeping costs moderate.
+   - It introduces more moving parts and environment variables.
+   - It may be useful if the database is the only piece that should be managed professionally.
+
+4. **Institutional or donated hosting**: ask whether the church, synod, borough, a member, or a local nonprofit technology group can provide hosting credits, a managed server, or sponsorship.
+   - This can keep direct cost low.
+   - Confirm who is responsible for backups, security updates, domain/DNS, and emergency recovery.
+   - Avoid arrangements where only one volunteer has undocumented access.
+
+Cost notes captured in June 2026 for future comparison:
+
+- DigitalOcean Droplets are advertised as starting at about `$4/month`, with the user responsible for managing the operating system, applications, and data.
+- DigitalOcean Managed PostgreSQL is advertised as starting at about `$15/month`.
+- DigitalOcean App Platform has a low or free static tier, but its development database is not a production replacement because it has limited capabilities and is not backed up by default.
+- Render has free/static and low-cost service tiers, with paid web services and paid Postgres tiers; a small paid web service plus a basic paid Postgres instance should be compared against a VPS.
+- Railway's Hobby plan is about `$5/month` and includes usage credit, but resource usage can exceed the base amount.
+- Fly.io can run small machines at low monthly compute prices, but persistent Postgres is more self-managed unless using a managed database offering or another provider.
+
+PostGIS support notes captured in June 2026:
+
+- DigitalOcean Managed PostgreSQL, Render Postgres, Supabase, Neon, AWS RDS PostgreSQL, Heroku Postgres, and Aiven PostgreSQL document PostGIS support.
+- Railway can support PostGIS through marketplace templates, but its default PostgreSQL template is intentionally simpler and does not include those extensions by default.
+- For this application, the required baseline is ordinary PostGIS geometry support, including `geometry`, `ST_AsGeoJSON`, `ST_Covers`, `ST_GeomFromGeoJSON`, spatial indexes, and SRID handling.
+- PostGIS raster support is probably not required because imagery is consumed from map services rather than stored as raster data in PostgreSQL.
+- Before selecting a provider or plan, run this smoke test on the target database:
+
+  ```sql
+  CREATE EXTENSION IF NOT EXISTS postgis;
+  SELECT postgis_full_version();
+  ```
+
+Other cloud geospatial data services to keep in mind:
+
+- MongoDB Atlas supports GeoJSON, geospatial indexes, and geospatial queries. It could store spatial cemetery data, but using it as the primary database would require rewriting the relational model for cemeteries, lots, gravesites, burials, deeds, users, evidence links, and audits.
+- ArcGIS Online hosted feature layers are useful for publishing, editing, or consuming GIS layers on the web. They may be useful as external spatial data sources or publishing targets, but they should not replace the application database for ownership, burial, user, and audit records.
+- Firebase / Cloud Firestore can support location queries through geohashes, but those queries can produce false positives and are not a strong fit for precise cemetery polygons or relational audit-heavy data.
+- Google BigQuery GIS supports a `GEOGRAPHY` type and spatial SQL functions. It is more appropriate for analytics than for operational application editing.
+- Elasticsearch or OpenSearch support geospatial search and could help with spatial/text search in the future, but they are not a good primary transactional store for this application.
+- Some MySQL-compatible cloud databases support spatial types and functions, but switching away from PostgreSQL/PostGIS would require rewriting schema, migrations, data access, and validation behavior.
+
+Current database direction: keep PostgreSQL/PostGIS as the system of record. The application data is relational, historical, audited, and permission-sensitive. PostGIS provides spatial capability while preserving SQL relationships, transactions, constraints, triggers, Liquibase migrations, and audit behavior.
+
+Decision criteria:
+
+1. Can it run PostgreSQL/PostGIS at the needed version?
+2. Are automated backups included, and has restore been tested?
+3. Where are uploaded media files stored, and how are they backed up?
+4. Is monthly cost predictable enough for a church budget?
+5. Who receives alerts and who can restore service if the maintainer is unavailable?
+6. How easy is it to deploy from GitHub after a merged PR?
+7. How easy is it to run Liquibase migrations safely?
+8. Can DEV/TEST/STAGE/PROD stay understandable without expensive duplicate infrastructure?
+
+Current leaning for a low-traffic church project: start by comparing a single small VPS with self-managed Postgres/PostGIS against one managed platform option with managed Postgres. The VPS is likely cheapest, but the managed platform may be worth the extra cost if it avoids fragile volunteer-only server maintenance. Make the final decision only after pricing the full monthly stack, including database, backups, media storage, domain/DNS, monitoring, and any email/Auth0 costs.
+
 ### Soft Delete And Restore
 
 Deletes in Cemetery Mapping are soft deletes unless a technical maintenance task explicitly says otherwise.
