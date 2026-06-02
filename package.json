@@ -26,6 +26,7 @@
     "auth0:configure": "node scripts/auth0-configure.mjs",
     "geodatabase:inspect": "node scripts/geodatabase-inspect.mjs",
     "geodatabase:export": "node scripts/geodatabase-export-layer.mjs",
+    "georef:image": "node scripts/georeference-image-from-control-points.mjs",
     "db:up": "node scripts/db-compose.mjs up",
     "db:up:dev": "APP_ENV=dev node scripts/db-compose.mjs up",
     "db:up:test": "APP_ENV=test node scripts/db-compose.mjs up",

@@ -409,6 +409,42 @@ Collect:
 7. Repeat until there are enough points to evaluate alignment.
 8. Export JSON or CSV.
 
+Georeference the image:
+
+1. Print the GDAL commands first:
+
+   ```bash
+   npm run georef:image -- \
+     --control-points "/path/to/cemetery-control-points.json" \
+     --source-name "TIFF2042-01.tif" \
+     --image "/path/to/TIFF2042-01.png" \
+     --output "/path/to/TIFF2042-01-georeferenced.tif"
+   ```
+
+2. Review the generated `gdal_translate` and `gdalwarp` commands.
+3. Run the commands when they look right:
+
+   ```bash
+   npm run georef:image -- \
+     --control-points "/path/to/cemetery-control-points.json" \
+     --source-name "TIFF2042-01.tif" \
+     --image "/path/to/TIFF2042-01.png" \
+     --output "/path/to/TIFF2042-01-georeferenced.tif" \
+     --run
+   ```
+
+4. Start with the default affine transform. If the paper scan is warped and you have many well-distributed points, compare with thin-plate spline:
+
+   ```bash
+   npm run georef:image -- \
+     --control-points "/path/to/cemetery-control-points.json" \
+     --source-name "TIFF2042-01.tif" \
+     --image "/path/to/TIFF2042-01.png" \
+     --output "/path/to/TIFF2042-01-georeferenced-tps.tif" \
+     --transform tps \
+     --run
+   ```
+
 Use exported points as review evidence for a later lot georeferencing/import step. Do not treat the historic scan as survey-grade geometry. It should help build a best-guess lot layer that is consistent with known lot dimensions, gravesite orientation, headstone-derived gravesite polygons, and reviewed deed-holder/lot-number text.
 
 ### Headstone Spreadsheet Import Checklist
