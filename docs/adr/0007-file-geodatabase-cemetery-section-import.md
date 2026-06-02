@@ -45,7 +45,7 @@ Known source:
 | Field | Value |
 | --- | --- |
 | Source type | Esri File Geodatabase |
-| Local path used during development | `/Users/scottpeterson/Dropbox/CemeteryDataManagement/Cemetery Data Management.gdb` |
+| Local path used during development | `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/Cemetery Data Management.gdb` |
 | Feature dataset | `CemeteryDataManagement` |
 | Layers used | `Cemeteries`, `Sections`, `Blocks`, `Lots` when present |
 | Responsible data owner | TBD |
@@ -56,6 +56,8 @@ Known source:
 ## Consequences
 
 The production `cemeteries`, `sections`, `blocks`, and `lots` tables can come from promoted FileGDB staging batches. Blocks remain optional. Lots are now part of the active hierarchy and render between section boundaries and gravesites on the map.
+
+Focused section geometry promotion is supported when the source FileGDB changes only selected section boundaries. That workflow updates `sections.geometry` for the requested section names and leaves cemetery, section text, lot, owner, and burial data unchanged. After the 2026 Trinity Section B/G refresh, production section geometry is required again and `sections.geometry` is restored to `NOT NULL`.
 
 Future grave polygon imports should use an actual gravesite source layer if one becomes available rather than treating headstone points as surveyed grave polygons.
 
@@ -83,6 +85,12 @@ Promote:
 
 ```bash
 APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
+```
+
+Promote only selected section boundaries:
+
+```bash
+APP_ENV=test npm run db:promote:section-geometry -- --batch-id <batch-uuid> --facility-id 1 --sections B,G
 ```
 
 If the batch UUID is not visible in the import output, query `spatial_import_batches` in the target environment:

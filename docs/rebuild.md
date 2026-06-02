@@ -129,6 +129,14 @@ APP_ENV=test npm run db:validate:spatial
 APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
 ```
 
+To refresh only existing section boundaries from a staged FileGDB batch, use the focused section promotion command instead of the full spatial promotion. This preserves cemetery, lot, and section text data while replacing the selected section geometries:
+
+```bash
+APP_ENV=test npm run db:promote:section-geometry -- --batch-id <batch-uuid> --facility-id 1 --sections B,G
+```
+
+After the Trinity Section B/G refresh, `sections.geometry` is required again. If a new section is created before geometry is available, stage and promote its section geometry before applying migrations that restore the `NOT NULL` constraint.
+
 The geodatabase import prints the batch UUID. To look it up later:
 
 ```bash
