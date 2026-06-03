@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { MapPinned, ShieldCheck } from "lucide-react";
-import { fetchCemeteryData, fetchCurrentUser, fetchGraveSpace, fetchHeadstoneLookups, fetchSearchMatches, updateBurial, updateGraveSpace, updateHeadstone, uploadGravePhoto } from "./api/cemeteryApi";
+import {
+  createOwnershipEvent,
+  fetchCemeteryData,
+  fetchCurrentUser,
+  fetchGraveSpace,
+  fetchHeadstoneLookups,
+  fetchSearchMatches,
+  updateBurial,
+  updateGraveSpace,
+  updateHeadstone,
+  uploadGravePhoto,
+} from "./api/cemeteryApi";
 import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { ControlPointCollector } from "./components/ControlPointCollector";
@@ -10,7 +21,22 @@ import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { graveSelectionKey } from "./lib/format";
 import { searchGraves } from "./lib/search";
-import type { Burial, CemeteryData, CurrentUser, GraveSpace, GraveSpaceSummary, GraveStatus, Headstone, HeadstoneLookups, Owner, SaveBurialInput, SaveGraveSpaceInput, SaveHeadstoneInput, SearchMatch } from "./types";
+import type {
+  Burial,
+  CemeteryData,
+  CurrentUser,
+  GraveSpace,
+  GraveSpaceSummary,
+  GraveStatus,
+  Headstone,
+  HeadstoneLookups,
+  Owner,
+  SaveBurialInput,
+  SaveGraveSpaceInput,
+  SaveHeadstoneInput,
+  SaveOwnershipEventInput,
+  SearchMatch,
+} from "./types";
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 const emptyHeadstoneLookups: HeadstoneLookups = { markerTypes: [], materials: [], conditions: [] };
@@ -232,6 +258,12 @@ export default function App() {
     setDetailRequestVersion((version) => version + 1);
   };
 
+  const saveOwnershipEvent = async (event: SaveOwnershipEventInput) => {
+    if (!selectedGrave) throw new Error("Select a grave site before recording ownership.");
+    await createOwnershipEvent(selectedGrave.cemeteryId, selectedGrave.id, event);
+    setDetailRequestVersion((version) => version + 1);
+  };
+
   return (
     <main className="app-shell">
       <SearchPanel
@@ -295,6 +327,7 @@ export default function App() {
         onSaveGraveSpace={saveGraveSpace}
         onSaveBurial={saveBurial}
         onSaveHeadstone={saveHeadstone}
+        onSaveOwnershipEvent={saveOwnershipEvent}
         onUploadPhoto={saveGravePhoto}
         isLoading={isDetailLoading}
         error={detailError}

@@ -7,7 +7,17 @@ import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from
 import { loadApiConfig } from "./config.mjs";
 import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
-import { getCemeteryData, getGraveSpace, listHeadstoneLookupOptions, restoreGraveSpace, softDeleteGraveSpace, updateBurial, updateGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
+import {
+  createOwnershipEvent,
+  getCemeteryData,
+  getGraveSpace,
+  listHeadstoneLookupOptions,
+  restoreGraveSpace,
+  softDeleteGraveSpace,
+  updateBurial,
+  updateGraveSpace,
+  updateHeadstone,
+} from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
 import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
@@ -187,6 +197,33 @@ function validateBurialPayload(body) {
     intermentType,
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
     notes: optionalText(body?.notes, "Burial notes", 4000) ?? "",
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateOwnershipEventPayload(body) {
+  const eventType = requiredText(body?.eventType, "Ownership event type", 50);
+  if (!["deed", "sale", "gift", "church_council_action", "correction", "release"].includes(eventType)) {
+    throw new BadRequestError("Ownership event type is invalid.");
+  }
+
+  const targetScope = requiredText(body?.targetScope, "Ownership target", 50);
+  if (!["selected_gravesite", "selected_lot", "listed_gravesites"].includes(targetScope)) {
+    throw new BadRequestError("Ownership target is invalid.");
+  }
+
+  const targetGravesiteIds = Array.isArray(body?.targetGravesiteIds)
+    ? [...new Set(body.targetGravesiteIds.map((value) => optionalText(value, "Target gravesite ID", 80)).filter(Boolean))]
+    : [];
+
+  return {
+    ownerDisplayName: requiredText(body?.ownerDisplayName, "Owner name", 250),
+    eventType,
+    targetScope,
+    targetGravesiteIds,
+    effectiveDate: optionalDate(body?.effectiveDate, "Effective date"),
+    documentReference: optionalText(body?.documentReference, "Document reference", 250),
+    notes: optionalText(body?.notes, "Ownership notes", 4000),
     reason: validateMutationReason(body?.reason),
   };
 }
@@ -391,6 +428,34 @@ export function createApp(config, pool) {
       }
       response.json(updated);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events", requirePowerUser, async (request, response, next) => {
+    try {
+      const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+      if (!canEditCemetery(request.user, cemeteryId)) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      const id = validateGraveSpaceId(request.params.id);
+      const event = validateOwnershipEventPayload(request.body);
+      const created = await createOwnershipEvent(pool, cemeteryId, id, event, {
+        actorUser: request.user,
+        reason: event.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!created) {
+        response.status(404).json({ error: "Grave space not found" });
+        return;
+      }
+      response.status(201).json(created);
+    } catch (error) {
+      if (error.message?.startsWith("Selected gravesite is not linked to a lot.") || error.message?.startsWith("Unknown gravesite ID:")) {
+        response.status(400).json({ error: error.message });
+        return;
+      }
       next(error);
     }
   });

@@ -174,6 +174,20 @@ export type SaveBurialInput = {
   reason?: string;
 };
 
+export type OwnershipEventType = "deed" | "sale" | "gift" | "church_council_action" | "correction" | "release";
+export type OwnershipTargetScope = "selected_gravesite" | "selected_lot" | "listed_gravesites";
+
+export type SaveOwnershipEventInput = {
+  ownerDisplayName: string;
+  eventType: OwnershipEventType;
+  targetScope: OwnershipTargetScope;
+  targetGravesiteIds: string[];
+  effectiveDate: string;
+  documentReference: string;
+  notes: string;
+  reason?: string;
+};
+
 export type CemeterySection = {
   id: string;
   name: string;

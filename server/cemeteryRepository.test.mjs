@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getCemeteryData, getDetailedCemeteryData, getGraveSpace, updateBurial, updateGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
+import { createOwnershipEvent, getCemeteryData, getDetailedCemeteryData, getGraveSpace, updateBurial, updateGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 
 function queryRows(sql) {
   if (sql.includes("information_schema.columns")) return [{ exists: true }];
@@ -214,6 +214,153 @@ test("repository maps generalized gravesite ownership rights into owner detail",
     documentReference: "Section G Plot Plan With Notations.pdf page 2",
     notes: "burial_right gravesite Imported from page 2 deed holder list.",
   });
+});
+
+test("repository maps generalized lot ownership rights into grave owner detail", async () => {
+  const graveUuid = "22222222-2222-4222-8222-222222222222";
+  const lotUuid = "99999999-9999-4999-8999-999999999999";
+  const ownerId = "ownership-party-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const queries = [];
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
+            return {
+              rows: [
+                {
+                  uuid: graveUuid,
+                  cemetery_id: "11111111-1111-4111-8111-111111111111",
+                  cemetery_name: "Sequential Cemetery",
+                  section_id: "B",
+                  lot_id: "166",
+                  lot_uuid: lotUuid,
+                  grave_id: "1",
+                  gravesite_id: "B-0166-01",
+                  status: "sold",
+                  cost: null,
+                  geometry: "{}",
+                },
+              ],
+            };
+          }
+          if (sql.includes("FROM owners") && sql.includes("current_ownership_right_owners")) {
+            return {
+              rows: [
+                {
+                  id: ownerId,
+                  gravesite_uuid: graveUuid,
+                  owner: null,
+                  co_owner: null,
+                  display_name: "Charles R. and Ruth M. Soergel",
+                  full_address: null,
+                  phone: null,
+                  email: null,
+                  sale_date: null,
+                  effective_date: "2026-05-31",
+                  recorded_at: "2026-06-03T12:00:00.000Z",
+                  event_type: "deed",
+                  recorded_by: "power@example.test",
+                  document_reference: "Deed book 1 page 2",
+                  notes: "burial_right lot Manual ownership workflow target: selected lot.",
+                  created_at: "2026-06-03T12:00:00.000Z",
+                  ownership_event_id: "ownership-event-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                },
+              ],
+            };
+          }
+          if (sql.includes("FROM burials")) return { rows: [] };
+          if (sql.includes("FROM headstones")) return { rows: [] };
+          if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return { rows: [] };
+          if (sql.includes("FROM gravesite_media_assets")) return { rows: [] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {},
+      };
+    },
+  };
+
+  const grave = await getGraveSpace(pool, "11111111-1111-4111-8111-111111111111", "B-0166-01");
+  const ownershipQuery = queries.find((query) => query.sql.includes("current_ownership_right_owners"))?.sql ?? "";
+
+  assert.match(ownershipQuery, /current_ownership_right_owners\.target_type = 'lot'/u);
+  assert.equal(grave.owners[0].displayName, "Charles R. and Ruth M. Soergel");
+  assert.deepEqual(grave.currentOwnerIds, [ownerId]);
+  assert.equal(grave.ownershipHistory[0].documentReference, "Deed book 1 page 2");
+});
+
+test("createOwnershipEvent records a scoped whole-lot ownership event", async () => {
+  const queries = [];
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
+          if (sql.includes("SELECT set_config")) return { rows: [] };
+          if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
+            return {
+              rows: [
+                {
+                  id: "22222222-2222-4222-8222-222222222222",
+                  cemetery_id: "11111111-1111-4111-8111-111111111111",
+                  gravesite_id: "B-0166-01",
+                  lot_uuid: "99999999-9999-4999-8999-999999999999",
+                },
+              ],
+            };
+          }
+          if (sql.includes("INSERT INTO ownership_parties")) return { rows: [{ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }] };
+          if (sql.includes("INSERT INTO ownership_events")) return { rows: [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }] };
+          if (sql.includes("INSERT INTO ownership_event_parties")) return { rows: [] };
+          if (sql.includes("INSERT INTO ownership_event_rights")) return { rows: [] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const created = await createOwnershipEvent(
+    pool,
+    "11111111-1111-4111-8111-111111111111",
+    "B-0166-01",
+    {
+      ownerDisplayName: "Charles R. and Ruth M. Soergel",
+      eventType: "deed",
+      targetScope: "selected_lot",
+      effectiveDate: "2026-05-31",
+      documentReference: "Deed book 1 page 2",
+      notes: "Entered from scanned deed.",
+    },
+    {
+      actorUser: { email: "power@example.test" },
+      allowedCemeteryIds: ["11111111-1111-4111-8111-111111111111"],
+    },
+  );
+
+  const eventQuery = queries.find((query) => query.sql.includes("INSERT INTO ownership_events"));
+  const rightQuery = queries.find((query) => query.sql.includes("INSERT INTO ownership_event_rights"));
+
+  assert.deepEqual(created, { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" });
+  assert.deepEqual(eventQuery?.values, [
+    "11111111-1111-4111-8111-111111111111",
+    "deed",
+    "2026-05-31",
+    "power@example.test",
+    "Deed book 1 page 2",
+    "Entered from scanned deed.",
+  ]);
+  assert.deepEqual(rightQuery?.values, [
+    "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    "lot",
+    "99999999-9999-4999-8999-999999999999",
+    null,
+    "burial_right | lot | Manual ownership workflow target: selected lot.",
+  ]);
 });
 
 test("updateHeadstone mutation state query qualifies joined id columns", async () => {
