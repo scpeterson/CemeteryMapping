@@ -76,6 +76,7 @@ Every real-data import or source change should update this file and the relevant
 | Alignment anchor | Draft geometry keeps the west edge on the current Section G boundary and aligns the south edge of plots `G-001` and `G-024` to the south edge of gravesite `TLC-GPS-0089`/B-0089 by default. Use `--south-reference <gravesite_id>` to override that anchor. |
 | Section boundary | Migrations `037-tighten-section-g-boundary.sql`, `039-align-section-g-boundary-to-gravesites.sql`, and `040-angle-section-g-boundary.sql` replace the oversized imported Section G polygon with a simplified angled boundary around the reviewed Section G plot block. The final boundary follows the PDF-style outline rather than every individual gravesite edge. |
 | Gravesite import | Migration `038-add-section-g-gravesites.sql` inserts or refreshes the 94 Section G gravesites in the production `gravesites` table. Section G has no lots, so `lot_uuid` and `lot_id` are left null. |
+| Deed holder import | Page 2 lists Section G plot deed holders. Migration `042-section-g-deed-holders.sql` imports populated rows into generalized ownership parties/events/rights, with one deed-holder party able to own multiple gravesite rights. The source heading says Section F, but this is interpreted as the same known Section G typo from the plan. |
 | Known limitations | Gravesite geometry is fit to the current Section G west boundary, the B-0089 south-edge anchor, and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
 
 ## Trinity Cemetery Registry 2022

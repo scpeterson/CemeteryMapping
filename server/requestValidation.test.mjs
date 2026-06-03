@@ -85,3 +85,17 @@ test("search runs SQL-like text without expanding results or building dynamic SQ
   assert.deepEqual(matches, []);
   assert.equal(pool.queryCount, 1);
 });
+
+test("search includes generalized ownership rights only through ownership-aware search", async () => {
+  const pool = {
+    async query(sql, values) {
+      assert.match(sql, /current_ownership_right_owners/);
+      assert.deepEqual(values, ["baur", [], false, []]);
+      return { rows: [] };
+    },
+  };
+
+  const matches = await searchCemetery(pool, { query: "Baur", statuses: [], includeOwnership: false, ownershipCemeteryIds: [] });
+
+  assert.deepEqual(matches, []);
+});

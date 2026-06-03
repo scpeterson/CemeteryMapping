@@ -122,3 +122,6 @@ databaseChangeLog:
   - include:
       file: changes/041-generalized-ownership-rights.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/042-section-g-deed-holders.sql
+      relativeToChangelogFile: true

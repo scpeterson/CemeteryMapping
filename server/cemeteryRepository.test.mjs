@@ -138,6 +138,84 @@ test("repository can redact ownership data from grave detail reads", async () =>
   assert.deepEqual(grave.mediaAssets, []);
 });
 
+test("repository maps generalized gravesite ownership rights into owner detail", async () => {
+  const graveUuid = "22222222-2222-4222-8222-222222222222";
+  const ownerId = "ownership-party-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const pool = {
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
+            return {
+              rows: [
+                {
+                  uuid: graveUuid,
+                  cemetery_id: "11111111-1111-4111-8111-111111111111",
+                  cemetery_name: "Sequential Cemetery",
+                  section_id: "G",
+                  lot_id: null,
+                  grave_id: "50",
+                  gravesite_id: "G-050",
+                  status: "sold",
+                  cost: null,
+                  geometry: "{}",
+                },
+              ],
+            };
+          }
+          if (sql.includes("FROM owners") && sql.includes("current_ownership_right_owners")) {
+            return {
+              rows: [
+                {
+                  id: ownerId,
+                  gravesite_uuid: graveUuid,
+                  owner: null,
+                  co_owner: null,
+                  display_name: "Baur, L & R",
+                  full_address: null,
+                  phone: null,
+                  email: null,
+                  sale_date: null,
+                  effective_date: null,
+                  recorded_at: "2026-06-03T12:00:00.000Z",
+                  event_type: "deed",
+                  recorded_by: "Section G Plot Plan With Notations.pdf",
+                  document_reference: "Section G Plot Plan With Notations.pdf page 2",
+                  notes: "burial_right gravesite Imported from page 2 deed holder list.",
+                  created_at: "2026-06-03T12:00:00.000Z",
+                  ownership_event_id: "ownership-event-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                },
+              ],
+            };
+          }
+          if (sql.includes("FROM burials")) return { rows: [] };
+          if (sql.includes("FROM headstones")) return { rows: [] };
+          if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return { rows: [] };
+          if (sql.includes("FROM gravesite_media_assets")) return { rows: [] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {},
+      };
+    },
+  };
+
+  const grave = await getGraveSpace(pool, "11111111-1111-4111-8111-111111111111", "G-050");
+
+  assert.equal(grave.owners[0].id, ownerId);
+  assert.equal(grave.owners[0].displayName, "Baur, L & R");
+  assert.match(grave.owners[0].contactNote, /Section G Plot Plan With Notations\.pdf page 2/u);
+  assert.deepEqual(grave.currentOwnerIds, [ownerId]);
+  assert.deepEqual(grave.ownershipHistory[0], {
+    id: "ownership-event-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    ownerIds: [ownerId],
+    eventType: "purchase",
+    effectiveDate: "2026-06-03",
+    recordedBy: "Section G Plot Plan With Notations.pdf",
+    documentReference: "Section G Plot Plan With Notations.pdf page 2",
+    notes: "burial_right gravesite Imported from page 2 deed holder list.",
+  });
+});
+
 test("updateHeadstone mutation state query qualifies joined id columns", async () => {
   const queries = [];
   const headstoneRow = {
