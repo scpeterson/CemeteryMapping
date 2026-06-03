@@ -20,8 +20,61 @@ const sectionGGeometry = {
   ],
 };
 
+const sectionB0089Geometry = {
+  type: "MultiPolygon",
+  coordinates: [
+    [
+      [
+        [-80.07975417, 40.60135903],
+        [-80.079718159, 40.60135903],
+        [-80.079718159, 40.60137001],
+        [-80.07975417, 40.60137001],
+        [-80.07975417, 40.60135903],
+      ],
+    ],
+  ],
+};
+
 function metersPerDegreeLongitude(latitude) {
   return metersPerDegreeLatitude * Math.cos(latitude * Math.PI / 180);
+}
+
+function exteriorPoints(geometry) {
+  return geometry.coordinates[0][0].slice(0, -1);
+}
+
+function southEdgeMidpoint(geometry) {
+  const sortedByLatitude = exteriorPoints(geometry).sort((left, right) => left[1] - right[1]);
+  const southEdge = sortedByLatitude.slice(0, 2);
+  return [
+    (southEdge[0][0] + southEdge[1][0]) / 2,
+    (southEdge[0][1] + southEdge[1][1]) / 2,
+  ];
+}
+
+function groundVector(from, to) {
+  return [
+    (to[0] - from[0]) * metersPerDegreeLongitude(from[1]),
+    (to[1] - from[1]) * metersPerDegreeLatitude,
+  ];
+}
+
+function normalize(vector) {
+  const length = Math.hypot(vector[0], vector[1]);
+  return [vector[0] / length, vector[1] / length];
+}
+
+function dot(left, right) {
+  return left[0] * right[0] + left[1] * right[1];
+}
+
+function signedNorthing(point) {
+  const sectionPoints = exteriorPoints(sectionGGeometry);
+  const sortedByLatitude = [...sectionPoints].sort((left, right) => left[1] - right[1]);
+  const southWest = sortedByLatitude.slice(0, 2).sort((left, right) => left[0] - right[0])[0];
+  const northWest = sortedByLatitude.slice(-2).sort((left, right) => left[0] - right[0])[0];
+  const northAxis = normalize(groundVector(southWest, northWest));
+  return dot(groundVector(southWest, point), northAxis);
 }
 
 function groundDistance(left, right) {
@@ -40,6 +93,16 @@ test("sectionGPlotRectangles models 94 plots without lots", () => {
   assert.deepEqual(plots.slice(-4).map((plot) => plot.plot), [91, 92, 93, 94]);
   assert.deepEqual(plots.find((plot) => plot.plot === 47)?.localRingFeet[0], { x: -24, y: 16 });
   assert.deepEqual(plots.find((plot) => plot.plot === 91)?.localRingFeet[0], { x: -48, y: 64 });
+});
+
+test("buildSectionGGravesiteFeatures aligns the south baseline to the B-0089 south edge", () => {
+  const features = buildSectionGGravesiteFeatures(sectionGGeometry, sectionB0089Geometry);
+  const plot1SouthMidpoint = southEdgeMidpoint(features[0].geometry);
+  const plot24SouthMidpoint = southEdgeMidpoint(features[23].geometry);
+  const referenceSouthMidpoint = southEdgeMidpoint(sectionB0089Geometry);
+
+  assert.equal(Math.round(signedNorthing(plot1SouthMidpoint) * 100), Math.round(signedNorthing(referenceSouthMidpoint) * 100));
+  assert.equal(Math.round(signedNorthing(plot24SouthMidpoint) * 100), Math.round(signedNorthing(referenceSouthMidpoint) * 100));
 });
 
 test("buildSectionGGravesiteFeatures creates draft gravesite GeoJSON from the section boundary", () => {

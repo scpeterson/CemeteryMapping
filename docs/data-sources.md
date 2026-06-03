@@ -73,7 +73,8 @@ Every real-data import or source change should update this file and the relevant
 | Dimensions | The small grid squares are 4 feet by 4 feet. Each plot/gravesite is 4 feet by 8 feet. |
 | Survey marks | Black X marks are surveyor-set aluminum spikes used as location references; they are not gravesites or markers. |
 | Generated output | Draft GeoJSON gravesite polygons `G-001` through `G-094` for review before any production import. |
-| Known limitations | Draft geometry is fit to the current Section G boundary and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
+| Alignment anchor | Draft geometry keeps the west edge on the current Section G boundary and aligns the south edge of plots `G-001` and `G-024` to the south edge of gravesite `TLC-GPS-0089`/B-0089 by default. Use `--south-reference <gravesite_id>` to override that anchor. |
+| Known limitations | Draft geometry is fit to the current Section G boundary, the B-0089 south-edge anchor, and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
 
 ## North Hills Genealogists Trinity OCR
 

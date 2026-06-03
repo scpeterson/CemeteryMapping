@@ -25,6 +25,7 @@ function usage() {
     "Options:",
     "  --facility-id <id>       Cemetery facility id. Default: 1.",
     "  --section <name>         Section name. Default: G.",
+    "  --south-reference <id>   Gravesite id used to align the south edge. Default: TLC-GPS-0089.",
     "  --output <path>          Output GeoJSON path. Default: /tmp/section-g-plot-gravesites.geojson.",
   ].join("\n");
 }
@@ -33,6 +34,7 @@ function parseArgs(args) {
   const options = {
     facilityId: "1",
     section: "G",
+    southReference: "TLC-GPS-0089",
     output: "/tmp/section-g-plot-gravesites.geojson",
   };
 
@@ -44,6 +46,9 @@ function parseArgs(args) {
         break;
       case "--section":
         options.section = args[++index];
+        break;
+      case "--south-reference":
+        options.southReference = args[++index];
         break;
       case "--output":
         options.output = args[++index];
@@ -70,8 +75,12 @@ function exteriorRingFromGeoJson(geometry) {
   throw new Error(`Unsupported section geometry type: ${geometry.type}`);
 }
 
+function exteriorPointsFromGeoJson(geometry) {
+  return exteriorRingFromGeoJson(geometry).slice(0, -1);
+}
+
 function sectionControlPoints(sectionGeometry) {
-  const ring = exteriorRingFromGeoJson(sectionGeometry).slice(0, -1);
+  const ring = exteriorPointsFromGeoJson(sectionGeometry);
   if (ring.length < 4) throw new Error("Section G geometry must have at least four exterior vertices.");
 
   const sortedByLatitude = [...ring].sort((left, right) => left[1] - right[1]);
@@ -116,9 +125,21 @@ function groundMetersToLonLat(point, origin) {
   ];
 }
 
-function buildTrueScaleTransform(sectionGeometry) {
+function southEdgeMidpoint(geometry) {
+  const ring = exteriorPointsFromGeoJson(geometry);
+  if (ring.length < 2) throw new Error("Reference gravesite geometry must have at least two exterior vertices.");
+
+  const sortedByLatitude = [...ring].sort((left, right) => left[1] - right[1]);
+  const southEdge = sortedByLatitude.slice(0, 2);
+  return [
+    (southEdge[0][0] + southEdge[1][0]) / 2,
+    (southEdge[0][1] + southEdge[1][1]) / 2,
+  ];
+}
+
+function buildTrueScaleTransform(sectionGeometry, southReferenceGeometry) {
   const controls = sectionControlPoints(sectionGeometry);
-  const origin = controls.A;
+  const origin = [...controls.A];
   const northAxis = normalizeVector(
     lonLatToGroundMeters(controls.B, origin),
   );
@@ -130,6 +151,16 @@ function buildTrueScaleTransform(sectionGeometry) {
     [northAxis[1], -northAxis[0]],
   ];
   const xAxis = perpendiculars.sort((left, right) => dot(towardG, right.map((value) => -value)) - dot(towardG, left.map((value) => -value)))[0];
+  if (southReferenceGeometry) {
+    const referenceSouthEdge = lonLatToGroundMeters(southEdgeMidpoint(southReferenceGeometry), origin);
+    const northShiftMeters = dot(referenceSouthEdge, northAxis);
+    const shiftedOrigin = groundMetersToLonLat([
+      northShiftMeters * northAxis[0],
+      northShiftMeters * northAxis[1],
+    ], origin);
+    origin[0] = shiftedOrigin[0];
+    origin[1] = shiftedOrigin[1];
+  }
 
   return (point) => groundMetersToLonLat([
     point.x * xAxis[0] + point.y * northAxis[0],
@@ -158,8 +189,8 @@ export function sectionGPlotRectangles() {
   });
 }
 
-export function buildSectionGGravesiteFeatures(sectionGeometry) {
-  const transform = buildTrueScaleTransform(sectionGeometry);
+export function buildSectionGGravesiteFeatures(sectionGeometry, southReferenceGeometry) {
+  const transform = buildTrueScaleTransform(sectionGeometry, southReferenceGeometry);
 
   return sectionGPlotRectangles().map((rectangle) => {
     const coordinates = rectangle.localRingFeet.map((point) => transform(localFeetToMeters(point)));
@@ -202,6 +233,25 @@ async function loadSectionGeometry(pool, { facilityId, section }) {
   return result.rows[0].geometry;
 }
 
+async function loadSouthReferenceGeometry(pool, { facilityId, southReference }) {
+  if (!southReference) return undefined;
+
+  const result = await pool.query(
+    `
+      SELECT ST_AsGeoJSON(gravesites.geometry)::json AS geometry
+      FROM gravesites
+      JOIN cemeteries ON cemeteries.id = gravesites.cemetery_id
+      WHERE cemeteries.facility_id = $1
+        AND gravesites.gravesite_id = $2
+        AND gravesites.deleted_at IS NULL
+      LIMIT 1
+    `,
+    [facilityId, southReference],
+  );
+  if (!result.rows[0]) throw new Error(`South reference gravesite ${southReference} not found for facility ${facilityId}.`);
+  return result.rows[0].geometry;
+}
+
 export async function main(args = process.argv.slice(2)) {
   const options = parseArgs(args);
   if (options.help) {
@@ -221,7 +271,8 @@ export async function main(args = process.argv.slice(2)) {
 
   try {
     const sectionGeometry = await loadSectionGeometry(pool, options);
-    const features = buildSectionGGravesiteFeatures(sectionGeometry);
+    const southReferenceGeometry = await loadSouthReferenceGeometry(pool, options);
+    const features = buildSectionGGravesiteFeatures(sectionGeometry, southReferenceGeometry);
     const collection = {
       type: "FeatureCollection",
       name: "section_g_draft_gravesites",
