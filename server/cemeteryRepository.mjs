@@ -78,6 +78,10 @@ function toOwnershipEvent(owner) {
   };
 }
 
+function statusCodeSelect(alias = "gravesites") {
+  return `COALESCE(status_type.code, legacy_status_type.code, NULLIF(lower(${alias}.status), ''), 'unknown')`;
+}
+
 function ownershipRightNotes(right) {
   return compactJoin([right.right_type, right.target_type, right.notes]);
 }
@@ -361,12 +365,16 @@ async function selectGravesForCemeteries(client, cemeteryIds, { includeCost = fa
         gravesites.grave_id,
         gravesites.gravesite_id,
         gravesites.name,
-        gravesites.status,
+        ${statusCodeSelect()} AS status,
         ${includeCost ? "gravesites.cost," : ""}
         ST_AsGeoJSON(gravesites.geometry)::json AS geometry
       FROM gravesites
       JOIN cemeteries
         ON cemeteries.id = gravesites.cemetery_id
+      LEFT JOIN gravesite_status_types status_type
+        ON status_type.id = gravesites.status_type_id
+      LEFT JOIN gravesite_status_types legacy_status_type
+        ON legacy_status_type.code = lower(gravesites.status)
       WHERE gravesites.cemetery_id = ANY($1::uuid[])
         AND gravesites.deleted_at IS NULL
       ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
@@ -422,12 +430,16 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
         gravesites.lot_id,
         gravesites.grave_id,
         gravesites.gravesite_id,
-        gravesites.status,
+        ${statusCodeSelect()} AS status,
         gravesites.cost,
         ST_AsGeoJSON(gravesites.geometry)::json AS geometry
       FROM gravesites
       JOIN cemeteries
         ON cemeteries.id = gravesites.cemetery_id
+      LEFT JOIN gravesite_status_types status_type
+        ON status_type.id = gravesites.status_type_id
+      LEFT JOIN gravesite_status_types legacy_status_type
+        ON legacy_status_type.code = lower(gravesites.status)
       WHERE gravesites.cemetery_id = $1
         AND gravesites.gravesite_id = $2
         AND gravesites.deleted_at IS NULL
@@ -448,10 +460,15 @@ async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
         gravesites.cemetery_id::text,
         gravesites.name,
         gravesites.gravesite_id,
-        gravesites.status,
+        gravesites.status_type_id::text,
+        ${statusCodeSelect()} AS status,
         gravesites.cost,
         gravesites.updated_at
       FROM gravesites
+      LEFT JOIN gravesite_status_types status_type
+        ON status_type.id = gravesites.status_type_id
+      LEFT JOIN gravesite_status_types legacy_status_type
+        ON legacy_status_type.code = lower(gravesites.status)
       WHERE gravesites.cemetery_id = $1
         AND gravesites.gravesite_id = $2
         AND gravesites.deleted_at IS NULL
@@ -1350,7 +1367,11 @@ export async function updateGraveSpace(pool, cemeteryId, gravesiteId, graveSpace
       `
         UPDATE gravesites
         SET name = $2,
-            status = $3,
+            status_type_id = (
+              SELECT id
+              FROM gravesite_status_types
+              WHERE code = $3
+            ),
             cost = $4::numeric
         WHERE id = $1
         RETURNING
@@ -1358,7 +1379,12 @@ export async function updateGraveSpace(pool, cemeteryId, gravesiteId, graveSpace
           cemetery_id::text,
           name,
           gravesite_id,
-          status,
+          status_type_id::text,
+          (
+            SELECT code
+            FROM gravesite_status_types
+            WHERE id = gravesites.status_type_id
+          ) AS status,
           cost,
           updated_at
       `,

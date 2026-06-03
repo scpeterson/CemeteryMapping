@@ -58,11 +58,10 @@ async function insertGravesite(client, { cemeteryId, sectionUuid, sectionName, s
         section_id,
         grave_id,
         gravesite_id,
-        status,
         status_type_id,
         geometry
       )
-      VALUES ($1, $2, $3, $4, $5, $6, 'available', $7, ST_GeomFromText($8, 4326))
+      VALUES ($1, $2, $3, $4, $5, $6, $7, ST_GeomFromText($8, 4326))
       RETURNING id::text
     `,
     [cemeteryId, sectionUuid, `TEST-${suffix}`, sectionName, graveId, `${sectionName}-${suffix}-${graveId}`, statusId, gravePolygon(offset)],
@@ -145,11 +144,10 @@ test("database enforces Section F and Section G marker business rules", async ()
           section_id,
           grave_id,
           gravesite_id,
-          status,
           status_type_id,
           geometry
         )
-        VALUES ($1, $2, $3, 'F', '1', $4, 'available', $5, ST_GeomFromText($6, 4326))
+        VALUES ($1, $2, $3, 'F', '1', $4, $5, ST_GeomFromText($6, 4326))
       `,
       [cemeteryId, sectionFId, `TEST-${suffix}`, `F-${suffix}-1`, availableStatusId, gravePolygon(0.0003)],
       /Section F cannot contain gravesites/u,

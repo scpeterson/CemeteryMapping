@@ -27,7 +27,8 @@ function emptyCemeteryPool() {
     },
     async query(sql, values) {
       queryCount += 1;
-      assert.match(sql, /WITH status_labels/);
+      assert.match(sql, /JOIN gravesite_status_types status_type|LEFT JOIN gravesite_status_types status_type/u);
+      assert.doesNotMatch(sql, /WITH status_labels/u);
       assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true, undefined]);
       return { rows: [] };
     },

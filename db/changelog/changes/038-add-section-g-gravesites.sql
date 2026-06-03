@@ -125,7 +125,7 @@ INSERT INTO gravesites (
   lot_id,
   grave_id,
   gravesite_id,
-  status,
+  status_type_id,
   width_feet,
   length_feet,
   geometry,
@@ -142,7 +142,7 @@ SELECT
   NULL::varchar(5),
   source_gravesites.grave_id,
   source_gravesites.gravesite_id,
-  'unknown',
+  unknown_status.id,
   4.00,
   8.00,
   ST_SetSRID(ST_GeomFromText(source_gravesites.wkt), 4326)::geometry(MultiPolygon, 4326),
@@ -150,6 +150,8 @@ SELECT
 FROM source_gravesites
 CROSS JOIN trinity
 CROSS JOIN section_g
+CROSS JOIN gravesite_status_types unknown_status
+WHERE unknown_status.code = 'unknown'
 ON CONFLICT (cemetery_id, gravesite_id) DO UPDATE SET
   section_uuid = EXCLUDED.section_uuid,
   lot_uuid = NULL,
@@ -159,7 +161,7 @@ ON CONFLICT (cemetery_id, gravesite_id) DO UPDATE SET
   block_id = NULL,
   lot_id = NULL,
   grave_id = EXCLUDED.grave_id,
-  status = EXCLUDED.status,
+  status_type_id = EXCLUDED.status_type_id,
   width_feet = EXCLUDED.width_feet,
   length_feet = EXCLUDED.length_feet,
   geometry = EXCLUDED.geometry,
