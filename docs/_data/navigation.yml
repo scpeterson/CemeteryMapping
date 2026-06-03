@@ -44,5 +44,7 @@
   url: /adr/0013-prioritize-admin-editing-workflows.html
 - title: "ADR 0014: Documentation Navigation"
   url: /adr/0014-documentation-navigation-layout.html
+- title: "ADR 0015: Ownership Rights"
+  url: /adr/0015-generalized-ownership-rights.html
 - title: "ADR Template"
   url: /adr/0000-template.html

@@ -26,6 +26,10 @@ const allowedAuditTables = new Set([
   "north_hills_ocr_entry_gravesite_links",
   "north_hills_ocr_entry_headstone_links",
   "owners",
+  "ownership_event_parties",
+  "ownership_event_rights",
+  "ownership_events",
+  "ownership_parties",
   "sections",
 ]);
 
