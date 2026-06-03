@@ -317,6 +317,158 @@ Use these checks when switching between DEV, TEST, STAGE, and PROD.
 
 Before running imports or promotions, apply migrations in that environment first.
 
+## Environment Promotion Workflow
+
+Use this workflow to move application changes, schema changes, and reviewed data changes through `DEV`, `TEST`, `STAGE`, and `PROD`. The environments form a ladder:
+
+| Environment | Purpose | Promotion Gate |
+| --- | --- | --- |
+| DEV | Local implementation and exploratory data work. | Developer verification is complete and the branch is ready for PR. |
+| TEST | Automated CI and repeatable test database validation. | PR checks pass against a rebuilt TEST database. |
+| STAGE | Production-like rehearsal with copied configuration shape and representative data. | Maintainer approves the release after smoke testing and migration rehearsal. |
+| PROD | Live cemetery records and field/photo workflows. | Stage has passed, backups are current, and a rollback plan exists. |
+
+Do not skip environments for schema, permission, import, or data-repair changes. A documentation-only or styling-only change may not need database promotion, but it should still pass CI before merge.
+
+### Promotion Principles
+
+1. Promote code by Git history, not by copying edited files between environments.
+2. Promote schema by Liquibase migrations, not by manual table edits.
+3. Promote data by reviewed scripts or Admin workflows, not by ad hoc SQL, except for documented maintenance with an audit reason.
+4. Promote configuration by environment-specific secrets and variables, not by committing credentials.
+5. Treat media files as deployment data. Database rows reference media URLs, but image files also need backup and environment-specific storage.
+6. Record every production-affecting release in the project notes or release history with the PR number, migration range, data scripts run, and verification result.
+
+### DEV To TEST
+
+Use DEV while building and doing first-pass local checks.
+
+Before opening or merging a PR:
+
+1. Create a branch for the change.
+2. Apply migrations locally when the change includes database work:
+
+   ```bash
+   APP_ENV=dev npm run db:migrate
+   ```
+
+3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes:
+
+   ```bash
+   npm run lint
+   npm run test:server
+   npm run build
+   APP_ENV=test npm run db:validate
+   APP_ENV=test npm run db:rollback:one
+   APP_ENV=test npm run db:migrate
+   APP_ENV=test npm run test:db-rules
+   ```
+
+4. Open a PR to `main`.
+5. Let GitHub Actions rebuild TEST from migrations, seed demo data, run rollback checks, run unit/integration tests, build, and run end-to-end tests.
+
+The change is promoted to TEST when the PR checks pass. It is promoted into the main code line when the PR merges.
+
+### TEST To STAGE
+
+Use STAGE as the dress rehearsal for production. STAGE should have the same major services as PROD: PostgreSQL/PostGIS version, Auth0 mode, required Auth0 permissions, storage settings, and public URLs. It may use scrubbed or representative data instead of live personal data.
+
+Before promoting to STAGE:
+
+1. Confirm `main` contains the merged PRs intended for release.
+2. Confirm no unrelated PRs are accidentally included.
+3. Start or connect to the STAGE database.
+4. Check pending migrations:
+
+   ```bash
+   APP_ENV=stage npm run db:status
+   ```
+
+5. Apply migrations:
+
+   ```bash
+   APP_ENV=stage npm run db:migrate
+   ```
+
+6. Run any reviewed data import or data repair scripts against STAGE first.
+7. Configure Auth0 and environment variables for STAGE if roles, permissions, callback URLs, audiences, or API scopes changed.
+8. Smoke test STAGE:
+   - Sign in as each relevant role.
+   - Load the map.
+   - Open a cemetery, section, lot, gravesite, marker, burial, and owner/deed detail where applicable.
+   - Test the specific workflow changed by the release.
+   - Confirm audit events appear for any staged write test.
+   - Confirm uploaded or existing photos render if media behavior changed.
+
+Do not promote to PROD until STAGE uses the same migration level and the smoke test passes.
+
+### STAGE To PROD
+
+Promote to PROD only from a known-good `main` commit that has passed TEST and STAGE.
+
+Before PROD migration:
+
+1. Announce the maintenance window if users may be affected.
+2. Confirm the exact commit or tag to deploy.
+3. Confirm database and media backups are current and restorable.
+4. Confirm the rollback plan:
+   - For code-only changes, identify the prior deployable commit.
+   - For schema changes, confirm whether rollback is safe or whether forward-fix is the safer path.
+   - For data changes, confirm the script output, affected record count, and backup point.
+5. Confirm Auth0 tenant settings and application secrets are correct for PROD.
+6. Confirm `AUTH_MODE=auth0` for PROD unless a documented emergency exception exists.
+
+During PROD promotion:
+
+1. Deploy the approved code.
+2. Apply migrations:
+
+   ```bash
+   APP_ENV=prod npm run db:migrate
+   ```
+
+3. Run reviewed data scripts only if they were already rehearsed in STAGE.
+4. Run a short smoke test:
+   - Reader can view map and non-deed detail.
+   - Power user can edit assigned cemetery data.
+   - Cemetery admin can manage assigned cemetery data.
+   - Admin can access Admin UI.
+   - Deed/owner data remains hidden from read-only users.
+   - Photos render and uploads work if field collection is in scope.
+5. Review recent audit events for expected migration or application writes.
+
+After PROD promotion:
+
+1. Record the PRs, commit, migration numbers, data scripts, and smoke-test result.
+2. Monitor API logs and database errors.
+3. Keep the backup from before the release until the next stable backup cycle.
+
+### Data Promotion Rules
+
+Application releases and data imports are separate decisions. Merging code does not automatically mean new source data should be imported into every environment.
+
+Use this order for data:
+
+1. Import raw source data into staging tables in TEST.
+2. Validate and review TEST output.
+3. Promote into authoritative TEST tables only when the import rules are understood.
+4. Repeat the import and promotion in STAGE as a rehearsal.
+5. Promote into PROD only after STAGE output matches expectations.
+
+Geometry-only updates should use geometry-only promotion commands when names, notes, contact fields, or other application-maintained text should not be overwritten.
+
+### Emergency Fixes
+
+Emergency fixes may move faster, but they still need a written trail.
+
+1. Create a small branch from `main`.
+2. Make the smallest safe fix.
+3. Run the most relevant local checks.
+4. Open and merge a PR after CI passes.
+5. Promote to STAGE if time allows; otherwise record why STAGE was skipped.
+6. Promote to PROD with a backup and rollback plan.
+7. Add follow-up documentation or tests after service is stable.
+
 ## One-Time Cemetery Onboarding Workflows
 
 Use these workflows when bringing a new cemetery or new source snapshot into the system. They are intentionally staging-first and verification-heavy. After a cemetery has been onboarded, routine updates should usually happen through the ongoing maintenance workflows unless a source system sends corrected replacement data.

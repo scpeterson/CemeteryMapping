@@ -53,6 +53,8 @@ APP_ENV=stage npm run db:migrate
 APP_ENV=prod npm run db:status
 ```
 
+Promotion between environments is documented in [Operator Workflows](docs/operator-workflows.md#environment-promotion-workflow). In short: implement in DEV, validate through PR/CI in TEST, rehearse production-like deployment in STAGE, then promote to PROD only after backups, smoke tests, and a rollback or forward-fix plan are ready.
+
 If another local PostgreSQL service already uses port `5432`, create `db/env/dev.local.env` and set `POSTGRES_PORT` to an open port such as `5436`. Local env override files are ignored by git and are loaded by both Docker Compose and the API.
 
 ## What is included
