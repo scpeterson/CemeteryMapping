@@ -128,7 +128,7 @@ Expected audit action:
 
 Third admin edit workflow.
 
-Admins need to adjust operational gravesite status without changing geometry.
+Admins can adjust gravesite notes and limited status flags without changing geometry. Most visible status values are derived from underlying records: active burials display as `occupied`; gravesites with no active burial and no current deed or ownership right display as `available`; deeded-but-unburied or otherwise unmatched gravesites display as `unknown`. Use the editable status field only for human workflow exceptions, especially `reserved` when someone has claimed a gravesite before a deed exists, or `needs_review` when deed and burial evidence conflicts.
 
 Initial fields:
 

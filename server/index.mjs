@@ -163,7 +163,7 @@ function validateHeadstonePayload(body) {
 
 function validateGraveSpacePayload(body) {
   const status = optionalText(body?.status, "Gravesite status", 30) || "unknown";
-  if (!["available", "reserved", "occupied", "sold", "needs_review", "unknown"].includes(status)) {
+  if (!["available", "reserved", "occupied", "needs_review", "unknown"].includes(status)) {
     throw new BadRequestError("Gravesite status is invalid.");
   }
   const costText = optionalText(body?.cost, "Cost", 30);

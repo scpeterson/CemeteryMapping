@@ -1,4 +1,4 @@
-export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "needs_review" | "unknown";
+export type GraveStatus = "available" | "reserved" | "occupied" | "needs_review" | "unknown";
 export type AppRoleName = "reader" | "power-user" | "cemetery-admin" | "admin";
 export type AreaGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 

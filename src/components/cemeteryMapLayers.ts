@@ -236,8 +236,6 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
         statusColors.reserved,
         "occupied",
         statusColors.occupied,
-        "sold",
-        statusColors.sold,
         "needs_review",
         statusColors.needs_review,
         statusColors.unknown,

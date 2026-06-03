@@ -46,7 +46,6 @@ const graveStatusOptions: { value: GraveStatus; label: string }[] = [
   { value: "available", label: "Available" },
   { value: "reserved", label: "Reserved" },
   { value: "occupied", label: "Occupied" },
-  { value: "sold", label: "Sold" },
   { value: "needs_review", label: "Needs review" },
   { value: "unknown", label: "Unknown" },
 ];

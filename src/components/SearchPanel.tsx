@@ -14,7 +14,7 @@ type SearchPanelProps = {
   onSelectMatch: (match: SearchMatch) => void;
 };
 
-const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
+const statuses: GraveStatus[] = ["available", "reserved", "occupied", "needs_review", "unknown"];
 
 export function SearchPanel({
   cemeteryScopeLabel,
