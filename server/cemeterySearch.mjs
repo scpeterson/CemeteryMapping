@@ -69,21 +69,19 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           gravesites.lot_id,
           gravesites.grave_id,
           gravesites.gravesite_id,
-          COALESCE(status_type.code, legacy_status_type.code, NULLIF(lower(gravesites.status), ''), 'unknown') AS status,
-          COALESCE(status_type.label, legacy_status_type.label, 'Unknown') AS status_label,
+          COALESCE(status_type.code, 'unknown') AS status,
+          COALESCE(status_type.label, 'Unknown') AS status_label,
           ST_AsGeoJSON(gravesites.geometry)::json AS geometry
         FROM gravesites
         JOIN cemeteries
           ON cemeteries.id = gravesites.cemetery_id
         LEFT JOIN gravesite_status_types status_type
           ON status_type.id = gravesites.status_type_id
-        LEFT JOIN gravesite_status_types legacy_status_type
-          ON legacy_status_type.code = lower(gravesites.status)
         WHERE gravesites.deleted_at IS NULL
           AND cemeteries.deleted_at IS NULL
           AND (
             cardinality($2::text[]) = 0
-            OR COALESCE(status_type.code, legacy_status_type.code, NULLIF(lower(gravesites.status), ''), 'unknown') = ANY($2::text[])
+            OR COALESCE(status_type.code, 'unknown') = ANY($2::text[])
           )
       )
       SELECT
