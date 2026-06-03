@@ -100,18 +100,26 @@ test("sectionGPlotRectangles models 94 plots without lots", () => {
   assert.deepEqual(plots.find((plot) => plot.plot === 91)?.localRingFeet[0], { x: -48, y: 64 });
 });
 
-test("sectionGBoundaryRingFeet creates a tight stepped outline around Section G plots", () => {
+test("sectionGBoundaryRingFeet creates the simplified angled outline around Section G plots", () => {
   const boundary = sectionGBoundaryRingFeet();
   const boundaryXs = boundary.map((point) => point.x);
   const boundaryYs = boundary.map((point) => point.y);
 
+  assert.equal(boundary.length, 8);
   assert.deepEqual(boundary[0], boundary.at(-1));
   assert.equal(Math.min(...boundaryXs), -48);
   assert.equal(Math.max(...boundaryXs), 0);
   assert.equal(Math.min(...boundaryYs), 0);
   assert.equal(Math.max(...boundaryYs), 92);
-  assert.ok(boundary.some((point) => point.x === -48 && point.y === 64));
-  assert.ok(boundary.some((point) => point.x === -48 && point.y === 80));
+  assert.deepEqual(boundary.slice(0, -1), [
+    { x: 0, y: 0 },
+    { x: 0, y: 92 },
+    { x: -32, y: 92 },
+    { x: -40, y: 88 },
+    { x: -48, y: 80 },
+    { x: -48, y: 64 },
+    { x: -16, y: 0 },
+  ]);
 });
 
 test("buildSectionGGravesiteFeatures aligns the south baseline to the B-0089 south edge", () => {
