@@ -91,7 +91,7 @@ Every real-data import or source change should update this file and the relevant
 | Staging tables | `deed_registry_import_batches`, `deed_registry_entries`, `deed_registry_entry_allocations` |
 | Worksheet interpretation | `Original 2017` is the baseline, `Investigated` preserves research rows and note-only rows, and `Updated 2022` is the investigation result. |
 | Lot identifier handling | `Lot num` / `Lot Number` worksheet values are staged as candidate lot identifiers intended for future `lots.lot_id` promotion after review. |
-| Known limitations | Staging and comparison only; no production promotion into lots, gravesites, owners, or ownership events yet. |
+| Known limitations | Staging and comparison only; no production promotion into lots, gravesites, generalized ownership parties/events/rights, or legacy owners yet. |
 
 ## North Hills Genealogists Trinity OCR
 

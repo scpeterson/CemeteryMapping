@@ -43,6 +43,8 @@ test("normalizeAuditFilters allows status and event lookup audit records", () =>
   assert.equal(normalizeAuditFilters({ targetTable: "headstone_condition_types" }).targetTable, "headstone_condition_types");
   assert.equal(normalizeAuditFilters({ targetTable: "gravesite_status_types" }).targetTable, "gravesite_status_types");
   assert.equal(normalizeAuditFilters({ targetTable: "lot_ownership_event_types" }).targetTable, "lot_ownership_event_types");
+  assert.equal(normalizeAuditFilters({ targetTable: "ownership_events" }).targetTable, "ownership_events");
+  assert.equal(normalizeAuditFilters({ targetTable: "ownership_event_rights" }).targetTable, "ownership_event_rights");
 });
 
 test("listAuditEvents returns filtered audit records", async () => {

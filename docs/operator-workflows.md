@@ -101,7 +101,7 @@ Use `Admin -> Deed Evidence` to review staged deed registry imports before any f
 7. Treat `review` or `low` confidence rows as requiring human interpretation.
 8. Treat `NA`, `OC`, passageway, and Section G plot references carefully because they may not map to ordinary section/lot/gravesite assumptions.
 
-The current Deed Evidence tab is read-only. It does not create lots, gravesites, owners, or ownership events.
+The current Deed Evidence tab is read-only. It does not create lots, gravesites, legacy owners, or generalized ownership parties/events/rights.
 
 ### Audit Log Review
 
@@ -679,10 +679,10 @@ Verify:
 2. Review high-confidence rows and low/review-confidence rows separately.
 3. Confirm `Investigated` notes appear with related registry entries.
 4. For an `Updated 2022` batch, confirm the comparison summary appears against the latest `Original 2017` batch.
-5. Review added, changed, unchanged, and removed rows before designing any promotion to `lots`, owners, gravesites, or ownership events.
+5. Review added, changed, unchanged, and removed rows before designing any promotion to `lots`, gravesites, legacy owners, or generalized ownership parties/events/rights.
 6. Leave ambiguous aliases, passageways, and Section G plot references staged for human interpretation.
 
-Do not promote deed registry evidence into owners, lots, or gravesites until explicit promotion rules exist.
+Do not promote deed registry evidence into owners, lots, gravesites, or generalized ownership rights until explicit promotion rules exist.
 
 ### North Hills OCR Import Checklist
 
