@@ -12,10 +12,10 @@ export const statusLabels: Record<GraveStatus, string> = {
 export const statusColors: Record<GraveStatus, string> = {
   available: "#5fa879",
   reserved: "#d9a441",
-  occupied: "#6d7f91",
+  occupied: "#2f6fbd",
   sold: "#8e6fbb",
   needs_review: "#c7524f",
-  unknown: "#8b9097",
+  unknown: "#b8c0c8",
 };
 
 export function formatDate(date?: string) {

@@ -28,6 +28,10 @@ function emptyCemeteryPool() {
     async query(sql, values) {
       queryCount += 1;
       assert.match(sql, /JOIN gravesite_status_types status_type|LEFT JOIN gravesite_status_types status_type/u);
+      assert.match(sql, /CROSS JOIN LATERAL/u);
+      assert.match(sql, /FROM burials status_burials/u);
+      assert.match(sql, /FROM current_ownership_right_owners status_rights/u);
+      assert.match(sql, /OR derived_status\.status = ANY\(\$2::text\[\]\)/u);
       assert.doesNotMatch(sql, /WITH status_labels/u);
       assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true, undefined]);
       return { rows: [] };
@@ -68,7 +72,14 @@ test("status validation rejects unsupported SQL-like status filters", () => {
 });
 
 test("status validation accepts comma-separated known statuses", () => {
-  assert.deepEqual(validateStatuses("occupied,reserved,needs_review,unknown"), ["occupied", "reserved", "needs_review", "unknown"]);
+  assert.deepEqual(validateStatuses("available,occupied,sold,reserved,needs_review,unknown"), [
+    "available",
+    "occupied",
+    "sold",
+    "reserved",
+    "needs_review",
+    "unknown",
+  ]);
 });
 
 test("mutation reason validation rejects oversized reasons", () => {

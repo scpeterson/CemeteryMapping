@@ -69,6 +69,8 @@ Use `Admin -> Lookups` to maintain controlled values such as marker types, marke
 8. Use the usage count before deactivating a value. If a value is already used by records, deactivation hides it from new choices but preserves historical data.
 9. Use the audit jump link when you need to see who last changed a lookup row.
 
+Gravesite status labels are not all manually assigned. `reserved` and `needs_review` are human workflow flags, while `occupied`, `sold`, `available`, and `unknown` are derived from active burials and current deed or ownership-right records. `sold` means the gravesite has a deed or ownership right, either directly or through its lot, but has no active burial.
+
 Avoid renaming a lookup value to mean something unrelated. Add a new value when the meaning changes, then deactivate the old one after records are reviewed.
 
 ### Readings Review

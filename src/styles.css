@@ -618,6 +618,7 @@ h3 {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  border: 1px solid rgba(38, 52, 45, 0.24);
 }
 
 .legend-symbol {
@@ -655,7 +656,15 @@ h3 {
 
 .legend-gravesite {
   border: 1px solid #31413c;
-  background: #6d7f91;
+  background: linear-gradient(
+    90deg,
+    #5fa879 0 16.66%,
+    #d9a441 16.66% 33.33%,
+    #2f6fbd 33.33% 50%,
+    #8e6fbb 50% 66.66%,
+    #c7524f 66.66% 83.33%,
+    #b8c0c8 83.33% 100%
+  );
 }
 
 .legend-marker {
@@ -684,7 +693,7 @@ h3 {
 }
 
 .legend-occupied {
-  background: #6d7f91;
+  background: #2f6fbd;
 }
 
 .legend-sold {
@@ -696,7 +705,7 @@ h3 {
 }
 
 .legend-unknown {
-  background: #8b9097;
+  background: #b8c0c8;
 }
 
 .detail-message {
