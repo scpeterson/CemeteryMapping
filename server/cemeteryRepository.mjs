@@ -78,6 +78,10 @@ function toOwnershipEvent(owner) {
   };
 }
 
+function ownershipRightNotes(right) {
+  return compactJoin([right.right_type, right.target_type, right.notes]);
+}
+
 function toLookupValue(row, prefix) {
   return {
     id: row[`${prefix}_id`],
@@ -534,7 +538,7 @@ async function selectOwnersForCemeteries(client, cemeteryIds) {
 
       SELECT
         concat('ownership-party-', current_ownership_right_owners.ownership_party_uuid::text) AS id,
-        current_ownership_right_owners.gravesite_uuid::text,
+        COALESCE(current_ownership_right_owners.gravesite_uuid::text, target_gravesites.id::text) AS gravesite_uuid,
         NULL::text AS owner,
         NULL::text AS co_owner,
         current_ownership_right_owners.display_name,
@@ -553,8 +557,17 @@ async function selectOwnersForCemeteries(client, cemeteryIds) {
       FROM current_ownership_right_owners
       JOIN ownership_events
         ON ownership_events.id = current_ownership_right_owners.ownership_event_uuid
-      WHERE current_ownership_right_owners.target_type = 'gravesite'
-        AND current_ownership_right_owners.gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
+      LEFT JOIN gravesites target_gravesites
+        ON current_ownership_right_owners.target_type = 'lot'
+       AND target_gravesites.lot_uuid = current_ownership_right_owners.lot_uuid
+       AND target_gravesites.deleted_at IS NULL
+      WHERE current_ownership_right_owners.target_type IN ('gravesite', 'lot')
+        AND COALESCE(current_ownership_right_owners.gravesite_uuid, target_gravesites.id) IN (
+          SELECT id
+          FROM gravesites
+          WHERE cemetery_id = ANY($1::uuid[])
+            AND deleted_at IS NULL
+        )
       ORDER BY sale_date DESC NULLS LAST, effective_date DESC NULLS LAST, created_at DESC, id
     `,
     [cemeteryIds],
@@ -581,6 +594,12 @@ async function selectBurialsForCemeteries(client, cemeteryIds) {
 async function selectOwnersForGrave(client, graveUuid) {
   const result = await client.query(
     `
+      WITH selected_grave AS (
+        SELECT id, lot_uuid
+        FROM gravesites
+        WHERE id = $1
+          AND deleted_at IS NULL
+      )
       SELECT
         owners.id::text AS id,
         owners.gravesite_uuid::text,
@@ -607,7 +626,7 @@ async function selectOwnersForGrave(client, graveUuid) {
 
       SELECT
         concat('ownership-party-', current_ownership_right_owners.ownership_party_uuid::text) AS id,
-        current_ownership_right_owners.gravesite_uuid::text,
+        selected_grave.id::text AS gravesite_uuid,
         NULL::text AS owner,
         NULL::text AS co_owner,
         current_ownership_right_owners.display_name,
@@ -624,16 +643,192 @@ async function selectOwnersForGrave(client, graveUuid) {
         current_ownership_right_owners.recorded_at AS created_at,
         concat('ownership-event-', current_ownership_right_owners.ownership_event_uuid::text) AS ownership_event_id
       FROM current_ownership_right_owners
+      JOIN selected_grave
+        ON (
+          current_ownership_right_owners.target_type = 'gravesite'
+          AND current_ownership_right_owners.gravesite_uuid = selected_grave.id
+        )
+        OR (
+          current_ownership_right_owners.target_type = 'lot'
+          AND current_ownership_right_owners.lot_uuid = selected_grave.lot_uuid
+        )
       JOIN ownership_events
         ON ownership_events.id = current_ownership_right_owners.ownership_event_uuid
-      WHERE current_ownership_right_owners.target_type = 'gravesite'
-        AND current_ownership_right_owners.gravesite_uuid = $1
+      WHERE current_ownership_right_owners.target_type IN ('gravesite', 'lot')
       ORDER BY sale_date DESC NULLS LAST, effective_date DESC NULLS LAST, created_at DESC, id
     `,
     [graveUuid],
   );
 
   return result.rows;
+}
+
+async function selectOwnershipTargets(client, cemeteryId, selectedGravesiteId, targetScope, targetGravesiteIds) {
+  const selectedResult = await client.query(
+    `
+      SELECT id, cemetery_id::text, gravesite_id, lot_uuid
+      FROM gravesites
+      WHERE cemetery_id = $1
+        AND gravesite_id = $2
+        AND deleted_at IS NULL
+      LIMIT 1
+    `,
+    [cemeteryId, selectedGravesiteId],
+  );
+  const selectedGrave = selectedResult.rows[0];
+  if (!selectedGrave) return undefined;
+
+  if (targetScope === "selected_lot") {
+    if (!selectedGrave.lot_uuid) {
+      throw new Error("Selected gravesite is not linked to a lot.");
+    }
+    return {
+      selectedGrave,
+      rights: [{ targetType: "lot", lotUuid: selectedGrave.lot_uuid, label: "selected lot" }],
+    };
+  }
+
+  if (targetScope === "listed_gravesites") {
+    const ids = [...new Set(targetGravesiteIds.map((id) => String(id ?? "").trim()).filter(Boolean))];
+    if (ids.length === 0) throw new Error("At least one gravesite ID is required.");
+    const result = await client.query(
+      `
+        SELECT id, gravesite_id
+        FROM gravesites
+        WHERE cemetery_id = $1
+          AND gravesite_id = ANY($2::text[])
+          AND deleted_at IS NULL
+        ORDER BY gravesite_id
+      `,
+      [cemeteryId, ids],
+    );
+    if (result.rows.length !== ids.length) {
+      const found = new Set(result.rows.map((row) => row.gravesite_id));
+      const missing = ids.filter((id) => !found.has(id));
+      throw new Error(`Unknown gravesite ID: ${missing.join(", ")}.`);
+    }
+    return {
+      selectedGrave,
+      rights: result.rows.map((row) => ({ targetType: "gravesite", gravesiteUuid: row.id, label: row.gravesite_id })),
+    };
+  }
+
+  return {
+    selectedGrave,
+    rights: [{ targetType: "gravesite", gravesiteUuid: selectedGrave.id, label: selectedGrave.gravesite_id }],
+  };
+}
+
+export async function createOwnershipEvent(
+  pool,
+  cemeteryId,
+  selectedGravesiteId,
+  { ownerDisplayName, eventType, targetScope, targetGravesiteIds = [], effectiveDate, documentReference, notes },
+  { actorUser, reason, allowedCemeteryIds } = {},
+) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason: reason ?? "Ownership event update" });
+
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    const targets = await selectOwnershipTargets(client, cemeteryId, selectedGravesiteId, targetScope, targetGravesiteIds);
+    if (!targets) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    const partyResult = await client.query(
+      `
+        INSERT INTO ownership_parties (display_name)
+        SELECT $1
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM ownership_parties
+          WHERE display_name = $1
+            AND deleted_at IS NULL
+        )
+        RETURNING id::text
+      `,
+      [ownerDisplayName],
+    );
+    const partyId =
+      partyResult.rows[0]?.id ??
+      (
+        await client.query(
+          `
+            SELECT id::text
+            FROM ownership_parties
+            WHERE display_name = $1
+              AND deleted_at IS NULL
+            ORDER BY created_at, id
+            LIMIT 1
+          `,
+          [ownerDisplayName],
+        )
+      ).rows[0]?.id;
+
+    const eventResult = await client.query(
+      `
+        INSERT INTO ownership_events (
+          cemetery_id,
+          event_type,
+          effective_date,
+          recorded_by,
+          document_reference,
+          notes,
+          source_table
+        )
+        VALUES ($1, $2, NULLIF($3, '')::date, $4, NULLIF($5, ''), NULLIF($6, ''), 'manual_ownership_workflow')
+        RETURNING id::text
+      `,
+      [cemeteryId, eventType, effectiveDate ?? "", actorUser?.email ?? "Cemetery database", documentReference ?? "", notes ?? ""],
+    );
+    const eventId = eventResult.rows[0].id;
+
+    await client.query(
+      `
+        INSERT INTO ownership_event_parties (ownership_event_uuid, ownership_party_uuid, ownership_role)
+        VALUES ($1, $2, 'owner')
+      `,
+      [eventId, partyId],
+    );
+
+    for (const right of targets.rights) {
+      await client.query(
+        `
+          INSERT INTO ownership_event_rights (
+            ownership_event_uuid,
+            target_type,
+            lot_uuid,
+            gravesite_uuid,
+            right_type,
+            notes
+          )
+          VALUES ($1, $2, $3::uuid, $4::uuid, 'burial_right', $5)
+        `,
+        [
+          eventId,
+          right.targetType,
+          right.lotUuid ?? null,
+          right.gravesiteUuid ?? null,
+          ownershipRightNotes({ right_type: "burial_right", target_type: right.targetType, notes: `Manual ownership workflow target: ${right.label}.` }),
+        ],
+      );
+    }
+
+    await client.query("COMMIT");
+    return { id: eventId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function selectBurialsForGrave(client, graveUuid) {

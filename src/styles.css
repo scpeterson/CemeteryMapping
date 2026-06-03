@@ -772,6 +772,54 @@ h3 {
   color: var(--text-muted);
 }
 
+.ownership-action {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ownership-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e8dc;
+}
+
+.ownership-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.ownership-form input,
+.ownership-form select,
+.ownership-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.ownership-wide-field,
+.ownership-form .detail-message,
+.ownership-form-actions {
+  grid-column: 1 / -1;
+}
+
+.ownership-form-actions {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+
 .burial-record > strong {
   display: block;
   margin-bottom: 10px;
@@ -928,6 +976,7 @@ h3 {
 }
 
 .icon-text-button,
+.ownership-form-actions button,
 .burial-form-actions button,
 .grave-form-actions button,
 .headstone-form-actions button {
@@ -948,6 +997,7 @@ h3 {
   color: #2f5d50;
 }
 
+.ownership-form-actions .secondary-button,
 .headstone-form-actions .secondary-button {
   border-color: #c8d1c3;
   background: #fff;
@@ -2590,6 +2640,9 @@ h3 {
   .admin-workspace,
   .admin-nav,
   .audit-filter-form,
+  .ownership-form,
+  .grave-form,
+  .burial-form,
   .headstone-form,
   .headstone-record dl,
   .media-gallery,

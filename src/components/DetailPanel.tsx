@@ -1,6 +1,23 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { Camera, FileText, History, Images, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
-import type { Burial, GraveSpace, GraveSpaceSummary, GraveStatus, Headstone, HeadstoneLookups, LookupOption, MediaAsset, NorthHillsLinkedEvidence, Owner, SaveBurialInput, SaveGraveSpaceInput, SaveHeadstoneInput } from "../types";
+import type {
+  Burial,
+  GraveSpace,
+  GraveSpaceSummary,
+  GraveStatus,
+  Headstone,
+  HeadstoneLookups,
+  LookupOption,
+  MediaAsset,
+  NorthHillsLinkedEvidence,
+  Owner,
+  OwnershipEventType,
+  OwnershipTargetScope,
+  SaveBurialInput,
+  SaveGraveSpaceInput,
+  SaveHeadstoneInput,
+  SaveOwnershipEventInput,
+} from "../types";
 import { apiBaseUrl } from "../config/environment";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName } from "../lib/format";
@@ -17,6 +34,7 @@ type DetailPanelProps = {
   onSaveGraveSpace: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
   isLoading?: boolean;
   error?: string;
@@ -32,6 +50,157 @@ const graveStatusOptions: { value: GraveStatus; label: string }[] = [
   { value: "needs_review", label: "Needs review" },
   { value: "unknown", label: "Unknown" },
 ];
+
+const ownershipEventOptions: { value: OwnershipEventType; label: string }[] = [
+  { value: "deed", label: "New deed" },
+  { value: "sale", label: "Sale / transfer" },
+  { value: "gift", label: "Gift" },
+  { value: "church_council_action", label: "Church council action" },
+  { value: "correction", label: "Correction" },
+  { value: "release", label: "Release" },
+];
+
+const ownershipTargetOptions: { value: OwnershipTargetScope; label: string }[] = [
+  { value: "selected_gravesite", label: "This gravesite" },
+  { value: "selected_lot", label: "This whole lot" },
+  { value: "listed_gravesites", label: "Listed gravesites" },
+];
+
+function blankOwnershipForm(grave: GraveSpace): SaveOwnershipEventInput {
+  return {
+    ownerDisplayName: "",
+    eventType: "deed",
+    targetScope: grave.lot ? "selected_lot" : "selected_gravesite",
+    targetGravesiteIds: [],
+    effectiveDate: new Date().toISOString().slice(0, 10),
+    documentReference: "",
+    notes: "",
+    reason: "Ownership event update",
+  };
+}
+
+function OwnershipEventForm({ grave, onSave }: { grave: GraveSpace; onSave: (event: SaveOwnershipEventInput) => Promise<void> }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState<SaveOwnershipEventInput>(() => blankOwnershipForm(grave));
+  const [listedGravesites, setListedGravesites] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string>();
+  const [error, setError] = useState<string>();
+
+  const startEditing = () => {
+    setForm(blankOwnershipForm(grave));
+    setListedGravesites("");
+    setMessage(undefined);
+    setError(undefined);
+    setIsEditing(true);
+  };
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setMessage(undefined);
+    setError(undefined);
+    try {
+      const targetGravesiteIds =
+        form.targetScope === "listed_gravesites"
+          ? listedGravesites
+              .split(/[\s,]+/u)
+              .map((value) => value.trim())
+              .filter(Boolean)
+          : [];
+      await onSave({ ...form, targetGravesiteIds });
+      setMessage("Ownership event recorded.");
+      setIsEditing(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to record ownership event.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!isEditing) {
+    return (
+      <div className="ownership-action">
+        {message ? <p className="detail-message is-success">{message}</p> : null}
+        <button type="button" className="icon-text-button" onClick={startEditing} title="Record a deed, transfer, gift, correction, or release for this gravesite or lot.">
+          <Pencil size={14} aria-hidden="true" />
+          Record deed or transfer
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form className="ownership-form" onSubmit={(event) => void save(event)}>
+      <label className="ownership-wide-field">
+        Owner or deed holder
+        <input
+          value={form.ownerDisplayName}
+          onChange={(event) => setForm((current) => ({ ...current, ownerDisplayName: event.target.value }))}
+          placeholder="Name, couple, family, church, or organization"
+          required
+        />
+      </label>
+      <label>
+        Event
+        <select value={form.eventType} onChange={(event) => setForm((current) => ({ ...current, eventType: event.target.value as OwnershipEventType }))}>
+          {ownershipEventOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Applies to
+        <select value={form.targetScope} onChange={(event) => setForm((current) => ({ ...current, targetScope: event.target.value as OwnershipTargetScope }))}>
+          {ownershipTargetOptions.map((option) => (
+            <option key={option.value} value={option.value} disabled={option.value === "selected_lot" && !grave.lot}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {form.targetScope === "listed_gravesites" ? (
+        <label className="ownership-wide-field">
+          Gravesite IDs
+          <textarea
+            value={listedGravesites}
+            onChange={(event) => setListedGravesites(event.target.value)}
+            rows={3}
+            placeholder={`Example: ${formatGraveLabel(grave)}, G-050`}
+            required
+          />
+        </label>
+      ) : null}
+      <label>
+        Effective date
+        <input type="date" value={form.effectiveDate} onChange={(event) => setForm((current) => ({ ...current, effectiveDate: event.target.value }))} />
+      </label>
+      <label className="ownership-wide-field">
+        Document reference
+        <input
+          value={form.documentReference}
+          onChange={(event) => setForm((current) => ({ ...current, documentReference: event.target.value }))}
+          placeholder="Deed book, scanned file, page, or source note"
+        />
+      </label>
+      <label className="ownership-wide-field">
+        Notes
+        <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={3} />
+      </label>
+      {error ? <p className="detail-message is-error">{error}</p> : null}
+      <div className="ownership-form-actions">
+        <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
+          Cancel
+        </button>
+        <button type="submit" disabled={isSaving || !form.ownerDisplayName.trim() || (form.targetScope === "listed_gravesites" && !listedGravesites.trim())}>
+          {isSaving ? "Recording..." : "Record ownership"}
+        </button>
+      </div>
+    </form>
+  );
+}
 
 function blankBurialForm(burial: Burial): SaveBurialInput {
   return {
@@ -572,6 +741,7 @@ export function DetailPanel({
   onSaveGraveSpace,
   onSaveBurial,
   onSaveHeadstone,
+  onSaveOwnershipEvent,
   onUploadPhoto,
   isLoading = false,
   error,
@@ -639,16 +809,21 @@ export function DetailPanel({
           <h3>Current Owner</h3>
         </div>
         <div className="owner-list">
-          {grave.currentOwnerIds.map((id) => {
-            const owner = ownersById.get(id);
-            return (
-              <div key={id} className="owner-row">
-                <strong>{owner?.displayName ?? "Unknown owner"}</strong>
-                {owner?.contactNote ? <span>{owner.contactNote}</span> : null}
-              </div>
-            );
-          })}
+          {grave.currentOwnerIds.length ? (
+            grave.currentOwnerIds.map((id) => {
+              const owner = ownersById.get(id);
+              return (
+                <div key={id} className="owner-row">
+                  <strong>{owner?.displayName ?? "Unknown owner"}</strong>
+                  {owner?.contactNote ? <span>{owner.contactNote}</span> : null}
+                </div>
+              );
+            })
+          ) : (
+            <p className="muted">No current ownership is recorded.</p>
+          )}
         </div>
+        {canUpdateGravesites ? <OwnershipEventForm grave={grave} onSave={onSaveOwnershipEvent} /> : null}
       </section>
       ) : null}
 

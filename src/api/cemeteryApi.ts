@@ -26,6 +26,7 @@ import type {
   SaveBurialInput,
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
+  SaveOwnershipEventInput,
   SearchMatch,
   SectionTextRecord,
 } from "../types";
@@ -98,6 +99,14 @@ export async function updateGraveSpace(cemeteryId: string, id: string, graveSpac
 export async function updateBurial(id: string, burial: SaveBurialInput): Promise<Burial> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/burials/${encodeURIComponent(id)}`, jsonRequest("PATCH", burial));
   return jsonResponse<Burial>(response, "Update burial API");
+}
+
+export async function createOwnershipEvent(cemeteryId: string, graveSpaceId: string, event: SaveOwnershipEventInput): Promise<{ id: string }> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(graveSpaceId)}/ownership-events`,
+    jsonRequest("POST", event),
+  );
+  return jsonResponse<{ id: string }>(response, "Ownership event API");
 }
 
 export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>): Promise<SearchMatch[]> {

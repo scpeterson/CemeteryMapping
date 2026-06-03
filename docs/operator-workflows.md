@@ -103,6 +103,37 @@ Use `Admin -> Deed Evidence` to review staged deed registry imports before any f
 
 The current Deed Evidence tab is read-only. It does not create lots, gravesites, legacy owners, or generalized ownership parties/events/rights.
 
+The regular grave-detail panel and ownership-aware search include both legacy `owners` rows and generalized gravesite ownership rights. For example, Section G deed-holder rights imported from the plot plan appear as current owner/deed information even though Section G has no lots.
+
+### Ownership Maintenance
+
+Use the regular grave-detail panel to record new deeds and ownership transfers after the cemetery is live. This workflow writes generalized ownership rights and preserves event history instead of replacing old owner text.
+
+1. Select the gravesite on the map or from search results.
+2. Confirm you are in the correct cemetery and gravesite.
+3. Open the `Current Owner` section.
+4. Use `Record deed or transfer`.
+5. Enter the owner or deed-holder name. This can be one person, a couple, a family, the church, or another organization.
+6. Choose the event type:
+   - `New deed` for a newly issued deed or first recorded owner.
+   - `Sale / transfer` when ownership changes by sale.
+   - `Gift` when ownership changes without sale.
+   - `Church council action` when council assigns ownership or clears unclear ownership.
+   - `Correction` when fixing a prior ownership record.
+   - `Release` when rights are relinquished.
+7. Choose what the event applies to:
+   - `This gravesite` for Section G plots or a single transferred burial right.
+   - `This whole lot` for a lot-level deed or transfer in sections that use lots.
+   - `Listed gravesites` when a deed or transfer covers several specific gravesites but not the whole lot.
+8. Enter the effective date from the deed, transfer, council record, or best known source date.
+9. Add a document reference such as a deed book, page, scanned file name, council minutes reference, or source note.
+10. Add notes when the deed language, transfer terms, or evidence confidence needs explanation.
+11. Save and confirm the `Current Owner` and `Ownership Timeline` sections refresh.
+
+`power-user` and `cemetery-admin` users can record ownership events only for assigned cemeteries. `admin` users can record ownership events for any cemetery. Readers cannot see this form.
+
+For an unsold lot or gravesite, record a `New deed` when rights are first issued. For a transfer of one or more gravesites from a larger lot, choose `Listed gravesites` and enter the specific gravesite IDs. For a transfer of an entire lot, choose `This whole lot`; the lot-level right will appear when viewing each gravesite in that lot.
+
 ### Audit Log Review
 
 Use `Admin -> Audit Log` when answering who changed a record, what changed, or whether a direct database edit occurred.

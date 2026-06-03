@@ -53,7 +53,7 @@ The `unlocated` target type is intentionally conservative. It lets the database 
 
 Future deed registry promotion should target the generalized ownership layer, not the legacy `owners` table. Section G rows should promote to `gravesite` rights. Standard A-E lot rows should promote to `lot` rights. Ambiguous passageway, alias, or grave-count-only rows should remain staged or become `unlocated` rights only after review.
 
-Existing UI and API code can continue reading the legacy lot ownership and `owners` paths until a later PR switches detail/search behavior to the generalized layer. During the transition, maintainers must be careful not to double-count ownership if both legacy and generalized rows are displayed.
+The grave-detail API reads both legacy `owners` rows and generalized ownership rights. Lot-level generalized rights are expanded to the gravesites in that lot for display, while direct gravesite rights appear only on their target gravesites. The detail panel can also create manual generalized ownership events for assigned power-users, cemetery-admins, and admins.
 
 Audit triggers cover the new tables, so changes made through the API, import scripts, or direct database access are recorded in `audit_events`.
 
