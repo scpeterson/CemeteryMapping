@@ -61,6 +61,23 @@ Every real-data import or source change should update this file and the relevant
 | Known limitations | Spreadsheet rows are flat and do not enforce referential integrity. Generated lot and gravesite polygons are approximate placeholders around GPS headstone points. |
 | Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
 
+## Section G Plot Plan
+
+| Field | Value |
+| --- | --- |
+| Source name | Section G Plot Plan With Notations |
+| Source type | PDF exported from Excel |
+| Source path used during development | `/Users/scottpeterson/Downloads/Cemetery/Section G Plot Plan With Notations.pdf` |
+| Application command | `APP_ENV=<env> npm run section-g:generate-gravesites -- --output /tmp/section-g-plot-gravesites.geojson --section-output /tmp/section-g-tight-boundary.geojson` |
+| Interpretation | References to Section F in this document are typos; the plan describes Section G. Section G has no lots. Its plots are gravesites sold individually. |
+| Dimensions | The small grid squares are 4 feet by 4 feet. Each plot/gravesite is 4 feet by 8 feet. |
+| Survey marks | Black X marks are surveyor-set aluminum spikes used as location references; they are not gravesites or markers. |
+| Generated output | GeoJSON gravesite polygons `G-001` through `G-094`, with `grave_id` preserving the PDF plot number. |
+| Alignment anchor | Draft geometry keeps the west edge on the current Section G boundary and aligns the south edge of plots `G-001` and `G-024` to the south edge of gravesite `TLC-GPS-0089`/B-0089 by default. Use `--south-reference <gravesite_id>` to override that anchor. |
+| Section boundary | Migrations `037-tighten-section-g-boundary.sql`, `039-align-section-g-boundary-to-gravesites.sql`, and `040-angle-section-g-boundary.sql` replace the oversized imported Section G polygon with a simplified angled boundary around the reviewed Section G plot block. The final boundary follows the PDF-style outline rather than every individual gravesite edge. |
+| Gravesite import | Migration `038-add-section-g-gravesites.sql` inserts or refreshes the 94 Section G gravesites in the production `gravesites` table. Section G has no lots, so `lot_uuid` and `lot_id` are left null. |
+| Known limitations | Gravesite geometry is fit to the current Section G west boundary, the B-0089 south-edge anchor, and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
+
 ## North Hills Genealogists Trinity OCR
 
 | Field | Value |
