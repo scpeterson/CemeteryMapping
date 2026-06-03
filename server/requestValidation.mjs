@@ -1,6 +1,6 @@
 const graveSpaceIdPattern = /^[A-Za-z0-9_-]{1,30}$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-const allowedStatuses = new Set(["available", "reserved", "occupied", "needs_review", "unknown"]);
+const allowedStatuses = new Set(["available", "reserved", "occupied", "sold", "needs_review", "unknown"]);
 const maxSearchLength = 120;
 const maxReasonLength = 500;
 

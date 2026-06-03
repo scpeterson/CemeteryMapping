@@ -38,7 +38,7 @@ import type {
   SearchMatch,
 } from "./types";
 
-const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "needs_review", "unknown"];
+const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 const emptyHeadstoneLookups: HeadstoneLookups = { markerTypes: [], materials: [], conditions: [] };
 
 export default function App() {

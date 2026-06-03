@@ -114,12 +114,14 @@ test("cemetery map derives gravesite status from review flags, burials, and owne
   await getCemeteryData(pool);
 
   const gravesQuery = queries.find((sql) => sql.includes("ST_AsGeoJSON(gravesites.geometry)::json"));
-  assert.match(gravesQuery, /status_type\.code IN \('reserved', 'needs_review'\)/u);
+  assert.match(gravesQuery, /status_type\.code = 'needs_review'/u);
   assert.match(gravesQuery, /FROM burials status_burials/u);
   assert.match(gravesQuery, /THEN 'occupied'/u);
+  assert.match(gravesQuery, /status_type\.code = 'reserved'/u);
   assert.match(gravesQuery, /FROM owners status_legacy_owners/u);
   assert.match(gravesQuery, /FROM current_ownership_right_owners status_rights/u);
   assert.match(gravesQuery, /status_rights\.target_type = 'lot'/u);
+  assert.match(gravesQuery, /THEN 'sold'/u);
   assert.match(gravesQuery, /THEN 'available'/u);
   assert.match(gravesQuery, /ELSE 'unknown'/u);
 });
@@ -183,7 +185,7 @@ test("repository maps generalized gravesite ownership rights into owner detail",
                   lot_id: null,
                   grave_id: "50",
                   gravesite_id: "G-050",
-                  status: "unknown",
+                  status: "sold",
                   cost: null,
                   geometry: "{}",
                 },
@@ -265,7 +267,7 @@ test("repository maps generalized lot ownership rights into grave owner detail",
                   lot_uuid: lotUuid,
                   grave_id: "1",
                   gravesite_id: "B-0166-01",
-                  status: "unknown",
+                  status: "sold",
                   cost: null,
                   geometry: "{}",
                 },

@@ -4,6 +4,7 @@ const statusMap = new Map([
   ["available", "available"],
   ["reserved", "reserved"],
   ["occupied", "occupied"],
+  ["sold", "sold"],
   ["needs_review", "needs_review"],
   ["needs review", "needs_review"],
 ]);
@@ -80,13 +81,32 @@ function toOwnershipEvent(owner) {
 function statusCodeSelect() {
   return `
     CASE
-      WHEN status_type.code IN ('reserved', 'needs_review') THEN status_type.code
+      WHEN status_type.code = 'needs_review' THEN status_type.code
       WHEN EXISTS (
         SELECT 1
         FROM burials status_burials
         WHERE status_burials.gravesite_uuid = gravesites.id
           AND status_burials.deleted_at IS NULL
       ) THEN 'occupied'
+      WHEN status_type.code = 'reserved' THEN status_type.code
+      WHEN EXISTS (
+        SELECT 1
+        FROM owners status_legacy_owners
+        WHERE status_legacy_owners.gravesite_uuid = gravesites.id
+          AND status_legacy_owners.deleted_at IS NULL
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM current_ownership_right_owners status_rights
+        WHERE (
+            status_rights.target_type = 'gravesite'
+            AND status_rights.gravesite_uuid = gravesites.id
+          )
+          OR (
+            status_rights.target_type = 'lot'
+            AND status_rights.lot_uuid = gravesites.lot_uuid
+          )
+      ) THEN 'sold'
       WHEN NOT EXISTS (
         SELECT 1
         FROM owners status_legacy_owners

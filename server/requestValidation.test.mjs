@@ -72,11 +72,14 @@ test("status validation rejects unsupported SQL-like status filters", () => {
 });
 
 test("status validation accepts comma-separated known statuses", () => {
-  assert.deepEqual(validateStatuses("available,occupied,reserved,needs_review,unknown"), ["available", "occupied", "reserved", "needs_review", "unknown"]);
-});
-
-test("status validation rejects deprecated sold status", () => {
-  assertBadRequest(() => validateStatuses("sold"), "Unsupported grave status: sold.");
+  assert.deepEqual(validateStatuses("available,occupied,sold,reserved,needs_review,unknown"), [
+    "available",
+    "occupied",
+    "sold",
+    "reserved",
+    "needs_review",
+    "unknown",
+  ]);
 });
 
 test("mutation reason validation rejects oversized reasons", () => {

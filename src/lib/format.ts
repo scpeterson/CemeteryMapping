@@ -4,6 +4,7 @@ export const statusLabels: Record<GraveStatus, string> = {
   available: "Available",
   reserved: "Reserved",
   occupied: "Occupied",
+  sold: "Sold",
   needs_review: "Needs review",
   unknown: "Unknown",
 };
@@ -12,6 +13,7 @@ export const statusColors: Record<GraveStatus, string> = {
   available: "#5fa879",
   reserved: "#d9a441",
   occupied: "#6d7f91",
+  sold: "#8e6fbb",
   needs_review: "#c7524f",
   unknown: "#8b9097",
 };
