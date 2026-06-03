@@ -103,6 +103,8 @@ Use `Admin -> Deed Evidence` to review staged deed registry imports before any f
 
 The current Deed Evidence tab is read-only. It does not create lots, gravesites, legacy owners, or generalized ownership parties/events/rights.
 
+The regular grave-detail panel and ownership-aware search include both legacy `owners` rows and generalized gravesite ownership rights. For example, Section G deed-holder rights imported from the plot plan appear as current owner/deed information even though Section G has no lots.
+
 ### Audit Log Review
 
 Use `Admin -> Audit Log` when answering who changed a record, what changed, or whether a direct database edit occurred.
