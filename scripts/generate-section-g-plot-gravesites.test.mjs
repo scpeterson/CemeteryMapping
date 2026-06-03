@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildSectionGGravesiteFeatures, sectionGPlotRectangles } from "./generate-section-g-plot-gravesites.mjs";
 
+const feetToMeters = 0.3048;
+const metersPerDegreeLatitude = 111320;
+
 const sectionGGeometry = {
   type: "MultiPolygon",
   coordinates: [
@@ -16,6 +19,18 @@ const sectionGGeometry = {
     ],
   ],
 };
+
+function metersPerDegreeLongitude(latitude) {
+  return metersPerDegreeLatitude * Math.cos(latitude * Math.PI / 180);
+}
+
+function groundDistance(left, right) {
+  const averageLatitude = (left[1] + right[1]) / 2;
+  return Math.hypot(
+    (right[0] - left[0]) * metersPerDegreeLongitude(averageLatitude),
+    (right[1] - left[1]) * metersPerDegreeLatitude,
+  );
+}
 
 test("sectionGPlotRectangles models 94 plots without lots", () => {
   const plots = sectionGPlotRectangles();
@@ -38,4 +53,12 @@ test("buildSectionGGravesiteFeatures creates draft gravesite GeoJSON from the se
   assert.match(features[0].properties.source_note, /not lots/u);
   assert.equal(features[0].geometry.type, "MultiPolygon");
   assert.equal(features[0].geometry.coordinates[0][0].length, 5);
+});
+
+test("buildSectionGGravesiteFeatures preserves 4 by 8 foot plot dimensions", () => {
+  const [firstFeature] = buildSectionGGravesiteFeatures(sectionGGeometry);
+  const ring = firstFeature.geometry.coordinates[0][0];
+
+  assert.equal(Math.round(groundDistance(ring[0], ring[1]) * 100), Math.round(8 * feetToMeters * 100));
+  assert.equal(Math.round(groundDistance(ring[1], ring[2]) * 100), Math.round(4 * feetToMeters * 100));
 });

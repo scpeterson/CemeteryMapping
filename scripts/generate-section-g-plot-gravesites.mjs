@@ -6,14 +6,7 @@ import { currentEnvironment, loadDbEnvironment } from "./lib/run-liquibase.mjs";
 const { Pool } = pg;
 
 const feetToMeters = 0.3048;
-const earthRadiusMeters = 6378137;
-
-const localBoundaryFeet = {
-  A: { x: 0, y: 0 },
-  B: { x: 0, y: 92 },
-  C: { x: -32, y: 92 },
-  G: { x: -16, y: 0 },
-};
+const metersPerDegreeLatitude = 111320;
 
 const sectionGStacks = [
   { firstPlot: 1, lastPlot: 23, x: -8, startY: 0 },
@@ -67,71 +60,8 @@ function parseArgs(args) {
   return options;
 }
 
-function lonLatToMercator([longitude, latitude]) {
-  const x = earthRadiusMeters * longitude * Math.PI / 180;
-  const y = earthRadiusMeters * Math.log(Math.tan(Math.PI / 4 + (latitude * Math.PI / 180) / 2));
-  return [x, y];
-}
-
-function mercatorToLonLat([x, y]) {
-  const longitude = x / earthRadiusMeters * 180 / Math.PI;
-  const latitude = (2 * Math.atan(Math.exp(y / earthRadiusMeters)) - Math.PI / 2) * 180 / Math.PI;
-  return [longitude, latitude];
-}
-
 function localFeetToMeters(point) {
   return { x: point.x * feetToMeters, y: point.y * feetToMeters };
-}
-
-function solveLinearSystem(matrix, vector) {
-  const rows = matrix.map((row, index) => [...row, vector[index]]);
-
-  for (let pivot = 0; pivot < rows.length; pivot += 1) {
-    let bestRow = pivot;
-    for (let candidate = pivot + 1; candidate < rows.length; candidate += 1) {
-      if (Math.abs(rows[candidate][pivot]) > Math.abs(rows[bestRow][pivot])) bestRow = candidate;
-    }
-    if (Math.abs(rows[bestRow][pivot]) < 1e-12) throw new Error("Control points do not define a solvable transform.");
-    [rows[pivot], rows[bestRow]] = [rows[bestRow], rows[pivot]];
-
-    const divisor = rows[pivot][pivot];
-    for (let column = pivot; column < rows[pivot].length; column += 1) rows[pivot][column] /= divisor;
-
-    for (let row = 0; row < rows.length; row += 1) {
-      if (row === pivot) continue;
-      const factor = rows[row][pivot];
-      for (let column = pivot; column < rows[row].length; column += 1) rows[row][column] -= factor * rows[pivot][column];
-    }
-  }
-
-  return rows.map((row) => row[row.length - 1]);
-}
-
-function fitAffineTransform(controlPairs) {
-  const normal = [
-    [0, 0, 0],
-    [0, 0, 0],
-    [0, 0, 0],
-  ];
-  const rhsX = [0, 0, 0];
-  const rhsY = [0, 0, 0];
-
-  for (const pair of controlPairs) {
-    const row = [pair.local.x, pair.local.y, 1];
-    for (let i = 0; i < 3; i += 1) {
-      for (let j = 0; j < 3; j += 1) normal[i][j] += row[i] * row[j];
-      rhsX[i] += row[i] * pair.map[0];
-      rhsY[i] += row[i] * pair.map[1];
-    }
-  }
-
-  const xCoefficients = solveLinearSystem(normal, rhsX);
-  const yCoefficients = solveLinearSystem(normal, rhsY);
-
-  return (point) => [
-    xCoefficients[0] * point.x + xCoefficients[1] * point.y + xCoefficients[2],
-    yCoefficients[0] * point.x + yCoefficients[1] * point.y + yCoefficients[2],
-  ];
 }
 
 function exteriorRingFromGeoJson(geometry) {
@@ -156,6 +86,57 @@ function sectionControlPoints(sectionGeometry) {
   };
 }
 
+function normalizeVector([x, y]) {
+  const length = Math.hypot(x, y);
+  if (length < 1e-9) throw new Error("Section G boundary does not provide enough orientation distance.");
+  return [x / length, y / length];
+}
+
+function dot(left, right) {
+  return left[0] * right[0] + left[1] * right[1];
+}
+
+function metersPerDegreeLongitude(latitude) {
+  return metersPerDegreeLatitude * Math.cos(latitude * Math.PI / 180);
+}
+
+function lonLatToGroundMeters(point, origin) {
+  const longitudeMeters = metersPerDegreeLongitude(origin[1]);
+  return [
+    (point[0] - origin[0]) * longitudeMeters,
+    (point[1] - origin[1]) * metersPerDegreeLatitude,
+  ];
+}
+
+function groundMetersToLonLat(point, origin) {
+  const longitudeMeters = metersPerDegreeLongitude(origin[1]);
+  return [
+    origin[0] + point[0] / longitudeMeters,
+    origin[1] + point[1] / metersPerDegreeLatitude,
+  ];
+}
+
+function buildTrueScaleTransform(sectionGeometry) {
+  const controls = sectionControlPoints(sectionGeometry);
+  const origin = controls.A;
+  const northAxis = normalizeVector(
+    lonLatToGroundMeters(controls.B, origin),
+  );
+  const towardG = normalizeVector(
+    lonLatToGroundMeters(controls.G, origin),
+  );
+  const perpendiculars = [
+    [-northAxis[1], northAxis[0]],
+    [northAxis[1], -northAxis[0]],
+  ];
+  const xAxis = perpendiculars.sort((left, right) => dot(towardG, right.map((value) => -value)) - dot(towardG, left.map((value) => -value)))[0];
+
+  return (point) => groundMetersToLonLat([
+    point.x * xAxis[0] + point.y * northAxis[0],
+    point.x * xAxis[1] + point.y * northAxis[1],
+  ], origin);
+}
+
 export function sectionGPlotRectangles() {
   return sectionGStacks.flatMap((stack) => {
     const plots = [];
@@ -178,16 +159,10 @@ export function sectionGPlotRectangles() {
 }
 
 export function buildSectionGGravesiteFeatures(sectionGeometry) {
-  const controls = sectionControlPoints(sectionGeometry);
-  const transform = fitAffineTransform(
-    Object.entries(localBoundaryFeet).map(([label, localFeet]) => ({
-      local: localFeetToMeters(localFeet),
-      map: lonLatToMercator(controls[label]),
-    })),
-  );
+  const transform = buildTrueScaleTransform(sectionGeometry);
 
   return sectionGPlotRectangles().map((rectangle) => {
-    const coordinates = rectangle.localRingFeet.map((point) => mercatorToLonLat(transform(localFeetToMeters(point))));
+    const coordinates = rectangle.localRingFeet.map((point) => transform(localFeetToMeters(point)));
     const plotId = String(rectangle.plot).padStart(3, "0");
     return {
       type: "Feature",
