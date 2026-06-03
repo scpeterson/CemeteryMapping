@@ -443,6 +443,7 @@ test("updateGraveSpace updates editable gravesite fields with cemetery scope", a
     grave_id: "0166A",
     gravesite_id: "TLC-GPS-0166-01",
     name: "Ruth M. Soergel",
+    status_type_id: "99999999-9999-4999-8999-999999999999",
     status: "occupied",
     cost: "1200.00",
     geometry: { type: "MultiPolygon", coordinates: [] },
@@ -488,6 +489,8 @@ test("updateGraveSpace updates editable gravesite fields with cemetery scope", a
 
   const updateQuery = queries.find((query) => query.sql.includes("UPDATE gravesites"));
   assert.match(updateQuery?.sql ?? "", /SET name = \$2/u);
+  assert.match(updateQuery?.sql ?? "", /status_type_id = \(/u);
+  assert.doesNotMatch(updateQuery?.sql ?? "", /status = \$3/u);
   assert.deepEqual(updateQuery?.values, ["22222222-2222-4222-8222-222222222222", "Ruth M. Soergel", "occupied", 1200]);
   assert.equal(updated?.name, "Ruth M. Soergel");
   assert.equal(updated?.status, "occupied");

@@ -410,7 +410,7 @@ async function upsertGravesite(client, cemetery, facilityId, imported, generated
         lot_id,
         grave_id,
         gravesite_id,
-        status,
+        status_type_id,
         geometry,
         updated_at
       )
@@ -424,7 +424,7 @@ async function upsertGravesite(client, cemetery, facilityId, imported, generated
         $7,
         $8,
         $9,
-        'occupied',
+        (SELECT id FROM gravesite_status_types WHERE code = 'occupied'),
         ST_SetSRID(ST_GeomFromGeoJSON($10), 4326)::geometry(MultiPolygon, 4326),
         now()
       )
@@ -437,7 +437,7 @@ async function upsertGravesite(client, cemetery, facilityId, imported, generated
         section_id = EXCLUDED.section_id,
         lot_id = EXCLUDED.lot_id,
         grave_id = EXCLUDED.grave_id,
-        status = EXCLUDED.status,
+        status_type_id = EXCLUDED.status_type_id,
         geometry = EXCLUDED.geometry,
         updated_at = now()
       RETURNING id

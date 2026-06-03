@@ -60,16 +60,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
   const scopedOwnershipCemeteryIds = ownershipCemeteryIds?.map((id) => String(id));
   const result = await pool.query(
     `
-      WITH status_labels(status, label) AS (
-        VALUES
-          ('available', 'Available'),
-          ('reserved', 'Reserved'),
-          ('occupied', 'Occupied'),
-          ('sold', 'Sold'),
-          ('needs_review', 'Needs review'),
-          ('unknown', 'Unknown')
-      ),
-      base_graves AS (
+      WITH base_graves AS (
         SELECT
           gravesites.id AS grave_uuid,
           gravesites.cemetery_id::text,
@@ -78,17 +69,22 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           gravesites.lot_id,
           gravesites.grave_id,
           gravesites.gravesite_id,
-          COALESCE(status_labels.status, 'unknown') AS status,
-          COALESCE(status_labels.label, 'Unknown') AS status_label,
+          COALESCE(status_type.code, legacy_status_type.code, NULLIF(lower(gravesites.status), ''), 'unknown') AS status,
+          COALESCE(status_type.label, legacy_status_type.label, 'Unknown') AS status_label,
           ST_AsGeoJSON(gravesites.geometry)::json AS geometry
         FROM gravesites
         JOIN cemeteries
           ON cemeteries.id = gravesites.cemetery_id
-        LEFT JOIN status_labels
-          ON status_labels.status = lower(gravesites.status)
+        LEFT JOIN gravesite_status_types status_type
+          ON status_type.id = gravesites.status_type_id
+        LEFT JOIN gravesite_status_types legacy_status_type
+          ON legacy_status_type.code = lower(gravesites.status)
         WHERE gravesites.deleted_at IS NULL
           AND cemeteries.deleted_at IS NULL
-          AND (cardinality($2::text[]) = 0 OR COALESCE(status_labels.status, 'unknown') = ANY($2::text[]))
+          AND (
+            cardinality($2::text[]) = 0
+            OR COALESCE(status_type.code, legacy_status_type.code, NULLIF(lower(gravesites.status), ''), 'unknown') = ANY($2::text[])
+          )
       )
       SELECT
         base_graves.cemetery_id,
