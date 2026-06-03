@@ -29,14 +29,14 @@ function compactJoin(values, separator = " | ") {
 }
 
 function ownerDisplayName(owner) {
-  return compactJoin([owner.owner, owner.co_owner], " and ") ?? "Unknown owner";
+  return owner.display_name ?? compactJoin([owner.owner, owner.co_owner], " and ") ?? "Unknown owner";
 }
 
 function toOwner(owner) {
   return {
     id: owner.id,
     displayName: ownerDisplayName(owner),
-    contactNote: compactJoin([owner.phone, owner.email, owner.full_address, owner.notes]),
+    contactNote: compactJoin([owner.phone, owner.email, owner.full_address, owner.document_reference, owner.notes]),
   };
 }
 
@@ -59,12 +59,21 @@ function toBurial(burial) {
 }
 
 function toOwnershipEvent(owner) {
+  const eventTypeMap = new Map([
+    ["deed", "purchase"],
+    ["sale", "purchase"],
+    ["gift", "transfer"],
+    ["church_council_action", "correction"],
+  ]);
+  const eventType = eventTypeMap.get(owner.event_type) ?? owner.event_type ?? "purchase";
+
   return {
-    id: `owner-${owner.id}`,
+    id: owner.ownership_event_id ?? `owner-${owner.id}`,
     ownerIds: [owner.id],
-    eventType: "purchase",
-    effectiveDate: dateOnly(owner.sale_date ?? owner.created_at) ?? "1900-01-01",
-    recordedBy: "Cemetery database",
+    eventType,
+    effectiveDate: dateOnly(owner.effective_date ?? owner.sale_date ?? owner.recorded_at ?? owner.created_at) ?? "1900-01-01",
+    recordedBy: owner.recorded_by ?? "Cemetery database",
+    documentReference: owner.document_reference ?? undefined,
     notes: owner.notes,
   };
 }
@@ -499,11 +508,54 @@ async function selectBurialById(client, id) {
 async function selectOwnersForCemeteries(client, cemeteryIds) {
   const result = await client.query(
     `
-      SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
+      SELECT
+        owners.id::text AS id,
+        owners.gravesite_uuid::text,
+        owners.owner,
+        owners.co_owner,
+        NULL::text AS display_name,
+        owners.full_address,
+        owners.phone,
+        owners.email,
+        owners.sale_date,
+        NULL::date AS effective_date,
+        owners.created_at AS recorded_at,
+        'purchase'::text AS event_type,
+        'Cemetery database'::text AS recorded_by,
+        NULL::text AS document_reference,
+        owners.notes,
+        owners.created_at,
+        NULL::text AS ownership_event_id
       FROM owners
-      WHERE deleted_at IS NULL
-        AND gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
-      ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
+      WHERE owners.deleted_at IS NULL
+        AND owners.gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
+
+      UNION ALL
+
+      SELECT
+        concat('ownership-party-', current_ownership_right_owners.ownership_party_uuid::text) AS id,
+        current_ownership_right_owners.gravesite_uuid::text,
+        NULL::text AS owner,
+        NULL::text AS co_owner,
+        current_ownership_right_owners.display_name,
+        NULL::text AS full_address,
+        NULL::text AS phone,
+        NULL::text AS email,
+        NULL::date AS sale_date,
+        current_ownership_right_owners.effective_date,
+        current_ownership_right_owners.recorded_at,
+        current_ownership_right_owners.event_type,
+        ownership_events.recorded_by,
+        ownership_events.document_reference,
+        concat_ws(' ', current_ownership_right_owners.right_type, current_ownership_right_owners.target_type, ownership_events.notes) AS notes,
+        current_ownership_right_owners.recorded_at AS created_at,
+        concat('ownership-event-', current_ownership_right_owners.ownership_event_uuid::text) AS ownership_event_id
+      FROM current_ownership_right_owners
+      JOIN ownership_events
+        ON ownership_events.id = current_ownership_right_owners.ownership_event_uuid
+      WHERE current_ownership_right_owners.target_type = 'gravesite'
+        AND current_ownership_right_owners.gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
+      ORDER BY sale_date DESC NULLS LAST, effective_date DESC NULLS LAST, created_at DESC, id
     `,
     [cemeteryIds],
   );
@@ -529,11 +581,54 @@ async function selectBurialsForCemeteries(client, cemeteryIds) {
 async function selectOwnersForGrave(client, graveUuid) {
   const result = await client.query(
     `
-      SELECT id::text, gravesite_uuid::text, owner, co_owner, full_address, phone, email, sale_date, notes, created_at
+      SELECT
+        owners.id::text AS id,
+        owners.gravesite_uuid::text,
+        owners.owner,
+        owners.co_owner,
+        NULL::text AS display_name,
+        owners.full_address,
+        owners.phone,
+        owners.email,
+        owners.sale_date,
+        NULL::date AS effective_date,
+        owners.created_at AS recorded_at,
+        'purchase'::text AS event_type,
+        'Cemetery database'::text AS recorded_by,
+        NULL::text AS document_reference,
+        owners.notes,
+        owners.created_at,
+        NULL::text AS ownership_event_id
       FROM owners
-      WHERE gravesite_uuid = $1
-        AND deleted_at IS NULL
-      ORDER BY sale_date DESC NULLS LAST, created_at DESC, id
+      WHERE owners.gravesite_uuid = $1
+        AND owners.deleted_at IS NULL
+
+      UNION ALL
+
+      SELECT
+        concat('ownership-party-', current_ownership_right_owners.ownership_party_uuid::text) AS id,
+        current_ownership_right_owners.gravesite_uuid::text,
+        NULL::text AS owner,
+        NULL::text AS co_owner,
+        current_ownership_right_owners.display_name,
+        NULL::text AS full_address,
+        NULL::text AS phone,
+        NULL::text AS email,
+        NULL::date AS sale_date,
+        current_ownership_right_owners.effective_date,
+        current_ownership_right_owners.recorded_at,
+        current_ownership_right_owners.event_type,
+        ownership_events.recorded_by,
+        ownership_events.document_reference,
+        concat_ws(' ', current_ownership_right_owners.right_type, current_ownership_right_owners.target_type, ownership_events.notes) AS notes,
+        current_ownership_right_owners.recorded_at AS created_at,
+        concat('ownership-event-', current_ownership_right_owners.ownership_event_uuid::text) AS ownership_event_id
+      FROM current_ownership_right_owners
+      JOIN ownership_events
+        ON ownership_events.id = current_ownership_right_owners.ownership_event_uuid
+      WHERE current_ownership_right_owners.target_type = 'gravesite'
+        AND current_ownership_right_owners.gravesite_uuid = $1
+      ORDER BY sale_date DESC NULLS LAST, effective_date DESC NULLS LAST, created_at DESC, id
     `,
     [graveUuid],
   );
