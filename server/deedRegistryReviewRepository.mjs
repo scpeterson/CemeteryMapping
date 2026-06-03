@@ -35,6 +35,29 @@ function toSummary(row) {
   };
 }
 
+function toComparisonSummary(row, originalBatch) {
+  return {
+    originalBatchId: originalBatch?.id ?? "",
+    originalBatchLabel: originalBatch ? `${originalBatch.source_name} (${originalBatch.worksheet_name})` : "",
+    addedCount: Number(row?.added_count ?? 0),
+    changedCount: Number(row?.changed_count ?? 0),
+    unchangedCount: Number(row?.unchanged_count ?? 0),
+    removedCount: Number(row?.removed_count ?? 0),
+  };
+}
+
+function toRemovedEntry(row) {
+  return {
+    id: row.id,
+    sourceRowNumber: row.source_row_number,
+    ownerDisplayName: row.owner_display_name ?? "",
+    rawLotText: row.raw_lot_text ?? "",
+    rawSectionText: row.raw_section_text ?? "",
+    rawRemarks: row.raw_remarks ?? "",
+    parsedLotNumbers: row.parsed_lot_numbers ?? [],
+  };
+}
+
 function toEntry(row) {
   return {
     id: row.id,
@@ -59,6 +82,11 @@ function toEntry(row) {
     status: row.status,
     allocationCount: Number(row.allocation_count ?? 0),
     relatedInvestigationNotes: row.related_investigation_notes ?? [],
+    comparisonStatus: row.comparison_status ?? "",
+    originalSourceRowNumber: row.original_source_row_number,
+    originalRawLotText: row.original_raw_lot_text ?? "",
+    originalRawSectionText: row.original_raw_section_text ?? "",
+    originalRawRemarks: row.original_raw_remarks ?? "",
   };
 }
 
@@ -84,7 +112,23 @@ export async function listDeedRegistryReview(pool, filters = {}) {
 
   const batches = batchResult.rows.map(toBatch);
   const selectedBatchId = compact(filters.batchId) ?? batches[0]?.id;
-  if (!selectedBatchId) return { batches, selectedBatchId: "", summary: [], entries: [] };
+  if (!selectedBatchId) return { batches, selectedBatchId: "", summary: [], comparison: null, removedOriginalEntries: [], entries: [] };
+
+  const originalBatchResult = await pool.query(
+    `
+      SELECT original.id::text, original.source_name, original.worksheet_name, original.created_at
+      FROM deed_registry_import_batches selected
+      JOIN deed_registry_import_batches original
+        ON original.cemetery_id = selected.cemetery_id
+       AND original.worksheet_name = 'Original 2017'
+       AND original.id <> selected.id
+      WHERE selected.id = $1
+      ORDER BY original.created_at DESC, original.id
+      LIMIT 1
+    `,
+    [selectedBatchId],
+  );
+  const originalBatch = originalBatchResult.rows[0] ?? null;
 
   const where = ["entry.batch_id = $1"];
   const values = [selectedBatchId];
@@ -113,6 +157,8 @@ export async function listDeedRegistryReview(pool, filters = {}) {
   }
 
   const limit = normalizeLimit(filters.limit);
+  values.push(originalBatch?.id ?? null);
+  const originalBatchPlaceholder = `$${values.length}`;
   values.push(limit);
   const limitPlaceholder = `$${values.length}`;
 
@@ -151,9 +197,37 @@ export async function listDeedRegistryReview(pool, filters = {}) {
         entry.parse_notes,
         entry.status,
         count(allocation.id) AS allocation_count,
-        COALESCE(investigation.related_notes, '[]'::jsonb) AS related_investigation_notes
+        COALESCE(investigation.related_notes, '[]'::jsonb) AS related_investigation_notes,
+        CASE
+          WHEN ${originalBatchPlaceholder}::uuid IS NULL THEN NULL
+          WHEN original_match.id IS NULL THEN 'added'
+          WHEN COALESCE(original_match.raw_lot_text, '') IS DISTINCT FROM COALESCE(entry.raw_lot_text, '')
+            OR COALESCE(original_match.raw_section_text, '') IS DISTINCT FROM COALESCE(entry.raw_section_text, '')
+            OR COALESCE(original_match.raw_remarks, '') IS DISTINCT FROM COALESCE(entry.raw_remarks, '')
+            OR COALESCE(original_match.deed_on_file, '') IS DISTINCT FROM COALESCE(entry.deed_on_file, '')
+            OR COALESCE(original_match.deed_register_on_file, '') IS DISTINCT FROM COALESCE(entry.deed_register_on_file, '')
+            OR COALESCE(original_match.parsed_lot_numbers, '{}'::text[]) IS DISTINCT FROM COALESCE(entry.parsed_lot_numbers, '{}'::text[])
+            THEN 'changed'
+          ELSE 'unchanged'
+        END AS comparison_status,
+        original_match.source_row_number AS original_source_row_number,
+        original_match.raw_lot_text AS original_raw_lot_text,
+        original_match.raw_section_text AS original_raw_section_text,
+        original_match.raw_remarks AS original_raw_remarks
       FROM deed_registry_entries entry
       LEFT JOIN deed_registry_entry_allocations allocation ON allocation.entry_id = entry.id
+      LEFT JOIN LATERAL (
+        SELECT original.*
+        FROM deed_registry_entries original
+        WHERE original.batch_id = ${originalBatchPlaceholder}::uuid
+          AND original.source_row->>'rowType' = entry.source_row->>'rowType'
+          AND lower(coalesce(original.owner_display_name, '')) = lower(coalesce(entry.owner_display_name, ''))
+        ORDER BY
+          (COALESCE(original.parsed_lot_numbers, '{}'::text[]) = COALESCE(entry.parsed_lot_numbers, '{}'::text[])) DESC,
+          (COALESCE(original.raw_section_text, '') = COALESCE(entry.raw_section_text, '')) DESC,
+          original.source_row_number
+        LIMIT 1
+      ) original_match ON true
       LEFT JOIN LATERAL (
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -190,7 +264,17 @@ export async function listDeedRegistryReview(pool, filters = {}) {
           AND lower(coalesce(owner_entry.owner_display_name, '')) = lower(coalesce(entry.owner_display_name, ''))
       ) investigation ON true
       WHERE ${where.join("\n        AND ")}
-      GROUP BY entry.id, investigation.related_notes
+      GROUP BY
+        entry.id,
+        investigation.related_notes,
+        original_match.id,
+        original_match.source_row_number,
+        original_match.raw_lot_text,
+        original_match.raw_section_text,
+        original_match.raw_remarks,
+        original_match.deed_on_file,
+        original_match.deed_register_on_file,
+        original_match.parsed_lot_numbers
       ORDER BY
         CASE entry.parse_confidence
           WHEN 'review' THEN 0
@@ -205,10 +289,97 @@ export async function listDeedRegistryReview(pool, filters = {}) {
     values,
   );
 
+  const comparisonResult = originalBatch
+    ? await pool.query(
+        `
+          WITH selected_entries AS (
+            SELECT *
+            FROM deed_registry_entries
+            WHERE batch_id = $1
+          ),
+          classified AS (
+            SELECT
+              selected.id,
+              CASE
+                WHEN original_match.id IS NULL THEN 'added'
+                WHEN COALESCE(original_match.raw_lot_text, '') IS DISTINCT FROM COALESCE(selected.raw_lot_text, '')
+                  OR COALESCE(original_match.raw_section_text, '') IS DISTINCT FROM COALESCE(selected.raw_section_text, '')
+                  OR COALESCE(original_match.raw_remarks, '') IS DISTINCT FROM COALESCE(selected.raw_remarks, '')
+                  OR COALESCE(original_match.deed_on_file, '') IS DISTINCT FROM COALESCE(selected.deed_on_file, '')
+                  OR COALESCE(original_match.deed_register_on_file, '') IS DISTINCT FROM COALESCE(selected.deed_register_on_file, '')
+                  OR COALESCE(original_match.parsed_lot_numbers, '{}'::text[]) IS DISTINCT FROM COALESCE(selected.parsed_lot_numbers, '{}'::text[])
+                  THEN 'changed'
+                ELSE 'unchanged'
+              END AS comparison_status
+            FROM selected_entries selected
+            LEFT JOIN LATERAL (
+              SELECT original.*
+              FROM deed_registry_entries original
+              WHERE original.batch_id = $2
+                AND original.source_row->>'rowType' = selected.source_row->>'rowType'
+                AND lower(coalesce(original.owner_display_name, '')) = lower(coalesce(selected.owner_display_name, ''))
+              ORDER BY
+                (COALESCE(original.parsed_lot_numbers, '{}'::text[]) = COALESCE(selected.parsed_lot_numbers, '{}'::text[])) DESC,
+                (COALESCE(original.raw_section_text, '') = COALESCE(selected.raw_section_text, '')) DESC,
+                original.source_row_number
+              LIMIT 1
+            ) original_match ON true
+          ),
+          removed AS (
+            SELECT original.id
+            FROM deed_registry_entries original
+            WHERE original.batch_id = $2
+              AND NOT EXISTS (
+                SELECT 1
+                FROM selected_entries selected
+                WHERE selected.source_row->>'rowType' = original.source_row->>'rowType'
+                  AND lower(coalesce(selected.owner_display_name, '')) = lower(coalesce(original.owner_display_name, ''))
+              )
+          )
+          SELECT
+            count(*) FILTER (WHERE comparison_status = 'added') AS added_count,
+            count(*) FILTER (WHERE comparison_status = 'changed') AS changed_count,
+            count(*) FILTER (WHERE comparison_status = 'unchanged') AS unchanged_count,
+            (SELECT count(*) FROM removed) AS removed_count
+          FROM classified
+        `,
+        [selectedBatchId, originalBatch.id],
+      )
+    : { rows: [] };
+
+  const removedResult = originalBatch
+    ? await pool.query(
+        `
+          SELECT
+            original.id::text,
+            original.source_row_number,
+            original.owner_display_name,
+            original.raw_lot_text,
+            original.raw_section_text,
+            original.raw_remarks,
+            original.parsed_lot_numbers
+          FROM deed_registry_entries original
+          WHERE original.batch_id = $1
+            AND NOT EXISTS (
+              SELECT 1
+              FROM deed_registry_entries selected
+              WHERE selected.batch_id = $2
+                AND selected.source_row->>'rowType' = original.source_row->>'rowType'
+                AND lower(coalesce(selected.owner_display_name, '')) = lower(coalesce(original.owner_display_name, ''))
+            )
+          ORDER BY original.source_row_number
+          LIMIT 50
+        `,
+        [originalBatch.id, selectedBatchId],
+      )
+    : { rows: [] };
+
   return {
     batches,
     selectedBatchId,
     summary: summaryResult.rows.map(toSummary),
+    comparison: originalBatch ? toComparisonSummary(comparisonResult.rows[0], originalBatch) : null,
+    removedOriginalEntries: removedResult.rows.map(toRemovedEntry),
     entries: entriesResult.rows.map(toEntry),
   };
 }

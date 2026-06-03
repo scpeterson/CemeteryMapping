@@ -76,7 +76,7 @@ test("registryRows imports Investigated-style sheets from their header row and p
   try {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Investigated");
-    worksheet.addRow(["Last Name", "First Name", "Address", "City", "State", "Lot Number", "", "Remarks", "Last Known Date", "Deed on File", "Deed Register on File", "Book Match"]);
+    worksheet.addRow(["Last Name", "First Name", "Address", "City", "State", "Lot num", "", "Remarks", "Last Known Date", "Deed on File", "Deed Register on File", "Book Match"]);
     worksheet.addRow(["Bladel", "Josephine K", "", "", "OH", "", "", "No Lot, no grave info.", "1951", "No", "No", ""]);
     worksheet.addRow(["", "", "", "", "", "Removed from Registry due to lack of evidence", "", "NHG Book p 233 lists a likely mismatch.", "", "", "", "No"]);
     await workbook.xlsx.writeFile(filePath);
@@ -86,6 +86,7 @@ test("registryRows imports Investigated-style sheets from their header row and p
     assert.equal(rows.length, 2);
     assert.equal(rows[0].rowNumber, 2);
     assert.equal(rows[0].rowType, "owner_record");
+    assert.equal(rows[0].lot, null);
     assert.equal(rows[1].rowType, "investigation_note");
     assert.equal(rows[1].lot, null);
     assert.match(rows[1].remarks, /Removed from Registry/u);

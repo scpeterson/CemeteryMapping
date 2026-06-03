@@ -373,6 +373,27 @@ export type DeedRegistryInvestigationNote = {
   rawRemarks: string;
 };
 
+export type DeedRegistryComparisonStatus = "added" | "changed" | "unchanged" | "";
+
+export type DeedRegistryComparisonSummary = {
+  originalBatchId: string;
+  originalBatchLabel: string;
+  addedCount: number;
+  changedCount: number;
+  unchangedCount: number;
+  removedCount: number;
+};
+
+export type DeedRegistryRemovedOriginalEntry = {
+  id: string;
+  sourceRowNumber: number;
+  ownerDisplayName: string;
+  rawLotText: string;
+  rawSectionText: string;
+  rawRemarks: string;
+  parsedLotNumbers: string[];
+};
+
 export type DeedRegistryReviewEntry = {
   id: string;
   batchId: string;
@@ -396,6 +417,11 @@ export type DeedRegistryReviewEntry = {
   status: string;
   allocationCount: number;
   relatedInvestigationNotes: DeedRegistryInvestigationNote[];
+  comparisonStatus: DeedRegistryComparisonStatus;
+  originalSourceRowNumber?: number;
+  originalRawLotText: string;
+  originalRawSectionText: string;
+  originalRawRemarks: string;
 };
 
 export type DeedRegistryReviewFilters = {
@@ -410,6 +436,8 @@ export type DeedRegistryReview = {
   batches: DeedRegistryImportBatch[];
   selectedBatchId: string;
   summary: DeedRegistrySummaryItem[];
+  comparison: DeedRegistryComparisonSummary | null;
+  removedOriginalEntries: DeedRegistryRemovedOriginalEntry[];
   entries: DeedRegistryReviewEntry[];
 };
 

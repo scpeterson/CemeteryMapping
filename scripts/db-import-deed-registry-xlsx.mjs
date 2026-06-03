@@ -10,7 +10,7 @@ const defaultWorksheetName = "Updated 2022";
 
 function usage() {
   console.error(
-    "Usage: npm run db:import:deed-registry -- /path/to/registry.xlsx [--facility-id 1] [--sheet \"Updated 2022\"] [--source-name \"Trinity Cemetery Registry 2022\"] [--imported-by \"Name\"] [--notes \"Text\"] [--dry-run]",
+    "Usage: npm run db:import:deed-registry -- /path/to/registry.xlsx [--facility-id 1] [--sheet \"Updated 2022\"] [--all-sheets true] [--source-name \"Trinity Cemetery Registry 2022\"] [--imported-by \"Name\"] [--notes \"Text\"] [--dry-run]",
   );
 }
 
@@ -118,7 +118,8 @@ function headerKey(value, fallback) {
 function findHeaderRow(worksheet) {
   for (let rowNumber = 1; rowNumber <= Math.min(10, worksheet.rowCount); rowNumber += 1) {
     const row = worksheet.getRow(rowNumber);
-    if (cleanText(row.getCell(1).value)?.toLowerCase() === "last name" && cleanText(row.getCell(6).value)?.toLowerCase() === "lot number") {
+    const lotHeader = cleanText(row.getCell(6).value)?.toLowerCase();
+    if (cleanText(row.getCell(1).value)?.toLowerCase() === "last name" && (lotHeader === "lot number" || lotHeader === "lot num")) {
       return rowNumber;
     }
   }
@@ -322,8 +323,8 @@ async function findCemetery(client, facilityId) {
 async function insertBatch(client, cemeteryId, { sourceName, sourcePath, worksheetName, importedBy, notes }) {
   const result = await client.query(
     `
-      INSERT INTO deed_registry_import_batches (cemetery_id, source_name, source_path, worksheet_name, imported_by, notes)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO deed_registry_import_batches (cemetery_id, source_name, source_path, worksheet_name, imported_by, notes, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, clock_timestamp())
       RETURNING id
     `,
     [cemeteryId, sourceName, sourcePath, worksheetName, importedBy, notes],
@@ -435,6 +436,46 @@ async function insertAllocation(client, entryId, allocation) {
   );
 }
 
+async function importWorksheet(client, cemetery, workbookPath, worksheetName, options) {
+  const rows = await registryRows(workbookPath, worksheetName);
+  const parsedRows = rows.map((row) => ({ row, parsed: parseRegistryRow(row) }));
+  const baseSourceName = options["source-name"] ?? basename(workbookPath);
+  const sourceName = options["all-sheets"] ? `${baseSourceName} - ${worksheetName}` : baseSourceName;
+  const batchNotes = [options.notes, worksheetName === "Original 2017" ? "Original 2017 is staged as the baseline for comparison with the investigated and updated registry sheets." : null]
+    .filter(Boolean)
+    .join(" ");
+  const batchId = await insertBatch(client, cemetery.id, {
+    sourceName,
+    sourcePath: workbookPath,
+    worksheetName,
+    importedBy: options["imported-by"] ?? null,
+    notes: batchNotes || null,
+  });
+
+  let allocationCount = 0;
+  for (const { row, parsed } of parsedRows) {
+    const entryId = await insertEntry(client, batchId, cemetery.id, row, parsed);
+    for (const allocation of parsed.allocations) {
+      await insertAllocation(client, entryId, allocation);
+      allocationCount += 1;
+    }
+  }
+
+  const reviewCount = parsedRows.filter(({ parsed }) => parsed.parseConfidence === "review" || parsed.parseConfidence === "low").length;
+  const sectionGCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "section_g_gravesite").length;
+  const passageCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "passage").length;
+
+  return {
+    batchId,
+    worksheetName,
+    rowCount: parsedRows.length,
+    allocationCount,
+    sectionGCount,
+    passageCount,
+    reviewCount,
+  };
+}
+
 async function main() {
   const { workbookPath, options } = parseArgs(process.argv.slice(2));
   if (!workbookPath) {
@@ -446,9 +487,9 @@ async function main() {
     process.exit(1);
   }
 
-  const worksheetName = options.sheet ?? defaultWorksheetName;
-  const rows = await registryRows(workbookPath, worksheetName);
-  const parsedRows = rows.map((row) => ({ row, parsed: parseRegistryRow(row) }));
+  const worksheetNames = options["all-sheets"]
+    ? ["Original 2017", "Investigated", "Updated 2022"]
+    : [options.sheet ?? defaultWorksheetName];
   const environment = currentEnvironment();
   const dbEnv = loadDbEnvironment(environment);
   const pool = new Pool({
@@ -463,42 +504,29 @@ async function main() {
   try {
     await client.query("BEGIN");
     const cemetery = await findCemetery(client, options["facility-id"] ?? "1");
-    const batchId = await insertBatch(client, cemetery.id, {
-      sourceName: options["source-name"] ?? basename(workbookPath),
-      sourcePath: workbookPath,
-      worksheetName,
-      importedBy: options["imported-by"] ?? null,
-      notes: options.notes ?? null,
-    });
-
-    let allocationCount = 0;
-    for (const { row, parsed } of parsedRows) {
-      const entryId = await insertEntry(client, batchId, cemetery.id, row, parsed);
-      for (const allocation of parsed.allocations) {
-        await insertAllocation(client, entryId, allocation);
-        allocationCount += 1;
-      }
+    const importResults = [];
+    for (const worksheetName of worksheetNames) {
+      importResults.push(await importWorksheet(client, cemetery, workbookPath, worksheetName, options));
     }
-
-    const reviewCount = parsedRows.filter(({ parsed }) => parsed.parseConfidence === "review" || parsed.parseConfidence === "low").length;
-    const sectionGCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "section_g_gravesite").length;
-    const passageCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "passage").length;
 
     if (options["dry-run"]) {
       await client.query("ROLLBACK");
       console.log("Dry run complete. No data was written.");
     } else {
       await client.query("COMMIT");
-      console.log(`Imported deed registry staging batch ${batchId} for ${cemetery.name}.`);
+      console.log(`Imported ${importResults.length} deed registry staging batch${importResults.length === 1 ? "" : "es"} for ${cemetery.name}.`);
     }
 
     console.log(`Workbook: ${basename(workbookPath)}`);
-    console.log(`Worksheet: ${worksheetName}`);
-    console.log(`Registry rows staged: ${parsedRows.length}.`);
-    console.log(`Parsed allocation rows staged: ${allocationCount}.`);
-    console.log(`Section G rows: ${sectionGCount}.`);
-    console.log(`Passage rows: ${passageCount}.`);
-    console.log(`Rows needing review: ${reviewCount}.`);
+    for (const result of importResults) {
+      console.log(`Worksheet: ${result.worksheetName}`);
+      console.log(`Batch: ${result.batchId}`);
+      console.log(`Registry rows staged: ${result.rowCount}.`);
+      console.log(`Parsed allocation rows staged: ${result.allocationCount}.`);
+      console.log(`Section G rows: ${result.sectionGCount}.`);
+      console.log(`Passage rows: ${result.passageCount}.`);
+      console.log(`Rows needing review: ${result.reviewCount}.`);
+    }
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

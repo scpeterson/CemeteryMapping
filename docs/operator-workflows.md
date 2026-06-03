@@ -96,8 +96,10 @@ Use `Admin -> Deed Evidence` to review staged deed registry imports before any f
 2. Select the import batch.
 3. Filter by parser confidence, evidence type, owner text, lot text, section text, or remarks.
 4. Review raw row text, parsed allocations, parser notes, and related `Investigated` worksheet notes.
-5. Treat `review` or `low` confidence rows as requiring human interpretation.
-6. Treat `NA`, `OC`, passageway, and Section G plot references carefully because they may not map to ordinary section/lot/gravesite assumptions.
+5. When reviewing `Updated 2022`, use the comparison summary to see added, changed, unchanged, and removed rows relative to the latest `Original 2017` staging batch.
+6. Treat `Lot num` or `Lot Number` values as candidate `lots.lot_id` values, not as spatial lot geometry.
+7. Treat `review` or `low` confidence rows as requiring human interpretation.
+8. Treat `NA`, `OC`, passageway, and Section G plot references carefully because they may not map to ordinary section/lot/gravesite assumptions.
 
 The current Deed Evidence tab is read-only. It does not create lots, gravesites, owners, or ownership events.
 
@@ -490,7 +492,8 @@ Before you run:
 
 1. Confirm the workbook path and target sheet.
 2. Remember that the deed registry is ownership evidence, not authoritative spatial geometry.
-3. Plan to import the `Updated 2022` and `Investigated` sheets as separate staging batches when both are needed.
+3. Treat `Original 2017` as the baseline, `Investigated` as supporting research rows/notes, and `Updated 2022` as the investigation result.
+4. Treat `Lot num` or `Lot Number` values as candidate `lots.lot_id` values. Do not promote them into `lots` until the future lot promotion workflow is explicitly approved.
 
 Run:
 
@@ -500,13 +503,19 @@ Run:
    APP_ENV=test npm run db:import:deed-registry -- "/path/to/Trinity Cemetery Registry 2022.xlsx" --dry-run
    ```
 
-2. Import the primary registry:
+2. Import all three worksheets together:
+
+   ```bash
+   APP_ENV=test npm run db:import:deed-registry -- "/path/to/Trinity Cemetery Registry 2022.xlsx" --all-sheets true --source-name "Trinity Cemetery Registry 2022" --imported-by "Name"
+   ```
+
+3. Or import a single worksheet for a targeted reimport:
 
    ```bash
    APP_ENV=test npm run db:import:deed-registry -- "/path/to/Trinity Cemetery Registry 2022.xlsx" --source-name "Trinity Cemetery Registry 2022" --imported-by "Name"
    ```
 
-3. Import `Investigated` separately:
+4. Import `Investigated` separately only when you need to refresh that worksheet without touching the others:
 
    ```bash
    APP_ENV=test npm run db:import:deed-registry -- "/path/to/Trinity Cemetery Registry 2022.xlsx" --sheet "Investigated" --source-name "Trinity Cemetery Registry 2022 - Investigated" --imported-by "Name"
@@ -517,7 +526,9 @@ Verify:
 1. Open `Admin -> Deed Evidence`.
 2. Review high-confidence rows and low/review-confidence rows separately.
 3. Confirm `Investigated` notes appear with related registry entries.
-4. Leave ambiguous aliases, passageways, and Section G plot references staged for human interpretation.
+4. For an `Updated 2022` batch, confirm the comparison summary appears against the latest `Original 2017` batch.
+5. Review added, changed, unchanged, and removed rows before designing any promotion to `lots`, owners, gravesites, or ownership events.
+6. Leave ambiguous aliases, passageways, and Section G plot references staged for human interpretation.
 
 Do not promote deed registry evidence into owners, lots, or gravesites until explicit promotion rules exist.
 
