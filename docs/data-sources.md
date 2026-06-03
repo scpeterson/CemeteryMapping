@@ -61,6 +61,20 @@ Every real-data import or source change should update this file and the relevant
 | Known limitations | Spreadsheet rows are flat and do not enforce referential integrity. Generated lot and gravesite polygons are approximate placeholders around GPS headstone points. |
 | Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
 
+## Section G Plot Plan
+
+| Field | Value |
+| --- | --- |
+| Source name | Section G Plot Plan With Notations |
+| Source type | PDF exported from Excel |
+| Source path used during development | `/Users/scottpeterson/Downloads/Cemetery/Section G Plot Plan With Notations.pdf` |
+| Application command | `APP_ENV=<env> npm run section-g:generate-gravesites -- --output /tmp/section-g-plot-gravesites.geojson` |
+| Interpretation | References to Section F in this document are typos; the plan describes Section G. Section G has no lots. Its plots are gravesites sold individually. |
+| Dimensions | The small grid squares are 4 feet by 4 feet. Each plot/gravesite is 4 feet by 8 feet. |
+| Survey marks | Black X marks are surveyor-set aluminum spikes used as location references; they are not gravesites or markers. |
+| Generated output | Draft GeoJSON gravesite polygons `G-001` through `G-094` for review before any production import. |
+| Known limitations | Draft geometry is fit to the current Section G boundary and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
+
 ## North Hills Genealogists Trinity OCR
 
 | Field | Value |
