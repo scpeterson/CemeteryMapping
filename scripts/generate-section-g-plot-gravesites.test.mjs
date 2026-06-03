@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildSectionGGravesiteFeatures, sectionGPlotRectangles } from "./generate-section-g-plot-gravesites.mjs";
+import {
+  buildSectionGBoundaryFeature,
+  buildSectionGGravesiteFeatures,
+  sectionGBoundaryRingFeet,
+  sectionGPlotRectangles,
+} from "./generate-section-g-plot-gravesites.mjs";
 
 const feetToMeters = 0.3048;
 const metersPerDegreeLatitude = 111320;
@@ -95,6 +100,20 @@ test("sectionGPlotRectangles models 94 plots without lots", () => {
   assert.deepEqual(plots.find((plot) => plot.plot === 91)?.localRingFeet[0], { x: -48, y: 64 });
 });
 
+test("sectionGBoundaryRingFeet creates a tight stepped outline around Section G plots", () => {
+  const boundary = sectionGBoundaryRingFeet();
+  const boundaryXs = boundary.map((point) => point.x);
+  const boundaryYs = boundary.map((point) => point.y);
+
+  assert.deepEqual(boundary[0], boundary.at(-1));
+  assert.equal(Math.min(...boundaryXs), -48);
+  assert.equal(Math.max(...boundaryXs), 0);
+  assert.equal(Math.min(...boundaryYs), 0);
+  assert.equal(Math.max(...boundaryYs), 92);
+  assert.ok(boundary.some((point) => point.x === -48 && point.y === 64));
+  assert.ok(boundary.some((point) => point.x === -48 && point.y === 80));
+});
+
 test("buildSectionGGravesiteFeatures aligns the south baseline to the B-0089 south edge", () => {
   const features = buildSectionGGravesiteFeatures(sectionGGeometry, sectionB0089Geometry);
   const plot1SouthMidpoint = southEdgeMidpoint(features[0].geometry);
@@ -103,6 +122,16 @@ test("buildSectionGGravesiteFeatures aligns the south baseline to the B-0089 sou
 
   assert.equal(Math.round(signedNorthing(plot1SouthMidpoint) * 100), Math.round(signedNorthing(referenceSouthMidpoint) * 100));
   assert.equal(Math.round(signedNorthing(plot24SouthMidpoint) * 100), Math.round(signedNorthing(referenceSouthMidpoint) * 100));
+});
+
+test("buildSectionGBoundaryFeature generates a tight Section G boundary feature", () => {
+  const boundaryFeature = buildSectionGBoundaryFeature(sectionGGeometry, sectionB0089Geometry);
+  const boundaryRing = boundaryFeature.geometry.coordinates[0][0];
+
+  assert.equal(boundaryFeature.properties.section, "G");
+  assert.equal(boundaryFeature.geometry.type, "MultiPolygon");
+  assert.equal(boundaryRing.length, sectionGBoundaryRingFeet().length);
+  assert.deepEqual(boundaryRing[0], boundaryRing.at(-1));
 });
 
 test("buildSectionGGravesiteFeatures creates draft gravesite GeoJSON from the section boundary", () => {

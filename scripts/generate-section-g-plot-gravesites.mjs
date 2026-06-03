@@ -27,6 +27,7 @@ function usage() {
     "  --section <name>         Section name. Default: G.",
     "  --south-reference <id>   Gravesite id used to align the south edge. Default: TLC-GPS-0089.",
     "  --output <path>          Output GeoJSON path. Default: /tmp/section-g-plot-gravesites.geojson.",
+    "  --section-output <path>  Optional tight Section G boundary GeoJSON output path.",
   ].join("\n");
 }
 
@@ -52,6 +53,9 @@ function parseArgs(args) {
         break;
       case "--output":
         options.output = args[++index];
+        break;
+      case "--section-output":
+        options.sectionOutput = args[++index];
         break;
       case "--help":
       case "-h":
@@ -189,6 +193,28 @@ export function sectionGPlotRectangles() {
   });
 }
 
+export function sectionGBoundaryRingFeet() {
+  return [
+    { x: 0, y: 0 },
+    { x: 0, y: 92 },
+    { x: -32, y: 92 },
+    { x: -32, y: 88 },
+    { x: -40, y: 88 },
+    { x: -40, y: 80 },
+    { x: -48, y: 80 },
+    { x: -48, y: 64 },
+    { x: -40, y: 64 },
+    { x: -40, y: 48 },
+    { x: -32, y: 48 },
+    { x: -32, y: 32 },
+    { x: -24, y: 32 },
+    { x: -24, y: 16 },
+    { x: -16, y: 16 },
+    { x: -16, y: 0 },
+    { x: 0, y: 0 },
+  ];
+}
+
 export function buildSectionGGravesiteFeatures(sectionGeometry, southReferenceGeometry) {
   const transform = buildTrueScaleTransform(sectionGeometry, southReferenceGeometry);
 
@@ -214,6 +240,26 @@ export function buildSectionGGravesiteFeatures(sectionGeometry, southReferenceGe
       },
     };
   });
+}
+
+export function buildSectionGBoundaryFeature(sectionGeometry, southReferenceGeometry) {
+  const transform = buildTrueScaleTransform(sectionGeometry, southReferenceGeometry);
+  const coordinates = sectionGBoundaryRingFeet().map((point) => transform(localFeetToMeters(point)));
+
+  return {
+    type: "Feature",
+    properties: {
+      cemetery: "Trinity Lutheran Church Cemetery",
+      section: "G",
+      source: "Section G Plot Plan With Notations.pdf",
+      source_note: "Draft tight Section G boundary generated around Section G plots G-001 through G-094.",
+      geometry_confidence: "draft",
+    },
+    geometry: {
+      type: "MultiPolygon",
+      coordinates: [[coordinates]],
+    },
+  };
 }
 
 async function loadSectionGeometry(pool, { facilityId, section }) {
@@ -281,6 +327,16 @@ export async function main(args = process.argv.slice(2)) {
     writeFileSync(options.output, `${JSON.stringify(collection, null, 2)}\n`);
     console.log(`Generated ${features.length} draft Section G gravesite polygons.`);
     console.log(`Output: ${options.output}`);
+
+    if (options.sectionOutput) {
+      const sectionCollection = {
+        type: "FeatureCollection",
+        name: "section_g_draft_boundary",
+        features: [buildSectionGBoundaryFeature(sectionGeometry, southReferenceGeometry)],
+      };
+      writeFileSync(options.sectionOutput, `${JSON.stringify(sectionCollection, null, 2)}\n`);
+      console.log(`Section boundary output: ${options.sectionOutput}`);
+    }
   } finally {
     await pool.end();
   }
