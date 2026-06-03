@@ -72,10 +72,11 @@ Every real-data import or source change should update this file and the relevant
 | Interpretation | References to Section F in this document are typos; the plan describes Section G. Section G has no lots. Its plots are gravesites sold individually. |
 | Dimensions | The small grid squares are 4 feet by 4 feet. Each plot/gravesite is 4 feet by 8 feet. |
 | Survey marks | Black X marks are surveyor-set aluminum spikes used as location references; they are not gravesites or markers. |
-| Generated output | Draft GeoJSON gravesite polygons `G-001` through `G-094` for review before any production import. |
+| Generated output | GeoJSON gravesite polygons `G-001` through `G-094`, with `grave_id` preserving the PDF plot number. |
 | Alignment anchor | Draft geometry keeps the west edge on the current Section G boundary and aligns the south edge of plots `G-001` and `G-024` to the south edge of gravesite `TLC-GPS-0089`/B-0089 by default. Use `--south-reference <gravesite_id>` to override that anchor. |
-| Section boundary | Migration `037-tighten-section-g-boundary.sql` replaces the oversized imported Section G polygon with a tight stepped boundary generated around the reviewed Section G plot block. |
-| Known limitations | Draft gravesite geometry is fit to the current Section G west boundary, the B-0089 south-edge anchor, and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
+| Section boundary | Migrations `037-tighten-section-g-boundary.sql` and `039-align-section-g-boundary-to-gravesites.sql` replace the oversized imported Section G polygon with a tight boundary generated around the reviewed Section G plot block. The final boundary is aligned to the inserted gravesite polygons so spatial coverage checks pass. |
+| Gravesite import | Migration `038-add-section-g-gravesites.sql` inserts or refreshes the 94 Section G gravesites in the production `gravesites` table. Section G has no lots, so `lot_uuid` and `lot_id` are left null. |
+| Known limitations | Gravesite geometry is fit to the current Section G west boundary, the B-0089 south-edge anchor, and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
 
 ## North Hills Genealogists Trinity OCR
 

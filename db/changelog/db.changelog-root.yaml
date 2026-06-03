@@ -110,3 +110,9 @@ databaseChangeLog:
   - include:
       file: changes/037-tighten-section-g-boundary.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/038-add-section-g-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/039-align-section-g-boundary-to-gravesites.sql
+      relativeToChangelogFile: true
