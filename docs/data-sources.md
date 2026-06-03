@@ -78,6 +78,21 @@ Every real-data import or source change should update this file and the relevant
 | Gravesite import | Migration `038-add-section-g-gravesites.sql` inserts or refreshes the 94 Section G gravesites in the production `gravesites` table. Section G has no lots, so `lot_uuid` and `lot_id` are left null. |
 | Known limitations | Gravesite geometry is fit to the current Section G west boundary, the B-0089 south-edge anchor, and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
 
+## Trinity Cemetery Registry 2022
+
+| Field | Value |
+| --- | --- |
+| Source name | Trinity Cemetery Registry 2022 |
+| Source type | Excel workbook |
+| Source path used during development | `/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx` |
+| Worksheets | `Original 2017`, `Investigated`, `Updated 2022` |
+| Application import command | `APP_ENV=<env> npm run db:import:deed-registry -- "/path/to/Trinity Cemetery Registry 2022.xlsx"` |
+| Three-sheet import command | `APP_ENV=<env> npm run db:import:deed-registry -- "/path/to/Trinity Cemetery Registry 2022.xlsx" --all-sheets true --source-name "Trinity Cemetery Registry 2022"` |
+| Staging tables | `deed_registry_import_batches`, `deed_registry_entries`, `deed_registry_entry_allocations` |
+| Worksheet interpretation | `Original 2017` is the baseline, `Investigated` preserves research rows and note-only rows, and `Updated 2022` is the investigation result. |
+| Lot identifier handling | `Lot num` / `Lot Number` worksheet values are staged as candidate lot identifiers intended for future `lots.lot_id` promotion after review. |
+| Known limitations | Staging and comparison only; no production promotion into lots, gravesites, owners, or ownership events yet. |
+
 ## North Hills Genealogists Trinity OCR
 
 | Field | Value |

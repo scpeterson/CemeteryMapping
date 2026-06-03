@@ -127,6 +127,8 @@ const emptyDeedRegistryReview: DeedRegistryReview = {
   batches: [],
   selectedBatchId: "",
   summary: [],
+  comparison: null,
+  removedOriginalEntries: [],
   entries: [],
 };
 
@@ -238,11 +240,17 @@ const confidenceLabels: Record<string, string> = {
   low: "Low",
   review: "Review",
 };
+const comparisonLabels: Record<string, string> = {
+  added: "Added since Original 2017",
+  changed: "Changed since Original 2017",
+  unchanged: "Unchanged from Original 2017",
+};
 const deedScopeLabel = (scope: string) => scopeLabels[scope] ?? scope;
 const deedConfidenceLabel = (confidence: string) => confidenceLabels[confidence] ?? confidence;
+const deedComparisonLabel = (status: string) => comparisonLabels[status] ?? status;
 const formatList = (values: string[]) => (values.length ? values.join(", ") : "None");
 const deedEntryTitle = (entry: DeedRegistryReviewEntry) =>
-  `Row ${entry.sourceRowNumber}. ${entry.ownerDisplayName || "No owner"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence.`;
+  `Row ${entry.sourceRowNumber}. ${entry.ownerDisplayName || "No owner"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence.${entry.comparisonStatus ? ` ${deedComparisonLabel(entry.comparisonStatus)}.` : ""}`;
 const readingEntryTitle = (entry: NorthHillsOcrReviewEntry) =>
   `Page ${entry.sourcePageNumber ?? entry.sourcePageIndex}. ${entry.nameText || "Unnamed reading"}. ${deedConfidenceLabel(entry.parseConfidence)} confidence. ${entry.candidateMatchCount} possible match${entry.candidateMatchCount === 1 ? "" : "es"}.`;
 const evidenceStatusLabels: Record<NorthHillsOcrEvidenceStatus, string> = {
@@ -345,6 +353,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     () => deedRegistryReview.batches.find((batch) => batch.id === deedRegistryReview.selectedBatchId),
     [deedRegistryReview.batches, deedRegistryReview.selectedBatchId],
   );
+  const removedOriginalDeedEntries = deedRegistryReview.removedOriginalEntries ?? [];
   const selectedNorthHillsBatch = useMemo(
     () => northHillsOcrReview.batches.find((batch) => batch.id === northHillsOcrReview.selectedBatchId),
     [northHillsOcrReview.batches, northHillsOcrReview.selectedBatchId],
@@ -1765,10 +1774,39 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
               </div>
             ) : null}
 
+            {deedRegistryReview.comparison ? (
+              <section className="deed-comparison-summary" aria-label="Original 2017 comparison">
+                <header>
+                  <strong>Compared with Original 2017</strong>
+                  <small>{deedRegistryReview.comparison.originalBatchLabel}</small>
+                </header>
+                <dl>
+                  <div title="Rows in this selected batch that do not have a matching owner row in Original 2017.">
+                    <dt>Added</dt>
+                    <dd>{deedRegistryReview.comparison.addedCount}</dd>
+                  </div>
+                  <div title="Rows with a matching Original 2017 owner but changed lot_id candidate, section, remarks, or deed flags.">
+                    <dt>Changed</dt>
+                    <dd>{deedRegistryReview.comparison.changedCount}</dd>
+                  </div>
+                  <div title="Rows that match the Original 2017 owner and staged values.">
+                    <dt>Unchanged</dt>
+                    <dd>{deedRegistryReview.comparison.unchangedCount}</dd>
+                  </div>
+                  <div title="Original 2017 rows whose owner does not appear in the selected batch.">
+                    <dt>Removed</dt>
+                    <dd>{deedRegistryReview.comparison.removedCount}</dd>
+                  </div>
+                </dl>
+              </section>
+            ) : selectedDeedBatch?.worksheetName === "Updated 2022" ? (
+              <p className="record-editor-empty">Import the `Original 2017` worksheet to compare this updated registry with the original baseline.</p>
+            ) : null}
+
             <div className="deed-entry-list" role="table" aria-label="Staged deed registry evidence">
               {deedRegistryReview.entries.length === 0 && !isLoadingDeedReview ? <p className="record-editor-empty">No deed evidence rows match these filters.</p> : null}
               {deedRegistryReview.entries.map((entry) => (
-                <article key={entry.id} className={`deed-entry-row confidence-${entry.parseConfidence}`} title={deedEntryTitle(entry)}>
+                <article key={entry.id} className={`deed-entry-row confidence-${entry.parseConfidence} comparison-${entry.comparisonStatus || "none"}`} title={deedEntryTitle(entry)}>
                   <header>
                     <span>
                       <strong>Row {entry.sourceRowNumber}</strong>
@@ -1782,10 +1820,16 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                       <strong>{deedScopeLabel(entry.ownershipScope)}</strong>
                       <small>{entry.allocationCount} allocation{entry.allocationCount === 1 ? "" : "s"}</small>
                     </span>
+                    {entry.comparisonStatus ? (
+                      <span>
+                        <strong>{deedComparisonLabel(entry.comparisonStatus)}</strong>
+                        <small>{entry.originalSourceRowNumber ? `Original row ${entry.originalSourceRowNumber}` : "No original row match"}</small>
+                      </span>
+                    ) : null}
                   </header>
                   <dl className="deed-entry-fields">
                     <div title="Raw lot or plot text from the worksheet.">
-                      <dt>Raw lot</dt>
+                      <dt>Lot num / lot_id candidate</dt>
                       <dd>{entry.rawLotText || "None"}</dd>
                     </div>
                     <div title="Raw section text from the worksheet.">
@@ -1810,6 +1854,25 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                     </div>
                   </dl>
                   {entry.rawRemarks ? <p className="deed-entry-remarks">{entry.rawRemarks}</p> : null}
+                  {entry.comparisonStatus === "changed" ? (
+                    <section className="deed-comparison-detail" aria-label="Original 2017 values">
+                      <h4>Original 2017 values</h4>
+                      <dl>
+                        <div>
+                          <dt>Lot num / lot_id candidate</dt>
+                          <dd>{entry.originalRawLotText || "None"}</dd>
+                        </div>
+                        <div>
+                          <dt>Section</dt>
+                          <dd>{entry.originalRawSectionText || "None"}</dd>
+                        </div>
+                        <div>
+                          <dt>Remarks</dt>
+                          <dd>{entry.originalRawRemarks || "None"}</dd>
+                        </div>
+                      </dl>
+                    </section>
+                  ) : null}
                   {entry.parseNotes.length ? (
                     <ul className="deed-entry-notes" aria-label="Parser notes">
                       {entry.parseNotes.map((note) => (
@@ -1830,6 +1893,19 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                 </article>
               ))}
             </div>
+
+            {removedOriginalDeedEntries.length ? (
+              <section className="deed-removed-list" aria-label="Original 2017 rows missing from selected batch">
+                <h4>Original 2017 rows not found in selected batch</h4>
+                {removedOriginalDeedEntries.map((entry) => (
+                  <article key={entry.id}>
+                    <strong>Row {entry.sourceRowNumber}: {entry.ownerDisplayName || "No owner"}</strong>
+                    <span>Lot num / lot_id candidate: {entry.rawLotText || formatList(entry.parsedLotNumbers)}</span>
+                    {entry.rawRemarks ? <p>{entry.rawRemarks}</p> : null}
+                  </article>
+                ))}
+              </section>
+            ) : null}
           </section>
         </>
       ) : activeTab === "readings" ? (

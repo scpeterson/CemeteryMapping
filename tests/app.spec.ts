@@ -683,6 +683,8 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
         ],
         selectedBatchId: "batch-updated",
         summary: [{ ownershipScope: "section_g_gravesite", parseConfidence: "high", count: 18 }],
+        comparison: null,
+        removedOriginalEntries: [],
         entries: [
           {
             id: "entry-1",

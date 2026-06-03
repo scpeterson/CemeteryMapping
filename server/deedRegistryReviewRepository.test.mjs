@@ -34,8 +34,21 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
           ],
         };
       }
+      if (sql.includes("FROM deed_registry_import_batches selected")) {
+        assert.deepEqual(values, ["batch-1"]);
+        return {
+          rows: [
+            {
+              id: "original-batch",
+              source_name: "Trinity Cemetery Registry 2022 - Original 2017",
+              worksheet_name: "Original 2017",
+              created_at: "2026-05-27T12:40:00.000Z",
+            },
+          ],
+        };
+      }
       if (sql.includes("related_investigation_notes")) {
-        assert.deepEqual(values, ["batch-1", "review", "%watenpool%", 50]);
+        assert.deepEqual(values, ["batch-1", "review", "%watenpool%", "original-batch", 50]);
         return {
           rows: [
             {
@@ -61,6 +74,36 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
               status: "staged",
               allocation_count: "1",
               related_investigation_notes: [{ sourceRowNumber: 16, ownerDisplayName: "Robert & Elizabeth Watenpool", rawRemarks: "Blackford investigation note." }],
+              comparison_status: "changed",
+              original_source_row_number: 201,
+              original_raw_lot_text: "87",
+              original_raw_section_text: "",
+              original_raw_remarks: "Original lot reference.",
+            },
+          ],
+        };
+      }
+      if (sql.includes("WITH selected_entries AS")) {
+        assert.deepEqual(values, ["batch-1", "original-batch"]);
+        return {
+          rows: [{ added_count: "4", changed_count: "12", unchanged_count: "200", removed_count: "2" }],
+        };
+      }
+      if (sql.includes("Original 2017 rows missing")) {
+        throw new Error("Unexpected UI text in SQL.");
+      }
+      if (sql.includes("FROM deed_registry_entries original") && sql.includes("NOT EXISTS")) {
+        assert.deepEqual(values, ["original-batch", "batch-1"]);
+        return {
+          rows: [
+            {
+              id: "removed-1",
+              source_row_number: 22,
+              owner_display_name: "Removed Owner",
+              raw_lot_text: "44",
+              raw_section_text: "OC",
+              raw_remarks: "Removed after investigation.",
+              parsed_lot_numbers: ["44"],
             },
           ],
         };
@@ -77,5 +120,9 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
   assert.equal(review.entries[0].ownerDisplayName, "Robert & Elizabeth Watenpool");
   assert.equal(review.entries[0].allocationCount, 1);
   assert.equal(review.entries[0].relatedInvestigationNotes[0].sourceRowNumber, 16);
-  assert.equal(calls.length, 3);
+  assert.equal(review.entries[0].comparisonStatus, "changed");
+  assert.equal(review.entries[0].originalSourceRowNumber, 201);
+  assert.equal(review.comparison?.changedCount, 12);
+  assert.equal(review.removedOriginalEntries[0].rawLotText, "44");
+  assert.equal(calls.length, 6);
 });
