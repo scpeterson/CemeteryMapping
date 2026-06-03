@@ -78,8 +78,8 @@ function toOwnershipEvent(owner) {
   };
 }
 
-function statusCodeSelect(alias = "gravesites") {
-  return `COALESCE(status_type.code, legacy_status_type.code, NULLIF(lower(${alias}.status), ''), 'unknown')`;
+function statusCodeSelect() {
+  return `COALESCE(status_type.code, 'unknown')`;
 }
 
 function ownershipRightNotes(right) {
@@ -373,8 +373,6 @@ async function selectGravesForCemeteries(client, cemeteryIds, { includeCost = fa
         ON cemeteries.id = gravesites.cemetery_id
       LEFT JOIN gravesite_status_types status_type
         ON status_type.id = gravesites.status_type_id
-      LEFT JOIN gravesite_status_types legacy_status_type
-        ON legacy_status_type.code = lower(gravesites.status)
       WHERE gravesites.cemetery_id = ANY($1::uuid[])
         AND gravesites.deleted_at IS NULL
       ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
@@ -438,8 +436,6 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
         ON cemeteries.id = gravesites.cemetery_id
       LEFT JOIN gravesite_status_types status_type
         ON status_type.id = gravesites.status_type_id
-      LEFT JOIN gravesite_status_types legacy_status_type
-        ON legacy_status_type.code = lower(gravesites.status)
       WHERE gravesites.cemetery_id = $1
         AND gravesites.gravesite_id = $2
         AND gravesites.deleted_at IS NULL
@@ -467,8 +463,6 @@ async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
       FROM gravesites
       LEFT JOIN gravesite_status_types status_type
         ON status_type.id = gravesites.status_type_id
-      LEFT JOIN gravesite_status_types legacy_status_type
-        ON legacy_status_type.code = lower(gravesites.status)
       WHERE gravesites.cemetery_id = $1
         AND gravesites.gravesite_id = $2
         AND gravesites.deleted_at IS NULL
