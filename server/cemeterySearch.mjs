@@ -1,3 +1,5 @@
+import { derivedGravesiteStatusSql } from "./gravesiteStatusSql.mjs";
+
 const statusLabels = {
   available: "Available",
   reserved: "Reserved",
@@ -78,54 +80,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         LEFT JOIN gravesite_status_types status_type
           ON status_type.id = gravesites.status_type_id
         CROSS JOIN LATERAL (
-          SELECT
-            CASE
-              WHEN status_type.code = 'needs_review' THEN status_type.code
-              WHEN EXISTS (
-                SELECT 1
-                FROM burials status_burials
-                WHERE status_burials.gravesite_uuid = gravesites.id
-                  AND status_burials.deleted_at IS NULL
-              ) THEN 'occupied'
-              WHEN status_type.code = 'reserved' THEN status_type.code
-              WHEN EXISTS (
-                SELECT 1
-                FROM owners status_legacy_owners
-                WHERE status_legacy_owners.gravesite_uuid = gravesites.id
-                  AND status_legacy_owners.deleted_at IS NULL
-              )
-              OR EXISTS (
-                SELECT 1
-                FROM current_ownership_right_owners status_rights
-                WHERE (
-                    status_rights.target_type = 'gravesite'
-                    AND status_rights.gravesite_uuid = gravesites.id
-                  )
-                  OR (
-                    status_rights.target_type = 'lot'
-                    AND status_rights.lot_uuid = gravesites.lot_uuid
-                  )
-              ) THEN 'sold'
-              WHEN NOT EXISTS (
-                SELECT 1
-                FROM owners status_legacy_owners
-                WHERE status_legacy_owners.gravesite_uuid = gravesites.id
-                  AND status_legacy_owners.deleted_at IS NULL
-              )
-              AND NOT EXISTS (
-                SELECT 1
-                FROM current_ownership_right_owners status_rights
-                WHERE (
-                    status_rights.target_type = 'gravesite'
-                    AND status_rights.gravesite_uuid = gravesites.id
-                  )
-                  OR (
-                    status_rights.target_type = 'lot'
-                    AND status_rights.lot_uuid = gravesites.lot_uuid
-                  )
-              ) THEN 'available'
-              ELSE 'unknown'
-            END AS status
+          SELECT ${derivedGravesiteStatusSql()} AS status
         ) derived_status
         LEFT JOIN gravesite_status_types derived_status_type
           ON derived_status_type.code = derived_status.status
