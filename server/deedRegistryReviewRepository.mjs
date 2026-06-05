@@ -174,35 +174,9 @@ export async function listDeedRegistryReview(pool, filters = {}) {
         OR lower(array_to_string(coalesce(entry.parsed_grave_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
         OR EXISTS (
           SELECT 1
-          FROM deed_registry_import_batches investigated_batch
-          JOIN deed_registry_entries owner_entry
-            ON owner_entry.batch_id = investigated_batch.id
-           AND owner_entry.source_row->>'rowType' = 'owner_record'
-          JOIN deed_registry_entries note
-            ON note.batch_id = investigated_batch.id
-           AND note.source_row->>'rowType' = 'investigation_note'
-           AND note.source_row_number > owner_entry.source_row_number
-           AND NOT EXISTS (
-             SELECT 1
-             FROM deed_registry_entries next_owner
-             WHERE next_owner.batch_id = investigated_batch.id
-               AND next_owner.source_row->>'rowType' = 'owner_record'
-               AND next_owner.source_row_number > owner_entry.source_row_number
-               AND next_owner.source_row_number < note.source_row_number
-           )
-          WHERE investigated_batch.worksheet_name = 'Investigated'
-            AND investigated_batch.id = (
-              SELECT latest_investigated.id
-              FROM deed_registry_import_batches latest_investigated
-              WHERE latest_investigated.worksheet_name = 'Investigated'
-              ORDER BY latest_investigated.created_at DESC, latest_investigated.id
-              LIMIT 1
-            )
-            AND lower(coalesce(owner_entry.owner_display_name, '')) = lower(coalesce(entry.owner_display_name, ''))
-            AND (
-              lower(coalesce(owner_entry.owner_display_name, '')) LIKE '%' || search_terms.term || '%'
-              OR lower(coalesce(note.raw_remarks, '')) LIKE '%' || search_terms.term || '%'
-            )
+          FROM investigated_notes
+          WHERE investigated_notes.owner_key = lower(coalesce(entry.owner_display_name, ''))
+            AND investigated_notes.search_text LIKE '%' || search_terms.term || '%'
         )
     )`);
   }
@@ -226,6 +200,47 @@ export async function listDeedRegistryReview(pool, filters = {}) {
 
   const entriesResult = await pool.query(
     `
+      WITH latest_investigated_batch AS (
+        SELECT id
+        FROM deed_registry_import_batches
+        WHERE worksheet_name = 'Investigated'
+        ORDER BY created_at DESC, id
+        LIMIT 1
+      ),
+      investigated_notes AS (
+        SELECT
+          lower(coalesce(owner_entry.owner_display_name, '')) AS owner_key,
+          string_agg(
+            lower(concat_ws(' ', owner_entry.owner_display_name, note.raw_remarks)),
+            ' '
+            ORDER BY note.source_row_number
+          ) AS search_text,
+          jsonb_agg(
+            jsonb_build_object(
+              'sourceRowNumber', note.source_row_number,
+              'ownerDisplayName', owner_entry.owner_display_name,
+              'rawRemarks', note.raw_remarks
+            )
+            ORDER BY note.source_row_number
+          ) AS related_notes
+        FROM latest_investigated_batch
+        JOIN deed_registry_entries owner_entry
+          ON owner_entry.batch_id = latest_investigated_batch.id
+         AND owner_entry.source_row->>'rowType' = 'owner_record'
+        JOIN deed_registry_entries note
+          ON note.batch_id = latest_investigated_batch.id
+         AND note.source_row->>'rowType' = 'investigation_note'
+         AND note.source_row_number > owner_entry.source_row_number
+         AND NOT EXISTS (
+           SELECT 1
+           FROM deed_registry_entries next_owner
+           WHERE next_owner.batch_id = latest_investigated_batch.id
+             AND next_owner.source_row->>'rowType' = 'owner_record'
+             AND next_owner.source_row_number > owner_entry.source_row_number
+             AND next_owner.source_row_number < note.source_row_number
+         )
+        GROUP BY lower(coalesce(owner_entry.owner_display_name, ''))
+      )
       SELECT
         entry.id::text,
         entry.batch_id::text,
@@ -279,41 +294,8 @@ export async function listDeedRegistryReview(pool, filters = {}) {
           original.source_row_number
         LIMIT 1
       ) original_match ON true
-      LEFT JOIN LATERAL (
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'sourceRowNumber', note.source_row_number,
-            'ownerDisplayName', owner_entry.owner_display_name,
-            'rawRemarks', note.raw_remarks
-          )
-          ORDER BY note.source_row_number
-        ) AS related_notes
-        FROM deed_registry_import_batches investigated_batch
-        JOIN deed_registry_entries owner_entry
-          ON owner_entry.batch_id = investigated_batch.id
-         AND owner_entry.source_row->>'rowType' = 'owner_record'
-        JOIN deed_registry_entries note
-          ON note.batch_id = investigated_batch.id
-         AND note.source_row->>'rowType' = 'investigation_note'
-         AND note.source_row_number > owner_entry.source_row_number
-         AND NOT EXISTS (
-           SELECT 1
-           FROM deed_registry_entries next_owner
-           WHERE next_owner.batch_id = investigated_batch.id
-             AND next_owner.source_row->>'rowType' = 'owner_record'
-             AND next_owner.source_row_number > owner_entry.source_row_number
-             AND next_owner.source_row_number < note.source_row_number
-         )
-        WHERE investigated_batch.worksheet_name = 'Investigated'
-          AND investigated_batch.id = (
-            SELECT latest_investigated.id
-            FROM deed_registry_import_batches latest_investigated
-            WHERE latest_investigated.worksheet_name = 'Investigated'
-            ORDER BY latest_investigated.created_at DESC, latest_investigated.id
-            LIMIT 1
-          )
-          AND lower(coalesce(owner_entry.owner_display_name, '')) = lower(coalesce(entry.owner_display_name, ''))
-      ) investigation ON true
+      LEFT JOIN investigated_notes investigation
+        ON investigation.owner_key = lower(coalesce(entry.owner_display_name, ''))
       WHERE ${where.join("\n        AND ")}
       GROUP BY
         entry.id,
