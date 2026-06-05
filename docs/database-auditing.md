@@ -30,6 +30,9 @@ Migration `014-database-audit-triggers.sql` attaches row-level audit triggers to
 - `headstones`
 - `headstone_gravesites`
 - `headstone_burials`
+- `deed_investigation_cases`
+- `deed_investigation_case_entries`
+- `deed_investigation_case_actions`
 - `app_users`
 - `app_user_cemetery_access`
 - `app_roles`

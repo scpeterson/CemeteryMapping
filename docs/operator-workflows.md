@@ -90,20 +90,26 @@ Use `Admin -> Readings` for staged North Hills Genealogists OCR readings.
 
 Readings review is an evidence workflow. It does not change burial names, dates, marker condition, owner/deed data, geometry, or lot/gravesite structure.
 
-### Deed Evidence Review
+### Deed Evidence Review And Investigations
 
-Use `Admin -> Deed Evidence` to review staged deed registry imports before any future promotion workflow writes ownership data.
+Use `Admin -> Deed Evidence` to review staged deed registry imports and document deed investigations before any future promotion workflow writes ownership data.
 
 1. Open `Admin -> Deed Evidence`.
-2. Select the import batch.
-3. Filter by parser confidence, evidence type, owner text, lot text, section text, or remarks.
-4. Review raw row text, parsed allocations, parser notes, and related `Investigated` worksheet notes.
-5. When reviewing `Updated 2022`, use the comparison summary to see added, changed, unchanged, and removed rows relative to the latest `Original 2017` staging batch.
-6. Treat `Lot num` or `Lot Number` values as candidate `lots.lot_id` values, not as spatial lot geometry.
-7. Treat `review` or `low` confidence rows as requiring human interpretation.
-8. Treat `NA`, `OC`, passageway, and Section G plot references carefully because they may not map to ordinary section/lot/gravesite assumptions.
+2. Use the case workbench when a person or family asks whether a deed, plot, replacement deed, marker approval, Council exception, or future burial right exists.
+3. Search existing cases by case number, family, plot, requester, or findings before creating a new case.
+4. Create or update the case with the subject, requester, plot reference, request summary, family or claimant notes, findings, case status, affidavit status, and outcome.
+5. Add one or more recommended actions when the investigation may have several outcomes. Examples include issuing a replacement deed for one person, approving ashes in a specific plot, denying a request, documenting that no deed exists, or approving a marker.
+6. For each recommended action, record the person, action type, plot or gravesite, Council status, Council decision date, Council minutes or document reference, affidavit status, deed status, notes, and final outcome.
+7. Use the evidence filters to select the import batch.
+8. Filter by parser confidence, evidence type, owner text, lot text, section text, remarks, family names, deed flags, parsed plot/grave identifiers, or related `Investigated` worksheet notes.
+9. Review raw row text, parsed allocations, parser notes, and related `Investigated` worksheet notes.
+10. Attach relevant evidence rows to the selected investigation case. Add a short note when the reason for attaching the row is not obvious.
+11. When reviewing `Updated 2022`, use the comparison summary to see added, changed, unchanged, and removed rows relative to the latest `Original 2017` staging batch.
+12. Treat `Lot num` or `Lot Number` values as candidate `lots.lot_id` values, not as spatial lot geometry.
+13. Treat `review` or `low` confidence rows as requiring human interpretation.
+14. Treat `NA`, `OC`, passageway, and Section G plot references carefully because they may not map to ordinary section/lot/gravesite assumptions.
 
-The current Deed Evidence tab is read-only. It does not create lots, gravesites, legacy owners, or generalized ownership parties/events/rights.
+Deed investigation cases, evidence links, and recommended actions are documentation records. They do not create lots, gravesites, legacy owners, generalized ownership parties/events/rights, or burial rows by themselves. After Council approval or a final decision, record any actual deed or ownership transfer through the ownership maintenance workflow.
 
 The regular grave-detail panel and ownership-aware search include both legacy `owners` rows and generalized gravesite ownership rights. For example, Section G deed-holder rights imported from the plot plan appear as current owner/deed information even though Section G has no lots.
 
