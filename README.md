@@ -70,6 +70,7 @@ If another local PostgreSQL service already uses port `5432`, create `db/env/dev
 - Esri File Geodatabase inspection, GeoJSON export, staging import, and cemetery/section promotion helpers
 - Excel headstone coordinate import that generates gravesite polygons, headstone points, and linked burials
 - Admin-only cemetery record editor with searchable cemetery, section, and lot pickers for cemetery names/notes, section names and alternate names, and lot names
+- Admin deed evidence review with deed investigation cases, linked evidence rows, repeatable recommended actions, Council decision tracking, affidavit status, and final outcomes
 - Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
 - Express API backed by PostgreSQL/PostGIS
 
@@ -123,6 +124,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
 - `GET /api/admin/cemetery-records` for admin-only cemetery, section, and lot text records
 - `PUT /api/admin/cemetery-records/cemeteries/:id`, `/sections/:id`, and `/lots/:id` for admin-only text updates
+- `GET /api/admin/deed-registry-review` for staged deed registry evidence review
+- `GET` and `POST /api/admin/deed-investigation-cases` plus case `PUT`, evidence-link, and action endpoints for admin-only deed investigation documentation
 - `DELETE /api/cemeteries/:cemeteryId/grave-spaces/:id` for admin-only soft delete of a grave space
 - `POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore` for admin-only restore of a soft-deleted grave space
 
