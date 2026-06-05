@@ -168,14 +168,11 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     const lotsSource = map.getSource("lots") as GeoJSONSource | undefined;
     lotsSource?.setData(lotsFeatureCollection(data));
 
-    const headstonesSource = map.getSource("headstones") as GeoJSONSource | undefined;
-    headstonesSource?.setData(headstonesFeatureCollection(data.headstones ?? [], selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds));
-
     if (boundarySource || sectionsSource || lotsSource) {
       syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
       fitMapToData(map, data);
     }
-  }, [data, searchResultIds, selectedGrave]);
+  }, [data]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("graves") as GeoJSONSource | undefined;
