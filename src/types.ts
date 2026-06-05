@@ -455,6 +455,83 @@ export type DeedRegistryReview = {
   entries: DeedRegistryReviewEntry[];
 };
 
+export type DeedInvestigationStatus = "open" | "researching" | "awaiting_family" | "awaiting_council" | "approved" | "denied" | "closed";
+export type DeedInvestigationAffidavitStatus = "not_needed" | "needed" | "sent" | "received" | "waived";
+export type DeedInvestigationActionType =
+  | "issue_deed"
+  | "replacement_deed"
+  | "inter_ashes"
+  | "approve_marker"
+  | "deny_request"
+  | "document_only"
+  | "other";
+export type DeedInvestigationCouncilStatus = "not_submitted" | "recommended" | "submitted" | "approved" | "denied" | "not_required";
+export type DeedInvestigationDeedStatus = "not_started" | "pending" | "issued" | "not_issued" | "not_applicable";
+
+export type DeedInvestigationLinkedEntry = {
+  id: string;
+  sourceRowNumber: number;
+  ownerDisplayName: string;
+  rawLotText: string;
+  rawSectionText: string;
+  rawRemarks: string;
+  note: string;
+};
+
+export type DeedInvestigationAction = {
+  id: string;
+  caseId: string;
+  subjectName: string;
+  actionType: DeedInvestigationActionType;
+  plotReference: string;
+  councilStatus: DeedInvestigationCouncilStatus;
+  councilDecisionDate: string;
+  councilDocumentReference: string;
+  affidavitStatus: DeedInvestigationAffidavitStatus;
+  deedStatus: DeedInvestigationDeedStatus;
+  outcome: string;
+  notes: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DeedInvestigationCase = {
+  id: string;
+  cemeteryId: string;
+  cemeteryName: string;
+  caseNumber: string;
+  status: DeedInvestigationStatus;
+  subjectName: string;
+  requesterName: string;
+  requesterContact: string;
+  plotReference: string;
+  requestSummary: string;
+  familySummary: string;
+  findings: string;
+  councilDecision: string;
+  affidavitStatus: DeedInvestigationAffidavitStatus;
+  outcome: string;
+  openedAt: string;
+  closedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  linkedEntryCount: number;
+  linkedEntries: DeedInvestigationLinkedEntry[];
+  recommendedActions: DeedInvestigationAction[];
+};
+
+export type SaveDeedInvestigationCaseInput = Omit<
+  DeedInvestigationCase,
+  "id" | "cemeteryName" | "createdAt" | "updatedAt" | "linkedEntryCount" | "linkedEntries" | "recommendedActions"
+> & {
+  reason?: string;
+};
+
+export type SaveDeedInvestigationActionInput = Omit<DeedInvestigationAction, "id" | "caseId" | "createdAt" | "updatedAt"> & {
+  reason?: string;
+};
+
 export type NorthHillsOcrImportBatch = {
   id: string;
   cemeteryName: string;

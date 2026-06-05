@@ -1600,6 +1600,14 @@ h3 {
 .admin-form select,
 .audit-filter-form input,
 .audit-filter-form select,
+.deed-case-form input,
+.deed-case-form select,
+.deed-case-form textarea,
+.deed-action-form input,
+.deed-action-form select,
+.deed-action-form textarea,
+.deed-case-toolbar input,
+.deed-case-toolbar select,
 .deed-review-filter-form input,
 .deed-review-filter-form select,
 .lookup-toolbar select,
@@ -1619,6 +1627,8 @@ h3 {
 }
 
 .lookup-row textarea,
+.deed-case-form textarea,
+.deed-action-form textarea,
 .record-editor-row textarea {
   resize: vertical;
   line-height: 1.35;
@@ -1705,6 +1715,189 @@ h3 {
 .audit-filter-actions,
 .deed-review-filter-actions {
   align-self: end;
+}
+
+.deed-case-workbench {
+  display: grid;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #d7e0d3;
+  border-radius: 8px;
+  background: #fbfcf8;
+}
+
+.deed-case-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.34fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.deed-case-toolbar label,
+.deed-case-form label,
+.deed-action-form label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.deed-case-actions,
+.deed-case-save-actions,
+.deed-action-save-actions {
+  align-self: end;
+}
+
+.deed-case-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.deed-case-card {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #fff;
+  color: #26342d;
+  text-align: left;
+}
+
+.deed-case-card.is-selected {
+  border-color: #496756;
+  background: #edf4ee;
+}
+
+.deed-case-card strong,
+.deed-case-card span,
+.deed-case-card small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deed-case-card small {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 720;
+}
+
+.deed-case-form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.deed-case-form label {
+  grid-column: span 2;
+}
+
+.deed-case-form .deed-case-wide,
+.deed-case-linked,
+.deed-case-save-actions {
+  grid-column: 1 / -1;
+}
+
+.deed-case-linked {
+  display: grid;
+  gap: 4px;
+  padding: 8px 9px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #fff;
+  color: #4f5d52;
+  font-size: 0.8rem;
+}
+
+.deed-case-linked strong {
+  color: #26342d;
+}
+
+.deed-action-workbench {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.deed-action-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.deed-action-heading strong {
+  color: #26342d;
+}
+
+.deed-action-heading .secondary-button {
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+  color: #405048;
+  font-weight: 720;
+}
+
+.deed-action-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.deed-action-card {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+  color: #26342d;
+  text-align: left;
+}
+
+.deed-action-card.is-selected {
+  border-color: #496756;
+  background: #edf4ee;
+}
+
+.deed-action-card strong,
+.deed-action-card span,
+.deed-action-card small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deed-action-card small {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 720;
+}
+
+.deed-action-form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.deed-action-form label {
+  grid-column: span 2;
+}
+
+.deed-action-form .deed-action-wide,
+.deed-action-save-actions {
+  grid-column: 1 / -1;
 }
 
 .admin-table,
@@ -2000,6 +2193,7 @@ h3 {
 }
 
 .deed-batch-summary dl,
+.deed-investigation-summary dl,
 .deed-summary-grid,
 .deed-entry-fields,
 .deed-comparison-summary dl,
@@ -2019,6 +2213,7 @@ h3 {
 
 .deed-summary-grid article,
 .deed-batch-summary dl div,
+.deed-investigation-summary dl div,
 .deed-entry-fields div,
 .deed-comparison-summary dl div,
 .deed-comparison-detail dl div {
@@ -2048,6 +2243,7 @@ h3 {
 .deed-summary-grid small,
 .deed-entry-row small,
 .deed-batch-summary dt,
+.deed-investigation-summary dt,
 .deed-entry-fields dt,
 .deed-comparison-summary dt,
 .deed-comparison-detail dt {
@@ -2057,6 +2253,7 @@ h3 {
 }
 
 .deed-batch-summary dd,
+.deed-investigation-summary dd,
 .deed-entry-fields dd,
 .deed-comparison-summary dd,
 .deed-comparison-detail dd {
@@ -2064,6 +2261,54 @@ h3 {
   color: #26342d;
   font-size: 0.84rem;
   overflow-wrap: anywhere;
+}
+
+.deed-investigation-summary {
+  display: grid;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #cad8cf;
+  border-radius: 8px;
+  background: #f6faf7;
+}
+
+.deed-investigation-summary header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.deed-investigation-summary header strong,
+.deed-investigation-summary header small {
+  display: block;
+}
+
+.deed-investigation-summary header small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 720;
+}
+
+.deed-investigation-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.deed-investigation-terms span {
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid #c8d1c3;
+  border-radius: 6px;
+  background: #fff;
+  color: #35443c;
+  font-size: 0.78rem;
+  font-weight: 740;
+}
+
+.deed-investigation-summary dl {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .deed-entry-list {
@@ -2107,7 +2352,7 @@ h3 {
 
 .deed-entry-row header {
   display: grid;
-  grid-template-columns: minmax(80px, 0.38fr) minmax(0, 1fr) minmax(125px, 0.62fr) minmax(135px, 0.66fr);
+  grid-template-columns: minmax(80px, 0.38fr) minmax(0, 1fr) minmax(125px, 0.62fr) minmax(135px, 0.66fr) auto;
   gap: 10px;
   align-items: start;
 }
@@ -2117,6 +2362,17 @@ h3 {
 .deed-entry-row header small {
   display: block;
   min-width: 0;
+}
+
+.deed-entry-link-button {
+  min-height: 32px;
+  align-self: start;
+  padding: 5px 9px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+  color: #405048;
+  font-weight: 720;
 }
 
 .deed-entry-fields {

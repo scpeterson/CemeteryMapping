@@ -134,3 +134,12 @@ databaseChangeLog:
   - include:
       file: changes/045-reactivate-sold-gravesite-status.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/046-deed-investigation-cases.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/047-deed-investigation-case-actions.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/048-deed-action-council-decision-fields.sql
+      relativeToChangelogFile: true
