@@ -48,7 +48,7 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
         };
       }
       if (sql.includes("related_investigation_notes")) {
-        assert.deepEqual(values, ["batch-1", "review", "%watenpool%", "original-batch", 50]);
+        assert.deepEqual(values, ["batch-1", "review", ["watenpool"], "original-batch", 50]);
         return {
           rows: [
             {
@@ -125,4 +125,49 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
   assert.equal(review.comparison?.changedCount, 12);
   assert.equal(review.removedOriginalEntries[0].rawLotText, "44");
   assert.equal(calls.length, 6);
+});
+
+test("listDeedRegistryReview searches investigation terms across names and plot hints", async () => {
+  const calls = [];
+  const pool = {
+    async query(sql, values) {
+      calls.push({ sql, values });
+      if (sql.includes("FROM deed_registry_import_batches batch")) {
+        return {
+          rows: [
+            {
+              id: "batch-1",
+              cemetery_name: "Trinity Lutheran Church Cemetery",
+              source_name: "Trinity Cemetery Registry 2022 - Updated 2022",
+              worksheet_name: "Updated 2022",
+              imported_by: "Scott Peterson",
+              notes: "",
+              created_at: "2026-05-27T12:46:57.728Z",
+              entry_count: "258",
+              review_count: "3",
+              low_confidence_count: "46",
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM deed_registry_import_batches selected")) {
+        return { rows: [] };
+      }
+      if (sql.includes("GROUP BY entry.ownership_scope")) {
+        return { rows: [] };
+      }
+      if (sql.includes("related_investigation_notes")) {
+        assert.deepEqual(values, ["batch-1", ["david", "wiskeman", "edith", "75", "na"], null, 100]);
+        assert.match(sql, /parsed_plot_numbers/u);
+        assert.match(sql, /parsed_grave_numbers/u);
+        assert.match(sql, /latest_investigated/u);
+        return { rows: [] };
+      }
+      throw new Error(`Unexpected query: ${sql}`);
+    },
+  };
+
+  await listDeedRegistryReview(pool, { q: "David Wiskeman, Edith, 75 NA", limit: 100 });
+
+  assert.equal(calls.length, 4);
 });

@@ -9,6 +9,7 @@ import type {
   CemeteryAdminRecords,
   CemeteryData,
   CemeteryTextRecord,
+  DeedInvestigationCase,
   DeedRegistryReview,
   DeedRegistryReviewFilters,
   CurrentUser,
@@ -26,6 +27,8 @@ import type {
   SaveBurialInput,
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
+  SaveDeedInvestigationCaseInput,
+  SaveDeedInvestigationActionInput,
   SaveOwnershipEventInput,
   SearchMatch,
   SectionTextRecord,
@@ -238,6 +241,56 @@ export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-registry-review${query ? `?${query}` : ""}`);
   return jsonResponse<DeedRegistryReview>(response, "Deed registry review API");
+}
+
+export type DeedInvestigationCaseFilters = {
+  q?: string;
+  status?: string;
+  limit?: number;
+};
+
+export async function fetchDeedInvestigationCases(filters: DeedInvestigationCaseFilters = {}): Promise<DeedInvestigationCase[]> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-investigation-cases${query ? `?${query}` : ""}`);
+  return jsonResponse<DeedInvestigationCase[]>(response, "Deed investigation cases API");
+}
+
+export async function createDeedInvestigationCase(investigation: SaveDeedInvestigationCaseInput): Promise<DeedInvestigationCase> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-investigation-cases`, jsonRequest("POST", investigation));
+  return jsonResponse<DeedInvestigationCase>(response, "Create deed investigation case API");
+}
+
+export async function updateDeedInvestigationCase(id: string, investigation: SaveDeedInvestigationCaseInput): Promise<DeedInvestigationCase> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-investigation-cases/${encodeURIComponent(id)}`, jsonRequest("PUT", investigation));
+  return jsonResponse<DeedInvestigationCase>(response, "Update deed investigation case API");
+}
+
+export async function linkDeedInvestigationCaseEntry(caseId: string, entryId: string, note = ""): Promise<DeedInvestigationCase> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/admin/deed-investigation-cases/${encodeURIComponent(caseId)}/evidence`,
+    jsonRequest("POST", { entryId, note, reason: "Linked deed evidence to investigation case." }),
+  );
+  return jsonResponse<DeedInvestigationCase>(response, "Link deed investigation evidence API");
+}
+
+export async function createDeedInvestigationAction(caseId: string, action: SaveDeedInvestigationActionInput) {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/admin/deed-investigation-cases/${encodeURIComponent(caseId)}/actions`,
+    jsonRequest("POST", action),
+  );
+  return jsonResponse<DeedInvestigationCase["recommendedActions"][number]>(response, "Create deed investigation action API");
+}
+
+export async function updateDeedInvestigationAction(caseId: string, actionId: string, action: SaveDeedInvestigationActionInput) {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/admin/deed-investigation-cases/${encodeURIComponent(caseId)}/actions/${encodeURIComponent(actionId)}`,
+    jsonRequest("PUT", action),
+  );
+  return jsonResponse<DeedInvestigationCase["recommendedActions"][number]>(response, "Update deed investigation action API");
 }
 
 export async function fetchNorthHillsOcrReview(filters: NorthHillsOcrReviewFilters = {}): Promise<NorthHillsOcrReview> {

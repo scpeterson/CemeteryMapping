@@ -12,6 +12,18 @@ function normalizeLimit(value) {
   return Math.min(Math.max(limit, 25), 250);
 }
 
+function queryTerms(value) {
+  return [
+    ...new Set(
+      String(value ?? "")
+        .toLowerCase()
+        .split(/[\s,;|/]+/u)
+        .map((term) => term.trim())
+        .filter((term) => term.length >= 2),
+    ),
+  ].slice(0, 12);
+}
+
 function toBatch(row) {
   return {
     id: row.id,
@@ -134,7 +146,7 @@ export async function listDeedRegistryReview(pool, filters = {}) {
   const values = [selectedBatchId];
   const confidence = compact(filters.confidence);
   const ownershipScope = compact(filters.ownershipScope);
-  const query = compact(filters.q);
+  const terms = queryTerms(filters.q);
 
   if (confidence && validConfidence.has(confidence)) {
     values.push(confidence);
@@ -146,13 +158,52 @@ export async function listDeedRegistryReview(pool, filters = {}) {
     where.push(`entry.ownership_scope = $${values.length}`);
   }
 
-  if (query) {
-    values.push(`%${query.toLowerCase()}%`);
-    where.push(`(
-      lower(coalesce(entry.owner_display_name, '')) LIKE $${values.length}
-      OR lower(coalesce(entry.raw_lot_text, '')) LIKE $${values.length}
-      OR lower(coalesce(entry.raw_section_text, '')) LIKE $${values.length}
-      OR lower(coalesce(entry.raw_remarks, '')) LIKE $${values.length}
+  if (terms.length) {
+    values.push(terms);
+    where.push(`EXISTS (
+      SELECT 1
+      FROM unnest($${values.length}::text[]) search_terms(term)
+      WHERE lower(coalesce(entry.owner_display_name, '')) LIKE '%' || search_terms.term || '%'
+        OR lower(coalesce(entry.raw_lot_text, '')) LIKE '%' || search_terms.term || '%'
+        OR lower(coalesce(entry.raw_section_text, '')) LIKE '%' || search_terms.term || '%'
+        OR lower(coalesce(entry.raw_remarks, '')) LIKE '%' || search_terms.term || '%'
+        OR lower(coalesce(entry.deed_on_file, '')) LIKE '%' || search_terms.term || '%'
+        OR lower(coalesce(entry.deed_register_on_file, '')) LIKE '%' || search_terms.term || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_lot_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_plot_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_grave_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
+        OR EXISTS (
+          SELECT 1
+          FROM deed_registry_import_batches investigated_batch
+          JOIN deed_registry_entries owner_entry
+            ON owner_entry.batch_id = investigated_batch.id
+           AND owner_entry.source_row->>'rowType' = 'owner_record'
+          JOIN deed_registry_entries note
+            ON note.batch_id = investigated_batch.id
+           AND note.source_row->>'rowType' = 'investigation_note'
+           AND note.source_row_number > owner_entry.source_row_number
+           AND NOT EXISTS (
+             SELECT 1
+             FROM deed_registry_entries next_owner
+             WHERE next_owner.batch_id = investigated_batch.id
+               AND next_owner.source_row->>'rowType' = 'owner_record'
+               AND next_owner.source_row_number > owner_entry.source_row_number
+               AND next_owner.source_row_number < note.source_row_number
+           )
+          WHERE investigated_batch.worksheet_name = 'Investigated'
+            AND investigated_batch.id = (
+              SELECT latest_investigated.id
+              FROM deed_registry_import_batches latest_investigated
+              WHERE latest_investigated.worksheet_name = 'Investigated'
+              ORDER BY latest_investigated.created_at DESC, latest_investigated.id
+              LIMIT 1
+            )
+            AND lower(coalesce(owner_entry.owner_display_name, '')) = lower(coalesce(entry.owner_display_name, ''))
+            AND (
+              lower(coalesce(owner_entry.owner_display_name, '')) LIKE '%' || search_terms.term || '%'
+              OR lower(coalesce(note.raw_remarks, '')) LIKE '%' || search_terms.term || '%'
+            )
+        )
     )`);
   }
 

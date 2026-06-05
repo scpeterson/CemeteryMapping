@@ -19,6 +19,14 @@ import {
   updateHeadstone,
 } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
+import {
+  createDeedInvestigationCase,
+  createDeedInvestigationCaseAction,
+  linkDeedInvestigationCaseEntry,
+  listDeedInvestigationCases,
+  updateDeedInvestigationCaseAction,
+  updateDeedInvestigationCase,
+} from "./deedInvestigationCaseRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
 import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
 import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
@@ -246,6 +254,53 @@ function validateNorthHillsEvidencePayload(body) {
     status,
     confidence,
     notes: optionalText(body?.notes, "Evidence notes", 4000),
+  };
+}
+
+function validateDeedInvestigationCasePayload(body) {
+  return {
+    cemeteryId: body?.cemeteryId ? validateUuid(body.cemeteryId, "Cemetery") : "",
+    caseNumber: requiredText(body?.caseNumber, "Case number", 50),
+    status: requiredText(body?.status, "Case status", 50),
+    subjectName: requiredText(body?.subjectName, "Subject name", 250),
+    requesterName: optionalText(body?.requesterName, "Requester name", 250),
+    requesterContact: optionalText(body?.requesterContact, "Requester contact", 500),
+    plotReference: optionalText(body?.plotReference, "Plot reference", 250),
+    requestSummary: optionalText(body?.requestSummary, "Request summary", 4000),
+    familySummary: optionalText(body?.familySummary, "Family summary", 4000),
+    findings: optionalText(body?.findings, "Findings", 4000),
+    councilDecision: optionalText(body?.councilDecision, "Council decision", 4000),
+    affidavitStatus: requiredText(body?.affidavitStatus, "Affidavit status", 50),
+    outcome: optionalText(body?.outcome, "Outcome", 4000),
+    openedAt: optionalDate(body?.openedAt, "Opened date"),
+    closedAt: optionalDate(body?.closedAt, "Closed date"),
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateDeedInvestigationCaseLinkPayload(body) {
+  return {
+    entryId: validateUuid(body?.entryId, "Deed evidence row"),
+    note: optionalText(body?.note, "Evidence note", 1000),
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateDeedInvestigationCaseActionPayload(body) {
+  const sortOrder = Number.parseInt(String(body?.sortOrder ?? "100"), 10);
+  return {
+    subjectName: requiredText(body?.subjectName, "Action subject", 250),
+    actionType: requiredText(body?.actionType, "Action type", 50),
+    plotReference: optionalText(body?.plotReference, "Action plot reference", 250),
+    councilStatus: requiredText(body?.councilStatus, "Council status", 50),
+    councilDecisionDate: optionalDate(body?.councilDecisionDate, "Council decision date"),
+    councilDocumentReference: optionalText(body?.councilDocumentReference, "Council document reference", 250),
+    affidavitStatus: requiredText(body?.affidavitStatus, "Affidavit status", 50),
+    deedStatus: requiredText(body?.deedStatus, "Deed status", 50),
+    outcome: optionalText(body?.outcome, "Action outcome", 4000),
+    notes: optionalText(body?.notes, "Action notes", 4000),
+    sortOrder: Number.isFinite(sortOrder) ? sortOrder : 100,
+    reason: validateMutationReason(body?.reason),
   };
 }
 
@@ -641,6 +696,68 @@ export function createApp(config, pool) {
   app.get("/api/admin/deed-registry-review", requireAdmin, async (request, response, next) => {
     try {
       response.json(await listDeedRegistryReview(pool, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/deed-investigation-cases", requireAdmin, async (request, response, next) => {
+    try {
+      response.json(await listDeedInvestigationCases(pool, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/deed-investigation-cases", requireAdmin, async (request, response, next) => {
+    try {
+      const investigation = validateDeedInvestigationCasePayload(request.body);
+      response.status(201).json(await createDeedInvestigationCase(pool, investigation, { actorUser: request.user, reason: investigation.reason }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/deed-investigation-cases/:caseId", requireAdmin, async (request, response, next) => {
+    try {
+      const caseId = validateUuid(request.params.caseId, "Investigation case");
+      const investigation = validateDeedInvestigationCasePayload(request.body);
+      const saved = await updateDeedInvestigationCase(pool, caseId, investigation, { actorUser: request.user, reason: investigation.reason });
+      if (!saved) response.status(404).json({ error: "Investigation case not found." });
+      else response.json(saved);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/deed-investigation-cases/:caseId/evidence", requireAdmin, async (request, response, next) => {
+    try {
+      const caseId = validateUuid(request.params.caseId, "Investigation case");
+      const link = validateDeedInvestigationCaseLinkPayload(request.body);
+      response.status(201).json(await linkDeedInvestigationCaseEntry(pool, caseId, link.entryId, link.note, { actorUser: request.user, reason: link.reason }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/deed-investigation-cases/:caseId/actions", requireAdmin, async (request, response, next) => {
+    try {
+      const caseId = validateUuid(request.params.caseId, "Investigation case");
+      const action = validateDeedInvestigationCaseActionPayload(request.body);
+      response.status(201).json(await createDeedInvestigationCaseAction(pool, caseId, action, { actorUser: request.user, reason: action.reason }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/deed-investigation-cases/:caseId/actions/:actionId", requireAdmin, async (request, response, next) => {
+    try {
+      const caseId = validateUuid(request.params.caseId, "Investigation case");
+      const actionId = validateUuid(request.params.actionId, "Recommended action");
+      const action = validateDeedInvestigationCaseActionPayload(request.body);
+      const saved = await updateDeedInvestigationCaseAction(pool, caseId, actionId, action, { actorUser: request.user, reason: action.reason });
+      if (!saved) response.status(404).json({ error: "Recommended action not found." });
+      else response.json(saved);
     } catch (error) {
       next(error);
     }

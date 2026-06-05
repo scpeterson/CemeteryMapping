@@ -2,19 +2,25 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, FileSearch, FileText, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
+  createDeedInvestigationAction,
+  createDeedInvestigationCase,
   createLookupRecord,
   fetchAdminAuditEvents,
   fetchAdminRoles,
   fetchAdminUsers,
   fetchCemeteryAdminRecords,
+  fetchDeedInvestigationCases,
   fetchDeedRegistryReview,
   fetchLookupAdminRecords,
   fetchNorthHillsOcrReview,
+  linkDeedInvestigationCaseEntry,
   resolveAuth0User,
   saveNorthHillsOcrEvidence,
   type SaveUserInput,
   updateAdminUser,
   updateCemeteryText,
+  updateDeedInvestigationAction,
+  updateDeedInvestigationCase,
   updateLookupRecord,
   updateLotText,
   updateSectionText,
@@ -27,6 +33,13 @@ import type {
   AuditEventFilters,
   CemeteryAdminRecords,
   CemeteryTextRecord,
+  DeedInvestigationAction,
+  DeedInvestigationActionType,
+  DeedInvestigationAffidavitStatus,
+  DeedInvestigationCase,
+  DeedInvestigationCouncilStatus,
+  DeedInvestigationDeedStatus,
+  DeedInvestigationStatus,
   DeedRegistryReview,
   DeedRegistryReviewEntry,
   DeedRegistryReviewFilters,
@@ -37,6 +50,8 @@ import type {
   NorthHillsOcrEvidenceStatus,
   NorthHillsOcrReviewEntry,
   NorthHillsOcrReviewFilters,
+  SaveDeedInvestigationActionInput,
+  SaveDeedInvestigationCaseInput,
   SectionTextRecord,
   CurrentUser,
 } from "../types";
@@ -123,6 +138,48 @@ const defaultDeedReviewFilters: DeedRegistryReviewFilters = {
   limit: 100,
 };
 
+const defaultDeedCaseFilters = {
+  q: "",
+  status: "",
+  limit: 25,
+};
+
+const todayIsoDate = () => new Date().toISOString().slice(0, 10);
+
+const blankDeedCaseForm = (): SaveDeedInvestigationCaseInput => ({
+  cemeteryId: "",
+  caseNumber: `DI-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
+  status: "open",
+  subjectName: "",
+  requesterName: "",
+  requesterContact: "",
+  plotReference: "",
+  requestSummary: "",
+  familySummary: "",
+  findings: "",
+  councilDecision: "",
+  affidavitStatus: "not_needed",
+  outcome: "",
+  openedAt: todayIsoDate(),
+  closedAt: "",
+  reason: "Updated deed investigation case.",
+});
+
+const blankDeedActionForm = (): SaveDeedInvestigationActionInput => ({
+  subjectName: "",
+  actionType: "issue_deed",
+  plotReference: "",
+  councilStatus: "recommended",
+  councilDecisionDate: "",
+  councilDocumentReference: "",
+  affidavitStatus: "needed",
+  deedStatus: "pending",
+  outcome: "",
+  notes: "",
+  sortOrder: 100,
+  reason: "Updated deed investigation recommended action.",
+});
+
 const emptyDeedRegistryReview: DeedRegistryReview = {
   batches: [],
   selectedBatchId: "",
@@ -188,6 +245,9 @@ const auditTableLabels: Record<string, string> = {
   deed_registry_entries: "Deed registry entries",
   deed_registry_entry_allocations: "Deed registry allocations",
   deed_registry_import_batches: "Deed registry imports",
+  deed_investigation_case_entries: "Deed investigation evidence",
+  deed_investigation_case_actions: "Deed investigation actions",
+  deed_investigation_cases: "Deed investigation cases",
   gravesites: "Gravesites",
   gravesite_status_types: "Gravesite statuses",
   headstone_burials: "Headstone burials",
@@ -245,6 +305,46 @@ const comparisonLabels: Record<string, string> = {
   changed: "Changed since Original 2017",
   unchanged: "Unchanged from Original 2017",
 };
+const investigationStatusLabels: Record<DeedInvestigationStatus, string> = {
+  open: "Open",
+  researching: "Researching",
+  awaiting_family: "Awaiting family",
+  awaiting_council: "Awaiting council",
+  approved: "Approved",
+  denied: "Denied",
+  closed: "Closed",
+};
+const affidavitStatusLabels: Record<DeedInvestigationAffidavitStatus, string> = {
+  not_needed: "Not needed",
+  needed: "Needed",
+  sent: "Sent",
+  received: "Received",
+  waived: "Waived",
+};
+const deedActionTypeLabels: Record<DeedInvestigationActionType, string> = {
+  issue_deed: "Issue deed",
+  replacement_deed: "Replacement deed",
+  inter_ashes: "Inter ashes",
+  approve_marker: "Approve marker",
+  deny_request: "Deny request",
+  document_only: "Document only",
+  other: "Other",
+};
+const councilStatusLabels: Record<DeedInvestigationCouncilStatus, string> = {
+  not_submitted: "Not submitted",
+  recommended: "Recommended",
+  submitted: "Submitted",
+  approved: "Approved",
+  denied: "Denied",
+  not_required: "Not required",
+};
+const deedStatusLabels: Record<DeedInvestigationDeedStatus, string> = {
+  not_started: "Not started",
+  pending: "Pending",
+  issued: "Issued",
+  not_issued: "Not issued",
+  not_applicable: "Not applicable",
+};
 const deedScopeLabel = (scope: string) => scopeLabels[scope] ?? scope;
 const deedConfidenceLabel = (confidence: string) => confidenceLabels[confidence] ?? confidence;
 const deedComparisonLabel = (status: string) => comparisonLabels[status] ?? status;
@@ -258,6 +358,60 @@ const evidenceStatusLabels: Record<NorthHillsOcrEvidenceStatus, string> = {
   rejected: "Rejected",
   needs_field_check: "Needs field check",
 };
+
+function deedSearchTerms(value: string) {
+  return [
+    ...new Set(
+      value
+        .toLowerCase()
+        .split(/[\s,;|/]+/u)
+        .map((term) => term.trim())
+        .filter((term) => term.length >= 2),
+    ),
+  ].slice(0, 12);
+}
+
+function uniqueFilled(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function deedCaseFormFromCase(investigation: DeedInvestigationCase): SaveDeedInvestigationCaseInput {
+  return {
+    cemeteryId: investigation.cemeteryId,
+    caseNumber: investigation.caseNumber,
+    status: investigation.status,
+    subjectName: investigation.subjectName,
+    requesterName: investigation.requesterName,
+    requesterContact: investigation.requesterContact,
+    plotReference: investigation.plotReference,
+    requestSummary: investigation.requestSummary,
+    familySummary: investigation.familySummary,
+    findings: investigation.findings,
+    councilDecision: investigation.councilDecision,
+    affidavitStatus: investigation.affidavitStatus,
+    outcome: investigation.outcome,
+    openedAt: investigation.openedAt,
+    closedAt: investigation.closedAt,
+    reason: "Updated deed investigation case.",
+  };
+}
+
+function deedActionFormFromAction(action: DeedInvestigationAction): SaveDeedInvestigationActionInput {
+  return {
+    subjectName: action.subjectName,
+    actionType: action.actionType,
+    plotReference: action.plotReference,
+    councilStatus: action.councilStatus,
+    councilDecisionDate: action.councilDecisionDate,
+    councilDocumentReference: action.councilDocumentReference,
+    affidavitStatus: action.affidavitStatus,
+    deedStatus: action.deedStatus,
+    outcome: action.outcome,
+    notes: action.notes,
+    sortOrder: action.sortOrder,
+    reason: "Updated deed investigation recommended action.",
+  };
+}
 const lookupRowTitle = (row: LookupRecord) => `${row.label}. ${row.isActive ? "Active" : "Inactive"}.`;
 const lookupUsageText = (row: LookupRecord) => `Used by ${row.usageCount} ${row.usageLabel || "records"}.`;
 
@@ -294,6 +448,12 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [selectedAuditEventId, setSelectedAuditEventId] = useState("");
   const [deedRegistryReview, setDeedRegistryReview] = useState<DeedRegistryReview>(emptyDeedRegistryReview);
   const [deedReviewFilters, setDeedReviewFilters] = useState<DeedRegistryReviewFilters>(defaultDeedReviewFilters);
+  const [deedCases, setDeedCases] = useState<DeedInvestigationCase[]>([]);
+  const [deedCaseFilters, setDeedCaseFilters] = useState(defaultDeedCaseFilters);
+  const [selectedDeedCaseId, setSelectedDeedCaseId] = useState("");
+  const [deedCaseForm, setDeedCaseForm] = useState<SaveDeedInvestigationCaseInput>(() => blankDeedCaseForm());
+  const [selectedDeedActionId, setSelectedDeedActionId] = useState("");
+  const [deedActionForm, setDeedActionForm] = useState<SaveDeedInvestigationActionInput>(() => blankDeedActionForm());
   const [northHillsOcrReview, setNorthHillsOcrReview] = useState<NorthHillsOcrReview>(emptyNorthHillsOcrReview);
   const [northHillsReviewFilters, setNorthHillsReviewFilters] = useState<NorthHillsOcrReviewFilters>(defaultNorthHillsReviewFilters);
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
@@ -313,6 +473,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAuditEvents, setIsLoadingAuditEvents] = useState(false);
   const [isLoadingDeedReview, setIsLoadingDeedReview] = useState(false);
+  const [isLoadingDeedCases, setIsLoadingDeedCases] = useState(false);
   const [isLoadingNorthHillsReview, setIsLoadingNorthHillsReview] = useState(false);
   const [isLoadingLookups, setIsLoadingLookups] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -321,6 +482,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [savingRecordKey, setSavingRecordKey] = useState<string>();
   const [savingLookupKey, setSavingLookupKey] = useState<string>();
   const [savingEvidenceKey, setSavingEvidenceKey] = useState<string>();
+  const [savingDeedCaseKey, setSavingDeedCaseKey] = useState<string>();
+  const [savingDeedActionKey, setSavingDeedActionKey] = useState<string>();
   const [recentlyMovedLookupIds, setRecentlyMovedLookupIds] = useState<Set<string>>(() => new Set());
   const movedLookupTimeoutRef = useRef<number | undefined>(undefined);
 
@@ -354,6 +517,36 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     [deedRegistryReview.batches, deedRegistryReview.selectedBatchId],
   );
   const removedOriginalDeedEntries = deedRegistryReview.removedOriginalEntries ?? [];
+  const selectedDeedCase = useMemo(() => deedCases.find((investigation) => investigation.id === selectedDeedCaseId), [deedCases, selectedDeedCaseId]);
+  const deedResearchTerms = useMemo(() => deedSearchTerms(deedReviewFilters.q ?? ""), [deedReviewFilters.q]);
+  const deedInvestigationOwners = useMemo(
+    () => uniqueFilled(deedRegistryReview.entries.map((entry) => entry.ownerDisplayName)).slice(0, 8),
+    [deedRegistryReview.entries],
+  );
+  const deedInvestigationLots = useMemo(
+    () =>
+      uniqueFilled(
+        deedRegistryReview.entries.flatMap((entry) => [
+          ...entry.parsedLotNumbers,
+          ...entry.parsedPlotNumbers,
+          entry.rawLotText,
+          entry.parsedSectionAlias ? `${entry.parsedSectionAlias} ${entry.rawLotText}` : "",
+        ]),
+      ).slice(0, 10),
+    [deedRegistryReview.entries],
+  );
+  const deedInvestigationNoteCount = useMemo(
+    () => deedRegistryReview.entries.reduce((count, entry) => count + entry.relatedInvestigationNotes.length, 0),
+    [deedRegistryReview.entries],
+  );
+  const deedOnFileCount = useMemo(
+    () => deedRegistryReview.entries.filter((entry) => /^(yes|y|true|1)$/iu.test(entry.deedOnFile.trim())).length,
+    [deedRegistryReview.entries],
+  );
+  const deedRegisterOnFileCount = useMemo(
+    () => deedRegistryReview.entries.filter((entry) => /^(yes|y|true|1)$/iu.test(entry.deedRegisterOnFile.trim())).length,
+    [deedRegistryReview.entries],
+  );
   const selectedNorthHillsBatch = useMemo(
     () => northHillsOcrReview.batches.find((batch) => batch.id === northHillsOcrReview.selectedBatchId),
     [northHillsOcrReview.batches, northHillsOcrReview.selectedBatchId],
@@ -480,9 +673,136 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     void loadDeedRegistryReview(deedReviewFilters);
   };
 
+  const loadDeedCases = async (filters = deedCaseFilters) => {
+    setIsLoadingDeedCases(true);
+    setError(undefined);
+
+    try {
+      const nextCases = await fetchDeedInvestigationCases(filters);
+      setDeedCases(nextCases);
+      setSelectedDeedCaseId((current) => (nextCases.some((investigation) => investigation.id === current) ? current : (nextCases[0]?.id ?? "")));
+      if (!selectedDeedCaseId && nextCases[0]) setDeedCaseForm(deedCaseFormFromCase(nextCases[0]));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load deed investigation cases.");
+    } finally {
+      setIsLoadingDeedCases(false);
+    }
+  };
+
+  const selectDeedCase = (investigation: DeedInvestigationCase) => {
+    setSelectedDeedCaseId(investigation.id);
+    setDeedCaseForm(deedCaseFormFromCase(investigation));
+    setSelectedDeedActionId("");
+    setDeedActionForm(blankDeedActionForm());
+  };
+
+  const startNewDeedCase = () => {
+    setSelectedDeedCaseId("");
+    setDeedCaseForm(blankDeedCaseForm());
+    setSelectedDeedActionId("");
+    setDeedActionForm(blankDeedActionForm());
+  };
+
+  const saveDeedCase = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingDeedCaseKey(selectedDeedCaseId || "new");
+    setError(undefined);
+    setMessage(undefined);
+
+    try {
+      const saved = selectedDeedCaseId
+        ? await updateDeedInvestigationCase(selectedDeedCaseId, deedCaseForm)
+        : await createDeedInvestigationCase(deedCaseForm);
+      setSelectedDeedCaseId(saved.id);
+      setDeedCaseForm(deedCaseFormFromCase(saved));
+      setDeedCases((current) => [saved, ...current.filter((investigation) => investigation.id !== saved.id)]);
+      setMessage(`Saved deed investigation case ${saved.caseNumber}.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save deed investigation case.");
+    } finally {
+      setSavingDeedCaseKey(undefined);
+    }
+  };
+
+  const selectDeedAction = (action: DeedInvestigationAction) => {
+    setSelectedDeedActionId(action.id);
+    setDeedActionForm(deedActionFormFromAction(action));
+  };
+
+  const startNewDeedAction = () => {
+    setSelectedDeedActionId("");
+    setDeedActionForm({
+      ...blankDeedActionForm(),
+      subjectName: deedCaseForm.subjectName,
+      plotReference: deedCaseForm.plotReference,
+    });
+  };
+
+  const saveDeedAction = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedDeedCaseId) {
+      setError("Save or select an investigation case before adding recommended actions.");
+      return;
+    }
+
+    setSavingDeedActionKey(selectedDeedActionId || "new");
+    setError(undefined);
+    setMessage(undefined);
+
+    try {
+      const saved = selectedDeedActionId
+        ? await updateDeedInvestigationAction(selectedDeedCaseId, selectedDeedActionId, deedActionForm)
+        : await createDeedInvestigationAction(selectedDeedCaseId, deedActionForm);
+      setSelectedDeedActionId(saved.id);
+      setDeedActionForm(deedActionFormFromAction(saved));
+      setDeedCases((current) =>
+        current.map((investigation) =>
+          investigation.id === selectedDeedCaseId
+            ? {
+                ...investigation,
+                recommendedActions: [
+                  ...investigation.recommendedActions.filter((action) => action.id !== saved.id),
+                  saved,
+                ].sort((left, right) => left.sortOrder - right.sortOrder || left.subjectName.localeCompare(right.subjectName)),
+              }
+            : investigation,
+        ),
+      );
+      setMessage(`Saved recommended action for ${saved.subjectName}.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save recommended action.");
+    } finally {
+      setSavingDeedActionKey(undefined);
+    }
+  };
+
+  const attachEntryToSelectedDeedCase = async (entry: DeedRegistryReviewEntry) => {
+    if (!selectedDeedCaseId) {
+      setError("Select or create an investigation case before attaching deed evidence.");
+      return;
+    }
+    const note = window.prompt(`Optional note for row ${entry.sourceRowNumber}:`, "");
+    if (note === null) return;
+    const key = `${selectedDeedCaseId}:${entry.id}`;
+    setSavingDeedCaseKey(key);
+    setError(undefined);
+    setMessage(undefined);
+
+    try {
+      const saved = await linkDeedInvestigationCaseEntry(selectedDeedCaseId, entry.id, note);
+      setDeedCases((current) => current.map((investigation) => (investigation.id === saved.id ? saved : investigation)));
+      setMessage(`Linked row ${entry.sourceRowNumber} to ${saved.caseNumber}.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to link deed evidence to the selected case.");
+    } finally {
+      setSavingDeedCaseKey(undefined);
+    }
+  };
+
   const openDeedReviewTab = () => {
     setActiveTab("deeds");
     if (deedRegistryReview.batches.length === 0 && !isLoadingDeedReview) void loadDeedRegistryReview();
+    if (deedCases.length === 0 && !isLoadingDeedCases) void loadDeedCases();
   };
 
   const loadNorthHillsOcrReview = async (filters = northHillsReviewFilters) => {
@@ -1647,6 +1967,323 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
               <h3>Deed Evidence</h3>
             </div>
 
+            <section className="deed-case-workbench" aria-label="Deed investigation cases">
+              <div className="deed-case-toolbar">
+                <label>
+                  Case search
+                  <input
+                    value={deedCaseFilters.q}
+                    onChange={(event) => setDeedCaseFilters((current) => ({ ...current, q: event.target.value }))}
+                    placeholder="Case, family, plot, findings"
+                    title="Search deed investigation cases by case number, subject, requester, plot, family summary, or findings."
+                  />
+                </label>
+                <label>
+                  Case status
+                  <select
+                    value={deedCaseFilters.status}
+                    onChange={(event) => setDeedCaseFilters((current) => ({ ...current, status: event.target.value }))}
+                    title="Filter deed investigation cases by status."
+                  >
+                    <option value="">All statuses</option>
+                    {Object.entries(investigationStatusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="admin-form-actions deed-case-actions">
+                  <button type="button" onClick={() => void loadDeedCases()} disabled={isLoadingDeedCases} title="Load matching deed investigation cases.">
+                    {isLoadingDeedCases ? "Loading..." : "Find cases"}
+                  </button>
+                  <button type="button" className="secondary-button" onClick={startNewDeedCase} title="Start a new deed investigation case.">
+                    New case
+                  </button>
+                </div>
+              </div>
+
+              {deedCases.length ? (
+                <div className="deed-case-list" aria-label="Recent deed investigation cases">
+                  {deedCases.slice(0, 6).map((investigation) => (
+                    <button
+                      key={investigation.id}
+                      type="button"
+                      className={`deed-case-card ${selectedDeedCaseId === investigation.id ? "is-selected" : ""}`}
+                      onClick={() => selectDeedCase(investigation)}
+                      title={`${investigation.caseNumber}: ${investigation.subjectName}. ${investigationStatusLabels[investigation.status]}.`}
+                    >
+                      <strong>{investigation.caseNumber}</strong>
+                      <span>{investigation.subjectName}</span>
+                      <small>{investigation.plotReference || investigationStatusLabels[investigation.status]} · {investigation.linkedEntryCount} evidence row{investigation.linkedEntryCount === 1 ? "" : "s"}</small>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              <form className="deed-case-form" onSubmit={saveDeedCase}>
+                <label>
+                  Case number
+                  <input
+                    value={deedCaseForm.caseNumber}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, caseNumber: event.target.value }))}
+                    required
+                    title="Short unique identifier for this investigation."
+                  />
+                </label>
+                <label>
+                  Subject
+                  <input
+                    value={deedCaseForm.subjectName}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, subjectName: event.target.value }))}
+                    required
+                    placeholder="Elaine Krepps Wasko"
+                    title="Person or family at the center of this deed investigation."
+                  />
+                </label>
+                <label>
+                  Plot
+                  <input
+                    value={deedCaseForm.plotReference}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, plotReference: event.target.value }))}
+                    placeholder="61 OC"
+                    title="Best-known plot, lot, section, or gravesite reference."
+                  />
+                </label>
+                <label>
+                  Status
+                  <select
+                    value={deedCaseForm.status}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, status: event.target.value as DeedInvestigationStatus }))}
+                    title="Current investigation status."
+                  >
+                    {Object.entries(investigationStatusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Affidavit
+                  <select
+                    value={deedCaseForm.affidavitStatus}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, affidavitStatus: event.target.value as DeedInvestigationAffidavitStatus }))}
+                    title="Lost deed affidavit state, if one is needed."
+                  >
+                    {Object.entries(affidavitStatusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Requester
+                  <input
+                    value={deedCaseForm.requesterName}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, requesterName: event.target.value }))}
+                    placeholder="Barb Porti"
+                    title="Person asking for the deed investigation."
+                  />
+                </label>
+                <label className="deed-case-wide">
+                  Request summary
+                  <textarea
+                    value={deedCaseForm.requestSummary}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, requestSummary: event.target.value }))}
+                    rows={3}
+                    title="What the family or pastor asked the cemetery to determine."
+                  />
+                </label>
+                <label className="deed-case-wide">
+                  Family / claimant notes
+                  <textarea
+                    value={deedCaseForm.familySummary}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, familySummary: event.target.value }))}
+                    rows={3}
+                    title="Living relatives, deceased relatives, possible deed holders, obituary notes, and claimant context."
+                  />
+                </label>
+                <label className="deed-case-wide">
+                  Findings and outcome
+                  <textarea
+                    value={deedCaseForm.findings}
+                    onChange={(event) => setDeedCaseForm((current) => ({ ...current, findings: event.target.value }))}
+                    rows={3}
+                    title="Evidence summary, recommendation, council decision, and final outcome."
+                  />
+                </label>
+                {selectedDeedCase?.linkedEntries.length ? (
+                  <div className="deed-case-linked deed-case-wide" aria-label="Linked deed evidence">
+                    <strong>Linked evidence</strong>
+                    {selectedDeedCase.linkedEntries.map((entry) => (
+                      <span key={entry.id}>Row {entry.sourceRowNumber}: {entry.ownerDisplayName || "No owner"} {entry.rawLotText ? `(${entry.rawLotText})` : ""}</span>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="admin-form-actions deed-case-save-actions">
+                  <button type="submit" disabled={Boolean(savingDeedCaseKey) || !deedCaseForm.caseNumber.trim() || !deedCaseForm.subjectName.trim()} title="Save this deed investigation case.">
+                    {savingDeedCaseKey === (selectedDeedCaseId || "new") ? "Saving..." : selectedDeedCaseId ? "Save case" : "Create case"}
+                  </button>
+                </div>
+              </form>
+
+              <section className="deed-action-workbench" aria-label="Recommended actions">
+                <div className="deed-action-heading">
+                  <strong>Recommended actions</strong>
+                  <button type="button" className="secondary-button" onClick={startNewDeedAction} disabled={!selectedDeedCaseId} title="Add another recommended action to this investigation.">
+                    New action
+                  </button>
+                </div>
+                {selectedDeedCase?.recommendedActions.length ? (
+                  <div className="deed-action-list">
+                    {selectedDeedCase.recommendedActions.map((action) => (
+                      <button
+                        key={action.id}
+                        type="button"
+                        className={`deed-action-card ${selectedDeedActionId === action.id ? "is-selected" : ""}`}
+                        onClick={() => selectDeedAction(action)}
+                        title={`${action.subjectName}. ${deedActionTypeLabels[action.actionType]}. Council: ${councilStatusLabels[action.councilStatus]}.`}
+                      >
+                        <strong>{action.subjectName}</strong>
+                        <span>{deedActionTypeLabels[action.actionType]} · {action.plotReference || "No plot"}</span>
+                        <small>
+                          Council {councilStatusLabels[action.councilStatus]}
+                          {action.councilDecisionDate ? ` ${action.councilDecisionDate}` : ""} · Affidavit {affidavitStatusLabels[action.affidavitStatus]} · Deed {deedStatusLabels[action.deedStatus]}
+                        </small>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="record-editor-empty">No recommended actions have been added to this case yet.</p>
+                )}
+
+                <form className="deed-action-form" onSubmit={saveDeedAction}>
+                  <label>
+                    Person
+                    <input
+                      value={deedActionForm.subjectName}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, subjectName: event.target.value }))}
+                      required
+                      placeholder="Elaine Krepps Wasko"
+                      title="Person or party this recommended action is for."
+                    />
+                  </label>
+                  <label>
+                    Action
+                    <select
+                      value={deedActionForm.actionType}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, actionType: event.target.value as DeedInvestigationActionType }))}
+                      title="Recommended action type."
+                    >
+                      {Object.entries(deedActionTypeLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Plot / gravesite
+                    <input
+                      value={deedActionForm.plotReference}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, plotReference: event.target.value }))}
+                      placeholder="61 OC grave 4"
+                      title="Plot, gravesite, or location this action concerns."
+                    />
+                  </label>
+                  <label>
+                    Council
+                    <select
+                      value={deedActionForm.councilStatus}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, councilStatus: event.target.value as DeedInvestigationCouncilStatus }))}
+                      title="Council approval status for this action."
+                    >
+                      {Object.entries(councilStatusLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Decision date
+                    <input
+                      type="date"
+                      value={deedActionForm.councilDecisionDate}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, councilDecisionDate: event.target.value }))}
+                      title="Date Council made or recorded its decision for this action."
+                    />
+                  </label>
+                  <label>
+                    Minutes / reference
+                    <input
+                      value={deedActionForm.councilDocumentReference}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, councilDocumentReference: event.target.value }))}
+                      placeholder="Council minutes 2026-03-17"
+                      title="Council minutes, agenda item, email approval, or other decision reference."
+                    />
+                  </label>
+                  <label>
+                    Affidavit
+                    <select
+                      value={deedActionForm.affidavitStatus}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, affidavitStatus: event.target.value as DeedInvestigationAffidavitStatus }))}
+                      title="Lost deed affidavit status for this action."
+                    >
+                      {Object.entries(affidavitStatusLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Deed / outcome
+                    <select
+                      value={deedActionForm.deedStatus}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, deedStatus: event.target.value as DeedInvestigationDeedStatus }))}
+                      title="Deed or action outcome status."
+                    >
+                      {Object.entries(deedStatusLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="deed-action-wide">
+                    Notes
+                    <textarea
+                      value={deedActionForm.notes}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, notes: event.target.value }))}
+                      rows={2}
+                      title="Recommendation notes, restrictions, or conditions for this action."
+                    />
+                  </label>
+                  <label className="deed-action-wide">
+                    Final outcome
+                    <textarea
+                      value={deedActionForm.outcome}
+                      onChange={(event) => setDeedActionForm((current) => ({ ...current, outcome: event.target.value }))}
+                      rows={2}
+                      title="Final result once the recommended action is resolved."
+                    />
+                  </label>
+                  <div className="admin-form-actions deed-action-save-actions">
+                    <button
+                      type="submit"
+                      disabled={!selectedDeedCaseId || Boolean(savingDeedActionKey) || !deedActionForm.subjectName.trim()}
+                      title="Save this recommended action."
+                    >
+                      {savingDeedActionKey === (selectedDeedActionId || "new") ? "Saving..." : selectedDeedActionId ? "Save action" : "Add action"}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </section>
+
             <form className="deed-review-filter-form" onSubmit={applyDeedReviewFilters}>
               <label>
                 Import batch
@@ -1698,8 +2335,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                 <input
                   value={deedReviewFilters.q ?? ""}
                   onChange={(event) => updateDeedReviewFilter({ q: event.target.value })}
-                  placeholder="Owner, lot, section, or remarks"
-                  title="Search staged owner names, lot text, section text, and remarks."
+                  placeholder="Family names, plot, deed, remarks"
+                  title="Search staged names, plot and lot text, deed flags, remarks, parsed identifiers, and related Investigated notes."
                 />
               </label>
               <label>
@@ -1760,6 +2397,38 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                 </dl>
                 {selectedDeedBatch.notes ? <p>{selectedDeedBatch.notes}</p> : null}
               </article>
+            ) : null}
+
+            {deedResearchTerms.length ? (
+              <section className="deed-investigation-summary" aria-label="Deed investigation search">
+                <header>
+                  <strong>Investigation</strong>
+                  <small>{deedRegistryReview.entries.length} matching row{deedRegistryReview.entries.length === 1 ? "" : "s"}</small>
+                </header>
+                <div className="deed-investigation-terms" aria-label="Search terms">
+                  {deedResearchTerms.map((term) => (
+                    <span key={term}>{term}</span>
+                  ))}
+                </div>
+                <dl>
+                  <div title="Distinct owner names returned by this deed evidence search.">
+                    <dt>Names</dt>
+                    <dd>{deedInvestigationOwners.length ? deedInvestigationOwners.join(", ") : "None"}</dd>
+                  </div>
+                  <div title="Lot, plot, and raw worksheet location references returned by this search.">
+                    <dt>Lots / plots</dt>
+                    <dd>{deedInvestigationLots.length ? deedInvestigationLots.join(", ") : "None"}</dd>
+                  </div>
+                  <div title="Rows that explicitly indicate a deed or deed register entry is on file.">
+                    <dt>Deed flags</dt>
+                    <dd>{deedOnFileCount} deed, {deedRegisterOnFileCount} register</dd>
+                  </div>
+                  <div title="Related notes pulled from the latest Investigated worksheet.">
+                    <dt>Investigated notes</dt>
+                    <dd>{deedInvestigationNoteCount}</dd>
+                  </div>
+                </dl>
+              </section>
             ) : null}
 
             {deedRegistryReview.summary.length ? (
@@ -1826,6 +2495,15 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                         <small>{entry.originalSourceRowNumber ? `Original row ${entry.originalSourceRowNumber}` : "No original row match"}</small>
                       </span>
                     ) : null}
+                    <button
+                      type="button"
+                      className="secondary-button deed-entry-link-button"
+                      onClick={() => void attachEntryToSelectedDeedCase(entry)}
+                      disabled={savingDeedCaseKey === `${selectedDeedCaseId}:${entry.id}`}
+                      title={selectedDeedCaseId ? `Attach row ${entry.sourceRowNumber} to the selected investigation case.` : "Select or create an investigation case before attaching evidence."}
+                    >
+                      {savingDeedCaseKey === `${selectedDeedCaseId}:${entry.id}` ? "Linking..." : "Attach"}
+                    </button>
                   </header>
                   <dl className="deed-entry-fields">
                     <div title="Raw lot or plot text from the worksheet.">
