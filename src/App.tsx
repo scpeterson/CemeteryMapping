@@ -160,17 +160,22 @@ export default function App() {
     }
 
     let isCurrent = true;
-
-    fetchSearchMatches(cleanedQuery, selectedStatuses)
-      .then((matches) => {
-        if (isCurrent) setRemoteMatches(matches);
-      })
-      .catch(() => {
-        if (isCurrent) setRemoteMatches([]);
-      });
+    const controller = new AbortController();
+    const searchTimeout = window.setTimeout(() => {
+      fetchSearchMatches(cleanedQuery, selectedStatuses, controller.signal)
+        .then((matches) => {
+          if (isCurrent) setRemoteMatches(matches);
+        })
+        .catch((error: unknown) => {
+          if (!isCurrent || (error instanceof DOMException && error.name === "AbortError")) return;
+          setRemoteMatches([]);
+        });
+    }, 250);
 
     return () => {
       isCurrent = false;
+      window.clearTimeout(searchTimeout);
+      controller.abort();
     };
   }, [query, selectedStatuses]);
 
