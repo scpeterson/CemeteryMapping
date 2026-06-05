@@ -131,19 +131,6 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND lower(owner_names.display_name) LIKE '%' || $1 || '%'
 
         UNION ALL
-        SELECT 'Historical owner', owner_names.display_name
-        FROM owners
-        CROSS JOIN LATERAL (
-          SELECT COALESCE(NULLIF(concat_ws(' and ', NULLIF(owners.owner, ''), NULLIF(owners.co_owner, '')), ''), 'Unknown owner') AS display_name
-        ) owner_names
-        WHERE $3::boolean
-          AND ($4::text[] IS NULL OR base_graves.cemetery_id = ANY($4::text[]))
-          AND $1 <> ''
-          AND owners.gravesite_uuid = base_graves.grave_uuid
-          AND owners.deleted_at IS NULL
-          AND lower(owner_names.display_name) LIKE '%' || $1 || '%'
-
-        UNION ALL
         SELECT 'Owner', current_ownership_right_owners.display_name
         FROM current_ownership_right_owners
         WHERE $3::boolean
