@@ -112,12 +112,12 @@ export async function createOwnershipEvent(cemeteryId: string, graveSpaceId: str
   return jsonResponse<{ id: string }>(response, "Ownership event API");
 }
 
-export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>): Promise<SearchMatch[]> {
+export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal): Promise<SearchMatch[]> {
   const params = new URLSearchParams();
   if (query.trim()) params.set("q", query);
   params.set("status", [...statuses].join(","));
 
-  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/search?${params.toString()}`);
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/search?${params.toString()}`, { signal });
   return jsonResponse<SearchMatch[]>(response, "Search API");
 }
 
