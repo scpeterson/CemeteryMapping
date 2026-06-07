@@ -187,6 +187,40 @@ test("two-person left-edge markers generate side-by-side gravesites around the h
   assert(northRing[3][1] > southRing[0][1]);
 });
 
+test("two-person left-edge markers accept pluralized second-person headers", () => {
+  const [imported] = importableRows(
+    [
+      {
+        rowNumber: 167,
+        row: {
+          Latitude: 40,
+          Longitude: -80,
+          Person1First: "Roy R",
+          Person1Last: "Soergel",
+          Person1Yob: "1895",
+          Person1Yod: "1974",
+          Persons2First: "Ruby I",
+          Persons2Last: "Soergel",
+          Person2Yob: "1897",
+          Person2Yod: "1994",
+          NhgSection: "C",
+        },
+      },
+    ],
+    {},
+  );
+
+  assert.equal(imported.gravesites.length, 2);
+  assert.equal(imported.gravesites[0].graveId, "0167A");
+  assert.equal(imported.gravesites[0].gravesiteId, "TLC-GPS-0167-01");
+  assert.equal(imported.gravesites[0].people[0].fullName, "Ruby I Soergel");
+  assert.equal(imported.gravesites[0].people[0].birthDate, "1897-01-01");
+  assert.equal(imported.gravesites[1].graveId, "0167B");
+  assert.equal(imported.gravesites[1].gravesiteId, "TLC-GPS-0167-02");
+  assert.equal(imported.gravesites[1].people[0].fullName, "Roy R Soergel");
+  assert.equal(imported.gravesites[1].people[0].deathDate, "1974-01-01");
+});
+
 test("upsertHeadstoneGravesite restores soft-deleted marker links", async () => {
   const calls = [];
   const client = {
