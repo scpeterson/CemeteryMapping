@@ -66,7 +66,9 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         SELECT
           gravesites.id AS grave_uuid,
           gravesites.cemetery_id::text,
+          cemeteries.facility_id AS cemetery_facility_id,
           cemeteries.name AS cemetery_name,
+          lots.name AS lot_name,
           gravesites.section_id,
           gravesites.lot_id,
           gravesites.grave_id,
@@ -77,6 +79,9 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         FROM gravesites
         JOIN cemeteries
           ON cemeteries.id = gravesites.cemetery_id
+        LEFT JOIN lots
+          ON lots.id = gravesites.lot_uuid
+         AND lots.deleted_at IS NULL
         LEFT JOIN gravesite_status_types status_type
           ON status_type.id = gravesites.status_type_id
         CROSS JOIN LATERAL (
@@ -111,6 +116,26 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         SELECT 'Grave', concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)
         WHERE $1 <> ''
           AND lower(concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)) LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Cemetery', base_graves.cemetery_name
+        WHERE $1 <> ''
+          AND lower(base_graves.cemetery_name) LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Cemetery facility ID', base_graves.cemetery_facility_id
+        WHERE $1 <> ''
+          AND lower(coalesce(base_graves.cemetery_facility_id, '')) LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Lot name', base_graves.lot_name
+        WHERE $1 <> ''
+          AND lower(coalesce(base_graves.lot_name, '')) LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Lot number', base_graves.lot_id
+        WHERE $1 <> ''
+          AND lower(coalesce(base_graves.lot_id, '')) LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Status', base_graves.status_label

@@ -32,6 +32,12 @@ function emptyCemeteryPool() {
       assert.match(sql, /FROM burials status_burials/u);
       assert.match(sql, /FROM current_ownership_right_owners status_rights/u);
       assert.match(sql, /OR derived_status\.status = ANY\(\$2::text\[\]\)/u);
+      assert.match(sql, /SELECT 'Cemetery'/u);
+      assert.match(sql, /SELECT 'Cemetery facility ID'/u);
+      assert.match(sql, /SELECT 'Lot name'/u);
+      assert.match(sql, /SELECT 'Lot number'/u);
+      assert.doesNotMatch(sql, /SELECT 'Cemetery ID'/u);
+      assert.doesNotMatch(sql, /SELECT 'Lot ID'/u);
       assert.doesNotMatch(sql, /WITH status_labels/u);
       assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true, undefined]);
       return { rows: [] };
@@ -110,4 +116,57 @@ test("search includes generalized ownership rights only through ownership-aware 
   const matches = await searchCemetery(pool, { query: "Baur", statuses: [], includeOwnership: false, ownershipCemeteryIds: [] });
 
   assert.deepEqual(matches, []);
+});
+
+test("search returns cemetery name and lot field reasons", async () => {
+  const pool = {
+    async query(_sql, values) {
+      assert.deepEqual(values, ["trinity", [], true, undefined]);
+      return {
+        rows: [
+          {
+            cemetery_id: "11111111-1111-4111-8111-111111111111",
+            cemetery_name: "Trinity Lutheran Church Cemetery",
+            section_id: "OC",
+            lot_id: "61",
+            grave_id: "1",
+            gravesite_id: "OC-61-1",
+            status: "available",
+            geometry: null,
+            reason_label: "Cemetery",
+            reason_value: "Trinity Lutheran Church Cemetery",
+          },
+          {
+            cemetery_id: "11111111-1111-4111-8111-111111111111",
+            cemetery_name: "Trinity Lutheran Church Cemetery",
+            section_id: "OC",
+            lot_id: "61",
+            grave_id: "1",
+            gravesite_id: "OC-61-1",
+            status: "available",
+            geometry: null,
+            reason_label: "Lot name",
+            reason_value: "Lot 61",
+          },
+          {
+            cemetery_id: "11111111-1111-4111-8111-111111111111",
+            cemetery_name: "Trinity Lutheran Church Cemetery",
+            section_id: "OC",
+            lot_id: "61",
+            grave_id: "1",
+            gravesite_id: "OC-61-1",
+            status: "available",
+            geometry: null,
+            reason_label: "Lot number",
+            reason_value: "61",
+          },
+        ],
+      };
+    },
+  };
+
+  const matches = await searchCemetery(pool, { query: "Trinity", statuses: [] });
+
+  assert.equal(matches.length, 1);
+  assert.deepEqual(matches[0].reasons, ["Cemetery: Trinity Lutheran Church Cemetery", "Lot name: Lot 61", "Lot number: 61"]);
 });

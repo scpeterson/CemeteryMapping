@@ -146,3 +146,12 @@ databaseChangeLog:
   - include:
       file: changes/049-deed-registry-review-indexes.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/050-split-trinity-c-0167-soergel-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/051-align-trinity-c-0167-with-c-0166.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/052-align-trinity-c-0168-with-soergel-block.sql
+      relativeToChangelogFile: true

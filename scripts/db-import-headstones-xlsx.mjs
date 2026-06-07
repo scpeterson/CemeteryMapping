@@ -89,8 +89,8 @@ function dateFromYear(value) {
 function personFields(row, personNumber) {
   if (personNumber === 2) {
     return {
-      firstName: textCell(row, "Person2First") ?? textCell(row, "Persons26First"),
-      lastName: textCell(row, "Person2Last") ?? textCell(row, "Persons26Last"),
+      firstName: textCell(row, "Person2First") ?? textCell(row, "Persons2First") ?? textCell(row, "Persons26First"),
+      lastName: textCell(row, "Person2Last") ?? textCell(row, "Persons2Last") ?? textCell(row, "Persons26Last"),
       birthDate: dateFromYear(cell(row, "Person2Yob")),
       deathDate: dateFromYear(cell(row, "Person2Yod")),
     };
