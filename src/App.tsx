@@ -4,8 +4,6 @@ import {
   createOwnershipEvent,
   fetchCemeteryData,
   fetchCurrentUser,
-  fetchGraveSpace,
-  fetchHeadstone,
   fetchHeadstoneLookups,
   fetchSearchMatches,
   updateBurial,
@@ -22,6 +20,7 @@ import { apiBaseUrl, appEnvironment } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { graveSelectionKey } from "./lib/format";
 import { searchGraves } from "./lib/search";
+import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import type {
   Burial,
   CemeteryData,
@@ -32,7 +31,6 @@ import type {
   Headstone,
   HeadstoneLookups,
   HeadstoneSummary,
-  Owner,
   SaveBurialInput,
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
@@ -50,19 +48,23 @@ export default function App() {
   const [loadError, setLoadError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
-  const [selectedGraveDetails, setSelectedGraveDetails] = useState<GraveSpace | undefined>();
   const [selectedHeadstone, setSelectedHeadstone] = useState<HeadstoneSummary | undefined>();
-  const [selectedHeadstoneDetails, setSelectedHeadstoneDetails] = useState<Headstone | undefined>();
-  const [selectedGraveOwners, setSelectedGraveOwners] = useState<Owner[]>([]);
-  const [detailError, setDetailError] = useState<string>();
-  const [isDetailLoading, setIsDetailLoading] = useState(false);
-  const [detailRequestVersion, setDetailRequestVersion] = useState(0);
   const [remoteMatches, setRemoteMatches] = useState<SearchMatch[]>();
   const [currentUser, setCurrentUser] = useState<CurrentUser>();
   const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
   const [userError, setUserError] = useState<string>();
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
+  const {
+    selectedGraveDetails,
+    setSelectedGraveDetails,
+    selectedHeadstoneDetails,
+    setSelectedHeadstoneDetails,
+    selectedGraveOwners,
+    detailError,
+    isDetailLoading,
+    refreshDetails,
+  } = useSelectedRecordDetails({ selectedGrave, selectedHeadstone });
 
   useEffect(() => {
     let isCurrent = true;
@@ -123,61 +125,6 @@ export default function App() {
       isCurrent = false;
     };
   }, []);
-
-  useEffect(() => {
-    setSelectedGraveDetails(undefined);
-    setSelectedHeadstoneDetails(undefined);
-    setSelectedGraveOwners([]);
-    setDetailError(undefined);
-
-    if (selectedHeadstone) {
-      let isCurrent = true;
-      setIsDetailLoading(true);
-
-      fetchHeadstone(selectedHeadstone.id)
-        .then((detail) => {
-          if (!isCurrent) return;
-          setSelectedHeadstoneDetails(detail);
-        })
-        .catch((error: unknown) => {
-          if (!isCurrent) return;
-          setDetailError(error instanceof Error ? error.message : "Unable to load marker details");
-        })
-        .finally(() => {
-          if (isCurrent) setIsDetailLoading(false);
-        });
-
-      return () => {
-        isCurrent = false;
-      };
-    }
-
-    if (!selectedGrave) {
-      setIsDetailLoading(false);
-      return;
-    }
-
-    let isCurrent = true;
-    setIsDetailLoading(true);
-
-    fetchGraveSpace(selectedGrave.cemeteryId, selectedGrave.id)
-      .then((detail) => {
-        if (!isCurrent) return;
-        setSelectedGraveDetails(detail);
-        setSelectedGraveOwners(detail.owners);
-      })
-      .catch((error: unknown) => {
-        if (!isCurrent) return;
-        setDetailError(error instanceof Error ? error.message : "Unable to load grave details");
-      })
-      .finally(() => {
-        if (isCurrent) setIsDetailLoading(false);
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [selectedGrave, selectedHeadstone, detailRequestVersion]);
 
   useEffect(() => {
     const cleanedQuery = query.trim();
@@ -252,8 +199,6 @@ export default function App() {
   const selectHeadstone = (headstone: HeadstoneSummary) => {
     setSelectedHeadstone(headstone);
     setSelectedGrave(undefined);
-    setSelectedGraveOwners([]);
-    setSelectedGraveDetails(undefined);
   };
 
   const saveHeadstone = async (id: string, headstone: SaveHeadstoneInput): Promise<Headstone> => {
@@ -318,13 +263,13 @@ export default function App() {
       notes,
       source: /iPhone|iPad|iPod/u.test(navigator.userAgent) ? "iphone" : "field_upload",
     });
-    setDetailRequestVersion((version) => version + 1);
+    refreshDetails();
   };
 
   const saveOwnershipEvent = async (event: SaveOwnershipEventInput) => {
     if (!selectedGrave) throw new Error("Select a grave site before recording ownership.");
     await createOwnershipEvent(selectedGrave.cemeteryId, selectedGrave.id, event);
-    setDetailRequestVersion((version) => version + 1);
+    refreshDetails();
   };
 
   return (
@@ -398,7 +343,7 @@ export default function App() {
         onUploadPhoto={saveGravePhoto}
         isLoading={isDetailLoading}
         error={detailError}
-        onRetry={() => setDetailRequestVersion((version) => version + 1)}
+        onRetry={refreshDetails}
       />
     </main>
   );
