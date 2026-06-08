@@ -276,6 +276,14 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
             Headstone marker
           </span>
           <span>
+            <i className="legend-symbol legend-highlighted-marker" />
+            Highlighted marker
+          </span>
+          <span>
+            <i className="legend-symbol legend-other-marker" />
+            Other marker
+          </span>
+          <span>
             <i className="legend-symbol legend-cemetery-label" />
             Cemetery label
           </span>

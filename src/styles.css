@@ -676,6 +676,24 @@ h3 {
   box-shadow: 0 0 0 2px #fbfcf7;
 }
 
+.legend-highlighted-marker {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #10211c;
+  border-radius: 50%;
+  background: #f8d465;
+  box-shadow: 0 0 0 2px #fbfcf7;
+}
+
+.legend-other-marker {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #5f2d08;
+  border-radius: 50%;
+  background: #d97706;
+  box-shadow: 0 0 0 2px #fbfcf7;
+}
+
 .legend-cemetery-label {
   width: 18px;
   height: 10px;

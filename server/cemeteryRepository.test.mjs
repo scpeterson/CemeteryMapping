@@ -4,6 +4,32 @@ import { createOwnershipEvent, getCemeteryData, getDetailedCemeteryData, getGrav
 
 function queryRows(sql) {
   if (sql.includes("information_schema.columns")) return [{ exists: true }];
+  if (sql.includes("ST_AsGeoJSON(headstones.geometry)::json")) {
+    return [
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        headstone_id: "HS-1",
+        cemetery_id: "11111111-1111-4111-8111-111111111111",
+        cemetery_name: "Sequential Cemetery",
+        gravesite_id: "A-01-01",
+        marker_type_code: "upright_headstone",
+        marker_type_label: "Upright headstone",
+        condition_code: "good",
+        geometry: '{"type":"Point","coordinates":[-80,40]}',
+      },
+      {
+        id: "44444444-4444-4444-8444-444444444444",
+        headstone_id: "TLC-HS-0173",
+        cemetery_id: "11111111-1111-4111-8111-111111111111",
+        cemetery_name: "Sequential Cemetery",
+        gravesite_id: null,
+        marker_type_code: "other",
+        marker_type_label: "Other marker",
+        condition_code: "unknown",
+        geometry: '{"type":"Point","coordinates":[-80.1,40.1]}',
+      },
+    ];
+  }
   if (sql.includes("FROM cemeteries")) {
     return [{ id: "11111111-1111-4111-8111-111111111111", name: "Sequential Cemetery", geometry: "{}" }];
   }
@@ -21,20 +47,6 @@ function queryRows(sql) {
         gravesite_id: "A-01-01",
         status: "occupied",
         geometry: "{}",
-      },
-    ];
-  }
-  if (sql.includes("ST_AsGeoJSON(headstones.geometry)::json")) {
-    return [
-      {
-        id: "33333333-3333-4333-8333-333333333333",
-        headstone_id: "HS-1",
-        cemetery_id: "11111111-1111-4111-8111-111111111111",
-        cemetery_name: "Sequential Cemetery",
-        gravesite_id: "A-01-01",
-        marker_type_label: "Upright headstone",
-        condition_code: "good",
-        geometry: '{"type":"Point","coordinates":[-80,40]}',
       },
     ];
   }
@@ -129,18 +141,56 @@ test("cemetery map derives gravesite status from review flags, burials, and owne
 test("cemetery map data includes lightweight headstone point summaries", async () => {
   const data = await getCemeteryData(strictSequentialPool());
 
-  assert.deepEqual(data.headstones[0], {
-    id: "33333333-3333-4333-8333-333333333333",
-    headstoneId: "HS-1",
-    cemeteryId: "11111111-1111-4111-8111-111111111111",
-    cemeteryName: "Sequential Cemetery",
-    gravesiteId: "A-01-01",
-    graveKey: "11111111-1111-4111-8111-111111111111:A-01-01",
-    label: "HS-1",
-    markerType: "Upright headstone",
-    condition: "good",
-    geometry: { type: "Point", coordinates: [-80, 40] },
-  });
+  assert.deepEqual(data.headstones, [
+    {
+      id: "33333333-3333-4333-8333-333333333333",
+      headstoneId: "HS-1",
+      cemeteryId: "11111111-1111-4111-8111-111111111111",
+      cemeteryName: "Sequential Cemetery",
+      gravesiteId: "A-01-01",
+      graveKey: "11111111-1111-4111-8111-111111111111:A-01-01",
+      label: "HS-1",
+      markerTypeCode: "upright_headstone",
+      markerType: "Upright headstone",
+      condition: "good",
+      geometry: { type: "Point", coordinates: [-80, 40] },
+    },
+    {
+      id: "44444444-4444-4444-8444-444444444444",
+      headstoneId: "TLC-HS-0173",
+      cemeteryId: "11111111-1111-4111-8111-111111111111",
+      cemeteryName: "Sequential Cemetery",
+      gravesiteId: null,
+      graveKey: "11111111-1111-4111-8111-111111111111:headstone:TLC-HS-0173",
+      label: "TLC-HS-0173",
+      markerTypeCode: "other",
+      markerType: "Other marker",
+      condition: "unknown",
+      geometry: { type: "Point", coordinates: [-80.1, 40.1] },
+    },
+  ]);
+});
+
+test("cemetery map data can include standalone markers without active gravesites", async () => {
+  const queries = [];
+  const pool = {
+    async connect() {
+      return {
+        async query(sql) {
+          queries.push(sql);
+          return { rows: queryRows(sql) };
+        },
+        release() {},
+      };
+    },
+  };
+
+  await getCemeteryData(pool);
+
+  const headstonesQuery = queries.find((sql) => sql.includes("ST_AsGeoJSON(headstones.geometry)::json"));
+  assert.match(headstonesQuery, /LEFT JOIN gravesites/u);
+  assert.match(headstonesQuery, /JOIN LATERAL/u);
+  assert.match(headstonesQuery, /ST_Covers\(cemeteries\.geometry, headstones\.geometry\)/u);
 });
 
 test("repository can redact ownership data from grave detail reads", async () => {

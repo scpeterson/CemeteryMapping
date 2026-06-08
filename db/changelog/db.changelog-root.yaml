@@ -158,3 +158,12 @@ databaseChangeLog:
   - include:
       file: changes/053-backfill-headstone-persons2-burials.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/054-align-c-0169-through-c-0172-and-split-c-0171.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/055-split-c-0172-simpson-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/056-remove-c-0173-gravesite-keep-marker.sql
+      relativeToChangelogFile: true
