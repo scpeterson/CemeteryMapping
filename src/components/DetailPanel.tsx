@@ -778,12 +778,84 @@ function HeadstoneRecord({
   );
 }
 
-export function DetailPanel({
-  owners,
+function MarkerDetailPanel({
+  summary,
+  headstone,
+  canUpdateHeadstones,
+  headstoneLookups,
+  onSaveHeadstone,
+  isLoading,
+  error,
+  onRetry,
+}: {
+  summary: HeadstoneSummary;
+  headstone?: Headstone;
+  canUpdateHeadstones: boolean;
+  headstoneLookups: HeadstoneLookups;
+  onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  isLoading: boolean;
+  error?: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <aside className="detail-panel">
+      <div className="grave-title-row">
+        <div>
+          <p className="eyebrow">Marker</p>
+          <h2>{summary.headstoneId}</h2>
+          <p className="grave-cemetery">{summary.cemeteryName}</p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="detail-message" role="status">
+          Loading marker details...
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="detail-message is-error" role="alert">
+          <p>Unable to load marker details: {error}</p>
+          {onRetry ? (
+            <button type="button" onClick={onRetry}>
+              Retry
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!headstone || isLoading || error ? null : (
+        <section className="detail-section">
+          <div className="section-title">
+            <Landmark size={17} aria-hidden="true" />
+            <h3>Marker</h3>
+          </div>
+          <div className="headstone-list">
+            <HeadstoneRecord headstone={headstone} lookups={headstoneLookups} canUpdate={canUpdateHeadstones} onSave={onSaveHeadstone} sectionName="" />
+          </div>
+        </section>
+      )}
+    </aside>
+  );
+}
+
+function EmptyDetailPanel() {
+  return (
+    <aside className="detail-panel empty-state">
+      <MapPinned size={28} aria-hidden="true" />
+      <h2>Select a grave site or marker</h2>
+      <p>Click a mapped grave space, marker, or choose a search result to view cemetery records.</p>
+    </aside>
+  );
+}
+
+function GraveDetailPanel({
+  ownersById,
   summary,
   grave,
-  standaloneHeadstoneSummary,
-  standaloneHeadstone,
+  headstones,
+  northHillsEvidence,
+  mediaAssets,
   canViewOwnership,
   canUpdateGravesites,
   canUpdateBurials,
@@ -794,77 +866,30 @@ export function DetailPanel({
   onSaveHeadstone,
   onSaveOwnershipEvent,
   onUploadPhoto,
-  isLoading = false,
+  isLoading,
   error,
   onRetry,
-}: DetailPanelProps) {
-  const ownersById = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
-  const headstones = useMemo(() => grave?.headstones ?? [], [grave?.headstones]);
-  const northHillsEvidence = grave?.northHillsEvidence ?? [];
-  const headstoneMediaIds = useMemo(() => new Set(headstones.flatMap((headstone) => (headstone.mediaAssets ?? []).map((asset) => asset.id))), [headstones]);
-  const mediaAssets = useMemo(() => (grave?.mediaAssets ?? []).filter((asset) => !headstoneMediaIds.has(asset.id)), [grave?.mediaAssets, headstoneMediaIds]);
-
-  if (standaloneHeadstoneSummary) {
-    return (
-      <aside className="detail-panel">
-        <div className="grave-title-row">
-          <div>
-            <p className="eyebrow">Marker</p>
-            <h2>{standaloneHeadstoneSummary.headstoneId}</h2>
-            <p className="grave-cemetery">{standaloneHeadstoneSummary.cemeteryName}</p>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="detail-message" role="status">
-            Loading marker details...
-          </div>
-        ) : null}
-
-        {error ? (
-          <div className="detail-message is-error" role="alert">
-            <p>Unable to load marker details: {error}</p>
-            {onRetry ? (
-              <button type="button" onClick={onRetry}>
-                Retry
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
-        {!standaloneHeadstone || isLoading || error ? null : (
-          <>
-            <section className="detail-section">
-              <div className="section-title">
-                <Landmark size={17} aria-hidden="true" />
-                <h3>Marker</h3>
-              </div>
-              <div className="headstone-list">
-                <HeadstoneRecord
-                  headstone={standaloneHeadstone}
-                  lookups={headstoneLookups}
-                  canUpdate={canUpdateHeadstones}
-                  onSave={onSaveHeadstone}
-                  sectionName=""
-                />
-              </div>
-            </section>
-          </>
-        )}
-      </aside>
-    );
-  }
-
-  if (!summary) {
-    return (
-      <aside className="detail-panel empty-state">
-        <MapPinned size={28} aria-hidden="true" />
-        <h2>Select a grave site or marker</h2>
-        <p>Click a mapped grave space, marker, or choose a search result to view cemetery records.</p>
-      </aside>
-    );
-  }
-
+}: {
+  ownersById: Map<string, Owner>;
+  summary: GraveSpaceSummary;
+  grave?: GraveSpace;
+  headstones: Headstone[];
+  northHillsEvidence: NorthHillsLinkedEvidence[];
+  mediaAssets: MediaAsset[];
+  canViewOwnership: boolean;
+  canUpdateGravesites: boolean;
+  canUpdateBurials: boolean;
+  canUpdateHeadstones: boolean;
+  headstoneLookups: HeadstoneLookups;
+  onSaveGraveSpace: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
+  onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
+  onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
+  isLoading: boolean;
+  error?: string;
+  onRetry?: () => void;
+}) {
   const title = formatGraveLabel(summary);
 
   return (
@@ -896,136 +921,206 @@ export function DetailPanel({
 
       {!grave || isLoading || error ? null : (
         <>
-      <section className="detail-section">
-        <div className="section-title">
-          <MapPinned size={17} aria-hidden="true" />
-          <h3>Gravesite</h3>
-        </div>
-        <GraveSpaceRecord grave={grave} canUpdate={canUpdateGravesites} onSave={onSaveGraveSpace} />
-      </section>
+          <section className="detail-section">
+            <div className="section-title">
+              <MapPinned size={17} aria-hidden="true" />
+              <h3>Gravesite</h3>
+            </div>
+            <GraveSpaceRecord grave={grave} canUpdate={canUpdateGravesites} onSave={onSaveGraveSpace} />
+          </section>
 
-      {canViewOwnership ? (
-      <section className="detail-section">
-        <div className="section-title">
-          <Landmark size={17} aria-hidden="true" />
-          <h3>Current Owner</h3>
-        </div>
-        <div className="owner-list">
-          {grave.currentOwnerIds.length ? (
-            grave.currentOwnerIds.map((id) => {
-              const owner = ownersById.get(id);
-              return (
-                <div key={id} className="owner-row">
-                  <strong>{owner?.displayName ?? "Unknown owner"}</strong>
-                  {owner?.contactNote ? <span>{owner.contactNote}</span> : null}
-                </div>
-              );
-            })
-          ) : (
-            <p className="muted">No current ownership is recorded.</p>
-          )}
-        </div>
-        {canUpdateGravesites ? <OwnershipEventForm grave={grave} onSave={onSaveOwnershipEvent} /> : null}
-      </section>
-      ) : null}
+          {canViewOwnership ? (
+            <section className="detail-section">
+              <div className="section-title">
+                <Landmark size={17} aria-hidden="true" />
+                <h3>Current Owner</h3>
+              </div>
+              <div className="owner-list">
+                {grave.currentOwnerIds.length ? (
+                  grave.currentOwnerIds.map((id) => {
+                    const owner = ownersById.get(id);
+                    return (
+                      <div key={id} className="owner-row">
+                        <strong>{owner?.displayName ?? "Unknown owner"}</strong>
+                        {owner?.contactNote ? <span>{owner.contactNote}</span> : null}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="muted">No current ownership is recorded.</p>
+                )}
+              </div>
+              {canUpdateGravesites ? <OwnershipEventForm grave={grave} onSave={onSaveOwnershipEvent} /> : null}
+            </section>
+          ) : null}
 
-      <section className="detail-section">
-        <div className="section-title">
-          <UserRound size={17} aria-hidden="true" />
-          <h3>Burials</h3>
-        </div>
-        {grave.burials.length ? (
-          <div className="burial-list">
-            {grave.burials.map((burial) => (
-              <BurialRecord key={burial.id} burial={burial} canUpdate={canUpdateBurials} onSave={onSaveBurial} />
-            ))}
-          </div>
-        ) : (
-          <p className="muted">No burials are recorded for this grave site.</p>
-        )}
-      </section>
+          <section className="detail-section">
+            <div className="section-title">
+              <UserRound size={17} aria-hidden="true" />
+              <h3>Burials</h3>
+            </div>
+            {grave.burials.length ? (
+              <div className="burial-list">
+                {grave.burials.map((burial) => (
+                  <BurialRecord key={burial.id} burial={burial} canUpdate={canUpdateBurials} onSave={onSaveBurial} />
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No burials are recorded for this grave site.</p>
+            )}
+          </section>
 
-      <section className="detail-section">
-        <div className="section-title">
-          <Landmark size={17} aria-hidden="true" />
-          <h3>Markers</h3>
-        </div>
-        {headstones.length ? (
-          <div className="headstone-list">
-            {headstones.map((headstone) => (
-              <HeadstoneRecord
-                key={headstone.id}
-                headstone={headstone}
-                lookups={headstoneLookups}
-                canUpdate={canUpdateHeadstones}
-                onSave={onSaveHeadstone}
-                sectionName={summary.section}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="muted">No markers are recorded for this grave site.</p>
-        )}
-      </section>
+          <section className="detail-section">
+            <div className="section-title">
+              <Landmark size={17} aria-hidden="true" />
+              <h3>Markers</h3>
+            </div>
+            {headstones.length ? (
+              <div className="headstone-list">
+                {headstones.map((headstone) => (
+                  <HeadstoneRecord
+                    key={headstone.id}
+                    headstone={headstone}
+                    lookups={headstoneLookups}
+                    canUpdate={canUpdateHeadstones}
+                    onSave={onSaveHeadstone}
+                    sectionName={summary.section}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No markers are recorded for this grave site.</p>
+            )}
+          </section>
 
-      <section className="detail-section">
-        <div className="section-title">
-          <Images size={17} aria-hidden="true" />
-          <h3>Gravesite Photos</h3>
-        </div>
-        <MediaGallery assets={mediaAssets} emptyMessage="No gravesite overview photos are linked yet." />
-        {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} onUpload={onUploadPhoto} /> : null}
-      </section>
+          <section className="detail-section">
+            <div className="section-title">
+              <Images size={17} aria-hidden="true" />
+              <h3>Gravesite Photos</h3>
+            </div>
+            <MediaGallery assets={mediaAssets} emptyMessage="No gravesite overview photos are linked yet." />
+            {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} onUpload={onUploadPhoto} /> : null}
+          </section>
 
-      {northHillsEvidence.length ? (
-        <section className="detail-section">
-          <div className="section-title">
-            <FileText size={17} aria-hidden="true" />
-            <h3>North Hills Evidence</h3>
-          </div>
-          <NorthHillsEvidenceList evidence={northHillsEvidence} />
-        </section>
-      ) : null}
+          {northHillsEvidence.length ? (
+            <section className="detail-section">
+              <div className="section-title">
+                <FileText size={17} aria-hidden="true" />
+                <h3>North Hills Evidence</h3>
+              </div>
+              <NorthHillsEvidenceList evidence={northHillsEvidence} />
+            </section>
+          ) : null}
 
-      {canViewOwnership ? (
-      <section className="detail-section">
-        <div className="section-title">
-          <History size={17} aria-hidden="true" />
-          <h3>Ownership Timeline</h3>
-        </div>
-        <ol className="timeline">
-          {[...grave.ownershipHistory]
-            .sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate))
-            .map((event) => (
-              <li key={event.id}>
-                <time>{formatDate(event.effectiveDate)}</time>
-                <strong>{event.eventType}</strong>
-                <span>{event.ownerIds.map((id) => ownerName(ownersById, id)).join(", ")}</span>
-                <small>{event.recordedBy}</small>
-                {event.documentReference ? (
-                  <span className="document-ref">
-                    <FileText size={13} aria-hidden="true" />
-                    {event.documentReference}
-                  </span>
-                ) : null}
-                {event.notes ? <p>{event.notes}</p> : null}
-              </li>
-            ))}
-        </ol>
-      </section>
-      ) : null}
+          {canViewOwnership ? (
+            <section className="detail-section">
+              <div className="section-title">
+                <History size={17} aria-hidden="true" />
+                <h3>Ownership Timeline</h3>
+              </div>
+              <ol className="timeline">
+                {[...grave.ownershipHistory]
+                  .sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate))
+                  .map((event) => (
+                    <li key={event.id}>
+                      <time>{formatDate(event.effectiveDate)}</time>
+                      <strong>{event.eventType}</strong>
+                      <span>{event.ownerIds.map((id) => ownerName(ownersById, id)).join(", ")}</span>
+                      <small>{event.recordedBy}</small>
+                      {event.documentReference ? (
+                        <span className="document-ref">
+                          <FileText size={13} aria-hidden="true" />
+                          {event.documentReference}
+                        </span>
+                      ) : null}
+                      {event.notes ? <p>{event.notes}</p> : null}
+                    </li>
+                  ))}
+              </ol>
+            </section>
+          ) : null}
 
-      {grave.notes ? (
-        <section className="detail-section">
-          <div className="section-title">
-            <FileText size={17} aria-hidden="true" />
-            <h3>Notes</h3>
-          </div>
-          <p className="note-box">{grave.notes}</p>
-        </section>
-      ) : null}
+          {grave.notes ? (
+            <section className="detail-section">
+              <div className="section-title">
+                <FileText size={17} aria-hidden="true" />
+                <h3>Notes</h3>
+              </div>
+              <p className="note-box">{grave.notes}</p>
+            </section>
+          ) : null}
         </>
       )}
     </aside>
+  );
+}
+
+export function DetailPanel({
+  owners,
+  summary,
+  grave,
+  standaloneHeadstoneSummary,
+  standaloneHeadstone,
+  canViewOwnership,
+  canUpdateGravesites,
+  canUpdateBurials,
+  canUpdateHeadstones,
+  headstoneLookups,
+  onSaveGraveSpace,
+  onSaveBurial,
+  onSaveHeadstone,
+  onSaveOwnershipEvent,
+  onUploadPhoto,
+  isLoading = false,
+  error,
+  onRetry,
+}: DetailPanelProps) {
+  const ownersById = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
+  const headstones = useMemo(() => grave?.headstones ?? [], [grave?.headstones]);
+  const northHillsEvidence = grave?.northHillsEvidence ?? [];
+  const headstoneMediaIds = useMemo(() => new Set(headstones.flatMap((headstone) => (headstone.mediaAssets ?? []).map((asset) => asset.id))), [headstones]);
+  const mediaAssets = useMemo(() => (grave?.mediaAssets ?? []).filter((asset) => !headstoneMediaIds.has(asset.id)), [grave?.mediaAssets, headstoneMediaIds]);
+
+  if (standaloneHeadstoneSummary) {
+    return (
+      <MarkerDetailPanel
+        summary={standaloneHeadstoneSummary}
+        headstone={standaloneHeadstone}
+        canUpdateHeadstones={canUpdateHeadstones}
+        headstoneLookups={headstoneLookups}
+        onSaveHeadstone={onSaveHeadstone}
+        isLoading={isLoading}
+        error={error}
+        onRetry={onRetry}
+      />
+    );
+  }
+
+  if (!summary) {
+    return <EmptyDetailPanel />;
+  }
+
+  return (
+    <GraveDetailPanel
+      ownersById={ownersById}
+      summary={summary}
+      grave={grave}
+      headstones={headstones}
+      northHillsEvidence={northHillsEvidence}
+      mediaAssets={mediaAssets}
+      canViewOwnership={canViewOwnership}
+      canUpdateGravesites={canUpdateGravesites}
+      canUpdateBurials={canUpdateBurials}
+      canUpdateHeadstones={canUpdateHeadstones}
+      headstoneLookups={headstoneLookups}
+      onSaveGraveSpace={onSaveGraveSpace}
+      onSaveBurial={onSaveBurial}
+      onSaveHeadstone={onSaveHeadstone}
+      onSaveOwnershipEvent={onSaveOwnershipEvent}
+      onUploadPhoto={onUploadPhoto}
+      isLoading={isLoading}
+      error={error}
+      onRetry={onRetry}
+    />
   );
 }
