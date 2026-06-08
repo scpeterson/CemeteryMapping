@@ -876,27 +876,119 @@ async function selectBurialsForGrave(client, graveUuid) {
   return result.rows;
 }
 
+const headstoneDetailColumnsSql = `
+  headstones.id::text,
+  headstones.headstone_id,
+  marker_types.id::text AS marker_type_id,
+  marker_types.code AS marker_type_code,
+  marker_types.label AS marker_type_label,
+  marker_material_types.id::text AS material_id,
+  marker_material_types.code AS material_code,
+  marker_material_types.label AS material_label,
+  headstone_condition_types.id::text AS condition_id,
+  headstone_condition_types.code AS condition_code,
+  headstone_condition_types.label AS condition_label,
+  headstones.condition_notes,
+  headstones.inscription,
+  headstones.design_notes,
+  headstones.back_description,
+  headstones.photo_url,
+  headstones.last_inspected_at
+`;
+
+const headstoneLookupJoinsSql = `
+  JOIN marker_types
+    ON marker_types.id = headstones.marker_type_id
+  JOIN marker_material_types
+    ON marker_material_types.id = headstones.material_type_id
+  JOIN headstone_condition_types
+    ON headstone_condition_types.id = headstones.condition_type_id
+`;
+
+const headstoneEvidenceJoinSql = `
+  LEFT JOIN LATERAL (
+    SELECT jsonb_agg(
+      jsonb_build_object(
+        'id', headstone_link.id::text,
+        'entryId', entry.id::text,
+        'targetType', 'headstone',
+        'status', headstone_link.status,
+        'confidence', headstone_link.confidence,
+        'sourcePageNumber', entry.source_page_number,
+        'nameText', entry.name_text,
+        'parsedSectionName', entry.parsed_section_name,
+        'parsedRowNumber', entry.parsed_row_number,
+        'parsedPositionNumber', entry.parsed_position_number,
+        'rawText', entry.raw_text,
+        'reviewNotes', headstone_link.notes,
+        'reviewedByEmail', headstone_link.reviewed_by_email,
+        'reviewedAt', headstone_link.reviewed_at
+      )
+      ORDER BY entry.source_page_number NULLS LAST, entry.source_line_start, entry.id
+    ) AS evidence
+    FROM north_hills_ocr_entry_headstone_links headstone_link
+    JOIN north_hills_ocr_entries entry
+      ON entry.id = headstone_link.entry_id
+    WHERE headstone_link.headstone_uuid = headstones.id
+      AND headstone_link.status = 'linked'
+  ) headstone_evidence ON true
+`;
+
+const headstoneMediaJoinSql = `
+  LEFT JOIN LATERAL (
+    SELECT jsonb_agg(
+      jsonb_build_object(
+        'id', media_assets.id::text,
+        'cemeteryId', media_assets.cemetery_id::text,
+        'assetType', media_assets.asset_type,
+        'fileUrl', media_assets.file_url,
+        'thumbnailUrl', COALESCE(media_assets.thumbnail_url, ''),
+        'originalFilename', COALESCE(media_assets.original_filename, ''),
+        'contentType', COALESCE(media_assets.content_type, ''),
+        'byteSize', COALESCE(media_assets.byte_size, 0),
+        'capturedAt', media_assets.captured_at,
+        'uploadedAt', media_assets.uploaded_at,
+        'capturedByEmail', COALESCE(media_assets.captured_by_email, ''),
+        'latitude', media_assets.latitude,
+        'longitude', media_assets.longitude,
+        'gpsAccuracy', media_assets.gps_accuracy,
+        'deviceMake', COALESCE(media_assets.device_make, ''),
+        'deviceModel', COALESCE(media_assets.device_model, ''),
+        'notes', COALESCE(media_assets.notes, ''),
+        'source', media_assets.source,
+        'status', media_assets.status
+      )
+      ORDER BY media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
+    ) AS media_assets
+    FROM headstone_media_assets
+    JOIN media_assets
+      ON media_assets.id = headstone_media_assets.media_asset_id
+    WHERE headstone_media_assets.headstone_uuid = headstones.id
+      AND headstone_media_assets.deleted_at IS NULL
+      AND headstone_media_assets.status = 'linked'
+      AND media_assets.deleted_at IS NULL
+      AND media_assets.status = 'linked'
+  ) headstone_media ON true
+`;
+
+const headstoneDetailGroupBySql = `
+  headstones.id,
+  marker_types.id,
+  marker_types.code,
+  marker_types.label,
+  marker_material_types.id,
+  marker_material_types.code,
+  marker_material_types.label,
+  headstone_condition_types.id,
+  headstone_condition_types.code,
+  headstone_condition_types.label
+`;
+
 async function selectHeadstonesForGrave(client, graveUuid) {
   const result = await client.query(
     `
       SELECT
-        headstones.id::text,
-        headstones.headstone_id,
-        marker_types.id::text AS marker_type_id,
-        marker_types.code AS marker_type_code,
-        marker_types.label AS marker_type_label,
-        marker_material_types.id::text AS material_id,
-        marker_material_types.code AS material_code,
-        marker_material_types.label AS material_label,
-        headstone_condition_types.id::text AS condition_id,
-        headstone_condition_types.code AS condition_code,
-        headstone_condition_types.label AS condition_label,
-        headstones.condition_notes,
-        headstones.inscription,
-        headstones.design_notes,
-        headstones.back_description,
-        headstones.photo_url,
-        headstones.last_inspected_at,
+        ${headstoneDetailColumnsSql},
         COALESCE(headstone_gravesites.relationship_type, 'primary') AS relationship_type,
         headstone_gravesites.notes AS relationship_notes,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
@@ -909,88 +1001,16 @@ async function selectHeadstonesForGrave(client, graveUuid) {
       LEFT JOIN headstone_burials
         ON headstone_burials.headstone_uuid = headstones.id
        AND headstone_burials.deleted_at IS NULL
-      JOIN marker_types
-        ON marker_types.id = headstones.marker_type_id
-      JOIN marker_material_types
-        ON marker_material_types.id = headstones.material_type_id
-      JOIN headstone_condition_types
-        ON headstone_condition_types.id = headstones.condition_type_id
-      LEFT JOIN LATERAL (
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', headstone_link.id::text,
-            'entryId', entry.id::text,
-            'targetType', 'headstone',
-            'status', headstone_link.status,
-            'confidence', headstone_link.confidence,
-            'sourcePageNumber', entry.source_page_number,
-            'nameText', entry.name_text,
-            'parsedSectionName', entry.parsed_section_name,
-            'parsedRowNumber', entry.parsed_row_number,
-            'parsedPositionNumber', entry.parsed_position_number,
-            'rawText', entry.raw_text,
-            'reviewNotes', headstone_link.notes,
-            'reviewedByEmail', headstone_link.reviewed_by_email,
-            'reviewedAt', headstone_link.reviewed_at
-          )
-          ORDER BY entry.source_page_number NULLS LAST, entry.source_line_start, entry.id
-        ) AS evidence
-        FROM north_hills_ocr_entry_headstone_links headstone_link
-        JOIN north_hills_ocr_entries entry
-          ON entry.id = headstone_link.entry_id
-        WHERE headstone_link.headstone_uuid = headstones.id
-          AND headstone_link.status = 'linked'
-      ) headstone_evidence ON true
-      LEFT JOIN LATERAL (
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', media_assets.id::text,
-            'cemeteryId', media_assets.cemetery_id::text,
-            'assetType', media_assets.asset_type,
-            'fileUrl', media_assets.file_url,
-            'thumbnailUrl', COALESCE(media_assets.thumbnail_url, ''),
-            'originalFilename', COALESCE(media_assets.original_filename, ''),
-            'contentType', COALESCE(media_assets.content_type, ''),
-            'byteSize', COALESCE(media_assets.byte_size, 0),
-            'capturedAt', media_assets.captured_at,
-            'uploadedAt', media_assets.uploaded_at,
-            'capturedByEmail', COALESCE(media_assets.captured_by_email, ''),
-            'latitude', media_assets.latitude,
-            'longitude', media_assets.longitude,
-            'gpsAccuracy', media_assets.gps_accuracy,
-            'deviceMake', COALESCE(media_assets.device_make, ''),
-            'deviceModel', COALESCE(media_assets.device_model, ''),
-            'notes', COALESCE(media_assets.notes, ''),
-            'source', media_assets.source,
-            'status', media_assets.status
-          )
-          ORDER BY media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
-        ) AS media_assets
-        FROM headstone_media_assets
-        JOIN media_assets
-          ON media_assets.id = headstone_media_assets.media_asset_id
-        WHERE headstone_media_assets.headstone_uuid = headstones.id
-          AND headstone_media_assets.deleted_at IS NULL
-          AND headstone_media_assets.status = 'linked'
-          AND media_assets.deleted_at IS NULL
-          AND media_assets.status = 'linked'
-      ) headstone_media ON true
+      ${headstoneLookupJoinsSql}
+      ${headstoneEvidenceJoinSql}
+      ${headstoneMediaJoinSql}
       WHERE headstones.deleted_at IS NULL
         AND (
           headstones.gravesite_uuid = $1
           OR headstone_gravesites.gravesite_uuid = $1
         )
       GROUP BY
-        headstones.id,
-        marker_types.id,
-        marker_types.code,
-        marker_types.label,
-        marker_material_types.id,
-        marker_material_types.code,
-        marker_material_types.label,
-        headstone_condition_types.id,
-        headstone_condition_types.code,
-        headstone_condition_types.label,
+        ${headstoneDetailGroupBySql},
         headstone_gravesites.relationship_type,
         headstone_gravesites.notes,
         headstone_evidence.evidence,
@@ -1007,23 +1027,7 @@ async function selectHeadstoneById(client, id) {
   const result = await client.query(
     `
       SELECT
-        headstones.id::text,
-        headstones.headstone_id,
-        marker_types.id::text AS marker_type_id,
-        marker_types.code AS marker_type_code,
-        marker_types.label AS marker_type_label,
-        marker_material_types.id::text AS material_id,
-        marker_material_types.code AS material_code,
-        marker_material_types.label AS material_label,
-        headstone_condition_types.id::text AS condition_id,
-        headstone_condition_types.code AS condition_code,
-        headstone_condition_types.label AS condition_label,
-        headstones.condition_notes,
-        headstones.inscription,
-        headstones.design_notes,
-        headstones.back_description,
-        headstones.photo_url,
-        headstones.last_inspected_at,
+        ${headstoneDetailColumnsSql},
         COALESCE(headstone_relationship.relationship_type, 'primary') AS relationship_type,
         headstone_relationship.notes AS relationship_notes,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
@@ -1049,85 +1053,13 @@ async function selectHeadstoneById(client, id) {
           id
         LIMIT 1
       ) headstone_relationship ON true
-      JOIN marker_types
-        ON marker_types.id = headstones.marker_type_id
-      JOIN marker_material_types
-        ON marker_material_types.id = headstones.material_type_id
-      JOIN headstone_condition_types
-        ON headstone_condition_types.id = headstones.condition_type_id
-      LEFT JOIN LATERAL (
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', headstone_link.id::text,
-            'entryId', entry.id::text,
-            'targetType', 'headstone',
-            'status', headstone_link.status,
-            'confidence', headstone_link.confidence,
-            'sourcePageNumber', entry.source_page_number,
-            'nameText', entry.name_text,
-            'parsedSectionName', entry.parsed_section_name,
-            'parsedRowNumber', entry.parsed_row_number,
-            'parsedPositionNumber', entry.parsed_position_number,
-            'rawText', entry.raw_text,
-            'reviewNotes', headstone_link.notes,
-            'reviewedByEmail', headstone_link.reviewed_by_email,
-            'reviewedAt', headstone_link.reviewed_at
-          )
-          ORDER BY entry.source_page_number NULLS LAST, entry.source_line_start, entry.id
-        ) AS evidence
-        FROM north_hills_ocr_entry_headstone_links headstone_link
-        JOIN north_hills_ocr_entries entry
-          ON entry.id = headstone_link.entry_id
-        WHERE headstone_link.headstone_uuid = headstones.id
-          AND headstone_link.status = 'linked'
-      ) headstone_evidence ON true
-      LEFT JOIN LATERAL (
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', media_assets.id::text,
-            'cemeteryId', media_assets.cemetery_id::text,
-            'assetType', media_assets.asset_type,
-            'fileUrl', media_assets.file_url,
-            'thumbnailUrl', COALESCE(media_assets.thumbnail_url, ''),
-            'originalFilename', COALESCE(media_assets.original_filename, ''),
-            'contentType', COALESCE(media_assets.content_type, ''),
-            'byteSize', COALESCE(media_assets.byte_size, 0),
-            'capturedAt', media_assets.captured_at,
-            'uploadedAt', media_assets.uploaded_at,
-            'capturedByEmail', COALESCE(media_assets.captured_by_email, ''),
-            'latitude', media_assets.latitude,
-            'longitude', media_assets.longitude,
-            'gpsAccuracy', media_assets.gps_accuracy,
-            'deviceMake', COALESCE(media_assets.device_make, ''),
-            'deviceModel', COALESCE(media_assets.device_model, ''),
-            'notes', COALESCE(media_assets.notes, ''),
-            'source', media_assets.source,
-            'status', media_assets.status
-          )
-          ORDER BY media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
-        ) AS media_assets
-        FROM headstone_media_assets
-        JOIN media_assets
-          ON media_assets.id = headstone_media_assets.media_asset_id
-        WHERE headstone_media_assets.headstone_uuid = headstones.id
-          AND headstone_media_assets.deleted_at IS NULL
-          AND headstone_media_assets.status = 'linked'
-          AND media_assets.deleted_at IS NULL
-          AND media_assets.status = 'linked'
-      ) headstone_media ON true
+      ${headstoneLookupJoinsSql}
+      ${headstoneEvidenceJoinSql}
+      ${headstoneMediaJoinSql}
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
       GROUP BY
-        headstones.id,
-        marker_types.id,
-        marker_types.code,
-        marker_types.label,
-        marker_material_types.id,
-        marker_material_types.code,
-        marker_material_types.label,
-        headstone_condition_types.id,
-        headstone_condition_types.code,
-        headstone_condition_types.label,
+        ${headstoneDetailGroupBySql},
         headstone_relationship.relationship_type,
         headstone_relationship.notes,
         headstone_evidence.evidence,
