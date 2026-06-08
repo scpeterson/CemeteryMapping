@@ -273,10 +273,10 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
   });
 }
 
-export function addHeadstoneLayers(map: Map, headstones: HeadstoneSummary[], selectedKey: string | undefined, searchResultIds: Set<string>) {
+export function addHeadstoneLayers(map: Map, headstones: HeadstoneSummary[], selectedKey: string | undefined, searchResultIds: Set<string>, selectedHeadstoneId?: string) {
   map.addSource("headstones", {
     type: "geojson",
-    data: headstonesFeatureCollection(headstones, selectedKey, searchResultIds),
+    data: headstonesFeatureCollection(headstones, selectedKey, searchResultIds, selectedHeadstoneId),
   });
 
   map.addLayer({

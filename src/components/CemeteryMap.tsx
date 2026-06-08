@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
-import type { CemeteryData, GraveSpaceSummary, GraveStatus } from "../types";
+import type { CemeteryData, GraveSpaceSummary, GraveStatus, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, statusLabels } from "../lib/format";
 import { exteriorRing, fitMapToData } from "./cemeteryMapBounds";
@@ -23,9 +23,11 @@ import { mapScale, type MapScale } from "./cemeteryMapScale";
 type CemeteryMapProps = {
   data: CemeteryData;
   selectedGrave?: GraveSpaceSummary;
+  selectedHeadstone?: HeadstoneSummary;
   visibleGraves: GraveSpaceSummary[];
   searchResultIds: Set<string>;
   onSelectGrave: (grave: GraveSpaceSummary) => void;
+  onSelectHeadstone: (headstone: HeadstoneSummary) => void;
 };
 
 const center: [number, number] = [-76.70431, 39.19604];
@@ -36,27 +38,37 @@ function graveSelectionIndex(graves: GraveSpaceSummary[]) {
   return new Map(graves.map((grave) => [graveSelectionKey(grave), grave]));
 }
 
-export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultIds, onSelectGrave }: CemeteryMapProps) {
+function headstoneSelectionIndex(headstones: HeadstoneSummary[]) {
+  return new Map(headstones.map((headstone) => [headstone.id, headstone]));
+}
+
+export function CemeteryMap({ data, selectedGrave, selectedHeadstone, visibleGraves, searchResultIds, onSelectGrave, onSelectHeadstone }: CemeteryMapProps) {
   const [scale, setScale] = useState<MapScale>();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
   const dataRef = useRef(data);
   const gravesBySelectionKeyRef = useRef(graveSelectionIndex(data.graves));
+  const headstonesByIdRef = useRef(headstoneSelectionIndex(data.headstones ?? []));
   const visibleGravesRef = useRef(visibleGraves);
   const searchResultIdsRef = useRef(searchResultIds);
   const selectedRef = useRef(selectedGrave ? graveSelectionKey(selectedGrave) : undefined);
+  const selectedHeadstoneIdRef = useRef(selectedHeadstone?.id);
   const onSelectRef = useRef(onSelectGrave);
+  const onSelectHeadstoneRef = useRef(onSelectHeadstone);
   const didSkipInitialSelectionFitRef = useRef(false);
 
   useEffect(() => {
     dataRef.current = data;
     gravesBySelectionKeyRef.current = graveSelectionIndex(data.graves);
+    headstonesByIdRef.current = headstoneSelectionIndex(data.headstones ?? []);
     visibleGravesRef.current = visibleGraves;
     searchResultIdsRef.current = searchResultIds;
     selectedRef.current = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
+    selectedHeadstoneIdRef.current = selectedHeadstone?.id;
     onSelectRef.current = onSelectGrave;
-  }, [data, onSelectGrave, searchResultIds, selectedGrave, visibleGraves]);
+    onSelectHeadstoneRef.current = onSelectHeadstone;
+  }, [data, onSelectGrave, onSelectHeadstone, searchResultIds, selectedGrave, selectedHeadstone, visibleGraves]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -98,7 +110,7 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       addSectionLayers(map, dataRef.current);
       addLotLayers(map, dataRef.current);
       addGraveLayers(map, visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current);
-      addHeadstoneLayers(map, dataRef.current.headstones ?? [], selectedRef.current, searchResultIdsRef.current);
+      addHeadstoneLayers(map, dataRef.current.headstones ?? [], selectedRef.current, searchResultIdsRef.current, selectedHeadstoneIdRef.current);
       addSectionLabelLayer(map);
 
       enforceMapLayerOrder(map);
@@ -111,9 +123,9 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
       };
 
       const selectHeadstoneFeature = (event: maplibregl.MapLayerMouseEvent) => {
-        const key = event.features?.[0]?.properties?.graveKey;
-        const grave = typeof key === "string" ? gravesBySelectionKeyRef.current.get(key) : undefined;
-        if (grave) onSelectRef.current(grave);
+        const id = event.features?.[0]?.properties?.id;
+        const headstone = typeof id === "string" ? headstonesByIdRef.current.get(id) : undefined;
+        if (headstone) onSelectHeadstoneRef.current(headstone);
       };
 
       selectableGraveLayers.forEach((layer) => {
@@ -179,8 +191,8 @@ export function CemeteryMap({ data, selectedGrave, visibleGraves, searchResultId
     source?.setData(gravesFeatureCollection(visibleGraves, selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds));
 
     const headstonesSource = mapRef.current?.getSource("headstones") as GeoJSONSource | undefined;
-    headstonesSource?.setData(headstonesFeatureCollection(data.headstones ?? [], selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds));
-  }, [data.headstones, searchResultIds, selectedGrave, visibleGraves]);
+    headstonesSource?.setData(headstonesFeatureCollection(data.headstones ?? [], selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds, selectedHeadstone?.id));
+  }, [data.headstones, searchResultIds, selectedGrave, selectedHeadstone, visibleGraves]);
 
   useEffect(() => {
     if (!selectedGrave || !mapRef.current) return;

@@ -131,6 +131,11 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
   return jsonResponse<HeadstoneLookups>(response, "Headstone lookup API");
 }
 
+export async function fetchHeadstone(id: string): Promise<Headstone> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(id)}`);
+  return jsonResponse<Headstone>(response, "Headstone API");
+}
+
 export async function updateHeadstone(id: string, headstone: SaveHeadstoneInput): Promise<Headstone> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(id)}`, jsonRequest("PATCH", headstone));
   return jsonResponse<Headstone>(response, "Update headstone API");

@@ -5,6 +5,7 @@ import {
   fetchCemeteryData,
   fetchCurrentUser,
   fetchGraveSpace,
+  fetchHeadstone,
   fetchHeadstoneLookups,
   fetchSearchMatches,
   updateBurial,
@@ -30,6 +31,7 @@ import type {
   GraveStatus,
   Headstone,
   HeadstoneLookups,
+  HeadstoneSummary,
   Owner,
   SaveBurialInput,
   SaveGraveSpaceInput,
@@ -49,6 +51,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
   const [selectedGraveDetails, setSelectedGraveDetails] = useState<GraveSpace | undefined>();
+  const [selectedHeadstone, setSelectedHeadstone] = useState<HeadstoneSummary | undefined>();
+  const [selectedHeadstoneDetails, setSelectedHeadstoneDetails] = useState<Headstone | undefined>();
   const [selectedGraveOwners, setSelectedGraveOwners] = useState<Owner[]>([]);
   const [detailError, setDetailError] = useState<string>();
   const [isDetailLoading, setIsDetailLoading] = useState(false);
@@ -122,8 +126,31 @@ export default function App() {
 
   useEffect(() => {
     setSelectedGraveDetails(undefined);
+    setSelectedHeadstoneDetails(undefined);
     setSelectedGraveOwners([]);
     setDetailError(undefined);
+
+    if (selectedHeadstone) {
+      let isCurrent = true;
+      setIsDetailLoading(true);
+
+      fetchHeadstone(selectedHeadstone.id)
+        .then((detail) => {
+          if (!isCurrent) return;
+          setSelectedHeadstoneDetails(detail);
+        })
+        .catch((error: unknown) => {
+          if (!isCurrent) return;
+          setDetailError(error instanceof Error ? error.message : "Unable to load marker details");
+        })
+        .finally(() => {
+          if (isCurrent) setIsDetailLoading(false);
+        });
+
+      return () => {
+        isCurrent = false;
+      };
+    }
 
     if (!selectedGrave) {
       setIsDetailLoading(false);
@@ -150,7 +177,7 @@ export default function App() {
     return () => {
       isCurrent = false;
     };
-  }, [selectedGrave, detailRequestVersion]);
+  }, [selectedGrave, selectedHeadstone, detailRequestVersion]);
 
   useEffect(() => {
     const cleanedQuery = query.trim();
@@ -192,7 +219,8 @@ export default function App() {
     (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
   const canUpdateSelectedHeadstones =
     currentUser?.role === "admin" ||
-    (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
+    (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false) ||
+    (hasScopedEditAccess && selectedHeadstone ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedHeadstone.cemeteryId) : false);
   const canUpdateSelectedGravesites = canUpdateSelectedHeadstones;
   const canUpdateSelectedBurials = canUpdateSelectedHeadstones;
   const cemeteryScopeLabel = useMemo(() => {
@@ -212,7 +240,20 @@ export default function App() {
   };
 
   const selectMatch = (match: SearchMatch) => {
+    setSelectedHeadstone(undefined);
     setSelectedGrave(match.grave);
+  };
+
+  const selectGrave = (grave: GraveSpaceSummary) => {
+    setSelectedHeadstone(undefined);
+    setSelectedGrave(grave);
+  };
+
+  const selectHeadstone = (headstone: HeadstoneSummary) => {
+    setSelectedHeadstone(headstone);
+    setSelectedGrave(undefined);
+    setSelectedGraveOwners([]);
+    setSelectedGraveDetails(undefined);
   };
 
   const saveHeadstone = async (id: string, headstone: SaveHeadstoneInput): Promise<Headstone> => {
@@ -225,6 +266,20 @@ export default function App() {
           }
         : current,
     );
+    setSelectedHeadstoneDetails((current) => (current?.id === saved.id ? saved : current));
+    setData((current) => ({
+      ...current,
+      headstones: (current.headstones ?? []).map((candidate) =>
+        candidate.id === saved.id
+          ? {
+              ...candidate,
+              markerTypeCode: saved.markerType.code,
+              markerType: saved.markerType.label,
+              condition: saved.condition.code,
+            }
+          : candidate,
+      ),
+    }));
     return saved;
   };
 
@@ -318,15 +373,19 @@ export default function App() {
         <CemeteryMap
           data={data}
           selectedGrave={selectedGrave}
+          selectedHeadstone={selectedHeadstone}
           visibleGraves={visibleGraves}
           searchResultIds={searchResultIds}
-          onSelectGrave={setSelectedGrave}
+          onSelectGrave={selectGrave}
+          onSelectHeadstone={selectHeadstone}
         />
       </section>
       <DetailPanel
         owners={selectedGraveOwners}
         summary={selectedGrave}
         grave={selectedGraveDetails}
+        standaloneHeadstoneSummary={selectedHeadstone}
+        standaloneHeadstone={selectedHeadstoneDetails}
         canViewOwnership={canViewSelectedOwnership}
         canUpdateGravesites={canUpdateSelectedGravesites}
         canUpdateBurials={canUpdateSelectedBurials}

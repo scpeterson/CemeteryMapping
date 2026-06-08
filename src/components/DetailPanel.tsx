@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
-import { Camera, FileText, History, Images, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
+import { Camera, FileText, History, Images, Info, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
 import type {
   Burial,
   GraveSpace,
@@ -7,6 +7,7 @@ import type {
   GraveStatus,
   Headstone,
   HeadstoneLookups,
+  HeadstoneSummary,
   LookupOption,
   MediaAsset,
   NorthHillsLinkedEvidence,
@@ -26,6 +27,8 @@ type DetailPanelProps = {
   owners: Owner[];
   summary?: GraveSpaceSummary;
   grave?: GraveSpace;
+  standaloneHeadstoneSummary?: HeadstoneSummary;
+  standaloneHeadstone?: Headstone;
   canViewOwnership: boolean;
   canUpdateGravesites: boolean;
   canUpdateBurials: boolean;
@@ -65,6 +68,34 @@ const ownershipTargetOptions: { value: OwnershipTargetScope; label: string }[] =
   { value: "selected_lot", label: "This whole lot" },
   { value: "listed_gravesites", label: "Listed gravesites" },
 ];
+
+const headstoneRelationshipCopy: Record<string, { label: string; description: string }> = {
+  primary: {
+    label: "Primary marker for this gravesite",
+    description: "This is the normal marker relationship: the marker belongs primarily to this gravesite.",
+  },
+  spans: {
+    label: "Marker spans multiple gravesites",
+    description: "One physical marker or headstone is shared by this gravesite and at least one neighboring gravesite, such as a two-person headstone centered between burial spaces.",
+  },
+  nearby: {
+    label: "Marker is nearby",
+    description: "The marker is near this gravesite, but the exact relationship is not confirmed.",
+  },
+  inferred: {
+    label: "Marker relationship inferred",
+    description: "The marker relationship was inferred from imported records, location, or other available evidence and may need field confirmation.",
+  },
+};
+
+function headstoneRelationshipDetails(relationshipType: string) {
+  return (
+    headstoneRelationshipCopy[relationshipType] ?? {
+      label: `Marker relationship: ${relationshipType}`,
+      description: "This marker has a non-standard relationship to the selected gravesite.",
+    }
+  );
+}
 
 function blankOwnershipForm(grave: GraveSpace): SaveOwnershipEventInput {
   return {
@@ -696,6 +727,9 @@ function HeadstoneRecord({
     );
   }
 
+  const relationshipDetails = headstoneRelationshipDetails(headstone.relationshipType);
+  const relationshipTitle = headstone.relationshipNotes ? `${relationshipDetails.description} Notes: ${headstone.relationshipNotes}` : relationshipDetails.description;
+
   return (
     <article className="headstone-record">
       <div className="headstone-record-header">
@@ -731,9 +765,12 @@ function HeadstoneRecord({
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
       {headstone.mediaAssets?.length ? <MediaGallery assets={headstone.mediaAssets} /> : null}
       {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
-        <p className="muted">
-          Relationship: {headstone.relationshipType}
-          {headstone.relationshipNotes ? ` - ${headstone.relationshipNotes}` : ""}
+        <p className="marker-relationship" title={relationshipTitle} aria-label={relationshipTitle}>
+          <Info size={14} aria-hidden="true" />
+          <span>
+            {relationshipDetails.label} <span className="marker-relationship-code">({headstone.relationshipType})</span>
+            {headstone.relationshipNotes ? ` - ${headstone.relationshipNotes}` : ""}
+          </span>
         </p>
       ) : null}
       <NorthHillsEvidenceList evidence={headstone.northHillsEvidence ?? []} />
@@ -745,6 +782,8 @@ export function DetailPanel({
   owners,
   summary,
   grave,
+  standaloneHeadstoneSummary,
+  standaloneHeadstone,
   canViewOwnership,
   canUpdateGravesites,
   canUpdateBurials,
@@ -765,12 +804,63 @@ export function DetailPanel({
   const headstoneMediaIds = useMemo(() => new Set(headstones.flatMap((headstone) => (headstone.mediaAssets ?? []).map((asset) => asset.id))), [headstones]);
   const mediaAssets = useMemo(() => (grave?.mediaAssets ?? []).filter((asset) => !headstoneMediaIds.has(asset.id)), [grave?.mediaAssets, headstoneMediaIds]);
 
+  if (standaloneHeadstoneSummary) {
+    return (
+      <aside className="detail-panel">
+        <div className="grave-title-row">
+          <div>
+            <p className="eyebrow">Marker</p>
+            <h2>{standaloneHeadstoneSummary.headstoneId}</h2>
+            <p className="grave-cemetery">{standaloneHeadstoneSummary.cemeteryName}</p>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="detail-message" role="status">
+            Loading marker details...
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="detail-message is-error" role="alert">
+            <p>Unable to load marker details: {error}</p>
+            {onRetry ? (
+              <button type="button" onClick={onRetry}>
+                Retry
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!standaloneHeadstone || isLoading || error ? null : (
+          <>
+            <section className="detail-section">
+              <div className="section-title">
+                <Landmark size={17} aria-hidden="true" />
+                <h3>Marker</h3>
+              </div>
+              <div className="headstone-list">
+                <HeadstoneRecord
+                  headstone={standaloneHeadstone}
+                  lookups={headstoneLookups}
+                  canUpdate={canUpdateHeadstones}
+                  onSave={onSaveHeadstone}
+                  sectionName=""
+                />
+              </div>
+            </section>
+          </>
+        )}
+      </aside>
+    );
+  }
+
   if (!summary) {
     return (
       <aside className="detail-panel empty-state">
         <MapPinned size={28} aria-hidden="true" />
-        <h2>Select a grave site</h2>
-        <p>Click a mapped grave space or choose a search result to view burial status and record history.</p>
+        <h2>Select a grave site or marker</h2>
+        <p>Click a mapped grave space, marker, or choose a search result to view cemetery records.</p>
       </aside>
     );
   }

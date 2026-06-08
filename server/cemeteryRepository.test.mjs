@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createOwnershipEvent, getCemeteryData, getDetailedCemeteryData, getGraveSpace, updateBurial, updateGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
+import { createOwnershipEvent, getCemeteryData, getDetailedCemeteryData, getGraveSpace, getHeadstone, updateBurial, updateGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
 
 function queryRows(sql) {
   if (sql.includes("information_schema.columns")) return [{ exists: true }];
@@ -512,6 +512,7 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
 
   const mutationStateQuery = queries.find((query) => query.sql.includes("FOR UPDATE"))?.sql ?? "";
   assert.match(mutationStateQuery, /headstones\.id::text/u);
+  assert.match(mutationStateQuery, /ST_Covers\(cemeteries\.geometry, headstones\.geometry\)/u);
   assert.match(mutationStateQuery, /FOR UPDATE OF headstones/u);
   assert.doesNotMatch(mutationStateQuery, /SELECT\s+id::text,/u);
   assert.equal(updated?.id, "33333333-3333-4333-8333-333333333333");
@@ -519,6 +520,55 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
   assert.equal(updated?.backDescription, "Back lists grandchildren");
   const updateQuery = queries.find((query) => query.sql.includes("UPDATE headstones"));
   assert.deepEqual(updateQuery?.values.slice(6, 8), ["Carved laurel flourish above surname", "Back lists grandchildren"]);
+});
+
+test("getHeadstone returns standalone marker detail without a gravesite", async () => {
+  const queries = [];
+  const headstoneRow = {
+    id: "44444444-4444-4444-8444-444444444444",
+    headstone_id: "TLC-HS-0173",
+    marker_type_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    marker_type_code: "other",
+    marker_type_label: "Other marker",
+    material_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    material_code: "granite",
+    material_label: "Granite",
+    condition_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    condition_code: "unknown",
+    condition_label: "Unknown",
+    condition_notes: "",
+    inscription: "F.B.",
+    design_notes: "",
+    back_description: "",
+    photo_url: "",
+    last_inspected_at: null,
+    relationship_type: "primary",
+    relationship_notes: null,
+    burial_ids: [],
+    north_hills_evidence: [],
+    media_assets: [],
+  };
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql.includes("FROM headstones") && sql.includes("WHERE headstones.id = $1")) return { rows: [headstoneRow] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const headstone = await getHeadstone(pool, "44444444-4444-4444-8444-444444444444");
+
+  assert.equal(headstone?.headstoneId, "TLC-HS-0173");
+  assert.equal(headstone?.inscription, "F.B.");
+  assert.equal(headstone?.markerType.code, "other");
+  assert.deepEqual(queries[0]?.values, ["44444444-4444-4444-8444-444444444444"]);
 });
 
 test("updateGraveSpace updates editable gravesite fields with cemetery scope", async () => {
