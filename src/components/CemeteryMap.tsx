@@ -42,6 +42,50 @@ function headstoneSelectionIndex(headstones: HeadstoneSummary[]) {
   return new Map(headstones.map((headstone) => [headstone.id, headstone]));
 }
 
+function getGeoJsonSource(map: MapLibreMap, sourceName: string) {
+  return map.getSource(sourceName) as GeoJSONSource | undefined;
+}
+
+function refreshStaticSources(map: MapLibreMap, data: CemeteryData) {
+  const boundarySource = getGeoJsonSource(map, "boundary");
+  const sectionsSource = getGeoJsonSource(map, "sections");
+  const lotsSource = getGeoJsonSource(map, "lots");
+
+  boundarySource?.setData(boundariesFeatureCollection(data));
+  sectionsSource?.setData(sectionsFeatureCollection(data));
+  lotsSource?.setData(lotsFeatureCollection(data));
+
+  return Boolean(boundarySource || sectionsSource || lotsSource);
+}
+
+function refreshSelectableSources(
+  map: MapLibreMap,
+  headstones: HeadstoneSummary[] | undefined,
+  visibleGraves: GraveSpaceSummary[],
+  selectedGrave: GraveSpaceSummary | undefined,
+  selectedHeadstone: HeadstoneSummary | undefined,
+  searchResultIds: Set<string>,
+) {
+  const selectedGraveKey = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
+
+  getGeoJsonSource(map, "graves")?.setData(gravesFeatureCollection(visibleGraves, selectedGraveKey, searchResultIds));
+  getGeoJsonSource(map, "headstones")?.setData(headstonesFeatureCollection(headstones ?? [], selectedGraveKey, searchResultIds, selectedHeadstone?.id));
+}
+
+function registerSelectableLayerHandlers(map: MapLibreMap, layers: readonly string[], onClick: (event: maplibregl.MapLayerMouseEvent) => void) {
+  layers.forEach((layer) => {
+    map.on("mouseenter", layer, () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    map.on("mouseleave", layer, () => {
+      map.getCanvas().style.cursor = "";
+    });
+
+    map.on("click", layer, onClick);
+  });
+}
+
 export function CemeteryMap({ data, selectedGrave, selectedHeadstone, visibleGraves, searchResultIds, onSelectGrave, onSelectHeadstone }: CemeteryMapProps) {
   const [scale, setScale] = useState<MapScale>();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -128,29 +172,8 @@ export function CemeteryMap({ data, selectedGrave, selectedHeadstone, visibleGra
         if (headstone) onSelectHeadstoneRef.current(headstone);
       };
 
-      selectableGraveLayers.forEach((layer) => {
-        map.on("mouseenter", layer, () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-
-        map.on("mouseleave", layer, () => {
-          map.getCanvas().style.cursor = "";
-        });
-
-        map.on("click", layer, selectGraveFeature);
-      });
-
-      selectableHeadstoneLayers.forEach((layer) => {
-        map.on("mouseenter", layer, () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-
-        map.on("mouseleave", layer, () => {
-          map.getCanvas().style.cursor = "";
-        });
-
-        map.on("click", layer, selectHeadstoneFeature);
-      });
+      registerSelectableLayerHandlers(map, selectableGraveLayers, selectGraveFeature);
+      registerSelectableLayerHandlers(map, selectableHeadstoneLayers, selectHeadstoneFeature);
     });
 
     map.on("move", updateScale);
@@ -171,27 +194,17 @@ export function CemeteryMap({ data, selectedGrave, selectedHeadstone, visibleGra
     const map = mapRef.current;
     if (!map) return;
 
-    const boundarySource = map.getSource("boundary") as GeoJSONSource | undefined;
-    boundarySource?.setData(boundariesFeatureCollection(data));
-
-    const sectionsSource = map.getSource("sections") as GeoJSONSource | undefined;
-    sectionsSource?.setData(sectionsFeatureCollection(data));
-
-    const lotsSource = map.getSource("lots") as GeoJSONSource | undefined;
-    lotsSource?.setData(lotsFeatureCollection(data));
-
-    if (boundarySource || sectionsSource || lotsSource) {
+    if (refreshStaticSources(map, data)) {
       syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
       fitMapToData(map, data);
     }
   }, [data]);
 
   useEffect(() => {
-    const source = mapRef.current?.getSource("graves") as GeoJSONSource | undefined;
-    source?.setData(gravesFeatureCollection(visibleGraves, selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds));
+    const map = mapRef.current;
+    if (!map) return;
 
-    const headstonesSource = mapRef.current?.getSource("headstones") as GeoJSONSource | undefined;
-    headstonesSource?.setData(headstonesFeatureCollection(data.headstones ?? [], selectedGrave ? graveSelectionKey(selectedGrave) : undefined, searchResultIds, selectedHeadstone?.id));
+    refreshSelectableSources(map, data.headstones, visibleGraves, selectedGrave, selectedHeadstone, searchResultIds);
   }, [data.headstones, searchResultIds, selectedGrave, selectedHeadstone, visibleGraves]);
 
   useEffect(() => {
