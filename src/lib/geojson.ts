@@ -36,6 +36,7 @@ export function headstonesFeatureCollection(headstones: HeadstoneSummary[], sele
         gravesiteId: headstone.gravesiteId,
         graveKey: headstone.graveKey,
         label: headstone.label,
+        markerTypeCode: headstone.markerTypeCode,
         markerType: headstone.markerType,
         condition: headstone.condition,
         selected: headstone.graveKey === selectedKey,

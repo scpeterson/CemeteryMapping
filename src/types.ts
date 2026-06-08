@@ -106,9 +106,10 @@ export type HeadstoneSummary = {
   headstoneId: string;
   cemeteryId: string;
   cemeteryName: string;
-  gravesiteId: string;
+  gravesiteId: string | null;
   graveKey: string;
   label: string;
+  markerTypeCode: string;
   markerType: string;
   condition: string;
   geometry: GeoJSON.Point;

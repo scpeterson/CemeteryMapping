@@ -182,7 +182,10 @@ export default function App() {
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
   const matches = remoteMatches ?? localMatches;
   const visibleGraves = useMemo(() => data.graves.filter((grave) => selectedStatuses.has(grave.status)), [data, selectedStatuses]);
-  const searchResultIds = useMemo(() => new Set(matches.map((match) => graveSelectionKey(match.grave))), [matches]);
+  const searchResultIds = useMemo(() => {
+    if (!query.trim()) return new Set<string>();
+    return new Set(matches.map((match) => graveSelectionKey(match.grave)));
+  }, [matches, query]);
   const hasScopedEditAccess = currentUser?.role === "power-user" || currentUser?.role === "cemetery-admin";
   const canViewSelectedOwnership =
     currentUser?.role === "admin" ||

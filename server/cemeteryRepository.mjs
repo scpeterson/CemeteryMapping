@@ -156,14 +156,17 @@ function toNorthHillsEvidence(row) {
 }
 
 function toHeadstoneSummary(row) {
+  const gravesiteId = row.gravesite_id ?? null;
+
   return {
     id: row.id,
     headstoneId: row.headstone_id,
     cemeteryId: row.cemetery_id,
     cemeteryName: row.cemetery_name,
-    gravesiteId: row.gravesite_id,
-    graveKey: `${row.cemetery_id}:${row.gravesite_id}`,
+    gravesiteId,
+    graveKey: gravesiteId ? `${row.cemetery_id}:${gravesiteId}` : `${row.cemetery_id}:headstone:${row.headstone_id}`,
     label: row.headstone_id,
+    markerTypeCode: row.marker_type_code ?? "unknown",
     markerType: row.marker_type_label ?? "Unknown",
     condition: row.condition_code ?? "unknown",
     geometry: parseGeometry(row.geometry),
@@ -388,27 +391,42 @@ async function selectHeadstoneSummariesForCemeteries(client, cemeteryIds) {
       SELECT
         headstones.id::text,
         headstones.headstone_id,
-        gravesites.cemetery_id::text,
+        cemeteries.id::text AS cemetery_id,
         cemeteries.name AS cemetery_name,
         gravesites.gravesite_id,
+        marker_types.code AS marker_type_code,
         marker_types.label AS marker_type_label,
         headstone_condition_types.code AS condition_code,
         ST_AsGeoJSON(headstones.geometry)::json AS geometry
       FROM headstones
-      JOIN gravesites
+      LEFT JOIN gravesites
         ON gravesites.id = headstones.gravesite_uuid
-      JOIN cemeteries
-        ON cemeteries.id = gravesites.cemetery_id
+       AND gravesites.deleted_at IS NULL
+      JOIN LATERAL (
+        SELECT cemeteries.id, cemeteries.name
+        FROM cemeteries
+        WHERE cemeteries.deleted_at IS NULL
+          AND cemeteries.id = ANY($1::uuid[])
+          AND (
+            cemeteries.id = gravesites.cemetery_id
+            OR (
+              gravesites.id IS NULL
+              AND cemeteries.geometry IS NOT NULL
+              AND ST_Covers(cemeteries.geometry, headstones.geometry)
+            )
+          )
+        ORDER BY
+          CASE WHEN cemeteries.id = gravesites.cemetery_id THEN 0 ELSE 1 END,
+          cemeteries.name
+        LIMIT 1
+      ) cemeteries ON TRUE
       JOIN marker_types
         ON marker_types.id = headstones.marker_type_id
       JOIN headstone_condition_types
         ON headstone_condition_types.id = headstones.condition_type_id
-      WHERE gravesites.cemetery_id = ANY($1::uuid[])
-        AND headstones.deleted_at IS NULL
-        AND gravesites.deleted_at IS NULL
-        AND cemeteries.deleted_at IS NULL
+      WHERE headstones.deleted_at IS NULL
         AND headstones.geometry IS NOT NULL
-      ORDER BY cemeteries.name, gravesites.gravesite_id, headstones.headstone_id
+      ORDER BY cemeteries.name, COALESCE(gravesites.gravesite_id, headstones.headstone_id), headstones.headstone_id
     `,
     [cemeteryIds],
   );
