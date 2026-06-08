@@ -76,6 +76,8 @@ First regular record-editing workflow.
 
 Readers can see marker/headstone details in the normal grave detail panel. Power users and cemetery admins can edit marker details for assigned cemeteries from that same panel without opening the Admin UI; global admins can edit marker details anywhere. This keeps operational cemetery record work near the map and leaves Admin focused on users, lookups, audit review, and setup data.
 
+Standalone markers that are not linked to an active gravesite, such as graveyard markers or field markers, can also be opened and edited from the Markers panel. These records use the same marker edit form and authorization rules as gravesite-linked headstones.
+
 Editable fields:
 
 - `marker_type_id`
@@ -83,6 +85,8 @@ Editable fields:
 - `condition_type_id`
 - `condition_notes`
 - `inscription`
+- `design_notes`
+- `back_description`
 - `last_inspected_at`
 - `photo_url`
 

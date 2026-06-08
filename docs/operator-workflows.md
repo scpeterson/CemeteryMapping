@@ -159,17 +159,19 @@ Audit events are read-only. If an audit result looks wrong, correct the source r
 
 ### Headstone And Marker Editing
 
-Use the normal grave-detail panel, not the Admin drawer, for operational marker/headstone updates.
+Use the normal grave-detail panel or the Markers panel, not the Admin drawer, for operational marker/headstone updates.
 
 1. Select a gravesite on the map or from search results.
 2. Review the marker/headstone section in the detail panel.
 3. Users with `reader` access can view marker information but cannot edit it.
 4. `power-user` and `cemetery-admin` users can edit marker details for assigned cemeteries.
 5. `admin` users can edit marker details for any cemetery.
-6. Edit marker type, material, condition, condition notes, inscription, or last inspected date.
+6. Edit marker type, material, condition, condition notes, inscription, design/flourish notes, back-side description, or last inspected date.
 7. For Section G, expect the marker type list to be restricted to flat markers. The API and database also enforce this rule.
 8. Section G gravesites can contain either one casket burial or up to two funeral urn burials. The database enforces this capacity rule when burial rows are created, restored, or updated.
 9. Save the marker and confirm the detail panel reflects the update.
+
+For standalone cemetery markers that are not tied to a gravesite, open the marker from the Markers panel and use the same edit flow. The marker relationship label explains how a marker relates to a gravesite when one exists: `primary` is the normal relationship, `spans` means one marker covers multiple gravesites, `nearby` means the marker is close but not confidently placed on that gravesite, and `inferred` means the link came from records or import logic and may need field confirmation.
 
 Linked North Hills evidence supports interpretation of a headstone or gravesite, but editing marker condition/material/type does not alter the linked reading evidence.
 
