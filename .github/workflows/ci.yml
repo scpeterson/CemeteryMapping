@@ -30,7 +30,14 @@ jobs:
         run: npm ci
 
       - name: Start PostGIS database
-        run: npm run db:up
+        run: |
+          for attempt in 1 2 3; do
+            npm run db:up && exit 0
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep 10
+          done
 
       - name: Validate database changelog
         run: npm run db:validate

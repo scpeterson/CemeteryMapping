@@ -52,6 +52,8 @@ export type Headstone = {
   condition: LookupOption;
   conditionNotes: string;
   inscription: string;
+  designNotes: string;
+  backDescription: string;
   photoUrl: string;
   lastInspectedAt?: string;
   relationshipType: string;
@@ -127,6 +129,8 @@ export type SaveHeadstoneInput = {
   conditionId: string;
   conditionNotes: string;
   inscription: string;
+  designNotes: string;
+  backDescription: string;
   photoUrl: string;
   lastInspectedAt: string;
   reason?: string;

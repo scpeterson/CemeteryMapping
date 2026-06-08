@@ -167,3 +167,9 @@ databaseChangeLog:
   - include:
       file: changes/056-remove-c-0173-gravesite-keep-marker.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/057-headstone-design-and-material-details.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/058-add-red-granite-material.sql
+      relativeToChangelogFile: true

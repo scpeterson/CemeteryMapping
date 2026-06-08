@@ -163,6 +163,8 @@ function validateHeadstonePayload(body) {
     conditionId: validateUuid(body?.conditionId, "Condition"),
     conditionNotes: optionalText(body?.conditionNotes, "Condition notes", 4000),
     inscription: optionalText(body?.inscription, "Inscription", 20_000),
+    designNotes: optionalText(body?.designNotes, "Design notes", 20_000),
+    backDescription: optionalText(body?.backDescription, "Back description", 20_000),
     photoUrl: optionalText(body?.photoUrl, "Photo URL", 300),
     lastInspectedAt,
     reason: validateMutationReason(body?.reason),

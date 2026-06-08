@@ -576,9 +576,11 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     markerTypeId,
     materialId: headstone.material.id,
     conditionId: headstone.condition.id,
-    conditionNotes: headstone.conditionNotes,
-    inscription: headstone.inscription,
-    photoUrl: headstone.photoUrl,
+    conditionNotes: headstone.conditionNotes ?? "",
+    inscription: headstone.inscription ?? "",
+    designNotes: headstone.designNotes ?? "",
+    backDescription: headstone.backDescription ?? "",
+    photoUrl: headstone.photoUrl ?? "",
     lastInspectedAt: headstone.lastInspectedAt ?? "",
     reason: "Headstone detail update",
   };
@@ -673,6 +675,14 @@ function HeadstoneRecord({
           Inscription
           <textarea value={form.inscription} onChange={(event) => setForm((current) => ({ ...current, inscription: event.target.value }))} rows={3} />
         </label>
+        <label className="headstone-wide-field">
+          Flourishes or designs
+          <textarea value={form.designNotes} onChange={(event) => setForm((current) => ({ ...current, designNotes: event.target.value }))} rows={3} />
+        </label>
+        <label className="headstone-wide-field">
+          Back of stone
+          <textarea value={form.backDescription} onChange={(event) => setForm((current) => ({ ...current, backDescription: event.target.value }))} rows={3} />
+        </label>
         {error ? <p className="detail-message is-error">{error}</p> : null}
         <div className="headstone-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
@@ -717,6 +727,8 @@ function HeadstoneRecord({
       </dl>
       {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
       {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
+      {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
+      {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
       {headstone.mediaAssets?.length ? <MediaGallery assets={headstone.mediaAssets} /> : null}
       {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
         <p className="muted">

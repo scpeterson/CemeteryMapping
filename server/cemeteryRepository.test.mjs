@@ -71,6 +71,8 @@ function queryRows(sql) {
         condition_label: "Good",
         condition_notes: "Stable and legible",
         inscription: "In memory",
+        design_notes: "Carved laurel flourish above surname",
+        back_description: "Back lists grandchildren",
         photo_url: "",
         last_inspected_at: "2026-05-28",
         relationship_type: "primary",
@@ -464,6 +466,8 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
     condition: "good",
     condition_notes: "Stable and legible",
     inscription: "In memory",
+    design_notes: "Carved laurel flourish above surname",
+    back_description: "Back lists grandchildren",
     photo_url: "",
     last_inspected_at: "2026-05-28",
     updated_at: "2026-05-31T12:00:00.000Z",
@@ -500,6 +504,8 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
     conditionId: "66666666-6666-4666-8666-666666666666",
     conditionNotes: "Stable and legible",
     inscription: "In memory",
+    designNotes: "Carved laurel flourish above surname",
+    backDescription: "Back lists grandchildren",
     photoUrl: "",
     lastInspectedAt: "2026-05-28",
   });
@@ -509,6 +515,10 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
   assert.match(mutationStateQuery, /FOR UPDATE OF headstones/u);
   assert.doesNotMatch(mutationStateQuery, /SELECT\s+id::text,/u);
   assert.equal(updated?.id, "33333333-3333-4333-8333-333333333333");
+  assert.equal(updated?.designNotes, "Carved laurel flourish above surname");
+  assert.equal(updated?.backDescription, "Back lists grandchildren");
+  const updateQuery = queries.find((query) => query.sql.includes("UPDATE headstones"));
+  assert.deepEqual(updateQuery?.values.slice(6, 8), ["Carved laurel flourish above surname", "Back lists grandchildren"]);
 });
 
 test("updateGraveSpace updates editable gravesite fields with cemetery scope", async () => {
