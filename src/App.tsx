@@ -41,6 +41,10 @@ import type {
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 const emptyHeadstoneLookups: HeadstoneLookups = { markerTypes: [], materials: [], conditions: [] };
 
+function includesAllStatuses(statuses: Set<GraveStatus>) {
+  return allStatuses.every((status) => statuses.has(status));
+}
+
 export default function App() {
   const [query, setQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<GraveStatus>>(() => new Set(allStatuses));
@@ -155,7 +159,10 @@ export default function App() {
 
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
   const matches = remoteMatches ?? localMatches;
-  const visibleGraves = useMemo(() => data.graves.filter((grave) => selectedStatuses.has(grave.status)), [data, selectedStatuses]);
+  const visibleGraves = useMemo(() => {
+    if (selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
+    return data.graves.filter((grave) => selectedStatuses.has(grave.status));
+  }, [data.graves, selectedStatuses]);
   const searchResultIds = useMemo(() => {
     if (!query.trim()) return new Set<string>();
     return new Set(matches.map((match) => graveSelectionKey(match.grave)));

@@ -973,6 +973,7 @@ const headstoneMediaJoinSql = `
 
 const headstoneDetailGroupBySql = `
   headstones.id,
+  headstones.headstone_id,
   marker_types.id,
   marker_types.code,
   marker_types.label,
@@ -981,38 +982,52 @@ const headstoneDetailGroupBySql = `
   marker_material_types.label,
   headstone_condition_types.id,
   headstone_condition_types.code,
-  headstone_condition_types.label
+  headstone_condition_types.label,
+  headstones.condition_notes,
+  headstones.inscription,
+  headstones.design_notes,
+  headstones.back_description,
+  headstones.photo_url,
+  headstones.last_inspected_at
 `;
 
 async function selectHeadstonesForGrave(client, graveUuid) {
   const result = await client.query(
     `
+      WITH selected_headstones AS (
+        SELECT DISTINCT ON (headstones.id, COALESCE(headstone_gravesites.relationship_type, 'primary'), headstone_gravesites.notes)
+          headstones.*,
+          COALESCE(headstone_gravesites.relationship_type, 'primary') AS selected_relationship_type,
+          headstone_gravesites.notes AS selected_relationship_notes
+        FROM headstones
+        LEFT JOIN headstone_gravesites
+          ON headstone_gravesites.headstone_uuid = headstones.id
+         AND headstone_gravesites.deleted_at IS NULL
+        WHERE headstones.deleted_at IS NULL
+          AND (
+            headstones.gravesite_uuid = $1
+            OR headstone_gravesites.gravesite_uuid = $1
+          )
+        ORDER BY headstones.id, COALESCE(headstone_gravesites.relationship_type, 'primary'), headstone_gravesites.notes
+      )
       SELECT
         ${headstoneDetailColumnsSql},
-        COALESCE(headstone_gravesites.relationship_type, 'primary') AS relationship_type,
-        headstone_gravesites.notes AS relationship_notes,
+        headstones.selected_relationship_type AS relationship_type,
+        headstones.selected_relationship_notes AS relationship_notes,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
         COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence,
         COALESCE(headstone_media.media_assets, '[]'::jsonb) AS media_assets
-      FROM headstones
-      LEFT JOIN headstone_gravesites
-        ON headstone_gravesites.headstone_uuid = headstones.id
-       AND headstone_gravesites.deleted_at IS NULL
+      FROM selected_headstones AS headstones
       LEFT JOIN headstone_burials
         ON headstone_burials.headstone_uuid = headstones.id
        AND headstone_burials.deleted_at IS NULL
       ${headstoneLookupJoinsSql}
       ${headstoneEvidenceJoinSql}
       ${headstoneMediaJoinSql}
-      WHERE headstones.deleted_at IS NULL
-        AND (
-          headstones.gravesite_uuid = $1
-          OR headstone_gravesites.gravesite_uuid = $1
-        )
       GROUP BY
         ${headstoneDetailGroupBySql},
-        headstone_gravesites.relationship_type,
-        headstone_gravesites.notes,
+        headstones.selected_relationship_type,
+        headstones.selected_relationship_notes,
         headstone_evidence.evidence,
         headstone_media.media_assets
       ORDER BY headstones.headstone_id, headstones.id
@@ -1026,6 +1041,12 @@ async function selectHeadstonesForGrave(client, graveUuid) {
 async function selectHeadstoneById(client, id) {
   const result = await client.query(
     `
+      WITH selected_headstones AS (
+        SELECT headstones.*
+        FROM headstones
+        WHERE headstones.id = $1
+          AND headstones.deleted_at IS NULL
+      )
       SELECT
         ${headstoneDetailColumnsSql},
         COALESCE(headstone_relationship.relationship_type, 'primary') AS relationship_type,
@@ -1033,7 +1054,7 @@ async function selectHeadstoneById(client, id) {
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
         COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence,
         COALESCE(headstone_media.media_assets, '[]'::jsonb) AS media_assets
-      FROM headstones
+      FROM selected_headstones AS headstones
       LEFT JOIN headstone_burials
         ON headstone_burials.headstone_uuid = headstones.id
        AND headstone_burials.deleted_at IS NULL
@@ -1056,8 +1077,6 @@ async function selectHeadstoneById(client, id) {
       ${headstoneLookupJoinsSql}
       ${headstoneEvidenceJoinSql}
       ${headstoneMediaJoinSql}
-      WHERE headstones.id = $1
-        AND headstones.deleted_at IS NULL
       GROUP BY
         ${headstoneDetailGroupBySql},
         headstone_relationship.relationship_type,
