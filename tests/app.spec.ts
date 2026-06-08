@@ -186,6 +186,8 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
             condition: { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
             conditionNotes: "Stable and legible",
             inscription: "Beloved family marker",
+            designNotes: "Carved roses above the name",
+            backDescription: "Back side lists children",
             photoUrl: "",
             lastInspectedAt: "2026-05-28",
             relationshipType: "primary",
@@ -205,6 +207,8 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   await expect(page.locator(".detail-panel")).toContainText("Upright headstone");
   await expect(page.locator(".detail-panel")).toContainText("Granite");
   await expect(page.locator(".detail-panel")).toContainText("Good");
+  await expect(page.locator(".detail-panel")).toContainText("Designs: Carved roses above the name");
+  await expect(page.locator(".detail-panel")).toContainText("Back: Back side lists children");
   await expect(page.getByLabel("Edit marker HS-1")).toHaveCount(0);
   await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
   await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");
@@ -232,6 +236,8 @@ test("power users can edit headstone marker details from grave detail", async ({
     condition: { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
     conditionNotes: "Stable and legible",
     inscription: "Beloved family marker",
+    designNotes: "",
+    backDescription: "",
     photoUrl: "",
     lastInspectedAt: "2026-05-28",
     relationshipType: "primary",
@@ -270,6 +276,7 @@ test("power users can edit headstone marker details from grave detail", async ({
         materials: [
           { id: "55555555-5555-4555-8555-555555555555", code: "granite", label: "Granite" },
           { id: "55555555-5555-4555-8555-555555555556", code: "marble", label: "Marble" },
+          { id: "55555555-5555-4555-8555-555555555557", code: "pink_granite", label: "Pink granite" },
         ],
         conditions: [
           { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
@@ -308,15 +315,21 @@ test("power users can edit headstone marker details from grave detail", async ({
   });
   await page.route("**/api/headstones/33333333-3333-4333-8333-333333333333", async (route) => {
     expect(route.request().method()).toBe("PATCH");
-    const body = route.request().postDataJSON() as { conditionId: string; conditionNotes: string };
+    const body = route.request().postDataJSON() as { materialId: string; conditionId: string; conditionNotes: string; designNotes: string; backDescription: string };
+    expect(body.materialId).toBe("55555555-5555-4555-8555-555555555557");
     expect(body.conditionId).toBe("66666666-6666-4666-8666-666666666667");
     expect(body.conditionNotes).toBe("Leaning and needs inspection");
+    expect(body.designNotes).toBe("Etched ivy border");
+    expect(body.backDescription).toBe("Veteran medallion attached on back");
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
         ...headstone,
+        material: { id: "55555555-5555-4555-8555-555555555557", code: "pink_granite", label: "Pink granite" },
         condition: { id: "66666666-6666-4666-8666-666666666667", code: "poor", label: "Poor" },
         conditionNotes: "Leaning and needs inspection",
+        designNotes: "Etched ivy border",
+        backDescription: "Veteran medallion attached on back",
         auditEventId: "77777777-7777-4777-8777-777777777777",
       }),
     });
@@ -324,12 +337,18 @@ test("power users can edit headstone marker details from grave detail", async ({
 
   await page.goto("/");
   await page.getByLabel("Edit marker HS-1").click();
+  await page.getByRole("combobox", { name: "Material" }).selectOption("55555555-5555-4555-8555-555555555557");
   await page.getByRole("combobox", { name: "Condition" }).selectOption("66666666-6666-4666-8666-666666666667");
   await page.getByRole("textbox", { name: "Condition notes" }).fill("Leaning and needs inspection");
+  await page.getByRole("textbox", { name: "Flourishes or designs" }).fill("Etched ivy border");
+  await page.getByRole("textbox", { name: "Back of stone" }).fill("Veteran medallion attached on back");
   await page.getByRole("button", { name: "Save marker" }).click();
 
+  await expect(page.locator(".detail-panel")).toContainText("Pink granite");
   await expect(page.locator(".detail-panel")).toContainText("Poor");
   await expect(page.locator(".detail-panel")).toContainText("Leaning and needs inspection");
+  await expect(page.locator(".detail-panel")).toContainText("Designs: Etched ivy border");
+  await expect(page.locator(".detail-panel")).toContainText("Back: Veteran medallion attached on back");
 });
 
 test("section G marker edits are limited to flat markers", async ({ page }) => {
@@ -352,6 +371,8 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
     condition: { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
     conditionNotes: "",
     inscription: "",
+    designNotes: "",
+    backDescription: "",
     photoUrl: "",
     lastInspectedAt: "2026-05-28",
     relationshipType: "primary",
