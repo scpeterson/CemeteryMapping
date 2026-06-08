@@ -1024,8 +1024,8 @@ async function selectHeadstoneById(client, id) {
         headstones.back_description,
         headstones.photo_url,
         headstones.last_inspected_at,
-        'primary' AS relationship_type,
-        NULL AS relationship_notes,
+        COALESCE(headstone_relationship.relationship_type, 'primary') AS relationship_type,
+        headstone_relationship.notes AS relationship_notes,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
         COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence,
         COALESCE(headstone_media.media_assets, '[]'::jsonb) AS media_assets
@@ -1033,6 +1033,22 @@ async function selectHeadstoneById(client, id) {
       LEFT JOIN headstone_burials
         ON headstone_burials.headstone_uuid = headstones.id
        AND headstone_burials.deleted_at IS NULL
+      LEFT JOIN LATERAL (
+        SELECT relationship_type, notes
+        FROM headstone_gravesites
+        WHERE headstone_gravesites.headstone_uuid = headstones.id
+          AND headstone_gravesites.deleted_at IS NULL
+        ORDER BY
+          CASE relationship_type
+            WHEN 'spans' THEN 1
+            WHEN 'nearby' THEN 2
+            WHEN 'inferred' THEN 3
+            ELSE 4
+          END,
+          created_at,
+          id
+        LIMIT 1
+      ) headstone_relationship ON true
       JOIN marker_types
         ON marker_types.id = headstones.marker_type_id
       JOIN marker_material_types
@@ -1112,6 +1128,8 @@ async function selectHeadstoneById(client, id) {
         headstone_condition_types.id,
         headstone_condition_types.code,
         headstone_condition_types.label,
+        headstone_relationship.relationship_type,
+        headstone_relationship.notes,
         headstone_evidence.evidence,
         headstone_media.media_assets
       LIMIT 1
@@ -1197,7 +1215,7 @@ async function selectHeadstoneMutationState(client, id) {
     `
       SELECT
         headstones.id::text,
-        gravesite.cemetery_id::text AS cemetery_id,
+        COALESCE(gravesite.cemetery_id, containing_cemetery.id)::text AS cemetery_id,
         headstones.headstone_id,
         headstones.marker_type_id::text,
         headstones.marker_type_code,
@@ -1215,6 +1233,15 @@ async function selectHeadstoneMutationState(client, id) {
       FROM headstones
       LEFT JOIN gravesites AS gravesite
         ON gravesite.id = headstones.gravesite_uuid
+      LEFT JOIN LATERAL (
+        SELECT cemeteries.id
+        FROM cemeteries
+        WHERE headstones.geometry IS NOT NULL
+          AND cemeteries.deleted_at IS NULL
+          AND ST_Covers(cemeteries.geometry, headstones.geometry)
+        ORDER BY cemeteries.name, cemeteries.id
+        LIMIT 1
+      ) containing_cemetery ON true
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
       FOR UPDATE OF headstones
@@ -1362,6 +1389,16 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
     const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
 
     return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, includeOwnership);
+  } finally {
+    client.release();
+  }
+}
+
+export async function getHeadstone(pool, id) {
+  const client = await pool.connect();
+  try {
+    const headstone = await selectHeadstoneById(client, id);
+    return headstone ? toHeadstone(headstone) : undefined;
   } finally {
     client.release();
   }

@@ -190,8 +190,8 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
             backDescription: "Back side lists children",
             photoUrl: "",
             lastInspectedAt: "2026-05-28",
-            relationshipType: "primary",
-            relationshipNotes: "",
+            relationshipType: "spans",
+            relationshipNotes: "Shared by adjacent gravesites",
             burialIds: ["burial-1"],
           },
         ],
@@ -209,6 +209,11 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   await expect(page.locator(".detail-panel")).toContainText("Good");
   await expect(page.locator(".detail-panel")).toContainText("Designs: Carved roses above the name");
   await expect(page.locator(".detail-panel")).toContainText("Back: Back side lists children");
+  await expect(page.locator(".marker-relationship")).toContainText("Marker spans multiple gravesites (spans) - Shared by adjacent gravesites");
+  await expect(page.locator(".marker-relationship")).toHaveAttribute(
+    "title",
+    "One physical marker or headstone is shared by this gravesite and at least one neighboring gravesite, such as a two-person headstone centered between burial spaces. Notes: Shared by adjacent gravesites",
+  );
   await expect(page.getByLabel("Edit marker HS-1")).toHaveCount(0);
   await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
   await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");

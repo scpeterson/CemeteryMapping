@@ -24,7 +24,7 @@ export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 
-export function headstonesFeatureCollection(headstones: HeadstoneSummary[], selectedKey?: string, searchKeys: Set<string> = new Set()) {
+export function headstonesFeatureCollection(headstones: HeadstoneSummary[], selectedKey?: string, searchKeys: Set<string> = new Set(), selectedHeadstoneId?: string) {
   return {
     type: "FeatureCollection",
     features: headstones.map((headstone) => ({
@@ -39,7 +39,7 @@ export function headstonesFeatureCollection(headstones: HeadstoneSummary[], sele
         markerTypeCode: headstone.markerTypeCode,
         markerType: headstone.markerType,
         condition: headstone.condition,
-        selected: headstone.graveKey === selectedKey,
+        selected: selectedHeadstoneId ? headstone.id === selectedHeadstoneId : headstone.graveKey === selectedKey,
         searchMatch: searchKeys.has(headstone.graveKey),
       },
       geometry: headstone.geometry,

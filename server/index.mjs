@@ -11,6 +11,7 @@ import {
   createOwnershipEvent,
   getCemeteryData,
   getGraveSpace,
+  getHeadstone,
   listHeadstoneLookupOptions,
   restoreGraveSpace,
   softDeleteGraveSpace,
@@ -539,6 +540,20 @@ export function createApp(config, pool) {
   app.get("/api/headstone-lookups", requireReader, async (_request, response, next) => {
     try {
       response.json(await listHeadstoneLookupOptions(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/headstones/:id", requireReader, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Headstone id");
+      const headstone = await getHeadstone(pool, id);
+      if (!headstone) {
+        response.status(404).json({ error: "Headstone not found" });
+        return;
+      }
+      response.json(headstone);
     } catch (error) {
       next(error);
     }
