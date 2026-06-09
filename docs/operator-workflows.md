@@ -660,6 +660,34 @@ Georeference the image:
 
 Use exported points as review evidence for a later lot georeferencing/import step. Do not treat the historic scan as survey-grade geometry. It should help build a best-guess lot layer that is consistent with known lot dimensions, gravesite orientation, headstone-derived gravesite polygons, and reviewed deed-holder/lot-number text.
 
+### Historic Lot Map Evidence Review
+
+Use `historic_lot_map_gravesite_evidence` when an older map scan helps interpret which lot, passageway, or adjacent area a gravesite belongs to. This table preserves the observation separately from production lot assignment so the evidence can be reviewed, accepted, rejected, or promoted later.
+
+Review:
+
+1. Confirm the source scan name and path match the evidence row.
+2. Confirm orientation before comparing the two scans. North and south appear to be reversed between `TIFF2042-01.png` and `TIFF2043-01.png`.
+3. Confirm the gravesite label resolves to the intended gravesite on the current map.
+4. Confirm the section or cemetery-area context before trusting a lot number. Historic lot numbers are not globally unique; for example, `70 OC` and `70 NA` can both exist.
+5. Use `relationship_type = 'lot'` only when the scan appears to place the gravesite in that lot.
+6. Use `relationship_type = 'passageway_between_lots'` when the scan places the gravesite in a passageway rather than in either neighboring lot.
+7. Keep `status = 'staged'` until a reviewer has checked the observation against the current map, deed registry, headstone evidence, and any field notes.
+
+Current staged Section C observations from `TIFF2042-01.png` and `TIFF2043-01.png` are:
+
+- `C-0168`, `C-0167A`, `C-0167B`, `C-0166A`, and `C-0166B` appear to be in lot `70`.
+- `C-0171B`, `C-0171A`, `C-0170`, and `C-0169` appear to be in lot `51`; one gravesite in lot `51` may remain unaccounted for.
+- `C-0172A` and `C-0172B` appear to be in the passageway between lots `29` and `51`.
+
+Treat `A` and `B` gravesite suffixes as evidence-based splits from one original gravesite record, not as source-native NHG labels. To date, suffix splits have been created when later evidence showed two separate gravesites because of a post-NHG burial, because a shared couple headstone spans two gravesites, or both.
+
+The original `C-0166` gravesite was created from the Geo-locations spreadsheet as one gravesite. Ruth and Charles Soergel died after NHG was published in 1997, so there is no NHG entry and there likely was no headstone there when NHG was published. A later field photo shows one shared headstone for both gravesites, so `C-0166` was split into `C-0166A` and `C-0166B`.
+
+The `C-0172A` and `C-0172B` split comes from a shared couple headstone. James H. Simpson died in 1995 and is listed in NHG; Ruth F. Simpson died in 2011, after NHG publication, and is in a separate gravesite using the same headstone.
+
+Do not promote historic lot map evidence by ad hoc SQL. A future promotion workflow should set a clear audit reason, preserve the source evidence row, and leave passageway evidence as passageway evidence unless Council or cemetery records establish a deeded lot relationship.
+
 ### Headstone Spreadsheet Import Checklist
 
 Before you run:
@@ -749,7 +777,8 @@ Before you run:
 
 1. Confirm the PDF is searchable or has already had OCR applied.
 2. Confirm the source covers the intended cemetery excerpt.
-3. Apply migrations before importing so staging and evidence-link tables exist.
+3. Remember that the NHG document was published in 1997 under Library of Congress Catalog Card #97-68576. Deaths close to or after that publication may be absent.
+4. Apply migrations before importing so staging and evidence-link tables exist.
 
 Run:
 

@@ -8,10 +8,11 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 - Version metadata is exposed through the UI environment badge, `/api/version`, and `/api/health`.
 - Release preparation scripts can bump `package.json` without creating a git tag.
+- Historic lot map observations can be staged as auditable gravesite evidence before any lot assignment promotion.
 
 ### Database
 
-- No database migrations in this release-preparation change.
+- Added `historic_lot_map_gravesite_evidence` for reviewable Section C lot and passageway observations from historic Trinity lot map scans.
 
 ### Operations
 
