@@ -2,6 +2,13 @@ export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "need
 export type AppRoleName = "reader" | "power-user" | "cemetery-admin" | "admin";
 export type AreaGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 
+export type AppVersion = {
+  version: string;
+  gitSha: string;
+  buildTime: string;
+  environment: string;
+};
+
 export type Person = {
   id: string;
   firstName: string;

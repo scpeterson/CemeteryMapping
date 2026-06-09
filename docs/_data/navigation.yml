@@ -46,5 +46,7 @@
   url: /adr/0014-documentation-navigation-layout.html
 - title: "ADR 0015: Ownership Rights"
   url: /adr/0015-generalized-ownership-rights.html
+- title: "ADR 0016: Versioned Releases"
+  url: /adr/0016-versioned-releases.html
 - title: "ADR Template"
   url: /adr/0000-template.html
