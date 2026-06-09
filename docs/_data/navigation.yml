@@ -50,5 +50,15 @@
   url: /adr/0016-versioned-releases.html
 - title: "ADR 0017: Historic Lot Evidence"
   url: /adr/0017-historic-lot-map-evidence.html
+- title: "ADR 0018: Section C Lot 70"
+  url: /adr/0018-reviewed-section-c-lot-70.html
+- title: "ADR 0019: Section C Lot 51"
+  url: /adr/0019-reviewed-section-c-lot-51.html
+- title: "ADR 0020: Section C 0172 Passageway"
+  url: /adr/0020-shift-section-c-0172-passageway-gravesites.html
+- title: "ADR 0021: Section C Lot 29"
+  url: /adr/0021-create-section-c-lot-29.html
+- title: "ADR 0022: Section C Lot 10"
+  url: /adr/0022-create-section-c-lot-10.html
 - title: "ADR Template"
   url: /adr/0000-template.html

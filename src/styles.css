@@ -650,8 +650,8 @@ h3 {
 }
 
 .legend-lot {
-  border: 1.5px solid #a07738;
-  background: rgba(243, 234, 210, 0.78);
+  border: 2px solid #f97316;
+  background: transparent;
 }
 
 .legend-gravesite {

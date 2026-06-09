@@ -176,3 +176,18 @@ databaseChangeLog:
   - include:
       file: changes/059-historic-lot-map-evidence.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/060-create-trinity-c-lot-70.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/061-create-trinity-c-lot-51.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/062-shift-trinity-c-0172-passageway-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/063-create-trinity-c-lot-29.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/064-create-trinity-c-lot-10.sql
+      relativeToChangelogFile: true

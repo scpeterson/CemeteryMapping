@@ -42,6 +42,11 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0015: Model Ownership as Rights That Can Target Lots or Gravesites](0015-generalized-ownership-rights.md)
 - [ADR 0016: Version Application Releases with SemVer and Database Tags](0016-versioned-releases.md)
 - [ADR 0017: Preserve Historic Lot Map Observations as Reviewable Evidence](0017-historic-lot-map-evidence.md)
+- [ADR 0018: Create Reviewed Section C Lot 70 from Gravesite Perimeter](0018-reviewed-section-c-lot-70.md)
+- [ADR 0019: Create Reviewed Section C Lot 51 with Missing Gravesite](0019-reviewed-section-c-lot-51.md)
+- [ADR 0020: Shift Section C 0172 Passageway Gravesites North](0020-shift-section-c-0172-passageway-gravesites.md)
+- [ADR 0021: Create Reviewed Section C Lot 29](0021-create-section-c-lot-29.md)
+- [ADR 0022: Create Reviewed Section C Lot 10](0022-create-section-c-lot-10.md)
 
 ## Creating a New ADR
 
