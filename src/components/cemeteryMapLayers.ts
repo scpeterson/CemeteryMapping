@@ -13,15 +13,15 @@ const mapLayerOrder = [
   "boundary-line",
   "sections-fill",
   "sections-line",
-  "lots-fill",
-  "lots-line",
   "graves-fill",
   "graves-line",
+  "lots-fill",
+  "lots-line",
   "headstones-halo",
   "headstones-circle",
   "sections-label",
-  "lots-label",
   "grave-labels",
+  "lots-label",
 ];
 
 const pasdaImageryExportUrl = "https://imagery.pasda.psu.edu/arcgis/rest/services/pasda/AlleghenyCountyImagery2017/MapServer/export";
@@ -191,27 +191,27 @@ export function addLotLayers(map: Map, data: CemeteryData) {
     id: "lots-fill",
     type: "fill",
     source: "lots",
-    paint: { "fill-color": "#f3ead2", "fill-opacity": 0.38 },
+    paint: { "fill-color": "#f97316", "fill-opacity": 0 },
   });
   map.addLayer({
     id: "lots-line",
     type: "line",
     source: "lots",
-    paint: { "line-color": "#a07738", "line-width": 1.2 },
+    paint: { "line-color": "#f97316", "line-width": 2.4 },
   });
   map.addLayer({
     id: "lots-label",
     type: "symbol",
     source: "lots",
     layout: {
-      "text-field": ["get", "name"],
+      "text-field": ["concat", ["get", "section"], "-", ["get", "id"]],
       "text-size": 12,
-      "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+      "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
     },
     paint: {
-      "text-color": "#5b4630",
-      "text-halo-color": "#fbf8ee",
-      "text-halo-width": 1,
+      "text-color": "#9a3412",
+      "text-halo-color": "#fff7ed",
+      "text-halo-width": 1.4,
     },
   });
 }
