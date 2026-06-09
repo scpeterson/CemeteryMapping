@@ -40,6 +40,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0013: Prioritize Admin Editing Workflows](0013-prioritize-admin-editing-workflows.md)
 - [ADR 0014: Use a Custom Documentation Layout with Sequential Navigation](0014-documentation-navigation-layout.md)
 - [ADR 0015: Model Ownership as Rights That Can Target Lots or Gravesites](0015-generalized-ownership-rights.md)
+- [ADR 0016: Version Application Releases with SemVer and Database Tags](0016-versioned-releases.md)
 
 ## Creating a New ADR
 

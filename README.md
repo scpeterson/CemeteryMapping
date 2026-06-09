@@ -99,6 +99,8 @@ The initial admin workflow order is tracked in `docs/admin-workflows.md`.
 
 Practical click-by-click and command-oriented workflows are tracked in `docs/operator-workflows.md`.
 
+Release history is tracked in `CHANGELOG.md`; release strategy is documented in `docs/adr/0016-versioned-releases.md`.
+
 Separate Auth0 test tenant setup is documented in `docs/auth0-test-tenant.md`.
 
 That guide also includes troubleshooting for Auth0 callback mismatches, missing API/audience configuration, SPA-to-API authorization errors, and API `401`/`403` responses.
@@ -120,6 +122,8 @@ Every PR that changes architecture, schema, import behavior, validation policy, 
 The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a summary-first map flow:
 
 - `GET /api/cemetery-map` for GeoJSON cemetery boundaries, sections, and summary grave-space geometry used by the map
+- `GET /api/version` for application version, git SHA, build time, and environment metadata
+- `GET /api/health` for API, database, and version health metadata
 - `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` for full grave details fetched when a grave is selected
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
 - `GET /api/admin/cemetery-records` for admin-only cemetery, section, and lot text records

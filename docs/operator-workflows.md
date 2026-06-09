@@ -414,6 +414,16 @@ The change is promoted to TEST when the PR checks pass. It is promoted into the 
 
 Use STAGE as the dress rehearsal for production. STAGE should have the same major services as PROD: PostgreSQL/PostGIS version, Auth0 mode, required Auth0 permissions, storage settings, and public URLs. It may use scrubbed or representative data instead of live personal data.
 
+For a versioned release, first create and merge a release-preparation PR:
+
+1. Choose the SemVer bump:
+   - `npm run release:patch` for bug fixes and narrow corrections.
+   - `npm run release:minor` for new workflows or compatible feature additions.
+   - `npm run release:major` for breaking operational changes after the app reaches `1.0.0`.
+2. Update `CHANGELOG.md` with the PRs included, migration range, data scripts, smoke-test plan, and rollback or forward-fix notes.
+3. Let CI pass and merge the release-preparation PR.
+4. Tag the merged `main` commit with the matching release tag, such as `v0.2.0`, and create a GitHub Release from that tag.
+
 Before promoting to STAGE:
 
 1. Confirm `main` contains the merged PRs intended for release.
@@ -433,7 +443,8 @@ Before promoting to STAGE:
 
 6. Run any reviewed data import or data repair scripts against STAGE first.
 7. Configure Auth0 and environment variables for STAGE if roles, permissions, callback URLs, audiences, or API scopes changed.
-8. Smoke test STAGE:
+8. Confirm the running version through the environment badge tooltip or `/api/version`.
+9. Smoke test STAGE:
    - Sign in as each relevant role.
    - Load the map.
    - Open a cemetery, section, lot, gravesite, marker, burial, and owner/deed detail where applicable.
@@ -468,15 +479,22 @@ During PROD promotion:
    APP_ENV=prod npm run db:migrate
    ```
 
-3. Run reviewed data scripts only if they were already rehearsed in STAGE.
-4. Run a short smoke test:
+3. Tag the migrated database with the release version:
+
+   ```bash
+   APP_ENV=prod npm run db:tag -- v0.2.0
+   ```
+
+4. Run reviewed data scripts only if they were already rehearsed in STAGE.
+5. Confirm `/api/version` and the environment badge show the expected release version and git SHA.
+6. Run a short smoke test:
    - Reader can view map and non-deed detail.
    - Power user can edit assigned cemetery data.
    - Cemetery admin can manage assigned cemetery data.
    - Admin can access Admin UI.
    - Deed/owner data remains hidden from read-only users.
    - Photos render and uploads work if field collection is in scope.
-5. Review recent audit events for expected migration or application writes.
+7. Review recent audit events for expected migration or application writes.
 
 After PROD promotion:
 

@@ -2,6 +2,7 @@ import { apiBaseUrl } from "../config/environment";
 import type {
   AppRole,
   AppUser,
+  AppVersion,
   AuditEvent,
   AuditEventFilters,
   Auth0ResolvedUser,
@@ -82,6 +83,11 @@ export async function fetchCemeteryData(attempts = 5): Promise<CemeteryData> {
   }
 
   throw lastError instanceof Error ? lastError : new Error("Unable to load cemetery data");
+}
+
+export async function fetchAppVersion(): Promise<AppVersion> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/version`);
+  return jsonResponse<AppVersion>(response, "Version API");
 }
 
 export async function fetchGraveSpace(cemeteryId: string, id: string): Promise<GraveSpace> {

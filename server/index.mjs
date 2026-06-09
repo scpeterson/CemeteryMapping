@@ -32,6 +32,7 @@ import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./loo
 import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
 import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
+import { appVersionMetadata } from "./version.mjs";
 import {
   BadRequestError,
   validateCemeteryId,
@@ -377,6 +378,7 @@ async function canEditLot(pool, user, lotId) {
 
 export function createApp(config, pool) {
   const app = express();
+  const versionMetadata = appVersionMetadata(config);
   const auth0ManagementClient = createAuth0ManagementClient({
     domain: config.auth.auth0.domain,
     ...config.auth.auth0.management,
@@ -391,6 +393,7 @@ export function createApp(config, pool) {
       response.json({
         status: "ok",
         environment: config.appEnv.toUpperCase(),
+        version: versionMetadata,
         database: config.database.database,
         serverTime: result.rows[0].server_time,
       });
@@ -402,6 +405,10 @@ export function createApp(config, pool) {
   const requireReader = requireRole(config.auth, pool, "reader");
   const requirePowerUser = requireRole(config.auth, pool, "power-user");
   const requireAdmin = requireRole(config.auth, pool, "admin");
+
+  app.get("/api/version", (_request, response) => {
+    response.json(versionMetadata);
+  });
 
   app.get("/api/me", requireReader, async (request, response) => {
     const role = request.user.role;

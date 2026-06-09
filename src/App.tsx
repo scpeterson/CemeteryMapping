@@ -16,7 +16,7 @@ import { CemeteryMap } from "./components/CemeteryMap";
 import { ControlPointCollector } from "./components/ControlPointCollector";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
-import { apiBaseUrl, appEnvironment } from "./config/environment";
+import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
 import { graveSelectionKey } from "./lib/format";
 import { searchGraves } from "./lib/search";
@@ -293,7 +293,10 @@ export default function App() {
         onSelectMatch={selectMatch}
       />
       <section className="map-region">
-        <div className={`environment-badge environment-${appEnvironment.toLowerCase()}`} title={`API: ${apiBaseUrl}`}>
+        <div
+          className={`environment-badge environment-${appEnvironment.toLowerCase()}`}
+          title={`Version: ${appVersionMetadata.version} (${appVersionMetadata.gitSha})\nBuild: ${appVersionMetadata.buildTime}\nAPI: ${apiBaseUrl}`}
+        >
           {appEnvironment}
         </div>
         {currentUser?.permissions.canOpenAdminPanel ? (
