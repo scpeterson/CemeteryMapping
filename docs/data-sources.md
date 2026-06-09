@@ -79,6 +79,23 @@ Every real-data import or source change should update this file and the relevant
 | Deed holder import | Page 2 lists Section G plot deed holders. Migration `042-section-g-deed-holders.sql` imports populated rows into generalized ownership parties/events/rights, with one deed-holder party able to own multiple gravesite rights. The source heading says Section F, but this is interpreted as the same known Section G typo from the plan. |
 | Known limitations | Gravesite geometry is fit to the current Section G west boundary, the B-0089 south-edge anchor, and plan grid. It is not survey-grade and should be reviewed against field control before promotion. |
 
+## Historic Trinity Lot Map Scans
+
+| Field | Value |
+| --- | --- |
+| Source name | Historic Trinity lot map scans |
+| Source type | PNG scans of older cemetery lot maps |
+| Source paths used during development | `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2042-01.png`; `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2043-01.png` |
+| Application table | `historic_lot_map_gravesite_evidence` |
+| Current use | Staged review evidence for gravesite-to-lot or passageway interpretation. |
+| Known Section C observations | `C-0168`, `C-0167A`, `C-0167B`, `C-0166A`, and `C-0166B` appear to be in lot `70`; `C-0171B`, `C-0171A`, `C-0170`, and `C-0169` appear to be in lot `51`; `C-0172A` and `C-0172B` appear to be in the passageway between lots `29` and `51`. One lot `51` gravesite may remain unaccounted for. |
+| A/B gravesite suffix rule | Gravesites with `A` or `B` suffixes have been split from one original gravesite record after later evidence showed two separate gravesites. To date, those splits come from post-NHG burial evidence, shared couple headstones that span two gravesites, or both. |
+| C-0166 split context | `C-0166` was created from the Geo-locations spreadsheet as one gravesite. Ruth and Charles Soergel died after NHG was published in 1997, so there is no NHG entry and there likely was no headstone there when NHG was published. A later field photo shows one shared headstone for both gravesites, so `C-0166` was split into `C-0166A` and `C-0166B`. The historic scans provide lot-context evidence. |
+| C-0172 split context | `C-0172` was split because the headstone was recorded as a couple marker. James H. Simpson died in 1995 and is listed in NHG; Ruth F. Simpson died in 2011, after NHG publication, and is in a separate gravesite using the shared headstone. |
+| Duplicate lot-number rule | Lot numbers are not globally unique. The same lot number can exist in different cemetery areas or sections, such as `70 OC` and `70 NA`, so lot evidence must be interpreted with section or area context. |
+| Known limitations | The scans are not georeferenced and are not survey-grade. North and south appear to be reversed between the two scans, so reviewers must confirm orientation before using the scans to support a lot or passageway decision. They can support deed and lot investigation, but should not directly overwrite production lot assignments or gravesite geometry without review. |
+| Related ADR | [ADR 0017](adr/0017-historic-lot-map-evidence.md) |
+
 ## Trinity Cemetery Registry 2022
 
 | Field | Value |
@@ -108,6 +125,7 @@ Every real-data import or source change should update this file and the relevant
 | Review UI | Admin -> Readings; admins can link, reject, or flag candidate gravesite/headstone matches |
 | Data owner | North Hills Genealogists |
 | Date received | 2026-05-29 |
+| Publication context | Published in 1997, Library of Congress Catalog Card #97-68576. Deaths that occurred close to or after publication may not appear in the NHG document, so absence from NHG should not be treated as strong negative evidence for those later burials. |
 | Known limitations | OCR contains normal scan artifacts such as `lA` for `1A`, punctuation drift, and occasional word/name errors. The importer stages entries for review and candidate matching only. Reviewed links surface as evidence in the detail panel, but they do not overwrite burials, headstones, lots, owners, or deeds. |
 | Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
 

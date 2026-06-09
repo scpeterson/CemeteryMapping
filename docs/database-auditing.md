@@ -33,6 +33,7 @@ Migration `014-database-audit-triggers.sql` attaches row-level audit triggers to
 - `deed_investigation_cases`
 - `deed_investigation_case_entries`
 - `deed_investigation_case_actions`
+- `historic_lot_map_gravesite_evidence`
 - `app_users`
 - `app_user_cemetery_access`
 - `app_roles`
@@ -94,7 +95,11 @@ GRANT INSERT, UPDATE ON
   memorials,
   headstones,
   headstone_gravesites,
-  headstone_burials
+  headstone_burials,
+  deed_investigation_cases,
+  deed_investigation_case_entries,
+  deed_investigation_case_actions,
+  historic_lot_map_gravesite_evidence
 TO cemetery_direct_write;
 
 GRANT INSERT ON audit_events TO cemetery_direct_write;

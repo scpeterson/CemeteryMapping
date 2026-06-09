@@ -48,5 +48,7 @@
   url: /adr/0015-generalized-ownership-rights.html
 - title: "ADR 0016: Versioned Releases"
   url: /adr/0016-versioned-releases.html
+- title: "ADR 0017: Historic Lot Evidence"
+  url: /adr/0017-historic-lot-map-evidence.html
 - title: "ADR Template"
   url: /adr/0000-template.html
