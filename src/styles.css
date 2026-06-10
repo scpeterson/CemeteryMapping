@@ -685,6 +685,23 @@ h3 {
   box-shadow: 0 0 0 2px #fbfcf7;
 }
 
+.legend-veteran-grave {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 14px;
+  color: #f2b705;
+  font-size: 15px;
+  line-height: 1;
+  text-shadow:
+    0 0 1px #17201d,
+    0 0 2px #17201d;
+}
+
+.legend-veteran-grave::before {
+  content: "★";
+}
+
 .legend-other-marker {
   width: 12px;
   height: 12px;
@@ -888,6 +905,16 @@ h3 {
   font-weight: 760;
 }
 
+.burial-form .burial-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  min-height: 38px;
+  color: var(--text-main);
+  font-size: 0.82rem;
+}
+
 .burial-form input,
 .burial-form select,
 .burial-form textarea {
@@ -899,6 +926,13 @@ h3 {
   background: #fff;
   color: var(--text-main);
   font: inherit;
+}
+
+.burial-form .burial-checkbox-field input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
 }
 
 .burial-wide-field,
@@ -916,6 +950,36 @@ h3 {
 .burial-record dd {
   margin: 2px 0 0;
   font-size: 0.88rem;
+}
+
+.burial-service {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  color: var(--text-main);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.burial-veteran-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid #d79b12;
+  border-radius: 999px;
+  background: #fff7d6;
+  color: #5f3d00;
+  font-size: 0.72rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.burial-veteran-badge::before {
+  content: "★";
+  color: #c98200;
 }
 
 .grave-record,

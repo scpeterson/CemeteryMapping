@@ -242,13 +242,32 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     burialDate: burial.burialDate ?? "",
     intermentType: burial.intermentType ?? "casket",
     funeralHome: burial.funeralHome ?? "",
+    veteran: burial.veteran ?? false,
+    militaryBranchCode: burial.militaryBranchCode ?? "",
+    militaryWarServiceCode: burial.militaryWarServiceCode ?? "",
     notes: burial.recordNotes ?? "",
     reason: "Burial detail update",
   };
 }
 
-function BurialRecord({ burial, canUpdate, onSave }: { burial: Burial; canUpdate: boolean; onSave: (id: string, burial: SaveBurialInput) => Promise<Burial> }) {
+function militaryServiceText(burial: Burial) {
+  const details = [burial.militaryBranch, burial.militaryWars].filter(Boolean).join(" | ");
+  return details;
+}
+
+function BurialRecord({
+  burial,
+  canUpdate,
+  lookups,
+  onSave,
+}: {
+  burial: Burial;
+  canUpdate: boolean;
+  lookups: HeadstoneLookups;
+  onSave: (id: string, burial: SaveBurialInput) => Promise<Burial>;
+}) {
   const noteItems = burialNoteItems(burial.notes);
+  const serviceText = militaryServiceText(burial);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<SaveBurialInput>(() => blankBurialForm(burial));
   const [isSaving, setIsSaving] = useState(false);
@@ -258,6 +277,15 @@ function BurialRecord({ burial, canUpdate, onSave }: { burial: Burial; canUpdate
     setForm(blankBurialForm(burial));
     setError(undefined);
     setIsEditing(true);
+  };
+
+  const setVeteran = (isVeteran: boolean) => {
+    setForm((current) => ({
+      ...current,
+      veteran: isVeteran,
+      militaryBranchCode: isVeteran ? current.militaryBranchCode : "",
+      militaryWarServiceCode: isVeteran ? current.militaryWarServiceCode : "",
+    }));
   };
 
   const save = async (event: FormEvent) => {
@@ -308,6 +336,36 @@ function BurialRecord({ burial, canUpdate, onSave }: { burial: Burial; canUpdate
           Funeral home
           <input value={form.funeralHome} onChange={(event) => setForm((current) => ({ ...current, funeralHome: event.target.value }))} />
         </label>
+        <label className="burial-checkbox-field">
+          <input type="checkbox" checked={form.veteran} onChange={(event) => setVeteran(event.target.checked)} />
+          Veteran
+        </label>
+        <label>
+          Military branch
+          <select value={form.militaryBranchCode} onChange={(event) => setForm((current) => ({ ...current, militaryBranchCode: event.target.value }))} disabled={!form.veteran}>
+            <option value="">Unknown / not recorded</option>
+            {lookups.militaryBranches.map((option) => (
+              <option key={option.id} value={option.code}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          War service
+          <select
+            value={form.militaryWarServiceCode}
+            onChange={(event) => setForm((current) => ({ ...current, militaryWarServiceCode: event.target.value }))}
+            disabled={!form.veteran}
+          >
+            <option value="">Unknown / not recorded</option>
+            {lookups.militaryWarServices.map((option) => (
+              <option key={option.id} value={option.code}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="burial-wide-field">
           Notes
           <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={4} />
@@ -354,6 +412,12 @@ function BurialRecord({ burial, canUpdate, onSave }: { burial: Burial; canUpdate
           <dd>{burial.intermentType === "urn" ? "Funeral urn" : "Casket"}</dd>
         </div>
       </dl>
+      {burial.veteran || serviceText ? (
+        <p className="burial-service">
+          {burial.veteran ? <span className="burial-veteran-badge">Veteran</span> : null}
+          {serviceText ? <span>{serviceText}</span> : null}
+        </p>
+      ) : null}
       {noteItems.length ? (
         <ul className="burial-notes">
           {noteItems.map((note) => (
@@ -962,7 +1026,7 @@ function GraveDetailPanel({
             {grave.burials.length ? (
               <div className="burial-list">
                 {grave.burials.map((burial) => (
-                  <BurialRecord key={burial.id} burial={burial} canUpdate={canUpdateBurials} onSave={onSaveBurial} />
+                  <BurialRecord key={burial.id} burial={burial} canUpdate={canUpdateBurials} lookups={headstoneLookups} onSave={onSaveBurial} />
                 ))}
               </div>
             ) : (

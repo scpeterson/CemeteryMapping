@@ -27,6 +27,9 @@ function emptyCemeteryPool() {
     },
     async query(sql, values) {
       queryCount += 1;
+      if (sql.includes("information_schema.columns")) {
+        return { rows: [{ has_military_service_columns: true, has_military_branch_lookup: true, has_military_war_service_lookup: true }] };
+      }
       assert.match(sql, /JOIN gravesite_status_types status_type|LEFT JOIN gravesite_status_types status_type/u);
       assert.match(sql, /CROSS JOIN LATERAL/u);
       assert.match(sql, /FROM burials status_burials/u);
@@ -36,6 +39,9 @@ function emptyCemeteryPool() {
       assert.match(sql, /SELECT 'Cemetery facility ID'/u);
       assert.match(sql, /SELECT 'Lot name'/u);
       assert.match(sql, /SELECT 'Lot number'/u);
+      assert.match(sql, /SELECT 'Veteran'/u);
+      assert.match(sql, /SELECT 'Military branch'/u);
+      assert.match(sql, /SELECT 'War service'/u);
       assert.doesNotMatch(sql, /SELECT 'Cemetery ID'/u);
       assert.doesNotMatch(sql, /SELECT 'Lot ID'/u);
       assert.doesNotMatch(sql, /WITH status_labels/u);
@@ -101,12 +107,15 @@ test("search runs SQL-like text without expanding results or building dynamic SQ
   const matches = await searchCemetery(pool, { query: validateSearchQuery("Garcia'; DROP TABLE gravesites; --"), statuses: [] });
 
   assert.deepEqual(matches, []);
-  assert.equal(pool.queryCount, 1);
+  assert.equal(pool.queryCount, 2);
 });
 
 test("search includes generalized ownership rights only through ownership-aware search", async () => {
   const pool = {
     async query(sql, values) {
+      if (sql.includes("information_schema.columns")) {
+        return { rows: [{ has_military_service_columns: true, has_military_branch_lookup: true, has_military_war_service_lookup: true }] };
+      }
       assert.match(sql, /current_ownership_right_owners/);
       assert.deepEqual(values, ["baur", [], false, []]);
       return { rows: [] };
@@ -121,6 +130,9 @@ test("search includes generalized ownership rights only through ownership-aware 
 test("search returns cemetery name and lot field reasons", async () => {
   const pool = {
     async query(_sql, values) {
+      if (_sql.includes("information_schema.columns")) {
+        return { rows: [{ has_military_service_columns: true, has_military_branch_lookup: true, has_military_war_service_lookup: true }] };
+      }
       assert.deepEqual(values, ["trinity", [], true, undefined]);
       return {
         rows: [

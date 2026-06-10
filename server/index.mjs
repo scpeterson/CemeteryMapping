@@ -196,6 +196,12 @@ function optionalDate(value, label) {
   return date;
 }
 
+function optionalBoolean(value, label) {
+  if (value === undefined || value === null) return false;
+  if (typeof value !== "boolean") throw new BadRequestError(`${label} must be true or false.`);
+  return value;
+}
+
 function validateBurialPayload(body) {
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "casket";
   if (!["casket", "urn"].includes(intermentType)) throw new BadRequestError("Interment type must be casket or urn.");
@@ -208,6 +214,9 @@ function validateBurialPayload(body) {
     burialDate: optionalDate(body?.burialDate, "Burial date") ?? "",
     intermentType,
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
+    veteran: optionalBoolean(body?.veteran, "Veteran"),
+    militaryBranchCode: optionalText(body?.militaryBranchCode, "Military branch", 50) ?? "",
+    militaryWarServiceCode: optionalText(body?.militaryWarServiceCode, "War service", 50) ?? "",
     notes: optionalText(body?.notes, "Burial notes", 4000) ?? "",
     reason: validateMutationReason(body?.reason),
   };

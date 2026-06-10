@@ -3,8 +3,8 @@ import type { CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
 
-export const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels"];
-export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo"];
+export const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels", "veteran-grave-symbols"];
+export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo", "headstones-veteran-star"];
 
 const mapLayerOrder = [
   "pasda-imagery-2017",
@@ -19,8 +19,10 @@ const mapLayerOrder = [
   "lots-line",
   "headstones-halo",
   "headstones-circle",
+  "headstones-veteran-star",
   "sections-label",
   "grave-labels",
+  "veteran-grave-symbols",
   "lots-label",
 ];
 
@@ -271,12 +273,39 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
       "text-halo-width": 1,
     },
   });
+
+  map.addLayer({
+    id: "veteran-grave-symbols",
+    type: "symbol",
+    source: "graves",
+    filter: ["==", ["get", "hasVeteran"], true],
+    layout: {
+      "text-field": "★",
+      "text-size": 15,
+      "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+      "text-offset": [0, -0.9],
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: {
+      "text-color": "#f2b705",
+      "text-halo-color": "#17201d",
+      "text-halo-width": 1.1,
+    },
+  });
 }
 
-export function addHeadstoneLayers(map: Map, headstones: HeadstoneSummary[], selectedKey: string | undefined, searchResultIds: Set<string>, selectedHeadstoneId?: string) {
+export function addHeadstoneLayers(
+  map: Map,
+  headstones: HeadstoneSummary[],
+  selectedKey: string | undefined,
+  searchResultIds: Set<string>,
+  selectedHeadstoneId?: string,
+  veteranGraveKeys: Set<string> = new Set(),
+) {
   map.addSource("headstones", {
     type: "geojson",
-    data: headstonesFeatureCollection(headstones, selectedKey, searchResultIds, selectedHeadstoneId),
+    data: headstonesFeatureCollection(headstones, selectedKey, searchResultIds, selectedHeadstoneId, veteranGraveKeys),
   });
 
   map.addLayer({
@@ -326,6 +355,25 @@ export function addHeadstoneLayers(map: Map, headstones: HeadstoneSummary[], sel
       ],
       "circle-stroke-color": ["case", ["==", ["get", "markerTypeCode"], "other"], "#5f2d08", "#10211c"],
       "circle-stroke-width": ["case", ["==", ["get", "markerTypeCode"], "other"], 1.2, 0.7],
+    },
+  });
+
+  map.addLayer({
+    id: "headstones-veteran-star",
+    type: "symbol",
+    source: "headstones",
+    filter: ["==", ["get", "hasVeteran"], true],
+    layout: {
+      "text-field": "★",
+      "text-size": 13,
+      "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: {
+      "text-color": "#f2b705",
+      "text-halo-color": "#17201d",
+      "text-halo-width": 1,
     },
   });
 }

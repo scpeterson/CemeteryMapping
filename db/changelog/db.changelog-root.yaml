@@ -191,3 +191,12 @@ databaseChangeLog:
   - include:
       file: changes/064-create-trinity-c-lot-10.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/065-burial-military-service-details.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/066-military-branch-lookup.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/067-military-war-service-lookup.sql
+      relativeToChangelogFile: true

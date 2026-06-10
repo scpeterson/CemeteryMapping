@@ -37,6 +37,8 @@ test("normalizeAuditFilters allows North Hills evidence link audit records", () 
 test("normalizeAuditFilters allows marker lookup audit records", () => {
   assert.equal(normalizeAuditFilters({ targetTable: "marker_types" }).targetTable, "marker_types");
   assert.equal(normalizeAuditFilters({ targetTable: "marker_material_types" }).targetTable, "marker_material_types");
+  assert.equal(normalizeAuditFilters({ targetTable: "military_branch_types" }).targetTable, "military_branch_types");
+  assert.equal(normalizeAuditFilters({ targetTable: "military_war_service_types" }).targetTable, "military_war_service_types");
 });
 
 test("normalizeAuditFilters allows status and event lookup audit records", () => {

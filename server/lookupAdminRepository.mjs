@@ -43,6 +43,24 @@ const lookupDefinitions = {
     usageLabel: "lot ownership events",
     usageWhere: "usage_records.deleted_at IS NULL",
   },
+  military_branch_types: {
+    table: "military_branch_types",
+    label: "Military branches",
+    hasSourceFields: false,
+    usageTable: "burials",
+    usageColumn: "military_branch_type_id",
+    usageLabel: "burials",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
+  military_war_service_types: {
+    table: "military_war_service_types",
+    label: "Military war service",
+    hasSourceFields: false,
+    usageTable: "burials",
+    usageColumn: "military_war_service_type_id",
+    usageLabel: "burials",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
 };
 
 function lookupDefinition(table) {

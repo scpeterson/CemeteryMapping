@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createOwnershipEvent, getCemeteryData, getDetailedCemeteryData, getGraveSpace, getHeadstone, updateBurial, updateGraveSpace, updateHeadstone } from "./cemeteryRepository.mjs";
+import {
+  createOwnershipEvent,
+  getCemeteryData,
+  getDetailedCemeteryData,
+  getGraveSpace,
+  getHeadstone,
+  listHeadstoneLookupOptions,
+  updateBurial,
+  updateGraveSpace,
+  updateHeadstone,
+} from "./cemeteryRepository.mjs";
 
 function queryRows(sql) {
   if (sql.includes("information_schema.columns")) return [{ exists: true }];
@@ -130,6 +140,11 @@ test("cemetery map derives gravesite status from review flags, burials, and owne
   const gravesQuery = queries.find((sql) => sql.includes("ST_AsGeoJSON(gravesites.geometry)::json"));
   assert.match(gravesQuery, /status_type\.code = 'needs_review'/u);
   assert.match(gravesQuery, /FROM burials status_burials/u);
+  assert.match(gravesQuery, /FROM burials veteran_burials/u);
+  assert.match(gravesQuery, /veteran_burials\.gravesite_uuid = gravesites\.id/u);
+  assert.match(gravesQuery, /veteran_burials\.gravesite_id = gravesites\.gravesite_id/u);
+  assert.match(gravesQuery, /lower\(btrim\(coalesce\(veteran_burials\.veteran, ''\)\)\)/u);
+  assert.match(gravesQuery, /AS has_veteran/u);
   assert.match(gravesQuery, /THEN 'occupied'/u);
   assert.match(gravesQuery, /status_type\.code = 'reserved'/u);
   assert.match(gravesQuery, /FROM owners status_legacy_owners/u);
@@ -219,6 +234,116 @@ test("repository can redact ownership data from grave detail reads", async () =>
   assert.deepEqual(grave.mediaAssets, []);
 });
 
+test("lookup options include active military branches", async () => {
+  const pool = {
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes("FROM marker_types")) return { rows: [] };
+          if (sql.includes("FROM marker_material_types")) return { rows: [] };
+          if (sql.includes("FROM headstone_condition_types")) return { rows: [] };
+          if (sql.includes("information_schema.tables")) return { rows: [{ exists: true }] };
+          if (sql.includes("FROM military_branch_types")) {
+            return {
+              rows: [
+                { id: "11111111-1111-4111-8111-111111111111", code: "army", label: "U.S. Army" },
+                { id: "22222222-2222-4222-8222-222222222222", code: "marine_corps", label: "U.S. Marine Corps" },
+                { id: "33333333-3333-4333-8333-333333333333", code: "navy", label: "U.S. Navy" },
+              ],
+            };
+          }
+          if (sql.includes("FROM military_war_service_types")) {
+            return {
+              rows: [
+                { id: "44444444-4444-4444-8444-444444444444", code: "world_war_i", label: "World War I" },
+                { id: "55555555-5555-4555-8555-555555555555", code: "world_war_ii", label: "World War II" },
+              ],
+            };
+          }
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {},
+      };
+    },
+  };
+
+  const lookups = await listHeadstoneLookupOptions(pool);
+
+  assert.deepEqual(
+    lookups.militaryBranches.map((branch) => branch.code),
+    ["army", "marine_corps", "navy"],
+  );
+  assert.deepEqual(
+    lookups.militaryWarServices.map((service) => service.code),
+    ["world_war_i", "world_war_ii"],
+  );
+});
+
+test("grave detail reads tolerate databases before burial military service migration", async () => {
+  const pool = {
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes("information_schema.columns")) return { rows: [{ exists: false }] };
+          if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
+            return {
+              rows: [
+                {
+                  uuid: "22222222-2222-4222-8222-222222222222",
+                  cemetery_id: "11111111-1111-4111-8111-111111111111",
+                  cemetery_name: "Sequential Cemetery",
+                  section_id: "A",
+                  lot_id: "1",
+                  grave_id: "1",
+                  gravesite_id: "A-01-01",
+                  status: "occupied",
+                  geometry: "{}",
+                },
+              ],
+            };
+          }
+          if (sql.includes("FROM burials")) {
+            assert.match(sql, /NULL::text AS military_branch/u);
+            assert.match(sql, /NULL::text AS military_war_service_code/u);
+            assert.match(sql, /NULL::text AS military_wars/u);
+            return {
+              rows: [
+                {
+                  id: "88888888-8888-4888-8888-888888888888",
+                  gravesite_uuid: "22222222-2222-4222-8222-222222222222",
+                  first_name: "Mabel",
+                  last_name: "Stone",
+                  full_name: "Mabel Stone",
+                  birth_date: null,
+                  death_date: null,
+                  burial_date: null,
+                  interment_type: "casket",
+                  funeral_home: null,
+                  veteran: "Yes",
+                  military_branch: null,
+                  military_wars: null,
+                  notes: null,
+                },
+              ],
+            };
+          }
+          if (sql.includes("FROM headstones")) return { rows: [] };
+          if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return { rows: [] };
+          if (sql.includes("FROM gravesite_media_assets")) return { rows: [] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {},
+      };
+    },
+  };
+
+  const grave = await getGraveSpace(pool, "11111111-1111-4111-8111-111111111111", "A-01-01", { includeOwnership: false });
+
+  assert.equal(grave.burials[0].veteran, true);
+  assert.equal(grave.burials[0].militaryBranch, "");
+  assert.equal(grave.burials[0].militaryWars, "");
+});
+
 test("repository maps generalized gravesite ownership rights into owner detail", async () => {
   const graveUuid = "22222222-2222-4222-8222-222222222222";
   const ownerId = "ownership-party-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -226,6 +351,7 @@ test("repository maps generalized gravesite ownership rights into owner detail",
     async connect() {
       return {
         async query(sql) {
+          if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
           if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
             return {
               rows: [
@@ -307,6 +433,7 @@ test("repository maps generalized lot ownership rights into grave owner detail",
       return {
         async query(sql, values = []) {
           queries.push({ sql, values });
+          if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
           if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
             return {
               rows: [
@@ -595,6 +722,7 @@ test("updateGraveSpace updates editable gravesite fields with cemetery scope", a
           queries.push({ sql, values });
           if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
           if (sql.includes("SELECT set_config")) return { rows: [] };
+          if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
           if (sql.includes("FOR UPDATE")) return { rows: [graveRow] };
           if (sql.includes("UPDATE gravesites")) return { rows: [graveRow] };
           if (sql.includes("FROM audit_events") && sql.includes("transaction_id")) return { rows: [] };
@@ -650,6 +778,9 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     burial_date: null,
     interment_type: "urn",
     funeral_home: null,
+    veteran: "No",
+    military_branch: null,
+    military_wars: null,
     notes: "Imported note",
     updated_at: "2026-05-31T12:00:00.000Z",
   };
@@ -660,6 +791,8 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
           queries.push({ sql, values });
           if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
           if (sql.includes("SELECT set_config")) return { rows: [] };
+          if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
+          if (sql.includes("information_schema.tables")) return { rows: [{ exists: true }] };
           if (sql.includes("FOR UPDATE OF burials")) return { rows: [burialRow] };
           if (sql.includes("UPDATE burials")) return { rows: [burialRow] };
           if (sql.includes("FROM audit_events") && sql.includes("transaction_id")) return { rows: [] };
@@ -685,6 +818,9 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
       burialDate: "",
       intermentType: "urn",
       funeralHome: "Brandt Funeral Home",
+      veteran: true,
+      militaryBranchCode: "army",
+      militaryWarServiceCode: "world_war_ii",
       notes: "Confirmed from marker photo.",
     },
     { allowedCemeteryIds: ["11111111-1111-4111-8111-111111111111"] },
@@ -702,6 +838,9 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     null,
     "urn",
     "Brandt Funeral Home",
+    "Yes",
+    "army",
+    "world_war_ii",
     "Confirmed from marker photo.",
   ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
@@ -709,5 +848,6 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
   assert.equal(updated?.person.birthDate, "1925-10-04");
   assert.equal(updated?.person.deathDate, "2017-10-22");
   assert.equal(updated?.intermentType, "urn");
+  assert.equal(updated?.veteran, false);
   assert.equal(updated?.recordNotes, "Imported note");
 });

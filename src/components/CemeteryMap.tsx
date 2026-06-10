@@ -42,6 +42,10 @@ function headstoneSelectionIndex(headstones: HeadstoneSummary[]) {
   return new Map(headstones.map((headstone) => [headstone.id, headstone]));
 }
 
+function veteranGraveKeySet(graves: GraveSpaceSummary[]) {
+  return new Set(graves.filter((grave) => grave.hasVeteran).map((grave) => graveSelectionKey(grave)));
+}
+
 function getGeoJsonSource(map: MapLibreMap, sourceName: string) {
   return map.getSource(sourceName) as GeoJSONSource | undefined;
 }
@@ -67,9 +71,10 @@ function refreshSelectableSources(
   searchResultIds: Set<string>,
 ) {
   const selectedGraveKey = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
+  const veteranGraveKeys = veteranGraveKeySet(visibleGraves);
 
   getGeoJsonSource(map, "graves")?.setData(gravesFeatureCollection(visibleGraves, selectedGraveKey, searchResultIds));
-  getGeoJsonSource(map, "headstones")?.setData(headstonesFeatureCollection(headstones ?? [], selectedGraveKey, searchResultIds, selectedHeadstone?.id));
+  getGeoJsonSource(map, "headstones")?.setData(headstonesFeatureCollection(headstones ?? [], selectedGraveKey, searchResultIds, selectedHeadstone?.id, veteranGraveKeys));
 }
 
 function registerSelectableLayerHandlers(map: MapLibreMap, layers: readonly string[], onClick: (event: maplibregl.MapLayerMouseEvent) => void) {
@@ -154,7 +159,14 @@ export function CemeteryMap({ data, selectedGrave, selectedHeadstone, visibleGra
       addSectionLayers(map, dataRef.current);
       addLotLayers(map, dataRef.current);
       addGraveLayers(map, visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current);
-      addHeadstoneLayers(map, dataRef.current.headstones ?? [], selectedRef.current, searchResultIdsRef.current, selectedHeadstoneIdRef.current);
+      addHeadstoneLayers(
+        map,
+        dataRef.current.headstones ?? [],
+        selectedRef.current,
+        searchResultIdsRef.current,
+        selectedHeadstoneIdRef.current,
+        veteranGraveKeySet(visibleGravesRef.current),
+      );
       addSectionLabelLayer(map);
 
       enforceMapLayerOrder(map);
@@ -303,6 +315,10 @@ export function CemeteryMap({ data, selectedGrave, selectedHeadstone, visibleGra
           <span>
             <i className="legend-symbol legend-highlighted-marker" />
             Highlighted marker
+          </span>
+          <span>
+            <i className="legend-symbol legend-veteran-grave" />
+            Veteran grave
           </span>
           <span>
             <i className="legend-symbol legend-other-marker" />
