@@ -30,6 +30,11 @@ export type Burial = {
   burialDate?: string;
   intermentType?: "casket" | "urn";
   funeralHome?: string;
+  veteran: boolean;
+  militaryBranchCode?: string;
+  militaryBranch?: string;
+  militaryWarServiceCode?: string;
+  militaryWars?: string;
   recordNotes?: string;
   notes?: string;
   auditEventId?: string;
@@ -128,6 +133,8 @@ export type HeadstoneLookups = {
   markerTypes: LookupOption[];
   materials: LookupOption[];
   conditions: LookupOption[];
+  militaryBranches: LookupOption[];
+  militaryWarServices: LookupOption[];
 };
 
 export type SaveHeadstoneInput = {
@@ -151,6 +158,7 @@ export type GraveSpaceSummary = {
   lot: string;
   space: string;
   status: GraveStatus;
+  hasVeteran?: boolean;
   geometry: AreaGeometry;
 };
 
@@ -182,6 +190,9 @@ export type SaveBurialInput = {
   burialDate: string;
   intermentType: "casket" | "urn";
   funeralHome: string;
+  veteran: boolean;
+  militaryBranchCode: string;
+  militaryWarServiceCode: string;
   notes: string;
   reason?: string;
 };

@@ -98,6 +98,11 @@ test("burial notes show the corrected North Hills source name without import-onl
           {
             id: "burial-1",
             person: { id: "person-1", firstName: "Mabel", lastName: "Stone" },
+            veteran: true,
+            militaryBranchCode: "army",
+            militaryBranch: "U.S. Army",
+            militaryWarServiceCode: "world_war_ii",
+            militaryWars: "World War II",
             notes:
               "Funeral home: Hill & Sons | Imported from headstone spreadsheet row 9. North Hills Guide section: B. Person column: 1. Family requested quiet service.",
           },
@@ -176,7 +181,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
         ...graveSummary,
         owners: [{ id: "owner-1", displayName: "Hidden Owner", contactNote: "Deed 100" }],
         currentOwnerIds: ["owner-1"],
-        burials: [{ id: "burial-1", person: { id: "person-1", firstName: "Mabel", lastName: "Stone" } }],
+        burials: [{ id: "burial-1", person: { id: "person-1", firstName: "Mabel", lastName: "Stone" }, veteran: false }],
         headstones: [
           {
             id: "33333333-3333-4333-8333-333333333333",
