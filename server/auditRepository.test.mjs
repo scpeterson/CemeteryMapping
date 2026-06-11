@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { listAuditEvents, normalizeAuditFilters } from "./auditRepository.mjs";
+import { listAuditEvents, normalizeAuditFilters, normalizeAuditRetentionPolicyInput, purgeAuditEvents } from "./auditRepository.mjs";
 
 test("normalizeAuditFilters clamps limits and ignores unsupported actions or tables", () => {
   assert.deepEqual(
@@ -48,6 +48,27 @@ test("normalizeAuditFilters allows status and event lookup audit records", () =>
   assert.equal(normalizeAuditFilters({ targetTable: "lot_ownership_event_types" }).targetTable, "lot_ownership_event_types");
   assert.equal(normalizeAuditFilters({ targetTable: "ownership_events" }).targetTable, "ownership_events");
   assert.equal(normalizeAuditFilters({ targetTable: "ownership_event_rights" }).targetTable, "ownership_event_rights");
+});
+
+test("normalizeAuditFilters allows audit retention policy audit records", () => {
+  assert.equal(normalizeAuditFilters({ targetTable: "audit_retention_policies" }).targetTable, "audit_retention_policies");
+});
+
+test("normalizeAuditRetentionPolicyInput keeps retention settings in bounded ranges", () => {
+  assert.deepEqual(
+    normalizeAuditRetentionPolicyInput({
+      retentionDays: 90,
+      minimumProtectedDays: 500,
+      batchSize: 100000,
+      isEnabled: "false",
+    }),
+    {
+      retentionDays: 500,
+      minimumProtectedDays: 500,
+      batchSize: 50000,
+      isEnabled: false,
+    },
+  );
 });
 
 test("listAuditEvents returns filtered audit records", async () => {
@@ -115,4 +136,40 @@ test("listAuditEvents returns filtered audit records", async () => {
       metadata: { request_id: "request-1" },
     },
   ]);
+});
+
+test("purgeAuditEvents deletes one configured batch of old audit records", async () => {
+  let capturedSql = "";
+  const pool = {
+    async query(sql) {
+      capturedSql = sql;
+      return {
+        rows: [
+          {
+            retention_days: 2555,
+            batch_size: 5000,
+            is_enabled: true,
+            cutoff_at: "2019-06-11T00:00:00.000Z",
+            selected_count: 5000,
+            deleted_count: 5000,
+          },
+        ],
+      };
+    },
+  };
+
+  const result = await purgeAuditEvents(pool);
+
+  assert.match(capturedSql, /WITH policy AS/u);
+  assert.match(capturedSql, /audit_events\.occurred_at < policy\.cutoff_at/u);
+  assert.match(capturedSql, /LIMIT \(SELECT batch_size FROM policy\)/u);
+  assert.match(capturedSql, /DELETE FROM audit_events/u);
+  assert.deepEqual(result, {
+    retentionDays: 2555,
+    batchSize: 5000,
+    isEnabled: true,
+    cutoffAt: "2019-06-11T00:00:00.000Z",
+    selectedCount: 5000,
+    deletedCount: 5000,
+  });
 });

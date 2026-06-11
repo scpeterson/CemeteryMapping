@@ -2,6 +2,8 @@ import { apiBaseUrl } from "../config/environment";
 import type {
   AppRole,
   AppUser,
+  AuditRetentionPolicy,
+  AuditRetentionPurgeResult,
   AppVersion,
   AuditEvent,
   AuditEventFilters,
@@ -246,6 +248,9 @@ export type SaveCemeteryTextInput = Pick<
 export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames" | "notes">;
 export type SaveLotTextInput = Pick<LotTextRecord, "name">;
 export type SaveLookupInput = Pick<LookupRecord, "code" | "label" | "description" | "sortOrder" | "isActive" | "sourceNotes" | "sourceUrl">;
+export type SaveAuditRetentionPolicyInput = Pick<AuditRetentionPolicy, "retentionDays" | "minimumProtectedDays" | "batchSize" | "isEnabled"> & {
+  reason?: string;
+};
 
 export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records`);
@@ -260,6 +265,21 @@ export async function fetchAdminAuditEvents(filters: AuditEventFilters = {}): Pr
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/audit-events${query ? `?${query}` : ""}`);
   return jsonResponse<AuditEvent[]>(response, "Audit events API");
+}
+
+export async function fetchAuditRetentionPolicy(): Promise<AuditRetentionPolicy> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/audit-retention-policy`);
+  return jsonResponse<AuditRetentionPolicy>(response, "Audit retention policy API");
+}
+
+export async function updateAuditRetentionPolicy(policy: SaveAuditRetentionPolicyInput): Promise<AuditRetentionPolicy> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/audit-retention-policy`, jsonRequest("PUT", policy));
+  return jsonResponse<AuditRetentionPolicy>(response, "Update audit retention policy API");
+}
+
+export async function runAuditRetentionPurge(): Promise<AuditRetentionPurgeResult> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/audit-retention-purge`, jsonRequest("POST", {}));
+  return jsonResponse<AuditRetentionPurgeResult>(response, "Audit retention purge API");
 }
 
 export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters = {}): Promise<DeedRegistryReview> {

@@ -2,7 +2,7 @@ import express from "express";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
-import { listAuditEvents } from "./auditRepository.mjs";
+import { getAuditRetentionPolicy, listAuditEvents, purgeAuditEvents, updateAuditRetentionPolicy } from "./auditRepository.mjs";
 import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from "./auth0Management.mjs";
 import { loadApiConfig } from "./config.mjs";
 import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
@@ -810,6 +810,31 @@ export function createApp(config, pool) {
   app.get("/api/admin/audit-events", requireAdmin, async (request, response, next) => {
     try {
       response.json(await listAuditEvents(pool, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/audit-retention-policy", requireAdmin, async (_request, response, next) => {
+    try {
+      response.json(await getAuditRetentionPolicy(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/audit-retention-policy", requireAdmin, async (request, response, next) => {
+    try {
+      const reason = validateMutationReason(request.body?.reason);
+      response.json(await updateAuditRetentionPolicy(pool, request.body, { actorUser: request.user, reason }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/audit-retention-purge", requireAdmin, async (_request, response, next) => {
+    try {
+      response.json(await purgeAuditEvents(pool));
     } catch (error) {
       next(error);
     }

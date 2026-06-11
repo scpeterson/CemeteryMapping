@@ -114,6 +114,18 @@ For hosted production databases, prefer managed authentication or a database acc
 
 Administrators can review recent audit events in the application under **Admin > Audit Log**. The tab is read-only and supports filtering by date range, actor, entity type, operation, record ID, and result limit. Selecting an audit row shows captured actor details, database user/session user, changed fields, reason, and the old/new JSON values stored in `audit_events`.
 
+## Retention
+
+Migration `071-audit-retention-policy.sql` adds a singleton `audit_retention_policies` row that controls audit cleanup. The default policy keeps seven years of audit history (`2555` days), preserves at least one year as the minimum configurable retention, and deletes at most `5000` audit rows per run.
+
+Run audit retention as a scheduled maintenance job rather than during normal API requests:
+
+```sh
+npm run db:purge:audit
+```
+
+The job reads the active policy and deletes one oldest-first batch of `audit_events` older than the cutoff. It prints the environment, cutoff, selected row count, and deleted row count as JSON so schedulers can capture the result. Admin-only API endpoints can read or update the policy and trigger a manual purge when needed.
+
 Recent changes:
 
 ```sql
