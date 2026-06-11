@@ -200,3 +200,12 @@ databaseChangeLog:
   - include:
       file: changes/067-military-war-service-lookup.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/068-burial-interment-type-lookup.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/069-drop-legacy-burial-military-service-columns.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/070-drop-legacy-headstone-lookup-code-columns.sql
+      relativeToChangelogFile: true

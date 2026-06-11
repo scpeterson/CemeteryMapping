@@ -40,7 +40,7 @@ import type {
 } from "./types";
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
-const emptyHeadstoneLookups: HeadstoneLookups = { markerTypes: [], materials: [], conditions: [], militaryBranches: [], militaryWarServices: [] };
+const emptyHeadstoneLookups: HeadstoneLookups = { markerTypes: [], materials: [], conditions: [], intermentTypes: [], militaryBranches: [], militaryWarServices: [] };
 
 function includesAllStatuses(statuses: Set<GraveStatus>) {
   return allStatuses.every((status) => statuses.has(status));

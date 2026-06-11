@@ -4,6 +4,7 @@ const allowedAuditTables = new Set([
   "app_users",
   "blocks",
   "burials",
+  "burial_interment_types",
   "cemeteries",
   "deed_registry_entries",
   "deed_registry_entry_allocations",

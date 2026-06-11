@@ -28,7 +28,8 @@ export type Burial = {
   id: string;
   person: Person;
   burialDate?: string;
-  intermentType?: "casket" | "urn";
+  intermentType?: string;
+  intermentTypeLabel?: string;
   funeralHome?: string;
   veteran: boolean;
   militaryBranchCode?: string;
@@ -133,6 +134,7 @@ export type HeadstoneLookups = {
   markerTypes: LookupOption[];
   materials: LookupOption[];
   conditions: LookupOption[];
+  intermentTypes: LookupOption[];
   militaryBranches: LookupOption[];
   militaryWarServices: LookupOption[];
 };
@@ -188,7 +190,7 @@ export type SaveBurialInput = {
   birthDate: string;
   deathDate: string;
   burialDate: string;
-  intermentType: "casket" | "urn";
+  intermentType: string;
   funeralHome: string;
   veteran: boolean;
   militaryBranchCode: string;

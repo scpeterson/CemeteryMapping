@@ -466,9 +466,9 @@ export async function upsertHeadstone(client, imported, gravesiteUuid) {
         gravesite_uuid,
         headstone_id,
         marker_type,
-        marker_type_code,
-        condition,
-        material_type_code,
+        marker_type_id,
+        condition_type_id,
+        material_type_id,
         latitude,
         longitude,
         geometry,
@@ -479,9 +479,9 @@ export async function upsertHeadstone(client, imported, gravesiteUuid) {
         $1,
         $2,
         'headstone',
-        'unknown',
-        'unknown',
-        'unknown',
+        (SELECT id FROM marker_types WHERE code = 'unknown'),
+        (SELECT id FROM headstone_condition_types WHERE code = 'unknown'),
+        (SELECT id FROM marker_material_types WHERE code = 'unknown'),
         $3::numeric,
         $4::numeric,
         ST_SetSRID(ST_MakePoint($4::double precision, $3::double precision), 4326),
@@ -491,13 +491,13 @@ export async function upsertHeadstone(client, imported, gravesiteUuid) {
       ON CONFLICT (headstone_id) DO UPDATE SET
         gravesite_uuid = EXCLUDED.gravesite_uuid,
         marker_type = EXCLUDED.marker_type,
-        marker_type_code = CASE
-          WHEN headstones.marker_type_code IS NULL OR headstones.marker_type_code = 'unknown' THEN EXCLUDED.marker_type_code
-          ELSE headstones.marker_type_code
+        marker_type_id = CASE
+          WHEN (SELECT code FROM marker_types WHERE id = headstones.marker_type_id) = 'unknown' THEN EXCLUDED.marker_type_id
+          ELSE headstones.marker_type_id
         END,
-        material_type_code = CASE
-          WHEN headstones.material_type_code IS NULL OR headstones.material_type_code = 'unknown' THEN EXCLUDED.material_type_code
-          ELSE headstones.material_type_code
+        material_type_id = CASE
+          WHEN (SELECT code FROM marker_material_types WHERE id = headstones.material_type_id) = 'unknown' THEN EXCLUDED.material_type_id
+          ELSE headstones.material_type_id
         END,
         latitude = EXCLUDED.latitude,
         longitude = EXCLUDED.longitude,
@@ -547,11 +547,12 @@ async function replaceBurials(client, imported, generatedGravesite, gravesiteUui
           full_name,
           birth_date,
           death_date,
+          interment_type_id,
           notes,
           gravesite_id,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, $5::date, $6::date, $7, $8, now())
+        VALUES ($1, $2, $3, $4, $5::date, $6::date, (SELECT id FROM burial_interment_types WHERE code = 'casket'), $7, $8, now())
         RETURNING id
       `,
       [

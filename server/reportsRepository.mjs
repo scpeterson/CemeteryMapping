@@ -202,8 +202,8 @@ async function runVeteranServiceSummary(client, definition, cemeteryIds) {
     WITH veteran_burials AS (
       SELECT
         burials.id,
-        COALESCE(military_branch_types.label, NULLIF(burials.military_branch, ''), 'Unknown/not recorded') AS branch,
-        COALESCE(military_war_service_types.label, NULLIF(burials.military_wars, ''), 'Unknown/not recorded') AS war_service
+        COALESCE(military_branch_types.label, 'Unknown/not recorded') AS branch,
+        COALESCE(military_war_service_types.label, 'Unknown/not recorded') AS war_service
       FROM burials
       JOIN gravesites
         ON gravesites.id = burials.gravesite_uuid

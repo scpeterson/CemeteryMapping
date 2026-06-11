@@ -28,7 +28,17 @@ function emptyCemeteryPool() {
     async query(sql, values) {
       queryCount += 1;
       if (sql.includes("information_schema.columns")) {
-        return { rows: [{ has_military_service_columns: true, has_military_branch_lookup: true, has_military_war_service_lookup: true }] };
+        return {
+          rows: [
+            {
+              has_veteran_column: true,
+              has_legacy_military_branch_column: false,
+              has_legacy_military_wars_column: false,
+              has_military_branch_lookup: true,
+              has_military_war_service_lookup: true,
+            },
+          ],
+        };
       }
       assert.match(sql, /JOIN gravesite_status_types status_type|LEFT JOIN gravesite_status_types status_type/u);
       assert.match(sql, /CROSS JOIN LATERAL/u);
@@ -114,7 +124,17 @@ test("search includes generalized ownership rights only through ownership-aware 
   const pool = {
     async query(sql, values) {
       if (sql.includes("information_schema.columns")) {
-        return { rows: [{ has_military_service_columns: true, has_military_branch_lookup: true, has_military_war_service_lookup: true }] };
+        return {
+          rows: [
+            {
+              has_veteran_column: true,
+              has_legacy_military_branch_column: false,
+              has_legacy_military_wars_column: false,
+              has_military_branch_lookup: true,
+              has_military_war_service_lookup: true,
+            },
+          ],
+        };
       }
       assert.match(sql, /current_ownership_right_owners/);
       assert.deepEqual(values, ["baur", [], false, []]);
@@ -131,7 +151,17 @@ test("search returns cemetery name and lot field reasons", async () => {
   const pool = {
     async query(_sql, values) {
       if (_sql.includes("information_schema.columns")) {
-        return { rows: [{ has_military_service_columns: true, has_military_branch_lookup: true, has_military_war_service_lookup: true }] };
+        return {
+          rows: [
+            {
+              has_veteran_column: true,
+              has_legacy_military_branch_column: false,
+              has_legacy_military_wars_column: false,
+              has_military_branch_lookup: true,
+              has_military_war_service_lookup: true,
+            },
+          ],
+        };
       }
       assert.deepEqual(values, ["trinity", [], true, undefined]);
       return {

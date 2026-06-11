@@ -241,6 +241,7 @@ const auditTableLabels: Record<string, string> = {
   app_user_cemetery_access: "User cemetery assignments",
   blocks: "Blocks",
   burials: "Burials",
+  burial_interment_types: "Burial interment types",
   cemeteries: "Cemeteries",
   deed_registry_entries: "Deed registry entries",
   deed_registry_entry_allocations: "Deed registry allocations",

@@ -56,6 +56,7 @@ function toBurial(burial) {
     },
     burialDate: dateOnly(burial.burial_date),
     intermentType: burial.interment_type ?? "casket",
+    intermentTypeLabel: burial.interment_type_label ?? (burial.interment_type === "urn" ? "Funeral urn" : "Casket"),
     funeralHome: burial.funeral_home ?? "",
     veteran: isVeteran,
     militaryBranchCode: burial.military_branch_code ?? "",
@@ -335,10 +336,109 @@ async function burialMilitaryServiceColumnsExist(client) {
       FROM information_schema.columns
       WHERE table_schema = current_schema()
         AND table_name = 'burials'
+        AND column_name = 'veteran'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function legacyBurialMilitaryBranchColumnExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'burials'
         AND column_name = 'military_branch'
     ) AS exists
   `);
 
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function legacyBurialMilitaryWarsColumnExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'burials'
+        AND column_name = 'military_wars'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function burialIntermentTypeLookupExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = current_schema()
+        AND table_name = 'burial_interment_types'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function burialIntermentTypeColumnExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'burials'
+        AND column_name = 'interment_type_id'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function legacyBurialIntermentTypeColumnExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'burials'
+        AND column_name = 'interment_type'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function burialIntermentTypeSql(client) {
+  if (await burialIntermentTypeColumnExists(client)) {
+    return {
+      select: "burial_interment_types.code AS interment_type, burial_interment_types.label AS interment_type_label",
+      join: "JOIN burial_interment_types ON burial_interment_types.id = burials.interment_type_id",
+      hasLookup: true,
+    };
+  }
+
+  if (await legacyBurialIntermentTypeColumnExists(client)) {
+    return {
+      select: "COALESCE(NULLIF(burials.interment_type, ''), 'casket') AS interment_type, CASE WHEN burials.interment_type = 'urn' THEN 'Funeral urn' ELSE 'Casket' END AS interment_type_label",
+      join: "",
+      hasLookup: false,
+    };
+  }
+
+  return {
+    select: "'casket'::text AS interment_type, 'Casket'::text AS interment_type_label",
+    join: "",
+    hasLookup: false,
+  };
+}
+
+async function activeIntermentTypeExists(client, code) {
+  if (!(await burialIntermentTypeColumnExists(client))) return true;
+  const result = await client.query("SELECT EXISTS (SELECT 1 FROM burial_interment_types WHERE code = $1 AND is_active) AS exists", [code]);
   return Boolean(result.rows[0]?.exists);
 }
 
@@ -399,7 +499,7 @@ async function burialMilitaryWarServiceTypeColumnExists(client) {
 async function burialMilitaryServiceSql(client) {
   if (!(await burialMilitaryServiceColumnsExist(client))) {
     return {
-      select: "burials.veteran, NULL::text AS military_branch_code, NULL::text AS military_branch, NULL::text AS military_war_service_code, NULL::text AS military_wars",
+      select: "NULL::text AS veteran, NULL::text AS military_branch_code, NULL::text AS military_branch, NULL::text AS military_war_service_code, NULL::text AS military_wars",
       join: "",
       hasLookup: false,
     };
@@ -407,10 +507,12 @@ async function burialMilitaryServiceSql(client) {
 
   const hasBranchLookup = await burialMilitaryBranchTypeColumnExists(client);
   const hasWarServiceLookup = await burialMilitaryWarServiceTypeColumnExists(client);
+  const hasLegacyBranchColumn = !hasBranchLookup && (await legacyBurialMilitaryBranchColumnExists(client));
+  const hasLegacyWarsColumn = !hasWarServiceLookup && (await legacyBurialMilitaryWarsColumnExists(client));
   const branchCodeSelect = hasBranchLookup ? "military_branch_types.code AS military_branch_code" : "NULL::text AS military_branch_code";
-  const branchLabelSelect = hasBranchLookup ? "COALESCE(military_branch_types.label, burials.military_branch) AS military_branch" : "burials.military_branch";
+  const branchLabelSelect = hasBranchLookup ? "military_branch_types.label AS military_branch" : hasLegacyBranchColumn ? "burials.military_branch" : "NULL::text AS military_branch";
   const warServiceCodeSelect = hasWarServiceLookup ? "military_war_service_types.code AS military_war_service_code" : "NULL::text AS military_war_service_code";
-  const warServiceLabelSelect = hasWarServiceLookup ? "COALESCE(military_war_service_types.label, burials.military_wars) AS military_wars" : "burials.military_wars";
+  const warServiceLabelSelect = hasWarServiceLookup ? "military_war_service_types.label AS military_wars" : hasLegacyWarsColumn ? "burials.military_wars" : "NULL::text AS military_wars";
   const branchJoin = hasBranchLookup ? "LEFT JOIN military_branch_types ON military_branch_types.id = burials.military_branch_type_id" : "";
   const warServiceJoin = hasWarServiceLookup ? "LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id" : "";
 
@@ -610,6 +712,7 @@ async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
 
 async function selectBurialMutationState(client, id) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
+  const intermentTypeSql = await burialIntermentTypeSql(client);
   const result = await client.query(
     `
       SELECT
@@ -622,12 +725,13 @@ async function selectBurialMutationState(client, id) {
         burials.birth_date,
         burials.death_date,
         burials.burial_date,
-        burials.interment_type,
+        ${intermentTypeSql.select},
         burials.funeral_home,
         ${militaryServiceSql.select},
         burials.notes,
         burials.updated_at
       FROM burials
+      ${intermentTypeSql.join}
       ${militaryServiceSql.join}
       JOIN gravesites
         ON gravesites.id = burials.gravesite_uuid
@@ -644,10 +748,12 @@ async function selectBurialMutationState(client, id) {
 
 async function selectBurialById(client, id) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
+  const intermentTypeSql = await burialIntermentTypeSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, burials.interment_type, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
+      ${intermentTypeSql.join}
       ${militaryServiceSql.join}
       WHERE burials.id = $1
         AND burials.deleted_at IS NULL
@@ -728,10 +834,12 @@ async function selectOwnersForCemeteries(client, cemeteryIds) {
 
 async function selectBurialsForCemeteries(client, cemeteryIds) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
+  const intermentTypeSql = await burialIntermentTypeSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, burials.interment_type, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
+      ${intermentTypeSql.join}
       ${militaryServiceSql.join}
       WHERE burials.deleted_at IS NULL
         AND burials.gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
@@ -985,10 +1093,12 @@ export async function createOwnershipEvent(
 
 async function selectBurialsForGrave(client, graveUuid) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
+  const intermentTypeSql = await burialIntermentTypeSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, burials.interment_type, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
+      ${intermentTypeSql.join}
       ${militaryServiceSql.join}
       WHERE burials.gravesite_uuid = $1
         AND burials.deleted_at IS NULL
@@ -1293,11 +1403,11 @@ async function selectHeadstoneMutationState(client, id) {
         COALESCE(gravesite.cemetery_id, containing_cemetery.id)::text AS cemetery_id,
         headstones.headstone_id,
         headstones.marker_type_id::text,
-        headstones.marker_type_code,
+        marker_types.code AS marker_type_code,
         headstones.material_type_id::text,
-        headstones.material_type_code,
+        marker_material_types.code AS material_type_code,
         headstones.condition_type_id::text,
-        headstones.condition,
+        headstone_condition_types.code AS condition,
         headstones.condition_notes,
         headstones.inscription,
         headstones.design_notes,
@@ -1306,6 +1416,12 @@ async function selectHeadstoneMutationState(client, id) {
         headstones.last_inspected_at,
         headstones.updated_at
       FROM headstones
+      JOIN marker_types
+        ON marker_types.id = headstones.marker_type_id
+      JOIN marker_material_types
+        ON marker_material_types.id = headstones.material_type_id
+      JOIN headstone_condition_types
+        ON headstone_condition_types.id = headstones.condition_type_id
       LEFT JOIN gravesites AS gravesite
         ON gravesite.id = headstones.gravesite_uuid
       LEFT JOIN LATERAL (
@@ -1333,6 +1449,14 @@ export async function listHeadstoneLookupOptions(pool) {
     const markerTypes = await client.query("SELECT id::text, code, label FROM marker_types WHERE is_active ORDER BY sort_order, label");
     const materials = await client.query("SELECT id::text, code, label FROM marker_material_types WHERE is_active ORDER BY sort_order, label");
     const conditions = await client.query("SELECT id::text, code, label FROM headstone_condition_types WHERE is_active ORDER BY sort_order, label");
+    const intermentTypes = (await burialIntermentTypeLookupExists(client))
+      ? await client.query("SELECT id::text, code, label FROM burial_interment_types WHERE is_active ORDER BY sort_order, label")
+      : {
+          rows: [
+            { id: "legacy-casket", code: "casket", label: "Casket" },
+            { id: "legacy-urn", code: "urn", label: "Funeral urn" },
+          ],
+        };
     const militaryBranches = (await burialMilitaryBranchLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM military_branch_types WHERE is_active ORDER BY sort_order, label")
       : { rows: [] };
@@ -1344,6 +1468,7 @@ export async function listHeadstoneLookupOptions(pool) {
       markerTypes: markerTypes.rows,
       materials: materials.rows,
       conditions: conditions.rows,
+      intermentTypes: intermentTypes.rows,
       militaryBranches: militaryBranches.rows,
       militaryWarServices: militaryWarServices.rows,
     };
@@ -1573,30 +1698,52 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     }
 
     const fullName = [burial.firstName, burial.lastName].filter(Boolean).join(" ") || null;
+    const effectiveIntermentType = burial.intermentType || "casket";
+    if (!(await activeIntermentTypeExists(client, effectiveIntermentType))) {
+      throw new Error(`Unsupported interment type: ${effectiveIntermentType}.`);
+    }
+    const hasIntermentTypeLookup = await burialIntermentTypeColumnExists(client);
+    const hasLegacyIntermentTypeColumn = !hasIntermentTypeLookup && (await legacyBurialIntermentTypeColumnExists(client));
+    const intermentTypeSetSql = hasIntermentTypeLookup
+      ? "interment_type_id = (SELECT id FROM burial_interment_types WHERE code = $8 AND is_active)"
+      : hasLegacyIntermentTypeColumn
+        ? "interment_type = $8"
+        : "id = id";
+    const intermentTypeReturnSql = hasIntermentTypeLookup
+      ? `(SELECT code FROM burial_interment_types WHERE burial_interment_types.id = burials.interment_type_id) AS interment_type,
+          (SELECT label FROM burial_interment_types WHERE burial_interment_types.id = burials.interment_type_id) AS interment_type_label`
+      : hasLegacyIntermentTypeColumn
+        ? `COALESCE(NULLIF(interment_type, ''), 'casket') AS interment_type,
+          CASE WHEN interment_type = 'urn' THEN 'Funeral urn' ELSE 'Casket' END AS interment_type_label`
+        : `'casket'::text AS interment_type,
+          'Casket'::text AS interment_type_label`;
     const hasMilitaryServiceColumns = await burialMilitaryServiceColumnsExist(client);
     const hasMilitaryBranchLookup = hasMilitaryServiceColumns && (await burialMilitaryBranchTypeColumnExists(client));
     const hasMilitaryWarServiceLookup = hasMilitaryServiceColumns && (await burialMilitaryWarServiceTypeColumnExists(client));
+    const hasLegacyMilitaryBranchColumn = hasMilitaryServiceColumns && !hasMilitaryBranchLookup && (await legacyBurialMilitaryBranchColumnExists(client));
+    const hasLegacyMilitaryWarsColumn = hasMilitaryServiceColumns && !hasMilitaryWarServiceLookup && (await legacyBurialMilitaryWarsColumnExists(client));
     const effectiveMilitaryBranchCode = burial.veteran ? burial.militaryBranchCode : "";
     const effectiveMilitaryWarServiceCode = burial.veteran ? burial.militaryWarServiceCode : "";
     const militaryBranchSetSql = hasMilitaryBranchLookup
-      ? `military_branch_type_id = (SELECT id FROM military_branch_types WHERE code = NULLIF($11, '') AND is_active),
-            military_branch = (SELECT label FROM military_branch_types WHERE code = NULLIF($11, '') AND is_active)`
-      : "military_branch = $11";
+      ? "military_branch_type_id = (SELECT id FROM military_branch_types WHERE code = NULLIF($11, '') AND is_active)"
+      : hasLegacyMilitaryBranchColumn
+        ? "military_branch = $11"
+        : "";
     const militaryWarServiceSetSql = hasMilitaryWarServiceLookup
-      ? `military_war_service_type_id = (SELECT id FROM military_war_service_types WHERE code = NULLIF($12, '') AND is_active),
-            military_wars = (SELECT label FROM military_war_service_types WHERE code = NULLIF($12, '') AND is_active)`
-      : "military_wars = $12";
+      ? "military_war_service_type_id = (SELECT id FROM military_war_service_types WHERE code = NULLIF($12, '') AND is_active)"
+      : hasLegacyMilitaryWarsColumn
+        ? "military_wars = $12"
+        : "";
+    const militaryServiceAssignments = [militaryBranchSetSql, militaryWarServiceSetSql, "notes = $13"].filter(Boolean);
     const militaryServiceSetSql = hasMilitaryServiceColumns
-      ? `${militaryBranchSetSql},
-            ${militaryWarServiceSetSql},
-            notes = $13`
+      ? militaryServiceAssignments.join(",\n            ")
       : "notes = $11";
     const militaryServiceReturnSql =
       hasMilitaryServiceColumns
         ? `${hasMilitaryBranchLookup ? "(SELECT code FROM military_branch_types WHERE military_branch_types.id = burials.military_branch_type_id)" : "NULL::text"} AS military_branch_code,
-          ${hasMilitaryBranchLookup ? "COALESCE((SELECT label FROM military_branch_types WHERE military_branch_types.id = burials.military_branch_type_id), military_branch)" : "military_branch"} AS military_branch,
+          ${hasMilitaryBranchLookup ? "(SELECT label FROM military_branch_types WHERE military_branch_types.id = burials.military_branch_type_id)" : hasLegacyMilitaryBranchColumn ? "military_branch" : "NULL::text"} AS military_branch,
           ${hasMilitaryWarServiceLookup ? "(SELECT code FROM military_war_service_types WHERE military_war_service_types.id = burials.military_war_service_type_id)" : "NULL::text"} AS military_war_service_code,
-          ${hasMilitaryWarServiceLookup ? "COALESCE((SELECT label FROM military_war_service_types WHERE military_war_service_types.id = burials.military_war_service_type_id), military_wars)" : "military_wars"} AS military_wars`
+          ${hasMilitaryWarServiceLookup ? "(SELECT label FROM military_war_service_types WHERE military_war_service_types.id = burials.military_war_service_type_id)" : hasLegacyMilitaryWarsColumn ? "military_wars" : "NULL::text"} AS military_wars`
         : `NULL::text AS military_branch_code,
           NULL::text AS military_branch,
           NULL::text AS military_war_service_code,
@@ -1610,7 +1757,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           burial.birthDate || null,
           burial.deathDate || null,
           burial.burialDate || null,
-          burial.intermentType || "casket",
+          effectiveIntermentType,
           burial.funeralHome || null,
           burial.veteran ? "Yes" : "No",
           effectiveMilitaryBranchCode || null,
@@ -1625,7 +1772,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           burial.birthDate || null,
           burial.deathDate || null,
           burial.burialDate || null,
-          burial.intermentType || "casket",
+          effectiveIntermentType,
           burial.funeralHome || null,
           burial.veteran ? "Yes" : "No",
           burial.notes || null,
@@ -1639,7 +1786,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
             birth_date = $5::date,
             death_date = $6::date,
             burial_date = $7::date,
-            interment_type = $8,
+            ${intermentTypeSetSql},
             funeral_home = $9,
             veteran = $10,
             ${militaryServiceSetSql}
@@ -1653,7 +1800,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           birth_date,
           death_date,
           burial_date,
-          interment_type,
+          ${intermentTypeReturnSql},
           funeral_home,
           veteran,
           ${militaryServiceReturnSql},
@@ -1716,11 +1863,11 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           id::text,
           headstone_id,
           marker_type_id::text,
-          marker_type_code,
+          (SELECT code FROM marker_types WHERE marker_types.id = headstones.marker_type_id) AS marker_type_code,
           material_type_id::text,
-          material_type_code,
+          (SELECT code FROM marker_material_types WHERE marker_material_types.id = headstones.material_type_id) AS material_type_code,
           condition_type_id::text,
-          condition,
+          (SELECT code FROM headstone_condition_types WHERE headstone_condition_types.id = headstones.condition_type_id) AS condition,
           condition_notes,
           inscription,
           design_notes,

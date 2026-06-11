@@ -230,7 +230,7 @@ function optionalBoolean(value, label) {
 
 function validateBurialPayload(body) {
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "casket";
-  if (!["casket", "urn"].includes(intermentType)) throw new BadRequestError("Interment type must be casket or urn.");
+  if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");
 
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
@@ -473,6 +473,10 @@ export function createApp(config, pool) {
     try {
       response.json(await getCemeteryData(pool));
     } catch (error) {
+      if (error.message?.startsWith("Unsupported interment type:")) {
+        response.status(400).json({ error: error.message });
+        return;
+      }
       next(error);
     }
   });
