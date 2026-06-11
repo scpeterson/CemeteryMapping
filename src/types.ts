@@ -9,6 +9,24 @@ export type AppVersion = {
   environment: string;
 };
 
+export type AuditRetentionPolicy = {
+  retentionDays: number;
+  minimumProtectedDays: number;
+  batchSize: number;
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AuditRetentionPurgeResult = {
+  retentionDays: number;
+  batchSize: number;
+  isEnabled: boolean;
+  cutoffAt: string;
+  selectedCount: number;
+  deletedCount: number;
+};
+
 export type Person = {
   id: string;
   firstName: string;

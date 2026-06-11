@@ -8,6 +8,7 @@ import {
   fetchAdminAuditEvents,
   fetchAdminRoles,
   fetchAdminUsers,
+  fetchAuditRetentionPolicy,
   fetchCemeteryAdminRecords,
   fetchDeedInvestigationCases,
   fetchDeedRegistryReview,
@@ -15,9 +16,12 @@ import {
   fetchNorthHillsOcrReview,
   linkDeedInvestigationCaseEntry,
   resolveAuth0User,
+  runAuditRetentionPurge,
   saveNorthHillsOcrEvidence,
+  type SaveAuditRetentionPolicyInput,
   type SaveUserInput,
   updateAdminUser,
+  updateAuditRetentionPolicy,
   updateCemeteryText,
   updateDeedInvestigationAction,
   updateDeedInvestigationCase,
@@ -31,6 +35,8 @@ import type {
   AppUser,
   AuditEvent,
   AuditEventFilters,
+  AuditRetentionPolicy,
+  AuditRetentionPurgeResult,
   CemeteryAdminRecords,
   CemeteryTextRecord,
   DeedInvestigationAction,
@@ -226,6 +232,15 @@ const blankLookupRecord: LookupRecord = {
   updatedAt: "",
 };
 
+const defaultAuditRetentionPolicy: AuditRetentionPolicy = {
+  retentionDays: 2555,
+  minimumProtectedDays: 365,
+  batchSize: 5000,
+  isEnabled: true,
+  createdAt: "",
+  updatedAt: "",
+};
+
 const auditActionLabels: Record<string, string> = {
   create: "Created",
   update: "Updated",
@@ -239,6 +254,7 @@ const auditTableLabels: Record<string, string> = {
   app_roles: "Roles",
   app_users: "Users",
   app_user_cemetery_access: "User cemetery assignments",
+  audit_retention_policies: "Audit retention policies",
   blocks: "Blocks",
   burials: "Burials",
   burial_interment_types: "Burial interment types",
@@ -1155,6 +1171,15 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [auditFilters, setAuditFilters] = useState<AuditEventFilters>(defaultAuditFilters);
+  const [auditRetentionPolicy, setAuditRetentionPolicy] = useState<AuditRetentionPolicy>(defaultAuditRetentionPolicy);
+  const [auditRetentionForm, setAuditRetentionForm] = useState<SaveAuditRetentionPolicyInput>({
+    retentionDays: defaultAuditRetentionPolicy.retentionDays,
+    minimumProtectedDays: defaultAuditRetentionPolicy.minimumProtectedDays,
+    batchSize: defaultAuditRetentionPolicy.batchSize,
+    isEnabled: defaultAuditRetentionPolicy.isEnabled,
+    reason: "",
+  });
+  const [auditRetentionPurgeResult, setAuditRetentionPurgeResult] = useState<AuditRetentionPurgeResult>();
   const [selectedAuditEventId, setSelectedAuditEventId] = useState("");
   const [deedRegistryReview, setDeedRegistryReview] = useState<DeedRegistryReview>(emptyDeedRegistryReview);
   const [deedReviewFilters, setDeedReviewFilters] = useState<DeedRegistryReviewFilters>(defaultDeedReviewFilters);
@@ -1182,6 +1207,9 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAuditEvents, setIsLoadingAuditEvents] = useState(false);
+  const [isLoadingAuditRetentionPolicy, setIsLoadingAuditRetentionPolicy] = useState(false);
+  const [isSavingAuditRetentionPolicy, setIsSavingAuditRetentionPolicy] = useState(false);
+  const [isPurgingAuditEvents, setIsPurgingAuditEvents] = useState(false);
   const [isLoadingDeedReview, setIsLoadingDeedReview] = useState(false);
   const [isLoadingDeedCases, setIsLoadingDeedCases] = useState(false);
   const [isLoadingNorthHillsReview, setIsLoadingNorthHillsReview] = useState(false);
@@ -1345,6 +1373,73 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     }
   };
 
+  const loadAuditRetentionPolicy = async () => {
+    setIsLoadingAuditRetentionPolicy(true);
+    setError(undefined);
+
+    try {
+      const nextPolicy = await fetchAuditRetentionPolicy();
+      setAuditRetentionPolicy(nextPolicy);
+      setAuditRetentionForm({
+        retentionDays: nextPolicy.retentionDays,
+        minimumProtectedDays: nextPolicy.minimumProtectedDays,
+        batchSize: nextPolicy.batchSize,
+        isEnabled: nextPolicy.isEnabled,
+        reason: "",
+      });
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load audit retention policy.");
+    } finally {
+      setIsLoadingAuditRetentionPolicy(false);
+    }
+  };
+
+  const updateAuditRetentionForm = (patch: Partial<SaveAuditRetentionPolicyInput>) => {
+    setAuditRetentionForm((current) => ({ ...current, ...patch }));
+  };
+
+  const saveAuditRetentionPolicy = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSavingAuditRetentionPolicy(true);
+    setError(undefined);
+    setMessage(undefined);
+
+    try {
+      const updated = await updateAuditRetentionPolicy(auditRetentionForm);
+      setAuditRetentionPolicy(updated);
+      setAuditRetentionForm({
+        retentionDays: updated.retentionDays,
+        minimumProtectedDays: updated.minimumProtectedDays,
+        batchSize: updated.batchSize,
+        isEnabled: updated.isEnabled,
+        reason: "",
+      });
+      setMessage("Audit retention policy saved.");
+      void loadAuditEvents(auditFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save audit retention policy.");
+    } finally {
+      setIsSavingAuditRetentionPolicy(false);
+    }
+  };
+
+  const purgeAuditEventsNow = async () => {
+    setIsPurgingAuditEvents(true);
+    setError(undefined);
+    setMessage(undefined);
+
+    try {
+      const result = await runAuditRetentionPurge();
+      setAuditRetentionPurgeResult(result);
+      setMessage(`Audit purge completed. Deleted ${result.deletedCount.toLocaleString()} event${result.deletedCount === 1 ? "" : "s"}.`);
+      void loadAuditEvents(auditFilters);
+    } catch (purgeError) {
+      setError(purgeError instanceof Error ? purgeError.message : "Unable to purge audit events.");
+    } finally {
+      setIsPurgingAuditEvents(false);
+    }
+  };
+
   const updateAuditFilter = (patch: Partial<AuditEventFilters>) => {
     setAuditFilters((current) => ({ ...current, ...patch }));
   };
@@ -1357,6 +1452,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const openAuditTab = () => {
     setActiveTab("audit");
     if (auditEvents.length === 0 && !isLoadingAuditEvents) void loadAuditEvents();
+    if (!isLoadingAuditRetentionPolicy) void loadAuditRetentionPolicy();
   };
 
   const loadDeedRegistryReview = async (filters = deedReviewFilters) => {
@@ -3006,6 +3102,98 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
               <History size={17} aria-hidden="true" />
               <h3>Audit Log</h3>
             </div>
+
+            <form className="audit-retention-panel" onSubmit={saveAuditRetentionPolicy}>
+              <div className="audit-retention-heading">
+                <div>
+                  <h4>Audit Retention</h4>
+                  <span>Updated {auditRetentionPolicy.updatedAt ? formatAdminTimestamp(auditRetentionPolicy.updatedAt) : "Not recorded"}</span>
+                </div>
+                <label className="toggle-field">
+                  <input
+                    type="checkbox"
+                    checked={auditRetentionForm.isEnabled}
+                    onChange={(event) => updateAuditRetentionForm({ isEnabled: event.target.checked })}
+                    title="Enable or disable scheduled audit cleanup."
+                  />
+                  Enabled
+                </label>
+              </div>
+
+              <div className="audit-retention-grid">
+                <label>
+                  Retention days
+                  <input
+                    type="number"
+                    min={auditRetentionForm.minimumProtectedDays}
+                    max={36500}
+                    value={auditRetentionForm.retentionDays}
+                    onChange={(event) => updateAuditRetentionForm({ retentionDays: Number(event.target.value) })}
+                    title="Audit events older than this window are eligible for cleanup."
+                  />
+                </label>
+                <label>
+                  Protected days
+                  <input
+                    type="number"
+                    min={365}
+                    max={36500}
+                    value={auditRetentionForm.minimumProtectedDays}
+                    onChange={(event) => updateAuditRetentionForm({ minimumProtectedDays: Number(event.target.value) })}
+                    title="Minimum retention window allowed by the policy."
+                  />
+                </label>
+                <label>
+                  Batch size
+                  <input
+                    type="number"
+                    min={1}
+                    max={50000}
+                    value={auditRetentionForm.batchSize}
+                    onChange={(event) => updateAuditRetentionForm({ batchSize: Number(event.target.value) })}
+                    title="Maximum number of audit events deleted per purge run."
+                  />
+                </label>
+                <label>
+                  Reason
+                  <input
+                    value={auditRetentionForm.reason ?? ""}
+                    onChange={(event) => updateAuditRetentionForm({ reason: event.target.value })}
+                    placeholder="Policy update reason"
+                    title="Reason recorded in the audit log when this policy changes."
+                  />
+                </label>
+              </div>
+
+              <div className="admin-form-actions audit-retention-actions">
+                <button type="submit" disabled={isSavingAuditRetentionPolicy || isLoadingAuditRetentionPolicy} title="Save audit retention policy.">
+                  {isSavingAuditRetentionPolicy ? "Saving..." : "Save policy"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => void loadAuditRetentionPolicy()}
+                  disabled={isLoadingAuditRetentionPolicy}
+                  title="Reload audit retention policy."
+                >
+                  {isLoadingAuditRetentionPolicy ? "Loading..." : "Refresh"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => void purgeAuditEventsNow()}
+                  disabled={isPurgingAuditEvents || !auditRetentionForm.isEnabled}
+                  title="Run one audit retention purge batch now."
+                >
+                  {isPurgingAuditEvents ? "Purging..." : "Run purge"}
+                </button>
+                {auditRetentionPurgeResult ? (
+                  <span className="audit-retention-result">
+                    Cutoff {formatAdminTimestamp(auditRetentionPurgeResult.cutoffAt)} - deleted {auditRetentionPurgeResult.deletedCount.toLocaleString()}
+                  </span>
+                ) : null}
+              </div>
+            </form>
 
             <form className="audit-filter-form" onSubmit={applyAuditFilters}>
               <label>

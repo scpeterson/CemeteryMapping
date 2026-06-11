@@ -2082,6 +2082,56 @@ h3 {
   gap: 12px;
 }
 
+.audit-retention-panel {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #d7e0d3;
+  border-radius: 8px;
+  background: #fbfcf8;
+}
+
+.audit-retention-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.audit-retention-heading h4 {
+  margin: 0;
+  color: #26342d;
+}
+
+.audit-retention-heading span,
+.audit-retention-result {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.audit-retention-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.toggle-field {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: #4f5d52;
+  font-size: 0.82rem;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.toggle-field input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #42624f;
+}
+
 .deed-review-filter-form {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2089,6 +2139,7 @@ h3 {
 }
 
 .audit-filter-form label,
+.audit-retention-grid label,
 .deed-review-filter-form label {
   display: grid;
   gap: 5px;
@@ -2098,8 +2149,13 @@ h3 {
 }
 
 .audit-filter-actions,
+.audit-retention-actions,
 .deed-review-filter-actions {
   align-self: end;
+}
+
+.audit-retention-actions {
+  align-items: center;
 }
 
 .deed-case-workbench {
@@ -3317,6 +3373,7 @@ h3 {
   .admin-workspace,
   .admin-nav,
   .audit-filter-form,
+  .audit-retention-grid,
   .ownership-form,
   .grave-form,
   .burial-form,
@@ -3335,6 +3392,11 @@ h3 {
   .audit-detail-grid,
   .audit-value-grid {
     grid-template-columns: 1fr;
+  }
+
+  .audit-retention-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .report-runner-header,
