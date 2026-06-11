@@ -1,5 +1,5 @@
 import { type Dispatch, FormEvent, type SetStateAction, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, FileSearch, FileText, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, FileSearch, FileText, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
   createDeedInvestigationAction,
@@ -14,6 +14,7 @@ import {
   fetchDeedRegistryReview,
   fetchLookupAdminRecords,
   fetchNorthHillsOcrReview,
+  fetchSystemEvents,
   linkDeedInvestigationCaseEntry,
   resolveAuth0User,
   runAuditRetentionPurge,
@@ -60,6 +61,8 @@ import type {
   SaveDeedInvestigationCaseInput,
   SectionTextRecord,
   CurrentUser,
+  SystemEvent,
+  SystemEventFilters,
 } from "../types";
 
 type AdminPanelProps = {
@@ -71,7 +74,7 @@ type UserFormState = SaveUserInput & {
   id?: string;
 };
 
-type AdminTab = "users" | "records" | "deeds" | "readings" | "audit" | "lookups";
+type AdminTab = "users" | "records" | "deeds" | "readings" | "audit" | "lookups" | "system";
 
 const blankUser: UserFormState = {
   externalSubject: "",
@@ -131,6 +134,17 @@ const defaultAuditFilters: AuditEventFilters = {
   targetTable: "",
   actor: "",
   targetRecordId: "",
+  dateFrom: "",
+  dateTo: "",
+  limit: 50,
+};
+
+const defaultSystemEventFilters: SystemEventFilters = {
+  eventType: "",
+  severity: "",
+  source: "",
+  status: "",
+  q: "",
   dateFrom: "",
   dateTo: "",
   limit: 50,
@@ -304,6 +318,34 @@ const auditEventSummary = (event: AuditEvent) => {
   return `${fields}${suffix}`;
 };
 const formatAuditJson = (value: Record<string, unknown>) => (Object.keys(value).length ? JSON.stringify(value, null, 2) : "None recorded");
+const systemEventTypeLabels: Record<string, string> = {
+  error: "Error",
+  warning: "Warning",
+  job_run: "Job run",
+  health_check: "Health check",
+  integration_failure: "Integration failure",
+};
+const systemEventSeverityLabels: Record<string, string> = {
+  info: "Info",
+  warning: "Warning",
+  error: "Error",
+  critical: "Critical",
+};
+const systemEventStatusLabels: Record<string, string> = {
+  started: "Started",
+  succeeded: "Succeeded",
+  failed: "Failed",
+  degraded: "Degraded",
+  reported: "Reported",
+  resolved: "Resolved",
+};
+const systemEventTypeLabel = (eventType: string) => systemEventTypeLabels[eventType] ?? eventType;
+const systemEventSeverityLabel = (severity: string) => systemEventSeverityLabels[severity] ?? severity;
+const systemEventStatusLabel = (status: string) => systemEventStatusLabels[status] ?? (status || "No status");
+const systemEventSummary = (event: SystemEvent) => {
+  const parts = [event.source, event.status ? systemEventStatusLabel(event.status) : "", event.requestPath].filter(Boolean);
+  return parts.length ? parts.join(" - ") : "No operational context recorded";
+};
 const scopeLabels: Record<string, string> = {
   grave_count_only: "Grave count only",
   multiple_lots: "Multiple lots",
@@ -1171,6 +1213,9 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [auditFilters, setAuditFilters] = useState<AuditEventFilters>(defaultAuditFilters);
+  const [systemEvents, setSystemEvents] = useState<SystemEvent[]>([]);
+  const [systemEventFilters, setSystemEventFilters] = useState<SystemEventFilters>(defaultSystemEventFilters);
+  const [selectedSystemEventId, setSelectedSystemEventId] = useState("");
   const [auditRetentionPolicy, setAuditRetentionPolicy] = useState<AuditRetentionPolicy>(defaultAuditRetentionPolicy);
   const [auditRetentionForm, setAuditRetentionForm] = useState<SaveAuditRetentionPolicyInput>({
     retentionDays: defaultAuditRetentionPolicy.retentionDays,
@@ -1207,6 +1252,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAuditEvents, setIsLoadingAuditEvents] = useState(false);
+  const [isLoadingSystemEvents, setIsLoadingSystemEvents] = useState(false);
   const [isLoadingAuditRetentionPolicy, setIsLoadingAuditRetentionPolicy] = useState(false);
   const [isSavingAuditRetentionPolicy, setIsSavingAuditRetentionPolicy] = useState(false);
   const [isPurgingAuditEvents, setIsPurgingAuditEvents] = useState(false);
@@ -1249,6 +1295,10 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const selectedAuditEvent = useMemo(
     () => auditEvents.find((event) => event.id === selectedAuditEventId),
     [auditEvents, selectedAuditEventId],
+  );
+  const selectedSystemEvent = useMemo(
+    () => systemEvents.find((event) => event.id === selectedSystemEventId),
+    [systemEvents, selectedSystemEventId],
   );
   const selectedDeedBatch = useMemo(
     () => deedRegistryReview.batches.find((batch) => batch.id === deedRegistryReview.selectedBatchId),
@@ -1442,6 +1492,35 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
 
   const updateAuditFilter = (patch: Partial<AuditEventFilters>) => {
     setAuditFilters((current) => ({ ...current, ...patch }));
+  };
+
+  const loadSystemEvents = async (filters = systemEventFilters) => {
+    setIsLoadingSystemEvents(true);
+    setError(undefined);
+
+    try {
+      const nextSystemEvents = await fetchSystemEvents(filters);
+      setSystemEvents(nextSystemEvents);
+      setSelectedSystemEventId((current) => (nextSystemEvents.some((event) => event.id === current) ? current : (nextSystemEvents[0]?.id ?? "")));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load system events.");
+    } finally {
+      setIsLoadingSystemEvents(false);
+    }
+  };
+
+  const updateSystemEventFilter = (patch: Partial<SystemEventFilters>) => {
+    setSystemEventFilters((current) => ({ ...current, ...patch }));
+  };
+
+  const applySystemEventFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void loadSystemEvents(systemEventFilters);
+  };
+
+  const openSystemTab = () => {
+    setActiveTab("system");
+    if (systemEvents.length === 0 && !isLoadingSystemEvents) void loadSystemEvents();
   };
 
   const applyAuditFilters = (event: FormEvent<HTMLFormElement>) => {
@@ -2081,6 +2160,16 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
           >
             <History size={16} aria-hidden="true" />
             <span>Audit</span>
+          </button> : null}
+          {canUseSystemAdminTabs ? <button
+            type="button"
+            aria-current={activeTab === "system" ? "page" : undefined}
+            className={activeTab === "system" ? "is-active" : undefined}
+            onClick={openSystemTab}
+            title="Review API errors, scheduled job runs, health checks, and integration failures."
+          >
+            <Activity size={16} aria-hidden="true" />
+            <span>System</span>
           </button> : null}
         </nav>
 
@@ -3092,6 +3181,202 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                   ) : null}
                 </article>
               ))}
+            </div>
+          </section>
+        </>
+      ) : activeTab === "system" ? (
+        <>
+          <section className="admin-section">
+            <div className="section-title">
+              <Activity size={17} aria-hidden="true" />
+              <h3>System Events</h3>
+            </div>
+
+            <form className="system-event-filter-form" onSubmit={applySystemEventFilters}>
+              <label>
+                Date from
+                <input
+                  type="date"
+                  value={systemEventFilters.dateFrom ?? ""}
+                  onChange={(event) => updateSystemEventFilter({ dateFrom: event.target.value })}
+                  title="Show system events that occurred on or after this date."
+                />
+              </label>
+              <label>
+                Date to
+                <input
+                  type="date"
+                  value={systemEventFilters.dateTo ?? ""}
+                  onChange={(event) => updateSystemEventFilter({ dateTo: event.target.value })}
+                  title="Show system events that occurred on or before this date."
+                />
+              </label>
+              <label>
+                Type
+                <select
+                  value={systemEventFilters.eventType ?? ""}
+                  onChange={(event) => updateSystemEventFilter({ eventType: event.target.value })}
+                  title="Filter by operational event type."
+                >
+                  <option value="">All types</option>
+                  {Object.entries(systemEventTypeLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Severity
+                <select
+                  value={systemEventFilters.severity ?? ""}
+                  onChange={(event) => updateSystemEventFilter({ severity: event.target.value })}
+                  title="Filter by severity."
+                >
+                  <option value="">All severities</option>
+                  {Object.entries(systemEventSeverityLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Status
+                <select
+                  value={systemEventFilters.status ?? ""}
+                  onChange={(event) => updateSystemEventFilter({ status: event.target.value })}
+                  title="Filter job and operational events by status."
+                >
+                  <option value="">All statuses</option>
+                  {Object.entries(systemEventStatusLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Source
+                <input
+                  value={systemEventFilters.source ?? ""}
+                  onChange={(event) => updateSystemEventFilter({ source: event.target.value })}
+                  placeholder="api, api-health, db:purge:audit"
+                  title="Filter by event source."
+                />
+              </label>
+              <label>
+                Search
+                <input
+                  value={systemEventFilters.q ?? ""}
+                  onChange={(event) => updateSystemEventFilter({ q: event.target.value })}
+                  placeholder="Message, detail, path, or actor"
+                  title="Search system event message, detail, request path, or actor email."
+                />
+              </label>
+              <label>
+                Limit
+                <select
+                  value={systemEventFilters.limit ?? 50}
+                  onChange={(event) => updateSystemEventFilter({ limit: Number(event.target.value) })}
+                  title="Limit the number of system events returned."
+                >
+                  <option value={25}>25 events</option>
+                  <option value={50}>50 events</option>
+                  <option value={100}>100 events</option>
+                </select>
+              </label>
+              <div className="admin-form-actions system-event-filter-actions">
+                <button type="submit" disabled={isLoadingSystemEvents} title="Apply system event filters.">
+                  {isLoadingSystemEvents ? "Loading..." : "Apply filters"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setSystemEventFilters(defaultSystemEventFilters);
+                    void loadSystemEvents(defaultSystemEventFilters);
+                  }}
+                  title="Clear system event filters and reload recent events."
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+
+            {isLoadingSystemEvents ? <div className="admin-message" role="status">Loading system events...</div> : null}
+
+            <div className="system-event-layout">
+              <div className="system-event-list" role="table" aria-label="System events">
+                {systemEvents.length === 0 && !isLoadingSystemEvents ? <p className="record-editor-empty">No system events match these filters.</p> : null}
+                {systemEvents.map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    className={event.id === selectedSystemEventId ? `system-event-row is-selected severity-${event.severity}` : `system-event-row severity-${event.severity}`}
+                    onClick={() => setSelectedSystemEventId(event.id)}
+                    title="Show details for this system event."
+                  >
+                    <span>
+                      <strong>{formatAdminTimestamp(event.occurredAt)}</strong>
+                      <small>{systemEventSummary(event)}</small>
+                    </span>
+                    <span>{systemEventTypeLabel(event.eventType)}</span>
+                    <span>{systemEventSeverityLabel(event.severity)}</span>
+                    <span>{event.message}</span>
+                  </button>
+                ))}
+              </div>
+
+              {selectedSystemEvent ? (
+                <article className="system-event-detail" aria-label="Selected system event detail">
+                  <h4>{systemEventTypeLabel(selectedSystemEvent.eventType)} - {selectedSystemEvent.message}</h4>
+                  <dl className="system-detail-grid">
+                    <div title="The component or job that emitted the event.">
+                      <dt>Source</dt>
+                      <dd>{selectedSystemEvent.source}</dd>
+                    </div>
+                    <div title="Operational severity for this event.">
+                      <dt>Severity</dt>
+                      <dd>{systemEventSeverityLabel(selectedSystemEvent.severity)}</dd>
+                    </div>
+                    <div title="Job or operational status, when available.">
+                      <dt>Status</dt>
+                      <dd>{systemEventStatusLabel(selectedSystemEvent.status)}</dd>
+                    </div>
+                    <div title="The application environment that emitted the event.">
+                      <dt>Environment</dt>
+                      <dd>{selectedSystemEvent.environment || "Not recorded"}</dd>
+                    </div>
+                    <div title="HTTP request path, when this event came from the API.">
+                      <dt>Request</dt>
+                      <dd>{selectedSystemEvent.requestPath ? `${selectedSystemEvent.requestMethod} ${selectedSystemEvent.requestPath}` : "Not recorded"}</dd>
+                    </div>
+                    <div title="HTTP response status, when this event came from the API.">
+                      <dt>Response</dt>
+                      <dd>{selectedSystemEvent.responseStatus ?? "Not recorded"}</dd>
+                    </div>
+                    <div title="Application user recorded with the event, when available.">
+                      <dt>Actor</dt>
+                      <dd>{selectedSystemEvent.actorEmail || selectedSystemEvent.actorRole || "Not recorded"}</dd>
+                    </div>
+                    <div title="Elapsed runtime for job events, when available.">
+                      <dt>Duration</dt>
+                      <dd>{selectedSystemEvent.durationMs === undefined ? "Not recorded" : `${selectedSystemEvent.durationMs.toLocaleString()} ms`}</dd>
+                    </div>
+                  </dl>
+                  <div className="system-value-grid">
+                    <section>
+                      <h5>Detail</h5>
+                      <pre>{selectedSystemEvent.detail || "None recorded"}</pre>
+                    </section>
+                    <section>
+                      <h5>Metadata</h5>
+                      <pre>{formatAuditJson(selectedSystemEvent.metadata)}</pre>
+                    </section>
+                  </div>
+                </article>
+              ) : null}
             </div>
           </section>
         </>

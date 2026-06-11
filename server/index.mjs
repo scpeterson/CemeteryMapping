@@ -33,6 +33,7 @@ import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
 import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
 import { listReportsForUser, matchReportQuery, runReport } from "./reportsRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
+import { listSystemEvents, safelyRecordSystemEvent } from "./systemEventRepository.mjs";
 import { appVersionMetadata } from "./version.mjs";
 import {
   BadRequestError,
@@ -433,6 +434,22 @@ export function createApp(config, pool) {
         serverTime: result.rows[0].server_time,
       });
     } catch (error) {
+      await safelyRecordSystemEvent(pool, {
+        eventType: "health_check",
+        severity: "error",
+        source: "api-health",
+        status: "failed",
+        message: error instanceof Error ? error.message : "Health check failed.",
+        detail: error instanceof Error ? error.stack : String(error),
+        requestMethod: "GET",
+        requestPath: "/api/health",
+        responseStatus: 500,
+        environment: config.appEnv,
+        appVersion: versionMetadata.version,
+        metadata: {
+          gitSha: versionMetadata.gitSha,
+        },
+      });
       next(error);
     }
   });
@@ -840,6 +857,14 @@ export function createApp(config, pool) {
     }
   });
 
+  app.get("/api/admin/system-events", requireAdmin, async (request, response, next) => {
+    try {
+      response.json(await listSystemEvents(pool, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/admin/deed-registry-review", requireAdmin, async (request, response, next) => {
     try {
       response.json(await listDeedRegistryReview(pool, request.query));
@@ -1041,7 +1066,7 @@ export function createApp(config, pool) {
     }
   });
 
-  app.use((error, _request, response, _next) => {
+  app.use(async (error, request, response, _next) => {
     void _next;
     if (error instanceof BadRequestError) {
       response.status(400).json({ error: error.message });
@@ -1049,6 +1074,26 @@ export function createApp(config, pool) {
     }
 
     console.error(error);
+    if ((request.originalUrl ?? request.url) !== "/api/health") {
+      await safelyRecordSystemEvent(pool, {
+        eventType: "error",
+        severity: "error",
+        source: "api",
+        status: "failed",
+        message: error instanceof Error ? error.message : "Unhandled API error.",
+        detail: error instanceof Error ? error.stack : String(error),
+        requestMethod: request.method,
+        requestPath: request.originalUrl ?? request.url,
+        responseStatus: 500,
+        actorEmail: request.user?.email,
+        actorRole: request.user?.role,
+        environment: config.appEnv,
+        appVersion: versionMetadata.version,
+        metadata: {
+          gitSha: versionMetadata.gitSha,
+        },
+      });
+    }
     response.status(500).json({ error: "Internal server error" });
   });
 

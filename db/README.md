@@ -274,6 +274,7 @@ The security foundation uses:
 - `app_user_cemetery_access` for cemetery-scoped edit assignments used by `power-user` and `cemetery-admin` users.
 - `audit_events` for append-only row-level change history.
 - `audit_retention_policies` for the global audit retention window and purge batch size.
+- `system_events` for operational failures, warnings, health-check failures, integration failures, and scheduled job runs.
 - `deleted_at`, `deleted_by`, and `delete_reason` columns on cemetery business tables.
 
 The application should use soft deletes for cemetery data. Normal read queries should filter `deleted_at IS NULL`; administrative recovery and audit views can explicitly include deleted rows.
@@ -281,6 +282,8 @@ The application should use soft deletes for cemetery data. Normal read queries s
 Database triggers write `audit_events` records for inserts, updates, soft deletes, restores, and hard deletes across the core cemetery and admin tables. API mutation paths set transaction-local audit context so audit rows include the application user, role, identity-provider subject, and email. Direct database changes are also captured with PostgreSQL `current_user` and `session_user`; use unique named database login roles for every person or automation with direct database access. See the [Database Auditing](../docs/database-auditing.md) guide.
 
 Audit retention is controlled by the singleton `audit_retention_policies` row. The default keeps seven years of audit events and removes old rows in `5000` row batches through `npm run db:purge:audit`.
+
+Operational failure reporting uses `system_events`, separate from row-level data auditing. Unexpected API 500s, failed health checks, and scheduled job start/end/failure records are stored there and visible to admins from the Admin UI System tab.
 
 Database triggers also maintain `updated_at` on current tables that expose that lifecycle column. Application code should not set `updated_at` manually for normal row updates.
 

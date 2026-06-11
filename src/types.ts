@@ -27,6 +27,40 @@ export type AuditRetentionPurgeResult = {
   deletedCount: number;
 };
 
+export type SystemEventType = "error" | "warning" | "job_run" | "health_check" | "integration_failure";
+export type SystemEventSeverity = "info" | "warning" | "error" | "critical";
+
+export type SystemEvent = {
+  id: string;
+  occurredAt: string;
+  eventType: SystemEventType;
+  severity: SystemEventSeverity;
+  source: string;
+  status: string;
+  message: string;
+  detail: string;
+  requestMethod: string;
+  requestPath: string;
+  responseStatus?: number;
+  actorEmail: string;
+  actorRole: string;
+  environment: string;
+  appVersion: string;
+  durationMs?: number;
+  metadata: Record<string, unknown>;
+};
+
+export type SystemEventFilters = {
+  eventType?: string;
+  severity?: string;
+  source?: string;
+  status?: string;
+  q?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  limit?: number;
+};
+
 export type Person = {
   id: string;
   firstName: string;
