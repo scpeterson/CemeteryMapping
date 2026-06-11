@@ -260,8 +260,10 @@ test("headstone upserts preserve curated marker lookup values", async () => {
   );
 
   assert.equal(headstoneUuid, "headstone-uuid");
-  assert.match(calls[0].sql, /marker_type_code/u);
-  assert.match(calls[0].sql, /material_type_code/u);
-  assert.match(calls[0].sql, /ELSE headstones\.marker_type_code/u);
-  assert.match(calls[0].sql, /ELSE headstones\.material_type_code/u);
+  assert.match(calls[0].sql, /marker_type_id/u);
+  assert.match(calls[0].sql, /material_type_id/u);
+  assert.match(calls[0].sql, /ELSE headstones\.marker_type_id/u);
+  assert.match(calls[0].sql, /ELSE headstones\.material_type_id/u);
+  assert.doesNotMatch(calls[0].sql, /marker_type_code/u);
+  assert.doesNotMatch(calls[0].sql, /material_type_code/u);
 });

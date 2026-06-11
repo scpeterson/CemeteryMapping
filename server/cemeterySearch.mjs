@@ -65,8 +65,22 @@ async function burialMilitaryServiceSearchState(pool) {
         FROM information_schema.columns
         WHERE table_schema = current_schema()
           AND table_name = 'burials'
+          AND column_name = 'veteran'
+      ) AS has_veteran_column,
+      EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'burials'
           AND column_name = 'military_branch'
-      ) AS has_military_service_columns,
+      ) AS has_legacy_military_branch_column,
+      EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'burials'
+          AND column_name = 'military_wars'
+      ) AS has_legacy_military_wars_column,
       EXISTS (
         SELECT 1
         FROM information_schema.columns
@@ -84,7 +98,9 @@ async function burialMilitaryServiceSearchState(pool) {
   `);
 
   return {
-    hasMilitaryServiceColumns: Boolean(result.rows[0]?.has_military_service_columns),
+    hasVeteranColumn: Boolean(result.rows[0]?.has_veteran_column),
+    hasLegacyMilitaryBranchColumn: Boolean(result.rows[0]?.has_legacy_military_branch_column),
+    hasLegacyMilitaryWarsColumn: Boolean(result.rows[0]?.has_legacy_military_wars_column),
     hasMilitaryBranchLookup: Boolean(result.rows[0]?.has_military_branch_lookup),
     hasMilitaryWarServiceLookup: Boolean(result.rows[0]?.has_military_war_service_lookup),
   };
@@ -93,12 +109,13 @@ async function burialMilitaryServiceSearchState(pool) {
 export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds } = {}) {
   const cleanedQuery = normalize(query.trim());
   const scopedOwnershipCemeteryIds = ownershipCemeteryIds?.map((id) => String(id));
-  const { hasMilitaryServiceColumns, hasMilitaryBranchLookup, hasMilitaryWarServiceLookup } = await burialMilitaryServiceSearchState(pool);
+  const { hasLegacyMilitaryBranchColumn, hasLegacyMilitaryWarsColumn, hasMilitaryBranchLookup, hasMilitaryWarServiceLookup } =
+    await burialMilitaryServiceSearchState(pool);
   const militaryBranchJoin = hasMilitaryBranchLookup ? "LEFT JOIN military_branch_types ON military_branch_types.id = burials.military_branch_type_id" : "";
-  const militaryBranchValue = hasMilitaryBranchLookup ? "COALESCE(military_branch_types.label, burials.military_branch)" : "burials.military_branch";
+  const militaryBranchValue = hasMilitaryBranchLookup ? "military_branch_types.label" : hasLegacyMilitaryBranchColumn ? "burials.military_branch" : "NULL::text";
   const militaryWarServiceJoin = hasMilitaryWarServiceLookup ? "LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id" : "";
-  const militaryWarServiceValue = hasMilitaryWarServiceLookup ? "COALESCE(military_war_service_types.label, burials.military_wars)" : "burials.military_wars";
-  const militaryServiceSearchSql = hasMilitaryServiceColumns
+  const militaryWarServiceValue = hasMilitaryWarServiceLookup ? "military_war_service_types.label" : hasLegacyMilitaryWarsColumn ? "burials.military_wars" : "NULL::text";
+  const militaryServiceSearchSql = hasMilitaryBranchLookup || hasLegacyMilitaryBranchColumn || hasMilitaryWarServiceLookup || hasLegacyMilitaryWarsColumn
     ? `
         UNION ALL
         SELECT 'Military branch', ${militaryBranchValue}

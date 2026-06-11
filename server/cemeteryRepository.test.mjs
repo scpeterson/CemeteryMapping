@@ -243,6 +243,14 @@ test("lookup options include active military branches", async () => {
           if (sql.includes("FROM marker_material_types")) return { rows: [] };
           if (sql.includes("FROM headstone_condition_types")) return { rows: [] };
           if (sql.includes("information_schema.tables")) return { rows: [{ exists: true }] };
+          if (sql.includes("FROM burial_interment_types")) {
+            return {
+              rows: [
+                { id: "66666666-6666-4666-8666-666666666666", code: "casket", label: "Casket" },
+                { id: "77777777-7777-4777-8777-777777777777", code: "urn", label: "Funeral urn" },
+              ],
+            };
+          }
           if (sql.includes("FROM military_branch_types")) {
             return {
               rows: [
@@ -269,6 +277,10 @@ test("lookup options include active military branches", async () => {
 
   const lookups = await listHeadstoneLookupOptions(pool);
 
+  assert.deepEqual(
+    lookups.intermentTypes.map((type) => type.code),
+    ["casket", "urn"],
+  );
   assert.deepEqual(
     lookups.militaryBranches.map((branch) => branch.code),
     ["army", "marine_corps", "navy"],
@@ -777,6 +789,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     death_date: "2017-10-22",
     burial_date: null,
     interment_type: "urn",
+    interment_type_label: "Funeral urn",
     funeral_home: null,
     veteran: "No",
     military_branch: null,
@@ -793,6 +806,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
           if (sql.includes("SELECT set_config")) return { rows: [] };
           if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
           if (sql.includes("information_schema.tables")) return { rows: [{ exists: true }] };
+          if (sql.includes("FROM burial_interment_types") && sql.includes("SELECT EXISTS")) return { rows: [{ exists: true }] };
           if (sql.includes("FOR UPDATE OF burials")) return { rows: [burialRow] };
           if (sql.includes("UPDATE burials")) return { rows: [burialRow] };
           if (sql.includes("FROM audit_events") && sql.includes("transaction_id")) return { rows: [] };
@@ -828,6 +842,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
 
   const updateQuery = queries.find((query) => query.sql.includes("UPDATE burials"));
   assert.match(updateQuery?.sql ?? "", /SET first_name = \$2/u);
+  assert.match(updateQuery?.sql ?? "", /interment_type_id = \(SELECT id FROM burial_interment_types WHERE code = \$8 AND is_active\)/u);
   assert.deepEqual(updateQuery?.values, [
     "88888888-8888-4888-8888-888888888888",
     "Ruth M.",

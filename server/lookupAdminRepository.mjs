@@ -34,6 +34,15 @@ const lookupDefinitions = {
     usageLabel: "gravesites",
     usageWhere: "usage_records.deleted_at IS NULL",
   },
+  burial_interment_types: {
+    table: "burial_interment_types",
+    label: "Burial interment types",
+    hasSourceFields: false,
+    usageTable: "burials",
+    usageColumn: "interment_type_id",
+    usageLabel: "burials",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
   lot_ownership_event_types: {
     table: "lot_ownership_event_types",
     label: "Lot ownership event types",

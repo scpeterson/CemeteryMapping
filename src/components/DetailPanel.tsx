@@ -255,6 +255,15 @@ function militaryServiceText(burial: Burial) {
   return details;
 }
 
+function intermentTypeOptions(lookups: HeadstoneLookups) {
+  return lookups.intermentTypes.length
+    ? lookups.intermentTypes
+    : [
+        { id: "legacy-casket", code: "casket", label: "Casket" },
+        { id: "legacy-urn", code: "urn", label: "Funeral urn" },
+      ];
+}
+
 function BurialRecord({
   burial,
   canUpdate,
@@ -268,6 +277,7 @@ function BurialRecord({
 }) {
   const noteItems = burialNoteItems(burial.notes);
   const serviceText = militaryServiceText(burial);
+  const intermentOptions = intermentTypeOptions(lookups);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<SaveBurialInput>(() => blankBurialForm(burial));
   const [isSaving, setIsSaving] = useState(false);
@@ -327,9 +337,12 @@ function BurialRecord({
         </label>
         <label>
           Interment
-          <select value={form.intermentType} onChange={(event) => setForm((current) => ({ ...current, intermentType: event.target.value as "casket" | "urn" }))}>
-            <option value="casket">Casket</option>
-            <option value="urn">Funeral urn</option>
+          <select value={form.intermentType} onChange={(event) => setForm((current) => ({ ...current, intermentType: event.target.value }))}>
+            {intermentOptions.map((option) => (
+              <option key={option.id} value={option.code}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
         <label className="burial-wide-field">
@@ -409,7 +422,7 @@ function BurialRecord({
         </div>
         <div>
           <dt>Interment</dt>
-          <dd>{burial.intermentType === "urn" ? "Funeral urn" : "Casket"}</dd>
+          <dd>{burial.intermentTypeLabel ?? intermentOptions.find((option) => option.code === burial.intermentType)?.label ?? "Casket"}</dd>
         </div>
       </dl>
       {burial.veteran || serviceText ? (
