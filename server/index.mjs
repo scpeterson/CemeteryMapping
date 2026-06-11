@@ -31,6 +31,7 @@ import {
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
 import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
 import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
+import { listReportsForUser, matchReportQuery, runReport } from "./reportsRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import { appVersionMetadata } from "./version.mjs";
 import {
@@ -152,6 +153,31 @@ function validateLookupPayload(body) {
     isActive: body?.isActive !== false,
     sourceNotes: optionalText(body?.sourceNotes, "Source notes", 500),
     sourceUrl: optionalText(body?.sourceUrl, "Source URL", 500),
+  };
+}
+
+function validateReportId(value) {
+  const id = requiredText(value, "Report", 100);
+  if (!/^[a-z0-9-]+$/u.test(id)) throw new BadRequestError("Report is invalid.");
+  return id;
+}
+
+function validateReportParameters(value) {
+  if (value === undefined || value === null) return {};
+  if (typeof value !== "object" || Array.isArray(value)) throw new BadRequestError("Report parameters are invalid.");
+  return value;
+}
+
+function validateReportRunPayload(body) {
+  return {
+    reportId: validateReportId(body?.reportId),
+    parameters: validateReportParameters(body?.parameters),
+  };
+}
+
+function validateReportQueryPayload(body) {
+  return {
+    query: requiredText(body?.query, "Question", 500),
   };
 }
 
@@ -549,6 +575,65 @@ export function createApp(config, pool) {
         }),
       );
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/reports", requireReader, async (request, response) => {
+    response.json(listReportsForUser(request.user));
+  });
+
+  app.post("/api/reports/run", requireReader, async (request, response, next) => {
+    try {
+      const { reportId, parameters } = validateReportRunPayload(request.body);
+      response.json(await runReport(pool, reportId, parameters, request.user));
+    } catch (error) {
+      if (error.code === "REPORT_NOT_FOUND") {
+        response.status(404).json({ error: error.message });
+        return;
+      }
+      if (error.code === "REPORT_FORBIDDEN") {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      if (error.code === "REPORT_PARAMETER_REQUIRED") {
+        response.status(400).json({ error: error.message });
+        return;
+      }
+      if (error.code === "REPORT_PARAMETER_INVALID") {
+        response.status(400).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  app.post("/api/reports/query", requireReader, async (request, response, next) => {
+    try {
+      const { query } = validateReportQueryPayload(request.body);
+      const requestedParameters = validateReportParameters(request.body?.parameters);
+      const match = matchReportQuery(query);
+      const parameters = { ...(match.parameters ?? {}), ...requestedParameters };
+      const missingParameters = match.report?.parameters.filter((parameter) => parameter.required && !parameters[parameter.name]) ?? match.missingParameters;
+      if (!match.matched || missingParameters?.length) {
+        response.json({ ...match, parameters, missingParameters });
+        return;
+      }
+      response.json({
+        ...match,
+        parameters,
+        missingParameters,
+        result: await runReport(pool, match.report.id, parameters, request.user),
+      });
+    } catch (error) {
+      if (error.code === "REPORT_FORBIDDEN") {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      if (error.code === "REPORT_PARAMETER_INVALID") {
+        response.status(400).json({ error: error.message });
+        return;
+      }
       next(error);
     }
   });

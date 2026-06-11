@@ -24,6 +24,9 @@ import type {
   MediaAsset,
   NorthHillsOcrReview,
   NorthHillsOcrReviewFilters,
+  ReportDefinition,
+  ReportQueryResponse,
+  ReportResult,
   SaveNorthHillsOcrEvidenceInput,
   SaveBurialInput,
   SaveGraveSpaceInput,
@@ -125,6 +128,21 @@ export async function fetchSearchMatches(query: string, statuses: Set<GraveStatu
 
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/search?${params.toString()}`, { signal });
   return jsonResponse<SearchMatch[]>(response, "Search API");
+}
+
+export async function fetchReports(): Promise<ReportDefinition[]> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/reports`);
+  return jsonResponse<ReportDefinition[]>(response, "Reports API");
+}
+
+export async function runReport(reportId: string, parameters: Record<string, string> = {}): Promise<ReportResult> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/reports/run`, jsonRequest("POST", { reportId, parameters }));
+  return jsonResponse<ReportResult>(response, "Run report API");
+}
+
+export async function queryReports(query: string, parameters: Record<string, string> = {}): Promise<ReportQueryResponse> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/reports/query`, jsonRequest("POST", { query, parameters }));
+  return jsonResponse<ReportQueryResponse>(response, "Report query API");
 }
 
 export async function fetchCurrentUser(): Promise<CurrentUser> {
