@@ -240,6 +240,42 @@ export type SearchMatch = {
   reasons: string[];
 };
 
+export type ReportParameterDefinition = {
+  name: string;
+  label: string;
+  type: "text";
+  required: boolean;
+};
+
+export type ReportDefinition = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  requiredRole: AppRoleName;
+  parameters: ReportParameterDefinition[];
+  examples: string[];
+};
+
+export type ReportResult = {
+  report: ReportDefinition;
+  summary: string;
+  columns: { key: string; label: string }[];
+  rows: Record<string, unknown>[];
+  notes: string[];
+  generatedAt: string;
+};
+
+export type ReportQueryResponse = {
+  matched: boolean;
+  message: string;
+  report?: ReportDefinition;
+  parameters?: Record<string, string>;
+  missingParameters?: ReportParameterDefinition[];
+  availableReports?: ReportDefinition[];
+  result?: ReportResult;
+};
+
 export type CurrentUser = {
   subject: string;
   email?: string;

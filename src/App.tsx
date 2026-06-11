@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MapPinned, ShieldCheck } from "lucide-react";
+import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
   fetchCemeteryData,
@@ -15,6 +15,7 @@ import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { ControlPointCollector } from "./components/ControlPointCollector";
 import { DetailPanel } from "./components/DetailPanel";
+import { ReportsPanel } from "./components/ReportsPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
@@ -58,6 +59,7 @@ export default function App() {
   const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
   const [userError, setUserError] = useState<string>();
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [isReportsPanelOpen, setIsReportsPanelOpen] = useState(false);
   const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
   const {
     selectedGraveDetails,
@@ -299,18 +301,27 @@ export default function App() {
         >
           {appEnvironment}
         </div>
-        {currentUser?.permissions.canOpenAdminPanel ? (
-          <div className="map-tool-buttons">
-            <button type="button" className="map-tool-button" onClick={() => setIsControlPointCollectorOpen(true)} aria-label="Open control point collector">
-              <MapPinned size={16} aria-hidden="true" />
-              Control
+        <div className="map-tool-buttons">
+          {currentUser ? (
+            <button type="button" className="map-tool-button" onClick={() => setIsReportsPanelOpen(true)} aria-label="Open reports">
+              <BarChart3 size={16} aria-hidden="true" />
+              Reports
             </button>
-            <button type="button" className="map-tool-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin management">
-              <ShieldCheck size={16} aria-hidden="true" />
-              Admin
-            </button>
-          </div>
-        ) : null}
+          ) : null}
+          {currentUser?.permissions.canOpenAdminPanel ? (
+            <>
+              <button type="button" className="map-tool-button" onClick={() => setIsControlPointCollectorOpen(true)} aria-label="Open control point collector">
+                <MapPinned size={16} aria-hidden="true" />
+                Control
+              </button>
+              <button type="button" className="map-tool-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin management">
+                <ShieldCheck size={16} aria-hidden="true" />
+                Admin
+              </button>
+            </>
+          ) : null}
+        </div>
+        {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onClose={() => setIsReportsPanelOpen(false)} /> : null}
         {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onClose={() => setIsAdminPanelOpen(false)} /> : null}
         {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
           <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
