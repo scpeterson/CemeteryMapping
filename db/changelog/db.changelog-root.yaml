@@ -212,3 +212,6 @@ databaseChangeLog:
   - include:
       file: changes/071-audit-retention-policy.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/072-system-events.sql
+      relativeToChangelogFile: true

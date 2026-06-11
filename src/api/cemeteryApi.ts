@@ -38,6 +38,8 @@ import type {
   SaveOwnershipEventInput,
   SearchMatch,
   SectionTextRecord,
+  SystemEvent,
+  SystemEventFilters,
 } from "../types";
 
 type AccessTokenProvider = () => Promise<string | undefined>;
@@ -280,6 +282,16 @@ export async function updateAuditRetentionPolicy(policy: SaveAuditRetentionPolic
 export async function runAuditRetentionPurge(): Promise<AuditRetentionPurgeResult> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/audit-retention-purge`, jsonRequest("POST", {}));
   return jsonResponse<AuditRetentionPurgeResult>(response, "Audit retention purge API");
+}
+
+export async function fetchSystemEvents(filters: SystemEventFilters = {}): Promise<SystemEvent[]> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/system-events${query ? `?${query}` : ""}`);
+  return jsonResponse<SystemEvent[]>(response, "System events API");
 }
 
 export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters = {}): Promise<DeedRegistryReview> {

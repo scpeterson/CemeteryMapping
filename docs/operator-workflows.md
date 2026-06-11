@@ -499,8 +499,17 @@ During PROD promotion:
 After PROD promotion:
 
 1. Record the PRs, commit, migration numbers, data scripts, and smoke-test result.
-2. Monitor API logs and database errors.
-3. Keep the backup from before the release until the next stable backup cycle.
+2. Review **Admin -> System** for recent errors, failed health checks, and failed scheduled jobs.
+3. Monitor API logs and database errors.
+4. Keep the backup from before the release until the next stable backup cycle.
+
+### System Events
+
+Admins can use **Admin -> System** to review operational events such as unexpected API errors, failed health checks, integration failures, warnings, and scheduled job runs. This view is separate from **Admin -> Audit**, which remains focused on data-change history.
+
+The system event list can be filtered by date, type, severity, status, source, and search text. Select an event to inspect request context, response status, actor, duration, stack/detail text, and JSON metadata.
+
+Scheduled jobs should record a `job_run` event when they start and when they finish. Failures should be recorded with severity `error` and status `failed`. The audit purge job already writes these events.
 
 ### Data Promotion Rules
 

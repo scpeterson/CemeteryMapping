@@ -2082,6 +2082,12 @@ h3 {
   gap: 12px;
 }
 
+.system-event-filter-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .audit-retention-panel {
   display: grid;
   gap: 12px;
@@ -2140,6 +2146,7 @@ h3 {
 
 .audit-filter-form label,
 .audit-retention-grid label,
+.system-event-filter-form label,
 .deed-review-filter-form label {
   display: grid;
   gap: 5px;
@@ -2150,6 +2157,7 @@ h3 {
 
 .audit-filter-actions,
 .audit-retention-actions,
+.system-event-filter-actions,
 .deed-review-filter-actions {
   align-self: end;
 }
@@ -2599,12 +2607,14 @@ h3 {
   grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
 }
 
-.audit-log-layout {
+.audit-log-layout,
+.system-event-layout {
   display: grid;
   gap: 12px;
 }
 
-.audit-event-list {
+.audit-event-list,
+.system-event-list {
   display: grid;
   gap: 7px;
 }
@@ -2957,29 +2967,67 @@ h3 {
   text-align: left;
 }
 
+.system-event-row {
+  display: grid;
+  grid-template-columns: minmax(165px, 1fr) minmax(105px, 0.55fr) minmax(85px, 0.4fr) minmax(0, 1.3fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid #d9e0d5;
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: #fff;
+  color: #26342d;
+  text-align: left;
+}
+
 .audit-event-row.is-selected,
-.audit-event-row:hover {
+.audit-event-row:hover,
+.system-event-row.is-selected,
+.system-event-row:hover {
   border-color: #9fb29a;
   background: #f4f8f1;
 }
 
-.audit-event-row span {
+.system-event-row.severity-info {
+  border-left-color: #5c7f99;
+}
+
+.system-event-row.severity-warning {
+  border-left-color: #d9a441;
+}
+
+.system-event-row.severity-error {
+  border-left-color: #c7524f;
+}
+
+.system-event-row.severity-critical {
+  border-left-color: #8e3845;
+}
+
+.audit-event-row span,
+.system-event-row span {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .audit-event-row strong,
-.audit-event-row small {
+.audit-event-row small,
+.system-event-row strong,
+.system-event-row small {
   display: block;
 }
 
-.audit-event-row small {
+.audit-event-row small,
+.system-event-row small {
   margin-top: 2px;
   color: var(--text-muted);
   font-size: 0.74rem;
 }
 
-.audit-event-detail {
+.audit-event-detail,
+.system-event-detail {
   display: grid;
   gap: 12px;
   padding: 12px;
@@ -2989,24 +3037,31 @@ h3 {
 }
 
 .audit-event-detail h4,
-.audit-event-detail h5 {
+.audit-event-detail h5,
+.system-event-detail h4,
+.system-event-detail h5 {
   margin: 0;
   color: #26342d;
 }
 
 .audit-detail-grid,
-.audit-value-grid {
+.audit-value-grid,
+.system-detail-grid,
+.system-value-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.audit-detail-grid {
+.audit-detail-grid,
+.system-detail-grid {
   margin: 0;
 }
 
 .audit-detail-grid div,
-.audit-value-grid section {
+.audit-value-grid section,
+.system-detail-grid div,
+.system-value-grid section {
   min-width: 0;
   padding: 9px 10px;
   border: 1px solid #d9e0d5;
@@ -3014,29 +3069,34 @@ h3 {
   background: #f8faf6;
 }
 
-.audit-detail-grid dt {
+.audit-detail-grid dt,
+.system-detail-grid dt {
   color: #4f5d52;
   font-size: 0.74rem;
   font-weight: 760;
 }
 
-.audit-detail-grid dd {
+.audit-detail-grid dd,
+.system-detail-grid dd {
   margin: 4px 0 0;
   color: #26342d;
   font-size: 0.84rem;
   overflow-wrap: anywhere;
 }
 
-.audit-value-grid {
+.audit-value-grid,
+.system-value-grid {
   align-items: start;
 }
 
-.audit-value-grid section {
+.audit-value-grid section,
+.system-value-grid section {
   display: grid;
   gap: 8px;
 }
 
-.audit-value-grid pre {
+.audit-value-grid pre,
+.system-value-grid pre {
   max-height: 240px;
   margin: 0;
   overflow: auto;
@@ -3374,6 +3434,7 @@ h3 {
   .admin-nav,
   .audit-filter-form,
   .audit-retention-grid,
+  .system-event-filter-form,
   .ownership-form,
   .grave-form,
   .burial-form,
@@ -3389,8 +3450,11 @@ h3 {
   .record-editor-row,
   .record-editor-row:has(textarea),
   .audit-event-row,
+  .system-event-row,
   .audit-detail-grid,
-  .audit-value-grid {
+  .audit-value-grid,
+  .system-detail-grid,
+  .system-value-grid {
     grid-template-columns: 1fr;
   }
 
