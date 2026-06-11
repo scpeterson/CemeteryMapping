@@ -547,11 +547,12 @@ async function replaceBurials(client, imported, generatedGravesite, gravesiteUui
           full_name,
           birth_date,
           death_date,
+          interment_type_id,
           notes,
           gravesite_id,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, $5::date, $6::date, $7, $8, now())
+        VALUES ($1, $2, $3, $4, $5::date, $6::date, (SELECT id FROM burial_interment_types WHERE code = 'casket'), $7, $8, now())
         RETURNING id
       `,
       [
