@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { searchCemetery } from "./cemeterySearch.mjs";
+import { validateBurialPayload } from "./index.mjs";
 import {
   BadRequestError,
   validateCemeteryId,
@@ -110,6 +111,46 @@ test("mutation reason validation rejects oversized reasons", () => {
 
 test("mutation reason validation trims empty reasons to undefined", () => {
   assert.equal(validateMutationReason("   "), undefined);
+});
+
+test("burial payload validation accepts recorded cemetery date text", () => {
+  const basePayload = {
+    firstName: "Henry",
+    lastName: "McWilliams",
+    birthDate: "1909",
+    deathDate: "Dec 16, 1965",
+    burialDate: "",
+    intermentType: "casket",
+    funeralHome: "",
+    veteran: false,
+    militaryBranchCode: "",
+    militaryWarServiceCode: "",
+    notes: "",
+  };
+
+  assert.equal(validateBurialPayload(basePayload).deathDate, "Dec 16, 1965");
+  assert.equal(validateBurialPayload({ ...basePayload, birthDate: "Nov. 1929," }).birthDate, "Nov. 1929,");
+  assert.equal(validateBurialPayload({ ...basePayload, deathDate: "December 16 1965" }).deathDate, "December 16 1965");
+});
+
+test("burial payload validation rejects unsupported date text", () => {
+  assertBadRequest(
+    () =>
+      validateBurialPayload({
+        firstName: "Henry",
+        lastName: "McWilliams",
+        birthDate: "winter 1909",
+        deathDate: "",
+        burialDate: "",
+        intermentType: "casket",
+        funeralHome: "",
+        veteran: false,
+        militaryBranchCode: "",
+        militaryWarServiceCode: "",
+        notes: "",
+      }),
+    "Birth date must use YYYY, YYYY-MM, YYYY-MM-DD, Month YYYY, or Month DD YYYY format.",
+  );
 });
 
 test("search runs SQL-like text without expanding results or building dynamic SQL", async () => {

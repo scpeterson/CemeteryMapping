@@ -239,8 +239,13 @@ function optionalRecordedDate(value, label) {
   const date = optionalText(value, label, 50);
   if (!date) return date;
   const monthName = "(?:Jan\\.?|January|Feb\\.?|February|Mar\\.?|March|Apr\\.?|April|May|Jun\\.?|June|Jul\\.?|July|Aug\\.?|August|Sep\\.?|Sept\\.?|September|Oct\\.?|October|Nov\\.?|November|Dec\\.?|December)";
-  const validRecordedDate = new RegExp(`^(?:\\d{4}|\\d{4}-\\d{2}|\\d{4}-\\d{2}-\\d{2}|${monthName}\\s+\\d{4})$`, "iu");
-  if (!validRecordedDate.test(date)) throw new BadRequestError(`${label} must use YYYY, YYYY-MM, YYYY-MM-DD, or Month YYYY format.`);
+  const validRecordedDate = new RegExp(
+    `^(?:\\d{4}|\\d{4}-\\d{2}|\\d{4}-\\d{2}-\\d{2}|${monthName}\\s+\\d{4},?|${monthName}\\s+\\d{1,2},?\\s+\\d{4})$`,
+    "iu",
+  );
+  if (!validRecordedDate.test(date)) {
+    throw new BadRequestError(`${label} must use YYYY, YYYY-MM, YYYY-MM-DD, Month YYYY, or Month DD YYYY format.`);
+  }
   return date;
 }
 
@@ -250,7 +255,7 @@ function optionalBoolean(value, label) {
   return value;
 }
 
-function validateBurialPayload(body) {
+export function validateBurialPayload(body) {
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "casket";
   if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");
 

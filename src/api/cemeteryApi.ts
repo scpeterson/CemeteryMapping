@@ -66,8 +66,20 @@ async function authorizedFetch(url: string, init?: RequestInit) {
   return fetch(url, { ...init, headers });
 }
 
+async function responseErrorDetail(response: Response) {
+  try {
+    const body = (await response.clone().json()) as { error?: unknown };
+    return typeof body.error === "string" && body.error.trim() ? `: ${body.error.trim()}` : "";
+  } catch {
+    return "";
+  }
+}
+
 async function jsonResponse<T>(response: Response, label: string): Promise<T> {
-  if (!response.ok) throw new Error(`${label} returned ${response.status}`);
+  if (!response.ok) {
+    const detail = await responseErrorDetail(response);
+    throw new Error(`${label} returned ${response.status}${detail}`);
+  }
   return (await response.json()) as T;
 }
 

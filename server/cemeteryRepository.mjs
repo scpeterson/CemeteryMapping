@@ -29,10 +29,47 @@ function recordedDate(value, fallbackDate) {
   return value || dateOnly(fallbackDate);
 }
 
+const recordedDateMonths = new Map([
+  ["jan", "01"],
+  ["january", "01"],
+  ["feb", "02"],
+  ["february", "02"],
+  ["mar", "03"],
+  ["march", "03"],
+  ["apr", "04"],
+  ["april", "04"],
+  ["may", "05"],
+  ["jun", "06"],
+  ["june", "06"],
+  ["jul", "07"],
+  ["july", "07"],
+  ["aug", "08"],
+  ["august", "08"],
+  ["sep", "09"],
+  ["sept", "09"],
+  ["september", "09"],
+  ["oct", "10"],
+  ["october", "10"],
+  ["nov", "11"],
+  ["november", "11"],
+  ["dec", "12"],
+  ["december", "12"],
+]);
+
 function splitRecordedDate(value) {
   const text = String(value ?? "").trim();
   if (!text) return { date: null, text: null };
-  return /^\d{4}-\d{2}-\d{2}$/u.test(text) ? { date: text, text } : { date: null, text };
+  if (/^\d{4}-\d{2}-\d{2}$/u.test(text)) return { date: text, text };
+  const monthDayYear = text.match(/^([A-Za-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})$/u);
+  if (monthDayYear) {
+    const month = recordedDateMonths.get(monthDayYear[1].toLowerCase());
+    const day = Number(monthDayYear[2]);
+    const year = Number(monthDayYear[3]);
+    if (month && day >= 1 && day <= 31 && year >= 1000 && year <= 9999) {
+      return { date: `${monthDayYear[3]}-${month}-${String(day).padStart(2, "0")}`, text };
+    }
+  }
+  return { date: null, text };
 }
 
 function compactJoin(values, separator = " | ") {
@@ -119,6 +156,10 @@ function toHeadstone(row) {
     markerType: toLookupValue(row, "marker_type"),
     material: toLookupValue(row, "material"),
     condition: toLookupValue(row, "condition"),
+    vaseType: row.vase_type_id ? toLookupValue(row, "vase_type") : undefined,
+    vaseMaterial: row.vase_material_id ? toLookupValue(row, "vase_material") : undefined,
+    vasePlacement: row.vase_placement_id ? toLookupValue(row, "vase_placement") : undefined,
+    vaseNotes: row.vase_notes ?? "",
     conditionNotes: row.condition_notes ?? "",
     inscription: row.inscription ?? "",
     designNotes: row.design_notes ?? "",
@@ -1169,6 +1210,16 @@ const headstoneDetailColumnsSql = `
   headstone_condition_types.id::text AS condition_id,
   headstone_condition_types.code AS condition_code,
   headstone_condition_types.label AS condition_label,
+  headstone_vase_types.id::text AS vase_type_id,
+  headstone_vase_types.code AS vase_type_code,
+  headstone_vase_types.label AS vase_type_label,
+  headstone_vase_material_types.id::text AS vase_material_id,
+  headstone_vase_material_types.code AS vase_material_code,
+  headstone_vase_material_types.label AS vase_material_label,
+  headstone_vase_placement_types.id::text AS vase_placement_id,
+  headstone_vase_placement_types.code AS vase_placement_code,
+  headstone_vase_placement_types.label AS vase_placement_label,
+  headstones.vase_notes,
   headstones.condition_notes,
   headstones.inscription,
   headstones.design_notes,
@@ -1184,6 +1235,12 @@ const headstoneLookupJoinsSql = `
     ON marker_material_types.id = headstones.material_type_id
   JOIN headstone_condition_types
     ON headstone_condition_types.id = headstones.condition_type_id
+  LEFT JOIN headstone_vase_types
+    ON headstone_vase_types.id = headstones.vase_type_id
+  LEFT JOIN headstone_vase_material_types
+    ON headstone_vase_material_types.id = headstones.vase_material_type_id
+  LEFT JOIN headstone_vase_placement_types
+    ON headstone_vase_placement_types.id = headstones.vase_placement_type_id
 `;
 
 const headstoneEvidenceJoinSql = `
@@ -1264,6 +1321,16 @@ const headstoneDetailGroupBySql = `
   headstone_condition_types.id,
   headstone_condition_types.code,
   headstone_condition_types.label,
+  headstone_vase_types.id,
+  headstone_vase_types.code,
+  headstone_vase_types.label,
+  headstone_vase_material_types.id,
+  headstone_vase_material_types.code,
+  headstone_vase_material_types.label,
+  headstone_vase_placement_types.id,
+  headstone_vase_placement_types.code,
+  headstone_vase_placement_types.label,
+  headstones.vase_notes,
   headstones.condition_notes,
   headstones.inscription,
   headstones.design_notes,
@@ -1455,6 +1522,13 @@ async function selectHeadstoneMutationState(client, id) {
         marker_material_types.code AS material_type_code,
         headstones.condition_type_id::text,
         headstone_condition_types.code AS condition,
+        headstones.vase_type_id::text,
+        headstone_vase_types.code AS vase_type_code,
+        headstones.vase_material_type_id::text,
+        headstone_vase_material_types.code AS vase_material_type_code,
+        headstones.vase_placement_type_id::text,
+        headstone_vase_placement_types.code AS vase_placement_type_code,
+        headstones.vase_notes,
         headstones.condition_notes,
         headstones.inscription,
         headstones.design_notes,
@@ -1469,6 +1543,12 @@ async function selectHeadstoneMutationState(client, id) {
         ON marker_material_types.id = headstones.material_type_id
       JOIN headstone_condition_types
         ON headstone_condition_types.id = headstones.condition_type_id
+      LEFT JOIN headstone_vase_types
+        ON headstone_vase_types.id = headstones.vase_type_id
+      LEFT JOIN headstone_vase_material_types
+        ON headstone_vase_material_types.id = headstones.vase_material_type_id
+      LEFT JOIN headstone_vase_placement_types
+        ON headstone_vase_placement_types.id = headstones.vase_placement_type_id
       LEFT JOIN gravesites AS gravesite
         ON gravesite.id = headstones.gravesite_uuid
       LEFT JOIN LATERAL (
@@ -1496,6 +1576,9 @@ export async function listHeadstoneLookupOptions(pool) {
     const markerTypes = await client.query("SELECT id::text, code, label FROM marker_types WHERE is_active ORDER BY sort_order, label");
     const materials = await client.query("SELECT id::text, code, label FROM marker_material_types WHERE is_active ORDER BY sort_order, label");
     const conditions = await client.query("SELECT id::text, code, label FROM headstone_condition_types WHERE is_active ORDER BY sort_order, label");
+    const vaseTypes = await client.query("SELECT id::text, code, label FROM headstone_vase_types WHERE is_active ORDER BY sort_order, label");
+    const vaseMaterials = await client.query("SELECT id::text, code, label FROM headstone_vase_material_types WHERE is_active ORDER BY sort_order, label");
+    const vasePlacements = await client.query("SELECT id::text, code, label FROM headstone_vase_placement_types WHERE is_active ORDER BY sort_order, label");
     const intermentTypes = (await burialIntermentTypeLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM burial_interment_types WHERE is_active ORDER BY sort_order, label")
       : {
@@ -1515,6 +1598,9 @@ export async function listHeadstoneLookupOptions(pool) {
       markerTypes: markerTypes.rows,
       materials: materials.rows,
       conditions: conditions.rows,
+      vaseTypes: vaseTypes.rows,
+      vaseMaterials: vaseMaterials.rows,
+      vasePlacements: vasePlacements.rows,
       intermentTypes: intermentTypes.rows,
       militaryBranches: militaryBranches.rows,
       militaryWarServices: militaryWarServices.rows,
@@ -1905,12 +1991,16 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
         SET marker_type_id = $2::uuid,
             material_type_id = $3::uuid,
             condition_type_id = $4::uuid,
-            condition_notes = $5,
-            inscription = $6,
-            design_notes = $7,
-            back_description = $8,
-            photo_url = $9,
-            last_inspected_at = $10::date
+            vase_type_id = NULLIF($5, '')::uuid,
+            vase_material_type_id = NULLIF($6, '')::uuid,
+            vase_placement_type_id = NULLIF($7, '')::uuid,
+            vase_notes = $8,
+            condition_notes = $9,
+            inscription = $10,
+            design_notes = $11,
+            back_description = $12,
+            photo_url = $13,
+            last_inspected_at = $14::date
         WHERE id = $1
         RETURNING
           id::text,
@@ -1921,6 +2011,13 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           (SELECT code FROM marker_material_types WHERE marker_material_types.id = headstones.material_type_id) AS material_type_code,
           condition_type_id::text,
           (SELECT code FROM headstone_condition_types WHERE headstone_condition_types.id = headstones.condition_type_id) AS condition,
+          vase_type_id::text,
+          (SELECT code FROM headstone_vase_types WHERE headstone_vase_types.id = headstones.vase_type_id) AS vase_type_code,
+          vase_material_type_id::text,
+          (SELECT code FROM headstone_vase_material_types WHERE headstone_vase_material_types.id = headstones.vase_material_type_id) AS vase_material_type_code,
+          vase_placement_type_id::text,
+          (SELECT code FROM headstone_vase_placement_types WHERE headstone_vase_placement_types.id = headstones.vase_placement_type_id) AS vase_placement_type_code,
+          vase_notes,
           condition_notes,
           inscription,
           design_notes,
@@ -1934,6 +2031,10 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
         headstone.markerTypeId,
         headstone.materialId,
         headstone.conditionId,
+        headstone.vaseTypeId || "",
+        headstone.vaseMaterialId || "",
+        headstone.vasePlacementId || "",
+        headstone.vaseNotes || null,
         headstone.conditionNotes || null,
         headstone.inscription || null,
         headstone.designNotes || null,

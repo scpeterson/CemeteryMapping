@@ -684,6 +684,10 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     markerTypeId,
     materialId: headstone.material.id,
     conditionId: headstone.condition.id,
+    vaseTypeId: headstone.vaseType?.id ?? "",
+    vaseMaterialId: headstone.vaseMaterial?.id ?? "",
+    vasePlacementId: headstone.vasePlacement?.id ?? "",
+    vaseNotes: headstone.vaseNotes ?? "",
     conditionNotes: headstone.conditionNotes ?? "",
     inscription: headstone.inscription ?? "",
     designNotes: headstone.designNotes ?? "",
@@ -772,8 +776,45 @@ function HeadstoneRecord({
           </select>
         </label>
         <label>
+          Vase type
+          <select value={form.vaseTypeId} onChange={(event) => setForm((current) => ({ ...current, vaseTypeId: event.target.value }))}>
+            <option value="">Not recorded</option>
+            {lookups.vaseTypes.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Vase material
+          <select value={form.vaseMaterialId} onChange={(event) => setForm((current) => ({ ...current, vaseMaterialId: event.target.value }))}>
+            <option value="">Not recorded</option>
+            {lookups.vaseMaterials.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Vase placement
+          <select value={form.vasePlacementId} onChange={(event) => setForm((current) => ({ ...current, vasePlacementId: event.target.value }))}>
+            <option value="">Not recorded</option>
+            {lookups.vasePlacements.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           Last inspected
           <input type="date" value={form.lastInspectedAt} onChange={(event) => setForm((current) => ({ ...current, lastInspectedAt: event.target.value }))} />
+        </label>
+        <label className="headstone-wide-field">
+          Vase notes
+          <textarea value={form.vaseNotes} onChange={(event) => setForm((current) => ({ ...current, vaseNotes: event.target.value }))} rows={2} />
         </label>
         <label className="headstone-wide-field">
           Condition notes
@@ -831,11 +872,30 @@ function HeadstoneRecord({
           <dt>Condition</dt>
           <dd>{headstone.condition.label}</dd>
         </div>
+        {headstone.vaseType ? (
+          <div>
+            <dt>Vase</dt>
+            <dd>{headstone.vaseType.label}</dd>
+          </div>
+        ) : null}
+        {headstone.vaseMaterial ? (
+          <div>
+            <dt>Vase material</dt>
+            <dd>{headstone.vaseMaterial.label}</dd>
+          </div>
+        ) : null}
+        {headstone.vasePlacement ? (
+          <div>
+            <dt>Vase placement</dt>
+            <dd>{headstone.vasePlacement.label}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>Last inspected</dt>
           <dd>{formatDate(headstone.lastInspectedAt)}</dd>
         </div>
       </dl>
+      {headstone.vaseNotes ? <p className="note-box">Vase: {headstone.vaseNotes}</p> : null}
       {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
       {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
