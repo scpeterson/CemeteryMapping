@@ -242,6 +242,30 @@ test("lookup options include active military branches", async () => {
           if (sql.includes("FROM marker_types")) return { rows: [] };
           if (sql.includes("FROM marker_material_types")) return { rows: [] };
           if (sql.includes("FROM headstone_condition_types")) return { rows: [] };
+          if (sql.includes("FROM headstone_vase_types")) {
+            return {
+              rows: [
+                { id: "88888888-8888-4888-8888-888888888888", code: "in_ground", label: "In-ground vase" },
+                { id: "99999999-9999-4999-8999-999999999999", code: "missing_or_removed", label: "Missing or removed" },
+              ],
+            };
+          }
+          if (sql.includes("FROM headstone_vase_material_types")) {
+            return {
+              rows: [
+                { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", code: "bronze", label: "Bronze" },
+                { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", code: "plastic", label: "Plastic" },
+              ],
+            };
+          }
+          if (sql.includes("FROM headstone_vase_placement_types")) {
+            return {
+              rows: [
+                { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", code: "in_ground", label: "In ground" },
+                { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", code: "attached_to_marker", label: "Attached to marker" },
+              ],
+            };
+          }
           if (sql.includes("information_schema.tables")) return { rows: [{ exists: true }] };
           if (sql.includes("FROM burial_interment_types")) {
             return {
@@ -277,6 +301,18 @@ test("lookup options include active military branches", async () => {
 
   const lookups = await listHeadstoneLookupOptions(pool);
 
+  assert.deepEqual(
+    lookups.vaseTypes.map((type) => type.code),
+    ["in_ground", "missing_or_removed"],
+  );
+  assert.deepEqual(
+    lookups.vaseMaterials.map((material) => material.code),
+    ["bronze", "plastic"],
+  );
+  assert.deepEqual(
+    lookups.vasePlacements.map((placement) => placement.code),
+    ["in_ground", "attached_to_marker"],
+  );
   assert.deepEqual(
     lookups.intermentTypes.map((type) => type.code),
     ["casket", "urn"],
@@ -641,6 +677,10 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
     markerTypeId: "44444444-4444-4444-8444-444444444444",
     materialId: "55555555-5555-4555-8555-555555555555",
     conditionId: "66666666-6666-4666-8666-666666666666",
+    vaseTypeId: "88888888-8888-4888-8888-888888888888",
+    vaseMaterialId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    vasePlacementId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    vaseNotes: "NHG: vase in ground",
     conditionNotes: "Stable and legible",
     inscription: "In memory",
     designNotes: "Carved laurel flourish above surname",
@@ -658,7 +698,8 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
   assert.equal(updated?.designNotes, "Carved laurel flourish above surname");
   assert.equal(updated?.backDescription, "Back lists grandchildren");
   const updateQuery = queries.find((query) => query.sql.includes("UPDATE headstones"));
-  assert.deepEqual(updateQuery?.values.slice(6, 8), ["Carved laurel flourish above surname", "Back lists grandchildren"]);
+  assert.deepEqual(updateQuery?.values.slice(7, 10), ["NHG: vase in ground", "Stable and legible", "In memory"]);
+  assert.deepEqual(updateQuery?.values.slice(10, 12), ["Carved laurel flourish above surname", "Back lists grandchildren"]);
 });
 
 test("getHeadstone returns standalone marker detail without a gravesite", async () => {
@@ -828,7 +869,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
       firstName: "Ruth M.",
       lastName: "Soergel",
       birthDate: "1925-10-04",
-      deathDate: "2017-10-22",
+      deathDate: "Dec 16, 1965",
       burialDate: "",
       intermentType: "urn",
       funeralHome: "Brandt Funeral Home",
@@ -849,17 +890,17 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "Soergel",
     "Ruth M. Soergel",
     "1925-10-04",
-    "2017-10-22",
+    "1965-12-16",
     null,
     "urn",
     "Brandt Funeral Home",
     "Yes",
-	    "army",
-	    "world_war_ii",
-	    "Confirmed from marker photo.",
-	    "1925-10-04",
-	    "2017-10-22",
-	  ]);
+    "army",
+    "world_war_ii",
+    "Confirmed from marker photo.",
+    "1925-10-04",
+    "Dec 16, 1965",
+  ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");
   assert.equal(updated?.person.birthDate, "1925-10-04");

@@ -127,6 +127,10 @@ export type Headstone = {
   markerType: LookupOption;
   material: LookupOption;
   condition: LookupOption;
+  vaseType?: LookupOption;
+  vaseMaterial?: LookupOption;
+  vasePlacement?: LookupOption;
+  vaseNotes: string;
   conditionNotes: string;
   inscription: string;
   designNotes: string;
@@ -198,6 +202,9 @@ export type HeadstoneLookups = {
   markerTypes: LookupOption[];
   materials: LookupOption[];
   conditions: LookupOption[];
+  vaseTypes: LookupOption[];
+  vaseMaterials: LookupOption[];
+  vasePlacements: LookupOption[];
   intermentTypes: LookupOption[];
   militaryBranches: LookupOption[];
   militaryWarServices: LookupOption[];
@@ -207,6 +214,10 @@ export type SaveHeadstoneInput = {
   markerTypeId: string;
   materialId: string;
   conditionId: string;
+  vaseTypeId: string;
+  vaseMaterialId: string;
+  vasePlacementId: string;
+  vaseNotes: string;
   conditionNotes: string;
   inscription: string;
   designNotes: string;

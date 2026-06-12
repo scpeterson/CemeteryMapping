@@ -230,3 +230,27 @@ databaseChangeLog:
   - include:
       file: changes/077-repair-north-hills-mixed-case-ocr.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/078-split-c-0175-wolf-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/079-align-c-0175a-with-c-70-167b.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/080-align-c-0175b-with-c-70-0166a.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/081-align-c-0174-c-0176-c-0177-with-lot-70.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/082-restore-c-0174-through-c-0177-marker-gps-points.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/083-create-trinity-c-lot-71.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/084-headstone-vase-types.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/085-headstone-vase-material-placement-notes.sql
+      relativeToChangelogFile: true

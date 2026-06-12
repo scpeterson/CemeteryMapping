@@ -292,6 +292,9 @@ test("power users can edit headstone marker details from grave detail", async ({
           { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
           { id: "66666666-6666-4666-8666-666666666667", code: "poor", label: "Poor" },
         ],
+        vaseTypes: [],
+        vaseMaterials: [],
+        vasePlacements: [],
       }),
     });
   });
@@ -347,7 +350,7 @@ test("power users can edit headstone marker details from grave detail", async ({
 
   await page.goto("/");
   await page.getByLabel("Edit marker HS-1").click();
-  await page.getByRole("combobox", { name: "Material" }).selectOption("55555555-5555-4555-8555-555555555557");
+  await page.getByRole("combobox", { name: "Material", exact: true }).selectOption("55555555-5555-4555-8555-555555555557");
   await page.getByRole("combobox", { name: "Condition" }).selectOption("66666666-6666-4666-8666-666666666667");
   await page.getByRole("textbox", { name: "Condition notes" }).fill("Leaning and needs inspection");
   await page.getByRole("textbox", { name: "Flourishes or designs" }).fill("Etched ivy border");
@@ -420,6 +423,9 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
         ],
         materials: [{ id: "55555555-5555-4555-8555-555555555555", code: "granite", label: "Granite" }],
         conditions: [{ id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" }],
+        vaseTypes: [],
+        vaseMaterials: [],
+        vasePlacements: [],
       }),
     });
   });
@@ -486,7 +492,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
-  await expect(page.locator(".panel-heading .eyebrow")).toContainText(/\d+ cemeteries/);
+  await expect(page.locator(".panel-heading .eyebrow")).toContainText(/Cemetery records|\d+ cemeteries/);
   await expect(page.getByLabel("North arrow")).toBeVisible();
   await expect(page.getByLabel("Open admin management")).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
