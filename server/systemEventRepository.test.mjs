@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { listSystemEvents, normalizeSystemEventFilters, normalizeSystemEventInput, recordSystemEvent, safelyRecordSystemEvent } from "./systemEventRepository.mjs";
+import {
+  jobRunEvent,
+  listSystemEvents,
+  normalizeSystemEventFilters,
+  normalizeSystemEventInput,
+  normalizeSystemEventRetentionPolicyInput,
+  purgeSystemEvents,
+  recordSystemEvent,
+  safelyRecordSystemEvent,
+} from "./systemEventRepository.mjs";
 
 test("normalizeSystemEventFilters clamps unsupported values and limits", () => {
   assert.deepEqual(
@@ -48,13 +57,47 @@ test("normalizeSystemEventInput defaults invalid operational event fields", () =
       detail: undefined,
       requestMethod: undefined,
       requestPath: undefined,
-      responseStatus: 599,
+      responseStatus: undefined,
       actorEmail: undefined,
       actorRole: undefined,
       environment: undefined,
       appVersion: undefined,
-      durationMs: 0,
+      durationMs: undefined,
       metadata: {},
+    },
+  );
+});
+
+test("normalizeSystemEventRetentionPolicyInput keeps retention settings in bounded ranges", () => {
+  assert.deepEqual(
+    normalizeSystemEventRetentionPolicyInput({
+      retentionDays: 10,
+      minimumProtectedDays: 60,
+      batchSize: 100000,
+      isEnabled: "false",
+    }),
+    {
+      retentionDays: 60,
+      minimumProtectedDays: 60,
+      batchSize: 50000,
+      isEnabled: false,
+    },
+  );
+});
+
+test("jobRunEvent preserves job run event type and severity defaults", () => {
+  assert.deepEqual(
+    jobRunEvent({
+      eventType: "error",
+      severity: "critical",
+      status: "failed",
+      message: "boom",
+    }),
+    {
+      eventType: "job_run",
+      severity: "error",
+      status: "failed",
+      message: "boom",
     },
   );
 });
@@ -179,4 +222,40 @@ test("safelyRecordSystemEvent swallows recording errors", async () => {
   } finally {
     console.error = originalConsoleError;
   }
+});
+
+test("purgeSystemEvents deletes one configured batch of old system event records", async () => {
+  let capturedSql = "";
+  const pool = {
+    async query(sql) {
+      capturedSql = sql;
+      return {
+        rows: [
+          {
+            retention_days: 365,
+            batch_size: 5000,
+            is_enabled: true,
+            cutoff_at: "2025-06-11T00:00:00.000Z",
+            selected_count: 5000,
+            deleted_count: 5000,
+          },
+        ],
+      };
+    },
+  };
+
+  const result = await purgeSystemEvents(pool);
+
+  assert.match(capturedSql, /WITH policy AS/u);
+  assert.match(capturedSql, /system_events\.occurred_at < policy\.cutoff_at/u);
+  assert.match(capturedSql, /LIMIT \(SELECT batch_size FROM policy\)/u);
+  assert.match(capturedSql, /DELETE FROM system_events/u);
+  assert.deepEqual(result, {
+    retentionDays: 365,
+    batchSize: 5000,
+    isEnabled: true,
+    cutoffAt: "2025-06-11T00:00:00.000Z",
+    selectedCount: 5000,
+    deletedCount: 5000,
+  });
 });

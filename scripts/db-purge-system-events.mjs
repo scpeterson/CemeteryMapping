@@ -1,6 +1,6 @@
 import pg from "pg";
 import { loadApiConfig } from "../server/config.mjs";
-import { runAuditRetentionPurgeJob } from "../server/retentionJobs.mjs";
+import { runSystemEventRetentionPurgeJob } from "../server/retentionJobs.mjs";
 
 const { Pool } = pg;
 
@@ -8,7 +8,7 @@ const config = loadApiConfig();
 const pool = new Pool(config.database);
 
 try {
-  const result = await runAuditRetentionPurgeJob(pool, {
+  const result = await runSystemEventRetentionPurgeJob(pool, {
     trigger: "script",
     environment: config.appEnv,
   });

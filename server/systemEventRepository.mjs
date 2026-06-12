@@ -1,3 +1,5 @@
+import { withAuditContext } from "./auditContext.mjs";
+
 const eventTypes = new Set(["error", "warning", "job_run", "health_check", "integration_failure"]);
 const severities = new Set(["info", "warning", "error", "critical"]);
 const statuses = new Set(["started", "succeeded", "failed", "degraded", "reported", "resolved", ""]);
@@ -12,6 +14,27 @@ function cleanInteger(value, min, max) {
   const parsed = Number.parseInt(String(value), 10);
   if (Number.isNaN(parsed)) return undefined;
   return Math.min(Math.max(parsed, min), max);
+}
+
+function cleanBoundedInteger(value, min, max) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number.parseInt(String(value), 10);
+  if (Number.isNaN(parsed) || parsed < min || parsed > max) return undefined;
+  return parsed;
+}
+
+function normalizedInteger(value, fallback, min, max) {
+  return cleanInteger(value, min, max) ?? fallback;
+}
+
+function normalizedBoolean(value, fallback) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+  return fallback;
 }
 
 function normalizedLimit(limit) {
@@ -42,6 +65,17 @@ function toSystemEvent(row) {
     appVersion: row.app_version ?? "",
     durationMs: row.duration_ms ?? undefined,
     metadata: row.metadata ?? {},
+  };
+}
+
+function toSystemEventRetentionPolicy(row) {
+  return {
+    retentionDays: row.retention_days,
+    minimumProtectedDays: row.minimum_protected_days,
+    batchSize: row.batch_size,
+    isEnabled: row.is_enabled,
+    createdAt: row.created_at?.toISOString?.() ?? row.created_at,
+    updatedAt: row.updated_at?.toISOString?.() ?? row.updated_at,
   };
 }
 
@@ -78,13 +112,25 @@ export function normalizeSystemEventInput(input = {}) {
     detail: cleanText(input.detail, 10000) || undefined,
     requestMethod: cleanText(input.requestMethod, 10) || undefined,
     requestPath: cleanText(input.requestPath, 500) || undefined,
-    responseStatus: cleanInteger(input.responseStatus, 100, 599),
+    responseStatus: cleanBoundedInteger(input.responseStatus, 100, 599),
     actorEmail: cleanText(input.actorEmail, 320) || undefined,
     actorRole: cleanText(input.actorRole, 50) || undefined,
     environment: cleanText(input.environment, 20) || undefined,
     appVersion: cleanText(input.appVersion, 100) || undefined,
-    durationMs: cleanInteger(input.durationMs, 0, 2_147_483_647),
+    durationMs: cleanBoundedInteger(input.durationMs, 0, 2_147_483_647),
     metadata: input.metadata && typeof input.metadata === "object" && !Array.isArray(input.metadata) ? input.metadata : {},
+  };
+}
+
+export function normalizeSystemEventRetentionPolicyInput(input = {}, currentPolicy = {}) {
+  const minimumProtectedDays = normalizedInteger(input.minimumProtectedDays, currentPolicy.minimumProtectedDays ?? 30, 30, 36500);
+  const retentionDays = normalizedInteger(input.retentionDays, currentPolicy.retentionDays ?? 365, minimumProtectedDays, 36500);
+
+  return {
+    retentionDays,
+    minimumProtectedDays: Math.min(minimumProtectedDays, retentionDays),
+    batchSize: normalizedInteger(input.batchSize, currentPolicy.batchSize ?? 5000, 1, 50000),
+    isEnabled: normalizedBoolean(input.isEnabled, currentPolicy.isEnabled ?? true),
   };
 }
 
@@ -237,10 +283,116 @@ export async function listSystemEvents(pool, filters = {}) {
   return result.rows.map(toSystemEvent);
 }
 
-export async function recordJobRun(pool, input) {
-  return recordSystemEvent(pool, {
+export function jobRunEvent(input = {}) {
+  return {
+    ...input,
     eventType: "job_run",
     severity: input.status === "failed" ? "error" : "info",
-    ...input,
+  };
+}
+
+export async function safelyRecordJobRun(pool, input) {
+  return safelyRecordSystemEvent(pool, jobRunEvent(input));
+}
+
+export async function getSystemEventRetentionPolicy(pool) {
+  const result = await pool.query(
+    `
+      SELECT
+        retention_days,
+        minimum_protected_days,
+        batch_size,
+        is_enabled,
+        created_at,
+        updated_at
+      FROM system_event_retention_policies
+      WHERE id = 1
+    `,
+  );
+
+  return toSystemEventRetentionPolicy(result.rows[0]);
+}
+
+export async function updateSystemEventRetentionPolicy(pool, input, audit = {}) {
+  const currentPolicy = await getSystemEventRetentionPolicy(pool);
+  const normalized = normalizeSystemEventRetentionPolicyInput(input, currentPolicy);
+
+  return withAuditContext(pool, audit, async (client) => {
+    const result = await client.query(
+      `
+        INSERT INTO system_event_retention_policies (
+          id,
+          retention_days,
+          minimum_protected_days,
+          batch_size,
+          is_enabled
+        )
+        VALUES (1, $1, $2, $3, $4)
+        ON CONFLICT (id) DO UPDATE
+        SET
+          retention_days = EXCLUDED.retention_days,
+          minimum_protected_days = EXCLUDED.minimum_protected_days,
+          batch_size = EXCLUDED.batch_size,
+          is_enabled = EXCLUDED.is_enabled
+        RETURNING
+          retention_days,
+          minimum_protected_days,
+          batch_size,
+          is_enabled,
+          created_at,
+          updated_at
+      `,
+      [normalized.retentionDays, normalized.minimumProtectedDays, normalized.batchSize, normalized.isEnabled],
+    );
+
+    return toSystemEventRetentionPolicy(result.rows[0]);
   });
+}
+
+export async function purgeSystemEvents(pool) {
+  const result = await pool.query(
+    `
+      WITH policy AS (
+        SELECT
+          retention_days,
+          batch_size,
+          is_enabled,
+          now() - make_interval(days => retention_days) AS cutoff_at
+        FROM system_event_retention_policies
+        WHERE id = 1
+      ),
+      eligible AS (
+        SELECT system_events.id
+        FROM system_events
+        CROSS JOIN policy
+        WHERE policy.is_enabled
+          AND system_events.occurred_at < policy.cutoff_at
+        ORDER BY system_events.occurred_at ASC, system_events.id ASC
+        LIMIT (SELECT batch_size FROM policy)
+      ),
+      deleted AS (
+        DELETE FROM system_events
+        WHERE id IN (SELECT id FROM eligible)
+        RETURNING id
+      )
+      SELECT
+        policy.retention_days,
+        policy.batch_size,
+        policy.is_enabled,
+        policy.cutoff_at,
+        (SELECT count(*)::integer FROM eligible) AS selected_count,
+        (SELECT count(*)::integer FROM deleted) AS deleted_count
+      FROM policy
+    `,
+  );
+
+  const row = result.rows[0];
+  return {
+    retentionDays: row.retention_days,
+    batchSize: row.batch_size,
+    isEnabled: row.is_enabled,
+    cutoffAt: row.cutoff_at?.toISOString?.() ?? row.cutoff_at,
+    selectedCount: row.selected_count,
+    deletedCount: row.deleted_count,
+  };
 }

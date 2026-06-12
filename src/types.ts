@@ -25,7 +25,19 @@ export type AuditRetentionPurgeResult = {
   cutoffAt: string;
   selectedCount: number;
   deletedCount: number;
+  durationMs?: number;
 };
+
+export type SystemEventRetentionPolicy = {
+  retentionDays: number;
+  minimumProtectedDays: number;
+  batchSize: number;
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SystemEventRetentionPurgeResult = AuditRetentionPurgeResult;
 
 export type SystemEventType = "error" | "warning" | "job_run" | "health_check" | "integration_failure";
 export type SystemEventSeverity = "info" | "warning" | "error" | "critical";
