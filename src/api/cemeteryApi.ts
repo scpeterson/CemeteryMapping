@@ -26,9 +26,12 @@ import type {
   MediaAsset,
   NorthHillsOcrReview,
   NorthHillsOcrReviewFilters,
+  NorthHillsSourceFact,
+  PromoteNorthHillsSourceFactInput,
   ReportDefinition,
   ReportQueryResponse,
   ReportResult,
+  ReviewNorthHillsSourceFactInput,
   SaveNorthHillsOcrEvidenceInput,
   SaveBurialInput,
   SaveGraveSpaceInput,
@@ -387,6 +390,21 @@ export async function fetchNorthHillsOcrReview(filters: NorthHillsOcrReviewFilte
 export async function saveNorthHillsOcrEvidence(entryId: string, evidence: SaveNorthHillsOcrEvidenceInput): Promise<void> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-ocr-review/${encodeURIComponent(entryId)}/evidence`, jsonRequest("POST", evidence));
   await jsonResponse<unknown>(response, "North Hills evidence API");
+}
+
+export async function deleteNorthHillsOcrEvidence(entryId: string, evidence: Pick<SaveNorthHillsOcrEvidenceInput, "targetType" | "targetId">): Promise<void> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-ocr-review/${encodeURIComponent(entryId)}/evidence`, jsonRequest("DELETE", evidence));
+  await jsonResponse<unknown>(response, "North Hills evidence unlink API");
+}
+
+export async function reviewNorthHillsSourceFact(factId: string, review: ReviewNorthHillsSourceFactInput): Promise<NorthHillsSourceFact> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-source-facts/${encodeURIComponent(factId)}/review`, jsonRequest("POST", review));
+  return jsonResponse<NorthHillsSourceFact>(response, "North Hills source fact review API");
+}
+
+export async function promoteNorthHillsSourceFact(factId: string, promotion: PromoteNorthHillsSourceFactInput): Promise<NorthHillsSourceFact> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-source-facts/${encodeURIComponent(factId)}/promote`, jsonRequest("POST", promotion));
+  return jsonResponse<NorthHillsSourceFact>(response, "North Hills source fact promotion API");
 }
 
 export async function fetchLookupAdminRecords(): Promise<LookupAdminRecords> {

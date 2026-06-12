@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import pg from "pg";
 import { currentEnvironment, loadDbEnvironment } from "./lib/run-liquibase.mjs";
+import { parseNorthHillsSourceFacts } from "../server/northHillsSourceFacts.mjs";
 
 const { Pool } = pg;
 const sourceName = "North Hills Genealogists Trinity OCR";
@@ -77,6 +78,10 @@ function surnameList(nameText) {
   ];
 }
 
+function normalizeNameText(nameText) {
+  return cleanText(nameText).replace(/\b([A-Z])\[-[0-9Il]\b/gu, "$1[-]");
+}
+
 function yearsFromText(text) {
   return [...new Set([...String(text ?? "").matchAll(/\b(17|18|19|20)\d{2}\b/gu)].map((match) => Number.parseInt(match[0], 10)))].sort(
     (left, right) => left - right,
@@ -131,13 +136,13 @@ function entryNotes(entry) {
 }
 
 function printedPageNumber(pageText) {
-  const match = String(pageText ?? "").match(/Franklin\s+Park\.?\s+Borough\s+(\d{3})\s+Allegheny\s+County/iu);
+  const match = String(pageText ?? "").match(/Franklin\s+Park\.?\s+Borough\s+(\d{3})\b[\s\S]*?Allegheny\s+County/iu);
   return match ? Number.parseInt(match[1], 10) : null;
 }
 
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
-const entryStartPattern = /^\s*([A-Z][A-Z0-9/[\]()? .,'&-]{1,90}?)\s+\(\s*([0-9lISOS?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOS?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\)/u;
-const embeddedEntryStartPattern = /([A-Z][A-Z0-9/[\]()? .,'&-]{1,90}?)\s+\(\s*[0-9lISOS?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOS?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\)/gu;
+const entryStartPattern = /^\s*([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+\(\s*([0-9lISOS?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOS?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\)/u;
+const embeddedEntryStartPattern = /([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+\(\s*[0-9lISOS?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOS?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\)/gu;
 
 function isNonEntryBoundary(line) {
   return (
@@ -175,8 +180,8 @@ export function parseNorthHillsOcrText(text) {
       sourceLineStart: currentEntry.sourceLineStart,
       sourceLineEnd: currentEntry.sourceLineEnd,
       rawText,
-      nameText: cleanText(currentEntry.nameText),
-      surnames: surnameList(currentEntry.nameText),
+      nameText: normalizeNameText(currentEntry.nameText),
+      surnames: surnameList(normalizeNameText(currentEntry.nameText)),
       parsedSectionName: currentEntry.parsedSectionName,
       parsedRowNumber: currentEntry.parsedRowNumber,
       parsedPositionNumber: currentEntry.parsedPositionNumber,
@@ -299,7 +304,7 @@ async function importEntries(client, cemetery, sourcePath, options, entries) {
   const batchId = batchResult.rows[0].id;
 
   for (const entry of entries) {
-    await client.query(
+    const entryResult = await client.query(
       `
         INSERT INTO north_hills_ocr_entries (
           batch_id,
@@ -327,6 +332,7 @@ async function importEntries(client, cemetery, sourcePath, options, entries) {
         VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9::text[], $10, $11, $12, $13, $14, $15, $16, $17, $18::integer[], $19, $20::text[], $21::jsonb
         )
+        RETURNING id::text
       `,
       [
         batchId,
@@ -352,6 +358,36 @@ async function importEntries(client, cemetery, sourcePath, options, entries) {
         JSON.stringify(entry.sourceEntry),
       ],
     );
+
+    const sourceFacts = parseNorthHillsSourceFacts(entry.rawText);
+    for (const fact of sourceFacts) {
+      await client.query(
+        `
+          INSERT INTO north_hills_ocr_source_facts (
+            entry_id,
+            source_code,
+            source_label,
+            fact_type,
+            fact_value,
+            fact_date,
+            raw_text,
+            confidence
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          ON CONFLICT (entry_id, source_code, fact_type, fact_value) DO NOTHING
+        `,
+        [
+          entryResult.rows[0].id,
+          fact.sourceCode,
+          fact.sourceLabel,
+          fact.factType,
+          fact.factValue,
+          fact.factDate ?? null,
+          fact.rawText,
+          fact.confidence,
+        ],
+      );
+    }
   }
 
   return batchId;

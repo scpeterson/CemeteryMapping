@@ -30,7 +30,13 @@ import {
 } from "./deedInvestigationCaseRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
 import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
-import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
+import {
+  deleteNorthHillsOcrEvidenceLink,
+  listNorthHillsOcrReview,
+  promoteNorthHillsSourceFact,
+  reviewNorthHillsSourceFact,
+  saveNorthHillsOcrEvidenceLink,
+} from "./northHillsOcrReviewRepository.mjs";
 import { listReportsForUser, matchReportQuery, runReport } from "./reportsRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
@@ -312,6 +318,41 @@ function validateNorthHillsEvidencePayload(body) {
   };
 }
 
+function validateNorthHillsEvidenceTargetPayload(body) {
+  const targetType = requiredText(body?.targetType, "Evidence target type", 50);
+  if (!["headstone", "gravesite"].includes(targetType)) throw new BadRequestError("Evidence target type must be headstone or gravesite.");
+
+  return {
+    targetType,
+    targetId: validateUuid(body?.targetId, "Evidence target"),
+  };
+}
+
+function validateNorthHillsSourceFactReviewPayload(body) {
+  const status = requiredText(body?.status, "Source fact status", 50);
+  if (!["staged", "reviewed", "rejected"].includes(status)) {
+    throw new BadRequestError("Source fact status must be staged, reviewed, or rejected.");
+  }
+  const confidence = optionalText(body?.confidence, "Source fact confidence", 50) || "review";
+  if (!["high", "medium", "low", "review"].includes(confidence)) {
+    throw new BadRequestError("Source fact confidence must be high, medium, low, or review.");
+  }
+
+  return {
+    status,
+    confidence,
+    notes: optionalText(body?.notes, "Source fact notes", 4000),
+  };
+}
+
+function validateNorthHillsSourceFactPromotionPayload(body) {
+  return {
+    burialId: validateUuid(body?.burialId, "Burial"),
+    notes: optionalText(body?.notes, "Promotion notes", 4000),
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
 function validateDeedInvestigationCasePayload(body) {
   return {
     cemeteryId: body?.cemeteryId ? validateUuid(body.cemeteryId, "Cemetery") : "",
@@ -471,6 +512,7 @@ export function createApp(config, pool) {
 
   const requireReader = requireRole(config.auth, pool, "reader");
   const requirePowerUser = requireRole(config.auth, pool, "power-user");
+  const requireCemeteryAdmin = requireRole(config.auth, pool, "cemetery-admin");
   const requireAdmin = requireRole(config.auth, pool, "admin");
 
   app.get("/api/version", (_request, response) => {
@@ -1004,6 +1046,45 @@ export function createApp(config, pool) {
       const entryId = validateUuid(request.params.entryId, "North Hills reading");
       const evidence = validateNorthHillsEvidencePayload(request.body);
       response.status(201).json(await saveNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser: request.user }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/admin/north-hills-ocr-review/:entryId/evidence", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const entryId = validateUuid(request.params.entryId, "North Hills reading");
+      const evidence = validateNorthHillsEvidenceTargetPayload(request.body);
+      const deleted = await deleteNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser: request.user });
+      if (!deleted) response.status(404).json({ error: "North Hills evidence link not found." });
+      else response.json(deleted);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/north-hills-source-facts/:factId/review", requireAdmin, async (request, response, next) => {
+    try {
+      const factId = validateUuid(request.params.factId, "North Hills source fact");
+      const review = validateNorthHillsSourceFactReviewPayload(request.body);
+      const saved = await reviewNorthHillsSourceFact(pool, factId, review, { actorUser: request.user });
+      if (!saved) response.status(404).json({ error: "North Hills source fact not found." });
+      else response.json(saved);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/north-hills-source-facts/:factId/promote", requireAdmin, async (request, response, next) => {
+    try {
+      const factId = validateUuid(request.params.factId, "North Hills source fact");
+      const promotion = validateNorthHillsSourceFactPromotionPayload(request.body);
+      const saved = await promoteNorthHillsSourceFact(pool, factId, promotion, {
+        actorUser: request.user,
+        reason: promotion.reason,
+      });
+      if (!saved) response.status(404).json({ error: "North Hills source fact not found." });
+      else response.json(saved);
     } catch (error) {
       next(error);
     }

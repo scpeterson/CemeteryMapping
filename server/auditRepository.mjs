@@ -32,6 +32,7 @@ const allowedAuditTables = new Set([
   "headstone_media_assets",
   "media_assets",
   "memorials",
+  "north_hills_ocr_source_facts",
   "north_hills_ocr_entry_gravesite_links",
   "north_hills_ocr_entry_headstone_links",
   "owners",

@@ -5,6 +5,7 @@ const validStatuses = new Set(["staged", "reviewed", "promoted", "rejected"]);
 const validSorts = new Set(["review", "page"]);
 const validEvidenceTargetTypes = new Set(["headstone", "gravesite"]);
 const validEvidenceStatuses = new Set(["linked", "rejected", "needs_field_check"]);
+const validSourceFactStatuses = new Set(["staged", "reviewed", "promoted", "rejected"]);
 
 function compact(value) {
   const text = String(value ?? "").trim();
@@ -65,6 +66,7 @@ function toEntry(row) {
     status: row.status,
     candidateMatchCount: Number(row.candidate_match_count ?? 0),
     candidateMatches: row.candidate_matches ?? [],
+    sourceFacts: row.source_facts ?? [],
   };
 }
 
@@ -77,6 +79,25 @@ function toEvidenceLink(row) {
     status: row.status,
     confidence: row.confidence,
     notes: row.notes ?? "",
+    reviewedByEmail: row.reviewed_by_email ?? "",
+    reviewedAt: row.reviewed_at,
+  };
+}
+
+function toSourceFact(row) {
+  return {
+    id: row.id,
+    entryId: row.entry_id,
+    sourceCode: row.source_code,
+    sourceLabel: row.source_label,
+    factType: row.fact_type,
+    factValue: row.fact_value,
+    factDate: row.fact_date?.toISOString?.().slice(0, 10) ?? row.fact_date,
+    rawText: row.raw_text ?? "",
+    reviewNotes: row.review_notes ?? "",
+    confidence: row.confidence,
+    status: row.status,
+    promotedBurialId: row.promoted_burial_uuid ?? "",
     reviewedByEmail: row.reviewed_by_email ?? "",
     reviewedAt: row.reviewed_at,
   };
@@ -128,7 +149,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
   const status = compact(filters.status);
   const section = compact(filters.section);
   const query = compact(filters.q);
-  const sort = validSorts.has(compact(filters.sort)) ? compact(filters.sort) : "review";
+  let sort = validSorts.has(compact(filters.sort)) ? compact(filters.sort) : "review";
 
   if (confidence && validConfidence.has(confidence)) {
     values.push(confidence);
@@ -150,6 +171,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
     if (pageNumber) {
       values.push(pageNumber);
       where.push(`entry.source_page_number = $${values.length}`);
+      sort = "page";
     } else {
       values.push(`%${query.toLowerCase()}%`);
       where.push(`(
@@ -220,8 +242,40 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
         entry.parse_notes,
         entry.status,
         COALESCE(matches.candidate_match_count, 0) AS candidate_match_count,
-        COALESCE(matches.candidate_matches, '[]'::jsonb) AS candidate_matches
+        COALESCE(matches.candidate_matches, '[]'::jsonb) AS candidate_matches,
+        COALESCE(source_facts.facts, '[]'::jsonb) AS source_facts
       FROM north_hills_ocr_entries entry
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', fact.id::text,
+            'entryId', fact.entry_id::text,
+            'sourceCode', fact.source_code,
+            'sourceLabel', fact.source_label,
+            'factType', fact.fact_type,
+            'factValue', fact.fact_value,
+            'factDate', fact.fact_date,
+            'rawText', fact.raw_text,
+            'reviewNotes', fact.review_notes,
+            'confidence', fact.confidence,
+            'status', fact.status,
+            'promotedBurialId', fact.promoted_burial_uuid::text,
+            'reviewedByEmail', fact.reviewed_by_email,
+            'reviewedAt', fact.reviewed_at
+          )
+          ORDER BY
+            CASE fact.fact_type
+              WHEN 'death_date' THEN 0
+              WHEN 'middle_initial' THEN 1
+              WHEN 'age_at_death' THEN 2
+              ELSE 3
+            END,
+            fact.source_code,
+            fact.fact_value
+        ) AS facts
+        FROM north_hills_ocr_source_facts fact
+        WHERE fact.entry_id = entry.id
+      ) source_facts ON true
       LEFT JOIN LATERAL (
         SELECT count(*) AS candidate_match_count,
                jsonb_agg(
@@ -415,4 +469,166 @@ export async function saveNorthHillsOcrEvidenceLink(pool, entryId, evidence, { a
   );
 
   return result.rows[0] ? toEvidenceLink(result.rows[0]) : undefined;
+}
+
+export async function deleteNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser } = {}) {
+  const targetType = String(evidence?.targetType ?? "").trim();
+  const targetId = String(evidence?.targetId ?? "").trim();
+
+  if (!validEvidenceTargetTypes.has(targetType)) throw new Error(`Unsupported North Hills evidence target type: ${targetType}`);
+  if (!targetId) throw new Error("A North Hills evidence target is required.");
+
+  const table = targetType === "headstone" ? "north_hills_ocr_entry_headstone_links" : "north_hills_ocr_entry_gravesite_links";
+  const targetColumn = targetType === "headstone" ? "headstone_uuid" : "gravesite_uuid";
+
+  const result = await withAuditContext(pool, { actorUser, reason: `North Hills OCR unlink ${targetType}` }, (client) =>
+    client.query(
+      `
+        DELETE FROM ${table}
+        WHERE entry_id = $1
+          AND ${targetColumn} = $2
+        RETURNING
+          id::text,
+          entry_id::text,
+          '${targetType}' AS target_type,
+          ${targetColumn}::text AS target_id,
+          status,
+          confidence,
+          notes,
+          reviewed_by_email,
+          reviewed_at
+      `,
+      [entryId, targetId],
+    ),
+  );
+
+  return result.rows[0] ? toEvidenceLink(result.rows[0]) : undefined;
+}
+
+export async function reviewNorthHillsSourceFact(pool, factId, review = {}, { actorUser } = {}) {
+  const status = String(review?.status ?? "").trim();
+  const confidence = String(review?.confidence ?? "review").trim() || "review";
+  const notes = String(review?.notes ?? "").trim();
+
+  if (!validSourceFactStatuses.has(status)) throw new Error(`Unsupported North Hills source fact status: ${status}`);
+  if (!validConfidence.has(confidence)) throw new Error(`Unsupported North Hills source fact confidence: ${confidence}`);
+  if (status === "promoted") throw new Error("Use the promote endpoint to promote a North Hills source fact.");
+
+  const result = await withAuditContext(pool, { actorUser, reason: `North Hills source fact ${status}` }, (client) =>
+    client.query(
+      `
+        UPDATE north_hills_ocr_source_facts
+        SET
+          status = $2,
+          confidence = $3,
+          review_notes = COALESCE(NULLIF($4, ''), review_notes),
+          reviewed_by_app_user_id = $5,
+          reviewed_by_external_subject = $6,
+          reviewed_by_email = $7,
+          reviewed_at = now()
+        WHERE id = $1
+        RETURNING
+          id::text,
+          entry_id::text,
+          source_code,
+          source_label,
+          fact_type,
+          fact_value,
+          fact_date,
+          raw_text,
+          review_notes,
+          confidence,
+          status,
+          promoted_burial_uuid::text,
+          reviewed_by_email,
+          reviewed_at
+      `,
+      [factId, status, confidence, notes, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
+    ),
+  );
+
+  return result.rows[0] ? toSourceFact(result.rows[0]) : undefined;
+}
+
+export async function promoteNorthHillsSourceFact(pool, factId, promotion = {}, { actorUser, reason } = {}) {
+  const burialId = String(promotion?.burialId ?? "").trim();
+  const notes = String(promotion?.notes ?? "").trim();
+  if (!burialId) throw new Error("A burial is required to promote a North Hills source fact.");
+
+  const result = await withAuditContext(pool, { actorUser, reason: reason || "Promote North Hills source fact to burial" }, async (client) => {
+    const factResult = await client.query(
+      `
+        SELECT
+          id,
+          source_code,
+          source_label,
+          fact_type,
+          fact_value,
+          fact_date,
+          raw_text,
+          review_notes
+        FROM north_hills_ocr_source_facts
+        WHERE id = $1
+        FOR UPDATE
+      `,
+      [factId],
+    );
+    const fact = factResult.rows[0];
+    if (!fact) return { rows: [] };
+    if (fact.fact_type !== "death_date" || !fact.fact_date) throw new Error("Only North Hills death date source facts can be promoted to burial dates.");
+
+    const isoDeathDate = fact.fact_date.toISOString?.().slice(0, 10) ?? String(fact.fact_date);
+    const burialUpdate = await client.query(
+      `
+        UPDATE burials
+        SET
+          death_date = $2::date,
+          death_date_text = $2,
+          notes = CASE
+            WHEN NULLIF($3, '') IS NULL THEN notes
+            WHEN COALESCE(notes, '') = '' THEN $3
+            WHEN notes ILIKE '%' || $3 || '%' THEN notes
+            ELSE notes || E'\n' || $3
+          END
+        WHERE id = $1
+          AND deleted_at IS NULL
+        RETURNING id
+      `,
+      [burialId, isoDeathDate, notes],
+    );
+    if (!burialUpdate.rows[0]) throw new Error("Burial not found for North Hills source fact promotion.");
+
+    return client.query(
+      `
+        UPDATE north_hills_ocr_source_facts
+        SET
+          status = 'promoted',
+          confidence = CASE WHEN confidence = 'review' THEN 'high' ELSE confidence END,
+          promoted_burial_uuid = $2,
+          reviewed_by_app_user_id = $3,
+          reviewed_by_external_subject = $4,
+          reviewed_by_email = $5,
+          reviewed_at = now()
+        WHERE id = $1
+        RETURNING
+          id::text,
+          entry_id::text,
+          source_code,
+          source_label,
+          fact_type,
+          fact_value,
+          fact_date,
+          raw_text,
+          review_notes,
+          confidence,
+          status,
+          promoted_burial_uuid::text,
+          reviewed_by_email,
+          reviewed_at
+      `,
+      [factId, burialId, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
+    );
+  });
+
+  return result.rows[0] ? toSourceFact(result.rows[0]) : undefined;
 }

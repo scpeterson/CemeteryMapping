@@ -5,6 +5,7 @@ import {
   createDeedInvestigationAction,
   createDeedInvestigationCase,
   createLookupRecord,
+  deleteNorthHillsOcrEvidence,
   fetchAdminRoles,
   fetchAdminUsers,
   fetchCemeteryAdminRecords,
@@ -13,7 +14,9 @@ import {
   fetchLookupAdminRecords,
   fetchNorthHillsOcrReview,
   linkDeedInvestigationCaseEntry,
+  promoteNorthHillsSourceFact,
   resolveAuth0User,
+  reviewNorthHillsSourceFact,
   saveNorthHillsOcrEvidence,
   type SaveUserInput,
   updateAdminUser,
@@ -50,6 +53,8 @@ import type {
   NorthHillsOcrEvidenceStatus,
   NorthHillsOcrReviewEntry,
   NorthHillsOcrReviewFilters,
+  NorthHillsSourceFact,
+  NorthHillsSourceFactStatus,
   SaveDeedInvestigationActionInput,
   SaveDeedInvestigationCaseInput,
   SectionTextRecord,
@@ -295,6 +300,18 @@ const evidenceStatusLabels: Record<NorthHillsOcrEvidenceStatus, string> = {
   linked: "Linked",
   rejected: "Rejected",
   needs_field_check: "Needs field check",
+};
+const sourceFactStatusLabels: Record<NorthHillsSourceFactStatus, string> = {
+  staged: "Staged",
+  reviewed: "Reviewed",
+  promoted: "Promoted",
+  rejected: "Rejected",
+};
+const sourceFactTypeLabels: Record<NorthHillsSourceFact["factType"], string> = {
+  death_date: "Death date",
+  middle_initial: "Middle initial",
+  age_at_death: "Age at death",
+  note: "Source note",
 };
 
 function deedSearchTerms(value: string) {
@@ -1201,6 +1218,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const duplicateLookupSortOrders = useMemo(() => lookupDuplicateSortOrders(selectedLookupAllRows), [selectedLookupAllRows]);
   const canManageUsers = currentUser.permissions.canManageUsers;
   const canUseSystemAdminTabs = currentUser.role === "admin";
+  const canUnlinkNorthHillsEvidence = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
   const canEditSelectedCemetery = currentUser.role === "admin" || (selectedCemeteryId ? currentUser.assignedCemeteryIds.includes(selectedCemeteryId) : false);
 
   useEffect(() => {
@@ -1477,6 +1495,71 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
       await loadNorthHillsOcrReview(northHillsReviewFilters);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save North Hills evidence review.");
+    } finally {
+      setSavingEvidenceKey(undefined);
+    }
+  };
+
+  const unlinkNorthHillsEvidence = async (entryId: string, targetType: "headstone" | "gravesite", targetId: string, label: string) => {
+    if (!window.confirm(`Unlink this North Hills reading from ${label}?`)) return;
+    const key = `${entryId}:${targetType}:${targetId}:unlink`;
+    setSavingEvidenceKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      await deleteNorthHillsOcrEvidence(entryId, { targetType, targetId });
+      setMessage(`Unlinked North Hills reading from ${label}.`);
+      await loadNorthHillsOcrReview(northHillsReviewFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to unlink North Hills evidence.");
+    } finally {
+      setSavingEvidenceKey(undefined);
+    }
+  };
+
+  const saveNorthHillsSourceFactReview = async (fact: NorthHillsSourceFact, status: Exclude<NorthHillsSourceFactStatus, "promoted">) => {
+    const notes = window.prompt(`Optional notes for ${sourceFactStatusLabels[status].toLowerCase()} ${sourceFactTypeLabels[fact.factType].toLowerCase()}:`, "");
+    if (notes === null) return;
+    const key = `${fact.id}:source-fact:${status}`;
+    setSavingEvidenceKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      await reviewNorthHillsSourceFact(fact.id, {
+        status,
+        confidence: status === "reviewed" ? fact.confidence : status === "rejected" ? "low" : "review",
+        notes,
+      });
+      setMessage(`${sourceFactTypeLabels[fact.factType]} marked ${sourceFactStatusLabels[status].toLowerCase()}.`);
+      await loadNorthHillsOcrReview(northHillsReviewFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save North Hills source fact review.");
+    } finally {
+      setSavingEvidenceKey(undefined);
+    }
+  };
+
+  const promoteNorthHillsDeathDate = async (fact: NorthHillsSourceFact, match: NorthHillsOcrReviewEntry["candidateMatches"][number]) => {
+    const defaultNote = `${fact.sourceCode} evidence from North Hills reading: ${fact.factValue}.`;
+    const notes = window.prompt(`Optional burial note for promoting ${fact.factValue} to ${match.fullName || match.gravesiteId}:`, defaultNote);
+    if (notes === null) return;
+    const key = `${fact.id}:promote:${match.burialId}`;
+    setSavingEvidenceKey(key);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      await promoteNorthHillsSourceFact(fact.id, {
+        burialId: match.burialId,
+        notes,
+        reason: `Promote ${fact.sourceCode} death date from North Hills reading`,
+      });
+      setMessage(`Promoted ${fact.factValue} to ${match.fullName || match.gravesiteId}.`);
+      await loadNorthHillsOcrReview(northHillsReviewFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to promote North Hills source fact.");
     } finally {
       setSavingEvidenceKey(undefined);
     }
@@ -2826,6 +2909,63 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                       ))}
                     </ul>
                   ) : null}
+                  {entry.sourceFacts.length ? (
+                    <section className="deed-investigation-links" aria-label="Church record source facts">
+                      <h4>Church record facts</h4>
+                      {entry.sourceFacts.map((fact) => (
+                        <article key={fact.id} className="reading-match-review">
+                          <p>
+                            <strong>{fact.sourceCode} {sourceFactTypeLabels[fact.factType]}:</strong> {fact.factValue}
+                            {fact.factDate ? ` (${fact.factDate})` : ""}
+                          </p>
+                          <small>
+                            {fact.sourceLabel} · {sourceFactStatusLabels[fact.status] ?? fact.status} · {deedConfidenceLabel(fact.confidence)}
+                            {fact.reviewedByEmail ? ` · ${fact.reviewedByEmail}` : ""}
+                          </small>
+                          {fact.rawText ? <p className="deed-entry-remarks">{fact.rawText}</p> : null}
+                          {fact.reviewNotes ? <p className="deed-entry-remarks">{fact.reviewNotes}</p> : null}
+                          <div className="reading-match-actions">
+                            {fact.status !== "promoted" ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="secondary-button"
+                                  disabled={Boolean(savingEvidenceKey)}
+                                  onClick={() => void saveNorthHillsSourceFactReview(fact, "reviewed")}
+                                  title="Mark this church record fact as reviewed."
+                                >
+                                  Mark reviewed
+                                </button>
+                                <button
+                                  type="button"
+                                  className="secondary-button"
+                                  disabled={Boolean(savingEvidenceKey)}
+                                  onClick={() => void saveNorthHillsSourceFactReview(fact, "rejected")}
+                                  title="Reject this church record fact."
+                                >
+                                  Reject fact
+                                </button>
+                              </>
+                            ) : null}
+                            {fact.factType === "death_date" && fact.status !== "promoted"
+                              ? entry.candidateMatches.map((match) => (
+                                  <button
+                                    key={`${fact.id}:${match.burialId}`}
+                                    type="button"
+                                    className="secondary-button"
+                                    disabled={Boolean(savingEvidenceKey)}
+                                    onClick={() => void promoteNorthHillsDeathDate(fact, match)}
+                                    title={`Promote this church record death date to ${match.fullName || match.gravesiteId}.`}
+                                  >
+                                    Promote to {match.fullName || match.gravesiteId}
+                                  </button>
+                                ))
+                              : null}
+                          </div>
+                        </article>
+                      ))}
+                    </section>
+                  ) : null}
                   {entry.candidateMatches.length ? (
                     <section className="deed-investigation-links" aria-label="Possible existing burial matches">
                       <h4>Possible existing matches</h4>
@@ -2868,6 +3008,17 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                             >
                               Needs field check
                             </button>
+                            {canUnlinkNorthHillsEvidence && match.gravesiteEvidence.length ? (
+                              <button
+                                type="button"
+                                className="secondary-button"
+                                disabled={Boolean(savingEvidenceKey)}
+                                onClick={() => void unlinkNorthHillsEvidence(entry.id, "gravesite", match.gravesiteUuid, `gravesite ${match.gravesiteId}`)}
+                                title="Remove this North Hills reading from this gravesite."
+                              >
+                                Unlink gravesite
+                              </button>
+                            ) : null}
                           </div>
                           {match.headstoneCandidates.length ? (
                             <div className="reading-headstone-candidates">
@@ -2902,6 +3053,17 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                                   >
                                     Field check
                                   </button>
+                                  {canUnlinkNorthHillsEvidence && headstone.evidence.length ? (
+                                    <button
+                                      type="button"
+                                      className="secondary-button"
+                                      disabled={Boolean(savingEvidenceKey)}
+                                      onClick={() => void unlinkNorthHillsEvidence(entry.id, "headstone", headstone.id, `headstone ${headstone.headstoneId}`)}
+                                      title="Remove this North Hills reading from this headstone."
+                                    >
+                                      Unlink headstone
+                                    </button>
+                                  ) : null}
                                 </span>
                               ))}
                             </div>
