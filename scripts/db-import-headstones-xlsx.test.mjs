@@ -214,11 +214,11 @@ test("two-person left-edge markers accept pluralized second-person headers", () 
   assert.equal(imported.gravesites[0].graveId, "0167A");
   assert.equal(imported.gravesites[0].gravesiteId, "TLC-GPS-0167-01");
   assert.equal(imported.gravesites[0].people[0].fullName, "Ruby I Soergel");
-  assert.equal(imported.gravesites[0].people[0].birthDate, "1897-01-01");
+  assert.equal(imported.gravesites[0].people[0].birthDate, "1897");
   assert.equal(imported.gravesites[1].graveId, "0167B");
   assert.equal(imported.gravesites[1].gravesiteId, "TLC-GPS-0167-02");
   assert.equal(imported.gravesites[1].people[0].fullName, "Roy R Soergel");
-  assert.equal(imported.gravesites[1].people[0].deathDate, "1974-01-01");
+  assert.equal(imported.gravesites[1].people[0].deathDate, "1974");
 });
 
 test("upsertHeadstoneGravesite restores soft-deleted marker links", async () => {

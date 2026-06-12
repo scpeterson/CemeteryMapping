@@ -20,6 +20,18 @@ export const statusColors: Record<GraveStatus, string> = {
 
 export function formatDate(date?: string) {
   if (!date) return "Unknown";
+  if (/^\d{4}$/u.test(date)) return date;
+  const yearMonth = /^(\d{4})-(\d{2})$/u.exec(date);
+  if (yearMonth) {
+    const parsedMonth = new Date(`${yearMonth[1]}-${yearMonth[2]}-01T00:00:00`);
+    if (!Number.isNaN(parsedMonth.getTime())) {
+      return new Intl.DateTimeFormat("en", {
+        year: "numeric",
+        month: "short",
+      }).format(parsedMonth);
+    }
+  }
+  if (/^(?:Jan\.?|January|Feb\.?|February|Mar\.?|March|Apr\.?|April|May|Jun\.?|June|Jul\.?|July|Aug\.?|August|Sep\.?|Sept\.?|September|Oct\.?|October|Nov\.?|November|Dec\.?|December)\s+\d{4}$/iu.test(date)) return date;
   const normalizedDate = /^\d{4}-\d{2}-\d{2}$/u.test(date) ? `${date}T00:00:00` : date;
   const parsedDate = new Date(normalizedDate);
   if (Number.isNaN(parsedDate.getTime())) return "Unknown";
