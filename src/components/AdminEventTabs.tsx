@@ -100,6 +100,7 @@ const auditTableLabels: Record<string, string> = {
   military_branch_types: "Military branches",
   military_war_service_types: "Military war service",
   memorials: "Memorials",
+  north_hills_ocr_source_facts: "North Hills source facts",
   north_hills_ocr_entries: "North Hills OCR readings",
   north_hills_ocr_entry_gravesite_links: "North Hills gravesite evidence links",
   north_hills_ocr_entry_headstone_links: "North Hills headstone evidence links",

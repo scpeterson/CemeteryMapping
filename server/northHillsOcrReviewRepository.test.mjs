@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
+import { deleteNorthHillsOcrEvidenceLink, listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
 
 test("listNorthHillsOcrReview returns batches, summaries, staged readings, and candidate matches", async () => {
   const pool = {
@@ -57,6 +57,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
             status: "staged",
             candidate_match_count: "1",
             candidate_matches: [{ burialId: "burial-1", gravesiteId: "TLC-GPS-0009", sectionId: "A", fullName: "George L Burgess", score: 9 }],
+            source_facts: [{ id: "fact-1", sourceCode: "CR", factType: "death_date", factValue: "December 16, 1965", status: "staged" }],
           },
         ],
       };
@@ -69,6 +70,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
   assert.equal(review.batches[0].matchedCount, 2);
   assert.deepEqual(review.summary[0], { parseConfidence: "high", status: "staged", count: 2 });
   assert.equal(review.entries[0].candidateMatches[0].gravesiteId, "TLC-GPS-0009");
+  assert.equal(review.entries[0].sourceFacts[0].factValue, "December 16, 1965");
 });
 
 test("listNorthHillsOcrReview can sort staged readings by printed page order", async () => {
@@ -135,6 +137,8 @@ test("listNorthHillsOcrReview search matches printed page numbers", async () => 
 
       assert.match(sql, /WHERE entry\.batch_id = \$1\s+AND entry\.source_page_number = \$2/u);
       assert.doesNotMatch(sql, /lower\(coalesce\(entry\.raw_text/u);
+      assert.doesNotMatch(sql, /CASE entry\.parse_confidence/u);
+      assert.match(sql, /ORDER BY\s+[\s\S]*entry\.source_page_number NULLS LAST,\s+entry\.source_page_index,\s+entry\.source_line_start/u);
       assert.deepEqual(values, ["batch-1", 183, 100]);
       return { rows: [] };
     },
@@ -221,5 +225,67 @@ test("saveNorthHillsOcrEvidenceLink stores reviewed gravesite evidence with audi
     "33333333-3333-4333-8333-333333333333",
     "auth0|admin",
     "admin@example.test",
+  ]);
+});
+
+test("deleteNorthHillsOcrEvidenceLink removes reviewed headstone evidence with audit context", async () => {
+  const queries = [];
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql.includes("DELETE FROM north_hills_ocr_entry_headstone_links")) {
+            return {
+              rows: [
+                {
+                  id: "link-1",
+                  entry_id: "11111111-1111-4111-8111-111111111111",
+                  target_type: "headstone",
+                  target_id: "22222222-2222-4222-8222-222222222222",
+                  status: "linked",
+                  confidence: "high",
+                  notes: "Mistaken link",
+                  reviewed_by_email: "admin@example.test",
+                  reviewed_at: "2026-05-29T12:00:00.000Z",
+                },
+              ],
+            };
+          }
+
+          return { rows: [] };
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const link = await deleteNorthHillsOcrEvidenceLink(
+    pool,
+    "11111111-1111-4111-8111-111111111111",
+    {
+      targetType: "headstone",
+      targetId: "22222222-2222-4222-8222-222222222222",
+    },
+    {
+      actorUser: {
+        id: "33333333-3333-4333-8333-333333333333",
+        subject: "auth0|admin",
+        email: "admin@example.test",
+        role: "cemetery-admin",
+      },
+    },
+  );
+
+  assert.equal(link?.targetType, "headstone");
+  assert.equal(queries[0].sql, "BEGIN");
+  assert.equal(queries.at(-2).sql, "COMMIT");
+  assert.equal(queries.at(-1).sql, "RELEASE");
+  assert.match(queries.find((query) => query.sql.includes("DELETE FROM"))?.sql ?? "", /north_hills_ocr_entry_headstone_links/u);
+  assert.deepEqual(queries.find((query) => query.sql.includes("DELETE FROM"))?.values, [
+    "11111111-1111-4111-8111-111111111111",
+    "22222222-2222-4222-8222-222222222222",
   ]);
 });

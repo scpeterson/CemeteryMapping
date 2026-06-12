@@ -74,3 +74,35 @@ Franklin Park. Borough                   185                Allegheny County, PA
     [185, 185, 185],
   );
 });
+
+test("parseNorthHillsOcrText accepts mixed-case OCR names and page footer punctuation", () => {
+  const text = `Section C, Row 1
+B[-1 (lC, 7, s) upright, gray granite, exc cond "F. B."
+Balance of row, approximately 100 feet, is empty
+Section C, Row 2
+McWILLIAMS (2C, 1, s) pillow, gray granite, good cond, flower
+"Brother/ Henry McWilllams / 1909-1965" CR: Middle Initial T., d.
+December 16, 1965, 56y Sm 25da, "our janitor"
+Franklin Park Borough               197                Allegheny County, PA
+\fWISKEMAN (2C, 7, s) flat, gray granite military marker, exc cond,
+cross "John G. Wiskeman / US Army/ World War II/ Jan 6 1926 Aug
+26 2005 / Lovingly known as Jack"
+HtEBER (2C, 8, c) upright, gray granite, exc cond, flowers, leaves
+with basket weave "Hieber/ David L. / 1867-1940 /Father/ Anna C. /
+1873-1949 / Mother" On back: "Hieber"
+Franklin Park Borough                198   •          Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["B[-]", 197, "C", 1, 7],
+      ["McWILLIAMS", 197, "C", 2, 1],
+      ["WISKEMAN", 198, "C", 2, 7],
+      ["HtEBER", 198, "C", 2, 8],
+    ],
+  );
+  assert.equal(entries[1].rawText.includes("December 16, 1965"), true);
+  assert.deepEqual(entries[3].parsedYears, [1867, 1873, 1940, 1949]);
+});

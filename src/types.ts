@@ -691,6 +691,7 @@ export type NorthHillsOcrCandidateMatch = {
 };
 
 export type NorthHillsOcrEvidenceStatus = "linked" | "rejected" | "needs_field_check";
+export type NorthHillsSourceFactStatus = "staged" | "reviewed" | "promoted" | "rejected";
 
 export type NorthHillsOcrEvidenceLink = {
   id: string;
@@ -713,6 +714,35 @@ export type SaveNorthHillsOcrEvidenceInput = {
   status: NorthHillsOcrEvidenceStatus;
   confidence: "high" | "medium" | "low" | "review";
   notes: string;
+};
+
+export type NorthHillsSourceFact = {
+  id: string;
+  entryId: string;
+  sourceCode: "CR" | "CRG";
+  sourceLabel: string;
+  factType: "death_date" | "middle_initial" | "age_at_death" | "note";
+  factValue: string;
+  factDate?: string;
+  rawText: string;
+  reviewNotes?: string;
+  confidence: "high" | "medium" | "low" | "review";
+  status: NorthHillsSourceFactStatus;
+  promotedBurialId?: string;
+  reviewedByEmail?: string;
+  reviewedAt?: string;
+};
+
+export type ReviewNorthHillsSourceFactInput = {
+  status: Exclude<NorthHillsSourceFactStatus, "promoted">;
+  confidence: "high" | "medium" | "low" | "review";
+  notes: string;
+};
+
+export type PromoteNorthHillsSourceFactInput = {
+  burialId: string;
+  notes: string;
+  reason: string;
 };
 
 export type NorthHillsOcrReviewEntry = {
@@ -739,6 +769,7 @@ export type NorthHillsOcrReviewEntry = {
   status: string;
   candidateMatchCount: number;
   candidateMatches: NorthHillsOcrCandidateMatch[];
+  sourceFacts: NorthHillsSourceFact[];
 };
 
 export type NorthHillsOcrReviewFilters = {

@@ -221,3 +221,12 @@ databaseChangeLog:
   - include:
       file: changes/074-burial-recorded-date-text.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/075-north-hills-source-facts.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/076-north-hills-source-fact-review-notes.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/077-repair-north-hills-mixed-case-ocr.sql
+      relativeToChangelogFile: true
