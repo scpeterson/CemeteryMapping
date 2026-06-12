@@ -40,6 +40,8 @@ import type {
   SectionTextRecord,
   SystemEvent,
   SystemEventFilters,
+  SystemEventRetentionPolicy,
+  SystemEventRetentionPurgeResult,
 } from "../types";
 
 type AccessTokenProvider = () => Promise<string | undefined>;
@@ -253,6 +255,9 @@ export type SaveLookupInput = Pick<LookupRecord, "code" | "label" | "description
 export type SaveAuditRetentionPolicyInput = Pick<AuditRetentionPolicy, "retentionDays" | "minimumProtectedDays" | "batchSize" | "isEnabled"> & {
   reason?: string;
 };
+export type SaveSystemEventRetentionPolicyInput = Pick<SystemEventRetentionPolicy, "retentionDays" | "minimumProtectedDays" | "batchSize" | "isEnabled"> & {
+  reason?: string;
+};
 
 export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records`);
@@ -292,6 +297,21 @@ export async function fetchSystemEvents(filters: SystemEventFilters = {}): Promi
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/system-events${query ? `?${query}` : ""}`);
   return jsonResponse<SystemEvent[]>(response, "System events API");
+}
+
+export async function fetchSystemEventRetentionPolicy(): Promise<SystemEventRetentionPolicy> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/system-event-retention-policy`);
+  return jsonResponse<SystemEventRetentionPolicy>(response, "System event retention policy API");
+}
+
+export async function updateSystemEventRetentionPolicy(policy: SaveSystemEventRetentionPolicyInput): Promise<SystemEventRetentionPolicy> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/system-event-retention-policy`, jsonRequest("PUT", policy));
+  return jsonResponse<SystemEventRetentionPolicy>(response, "Update system event retention policy API");
+}
+
+export async function runSystemEventRetentionPurge(): Promise<SystemEventRetentionPurgeResult> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/system-event-retention-purge`, jsonRequest("POST", {}));
+  return jsonResponse<SystemEventRetentionPurgeResult>(response, "System event retention purge API");
 }
 
 export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters = {}): Promise<DeedRegistryReview> {

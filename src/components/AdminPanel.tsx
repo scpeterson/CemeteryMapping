@@ -5,24 +5,18 @@ import {
   createDeedInvestigationAction,
   createDeedInvestigationCase,
   createLookupRecord,
-  fetchAdminAuditEvents,
   fetchAdminRoles,
   fetchAdminUsers,
-  fetchAuditRetentionPolicy,
   fetchCemeteryAdminRecords,
   fetchDeedInvestigationCases,
   fetchDeedRegistryReview,
   fetchLookupAdminRecords,
   fetchNorthHillsOcrReview,
-  fetchSystemEvents,
   linkDeedInvestigationCaseEntry,
   resolveAuth0User,
-  runAuditRetentionPurge,
   saveNorthHillsOcrEvidence,
-  type SaveAuditRetentionPolicyInput,
   type SaveUserInput,
   updateAdminUser,
-  updateAuditRetentionPolicy,
   updateCemeteryText,
   updateDeedInvestigationAction,
   updateDeedInvestigationCase,
@@ -30,14 +24,13 @@ import {
   updateLotText,
   updateSectionText,
 } from "../api/cemeteryApi";
+import { defaultAuditFilters } from "./AdminEventDefaults";
+import { AuditAdminTab, SystemEventsAdminTab } from "./AdminEventTabs";
 import type {
   AppRole,
   AppRoleName,
   AppUser,
-  AuditEvent,
   AuditEventFilters,
-  AuditRetentionPolicy,
-  AuditRetentionPurgeResult,
   CemeteryAdminRecords,
   CemeteryTextRecord,
   DeedInvestigationAction,
@@ -61,8 +54,6 @@ import type {
   SaveDeedInvestigationCaseInput,
   SectionTextRecord,
   CurrentUser,
-  SystemEvent,
-  SystemEventFilters,
 } from "../types";
 
 type AdminPanelProps = {
@@ -127,27 +118,6 @@ const emptyCemeteryRecords: CemeteryAdminRecords = {
   cemeteries: [],
   sections: [],
   lots: [],
-};
-
-const defaultAuditFilters: AuditEventFilters = {
-  action: "",
-  targetTable: "",
-  actor: "",
-  targetRecordId: "",
-  dateFrom: "",
-  dateTo: "",
-  limit: 50,
-};
-
-const defaultSystemEventFilters: SystemEventFilters = {
-  eventType: "",
-  severity: "",
-  source: "",
-  status: "",
-  q: "",
-  dateFrom: "",
-  dateTo: "",
-  limit: 50,
 };
 
 const defaultDeedReviewFilters: DeedRegistryReviewFilters = {
@@ -246,61 +216,6 @@ const blankLookupRecord: LookupRecord = {
   updatedAt: "",
 };
 
-const defaultAuditRetentionPolicy: AuditRetentionPolicy = {
-  retentionDays: 2555,
-  minimumProtectedDays: 365,
-  batchSize: 5000,
-  isEnabled: true,
-  createdAt: "",
-  updatedAt: "",
-};
-
-const auditActionLabels: Record<string, string> = {
-  create: "Created",
-  update: "Updated",
-  soft_delete: "Deleted",
-  restore: "Restored",
-  delete: "Hard deleted",
-  import_promote: "Imported",
-};
-
-const auditTableLabels: Record<string, string> = {
-  app_roles: "Roles",
-  app_users: "Users",
-  app_user_cemetery_access: "User cemetery assignments",
-  audit_retention_policies: "Audit retention policies",
-  blocks: "Blocks",
-  burials: "Burials",
-  burial_interment_types: "Burial interment types",
-  cemeteries: "Cemeteries",
-  deed_registry_entries: "Deed registry entries",
-  deed_registry_entry_allocations: "Deed registry allocations",
-  deed_registry_import_batches: "Deed registry imports",
-  deed_investigation_case_entries: "Deed investigation evidence",
-  deed_investigation_case_actions: "Deed investigation actions",
-  deed_investigation_cases: "Deed investigation cases",
-  gravesites: "Gravesites",
-  gravesite_status_types: "Gravesite statuses",
-  headstone_burials: "Headstone burials",
-  headstone_condition_types: "Headstone conditions",
-  headstone_gravesites: "Headstone gravesites",
-  headstones: "Headstones",
-  lot_owner_parties: "Lot owners",
-  lot_ownership_event_types: "Lot ownership events",
-  lots: "Lots",
-  marker_material_types: "Marker materials",
-  marker_types: "Marker types",
-  military_branch_types: "Military branches",
-  military_war_service_types: "Military war service",
-  memorials: "Memorials",
-  north_hills_ocr_entries: "North Hills OCR readings",
-  north_hills_ocr_entry_gravesite_links: "North Hills gravesite evidence links",
-  north_hills_ocr_entry_headstone_links: "North Hills headstone evidence links",
-  north_hills_ocr_import_batches: "North Hills OCR imports",
-  owners: "Owners",
-  sections: "Sections",
-};
-
 const alternateNamesText = (alternateNames: string[]) => alternateNames.join("\n");
 const parseAlternateNames = (value: string) =>
   [...new Set(value.split(/\r?\n|,/u).map((item) => item.trim()).filter(Boolean))];
@@ -308,44 +223,6 @@ const cemeteryPickerLabel = (cemetery: CemeteryTextRecord) => cemetery.name;
 const sectionPickerLabel = (section: SectionTextRecord) => `Section ${section.name}`;
 const lotPickerLabel = (lot: LotTextRecord) => `Lot ${lot.lotId} - ${lot.name}`;
 const formatAdminTimestamp = (value: string) => (value ? new Date(value).toLocaleString() : "Not recorded");
-const auditActorLabel = (event: AuditEvent) => event.actorEmail || event.actorDatabaseUser || event.actorSessionUser || "Unknown actor";
-const auditActionLabel = (action: string) => auditActionLabels[action] ?? action;
-const auditTableLabel = (targetTable: string) => auditTableLabels[targetTable] ?? targetTable;
-const auditEventSummary = (event: AuditEvent) => {
-  if (event.changedFields.length === 0) return event.reason || "No field-level changes recorded";
-  const fields = event.changedFields.slice(0, 3).join(", ");
-  const suffix = event.changedFields.length > 3 ? ` +${event.changedFields.length - 3} more` : "";
-  return `${fields}${suffix}`;
-};
-const formatAuditJson = (value: Record<string, unknown>) => (Object.keys(value).length ? JSON.stringify(value, null, 2) : "None recorded");
-const systemEventTypeLabels: Record<string, string> = {
-  error: "Error",
-  warning: "Warning",
-  job_run: "Job run",
-  health_check: "Health check",
-  integration_failure: "Integration failure",
-};
-const systemEventSeverityLabels: Record<string, string> = {
-  info: "Info",
-  warning: "Warning",
-  error: "Error",
-  critical: "Critical",
-};
-const systemEventStatusLabels: Record<string, string> = {
-  started: "Started",
-  succeeded: "Succeeded",
-  failed: "Failed",
-  degraded: "Degraded",
-  reported: "Reported",
-  resolved: "Resolved",
-};
-const systemEventTypeLabel = (eventType: string) => systemEventTypeLabels[eventType] ?? eventType;
-const systemEventSeverityLabel = (severity: string) => systemEventSeverityLabels[severity] ?? severity;
-const systemEventStatusLabel = (status: string) => systemEventStatusLabels[status] ?? (status || "No status");
-const systemEventSummary = (event: SystemEvent) => {
-  const parts = [event.source, event.status ? systemEventStatusLabel(event.status) : "", event.requestPath].filter(Boolean);
-  return parts.length ? parts.join(" - ") : "No operational context recorded";
-};
 const scopeLabels: Record<string, string> = {
   grave_count_only: "Grave count only",
   multiple_lots: "Multiple lots",
@@ -1211,21 +1088,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>(currentUser.permissions.canManageUsers ? "users" : "records");
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
-  const [auditFilters, setAuditFilters] = useState<AuditEventFilters>(defaultAuditFilters);
-  const [systemEvents, setSystemEvents] = useState<SystemEvent[]>([]);
-  const [systemEventFilters, setSystemEventFilters] = useState<SystemEventFilters>(defaultSystemEventFilters);
-  const [selectedSystemEventId, setSelectedSystemEventId] = useState("");
-  const [auditRetentionPolicy, setAuditRetentionPolicy] = useState<AuditRetentionPolicy>(defaultAuditRetentionPolicy);
-  const [auditRetentionForm, setAuditRetentionForm] = useState<SaveAuditRetentionPolicyInput>({
-    retentionDays: defaultAuditRetentionPolicy.retentionDays,
-    minimumProtectedDays: defaultAuditRetentionPolicy.minimumProtectedDays,
-    batchSize: defaultAuditRetentionPolicy.batchSize,
-    isEnabled: defaultAuditRetentionPolicy.isEnabled,
-    reason: "",
-  });
-  const [auditRetentionPurgeResult, setAuditRetentionPurgeResult] = useState<AuditRetentionPurgeResult>();
-  const [selectedAuditEventId, setSelectedAuditEventId] = useState("");
+  const [auditSeedFilters, setAuditSeedFilters] = useState<AuditEventFilters>();
   const [deedRegistryReview, setDeedRegistryReview] = useState<DeedRegistryReview>(emptyDeedRegistryReview);
   const [deedReviewFilters, setDeedReviewFilters] = useState<DeedRegistryReviewFilters>(defaultDeedReviewFilters);
   const [deedCases, setDeedCases] = useState<DeedInvestigationCase[]>([]);
@@ -1251,11 +1114,6 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingAuditEvents, setIsLoadingAuditEvents] = useState(false);
-  const [isLoadingSystemEvents, setIsLoadingSystemEvents] = useState(false);
-  const [isLoadingAuditRetentionPolicy, setIsLoadingAuditRetentionPolicy] = useState(false);
-  const [isSavingAuditRetentionPolicy, setIsSavingAuditRetentionPolicy] = useState(false);
-  const [isPurgingAuditEvents, setIsPurgingAuditEvents] = useState(false);
   const [isLoadingDeedReview, setIsLoadingDeedReview] = useState(false);
   const [isLoadingDeedCases, setIsLoadingDeedCases] = useState(false);
   const [isLoadingNorthHillsReview, setIsLoadingNorthHillsReview] = useState(false);
@@ -1291,14 +1149,6 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const selectedLot = useMemo(
     () => lotsForSelectedSection.find((lot) => lot.id === selectedLotId),
     [lotsForSelectedSection, selectedLotId],
-  );
-  const selectedAuditEvent = useMemo(
-    () => auditEvents.find((event) => event.id === selectedAuditEventId),
-    [auditEvents, selectedAuditEventId],
-  );
-  const selectedSystemEvent = useMemo(
-    () => systemEvents.find((event) => event.id === selectedSystemEventId),
-    [systemEvents, selectedSystemEventId],
   );
   const selectedDeedBatch = useMemo(
     () => deedRegistryReview.batches.find((batch) => batch.id === deedRegistryReview.selectedBatchId),
@@ -1408,130 +1258,12 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     [],
   );
 
-  const loadAuditEvents = async (filters = auditFilters) => {
-    setIsLoadingAuditEvents(true);
-    setError(undefined);
-
-    try {
-      const nextAuditEvents = await fetchAdminAuditEvents(filters);
-      setAuditEvents(nextAuditEvents);
-      setSelectedAuditEventId((current) => (nextAuditEvents.some((event) => event.id === current) ? current : (nextAuditEvents[0]?.id ?? "")));
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Unable to load audit events.");
-    } finally {
-      setIsLoadingAuditEvents(false);
-    }
-  };
-
-  const loadAuditRetentionPolicy = async () => {
-    setIsLoadingAuditRetentionPolicy(true);
-    setError(undefined);
-
-    try {
-      const nextPolicy = await fetchAuditRetentionPolicy();
-      setAuditRetentionPolicy(nextPolicy);
-      setAuditRetentionForm({
-        retentionDays: nextPolicy.retentionDays,
-        minimumProtectedDays: nextPolicy.minimumProtectedDays,
-        batchSize: nextPolicy.batchSize,
-        isEnabled: nextPolicy.isEnabled,
-        reason: "",
-      });
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Unable to load audit retention policy.");
-    } finally {
-      setIsLoadingAuditRetentionPolicy(false);
-    }
-  };
-
-  const updateAuditRetentionForm = (patch: Partial<SaveAuditRetentionPolicyInput>) => {
-    setAuditRetentionForm((current) => ({ ...current, ...patch }));
-  };
-
-  const saveAuditRetentionPolicy = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSavingAuditRetentionPolicy(true);
-    setError(undefined);
-    setMessage(undefined);
-
-    try {
-      const updated = await updateAuditRetentionPolicy(auditRetentionForm);
-      setAuditRetentionPolicy(updated);
-      setAuditRetentionForm({
-        retentionDays: updated.retentionDays,
-        minimumProtectedDays: updated.minimumProtectedDays,
-        batchSize: updated.batchSize,
-        isEnabled: updated.isEnabled,
-        reason: "",
-      });
-      setMessage("Audit retention policy saved.");
-      void loadAuditEvents(auditFilters);
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to save audit retention policy.");
-    } finally {
-      setIsSavingAuditRetentionPolicy(false);
-    }
-  };
-
-  const purgeAuditEventsNow = async () => {
-    setIsPurgingAuditEvents(true);
-    setError(undefined);
-    setMessage(undefined);
-
-    try {
-      const result = await runAuditRetentionPurge();
-      setAuditRetentionPurgeResult(result);
-      setMessage(`Audit purge completed. Deleted ${result.deletedCount.toLocaleString()} event${result.deletedCount === 1 ? "" : "s"}.`);
-      void loadAuditEvents(auditFilters);
-    } catch (purgeError) {
-      setError(purgeError instanceof Error ? purgeError.message : "Unable to purge audit events.");
-    } finally {
-      setIsPurgingAuditEvents(false);
-    }
-  };
-
-  const updateAuditFilter = (patch: Partial<AuditEventFilters>) => {
-    setAuditFilters((current) => ({ ...current, ...patch }));
-  };
-
-  const loadSystemEvents = async (filters = systemEventFilters) => {
-    setIsLoadingSystemEvents(true);
-    setError(undefined);
-
-    try {
-      const nextSystemEvents = await fetchSystemEvents(filters);
-      setSystemEvents(nextSystemEvents);
-      setSelectedSystemEventId((current) => (nextSystemEvents.some((event) => event.id === current) ? current : (nextSystemEvents[0]?.id ?? "")));
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Unable to load system events.");
-    } finally {
-      setIsLoadingSystemEvents(false);
-    }
-  };
-
-  const updateSystemEventFilter = (patch: Partial<SystemEventFilters>) => {
-    setSystemEventFilters((current) => ({ ...current, ...patch }));
-  };
-
-  const applySystemEventFilters = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    void loadSystemEvents(systemEventFilters);
-  };
-
   const openSystemTab = () => {
     setActiveTab("system");
-    if (systemEvents.length === 0 && !isLoadingSystemEvents) void loadSystemEvents();
-  };
-
-  const applyAuditFilters = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    void loadAuditEvents(auditFilters);
   };
 
   const openAuditTab = () => {
     setActiveTab("audit");
-    if (auditEvents.length === 0 && !isLoadingAuditEvents) void loadAuditEvents();
-    if (!isLoadingAuditRetentionPolicy) void loadAuditRetentionPolicy();
   };
 
   const loadDeedRegistryReview = async (filters = deedReviewFilters) => {
@@ -2030,9 +1762,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
 
   const viewLookupAudit = (table: string, row: LookupRecord) => {
     const filters = { ...defaultAuditFilters, targetTable: table, targetRecordId: row.id };
-    setAuditFilters(filters);
+    setAuditSeedFilters(filters);
     setActiveTab("audit");
-    void loadAuditEvents(filters);
   };
 
   const addLookupRecord = async () => {
@@ -3185,469 +2916,9 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
           </section>
         </>
       ) : activeTab === "system" ? (
-        <>
-          <section className="admin-section">
-            <div className="section-title">
-              <Activity size={17} aria-hidden="true" />
-              <h3>System Events</h3>
-            </div>
-
-            <form className="system-event-filter-form" onSubmit={applySystemEventFilters}>
-              <label>
-                Date from
-                <input
-                  type="date"
-                  value={systemEventFilters.dateFrom ?? ""}
-                  onChange={(event) => updateSystemEventFilter({ dateFrom: event.target.value })}
-                  title="Show system events that occurred on or after this date."
-                />
-              </label>
-              <label>
-                Date to
-                <input
-                  type="date"
-                  value={systemEventFilters.dateTo ?? ""}
-                  onChange={(event) => updateSystemEventFilter({ dateTo: event.target.value })}
-                  title="Show system events that occurred on or before this date."
-                />
-              </label>
-              <label>
-                Type
-                <select
-                  value={systemEventFilters.eventType ?? ""}
-                  onChange={(event) => updateSystemEventFilter({ eventType: event.target.value })}
-                  title="Filter by operational event type."
-                >
-                  <option value="">All types</option>
-                  {Object.entries(systemEventTypeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Severity
-                <select
-                  value={systemEventFilters.severity ?? ""}
-                  onChange={(event) => updateSystemEventFilter({ severity: event.target.value })}
-                  title="Filter by severity."
-                >
-                  <option value="">All severities</option>
-                  {Object.entries(systemEventSeverityLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Status
-                <select
-                  value={systemEventFilters.status ?? ""}
-                  onChange={(event) => updateSystemEventFilter({ status: event.target.value })}
-                  title="Filter job and operational events by status."
-                >
-                  <option value="">All statuses</option>
-                  {Object.entries(systemEventStatusLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Source
-                <input
-                  value={systemEventFilters.source ?? ""}
-                  onChange={(event) => updateSystemEventFilter({ source: event.target.value })}
-                  placeholder="api, api-health, db:purge:audit"
-                  title="Filter by event source."
-                />
-              </label>
-              <label>
-                Search
-                <input
-                  value={systemEventFilters.q ?? ""}
-                  onChange={(event) => updateSystemEventFilter({ q: event.target.value })}
-                  placeholder="Message, detail, path, or actor"
-                  title="Search system event message, detail, request path, or actor email."
-                />
-              </label>
-              <label>
-                Limit
-                <select
-                  value={systemEventFilters.limit ?? 50}
-                  onChange={(event) => updateSystemEventFilter({ limit: Number(event.target.value) })}
-                  title="Limit the number of system events returned."
-                >
-                  <option value={25}>25 events</option>
-                  <option value={50}>50 events</option>
-                  <option value={100}>100 events</option>
-                </select>
-              </label>
-              <div className="admin-form-actions system-event-filter-actions">
-                <button type="submit" disabled={isLoadingSystemEvents} title="Apply system event filters.">
-                  {isLoadingSystemEvents ? "Loading..." : "Apply filters"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => {
-                    setSystemEventFilters(defaultSystemEventFilters);
-                    void loadSystemEvents(defaultSystemEventFilters);
-                  }}
-                  title="Clear system event filters and reload recent events."
-                >
-                  Clear
-                </button>
-              </div>
-            </form>
-
-            {isLoadingSystemEvents ? <div className="admin-message" role="status">Loading system events...</div> : null}
-
-            <div className="system-event-layout">
-              <div className="system-event-list" role="table" aria-label="System events">
-                {systemEvents.length === 0 && !isLoadingSystemEvents ? <p className="record-editor-empty">No system events match these filters.</p> : null}
-                {systemEvents.map((event) => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    className={event.id === selectedSystemEventId ? `system-event-row is-selected severity-${event.severity}` : `system-event-row severity-${event.severity}`}
-                    onClick={() => setSelectedSystemEventId(event.id)}
-                    title="Show details for this system event."
-                  >
-                    <span>
-                      <strong>{formatAdminTimestamp(event.occurredAt)}</strong>
-                      <small>{systemEventSummary(event)}</small>
-                    </span>
-                    <span>{systemEventTypeLabel(event.eventType)}</span>
-                    <span>{systemEventSeverityLabel(event.severity)}</span>
-                    <span>{event.message}</span>
-                  </button>
-                ))}
-              </div>
-
-              {selectedSystemEvent ? (
-                <article className="system-event-detail" aria-label="Selected system event detail">
-                  <h4>{systemEventTypeLabel(selectedSystemEvent.eventType)} - {selectedSystemEvent.message}</h4>
-                  <dl className="system-detail-grid">
-                    <div title="The component or job that emitted the event.">
-                      <dt>Source</dt>
-                      <dd>{selectedSystemEvent.source}</dd>
-                    </div>
-                    <div title="Operational severity for this event.">
-                      <dt>Severity</dt>
-                      <dd>{systemEventSeverityLabel(selectedSystemEvent.severity)}</dd>
-                    </div>
-                    <div title="Job or operational status, when available.">
-                      <dt>Status</dt>
-                      <dd>{systemEventStatusLabel(selectedSystemEvent.status)}</dd>
-                    </div>
-                    <div title="The application environment that emitted the event.">
-                      <dt>Environment</dt>
-                      <dd>{selectedSystemEvent.environment || "Not recorded"}</dd>
-                    </div>
-                    <div title="HTTP request path, when this event came from the API.">
-                      <dt>Request</dt>
-                      <dd>{selectedSystemEvent.requestPath ? `${selectedSystemEvent.requestMethod} ${selectedSystemEvent.requestPath}` : "Not recorded"}</dd>
-                    </div>
-                    <div title="HTTP response status, when this event came from the API.">
-                      <dt>Response</dt>
-                      <dd>{selectedSystemEvent.responseStatus ?? "Not recorded"}</dd>
-                    </div>
-                    <div title="Application user recorded with the event, when available.">
-                      <dt>Actor</dt>
-                      <dd>{selectedSystemEvent.actorEmail || selectedSystemEvent.actorRole || "Not recorded"}</dd>
-                    </div>
-                    <div title="Elapsed runtime for job events, when available.">
-                      <dt>Duration</dt>
-                      <dd>{selectedSystemEvent.durationMs === undefined ? "Not recorded" : `${selectedSystemEvent.durationMs.toLocaleString()} ms`}</dd>
-                    </div>
-                  </dl>
-                  <div className="system-value-grid">
-                    <section>
-                      <h5>Detail</h5>
-                      <pre>{selectedSystemEvent.detail || "None recorded"}</pre>
-                    </section>
-                    <section>
-                      <h5>Metadata</h5>
-                      <pre>{formatAuditJson(selectedSystemEvent.metadata)}</pre>
-                    </section>
-                  </div>
-                </article>
-              ) : null}
-            </div>
-          </section>
-        </>
+        <SystemEventsAdminTab onError={setError} onMessage={setMessage} />
       ) : (
-        <>
-          <section className="admin-section">
-            <div className="section-title">
-              <History size={17} aria-hidden="true" />
-              <h3>Audit Log</h3>
-            </div>
-
-            <form className="audit-retention-panel" onSubmit={saveAuditRetentionPolicy}>
-              <div className="audit-retention-heading">
-                <div>
-                  <h4>Audit Retention</h4>
-                  <span>Updated {auditRetentionPolicy.updatedAt ? formatAdminTimestamp(auditRetentionPolicy.updatedAt) : "Not recorded"}</span>
-                </div>
-                <label className="toggle-field">
-                  <input
-                    type="checkbox"
-                    checked={auditRetentionForm.isEnabled}
-                    onChange={(event) => updateAuditRetentionForm({ isEnabled: event.target.checked })}
-                    title="Enable or disable scheduled audit cleanup."
-                  />
-                  Enabled
-                </label>
-              </div>
-
-              <div className="audit-retention-grid">
-                <label>
-                  Retention days
-                  <input
-                    type="number"
-                    min={auditRetentionForm.minimumProtectedDays}
-                    max={36500}
-                    value={auditRetentionForm.retentionDays}
-                    onChange={(event) => updateAuditRetentionForm({ retentionDays: Number(event.target.value) })}
-                    title="Audit events older than this window are eligible for cleanup."
-                  />
-                </label>
-                <label>
-                  Protected days
-                  <input
-                    type="number"
-                    min={365}
-                    max={36500}
-                    value={auditRetentionForm.minimumProtectedDays}
-                    onChange={(event) => updateAuditRetentionForm({ minimumProtectedDays: Number(event.target.value) })}
-                    title="Minimum retention window allowed by the policy."
-                  />
-                </label>
-                <label>
-                  Batch size
-                  <input
-                    type="number"
-                    min={1}
-                    max={50000}
-                    value={auditRetentionForm.batchSize}
-                    onChange={(event) => updateAuditRetentionForm({ batchSize: Number(event.target.value) })}
-                    title="Maximum number of audit events deleted per purge run."
-                  />
-                </label>
-                <label>
-                  Reason
-                  <input
-                    value={auditRetentionForm.reason ?? ""}
-                    onChange={(event) => updateAuditRetentionForm({ reason: event.target.value })}
-                    placeholder="Policy update reason"
-                    title="Reason recorded in the audit log when this policy changes."
-                  />
-                </label>
-              </div>
-
-              <div className="admin-form-actions audit-retention-actions">
-                <button type="submit" disabled={isSavingAuditRetentionPolicy || isLoadingAuditRetentionPolicy} title="Save audit retention policy.">
-                  {isSavingAuditRetentionPolicy ? "Saving..." : "Save policy"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => void loadAuditRetentionPolicy()}
-                  disabled={isLoadingAuditRetentionPolicy}
-                  title="Reload audit retention policy."
-                >
-                  {isLoadingAuditRetentionPolicy ? "Loading..." : "Refresh"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => void purgeAuditEventsNow()}
-                  disabled={isPurgingAuditEvents || !auditRetentionForm.isEnabled}
-                  title="Run one audit retention purge batch now."
-                >
-                  {isPurgingAuditEvents ? "Purging..." : "Run purge"}
-                </button>
-                {auditRetentionPurgeResult ? (
-                  <span className="audit-retention-result">
-                    Cutoff {formatAdminTimestamp(auditRetentionPurgeResult.cutoffAt)} - deleted {auditRetentionPurgeResult.deletedCount.toLocaleString()}
-                  </span>
-                ) : null}
-              </div>
-            </form>
-
-            <form className="audit-filter-form" onSubmit={applyAuditFilters}>
-              <label>
-                Date from
-                <input
-                  type="date"
-                  value={auditFilters.dateFrom ?? ""}
-                  onChange={(event) => updateAuditFilter({ dateFrom: event.target.value })}
-                  title="Show audit events that occurred on or after this date."
-                />
-              </label>
-              <label>
-                Date to
-                <input
-                  type="date"
-                  value={auditFilters.dateTo ?? ""}
-                  onChange={(event) => updateAuditFilter({ dateTo: event.target.value })}
-                  title="Show audit events that occurred on or before this date."
-                />
-              </label>
-              <label>
-                Operation
-                <select
-                  value={auditFilters.action ?? ""}
-                  onChange={(event) => updateAuditFilter({ action: event.target.value })}
-                  title="Filter audit events by operation type."
-                >
-                  <option value="">All operations</option>
-                  {Object.entries(auditActionLabels).map(([action, label]) => (
-                    <option key={action} value={action}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Entity
-                <select
-                  value={auditFilters.targetTable ?? ""}
-                  onChange={(event) => updateAuditFilter({ targetTable: event.target.value })}
-                  title="Filter audit events by table or entity type."
-                >
-                  <option value="">All entities</option>
-                  {Object.entries(auditTableLabels).map(([table, label]) => (
-                    <option key={table} value={table}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Actor
-                <input
-                  value={auditFilters.actor ?? ""}
-                  onChange={(event) => updateAuditFilter({ actor: event.target.value })}
-                  placeholder="Email or database user"
-                  title="Filter by application user email, Auth0 subject, database user, or database session user."
-                />
-              </label>
-              <label>
-                Record ID
-                <input
-                  value={auditFilters.targetRecordId ?? ""}
-                  onChange={(event) => updateAuditFilter({ targetRecordId: event.target.value })}
-                  placeholder="Target record ID"
-                  title="Filter by the audited record identifier."
-                />
-              </label>
-              <label>
-                Limit
-                <select
-                  value={auditFilters.limit ?? 50}
-                  onChange={(event) => updateAuditFilter({ limit: Number(event.target.value) })}
-                  title="Limit the number of audit events returned."
-                >
-                  <option value={25}>25 events</option>
-                  <option value={50}>50 events</option>
-                  <option value={100}>100 events</option>
-                </select>
-              </label>
-              <div className="admin-form-actions audit-filter-actions">
-                <button type="submit" disabled={isLoadingAuditEvents} title="Apply audit log filters.">
-                  {isLoadingAuditEvents ? "Loading..." : "Apply filters"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => {
-                    setAuditFilters(defaultAuditFilters);
-                    void loadAuditEvents(defaultAuditFilters);
-                  }}
-                  title="Clear all audit log filters and reload recent events."
-                >
-                  Clear
-                </button>
-              </div>
-            </form>
-
-            {isLoadingAuditEvents ? <div className="admin-message" role="status">Loading audit events...</div> : null}
-
-            <div className="audit-log-layout">
-              <div className="audit-event-list" role="table" aria-label="Audit events">
-                {auditEvents.length === 0 && !isLoadingAuditEvents ? <p className="record-editor-empty">No audit events match these filters.</p> : null}
-                {auditEvents.map((event) => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    className={event.id === selectedAuditEventId ? "audit-event-row is-selected" : "audit-event-row"}
-                    onClick={() => setSelectedAuditEventId(event.id)}
-                    title="Show the old and new values captured for this audit event."
-                  >
-                    <span>
-                      <strong>{formatAdminTimestamp(event.occurredAt)}</strong>
-                      <small>{auditActorLabel(event)}</small>
-                    </span>
-                    <span>{auditActionLabel(event.action)}</span>
-                    <span>
-                      <strong>{auditTableLabel(event.targetTable)}</strong>
-                      <small>{event.targetRecordId || "No record ID"}</small>
-                    </span>
-                    <span>{auditEventSummary(event)}</span>
-                  </button>
-                ))}
-              </div>
-
-              {selectedAuditEvent ? (
-                <article className="audit-event-detail" aria-label="Selected audit event detail">
-                  <h4>{auditActionLabel(selectedAuditEvent.action)} {auditTableLabel(selectedAuditEvent.targetTable)}</h4>
-                  <dl className="audit-detail-grid">
-                    <div title="The application user or database user responsible for this event.">
-                      <dt>Actor</dt>
-                      <dd>{auditActorLabel(selectedAuditEvent)}</dd>
-                    </div>
-                    <div title="Whether the change came from the API, an import, or direct database access.">
-                      <dt>Source</dt>
-                      <dd>{selectedAuditEvent.source || "Unknown"}</dd>
-                    </div>
-                    <div title="The PostgreSQL current_user captured by the audit trigger.">
-                      <dt>Database user</dt>
-                      <dd>{selectedAuditEvent.actorDatabaseUser || "Not recorded"}</dd>
-                    </div>
-                    <div title="The PostgreSQL session_user captured by the audit trigger.">
-                      <dt>Session user</dt>
-                      <dd>{selectedAuditEvent.actorSessionUser || "Not recorded"}</dd>
-                    </div>
-                    <div title="The changed fields reported by the audit trigger.">
-                      <dt>Changed fields</dt>
-                      <dd>{selectedAuditEvent.changedFields.length ? selectedAuditEvent.changedFields.join(", ") : "None recorded"}</dd>
-                    </div>
-                    <div title="The reason supplied by the application or database session, when available.">
-                      <dt>Reason</dt>
-                      <dd>{selectedAuditEvent.reason || "None recorded"}</dd>
-                    </div>
-                  </dl>
-                  <div className="audit-value-grid">
-                    <section>
-                      <h5>Old values</h5>
-                      <pre>{formatAuditJson(selectedAuditEvent.previousValues)}</pre>
-                    </section>
-                    <section>
-                      <h5>New values</h5>
-                      <pre>{formatAuditJson(selectedAuditEvent.newValues)}</pre>
-                    </section>
-                  </div>
-                </article>
-              ) : null}
-            </div>
-          </section>
-        </>
+        <AuditAdminTab seedFilters={auditSeedFilters} onError={setError} onMessage={setMessage} />
       )}
         </div>
       </div>

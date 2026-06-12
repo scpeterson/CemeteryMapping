@@ -215,3 +215,6 @@ databaseChangeLog:
   - include:
       file: changes/072-system-events.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/073-system-event-retention-policy.sql
+      relativeToChangelogFile: true

@@ -40,6 +40,7 @@ const allowedAuditTables = new Set([
   "ownership_events",
   "ownership_parties",
   "sections",
+  "system_event_retention_policies",
 ]);
 
 function toAuditEvent(row) {

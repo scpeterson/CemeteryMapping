@@ -52,6 +52,7 @@ test("normalizeAuditFilters allows status and event lookup audit records", () =>
 
 test("normalizeAuditFilters allows audit retention policy audit records", () => {
   assert.equal(normalizeAuditFilters({ targetTable: "audit_retention_policies" }).targetTable, "audit_retention_policies");
+  assert.equal(normalizeAuditFilters({ targetTable: "system_event_retention_policies" }).targetTable, "system_event_retention_policies");
 });
 
 test("normalizeAuditRetentionPolicyInput keeps retention settings in bounded ranges", () => {

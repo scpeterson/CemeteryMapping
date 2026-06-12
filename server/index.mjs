@@ -2,7 +2,7 @@ import express from "express";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
-import { getAuditRetentionPolicy, listAuditEvents, purgeAuditEvents, updateAuditRetentionPolicy } from "./auditRepository.mjs";
+import { getAuditRetentionPolicy, listAuditEvents, updateAuditRetentionPolicy } from "./auditRepository.mjs";
 import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from "./auth0Management.mjs";
 import { loadApiConfig } from "./config.mjs";
 import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
@@ -33,7 +33,13 @@ import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
 import { listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
 import { listReportsForUser, matchReportQuery, runReport } from "./reportsRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
-import { listSystemEvents, safelyRecordSystemEvent } from "./systemEventRepository.mjs";
+import {
+  getSystemEventRetentionPolicy,
+  listSystemEvents,
+  safelyRecordSystemEvent,
+  updateSystemEventRetentionPolicy,
+} from "./systemEventRepository.mjs";
+import { runAuditRetentionPurgeJob, runSystemEventRetentionPurgeJob } from "./retentionJobs.mjs";
 import { appVersionMetadata } from "./version.mjs";
 import {
   BadRequestError,
@@ -849,9 +855,50 @@ export function createApp(config, pool) {
     }
   });
 
-  app.post("/api/admin/audit-retention-purge", requireAdmin, async (_request, response, next) => {
+  app.post("/api/admin/audit-retention-purge", requireAdmin, async (request, response, next) => {
     try {
-      response.json(await purgeAuditEvents(pool));
+      response.json(
+        await runAuditRetentionPurgeJob(pool, {
+          actorUser: request.user,
+          trigger: "admin-api",
+          environment: config.appEnv,
+          appVersion: versionMetadata.version,
+          gitSha: versionMetadata.gitSha,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/system-event-retention-policy", requireAdmin, async (_request, response, next) => {
+    try {
+      response.json(await getSystemEventRetentionPolicy(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/system-event-retention-policy", requireAdmin, async (request, response, next) => {
+    try {
+      const reason = validateMutationReason(request.body?.reason);
+      response.json(await updateSystemEventRetentionPolicy(pool, request.body, { actorUser: request.user, reason }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/system-event-retention-purge", requireAdmin, async (request, response, next) => {
+    try {
+      response.json(
+        await runSystemEventRetentionPurgeJob(pool, {
+          actorUser: request.user,
+          trigger: "admin-api",
+          environment: config.appEnv,
+          appVersion: versionMetadata.version,
+          gitSha: versionMetadata.gitSha,
+        }),
+      );
     } catch (error) {
       next(error);
     }
