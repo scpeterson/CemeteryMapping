@@ -854,10 +854,12 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "urn",
     "Brandt Funeral Home",
     "Yes",
-    "army",
-    "world_war_ii",
-    "Confirmed from marker photo.",
-  ]);
+	    "army",
+	    "world_war_ii",
+	    "Confirmed from marker photo.",
+	    "1925-10-04",
+	    "2017-10-22",
+	  ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");
   assert.equal(updated?.person.birthDate, "1925-10-04");

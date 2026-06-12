@@ -150,7 +150,8 @@ async function runBurialDateExtremes(client, definition, cemeteryIds) {
         gravesites.gravesite_id,
         COALESCE(NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''))) AS person,
         burials.burial_date,
-        burials.death_date
+        COALESCE(burials.death_date_text, burials.death_date::text) AS death_date,
+        burials.death_date AS death_date_sort
       FROM burials
       JOIN gravesites
         ON gravesites.id = burials.gravesite_uuid
@@ -164,14 +165,14 @@ async function runBurialDateExtremes(client, definition, cemeteryIds) {
     (
       SELECT 'Oldest burial' AS result, cemetery, grave, gravesite_id, person, burial_date, death_date
       FROM eligible_burials
-      ORDER BY burial_date ASC, death_date ASC NULLS LAST, person
+      ORDER BY burial_date ASC, death_date_sort ASC NULLS LAST, death_date ASC NULLS LAST, person
       LIMIT 1
     )
     UNION ALL
     (
       SELECT 'Latest burial' AS result, cemetery, grave, gravesite_id, person, burial_date, death_date
       FROM eligible_burials
-      ORDER BY burial_date DESC, death_date DESC NULLS LAST, person
+      ORDER BY burial_date DESC, death_date_sort DESC NULLS LAST, death_date DESC NULLS LAST, person
       LIMIT 1
     )
   `,

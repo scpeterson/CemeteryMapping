@@ -25,6 +25,16 @@ function dateOnly(value) {
   return String(value).slice(0, 10);
 }
 
+function recordedDate(value, fallbackDate) {
+  return value || dateOnly(fallbackDate);
+}
+
+function splitRecordedDate(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return { date: null, text: null };
+  return /^\d{4}-\d{2}-\d{2}$/u.test(text) ? { date: text, text } : { date: null, text };
+}
+
 function compactJoin(values, separator = " | ") {
   return values.filter(Boolean).join(separator) || undefined;
 }
@@ -51,8 +61,8 @@ function toBurial(burial) {
       id: `person-${burial.id}`,
       firstName: burial.first_name ?? "",
       lastName: burial.last_name ?? burial.full_name ?? "Unknown",
-      birthDate: dateOnly(burial.birth_date),
-      deathDate: dateOnly(burial.death_date),
+      birthDate: recordedDate(burial.birth_date_text, burial.birth_date),
+      deathDate: recordedDate(burial.death_date_text, burial.death_date),
     },
     burialDate: dateOnly(burial.burial_date),
     intermentType: burial.interment_type ?? "casket",
@@ -341,6 +351,38 @@ async function burialMilitaryServiceColumnsExist(client) {
   `);
 
   return Boolean(result.rows[0]?.exists);
+}
+
+async function burialRecordedDateTextColumnsExist(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'burials'
+        AND column_name = 'birth_date_text'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function burialRecordedDateTextSql(client) {
+  if (await burialRecordedDateTextColumnsExist(client)) {
+    return {
+      select: "burials.birth_date_text, burials.death_date_text",
+      set: "birth_date_text = $14,\n            death_date_text = $15",
+      return: "birth_date_text,\n          death_date_text",
+      hasColumns: true,
+    };
+  }
+
+  return {
+    select: "NULL::text AS birth_date_text, NULL::text AS death_date_text",
+    set: "",
+    return: "NULL::text AS birth_date_text,\n          NULL::text AS death_date_text",
+    hasColumns: false,
+  };
 }
 
 async function legacyBurialMilitaryBranchColumnExists(client) {
@@ -713,6 +755,7 @@ async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
 async function selectBurialMutationState(client, id) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
+  const recordedDateTextSql = await burialRecordedDateTextSql(client);
   const result = await client.query(
     `
       SELECT
@@ -723,6 +766,7 @@ async function selectBurialMutationState(client, id) {
         burials.last_name,
         burials.full_name,
         burials.birth_date,
+        ${recordedDateTextSql.select},
         burials.death_date,
         burials.burial_date,
         ${intermentTypeSql.select},
@@ -749,9 +793,10 @@ async function selectBurialMutationState(client, id) {
 async function selectBurialById(client, id) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
+  const recordedDateTextSql = await burialRecordedDateTextSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
       ${intermentTypeSql.join}
       ${militaryServiceSql.join}
@@ -835,9 +880,10 @@ async function selectOwnersForCemeteries(client, cemeteryIds) {
 async function selectBurialsForCemeteries(client, cemeteryIds) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
+  const recordedDateTextSql = await burialRecordedDateTextSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
       ${intermentTypeSql.join}
       ${militaryServiceSql.join}
@@ -1094,9 +1140,10 @@ export async function createOwnershipEvent(
 async function selectBurialsForGrave(client, graveUuid) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
+  const recordedDateTextSql = await burialRecordedDateTextSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
       ${intermentTypeSql.join}
       ${militaryServiceSql.join}
@@ -1718,6 +1765,9 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
         : `'casket'::text AS interment_type,
           'Casket'::text AS interment_type_label`;
     const hasMilitaryServiceColumns = await burialMilitaryServiceColumnsExist(client);
+    const recordedDateTextSql = await burialRecordedDateTextSql(client);
+    const birthDate = splitRecordedDate(burial.birthDate);
+    const deathDate = splitRecordedDate(burial.deathDate);
     const hasMilitaryBranchLookup = hasMilitaryServiceColumns && (await burialMilitaryBranchTypeColumnExists(client));
     const hasMilitaryWarServiceLookup = hasMilitaryServiceColumns && (await burialMilitaryWarServiceTypeColumnExists(client));
     const hasLegacyMilitaryBranchColumn = hasMilitaryServiceColumns && !hasMilitaryBranchLookup && (await legacyBurialMilitaryBranchColumnExists(client));
@@ -1754,8 +1804,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           burial.firstName || null,
           burial.lastName || null,
           fullName,
-          burial.birthDate || null,
-          burial.deathDate || null,
+          birthDate.date,
+          deathDate.date,
           burial.burialDate || null,
           effectiveIntermentType,
           burial.funeralHome || null,
@@ -1769,14 +1819,16 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           burial.firstName || null,
           burial.lastName || null,
           fullName,
-          burial.birthDate || null,
-          burial.deathDate || null,
+          birthDate.date,
+          deathDate.date,
           burial.burialDate || null,
           effectiveIntermentType,
           burial.funeralHome || null,
           burial.veteran ? "Yes" : "No",
           burial.notes || null,
         ];
+    if (recordedDateTextSql.hasColumns) updateValues.push(birthDate.text, deathDate.text);
+    const recordedDateAssignments = recordedDateTextSql.hasColumns ? `,\n            ${recordedDateTextSql.set}` : "";
     const updateResult = await client.query(
       `
         UPDATE burials
@@ -1789,7 +1841,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
             ${intermentTypeSetSql},
             funeral_home = $9,
             veteran = $10,
-            ${militaryServiceSetSql}
+            ${militaryServiceSetSql}${recordedDateAssignments}
         WHERE id = $1
         RETURNING
           id::text,
@@ -1798,6 +1850,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           last_name,
           full_name,
           birth_date,
+          ${recordedDateTextSql.return},
           death_date,
           burial_date,
           ${intermentTypeReturnSql},

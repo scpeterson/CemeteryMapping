@@ -325,11 +325,11 @@ function BurialRecord({
         </label>
         <label>
           Birth date
-          <input type="date" value={form.birthDate} onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value }))} />
+          <input value={form.birthDate} placeholder="YYYY, YYYY-MM, or Nov. YYYY" onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value }))} />
         </label>
         <label>
           Death date
-          <input type="date" value={form.deathDate} onChange={(event) => setForm((current) => ({ ...current, deathDate: event.target.value }))} />
+          <input value={form.deathDate} placeholder="YYYY, YYYY-MM, or Nov. YYYY" onChange={(event) => setForm((current) => ({ ...current, deathDate: event.target.value }))} />
         </label>
         <label>
           Burial date

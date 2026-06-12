@@ -229,6 +229,15 @@ function optionalDate(value, label) {
   return date;
 }
 
+function optionalRecordedDate(value, label) {
+  const date = optionalText(value, label, 50);
+  if (!date) return date;
+  const monthName = "(?:Jan\\.?|January|Feb\\.?|February|Mar\\.?|March|Apr\\.?|April|May|Jun\\.?|June|Jul\\.?|July|Aug\\.?|August|Sep\\.?|Sept\\.?|September|Oct\\.?|October|Nov\\.?|November|Dec\\.?|December)";
+  const validRecordedDate = new RegExp(`^(?:\\d{4}|\\d{4}-\\d{2}|\\d{4}-\\d{2}-\\d{2}|${monthName}\\s+\\d{4})$`, "iu");
+  if (!validRecordedDate.test(date)) throw new BadRequestError(`${label} must use YYYY, YYYY-MM, YYYY-MM-DD, or Month YYYY format.`);
+  return date;
+}
+
 function optionalBoolean(value, label) {
   if (value === undefined || value === null) return false;
   if (typeof value !== "boolean") throw new BadRequestError(`${label} must be true or false.`);
@@ -242,8 +251,8 @@ function validateBurialPayload(body) {
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
     lastName: optionalText(body?.lastName, "Last name", 100) ?? "",
-    birthDate: optionalDate(body?.birthDate, "Birth date") ?? "",
-    deathDate: optionalDate(body?.deathDate, "Death date") ?? "",
+    birthDate: optionalRecordedDate(body?.birthDate, "Birth date") ?? "",
+    deathDate: optionalRecordedDate(body?.deathDate, "Death date") ?? "",
     burialDate: optionalDate(body?.burialDate, "Burial date") ?? "",
     intermentType,
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",

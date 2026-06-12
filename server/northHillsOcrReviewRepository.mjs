@@ -247,8 +247,8 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
             gravesite.gravesite_id,
             gravesite.section_id,
             burial.full_name,
-            burial.birth_date,
-            burial.death_date,
+            COALESCE(burial.birth_date_text, burial.birth_date::text) AS birth_date,
+            COALESCE(burial.death_date_text, burial.death_date::text) AS death_date,
             burial.notes,
             COALESCE(gravesite_evidence.evidence, '[]'::jsonb) AS gravesite_evidence,
             COALESCE(headstone_candidates.candidates, '[]'::jsonb) AS headstone_candidates,
@@ -271,6 +271,8 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
               CASE
                 WHEN (EXTRACT(YEAR FROM burial.birth_date)::int = ANY(entry.parsed_years))
                   OR (EXTRACT(YEAR FROM burial.death_date)::int = ANY(entry.parsed_years))
+                  OR (substring(burial.birth_date_text from '([0-9]{4})')::int = ANY(entry.parsed_years))
+                  OR (substring(burial.death_date_text from '([0-9]{4})')::int = ANY(entry.parsed_years))
                 THEN 2 ELSE 0
               END
             ) AS score

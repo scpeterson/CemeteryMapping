@@ -77,13 +77,13 @@ function numberCell(row, columnName) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function dateFromYear(value) {
+function recordedDateFromYear(value) {
   if (!present(value)) return null;
 
   const parsed = Number.parseInt(String(value).trim(), 10);
   if (!Number.isInteger(parsed) || parsed < 1000 || parsed > 9999) return null;
 
-  return `${String(parsed).padStart(4, "0")}-01-01`;
+  return String(parsed).padStart(4, "0");
 }
 
 function personFields(row, personNumber) {
@@ -91,16 +91,16 @@ function personFields(row, personNumber) {
     return {
       firstName: textCell(row, "Person2First") ?? textCell(row, "Persons2First") ?? textCell(row, "Persons26First"),
       lastName: textCell(row, "Person2Last") ?? textCell(row, "Persons2Last") ?? textCell(row, "Persons26Last"),
-      birthDate: dateFromYear(cell(row, "Person2Yob")),
-      deathDate: dateFromYear(cell(row, "Person2Yod")),
+      birthDate: recordedDateFromYear(cell(row, "Person2Yob")),
+      deathDate: recordedDateFromYear(cell(row, "Person2Yod")),
     };
   }
 
   return {
     firstName: textCell(row, `Person${personNumber}First`),
     lastName: textCell(row, `Person${personNumber}Last`),
-    birthDate: dateFromYear(cell(row, `Person${personNumber}Yob`)),
-    deathDate: dateFromYear(cell(row, `Person${personNumber}Yod`)),
+    birthDate: recordedDateFromYear(cell(row, `Person${personNumber}Yob`)),
+    deathDate: recordedDateFromYear(cell(row, `Person${personNumber}Yod`)),
   };
 }
 
@@ -546,13 +546,15 @@ async function replaceBurials(client, imported, generatedGravesite, gravesiteUui
           last_name,
           full_name,
           birth_date,
+          birth_date_text,
           death_date,
+          death_date_text,
           interment_type_id,
           notes,
           gravesite_id,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, $5::date, $6::date, (SELECT id FROM burial_interment_types WHERE code = 'casket'), $7, $8, now())
+        VALUES ($1, $2, $3, $4, NULL, $5, NULL, $6, (SELECT id FROM burial_interment_types WHERE code = 'casket'), $7, $8, now())
         RETURNING id
       `,
       [
