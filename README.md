@@ -155,9 +155,9 @@ AUTH0_DOMAIN=<tenant>.auth0.com
 AUTH0_AUDIENCE=<api-identifier>
 ```
 
-In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, and `admin` checks.
+In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, `cemetery-admin`, and `admin` checks.
 
-Auth0 API permissions must be configured in Auth0 manually. The API should include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user` and `admin`, then have affected users sign out and back in so their access tokens are refreshed.
+Auth0 API permissions must be configured in Auth0 manually. The API should include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user`, `cemetery-admin`, and `admin`, then have affected users sign out and back in so their access tokens are refreshed.
 
 To configure those Auth0 API permissions and role assignments through the Auth0 Management API, run the environment-aware setup script with the target tenant values:
 
@@ -188,6 +188,6 @@ For controlled integration testing behind a trusted local proxy, use `AUTH_MODE=
 
 - `x-cemetery-user-subject`
 - `x-cemetery-user-email`
-- `x-cemetery-user-role` with `reader`, `power-user`, or `admin`
+- `x-cemetery-user-role` with `reader`, `power-user`, `cemetery-admin`, or `admin`
 
 Do not expose trusted-header mode directly to the public internet.

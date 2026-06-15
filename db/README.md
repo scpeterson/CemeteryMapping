@@ -279,7 +279,7 @@ The security foundation uses:
 
 The application should use soft deletes for cemetery data. Normal read queries should filter `deleted_at IS NULL`; administrative recovery and audit views can explicitly include deleted rows.
 
-Database triggers write `audit_events` records for inserts, updates, soft deletes, restores, and hard deletes across the core cemetery and admin tables. API mutation paths set transaction-local audit context so audit rows include the application user, role, identity-provider subject, and email. Direct database changes are also captured with PostgreSQL `current_user` and `session_user`; use unique named database login roles for every person or automation with direct database access. See the [Database Auditing](../docs/database-auditing.md) guide.
+Database triggers write `audit_events` records for inserts, updates, soft deletes, restores, and hard deletes across the core cemetery and admin tables. API mutation paths set transaction-local audit context so audit rows include the application user, role, identity-provider subject, and email. Direct database changes are also captured with PostgreSQL `current_user` and `session_user`; use unique named database login roles for every person or automation with direct database access, granted through PostgreSQL group roles that mirror the application roles. See the [Database Auditing](../docs/database-auditing.md) guide.
 
 Audit retention is controlled by the singleton `audit_retention_policies` row. The default keeps seven years of audit events and removes old rows in `5000` row batches through `npm run db:purge:audit`.
 

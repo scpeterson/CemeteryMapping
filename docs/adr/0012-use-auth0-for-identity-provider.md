@@ -13,6 +13,7 @@
 ADR 0011 established that the application should not store passwords and should use an external identity provider. The application needs:
 
 - A highest-level `admin` role.
+- A cemetery-scoped `cemetery-admin` role for administering assigned cemeteries without global system administration.
 - A `power-user` role for deed/owner access and existing-record updates.
 - A broadly usable `reader` role.
 - Standards-based login for the React frontend.
@@ -36,8 +37,16 @@ Auth0 will provide:
 Initial Auth0 roles:
 
 - `admin`
+- `cemetery-admin`
 - `power-user`
 - `reader`
+
+Application role intent:
+
+- `reader`: can view cemetery map, grave, burial, and marker information, but cannot view deed/owner details.
+- `power-user`: can view deed/owner details and update existing cemetery records for assigned cemeteries.
+- `cemetery-admin`: can administer assigned cemeteries and has read-only access elsewhere, but cannot manage global users, lookups, audit/system events, or system-wide deletes.
+- `admin`: can manage the whole system, including users, roles, lookups, audit/system events, all cemeteries, and global administrative actions.
 
 Initial API permissions:
 
@@ -75,6 +84,8 @@ The repository must not commit Auth0 secrets. Local, stage, and production deplo
 Development and CI can continue using `AUTH_MODE=disabled` until Auth0 test tenant credentials are available.
 
 The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT validation. After validation, the API loads `app_users` using the token `sub` claim and enforces the local `role_name`. Token permissions are useful context from Auth0, but the database remains the final application authorization source.
+
+Production database access should mirror the application role model with PostgreSQL group roles such as `cemetery_reader`, `cemetery_power_user`, `cemetery_admin`, and `cemetery_system_admin`. Normal web traffic still uses the API service database account plus transaction-local application audit context; mirrored PostgreSQL roles are for direct database users, maintenance scripts, imports, and break-glass administration so `current_user` and `session_user` remain meaningful in audit rows.
 
 When Management API credentials are configured, the Admin UI can find an Auth0 user by email or create an Auth0 database-connection user before saving the local `app_users` row. If `AUTH0_PASSWORD_RESET_CLIENT_ID` is also configured, newly created users receive Auth0's password reset email so they can set their own password. This keeps Auth0 responsible for identity while keeping application roles local.
 
