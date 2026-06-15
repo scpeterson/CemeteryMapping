@@ -254,3 +254,21 @@ databaseChangeLog:
   - include:
       file: changes/085-headstone-vase-material-placement-notes.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/086-create-trinity-c-lots-72-through-85.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/087-create-trinity-c-lots-50-through-41-and-86-through-90.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/088-create-trinity-c-lots-28-through-20-40-and-91-through-95.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/089-realign-trinity-c-lot-29-row.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/090-realign-trinity-c-lot-10.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/091-create-trinity-c-lots-11-through-19-39-and-96-through-100.sql
+      relativeToChangelogFile: true
