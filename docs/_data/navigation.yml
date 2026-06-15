@@ -14,6 +14,8 @@
   url: /database-auditing.html
 - title: "Auth0 Test Tenant"
   url: /auth0-test-tenant.html
+- title: "Auth0 Production Checklist"
+  url: /auth0-production-checklist.html
 - title: "ADR Index"
   url: /adr/
 - title: "ADR 0001: Frontend"

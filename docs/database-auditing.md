@@ -62,17 +62,35 @@ Direct database users do not have application audit context unless they set it e
 
 Use group roles for privileges and one login role per human or automation. That keeps grants manageable while preserving the actual login identity in `session_user`.
 
+The database group roles should mirror the application role model:
+
+- `cemetery_reader`
+- `cemetery_power_user`
+- `cemetery_admin`
+- `cemetery_system_admin`
+
+Do not create one PostgreSQL login for every normal web application session. The API should continue to connect through its service account and set application audit context from Auth0 and `app_users`; that is what records the signed-in user's email, role, and identity-provider subject for application writes. Mirrored PostgreSQL roles are for direct database sessions, maintenance scripts, import jobs, and break-glass administration where PostgreSQL `current_user` and `session_user` become the primary actor evidence.
+
+Each direct human or automation login should be granted exactly one of the mirrored group roles by default. If temporary elevated access is needed, grant it deliberately, document the reason, and revoke it after the task.
+
 Example:
 
 ```sql
-CREATE ROLE cemetery_direct_read NOLOGIN;
-CREATE ROLE cemetery_direct_write NOLOGIN;
+CREATE ROLE cemetery_reader NOLOGIN;
+CREATE ROLE cemetery_power_user NOLOGIN;
+CREATE ROLE cemetery_admin NOLOGIN;
+CREATE ROLE cemetery_system_admin NOLOGIN;
 
-GRANT CONNECT ON DATABASE cemetery_mapping_dev TO cemetery_direct_read, cemetery_direct_write;
-GRANT USAGE ON SCHEMA public TO cemetery_direct_read, cemetery_direct_write;
+GRANT CONNECT ON DATABASE cemetery_mapping_dev
+TO cemetery_reader, cemetery_power_user, cemetery_admin, cemetery_system_admin;
 
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO cemetery_direct_read;
-GRANT cemetery_direct_read TO cemetery_direct_write;
+GRANT USAGE ON SCHEMA public
+TO cemetery_reader, cemetery_power_user, cemetery_admin, cemetery_system_admin;
+
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO cemetery_reader;
+GRANT cemetery_reader TO cemetery_power_user;
+GRANT cemetery_power_user TO cemetery_admin;
+GRANT cemetery_admin TO cemetery_system_admin;
 
 GRANT INSERT, UPDATE ON
   cemeteries,
@@ -100,12 +118,16 @@ GRANT INSERT, UPDATE ON
   deed_investigation_case_entries,
   deed_investigation_case_actions,
   historic_lot_map_gravesite_evidence
-TO cemetery_direct_write;
+TO cemetery_power_user;
 
-GRANT INSERT ON audit_events TO cemetery_direct_write;
+GRANT INSERT ON audit_events TO cemetery_power_user;
+
+-- System-admin-only direct maintenance, such as user/role repair.
+GRANT INSERT, UPDATE ON app_users, app_user_cemetery_access, app_roles
+TO cemetery_system_admin;
 
 CREATE ROLE scott_peterson LOGIN PASSWORD '<use a generated password>';
-GRANT cemetery_direct_write TO scott_peterson;
+GRANT cemetery_system_admin TO scott_peterson;
 ```
 
 For hosted production databases, prefer managed authentication or a database access proxy when available. The same rule still applies: the database session must preserve a unique per-person or per-automation identity.
