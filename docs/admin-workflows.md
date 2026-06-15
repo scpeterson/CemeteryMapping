@@ -15,6 +15,7 @@ This page records the first administrative editing workflows for Cemetery Mappin
 - Deletes are soft deletes and must create audit events.
 - Creates and updates should create audit events before they are exposed in the UI.
 - Spatial geometry edits should be handled carefully and should not be the first editing workflow unless the source data workflow is also defined.
+- Spatial records should distinguish measured evidence, operational interpretation, and user-friendly presentation. GPS marker/headstone points are evidence; gravesite and lot polygons are often interpreted working geometry; historic scans and schematic layouts can support readable presentation without being survey-grade.
 
 ## Workflow Priority
 
@@ -175,10 +176,28 @@ Defer until the spatial editing source of truth is decided.
 
 Geometry editing has higher risk because existing data originates from an Esri File Geodatabase and the spreadsheet-derived gravesite boxes are placeholders. Before exposing geometry edits, decide whether edits happen in this application, ArcGIS Pro, or another GIS editing workflow.
 
+Future task: define and implement the cemetery geometry philosophy before adding broad spatial editing tools.
+
+The working principle should be:
+
+- Headstones and markers are evidence. GPS marker points should remain fixed unless the source observation itself is corrected.
+- Gravesites and lots are operational interpretation. Their polygons may be best-fit, estimated, reviewed, or aligned to local cemetery structure.
+- Historic scans, old TIF diagrams, and future schematic layouts are presentation and evidence aids. They may be easier for users to read without being geographically precise.
+
+Expected future work:
+
+- Add an ADR for separating evidence geometry, operational geometry, and schematic presentation geometry.
+- Add geometry metadata such as source type, confidence, review notes, reviewed timestamp, and reviewer where useful.
+- Consider a separate schematic geometry layer instead of forcing readable diagram layouts into the same PostGIS geometry used for geographic display.
+- Add map modes or layers such as `Geographic`, `Diagram`, and `Evidence`.
+- Add legends and detail-panel labels that tell users whether a marker point is GPS-observed and whether a gravesite or lot polygon is estimated, reviewed, or schematic.
+- Build alignment-run tools for sections such as C so gravesite polygons can be regularized between anchors without moving GPS marker points or accumulating east-west spacing error one grave at a time.
+
 ## Explicitly Deferred
 
 - Editing cemetery or section polygons in the web UI.
 - Creating surveyed gravesite polygons.
+- Adding broad gravesite geometry editing before the evidence/interpretation/presentation model is documented.
 - Bulk import approval screens.
 - Automatic deed registry promotion from staged evidence into production ownership records.
 - Hard delete operations.
