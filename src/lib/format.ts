@@ -1,4 +1,4 @@
-import type { GraveSpaceSummary, GraveStatus } from "../types";
+import type { CemeteryLot, GeometryConfidence, GeometryType, GraveSpaceSummary, GraveStatus } from "../types";
 
 export const statusLabels: Record<GraveStatus, string> = {
   available: "Available",
@@ -16,6 +16,21 @@ export const statusColors: Record<GraveStatus, string> = {
   sold: "#8e6fbb",
   needs_review: "#c7524f",
   unknown: "#b8c0c8",
+};
+
+export const geometryTypeLabels: Record<GeometryType, string> = {
+  evidence: "Evidence",
+  operational: "Operational",
+  schematic: "Diagram",
+};
+
+export const geometryConfidenceLabels: Record<GeometryConfidence, string> = {
+  gps: "GPS",
+  surveyed: "Surveyed",
+  reviewed: "Reviewed",
+  estimated: "Estimated",
+  draft: "Draft",
+  unknown: "Unknown",
 };
 
 export function formatDate(date?: string) {
@@ -62,6 +77,10 @@ export function formatGraveLocation(grave: Pick<GraveSpaceSummary, "section" | "
 
 export function graveSelectionKey(grave: Pick<GraveSpaceSummary, "cemeteryId" | "id">) {
   return `${grave.cemeteryId}:${grave.id}`;
+}
+
+export function lotSelectionKey(lot: Pick<CemeteryLot, "cemeteryId" | "section" | "block" | "id">) {
+  return [lot.cemeteryId, lot.section, lot.block ?? "", lot.id].join(":");
 }
 
 export function normalize(value: string) {

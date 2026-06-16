@@ -221,6 +221,28 @@ export async function uploadGravePhoto(input: UploadGravePhotoInput): Promise<Me
   return jsonResponse<MediaAsset>(response, "Photo upload API");
 }
 
+export type UploadHeadstonePhotoInput = Omit<UploadGravePhotoInput, "graveSpaceId" | "headstoneId"> & {
+  headstoneId: string;
+};
+
+export async function uploadHeadstonePhoto(input: UploadHeadstonePhotoInput): Promise<MediaAsset> {
+  const params = new URLSearchParams();
+  params.set("filename", input.file.name);
+  params.set("notes", input.notes ?? "");
+  params.set("capturedAt", input.capturedAt ?? new Date(input.file.lastModified || Date.now()).toISOString());
+  params.set("source", input.source ?? "field_upload");
+  if (input.latitude !== undefined) params.set("latitude", String(input.latitude));
+  if (input.longitude !== undefined) params.set("longitude", String(input.longitude));
+  if (input.gpsAccuracy !== undefined) params.set("gpsAccuracy", String(input.gpsAccuracy));
+
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(input.headstoneId)}/media-assets?${params.toString()}`, {
+    method: "POST",
+    headers: { "Content-Type": input.file.type || "image/jpeg" },
+    body: input.file,
+  });
+  return jsonResponse<MediaAsset>(response, "Marker photo upload API");
+}
+
 export async function fetchAdminRoles(): Promise<AppRole[]> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/roles`);
   return jsonResponse<AppRole[]>(response, "Roles API");

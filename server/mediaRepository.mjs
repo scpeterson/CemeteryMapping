@@ -102,6 +102,20 @@ async function headstoneIsLinkedToGrave(client, headstoneId, graveUuid) {
   return Boolean(result.rows[0]);
 }
 
+async function headstoneForId(client, headstoneId) {
+  const result = await client.query(
+    `
+      SELECT id::text, cemetery_id::text
+      FROM headstones
+      WHERE id = $1
+        AND deleted_at IS NULL
+      LIMIT 1
+    `,
+    [headstoneId],
+  );
+  return result.rows[0];
+}
+
 export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = defaultUploadRoot } = {}) {
   if (!allowedImageTypes.has(String(file.contentType ?? "").toLowerCase())) {
     throw new Error("Unsupported photo type.");
@@ -239,6 +253,128 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
         [assetId, headstoneId, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
       );
     }
+
+    await client.query("COMMIT");
+    return toMediaAsset(assetResult.rows[0]);
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = defaultUploadRoot } = {}) {
+  if (!allowedImageTypes.has(String(file.contentType ?? "").toLowerCase())) {
+    throw new Error("Unsupported photo type.");
+  }
+  if (!file.bytes?.length) throw new Error("Photo file is required.");
+
+  const client = await pool.connect();
+  let savedFilePath;
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason: "Photo upload" });
+    const headstone = await headstoneForId(client, headstoneId);
+    if (!headstone || (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(headstone.cemetery_id))) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    const assetId = randomUUID();
+    const extension = fileExtension(file.contentType, file.originalFilename);
+    const storageKey = `${assetId}${extension}`;
+    savedFilePath = join(uploadRoot, storageKey);
+    await mkdir(uploadRoot, { recursive: true });
+    await writeFile(savedFilePath, file.bytes);
+
+    const assetResult = await client.query(
+      `
+        INSERT INTO media_assets (
+          id,
+          cemetery_id,
+          asset_type,
+          storage_key,
+          file_url,
+          original_filename,
+          content_type,
+          byte_size,
+          captured_at,
+          captured_by_app_user_id,
+          captured_by_external_subject,
+          captured_by_email,
+          latitude,
+          longitude,
+          gps_accuracy,
+          device_make,
+          device_model,
+          notes,
+          source,
+          status
+        )
+        VALUES (
+          $1, $2, 'photo', $3, $4, $5, $6, $7, $8::timestamptz,
+          $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'linked'
+        )
+        RETURNING
+          id::text,
+          cemetery_id::text,
+          asset_type,
+          file_url,
+          thumbnail_url,
+          original_filename,
+          content_type,
+          byte_size,
+          captured_at,
+          uploaded_at,
+          captured_by_email,
+          latitude,
+          longitude,
+          gps_accuracy,
+          device_make,
+          device_model,
+          notes,
+          source,
+          status
+      `,
+      [
+        assetId,
+        headstone.cemetery_id,
+        storageKey,
+        publicFileUrl(storageKey),
+        cleanText(file.originalFilename, 255) || null,
+        file.contentType,
+        file.bytes.length,
+        optionalDate(metadata.capturedAt),
+        actorUser?.id ?? null,
+        actorUser?.subject ?? null,
+        actorUser?.email ?? null,
+        optionalNumber(metadata.latitude),
+        optionalNumber(metadata.longitude),
+        optionalNumber(metadata.gpsAccuracy),
+        cleanText(metadata.deviceMake, 100) || null,
+        cleanText(metadata.deviceModel, 100) || null,
+        cleanText(metadata.notes, 4000) || null,
+        cleanText(metadata.source, 50) || "field_upload",
+      ],
+    );
+
+    await client.query(
+      `
+        INSERT INTO headstone_media_assets (
+          media_asset_id,
+          headstone_uuid,
+          relationship_type,
+          status,
+          notes,
+          linked_by_app_user_id,
+          linked_by_external_subject,
+          linked_by_email
+        )
+        VALUES ($1, $2, 'documents', 'linked', $3, $4, $5, $6)
+      `,
+      [assetId, headstone.id, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
+    );
 
     await client.query("COMMIT");
     return toMediaAsset(assetResult.rows[0]);

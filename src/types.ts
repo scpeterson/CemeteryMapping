@@ -1,6 +1,8 @@
 export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "needs_review" | "unknown";
 export type AppRoleName = "reader" | "power-user" | "cemetery-admin" | "admin";
 export type AreaGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
+export type GeometryType = "evidence" | "operational" | "schematic";
+export type GeometryConfidence = "gps" | "surveyed" | "reviewed" | "estimated" | "draft" | "unknown";
 
 export type AppVersion = {
   version: string;
@@ -139,6 +141,7 @@ export type Headstone = {
   lastInspectedAt?: string;
   relationshipType: string;
   relationshipNotes: string;
+  associatedGravesiteIds: string[];
   burialIds: string[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
   mediaAssets: MediaAsset[];
@@ -236,12 +239,20 @@ export type GraveSpaceSummary = {
   space: string;
   status: GraveStatus;
   hasVeteran?: boolean;
+  geometryType?: GeometryType;
+  geometrySource?: string;
+  geometryConfidence?: GeometryConfidence;
+  geometryNotes?: string;
   geometry: AreaGeometry;
 };
 
 export type GraveSpace = GraveSpaceSummary & {
   name: string;
   cost?: number;
+  lotGeometryType?: GeometryType;
+  lotGeometrySource?: string;
+  lotGeometryConfidence?: GeometryConfidence;
+  lotGeometryNotes?: string;
   owners: Owner[];
   currentOwnerIds: string[];
   burials: Burial[];
@@ -297,9 +308,14 @@ export type CemeterySection = {
 
 export type CemeteryLot = {
   id: string;
+  cemeteryId: string;
   name: string;
   section: string;
   block?: string;
+  geometryType?: GeometryType;
+  geometrySource?: string;
+  geometryConfidence?: GeometryConfidence;
+  geometryNotes?: string;
   geometry: AreaGeometry;
 };
 

@@ -284,3 +284,6 @@ databaseChangeLog:
   - include:
       file: changes/095-create-trinity-a-lots-9-through-1.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/096-geometry-metadata.sql
+      relativeToChangelogFile: true

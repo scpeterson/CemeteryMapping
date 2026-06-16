@@ -29,7 +29,7 @@ import {
   updateDeedInvestigationCase,
 } from "./deedInvestigationCaseRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
-import { createGraveSpacePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
+import { createGraveSpacePhoto, createHeadstonePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
 import {
   deleteNorthHillsOcrEvidenceLink,
   listNorthHillsOcrReview,
@@ -762,6 +762,43 @@ export function createApp(config, pool) {
       next(error);
     }
   });
+
+  app.post(
+    "/api/headstones/:id/media-assets",
+    requirePowerUser,
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"], limit: "25mb" }),
+    async (request, response, next) => {
+      try {
+        const id = validateUuid(request.params.id, "Headstone id");
+        const metadata = validateMediaUploadMetadata(request.query);
+        const created = await createHeadstonePhoto(
+          pool,
+          id,
+          {
+            bytes: request.body,
+            contentType: request.headers["content-type"],
+            originalFilename: metadata.originalFilename,
+          },
+          metadata,
+          {
+            actorUser: request.user,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          },
+        );
+        if (!created) {
+          response.status(404).json({ error: "Headstone not found" });
+          return;
+        }
+        response.status(201).json(created);
+      } catch (error) {
+        if (error.message === "Unsupported photo type." || error.message === "Photo file is required.") {
+          response.status(400).json({ error: error.message });
+          return;
+        }
+        next(error);
+      }
+    },
+  );
 
   app.post(
     "/api/cemeteries/:cemeteryId/grave-spaces/:id/media-assets",

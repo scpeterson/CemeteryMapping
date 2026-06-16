@@ -724,6 +724,7 @@ test("getHeadstone returns standalone marker detail without a gravesite", async 
     last_inspected_at: null,
     relationship_type: "primary",
     relationship_notes: null,
+    associated_gravesite_ids: ["TLC-GPS-0173"],
     burial_ids: [],
     north_hills_evidence: [],
     media_assets: [],
@@ -748,6 +749,7 @@ test("getHeadstone returns standalone marker detail without a gravesite", async 
   assert.equal(headstone?.headstoneId, "TLC-HS-0173");
   assert.equal(headstone?.inscription, "F.B.");
   assert.equal(headstone?.markerType.code, "other");
+  assert.deepEqual(headstone?.associatedGravesiteIds, ["TLC-GPS-0173"]);
   assert.deepEqual(queries[0]?.values, ["44444444-4444-4444-8444-444444444444"]);
 });
 

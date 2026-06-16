@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const packageJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
+const apiProxyTarget = process.env.VITE_PROXY_API_TARGET ?? "http://127.0.0.1:3001";
 
 function gitSha() {
   try {
@@ -26,11 +27,11 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:3001",
+        target: apiProxyTarget,
         changeOrigin: true,
       },
       "/media": {
-        target: "http://127.0.0.1:3001",
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },

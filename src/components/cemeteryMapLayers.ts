@@ -3,7 +3,10 @@ import type { CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
 
+export type MapViewMode = "geographic" | "diagram";
+
 export const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels", "veteran-grave-symbols"];
+export const selectableLotLayers = ["lots-fill", "lots-line", "lots-label"];
 export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo", "headstones-veteran-star"];
 
 const mapLayerOrder = [
@@ -193,13 +196,20 @@ export function addLotLayers(map: Map, data: CemeteryData) {
     id: "lots-fill",
     type: "fill",
     source: "lots",
-    paint: { "fill-color": "#f97316", "fill-opacity": 0 },
+    paint: {
+      "fill-color": ["case", ["==", ["get", "geometryType"], "schematic"], "#d9a441", "#f97316"],
+      "fill-opacity": ["case", ["==", ["get", "geometryType"], "schematic"], 0.08, 0],
+    },
   });
   map.addLayer({
     id: "lots-line",
     type: "line",
     source: "lots",
-    paint: { "line-color": "#f97316", "line-width": 2.4 },
+    paint: {
+      "line-color": ["case", ["boolean", ["get", "selected"], false], "#ff1493", ["==", ["get", "geometryType"], "schematic"], "#b45309", "#f97316"],
+      "line-opacity": ["case", ["==", ["get", "geometryConfidence"], "estimated"], 0.72, ["==", ["get", "geometryConfidence"], "draft"], 0.56, 0.95],
+      "line-width": ["case", ["boolean", ["get", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 1.8, 2.4],
+    },
   });
   map.addLayer({
     id: "lots-label",
@@ -211,7 +221,7 @@ export function addLotLayers(map: Map, data: CemeteryData) {
       "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
     },
     paint: {
-      "text-color": "#9a3412",
+      "text-color": ["case", ["==", ["get", "geometryType"], "schematic"], "#7c2d12", "#9a3412"],
       "text-halo-color": "#fff7ed",
       "text-halo-width": 1.4,
     },
@@ -254,6 +264,7 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
     source: "graves",
     paint: {
       "line-color": ["case", ["boolean", ["get", "selected"], false], "#ff1493", ["boolean", ["get", "searchMatch"], false], "#f9fafb", "#31413c"],
+      "line-opacity": ["case", ["==", ["get", "geometryConfidence"], "draft"], 0.62, ["==", ["get", "geometryConfidence"], "estimated"], 0.78, 1],
       "line-width": ["case", ["boolean", ["get", "selected"], false], 4, ["boolean", ["get", "searchMatch"], false], 2.8, 1.1],
     },
   });
@@ -382,4 +393,42 @@ export function enforceMapLayerOrder(map: Map) {
   mapLayerOrder.forEach((layer) => {
     if (map.getLayer(layer)) map.moveLayer(layer);
   });
+}
+
+export function applyMapViewMode(map: Map, mode: MapViewMode) {
+  if (map.getLayer("lots-fill")) {
+    map.setPaintProperty(
+      "lots-fill",
+      "fill-opacity",
+      mode === "diagram" ? ["case", ["==", ["get", "geometryType"], "schematic"], 0.24, 0.08] : ["case", ["==", ["get", "geometryType"], "schematic"], 0.06, 0],
+    );
+  }
+  if (map.getLayer("lots-line")) {
+    map.setPaintProperty(
+      "lots-line",
+      "line-opacity",
+      mode === "diagram"
+        ? ["case", ["==", ["get", "geometryType"], "schematic"], 1, 0.48]
+        : ["case", ["==", ["get", "geometryConfidence"], "estimated"], 0.72, ["==", ["get", "geometryConfidence"], "draft"], 0.56, 0.95],
+    );
+    map.setPaintProperty(
+      "lots-line",
+      "line-width",
+      mode === "diagram"
+        ? ["case", ["boolean", ["get", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 2.8, 1.6]
+        : ["case", ["boolean", ["get", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 1.6, 2.4],
+    );
+  }
+  if (map.getLayer("lots-label")) {
+    map.setPaintProperty("lots-label", "text-opacity", mode === "diagram" ? ["case", ["==", ["get", "geometryType"], "schematic"], 1, 0.5] : 0.86);
+  }
+  if (map.getLayer("graves-fill")) {
+    map.setPaintProperty("graves-fill", "fill-opacity", mode === "diagram" ? ["case", ["boolean", ["get", "searchMatch"], false], 0.82, 0.42] : ["case", ["boolean", ["get", "searchMatch"], false], 0.9, 0.72]);
+  }
+  if (map.getLayer("headstones-halo")) {
+    map.setPaintProperty("headstones-halo", "circle-opacity", mode === "diagram" ? 0.46 : 0.95);
+  }
+  if (map.getLayer("headstones-circle")) {
+    map.setPaintProperty("headstones-circle", "circle-opacity", mode === "diagram" ? 0.62 : 1);
+  }
 }
