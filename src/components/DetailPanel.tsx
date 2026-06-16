@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { Camera, FileText, History, Images, Info, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
 import type {
   Burial,
+  CemeteryLot,
   GraveSpace,
   GraveSpaceSummary,
   GraveStatus,
@@ -18,17 +19,22 @@ import type {
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
   SaveOwnershipEventInput,
+  GeometryConfidence,
+  GeometryType,
 } from "../types";
 import { apiBaseUrl } from "../config/environment";
 import { burialNoteItems } from "../lib/burialNotes";
-import { formatDate, formatGraveLabel, fullName } from "../lib/format";
+import { formatDate, formatGraveLabel, fullName, geometryConfidenceLabels, geometryTypeLabels, statusLabels } from "../lib/format";
 
 type DetailPanelProps = {
   owners: Owner[];
   summary?: GraveSpaceSummary;
+  lot?: CemeteryLot;
+  lotGraves?: GraveSpaceSummary[];
   grave?: GraveSpace;
   standaloneHeadstoneSummary?: HeadstoneSummary;
   standaloneHeadstone?: Headstone;
+  markerGraves?: GraveSpaceSummary[];
   canViewOwnership: boolean;
   canUpdateGravesites: boolean;
   canUpdateBurials: boolean;
@@ -38,11 +44,49 @@ type DetailPanelProps = {
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
+  onSelectLotGrave: (grave: GraveSpaceSummary) => void;
+  onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
 };
+
+function GeometryMetadataList({
+  type,
+  source,
+  confidence,
+  notes,
+}: {
+  type?: GeometryType;
+  source?: string;
+  confidence?: GeometryConfidence;
+  notes?: string;
+}) {
+  const geometryType = type ?? "operational";
+  const geometryConfidence = confidence ?? "estimated";
+
+  return (
+    <dl className="geometry-metadata">
+      <div>
+        <dt>Geometry type</dt>
+        <dd>{geometryTypeLabels[geometryType]}</dd>
+      </div>
+      <div>
+        <dt>Confidence</dt>
+        <dd>{geometryConfidenceLabels[geometryConfidence]}</dd>
+      </div>
+      <div>
+        <dt>Source</dt>
+        <dd>{source || "Not recorded"}</dd>
+      </div>
+      <div>
+        <dt>Review notes</dt>
+        <dd>{notes || "None"}</dd>
+      </div>
+    </dl>
+  );
+}
 
 const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
 const graveStatusOptions: { value: GraveStatus; label: string }[] = [
@@ -550,6 +594,23 @@ function GraveSpaceRecord({ grave, canUpdate, onSave }: { grave: GraveSpace; can
   );
 }
 
+function GraveGeometryMetadata({ grave }: { grave: GraveSpace }) {
+  return (
+    <div className="grave-record">
+      <section className="geometry-metadata-group" aria-label="Gravesite geometry metadata">
+        <h4>Gravesite geometry</h4>
+        <GeometryMetadataList type={grave.geometryType} source={grave.geometrySource} confidence={grave.geometryConfidence} notes={grave.geometryNotes} />
+      </section>
+      {grave.lot ? (
+        <section className="geometry-metadata-group" aria-label="Lot geometry metadata">
+          <h4>Lot geometry</h4>
+          <GeometryMetadataList type={grave.lotGeometryType} source={grave.lotGeometrySource} confidence={grave.lotGeometryConfidence} notes={grave.lotGeometryNotes} />
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
 function northHillsLocation(evidence: NorthHillsLinkedEvidence) {
   return [
     evidence.sourcePageNumber ? `page ${evidence.sourcePageNumber}` : undefined,
@@ -608,13 +669,15 @@ function MediaGallery({ assets, emptyMessage = "No photos are linked yet." }: { 
 
 function PhotoUploadForm({
   headstones,
+  fixedHeadstone,
   onUpload,
 }: {
   headstones: Headstone[];
+  fixedHeadstone?: Headstone;
   onUpload: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
 }) {
   const [file, setFile] = useState<File>();
-  const [headstoneId, setHeadstoneId] = useState("");
+  const [headstoneId, setHeadstoneId] = useState(fixedHeadstone?.id ?? "");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
@@ -633,9 +696,9 @@ function PhotoUploadForm({
     setError(undefined);
     setMessage(undefined);
     try {
-      await onUpload({ file, headstoneId: headstoneId || undefined, notes });
+      await onUpload({ file, headstoneId: fixedHeadstone?.id ?? (headstoneId || undefined), notes });
       setFile(undefined);
-      setHeadstoneId("");
+      setHeadstoneId(fixedHeadstone?.id ?? "");
       setNotes("");
       setMessage("Photo uploaded and linked.");
       (event.currentTarget as HTMLFormElement).reset();
@@ -652,17 +715,24 @@ function PhotoUploadForm({
         Photo
         <input type="file" accept="image/*" capture="environment" onChange={chooseFile} />
       </label>
-      <label>
-        Link marker
-        <select value={headstoneId} onChange={(event) => setHeadstoneId(event.target.value)}>
-          <option value="">Gravesite overview</option>
-          {headstones.map((headstone) => (
-            <option key={headstone.id} value={headstone.id}>
-              {headstone.headstoneId}
-            </option>
-          ))}
-        </select>
-      </label>
+      {fixedHeadstone ? (
+        <div className="photo-upload-linked-marker">
+          <span>Linked marker</span>
+          <strong>{fixedHeadstone.headstoneId}</strong>
+        </div>
+      ) : (
+        <label>
+          Link marker
+          <select value={headstoneId} onChange={(event) => setHeadstoneId(event.target.value)}>
+            <option value="">Gravesite overview</option>
+            {headstones.map((headstone) => (
+              <option key={headstone.id} value={headstone.id}>
+                {headstone.headstoneId}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className="headstone-wide-field">
         Notes
         <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} />
@@ -918,18 +988,24 @@ function HeadstoneRecord({
 function MarkerDetailPanel({
   summary,
   headstone,
+  markerGraves,
   canUpdateHeadstones,
   headstoneLookups,
   onSaveHeadstone,
+  onSelectMarkerGrave,
+  onUploadPhoto,
   isLoading,
   error,
   onRetry,
 }: {
   summary: HeadstoneSummary;
   headstone?: Headstone;
+  markerGraves: GraveSpaceSummary[];
   canUpdateHeadstones: boolean;
   headstoneLookups: HeadstoneLookups;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
   isLoading: boolean;
   error?: string;
   onRetry?: () => void;
@@ -972,6 +1048,26 @@ function MarkerDetailPanel({
           </div>
         </section>
       )}
+
+      {!headstone || isLoading || error || !canUpdateHeadstones ? null : (
+        <section className="detail-section">
+          <div className="section-title">
+            <Images size={17} aria-hidden="true" />
+            <h3>Marker Photos</h3>
+          </div>
+          <PhotoUploadForm headstones={[headstone]} fixedHeadstone={headstone} onUpload={onUploadPhoto} />
+        </section>
+      )}
+
+      {isLoading || error ? null : (
+        <section className="detail-section">
+          <div className="section-title">
+            <MapPinned size={17} aria-hidden="true" />
+            <h3>Associated Gravesites</h3>
+          </div>
+          <AssociatedGravesiteList graves={markerGraves} emptyMessage="No gravesites are associated with this marker." onSelectGrave={onSelectMarkerGrave} />
+        </section>
+      )}
     </aside>
   );
 }
@@ -980,8 +1076,89 @@ function EmptyDetailPanel() {
   return (
     <aside className="detail-panel empty-state">
       <MapPinned size={28} aria-hidden="true" />
-      <h2>Select a grave site or marker</h2>
-      <p>Click a mapped grave space, marker, or choose a search result to view cemetery records.</p>
+      <h2>Select a grave site, lot, or marker</h2>
+      <p>Click a mapped grave space, lot, marker, or choose a search result to view cemetery records.</p>
+    </aside>
+  );
+}
+
+function AssociatedGravesiteList({
+  graves,
+  emptyMessage,
+  onSelectGrave,
+}: {
+  graves: GraveSpaceSummary[];
+  emptyMessage: string;
+  onSelectGrave: (grave: GraveSpaceSummary) => void;
+}) {
+  if (!graves.length) return <p className="muted">{emptyMessage}</p>;
+
+  return (
+    <div className="associated-gravesite-list">
+      {graves.map((grave) => (
+        <button key={`${grave.cemeteryId}:${grave.id}`} type="button" className="associated-gravesite-row" onClick={() => onSelectGrave(grave)}>
+          <strong>{formatGraveLabel(grave)}</strong>
+          <span>{statusLabels[grave.status]}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function LotDetailPanel({ lot, graves, onSelectGrave }: { lot: CemeteryLot; graves: GraveSpaceSummary[]; onSelectGrave: (grave: GraveSpaceSummary) => void }) {
+  return (
+    <aside className="detail-panel">
+      <div className="grave-title-row">
+        <div>
+          <p className="eyebrow">Lot</p>
+          <h2>
+            {lot.section ? `${lot.section}-` : ""}
+            {lot.id}
+          </h2>
+          <p className="grave-cemetery">{lot.name}</p>
+        </div>
+      </div>
+
+      <section className="detail-section">
+        <div className="section-title">
+          <MapPinned size={17} aria-hidden="true" />
+          <h3>Lot</h3>
+        </div>
+        <article className="grave-record">
+          <dl>
+            <div>
+              <dt>Section</dt>
+              <dd>{lot.section || "Unknown"}</dd>
+            </div>
+            <div>
+              <dt>Lot</dt>
+              <dd>{lot.id || "Unknown"}</dd>
+            </div>
+            {lot.block ? (
+              <div>
+                <dt>Block</dt>
+                <dd>{lot.block}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>Name</dt>
+              <dd>{lot.name || "Unknown"}</dd>
+            </div>
+          </dl>
+          <section className="geometry-metadata-group" aria-label="Lot geometry metadata">
+            <h4>Lot geometry</h4>
+            <GeometryMetadataList type={lot.geometryType} source={lot.geometrySource} confidence={lot.geometryConfidence} notes={lot.geometryNotes} />
+          </section>
+        </article>
+      </section>
+
+      <section className="detail-section">
+        <div className="section-title">
+          <MapPinned size={17} aria-hidden="true" />
+          <h3>Gravesites</h3>
+        </div>
+        <AssociatedGravesiteList graves={graves} emptyMessage="No gravesites are associated with this lot." onSelectGrave={onSelectGrave} />
+      </section>
     </aside>
   );
 }
@@ -1186,6 +1363,14 @@ function GraveDetailPanel({
               <p className="note-box">{grave.notes}</p>
             </section>
           ) : null}
+
+          <section className="detail-section">
+            <div className="section-title">
+              <MapPinned size={17} aria-hidden="true" />
+              <h3>Geometry</h3>
+            </div>
+            <GraveGeometryMetadata grave={grave} />
+          </section>
         </>
       )}
     </aside>
@@ -1195,9 +1380,12 @@ function GraveDetailPanel({
 export function DetailPanel({
   owners,
   summary,
+  lot,
+  lotGraves = [],
   grave,
   standaloneHeadstoneSummary,
   standaloneHeadstone,
+  markerGraves = [],
   canViewOwnership,
   canUpdateGravesites,
   canUpdateBurials,
@@ -1207,6 +1395,8 @@ export function DetailPanel({
   onSaveBurial,
   onSaveHeadstone,
   onSaveOwnershipEvent,
+  onSelectLotGrave,
+  onSelectMarkerGrave,
   onUploadPhoto,
   isLoading = false,
   error,
@@ -1223,14 +1413,21 @@ export function DetailPanel({
       <MarkerDetailPanel
         summary={standaloneHeadstoneSummary}
         headstone={standaloneHeadstone}
+        markerGraves={markerGraves}
         canUpdateHeadstones={canUpdateHeadstones}
         headstoneLookups={headstoneLookups}
         onSaveHeadstone={onSaveHeadstone}
+        onSelectMarkerGrave={onSelectMarkerGrave}
+        onUploadPhoto={onUploadPhoto}
         isLoading={isLoading}
         error={error}
         onRetry={onRetry}
       />
     );
+  }
+
+  if (lot) {
+    return <LotDetailPanel lot={lot} graves={lotGraves} onSelectGrave={onSelectLotGrave} />;
   }
 
   if (!summary) {

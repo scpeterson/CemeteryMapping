@@ -1,5 +1,5 @@
 import type { AreaGeometry, CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types";
-import { formatGraveLabel, graveSelectionKey } from "./format";
+import { formatGraveLabel, graveSelectionKey, lotSelectionKey } from "./format";
 
 export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey?: string, searchKeys: Set<string> = new Set()) {
   return {
@@ -15,6 +15,8 @@ export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey
           cemeteryId: grave.cemeteryId,
           status: grave.status,
           hasVeteran: grave.hasVeteran ?? false,
+          geometryType: grave.geometryType ?? "operational",
+          geometryConfidence: grave.geometryConfidence ?? "estimated",
           label: formatGraveLabel(grave),
           selected: key === selectedKey,
           searchMatch: searchKeys.has(key),
@@ -70,19 +72,28 @@ export function sectionsFeatureCollection(data: CemeteryData) {
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 
-export function lotsFeatureCollection(data: CemeteryData) {
+export function lotsFeatureCollection(data: CemeteryData, selectedKey?: string) {
   return {
     type: "FeatureCollection",
-    features: data.lots.map((lot) => ({
-      type: "Feature",
-      properties: {
-        id: lot.id,
-        name: lot.name,
-        section: lot.section,
-        block: lot.block,
-      },
-      geometry: lot.geometry,
-    })),
+    features: data.lots.map((lot) => {
+      const key = lotSelectionKey(lot);
+
+      return {
+        type: "Feature",
+        properties: {
+          key,
+          id: lot.id,
+          cemeteryId: lot.cemeteryId,
+          name: lot.name,
+          section: lot.section,
+          block: lot.block,
+          geometryType: lot.geometryType ?? "operational",
+          geometryConfidence: lot.geometryConfidence ?? "estimated",
+          selected: key === selectedKey,
+        },
+        geometry: lot.geometry,
+      };
+    }),
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 

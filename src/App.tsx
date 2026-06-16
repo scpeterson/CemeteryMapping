@@ -10,6 +10,7 @@ import {
   updateGraveSpace,
   updateHeadstone,
   uploadGravePhoto,
+  uploadHeadstonePhoto,
 } from "./api/cemeteryApi";
 import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
@@ -25,6 +26,7 @@ import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import type {
   Burial,
   CemeteryData,
+  CemeteryLot,
   CurrentUser,
   GraveSpace,
   GraveSpaceSummary,
@@ -63,6 +65,7 @@ export default function App() {
   const [loadError, setLoadError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
+  const [selectedLot, setSelectedLot] = useState<CemeteryLot | undefined>();
   const [selectedHeadstone, setSelectedHeadstone] = useState<HeadstoneSummary | undefined>();
   const [remoteMatches, setRemoteMatches] = useState<SearchMatch[]>();
   const [currentUser, setCurrentUser] = useState<CurrentUser>();
@@ -179,6 +182,25 @@ export default function App() {
     if (!query.trim()) return new Set<string>();
     return new Set(matches.map((match) => graveSelectionKey(match.grave)));
   }, [matches, query]);
+  const selectedLotGraves = useMemo(() => {
+    if (!selectedLot) return [];
+    return data.graves.filter(
+      (grave) =>
+        grave.cemeteryId === selectedLot.cemeteryId &&
+        grave.section === selectedLot.section &&
+        grave.lot === selectedLot.id,
+    );
+  }, [data.graves, selectedLot]);
+  const selectedHeadstoneGraves = useMemo(() => {
+    if (!selectedHeadstone) return [];
+    const associatedIds = selectedHeadstoneDetails?.associatedGravesiteIds?.length
+      ? selectedHeadstoneDetails.associatedGravesiteIds
+      : selectedHeadstone.gravesiteId
+        ? [selectedHeadstone.gravesiteId]
+        : [];
+    const associatedIdSet = new Set(associatedIds);
+    return data.graves.filter((grave) => grave.cemeteryId === selectedHeadstone.cemeteryId && associatedIdSet.has(grave.id));
+  }, [data.graves, selectedHeadstone, selectedHeadstoneDetails]);
   const hasScopedEditAccess = currentUser?.role === "power-user" || currentUser?.role === "cemetery-admin";
   const canViewSelectedOwnership =
     currentUser?.role === "admin" ||
@@ -207,16 +229,25 @@ export default function App() {
 
   const selectMatch = (match: SearchMatch) => {
     setSelectedHeadstone(undefined);
+    setSelectedLot(undefined);
     setSelectedGrave(match.grave);
   };
 
   const selectGrave = (grave: GraveSpaceSummary) => {
     setSelectedHeadstone(undefined);
+    setSelectedLot(undefined);
     setSelectedGrave(grave);
+  };
+
+  const selectLot = (lot: CemeteryLot) => {
+    setSelectedHeadstone(undefined);
+    setSelectedGrave(undefined);
+    setSelectedLot(lot);
   };
 
   const selectHeadstone = (headstone: HeadstoneSummary) => {
     setSelectedHeadstone(headstone);
+    setSelectedLot(undefined);
     setSelectedGrave(undefined);
   };
 
@@ -273,15 +304,27 @@ export default function App() {
   };
 
   const saveGravePhoto = async ({ file, headstoneId, notes }: { file: File; headstoneId?: string; notes?: string }) => {
-    if (!selectedGrave) throw new Error("Select a grave site before uploading a photo.");
-    await uploadGravePhoto({
-      cemeteryId: selectedGrave.cemeteryId,
-      graveSpaceId: selectedGrave.id,
-      file,
-      headstoneId,
-      notes,
-      source: /iPhone|iPad|iPod/u.test(navigator.userAgent) ? "iphone" : "field_upload",
-    });
+    const source = /iPhone|iPad|iPod/u.test(navigator.userAgent) ? "iphone" : "field_upload";
+    if (selectedGrave) {
+      await uploadGravePhoto({
+        cemeteryId: selectedGrave.cemeteryId,
+        graveSpaceId: selectedGrave.id,
+        file,
+        headstoneId,
+        notes,
+        source,
+      });
+    } else if (selectedHeadstone) {
+      await uploadHeadstonePhoto({
+        cemeteryId: selectedHeadstone.cemeteryId,
+        headstoneId: selectedHeadstone.id,
+        file,
+        notes,
+        source,
+      });
+    } else {
+      throw new Error("Select a grave site or marker before uploading a photo.");
+    }
     refreshDetails();
   };
 
@@ -349,19 +392,24 @@ export default function App() {
         <CemeteryMap
           data={data}
           selectedGrave={selectedGrave}
+          selectedLot={selectedLot}
           selectedHeadstone={selectedHeadstone}
           visibleGraves={visibleGraves}
           searchResultIds={searchResultIds}
           onSelectGrave={selectGrave}
+          onSelectLot={selectLot}
           onSelectHeadstone={selectHeadstone}
         />
       </section>
       <DetailPanel
         owners={selectedGraveOwners}
         summary={selectedGrave}
+        lot={selectedLot}
+        lotGraves={selectedLotGraves}
         grave={selectedGraveDetails}
         standaloneHeadstoneSummary={selectedHeadstone}
         standaloneHeadstone={selectedHeadstoneDetails}
+        markerGraves={selectedHeadstoneGraves}
         canViewOwnership={canViewSelectedOwnership}
         canUpdateGravesites={canUpdateSelectedGravesites}
         canUpdateBurials={canUpdateSelectedBurials}
@@ -371,6 +419,8 @@ export default function App() {
         onSaveBurial={saveBurial}
         onSaveHeadstone={saveHeadstone}
         onSaveOwnershipEvent={saveOwnershipEvent}
+        onSelectLotGrave={selectGrave}
+        onSelectMarkerGrave={selectGrave}
         onUploadPhoto={saveGravePhoto}
         isLoading={isDetailLoading}
         error={detailError}

@@ -411,9 +411,9 @@ h3 {
 
 .map-controls {
   position: absolute;
-  top: 68px;
+  top: 116px;
   left: 18px;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   gap: 6px;
   padding: 6px;
@@ -422,6 +422,59 @@ h3 {
   background: rgba(251, 252, 247, 0.94);
   box-shadow: var(--shadow);
   backdrop-filter: blur(8px);
+}
+
+.map-view-toggle,
+.map-selection-toggle {
+  position: absolute;
+  left: 18px;
+  z-index: 2;
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: 8px;
+  background: rgba(251, 252, 247, 0.94);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.map-view-toggle {
+  top: 18px;
+}
+
+.map-selection-toggle {
+  top: 66px;
+}
+
+.map-view-toggle button,
+.map-selection-toggle button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #435049;
+  font-size: 0.78rem;
+  font-weight: 780;
+}
+
+.map-view-toggle button:hover,
+.map-selection-toggle button:hover {
+  border-color: rgba(53, 67, 57, 0.18);
+  background: #edf2ea;
+}
+
+.map-view-toggle button.is-active,
+.map-selection-toggle button.is-active {
+  background: #2f5d50;
+  color: #fff;
+}
+
+.map-view-toggle button:focus-visible,
+.map-selection-toggle button:focus-visible {
+  outline: 3px solid rgba(47, 104, 79, 0.24);
+  outline-offset: 2px;
 }
 
 .map-controls button {
@@ -652,6 +705,11 @@ h3 {
 .legend-lot {
   border: 2px solid #f97316;
   background: transparent;
+}
+
+.legend-schematic-lot {
+  border: 2px solid #b45309;
+  background: rgba(217, 164, 65, 0.24);
 }
 
 .legend-gravesite {
@@ -1020,6 +1078,82 @@ h3 {
   font-size: 0.88rem;
 }
 
+.geometry-metadata-group {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e8dc;
+}
+
+.geometry-metadata-group h4 {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.78rem;
+  font-weight: 820;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.geometry-metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.geometry-metadata dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.geometry-metadata dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  color: #26342d;
+  font-size: 0.86rem;
+}
+
+.associated-gravesite-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.associated-gravesite-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+  color: #26342d;
+  font: inherit;
+  text-align: left;
+}
+
+.associated-gravesite-row:hover {
+  border-color: rgba(47, 93, 80, 0.32);
+  background: #f5f8f2;
+}
+
+.associated-gravesite-row:focus-visible {
+  outline: 3px solid rgba(47, 104, 79, 0.24);
+  outline-offset: 2px;
+}
+
+.associated-gravesite-row span {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
 .grave-form,
 .headstone-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1164,6 +1298,24 @@ h3 {
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 760;
+}
+
+.photo-upload-linked-marker {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.photo-upload-linked-marker strong {
+  min-height: 38px;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
 }
 
 .photo-upload-form input,

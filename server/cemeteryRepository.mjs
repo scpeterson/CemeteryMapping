@@ -168,6 +168,7 @@ function toHeadstone(row) {
     lastInspectedAt: dateOnly(row.last_inspected_at),
     relationshipType: row.relationship_type ?? "primary",
     relationshipNotes: row.relationship_notes ?? "",
+    associatedGravesiteIds: row.associated_gravesite_ids ?? [],
     burialIds: row.burial_ids ?? [],
     northHillsEvidence: row.north_hills_evidence ?? [],
     mediaAssets: row.media_assets ?? [],
@@ -245,6 +246,10 @@ function toGraveSummary(grave) {
     space: grave.grave_id,
     status: normalizeStatus(grave.status),
     hasVeteran: Boolean(grave.has_veteran),
+    geometryType: grave.geometry_type ?? "operational",
+    geometrySource: grave.geometry_source ?? undefined,
+    geometryConfidence: grave.geometry_confidence ?? "estimated",
+    geometryNotes: grave.geometry_notes ?? undefined,
     geometry: parseGeometry(grave.geometry),
   };
 }
@@ -628,10 +633,15 @@ async function selectLotsForCemeteries(client, cemeteryIds) {
     `
       SELECT
         lots.id::text,
+        lots.cemetery_id::text,
         lot_id,
         section_id,
         block_id,
         COALESCE(name, lot_id) AS name,
+        geometry_type,
+        geometry_source,
+        geometry_confidence,
+        geometry_notes,
         ST_AsGeoJSON(geometry)::json AS geometry
       FROM lots
       WHERE cemetery_id = ANY($1::uuid[])
@@ -657,6 +667,10 @@ async function selectGravesForCemeteries(client, cemeteryIds, { includeCost = fa
         gravesites.gravesite_id,
         gravesites.name,
         ${statusCodeSelect()} AS status,
+        gravesites.geometry_type,
+        gravesites.geometry_source,
+        gravesites.geometry_confidence,
+        gravesites.geometry_notes,
         EXISTS (
           SELECT 1
           FROM burials veteran_burials
@@ -749,10 +763,21 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
         gravesites.gravesite_id,
         ${statusCodeSelect()} AS status,
         gravesites.cost,
+        gravesites.geometry_type,
+        gravesites.geometry_source,
+        gravesites.geometry_confidence,
+        gravesites.geometry_notes,
+        lots.geometry_type AS lot_geometry_type,
+        lots.geometry_source AS lot_geometry_source,
+        lots.geometry_confidence AS lot_geometry_confidence,
+        lots.geometry_notes AS lot_geometry_notes,
         ST_AsGeoJSON(gravesites.geometry)::json AS geometry
       FROM gravesites
       JOIN cemeteries
         ON cemeteries.id = gravesites.cemetery_id
+      LEFT JOIN lots
+        ON lots.id = gravesites.lot_uuid
+       AND lots.deleted_at IS NULL
       LEFT JOIN gravesite_status_types status_type
         ON status_type.id = gravesites.status_type_id
       WHERE gravesites.cemetery_id = $1
@@ -1399,6 +1424,7 @@ async function selectHeadstoneById(client, id) {
         ${headstoneDetailColumnsSql},
         COALESCE(headstone_relationship.relationship_type, 'primary') AS relationship_type,
         headstone_relationship.notes AS relationship_notes,
+        COALESCE(associated_gravesites.gravesite_ids, ARRAY[]::text[]) AS associated_gravesite_ids,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
         COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence,
         COALESCE(headstone_media.media_assets, '[]'::jsonb) AS media_assets
@@ -1422,6 +1448,25 @@ async function selectHeadstoneById(client, id) {
           id
         LIMIT 1
       ) headstone_relationship ON true
+      LEFT JOIN LATERAL (
+        SELECT array_remove(array_agg(DISTINCT associated_gravesite_rows.gravesite_id), NULL) AS gravesite_ids
+        FROM (
+          SELECT primary_gravesites.gravesite_id
+          FROM gravesites primary_gravesites
+          WHERE primary_gravesites.id = headstones.gravesite_uuid
+            AND primary_gravesites.deleted_at IS NULL
+
+          UNION
+
+          SELECT linked_gravesites.gravesite_id
+          FROM headstone_gravesites
+          JOIN gravesites linked_gravesites
+            ON linked_gravesites.id = headstone_gravesites.gravesite_uuid
+           AND linked_gravesites.deleted_at IS NULL
+          WHERE headstone_gravesites.headstone_uuid = headstones.id
+            AND headstone_gravesites.deleted_at IS NULL
+        ) associated_gravesite_rows
+      ) associated_gravesites ON true
       ${headstoneLookupJoinsSql}
       ${headstoneEvidenceJoinSql}
       ${headstoneMediaJoinSql}
@@ -1429,6 +1474,7 @@ async function selectHeadstoneById(client, id) {
         ${headstoneDetailGroupBySql},
         headstone_relationship.relationship_type,
         headstone_relationship.notes,
+        associated_gravesites.gravesite_ids,
         headstone_evidence.evidence,
         headstone_media.media_assets
       LIMIT 1
@@ -1630,9 +1676,14 @@ function toSection(section) {
 function toLot(lot) {
   return {
     id: lot.lot_id,
+    cemeteryId: lot.cemetery_id,
     name: lot.name,
     section: lot.section_id ?? "",
     block: lot.block_id ?? undefined,
+    geometryType: lot.geometry_type ?? "operational",
+    geometrySource: lot.geometry_source ?? undefined,
+    geometryConfidence: lot.geometry_confidence ?? "estimated",
+    geometryNotes: lot.geometry_notes ?? undefined,
     geometry: parseGeometry(lot.geometry),
   };
 }
@@ -1650,6 +1701,10 @@ function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, nort
     mediaAssets: mediaAssets.map(toMediaAsset),
     ownershipHistory: graveOwners.map(toOwnershipEvent),
     notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
+    lotGeometryType: grave.lot_geometry_type ?? undefined,
+    lotGeometrySource: grave.lot_geometry_source ?? undefined,
+    lotGeometryConfidence: grave.lot_geometry_confidence ?? undefined,
+    lotGeometryNotes: grave.lot_geometry_notes ?? undefined,
   };
 
   return includeOwnership ? detailedGrave : ownershipRedactedGrave(detailedGrave);
