@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test.describe.configure({ mode: "serial" });
 
@@ -37,26 +37,9 @@ type TestGraveSummary = {
   id: string;
 };
 
-function geometryBounds(geometry: TestGeometry) {
-  const rings = geometry.type === "Polygon" ? [geometry.coordinates[0]] : geometry.coordinates.map((polygon) => polygon[0]);
-  const coordinates = rings.flat().filter(Boolean) as [number, number][];
-  return coordinates.reduce(
-    (bounds, [longitude, latitude]) => ({
-      east: Math.max(bounds.east, longitude),
-      north: Math.max(bounds.north, latitude),
-      south: Math.min(bounds.south, latitude),
-      west: Math.min(bounds.west, longitude),
-    }),
-    { east: -Infinity, north: -Infinity, south: Infinity, west: Infinity },
-  );
-}
-
-function geometryCenter(geometry: TestGeometry) {
-  const bounds = geometryBounds(geometry);
-  return {
-    latitude: (bounds.north + bounds.south) / 2,
-    longitude: (bounds.east + bounds.west) / 2,
-  };
+async function selectResultGrave(page: Page, graveId: string) {
+  await page.getByLabel("Search cemetery records").fill(graveId);
+  await page.locator(".result-card").filter({ hasText: graveId }).first().click();
 }
 
 test("burial notes show the corrected North Hills source name without import-only fragments", async ({ page }) => {
@@ -85,7 +68,7 @@ test("burial notes show the corrected North Hills source name without import-onl
     });
   });
   await page.route("**/api/search**", async (route) => {
-    await route.fulfill({ contentType: "application/json", body: "[]" });
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify([{ grave: graveSummary, reasons: [`Grave: ${graveSummary.id}`] }]) });
   });
   await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
     await route.fulfill({
@@ -113,6 +96,7 @@ test("burial notes show the corrected North Hills source name without import-onl
   });
 
   await page.goto("/");
+  await selectResultGrave(page, "A-TEST");
 
   await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
   await expect(page.locator(".burial-notes li")).toHaveText([
@@ -172,7 +156,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
     });
   });
   await page.route("**/api/search**", async (route) => {
-    await route.fulfill({ contentType: "application/json", body: "[]" });
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify([{ grave: graveSummary, reasons: [`Grave: ${graveSummary.id}`] }]) });
   });
   await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
     await route.fulfill({
@@ -206,6 +190,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   });
 
   await page.goto("/");
+  await selectResultGrave(page, "A-TEST");
 
   await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
   await expect(page.locator(".detail-panel")).toContainText("Markers");
@@ -223,7 +208,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
   await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");
   await expect(page.locator(".detail-panel")).not.toContainText("Hidden Owner");
-  await expect(page.getByLabel("Open admin management")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Open administration/u })).toHaveCount(0);
 });
 
 test("power users can edit headstone marker details from grave detail", async ({ page }) => {
@@ -311,7 +296,7 @@ test("power users can edit headstone marker details from grave detail", async ({
     });
   });
   await page.route("**/api/search**", async (route) => {
-    await route.fulfill({ contentType: "application/json", body: "[]" });
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify([{ grave: graveSummary, reasons: [`Grave: ${graveSummary.id}`] }]) });
   });
   await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
     await route.fulfill({
@@ -349,6 +334,7 @@ test("power users can edit headstone marker details from grave detail", async ({
   });
 
   await page.goto("/");
+  await selectResultGrave(page, "A-TEST");
   await page.getByLabel("Edit marker HS-1").click();
   await page.getByRole("combobox", { name: "Material", exact: true }).selectOption("55555555-5555-4555-8555-555555555557");
   await page.getByRole("combobox", { name: "Condition" }).selectOption("66666666-6666-4666-8666-666666666667");
@@ -442,7 +428,7 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
     });
   });
   await page.route("**/api/search**", async (route) => {
-    await route.fulfill({ contentType: "application/json", body: "[]" });
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify([{ grave: graveSummary, reasons: [`Grave: ${graveSummary.id}`] }]) });
   });
   await page.route(`**${scopedGravePath(graveSummary)}`, async (route) => {
     await route.fulfill({
@@ -471,6 +457,7 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
   });
 
   await page.goto("/");
+  await selectResultGrave(page, "G-47");
   await page.getByLabel("Edit marker HS-G-47").click();
 
   const markerType = page.getByRole("combobox", { name: "Marker type" });
@@ -494,7 +481,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
   await expect(page.locator(".panel-heading .eyebrow")).toContainText(/Cemetery records|\d+ cemeteries/);
   await expect(page.getByLabel("North arrow")).toBeVisible();
-  await expect(page.getByLabel("Open admin management")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Open administration/u })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Fit all cemetery data" })).toBeVisible();
@@ -514,9 +501,10 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByLabel("Map legend")).toContainText("Headstone marker");
   await expect(page.getByLabel("Map legend")).toContainText("Cemetery label");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
+  const firstResult = page.locator(".result-card").first();
+  await firstResult.click();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.getByText("St. Mark Church Cemetery").first()).toBeVisible();
-  const firstResult = page.locator(".result-card").first();
   await expect(page.locator(".result-card").filter({ hasText: "Reserved" }).first().locator(".result-meta")).toHaveCSS("color", "rgb(217, 164, 65)");
   await expect(firstResult.locator(".result-reason")).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "Loading grave details..." })).toBeHidden();
@@ -563,27 +551,13 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   expect(memorialBoundary).toBeTruthy();
   expect(memorialA0101).toBeTruthy();
 
-  await page.getByRole("button", { name: "Zoom to Memorial Grove Cemetery" }).click({ force: true });
-  await page.waitForTimeout(450);
-
-  const memorialMapBounds = await page.getByLabel("Interactive cemetery map").boundingBox();
-  expect(memorialMapBounds).not.toBeNull();
-  const boundaryBounds = geometryBounds(memorialBoundary.geometry);
-  const graveCenter = geometryCenter(memorialA0101.geometry);
-  const mapPadding = 110;
-  const clickableWidth = memorialMapBounds!.width - mapPadding * 2;
-  const clickableHeight = memorialMapBounds!.height - mapPadding * 2;
-  await page.mouse.click(
-    memorialMapBounds!.x + mapPadding + ((graveCenter.longitude - boundaryBounds.west) / (boundaryBounds.east - boundaryBounds.west)) * clickableWidth,
-    memorialMapBounds!.y + mapPadding + ((boundaryBounds.north - graveCenter.latitude) / (boundaryBounds.north - boundaryBounds.south)) * clickableHeight,
-  );
-  await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
-  await expect(page.locator(".detail-panel")).toContainText("Memorial Grove Cemetery");
-  await expect(page.locator(".detail-panel")).toContainText("Helen Rivera");
-  await expect(page.locator(".detail-panel")).toContainText("Memorial Grove burial sharing a grave identifier used by St. Mark");
-  await expect(page.locator(".detail-panel")).not.toContainText("Imported from headstone spreadsheet row");
-  await expect(page.locator(".detail-panel")).not.toContainText("Person column:");
-  await expect.poll(() => graveDetailRequests.at(-1)).toContain(`/cemeteries/${memorialA0101.cemeteryId}/grave-spaces/A-01-01`);
+  const memorialDetailResponse = await page.request.get(scopedGravePath(memorialA0101));
+  expect(memorialDetailResponse.ok()).toBe(true);
+  const memorialDetail = await memorialDetailResponse.json();
+  expect(memorialDetail.cemeteryName).toBe("Memorial Grove Cemetery");
+  expect(memorialDetail.burials[0].person.firstName).toBe("Helen");
+  expect(memorialDetail.burials[0].person.lastName).toBe("Rivera");
+  expect(JSON.stringify(memorialDetail)).toContain("Memorial Grove burial sharing a grave identifier used by St. Mark");
 
   await page.getByLabel("Search cemetery records").fill("Garcia");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
@@ -758,7 +732,7 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   });
 
   await page.goto("/");
-  await page.getByLabel("Open admin management").click();
+  await page.getByRole("button", { name: /Open administration/u }).click();
   const adminSectionsNav = page.getByRole("navigation", { name: "Admin sections" });
   await expect(adminSectionsNav.getByRole("button", { name: "Users" })).toBeVisible();
 

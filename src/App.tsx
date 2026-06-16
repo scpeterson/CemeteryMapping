@@ -128,7 +128,7 @@ export default function App() {
         if (!isCurrent) return;
         setData(nextData);
         setSelectedGrave((current) =>
-          current ? nextData.graves.find((grave) => graveSelectionKey(grave) === graveSelectionKey(current)) : nextData.graves[0],
+          current ? nextData.graves.find((grave) => graveSelectionKey(grave) === graveSelectionKey(current)) : undefined,
         );
         setLoadError(undefined);
       })
@@ -178,6 +178,9 @@ export default function App() {
     if (selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
     return data.graves.filter((grave) => selectedStatuses.has(grave.status));
   }, [data.graves, selectedStatuses]);
+  const isInitialMapFitReady = Boolean(currentUser) && !isLoading;
+  const initialMapFitCemeteryIds =
+    currentUser && currentUser.role !== "admin" && currentUser.assignedCemeteryIds.length ? currentUser.assignedCemeteryIds : undefined;
   const searchResultIds = useMemo(() => {
     if (!query.trim()) return new Set<string>();
     return new Set(matches.map((match) => graveSelectionKey(match.grave)));
@@ -356,18 +359,36 @@ export default function App() {
         </div>
         <div className="map-tool-buttons">
           {currentUser ? (
-            <button type="button" className="map-tool-button" onClick={() => setIsReportsPanelOpen(true)} aria-label="Open reports">
+            <button
+              type="button"
+              className="map-tool-button"
+              onClick={() => setIsReportsPanelOpen(true)}
+              aria-label="Open reports: run saved cemetery reports and guided queries"
+              title="Open reports: run saved cemetery reports and guided queries."
+            >
               <BarChart3 size={16} aria-hidden="true" />
               Reports
             </button>
           ) : null}
           {currentUser?.permissions.canOpenAdminPanel ? (
             <>
-              <button type="button" className="map-tool-button" onClick={() => setIsControlPointCollectorOpen(true)} aria-label="Open control point collector">
+              <button
+                type="button"
+                className="map-tool-button"
+                onClick={() => setIsControlPointCollectorOpen(true)}
+                aria-label="Open control point collector: align historic map images to cemetery coordinates"
+                title="Open control point collector: align historic map images to cemetery coordinates."
+              >
                 <MapPinned size={16} aria-hidden="true" />
                 Control
               </button>
-              <button type="button" className="map-tool-button" onClick={() => setIsAdminPanelOpen(true)} aria-label="Open admin management">
+              <button
+                type="button"
+                className="map-tool-button"
+                onClick={() => setIsAdminPanelOpen(true)}
+                aria-label="Open administration: manage users, records, lookups, audits, and system events"
+                title="Open administration: manage users, records, lookups, audits, and system events."
+              >
                 <ShieldCheck size={16} aria-hidden="true" />
                 Admin
               </button>
@@ -396,6 +417,8 @@ export default function App() {
           selectedHeadstone={selectedHeadstone}
           visibleGraves={visibleGraves}
           searchResultIds={searchResultIds}
+          initialFitCemeteryIds={initialMapFitCemeteryIds}
+          isInitialFitReady={isInitialMapFitReady}
           onSelectGrave={selectGrave}
           onSelectLot={selectLot}
           onSelectHeadstone={selectHeadstone}

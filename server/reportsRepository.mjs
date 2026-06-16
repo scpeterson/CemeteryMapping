@@ -27,6 +27,32 @@ const reportDefinitions = [
     examples: ["How many veterans are buried here?", "What wars did veterans serve in?", "What service branches were they in?"],
   },
   {
+    id: "spatial-inventory-counts",
+    title: "Spatial inventory counts",
+    description: "Counts markers and gravesites by cemetery and optional section.",
+    category: "Inventory",
+    requiredRole: "reader",
+    parameters: [{ name: "sectionName", label: "Section", type: "text", required: false }],
+    examples: [
+      "How many markers are in section C?",
+      "How many markers are in the cemetery?",
+      "How many gravesites are in section C?",
+      "How many gravesites are in the cemetery?",
+    ],
+  },
+  {
+    id: "marker-type-inventory",
+    title: "Markers by type",
+    description: "Lists markers grouped by marker type, cemetery, and optional section.",
+    category: "Inventory",
+    requiredRole: "reader",
+    parameters: [
+      { name: "sectionName", label: "Section", type: "text", required: false },
+      { name: "markerType", label: "Marker type", type: "text", required: false },
+    ],
+    examples: ["List markers by type.", "What marker types are in section C?", "List flat markers."],
+  },
+  {
     id: "owner-holdings",
     title: "Owner holdings",
     description: "Lists lots and gravesites currently associated with an owner name.",
@@ -243,6 +269,228 @@ async function runVeteranServiceSummary(client, definition, cemeteryIds) {
     ],
     rows: result.rows,
     notes: ["Branch and war service are grouped as Unknown/not recorded when no lookup value is set."],
+  });
+}
+
+async function runSpatialInventoryCounts(client, definition, parameters, cemeteryIds) {
+  const sectionName = optionalTextParameter(parameters, "sectionName", 80);
+  const values = [];
+  const scope = scopedWhere("cemeteries.id", values, cemeteryIds);
+  const sectionFilters = [];
+  if (sectionName) {
+    values.push(sectionName);
+    sectionFilters.push(`upper(section) = upper($${values.length})`);
+  }
+  const markerSectionWhere = sectionFilters.length ? `WHERE ${sectionFilters.join(" AND ")}` : "";
+  const gravesiteSectionWhere = sectionFilters.length ? `WHERE ${sectionFilters.join(" AND ")}` : "";
+  const finalSectionWhere = sectionFilters.length ? `WHERE ${sectionFilters.join(" AND ")}` : "";
+
+  const result = await client.query(
+    `
+      WITH active_cemeteries AS (
+        SELECT cemeteries.id, cemeteries.name, cemeteries.geometry
+        FROM cemeteries
+        WHERE cemeteries.deleted_at IS NULL
+          ${scope}
+      ),
+      active_sections AS (
+        SELECT sections.section_id, sections.cemetery_id, sections.name, sections.geometry
+        FROM sections
+        JOIN active_cemeteries
+          ON active_cemeteries.id = sections.cemetery_id
+        WHERE sections.deleted_at IS NULL
+      ),
+      marker_locations AS (
+        SELECT DISTINCT
+          headstones.id AS marker_uuid,
+          active_cemeteries.name AS cemetery,
+          COALESCE(NULLIF(linked_gravesites.section_id, ''), NULLIF(covering_sections.name, ''), 'Unsectioned') AS section
+        FROM headstones
+        LEFT JOIN gravesites linked_gravesites
+          ON linked_gravesites.id = headstones.gravesite_uuid
+         AND linked_gravesites.deleted_at IS NULL
+        JOIN active_cemeteries
+          ON active_cemeteries.id = linked_gravesites.cemetery_id
+          OR (
+            linked_gravesites.id IS NULL
+            AND headstones.geometry IS NOT NULL
+            AND ST_Covers(active_cemeteries.geometry, headstones.geometry)
+          )
+        LEFT JOIN LATERAL (
+          SELECT active_sections.name
+          FROM active_sections
+          WHERE active_sections.cemetery_id = active_cemeteries.id
+            AND headstones.geometry IS NOT NULL
+            AND ST_Covers(active_sections.geometry, headstones.geometry)
+          ORDER BY active_sections.name
+          LIMIT 1
+        ) covering_sections ON true
+        WHERE headstones.deleted_at IS NULL
+      ),
+      filtered_marker_locations AS (
+        SELECT cemetery, section, marker_uuid
+        FROM marker_locations
+        ${markerSectionWhere}
+      ),
+      marker_counts AS (
+        SELECT cemetery, section, count(DISTINCT marker_uuid)::int AS marker_count
+        FROM filtered_marker_locations
+        GROUP BY cemetery, section
+      ),
+      gravesite_locations AS (
+        SELECT
+          active_cemeteries.name AS cemetery,
+          COALESCE(NULLIF(gravesites.section_id, ''), 'Unsectioned') AS section,
+          gravesites.id AS gravesite_uuid
+        FROM gravesites
+        JOIN active_cemeteries
+          ON active_cemeteries.id = gravesites.cemetery_id
+        WHERE gravesites.deleted_at IS NULL
+      ),
+      filtered_gravesite_locations AS (
+        SELECT cemetery, section, gravesite_uuid
+        FROM gravesite_locations
+        ${gravesiteSectionWhere}
+      ),
+      gravesite_counts AS (
+        SELECT cemetery, section, count(DISTINCT gravesite_uuid)::int AS gravesite_count
+        FROM filtered_gravesite_locations
+        GROUP BY cemetery, section
+      ),
+      combined_counts AS (
+        SELECT
+          COALESCE(marker_counts.cemetery, gravesite_counts.cemetery) AS cemetery,
+          COALESCE(marker_counts.section, gravesite_counts.section) AS section,
+          COALESCE(marker_counts.marker_count, 0)::int AS marker_count,
+          COALESCE(gravesite_counts.gravesite_count, 0)::int AS gravesite_count
+        FROM marker_counts
+        FULL OUTER JOIN gravesite_counts
+          ON marker_counts.cemetery = gravesite_counts.cemetery
+         AND marker_counts.section = gravesite_counts.section
+      )
+      SELECT cemetery, section, marker_count, gravesite_count
+      FROM combined_counts
+      ${finalSectionWhere}
+      ORDER BY cemetery, section
+    `,
+    values,
+  );
+
+  const markerTotal = result.rows.reduce((total, row) => total + Number(row.marker_count ?? 0), 0);
+  const gravesiteTotal = result.rows.reduce((total, row) => total + Number(row.gravesite_count ?? 0), 0);
+  const scopeText = sectionName ? ` in section ${sectionName}` : "";
+
+  return reportResult({
+    definition,
+    summary: `${markerTotal} marker${markerTotal === 1 ? "" : "s"} and ${gravesiteTotal} gravesite${gravesiteTotal === 1 ? "" : "s"} counted${scopeText}.`,
+    columns: [
+      { key: "cemetery", label: "Cemetery" },
+      { key: "section", label: "Section" },
+      { key: "marker_count", label: "Markers" },
+      { key: "gravesite_count", label: "Gravesites" },
+    ],
+    rows: result.rows,
+    notes: ["Markers are counted from linked gravesites when available, otherwise from marker GPS position inside cemetery and section geometry."],
+  });
+}
+
+async function runMarkerTypeInventory(client, definition, parameters, cemeteryIds) {
+  const sectionName = optionalTextParameter(parameters, "sectionName", 80);
+  const markerType = optionalTextParameter(parameters, "markerType", 80);
+  const values = [];
+  const scope = scopedWhere("cemeteries.id", values, cemeteryIds);
+  const filters = [];
+  if (sectionName) {
+    values.push(sectionName);
+    filters.push(`upper(section) = upper($${values.length})`);
+  }
+  if (markerType) {
+    values.push(`%${markerType}%`);
+    filters.push(`(marker_type ILIKE $${values.length} OR marker_type_code ILIKE $${values.length})`);
+  }
+  const filteredWhere = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+
+  const result = await client.query(
+    `
+      WITH active_cemeteries AS (
+        SELECT cemeteries.id, cemeteries.name, cemeteries.geometry
+        FROM cemeteries
+        WHERE cemeteries.deleted_at IS NULL
+          ${scope}
+      ),
+      active_sections AS (
+        SELECT sections.section_id, sections.cemetery_id, sections.name, sections.geometry
+        FROM sections
+        JOIN active_cemeteries
+          ON active_cemeteries.id = sections.cemetery_id
+        WHERE sections.deleted_at IS NULL
+      ),
+      marker_locations AS (
+        SELECT DISTINCT
+          headstones.id AS marker_uuid,
+          headstones.headstone_id,
+          active_cemeteries.name AS cemetery,
+          COALESCE(NULLIF(linked_gravesites.section_id, ''), NULLIF(covering_sections.name, ''), 'Unsectioned') AS section,
+          COALESCE(NULLIF(marker_types.label, ''), NULLIF(marker_types.code, ''), 'Unknown/not recorded') AS marker_type,
+          COALESCE(NULLIF(marker_types.code, ''), 'unknown') AS marker_type_code
+        FROM headstones
+        LEFT JOIN gravesites linked_gravesites
+          ON linked_gravesites.id = headstones.gravesite_uuid
+         AND linked_gravesites.deleted_at IS NULL
+        JOIN active_cemeteries
+          ON active_cemeteries.id = linked_gravesites.cemetery_id
+          OR (
+            linked_gravesites.id IS NULL
+            AND headstones.geometry IS NOT NULL
+            AND ST_Covers(active_cemeteries.geometry, headstones.geometry)
+          )
+        LEFT JOIN LATERAL (
+          SELECT active_sections.name
+          FROM active_sections
+          WHERE active_sections.cemetery_id = active_cemeteries.id
+            AND headstones.geometry IS NOT NULL
+            AND ST_Covers(active_sections.geometry, headstones.geometry)
+          ORDER BY active_sections.name
+          LIMIT 1
+        ) covering_sections ON true
+        LEFT JOIN marker_types
+          ON marker_types.id = headstones.marker_type_id
+        WHERE headstones.deleted_at IS NULL
+      ),
+      filtered_marker_locations AS (
+        SELECT cemetery, section, marker_type, marker_type_code, headstone_id, marker_uuid
+        FROM marker_locations
+        ${filteredWhere}
+      )
+      SELECT
+        cemetery,
+        section,
+        marker_type,
+        count(DISTINCT marker_uuid)::int AS marker_count,
+        string_agg(DISTINCT headstone_id, ', ' ORDER BY headstone_id) AS markers
+      FROM filtered_marker_locations
+      GROUP BY cemetery, section, marker_type
+      ORDER BY cemetery, section, marker_type
+    `,
+    values,
+  );
+
+  const markerTotal = result.rows.reduce((total, row) => total + Number(row.marker_count ?? 0), 0);
+  const qualifier = [sectionName ? `section ${sectionName}` : "", markerType ? `type matching "${markerType}"` : ""].filter(Boolean).join(", ");
+  const suffix = qualifier ? ` for ${qualifier}` : "";
+
+  return reportResult({
+    definition,
+    summary: `${markerTotal} marker${markerTotal === 1 ? "" : "s"} listed by type${suffix}.`,
+    columns: [
+      { key: "cemetery", label: "Cemetery" },
+      { key: "section", label: "Section" },
+      { key: "marker_type", label: "Marker type" },
+      { key: "marker_count", label: "Markers" },
+      { key: "markers", label: "Marker IDs" },
+    ],
+    rows: result.rows,
+    notes: ["Markers are grouped by the marker type lookup value currently linked to each marker."],
   });
 }
 
@@ -470,6 +718,24 @@ function extractOwnerName(text) {
   return compactText(byMatch[1].replace(/\b(?:own|owns|owned|holding|holdings|lots?|gravesites?)\b.*$/iu, "").replace(/[?.!,;:]+$/u, ""), 80);
 }
 
+function extractSectionName(text) {
+  const match = text.match(/\bsection\s+([a-z0-9-]{1,40})\b/iu);
+  if (!match) return "";
+  return compactText(match[1].replace(/[?.!,;:]+$/u, ""), 40);
+}
+
+function extractMarkerType(text) {
+  const typeMatch = text.match(/\b(?:marker\s+type|type)\s+([a-z0-9 .,'-]{2,80})/iu);
+  if (typeMatch) {
+    return compactText(typeMatch[1].replace(/\b(?:markers?|headstones?|in|for|section|cemetery)\b.*$/iu, "").replace(/[?.!,;:]+$/u, ""), 80);
+  }
+  const listMatch = text.match(/\blist\s+([a-z0-9 .,'-]{2,80})\s+(?:markers?|headstones?)\b/iu);
+  if (!listMatch) return "";
+  const candidate = compactText(listMatch[1].replace(/\b(?:all|the)\b/giu, "").replace(/[?.!,;:]+$/u, ""), 80);
+  if (!candidate || /\bby\s+type\b/iu.test(candidate)) return "";
+  return candidate;
+}
+
 export function matchReportQuery(query) {
   const text = compactText(query, 500);
   const lower = text.toLowerCase();
@@ -480,9 +746,19 @@ export function matchReportQuery(query) {
     reportId = "burial-date-extremes";
   } else if (/\bveterans?\b/u.test(lower) || /\bmilitary\b/u.test(lower) || /\bwar(?:s)?\b/u.test(lower) || /\bservice branches?\b/u.test(lower)) {
     reportId = "veteran-service-summary";
+  } else if (/\b(markers?|headstones?)\b/u.test(lower) && /\b(types?|by type|list)\b/u.test(lower)) {
+    reportId = "marker-type-inventory";
+    parameters.sectionName = extractSectionName(text);
+    parameters.markerType = extractMarkerType(text);
+  } else if (/\b(how many|count|counts?|number of)\b/u.test(lower) && /\b(markers?|headstones?|gravesites?)\b/u.test(lower) && /\b(section|cemeter(?:y|ies)|here)\b/u.test(lower)) {
+    reportId = "spatial-inventory-counts";
+    parameters.sectionName = extractSectionName(text);
   } else if (/\bavailable\b/u.test(lower) && /\b(lots?|gravesites?|purchase)\b/u.test(lower)) {
     reportId = "available-inventory";
-  } else if (/\b(deed|paperwork|trace|claim|parents?)\b/u.test(lower) && /\b(lot|gravesite|owned|ownership|rights?)\b/u.test(lower)) {
+  } else if (
+    (/\b(deed|paperwork|trace|claim|parents?)\b/u.test(lower) && /\b(lot|gravesite|owned|ownership|rights?)\b/u.test(lower)) ||
+    (/\b(deed|claim|trace)\b/u.test(lower) && /\bpaperwork|documents?\b/u.test(lower))
+  ) {
     reportId = "deed-claim-trace-guide";
   } else if (/\b(owner|owned|owns|holdings?|lots?|gravesites?)\b/u.test(lower)) {
     reportId = "owner-holdings";
@@ -530,6 +806,8 @@ export async function runReport(pool, reportId, parameters = {}, user) {
   try {
     if (reportId === "burial-date-extremes") return await runBurialDateExtremes(client, definition, cemeteryIds);
     if (reportId === "veteran-service-summary") return await runVeteranServiceSummary(client, definition, cemeteryIds);
+    if (reportId === "spatial-inventory-counts") return await runSpatialInventoryCounts(client, definition, parameters, cemeteryIds);
+    if (reportId === "marker-type-inventory") return await runMarkerTypeInventory(client, definition, parameters, cemeteryIds);
     if (reportId === "owner-holdings") return await runOwnerHoldings(client, definition, parameters, cemeteryIds);
     if (reportId === "available-inventory") return await runAvailableInventory(client, definition, cemeteryIds);
     if (reportId === "deed-claim-trace-guide") return runDeedClaimTraceGuide(definition, parameters);

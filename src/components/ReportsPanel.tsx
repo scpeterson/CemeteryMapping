@@ -29,8 +29,18 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
   const [question, setQuestion] = useState("");
   const [result, setResult] = useState<ReportResult>();
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"info" | "error">("info");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -81,6 +91,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
   const selectReport = (report: ReportDefinition) => {
     setSelectedReportId(report.id);
     setMessage("");
+    setMessageTone("info");
     setError("");
   };
 
@@ -89,6 +100,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
     setIsLoading(true);
     setError("");
     setMessage("");
+    setMessageTone("info");
     try {
       const nextResult = await runReport(report.id, scopedParameters(reportParameters));
       setResult(nextResult);
@@ -103,13 +115,32 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
   const askQuestion = async () => {
     const cleanedQuestion = question.trim();
     if (!cleanedQuestion) return;
+    const selectedExampleReport = selectedReport?.examples.includes(cleanedQuestion) ? selectedReport : undefined;
     setIsLoading(true);
     setError("");
     setMessage("");
+    setMessageTone("info");
     try {
       const response = await queryReports(cleanedQuestion, scopedParameters({}));
       if (!response.matched || !response.report) {
+        if (selectedExampleReport) {
+          const missingParameters = selectedExampleReport.parameters.filter((parameter) => parameter.required && !parameters[parameter.name]);
+          setSelectedReportId(selectedExampleReport.id);
+          if (missingParameters.length) {
+            setMessage(`More information is needed before this report can run. ${missingParameters.map((parameter) => parameter.label).join(", ")}`);
+            setMessageTone("info");
+            setResult(undefined);
+            return;
+          }
+
+          const nextResult = await runReport(selectedExampleReport.id, scopedParameters(parameters));
+          setResult(nextResult);
+          setMessage("Ran the selected report example.");
+          setMessageTone("info");
+          return;
+        }
         setMessage(response.message);
+        setMessageTone("error");
         setResult(undefined);
         return;
       }
@@ -118,10 +149,12 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
       if (response.result) {
         setResult(response.result);
         setMessage(response.message);
+        setMessageTone("info");
         return;
       }
       setResult(undefined);
       setMessage(response.missingParameters?.length ? `${response.message} ${response.missingParameters.map((parameter) => parameter.label).join(", ")}` : response.message);
+      setMessageTone("info");
     } catch (queryError) {
       setError(queryError instanceof Error ? queryError.message : "Unable to query reports.");
     } finally {
@@ -170,7 +203,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
         </label>
       ) : null}
 
-      {message ? <div className="report-message" role="status">{message}</div> : null}
+      {message ? <div className={`report-message ${messageTone === "error" ? "is-error" : ""}`} role={messageTone === "error" ? "alert" : "status"}>{message}</div> : null}
       {error ? <div className="report-message is-error" role="alert">{error}</div> : null}
 
       <div className="reports-layout">

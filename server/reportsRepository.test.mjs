@@ -33,11 +33,11 @@ function poolForRows(rowsByQuery) {
 test("listReportsForUser filters reports by role", () => {
   assert.deepEqual(
     listReportsForUser(readerUser).map((report) => report.id),
-    ["burial-date-extremes", "veteran-service-summary"],
+    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory"],
   );
   assert.deepEqual(
     listReportsForUser(powerUser).map((report) => report.id),
-    ["burial-date-extremes", "veteran-service-summary", "owner-holdings", "available-inventory"],
+    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "owner-holdings", "available-inventory"],
   );
   assert.ok(listReportsForUser(adminUser).some((report) => report.id === "deed-claim-trace-guide"));
 });
@@ -45,8 +45,19 @@ test("listReportsForUser filters reports by role", () => {
 test("matchReportQuery maps free text only to approved reports", () => {
   assert.equal(matchReportQuery("What is the oldest burial?").report.id, "burial-date-extremes");
   assert.equal(matchReportQuery("How many veterans and what wars?").report.id, "veteran-service-summary");
+  assert.equal(matchReportQuery("How many markers are in section C?").report.id, "spatial-inventory-counts");
+  assert.equal(matchReportQuery("How many gravesites are in the cemetery?").report.id, "spatial-inventory-counts");
+  assert.equal(matchReportQuery("List markers by type.").report.id, "marker-type-inventory");
+  assert.equal(matchReportQuery("What marker types are in section C?").report.id, "marker-type-inventory");
   assert.equal(matchReportQuery("What gravesites are available for purchase?").report.id, "available-inventory");
   assert.equal(matchReportQuery("How do we trace a deed claim without paperwork for a lot?").report.id, "deed-claim-trace-guide");
+  assert.equal(matchReportQuery("How do we trace a deed claim with no paperwork?").report.id, "deed-claim-trace-guide");
+
+  const spatialMatch = matchReportQuery("How many markers are in section C?");
+  assert.equal(spatialMatch.parameters.sectionName, "C");
+
+  const markerTypeMatch = matchReportQuery("What marker types are in section C?");
+  assert.equal(markerTypeMatch.parameters.sectionName, "C");
 
   const ownerMatch = matchReportQuery("How many lots are owned by Sarah Stone?");
   assert.equal(ownerMatch.report.id, "owner-holdings");
@@ -110,6 +121,42 @@ test("reader reports are scoped to assigned cemeteries", async () => {
 
   assert.match(query.sql, /gravesites\.cemetery_id = ANY\(\$1::uuid\[\]\)/u);
   assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"]]);
+});
+
+test("spatial inventory counts markers and gravesites with section filtering", async () => {
+  const pool = poolForRows([
+    {
+      includes: "WITH active_cemeteries",
+      rows: [{ cemetery: "Trinity", section: "C", marker_count: 12, gravesite_count: 120 }],
+    },
+  ]);
+
+  const result = await runReport(pool, "spatial-inventory-counts", { sectionName: "C" }, readerUser);
+  const query = pool.queries[0];
+
+  assert.match(query.sql, /cemeteries\.id = ANY\(\$1::uuid\[\]\)/u);
+  assert.match(query.sql, /upper\(section\) = upper\(\$2\)/u);
+  assert.doesNotMatch(query.sql, /sections\.id\b/u);
+  assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"], "C"]);
+  assert.equal(result.summary, "12 markers and 120 gravesites counted in section C.");
+});
+
+test("marker type inventory groups markers by lookup type", async () => {
+  const pool = poolForRows([
+    {
+      includes: "filtered_marker_locations",
+      rows: [{ cemetery: "Trinity", section: "C", marker_type: "Upright", marker_count: 3, markers: "TLC-HS-0001, TLC-HS-0002, TLC-HS-0003" }],
+    },
+  ]);
+
+  const result = await runReport(pool, "marker-type-inventory", { sectionName: "C", markerType: "upright" }, readerUser);
+  const query = pool.queries[0];
+
+  assert.match(query.sql, /marker_types\.id = headstones\.marker_type_id/u);
+  assert.match(query.sql, /marker_type ILIKE \$3 OR marker_type_code ILIKE \$3/u);
+  assert.doesNotMatch(query.sql, /sections\.id\b/u);
+  assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"], "C", "%upright%"]);
+  assert.equal(result.summary, '3 markers listed by type for section C, type matching "upright".');
 });
 
 test("non-admin reports ignore client supplied cemetery filters", async () => {

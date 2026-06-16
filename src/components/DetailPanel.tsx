@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { Camera, FileText, History, Images, Info, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
 import type {
   Burial,
@@ -24,7 +25,7 @@ import type {
 } from "../types";
 import { apiBaseUrl } from "../config/environment";
 import { burialNoteItems } from "../lib/burialNotes";
-import { formatDate, formatGraveLabel, fullName, geometryConfidenceLabels, geometryTypeLabels, statusLabels } from "../lib/format";
+import { formatDate, formatGraveLabel, fullName, geometryConfidenceLabels, geometryTypeLabels, statusColors, statusLabels } from "../lib/format";
 
 type DetailPanelProps = {
   owners: Owner[];
@@ -1098,7 +1099,9 @@ function AssociatedGravesiteList({
       {graves.map((grave) => (
         <button key={`${grave.cemeteryId}:${grave.id}`} type="button" className="associated-gravesite-row" onClick={() => onSelectGrave(grave)}>
           <strong>{formatGraveLabel(grave)}</strong>
-          <span>{statusLabels[grave.status]}</span>
+          <span className="associated-gravesite-status" style={{ "--status-color": statusColors[grave.status] } as CSSProperties}>
+            {statusLabels[grave.status]}
+          </span>
         </button>
       ))}
     </div>

@@ -36,8 +36,33 @@ export function dataBounds(data: CemeteryData) {
   return data.graves.reduce((bounds, grave) => extendGeometryBounds(bounds, grave.geometry), undefined as maplibregl.LngLatBounds | undefined);
 }
 
+export function dataBoundsForCemeteries(data: CemeteryData, cemeteryIds?: string[]) {
+  if (!cemeteryIds?.length) return dataBounds(data);
+
+  const cemeteryIdSet = new Set(cemeteryIds);
+  const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
+  const boundaryBounds = boundaries
+    .filter((boundary) => boundary.properties.id && cemeteryIdSet.has(boundary.properties.id))
+    .reduce((bounds, boundary) => extendGeometryBounds(bounds, boundary.geometry), undefined as maplibregl.LngLatBounds | undefined);
+  if (boundaryBounds) return boundaryBounds;
+
+  const lotBounds = data.lots
+    .filter((lot) => cemeteryIdSet.has(lot.cemeteryId))
+    .reduce((bounds, lot) => extendGeometryBounds(bounds, lot.geometry), undefined as maplibregl.LngLatBounds | undefined);
+  if (lotBounds) return lotBounds;
+
+  return data.graves
+    .filter((grave) => cemeteryIdSet.has(grave.cemeteryId))
+    .reduce((bounds, grave) => extendGeometryBounds(bounds, grave.geometry), undefined as maplibregl.LngLatBounds | undefined);
+}
+
 export function fitMapToData(map: Map, data: CemeteryData, duration = 350) {
   const bounds = dataBounds(data);
+  if (bounds) map.fitBounds(bounds, { padding: 90, maxZoom: 19, duration });
+}
+
+export function fitMapToCemeteries(map: Map, data: CemeteryData, cemeteryIds?: string[], duration = 350) {
+  const bounds = dataBoundsForCemeteries(data, cemeteryIds);
   if (bounds) map.fitBounds(bounds, { padding: 90, maxZoom: 19, duration });
 }
 
