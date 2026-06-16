@@ -272,3 +272,15 @@ databaseChangeLog:
   - include:
       file: changes/091-create-trinity-c-lots-11-through-19-39-and-96-through-100.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/092-create-trinity-a-lots-69-through-61.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/093-create-trinity-a-lots-52-through-60.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/094-create-trinity-a-lots-30-through-38.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/095-create-trinity-a-lots-9-through-1.sql
+      relativeToChangelogFile: true
