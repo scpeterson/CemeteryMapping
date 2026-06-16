@@ -35,6 +35,13 @@ npm ci
 
 ## Start a Local Database
 
+`db:up` creates or starts the Docker PostGIS container for the selected environment. It does not apply the database schema by itself. Run `db:migrate` after the container is healthy to create or update the schema from the Liquibase changelog.
+
+| Environment | Start command | Docker container | Database | Host port |
+| --- | --- | --- | --- | --- |
+| DEV | `npm run db:up` | `cemetery-mapping-db-dev` | `cemetery_mapping_dev` | `5432` by default; local overrides may use another port |
+| TEST | `npm run db:up:test` or `APP_ENV=test npm run db:up` | `cemetery-mapping-db-test` | `cemetery_mapping_test` | `5433` |
+
 DEV is the default environment:
 
 ```bash
@@ -49,9 +56,11 @@ APP_ENV=test npm run db:up
 APP_ENV=test npm run db:migrate
 ```
 
+The DEV and TEST containers use separate Docker Compose projects, databases, ports, and Docker volumes, so they can exist side by side on the same machine.
+
 ## Load Demo Data
 
-Demo data is allowed in DEV, TEST, and STAGE only:
+`db:seed:demo` is a separate optional step. Demo data is allowed in DEV, TEST, and STAGE only:
 
 ```bash
 npm run db:seed:demo
