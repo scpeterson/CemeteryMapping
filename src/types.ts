@@ -320,8 +320,8 @@ export type CemeteryLot = {
 };
 
 export type CemeteryData = {
-  boundary?: GeoJSON.Feature<AreaGeometry, { name: string }>;
-  boundaries?: GeoJSON.Feature<AreaGeometry, { name: string }>[];
+  boundary?: GeoJSON.Feature<AreaGeometry, { id?: string; name: string }>;
+  boundaries?: GeoJSON.Feature<AreaGeometry, { id?: string; name: string }>[];
   sections: CemeterySection[];
   lots: CemeteryLot[];
   graves: GraveSpaceSummary[];

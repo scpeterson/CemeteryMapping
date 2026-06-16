@@ -1659,7 +1659,7 @@ export async function listHeadstoneLookupOptions(pool) {
 function toBoundaryFeature(cemetery) {
   return {
     type: "Feature",
-    properties: { name: cemetery.name },
+    properties: { id: cemetery.id, name: cemetery.name },
     geometry: parseGeometry(cemetery.geometry),
   };
 }
@@ -1726,7 +1726,7 @@ export async function getCemeteryData(pool) {
       boundaries: cemeteries.map(toBoundaryFeature),
       boundary: {
         type: "Feature",
-        properties: { name: cemeteries[0].name },
+        properties: { id: cemeteries[0].id, name: cemeteries[0].name },
         geometry: parseGeometry(cemeteries[0].geometry),
       },
       sections: sections.map(toSection),
@@ -1759,7 +1759,7 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
       boundaries: cemeteries.map(toBoundaryFeature),
       boundary: {
         type: "Feature",
-        properties: { name: cemeteries[0].name },
+        properties: { id: cemeteries[0].id, name: cemeteries[0].name },
         geometry: parseGeometry(cemeteries[0].geometry),
       },
       sections: sections.map(toSection),

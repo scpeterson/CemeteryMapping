@@ -4,7 +4,7 @@ import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibr
 import type { CemeteryData, CemeteryLot, GraveSpaceSummary, GraveStatus, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, lotSelectionKey, statusLabels } from "../lib/format";
-import { exteriorRing, fitMapToData } from "./cemeteryMapBounds";
+import { exteriorRing, fitMapToCemeteries, fitMapToData } from "./cemeteryMapBounds";
 import {
   addBoundaryLayers,
   addGraveLayers,
@@ -30,6 +30,8 @@ type CemeteryMapProps = {
   selectedHeadstone?: HeadstoneSummary;
   visibleGraves: GraveSpaceSummary[];
   searchResultIds: Set<string>;
+  initialFitCemeteryIds?: string[];
+  isInitialFitReady: boolean;
   onSelectGrave: (grave: GraveSpaceSummary) => void;
   onSelectLot: (lot: CemeteryLot) => void;
   onSelectHeadstone: (headstone: HeadstoneSummary) => void;
@@ -109,7 +111,19 @@ function registerSelectableLayerHandlers(map: MapLibreMap, layers: readonly stri
   });
 }
 
-export function CemeteryMap({ data, selectedGrave, selectedLot, selectedHeadstone, visibleGraves, searchResultIds, onSelectGrave, onSelectLot, onSelectHeadstone }: CemeteryMapProps) {
+export function CemeteryMap({
+  data,
+  selectedGrave,
+  selectedLot,
+  selectedHeadstone,
+  visibleGraves,
+  searchResultIds,
+  initialFitCemeteryIds,
+  isInitialFitReady,
+  onSelectGrave,
+  onSelectLot,
+  onSelectHeadstone,
+}: CemeteryMapProps) {
   const [scale, setScale] = useState<MapScale>();
   const [mapViewMode, setMapViewMode] = useState<MapViewMode>("geographic");
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("gravesites");
@@ -119,6 +133,8 @@ export function CemeteryMap({ data, selectedGrave, selectedLot, selectedHeadston
   const selectionModeRef = useRef<SelectionMode>("gravesites");
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
   const dataRef = useRef(data);
+  const initialFitCemeteryIdsRef = useRef(initialFitCemeteryIds);
+  const isInitialFitReadyRef = useRef(isInitialFitReady);
   const gravesBySelectionKeyRef = useRef(graveSelectionIndex(data.graves));
   const lotsBySelectionKeyRef = useRef(lotSelectionIndex(data.lots));
   const headstonesByIdRef = useRef(headstoneSelectionIndex(data.headstones ?? []));
@@ -130,10 +146,12 @@ export function CemeteryMap({ data, selectedGrave, selectedLot, selectedHeadston
   const onSelectLotRef = useRef(onSelectLot);
   const onSelectHeadstoneRef = useRef(onSelectHeadstone);
   const didSkipInitialSelectionFitRef = useRef(false);
-  const didFitDynamicDataRef = useRef(false);
+  const didFitInitialScopeRef = useRef(false);
 
   useEffect(() => {
     dataRef.current = data;
+    initialFitCemeteryIdsRef.current = initialFitCemeteryIds;
+    isInitialFitReadyRef.current = isInitialFitReady;
     gravesBySelectionKeyRef.current = graveSelectionIndex(data.graves);
     lotsBySelectionKeyRef.current = lotSelectionIndex(data.lots);
     headstonesByIdRef.current = headstoneSelectionIndex(data.headstones ?? []);
@@ -144,7 +162,7 @@ export function CemeteryMap({ data, selectedGrave, selectedLot, selectedHeadston
     onSelectRef.current = onSelectGrave;
     onSelectLotRef.current = onSelectLot;
     onSelectHeadstoneRef.current = onSelectHeadstone;
-  }, [data, onSelectGrave, onSelectHeadstone, onSelectLot, searchResultIds, selectedGrave, selectedHeadstone, selectedLot, visibleGraves]);
+  }, [data, initialFitCemeteryIds, isInitialFitReady, onSelectGrave, onSelectHeadstone, onSelectLot, searchResultIds, selectedGrave, selectedHeadstone, selectedLot, visibleGraves]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -181,8 +199,6 @@ export function CemeteryMap({ data, selectedGrave, selectedLot, selectedHeadston
       addRasterLayers(map);
       addBoundaryLayers(map, dataRef.current);
 
-      fitMapToData(map, dataRef.current, 0);
-
       addSectionLayers(map, dataRef.current);
       addLotLayers(map, dataRef.current);
       addGraveLayers(map, visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current);
@@ -199,6 +215,10 @@ export function CemeteryMap({ data, selectedGrave, selectedLot, selectedHeadston
       enforceMapLayerOrder(map);
       applyMapViewMode(map, mapViewModeRef.current);
       syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
+      if (isInitialFitReadyRef.current) {
+        fitMapToCemeteries(map, dataRef.current, initialFitCemeteryIdsRef.current, 0);
+        didFitInitialScopeRef.current = true;
+      }
 
       registerSelectableLayerHandlers(map, selectableGraveLayers);
       registerSelectableLayerHandlers(map, selectableLotLayers);
@@ -260,12 +280,12 @@ export function CemeteryMap({ data, selectedGrave, selectedLot, selectedHeadston
 
     if (refreshStaticSources(map, data, selectedLot)) {
       syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
-      if (!didFitDynamicDataRef.current && !selectedGrave && !selectedLot && !selectedHeadstone) {
-        didFitDynamicDataRef.current = true;
-        fitMapToData(map, data);
+      if (isInitialFitReady && !didFitInitialScopeRef.current && !selectedGrave && !selectedLot && !selectedHeadstone) {
+        didFitInitialScopeRef.current = true;
+        fitMapToCemeteries(map, data, initialFitCemeteryIds);
       }
     }
-  }, [data, selectedGrave, selectedHeadstone, selectedLot]);
+  }, [data, initialFitCemeteryIds, isInitialFitReady, selectedGrave, selectedHeadstone, selectedLot]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -310,21 +330,56 @@ export function CemeteryMap({ data, selectedGrave, selectedLot, selectedHeadston
     <>
       <div ref={containerRef} className="map-canvas" aria-label="Interactive cemetery map" />
       <div className="map-view-toggle" aria-label="Map view">
-        <button type="button" className={mapViewMode === "geographic" ? "is-active" : ""} onClick={() => setMapViewMode("geographic")} aria-pressed={mapViewMode === "geographic"}>
+        <button
+          type="button"
+          className={mapViewMode === "geographic" ? "is-active" : ""}
+          onClick={() => setMapViewMode("geographic")}
+          aria-label="Geographic view: show features in their mapped GPS or operational locations"
+          aria-pressed={mapViewMode === "geographic"}
+          title="Geographic view: show features in their mapped GPS or operational locations."
+        >
           Geographic
         </button>
-        <button type="button" className={mapViewMode === "diagram" ? "is-active" : ""} onClick={() => setMapViewMode("diagram")} aria-pressed={mapViewMode === "diagram"}>
+        <button
+          type="button"
+          className={mapViewMode === "diagram" ? "is-active" : ""}
+          onClick={() => setMapViewMode("diagram")}
+          aria-label="Diagram view: emphasize schematic lot and grave layout for readability"
+          aria-pressed={mapViewMode === "diagram"}
+          title="Diagram view: emphasize schematic lot and grave layout for readability."
+        >
           Diagram
         </button>
       </div>
       <div className="map-selection-toggle" aria-label="Select map features">
-        <button type="button" className={selectionMode === "gravesites" ? "is-active" : ""} onClick={() => setSelectionMode("gravesites")} aria-pressed={selectionMode === "gravesites"}>
+        <button
+          type="button"
+          className={selectionMode === "gravesites" ? "is-active" : ""}
+          onClick={() => setSelectionMode("gravesites")}
+          aria-label="Select gravesites: clicks open grave space details"
+          aria-pressed={selectionMode === "gravesites"}
+          title="Select gravesites: clicks open grave space details."
+        >
           Graves
         </button>
-        <button type="button" className={selectionMode === "lots" ? "is-active" : ""} onClick={() => setSelectionMode("lots")} aria-pressed={selectionMode === "lots"}>
+        <button
+          type="button"
+          className={selectionMode === "lots" ? "is-active" : ""}
+          onClick={() => setSelectionMode("lots")}
+          aria-label="Select lots: clicks open lot details and associated gravesites"
+          aria-pressed={selectionMode === "lots"}
+          title="Select lots: clicks open lot details and associated gravesites."
+        >
           Lots
         </button>
-        <button type="button" className={selectionMode === "markers" ? "is-active" : ""} onClick={() => setSelectionMode("markers")} aria-pressed={selectionMode === "markers"}>
+        <button
+          type="button"
+          className={selectionMode === "markers" ? "is-active" : ""}
+          onClick={() => setSelectionMode("markers")}
+          aria-label="Select markers: clicks open headstone or marker details"
+          aria-pressed={selectionMode === "markers"}
+          title="Select markers: clicks open headstone or marker details."
+        >
           Markers
         </button>
       </div>
