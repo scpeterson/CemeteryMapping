@@ -19,4 +19,5 @@ export const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN;
 export const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
 export const auth0Audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 export const auth0Scope = import.meta.env.VITE_AUTH0_SCOPE ?? "read:cemetery write:cemetery read:deeds write:deeds";
-export const isAuth0Enabled = Boolean(auth0Domain && auth0ClientId && auth0Audience);
+export const frontendAuthMode = (import.meta.env.VITE_AUTH_MODE ?? "auth0").toLowerCase();
+export const isAuth0Enabled = frontendAuthMode !== "disabled" && Boolean(auth0Domain && auth0ClientId && auth0Audience);
