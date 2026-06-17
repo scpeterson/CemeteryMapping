@@ -420,10 +420,6 @@ export function CemeteryMap({
         <section>
           <h2>Layers</h2>
           <span>
-            <i className="legend-symbol legend-imagery" />
-            PASDA imagery
-          </span>
-          <span>
             <i className="legend-symbol legend-boundary" />
             Cemetery boundary
           </span>
@@ -435,14 +431,17 @@ export function CemeteryMap({
             <i className="legend-symbol legend-section" />
             Section polygon
           </span>
-          <span>
-            <i className="legend-symbol legend-lot" />
-            Lot polygon
-          </span>
-          <span>
-            <i className="legend-symbol legend-schematic-lot" />
-            Diagram lot
-          </span>
+          {mapViewMode === "geographic" ? (
+            <span>
+              <i className="legend-symbol legend-lot" />
+              Lot polygon
+            </span>
+          ) : (
+            <span>
+              <i className="legend-symbol legend-schematic-lot" />
+              Lot polygon
+            </span>
+          )}
           <span>
             <i className="legend-symbol legend-gravesite" />
             Gravesite polygon
@@ -452,20 +451,12 @@ export function CemeteryMap({
             Headstone marker
           </span>
           <span>
-            <i className="legend-symbol legend-highlighted-marker" />
-            Highlighted marker
-          </span>
-          <span>
             <i className="legend-symbol legend-veteran-grave" />
             Veteran grave
           </span>
           <span>
             <i className="legend-symbol legend-other-marker" />
             Other marker
-          </span>
-          <span>
-            <i className="legend-symbol legend-cemetery-label" />
-            Cemetery label
           </span>
         </section>
         <section>

@@ -493,13 +493,11 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await page.getByRole("button", { name: "Zoom in" }).click();
   await expect.poll(() => page.getByLabel("Map scale").innerText()).not.toBe(initialScale);
   await expect(page.getByLabel("Map legend")).toContainText("Layers");
-  await expect(page.getByLabel("Map legend")).toContainText("PASDA imagery");
   await expect(page.getByLabel("Map legend")).toContainText("Cemetery boundary");
   await expect(page.getByLabel("Map legend")).toContainText("Parcel boundary");
   await expect(page.getByLabel("Map legend")).toContainText("Lot polygon");
   await expect(page.getByLabel("Map legend")).toContainText("Gravesite Status");
   await expect(page.getByLabel("Map legend")).toContainText("Headstone marker");
-  await expect(page.getByLabel("Map legend")).toContainText("Cemetery label");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
   const firstResult = page.locator(".result-card").first();
   await firstResult.click();

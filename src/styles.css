@@ -685,13 +685,6 @@ h3 {
   background: rgba(223, 231, 217, 0.25);
 }
 
-.legend-imagery {
-  border: 1px solid #72806b;
-  background:
-    linear-gradient(135deg, rgba(88, 112, 68, 0.72), rgba(184, 172, 126, 0.72)),
-    linear-gradient(45deg, rgba(44, 78, 58, 0.85) 25%, transparent 25% 50%, rgba(44, 78, 58, 0.85) 50% 75%, transparent 75%);
-}
-
 .legend-parcel {
   border: 3px solid #ff0000;
   background: transparent;
@@ -734,15 +727,6 @@ h3 {
   box-shadow: 0 0 0 2px #fbfcf7;
 }
 
-.legend-highlighted-marker {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #10211c;
-  border-radius: 50%;
-  background: #f8d465;
-  box-shadow: 0 0 0 2px #fbfcf7;
-}
-
 .legend-veteran-grave {
   display: inline-grid;
   place-items: center;
@@ -767,14 +751,6 @@ h3 {
   border-radius: 50%;
   background: #d97706;
   box-shadow: 0 0 0 2px #fbfcf7;
-}
-
-.legend-cemetery-label {
-  width: 18px;
-  height: 10px;
-  border: 1px solid rgba(47, 93, 80, 0.32);
-  border-radius: 999px;
-  background: #2f5d50;
 }
 
 .legend-available {
