@@ -194,6 +194,10 @@ export default function App() {
         grave.lot === selectedLot.id,
     );
   }, [data.graves, selectedLot]);
+  const selectedLotRestrictedAreas = useMemo(() => {
+    if (!selectedLot) return [];
+    return (data.lotRestrictedAreas ?? []).filter((area) => area.cemeteryId === selectedLot.cemeteryId && area.lotId === selectedLot.id);
+  }, [data.lotRestrictedAreas, selectedLot]);
   const selectedHeadstoneGraves = useMemo(() => {
     if (!selectedHeadstone) return [];
     const associatedIds = selectedHeadstoneDetails?.associatedGravesiteIds?.length
@@ -429,6 +433,7 @@ export default function App() {
         summary={selectedGrave}
         lot={selectedLot}
         lotGraves={selectedLotGraves}
+        lotRestrictedAreas={selectedLotRestrictedAreas}
         grave={selectedGraveDetails}
         standaloneHeadstoneSummary={selectedHeadstone}
         standaloneHeadstone={selectedHeadstoneDetails}

@@ -312,10 +312,23 @@ export type CemeteryLot = {
   name: string;
   section: string;
   block?: string;
+  burialUseStatus?: "standard" | "non_burial" | "partially_restricted";
+  burialUseNotes?: string;
   geometryType?: GeometryType;
   geometrySource?: string;
   geometryConfidence?: GeometryConfidence;
   geometryNotes?: string;
+  geometry: AreaGeometry;
+};
+
+export type LotRestrictedArea = {
+  id: string;
+  lotId: string;
+  cemeteryId: string;
+  lotName: string;
+  restrictionType: "non_burial" | "no_gravesites_or_markers";
+  name: string;
+  notes?: string;
   geometry: AreaGeometry;
 };
 
@@ -324,6 +337,7 @@ export type CemeteryData = {
   boundaries?: GeoJSON.Feature<AreaGeometry, { id?: string; name: string }>[];
   sections: CemeterySection[];
   lots: CemeteryLot[];
+  lotRestrictedAreas?: LotRestrictedArea[];
   graves: GraveSpaceSummary[];
   headstones: HeadstoneSummary[];
 };
