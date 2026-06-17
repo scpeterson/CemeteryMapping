@@ -1148,10 +1148,6 @@ function LotDetailPanel({ lot, graves, onSelectGrave }: { lot: CemeteryLot; grav
               <dd>{lot.name || "Unknown"}</dd>
             </div>
           </dl>
-          <section className="geometry-metadata-group" aria-label="Lot geometry metadata">
-            <h4>Lot geometry</h4>
-            <GeometryMetadataList type={lot.geometryType} source={lot.geometrySource} confidence={lot.geometryConfidence} notes={lot.geometryNotes} />
-          </section>
         </article>
       </section>
 
@@ -1161,6 +1157,18 @@ function LotDetailPanel({ lot, graves, onSelectGrave }: { lot: CemeteryLot; grav
           <h3>Gravesites</h3>
         </div>
         <AssociatedGravesiteList graves={graves} emptyMessage="No gravesites are associated with this lot." onSelectGrave={onSelectGrave} />
+      </section>
+
+      <section className="detail-section">
+        <div className="section-title">
+          <MapPinned size={17} aria-hidden="true" />
+          <h3>Lot Geometry</h3>
+        </div>
+        <article className="grave-record">
+          <section className="geometry-metadata-group" aria-label="Lot geometry metadata">
+            <GeometryMetadataList type={lot.geometryType} source={lot.geometrySource} confidence={lot.geometryConfidence} notes={lot.geometryNotes} />
+          </section>
+        </article>
       </section>
     </aside>
   );
