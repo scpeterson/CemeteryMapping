@@ -305,3 +305,6 @@ databaseChangeLog:
   - include:
       file: changes/102-add-trinity-a-front-row-burial-use-restrictions.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/103-enforce-lot-burial-use-restrictions.sql
+      relativeToChangelogFile: true
