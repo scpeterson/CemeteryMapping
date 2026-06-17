@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
+import { Maximize2, Ruler, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, CemeteryLot, GraveSpaceSummary, GraveStatus, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
@@ -41,6 +41,12 @@ const center: [number, number] = [-76.70431, 39.19604];
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 type SelectionMode = "gravesites" | "lots" | "markers";
+type MeasurementPoint = [number, number];
+
+const emptyMeasurementFeatureCollection = {
+  type: "FeatureCollection",
+  features: [],
+} satisfies GeoJSON.FeatureCollection;
 
 function graveSelectionIndex(graves: GraveSpaceSummary[]) {
   return new Map(graves.map((grave) => [graveSelectionKey(grave), grave]));
@@ -99,13 +105,57 @@ function existingLayers(map: MapLibreMap, layers: readonly string[]) {
   return layers.filter((layer) => map.getLayer(layer));
 }
 
-function registerSelectableLayerHandlers(map: MapLibreMap, layers: readonly string[]) {
+function measurementFeatureCollection(points: MeasurementPoint[]): GeoJSON.FeatureCollection {
+  const lineFeature: GeoJSON.Feature<GeoJSON.LineString> | undefined =
+    points.length > 1
+      ? {
+          type: "Feature",
+          properties: { kind: "line" },
+          geometry: {
+            type: "LineString",
+            coordinates: points,
+          },
+        }
+      : undefined;
+  const pointFeatures = points.map(
+    (point, index): GeoJSON.Feature<GeoJSON.Point> => ({
+      type: "Feature",
+      properties: { kind: "point", label: `${index + 1}` },
+      geometry: {
+        type: "Point",
+        coordinates: point,
+      },
+    }),
+  );
+
+  return {
+    type: "FeatureCollection",
+    features: lineFeature ? [lineFeature, ...pointFeatures] : pointFeatures,
+  };
+}
+
+function totalMeasurementDistanceFeet(points: MeasurementPoint[]) {
+  return points.slice(1).reduce((total, point, index) => {
+    const previous = points[index];
+    return total + new maplibregl.LngLat(previous[0], previous[1]).distanceTo(new maplibregl.LngLat(point[0], point[1])) * 3.28084;
+  }, 0);
+}
+
+function formatMeasurementDistance(feet: number) {
+  if (feet >= 5280) return `${(feet / 5280).toFixed(2)} mi`;
+  if (feet >= 100) return `${Math.round(feet).toLocaleString()} ft`;
+  return `${feet.toFixed(1)} ft`;
+}
+
+function registerSelectableLayerHandlers(map: MapLibreMap, layers: readonly string[], isMeasuring: () => boolean) {
   layers.forEach((layer) => {
     map.on("mouseenter", layer, () => {
+      if (isMeasuring()) return;
       map.getCanvas().style.cursor = "pointer";
     });
 
     map.on("mouseleave", layer, () => {
+      if (isMeasuring()) return;
       map.getCanvas().style.cursor = "";
     });
   });
@@ -127,10 +177,13 @@ export function CemeteryMap({
   const [scale, setScale] = useState<MapScale>();
   const [mapViewMode, setMapViewMode] = useState<MapViewMode>("geographic");
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("gravesites");
+  const [isMeasuring, setIsMeasuring] = useState(false);
+  const [measurementPoints, setMeasurementPoints] = useState<MeasurementPoint[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const mapViewModeRef = useRef<MapViewMode>("geographic");
   const selectionModeRef = useRef<SelectionMode>("gravesites");
+  const isMeasuringRef = useRef(false);
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
   const dataRef = useRef(data);
   const initialFitCemeteryIdsRef = useRef(initialFitCemeteryIds);
@@ -214,16 +267,55 @@ export function CemeteryMap({
 
       enforceMapLayerOrder(map);
       applyMapViewMode(map, mapViewModeRef.current);
+
+      map.addSource("measurement", {
+        type: "geojson",
+        data: emptyMeasurementFeatureCollection,
+      });
+      map.addLayer({
+        id: "measurement-line",
+        type: "line",
+        source: "measurement",
+        filter: ["==", ["get", "kind"], "line"],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": "#b6423b",
+          "line-width": 3,
+          "line-dasharray": [1.2, 1],
+        },
+      });
+      map.addLayer({
+        id: "measurement-points",
+        type: "circle",
+        source: "measurement",
+        filter: ["==", ["get", "kind"], "point"],
+        paint: {
+          "circle-color": "#fbfcf7",
+          "circle-radius": 6,
+          "circle-stroke-color": "#b6423b",
+          "circle-stroke-width": 3,
+        },
+      });
+
       syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
       if (isInitialFitReadyRef.current) {
         fitMapToCemeteries(map, dataRef.current, initialFitCemeteryIdsRef.current, 0);
         didFitInitialScopeRef.current = true;
       }
 
-      registerSelectableLayerHandlers(map, selectableGraveLayers);
-      registerSelectableLayerHandlers(map, selectableLotLayers);
-      registerSelectableLayerHandlers(map, selectableHeadstoneLayers);
+      registerSelectableLayerHandlers(map, selectableGraveLayers, () => isMeasuringRef.current);
+      registerSelectableLayerHandlers(map, selectableLotLayers, () => isMeasuringRef.current);
+      registerSelectableLayerHandlers(map, selectableHeadstoneLayers, () => isMeasuringRef.current);
       map.on("click", (event) => {
+        if (isMeasuringRef.current) {
+          const nextPoint: MeasurementPoint = [event.lngLat.lng, event.lngLat.lat];
+          setMeasurementPoints((currentPoints) => [...currentPoints, nextPoint]);
+          return;
+        }
+
         const mode = selectionModeRef.current;
         const layers = mode === "lots" ? selectableLotLayers : mode === "markers" ? selectableHeadstoneLayers : selectableGraveLayers;
         const features = map.queryRenderedFeatures(event.point, { layers: existingLayers(map, layers) });
@@ -273,6 +365,18 @@ export function CemeteryMap({
   useEffect(() => {
     selectionModeRef.current = selectionMode;
   }, [selectionMode]);
+
+  useEffect(() => {
+    isMeasuringRef.current = isMeasuring;
+    const map = mapRef.current;
+    if (map) map.getCanvas().style.cursor = isMeasuring ? "crosshair" : "";
+  }, [isMeasuring]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    getGeoJsonSource(map, "measurement")?.setData(measurementFeatureCollection(measurementPoints));
+  }, [measurementPoints]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -325,6 +429,16 @@ export function CemeteryMap({
     const map = mapRef.current;
     if (map) fitMapToData(map, data);
   }, [data]);
+
+  const toggleMeasure = useCallback(() => {
+    setIsMeasuring((current) => !current);
+  }, []);
+
+  const clearMeasurement = useCallback(() => {
+    setMeasurementPoints([]);
+  }, []);
+
+  const measurementDistanceFeet = totalMeasurementDistanceFeet(measurementPoints);
 
   return (
     <>
@@ -400,7 +514,34 @@ export function CemeteryMap({
         <button type="button" onClick={fitAll} aria-label="Fit all cemetery data" title="Fit all cemetery data">
           <Maximize2 size={18} aria-hidden="true" />
         </button>
+        <button
+          type="button"
+          className={isMeasuring ? "is-active" : ""}
+          onClick={toggleMeasure}
+          aria-label={isMeasuring ? "Stop measuring distances" : "Measure distances between map points"}
+          aria-pressed={isMeasuring}
+          title={isMeasuring ? "Stop measuring distances." : "Measure distances between map points."}
+        >
+          <Ruler size={18} aria-hidden="true" />
+        </button>
       </div>
+      {isMeasuring || measurementPoints.length ? (
+        <div className="map-measurement" aria-live="polite">
+          <div>
+            <strong>{measurementPoints.length > 1 ? formatMeasurementDistance(measurementDistanceFeet) : "Click map points"}</strong>
+            <span>
+              {measurementPoints.length === 0
+                ? "Choose a starting point."
+                : measurementPoints.length === 1
+                  ? "Choose an ending point."
+                  : `${measurementPoints.length} points measured.`}
+            </span>
+          </div>
+          <button type="button" onClick={clearMeasurement} disabled={!measurementPoints.length} aria-label="Clear measurement" title="Clear measurement">
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
       {scale ? (
         <div className="map-scale" aria-label="Map scale">
           <div className="map-scale-fraction">Scale {scale.representativeFraction}</div>

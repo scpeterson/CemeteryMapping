@@ -494,9 +494,75 @@ h3 {
   background: #edf2ea;
 }
 
+.map-controls button.is-active {
+  background: #2f5d50;
+  color: #fff;
+}
+
 .map-controls button:focus-visible {
   outline: 3px solid rgba(47, 104, 79, 0.24);
   outline-offset: 2px;
+}
+
+.map-measurement {
+  position: absolute;
+  top: 116px;
+  left: 70px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(330px, calc(100vw - 110px));
+  padding: 9px 10px 9px 12px;
+  border: 1px solid rgba(182, 66, 59, 0.3);
+  border-radius: 8px;
+  background: rgba(251, 252, 247, 0.96);
+  color: #26342d;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.map-measurement div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.map-measurement strong {
+  color: #8c302d;
+  font-size: 0.88rem;
+  font-weight: 840;
+  line-height: 1.1;
+}
+
+.map-measurement span {
+  color: #5d6a62;
+  font-size: 0.72rem;
+  font-weight: 680;
+  line-height: 1.2;
+}
+
+.map-measurement button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: 6px;
+  background: #fff;
+  color: #435049;
+}
+
+.map-measurement button:hover:not(:disabled) {
+  border-color: rgba(182, 66, 59, 0.4);
+  color: #8c302d;
+}
+
+.map-measurement button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .north-arrow {
