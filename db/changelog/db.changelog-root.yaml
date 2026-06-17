@@ -287,3 +287,6 @@ databaseChangeLog:
   - include:
       file: changes/096-geometry-metadata.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/097-restore-c-0166-through-c-0172-marker-gps-points.sql
+      relativeToChangelogFile: true
