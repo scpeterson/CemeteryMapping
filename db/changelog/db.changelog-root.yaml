@@ -290,3 +290,18 @@ databaseChangeLog:
   - include:
       file: changes/097-restore-c-0166-through-c-0172-marker-gps-points.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/098-shift-current-lot-polygons-west.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/099-shift-lot-associated-gravesites-west.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/100-shift-selected-lot-rows-west.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/101-lot-burial-use-restrictions.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/102-add-trinity-a-front-row-burial-use-restrictions.sql
+      relativeToChangelogFile: true

@@ -87,6 +87,7 @@ export function lotsFeatureCollection(data: CemeteryData, selectedKey?: string) 
           name: lot.name,
           section: lot.section,
           block: lot.block,
+          burialUseStatus: lot.burialUseStatus ?? "standard",
           geometryType: lot.geometryType ?? "operational",
           geometryConfidence: lot.geometryConfidence ?? "estimated",
           selected: key === selectedKey,
@@ -94,6 +95,25 @@ export function lotsFeatureCollection(data: CemeteryData, selectedKey?: string) 
         geometry: lot.geometry,
       };
     }),
+  } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
+}
+
+export function lotRestrictedAreasFeatureCollection(data: CemeteryData) {
+  return {
+    type: "FeatureCollection",
+    features: (data.lotRestrictedAreas ?? []).map((area) => ({
+      type: "Feature",
+      properties: {
+        id: area.id,
+        lotId: area.lotId,
+        cemeteryId: area.cemeteryId,
+        lotName: area.lotName,
+        restrictionType: area.restrictionType,
+        name: area.name,
+        notes: area.notes,
+      },
+      geometry: area.geometry,
+    })),
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 

@@ -1,6 +1,6 @@
 import { type ImageSource, type Map } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types";
-import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
+import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotRestrictedAreasFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
 
 export type MapViewMode = "geographic" | "diagram";
@@ -19,7 +19,10 @@ const mapLayerOrder = [
   "graves-fill",
   "graves-line",
   "lots-fill",
+  "lots-prohibited-hatch",
   "lots-line",
+  "lot-restricted-areas-fill",
+  "lot-restricted-areas-line",
   "headstones-halo",
   "headstones-circle",
   "headstones-veteran-star",
@@ -65,6 +68,32 @@ const alleghenyParcelsDynamicLayers = encodeURIComponent(
   ]),
 );
 const alleghenyParcelsTileUrl = `${alleghenyParcelsExportUrl}?f=image&format=png32&transparent=true&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&dynamicLayers=${alleghenyParcelsDynamicLayers}`;
+const prohibitedLotPatternId = "prohibited-lot-hatch";
+
+function ensureProhibitedLotPattern(map: Map) {
+  if (map.hasImage(prohibitedLotPatternId)) return;
+
+  const size = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+
+  context.clearRect(0, 0, size, size);
+  context.strokeStyle = "rgba(51, 65, 85, 0.92)";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(-2, size + 2);
+  context.lineTo(size + 2, -2);
+  context.moveTo(size - 6, size + 2);
+  context.lineTo(size + 2, size - 6);
+  context.moveTo(-2, 6);
+  context.lineTo(6, -2);
+  context.stroke();
+
+  map.addImage(prohibitedLotPatternId, context.getImageData(0, 0, size, size), { pixelRatio: 1 });
+}
 
 function clampWebMercatorLatitude(latitude: number) {
   return Math.max(-85.05112878, Math.min(85.05112878, latitude));
@@ -191,14 +220,44 @@ export function addSectionLabelLayer(map: Map) {
 }
 
 export function addLotLayers(map: Map, data: CemeteryData) {
+  ensureProhibitedLotPattern(map);
   map.addSource("lots", { type: "geojson", data: lotsFeatureCollection(data) });
+  map.addSource("lot-restricted-areas", { type: "geojson", data: lotRestrictedAreasFeatureCollection(data) });
   map.addLayer({
     id: "lots-fill",
     type: "fill",
     source: "lots",
     paint: {
-      "fill-color": ["case", ["==", ["get", "geometryType"], "schematic"], "#d9a441", "#f97316"],
-      "fill-opacity": ["case", ["==", ["get", "geometryType"], "schematic"], 0.08, 0],
+      "fill-color": [
+        "case",
+        ["==", ["get", "burialUseStatus"], "non_burial"],
+        "#64748b",
+        ["==", ["get", "burialUseStatus"], "partially_restricted"],
+        "#d97706",
+        ["==", ["get", "geometryType"], "schematic"],
+        "#d9a441",
+        "#f97316",
+      ],
+      "fill-opacity": [
+        "case",
+        ["==", ["get", "burialUseStatus"], "non_burial"],
+        0.2,
+        ["==", ["get", "burialUseStatus"], "partially_restricted"],
+        0.12,
+        ["==", ["get", "geometryType"], "schematic"],
+        0.08,
+        0,
+      ],
+    },
+  });
+  map.addLayer({
+    id: "lots-prohibited-hatch",
+    type: "fill",
+    source: "lots",
+    filter: ["==", ["get", "burialUseStatus"], "non_burial"],
+    paint: {
+      "fill-pattern": prohibitedLotPatternId,
+      "fill-opacity": 0.55,
     },
   });
   map.addLayer({
@@ -206,9 +265,41 @@ export function addLotLayers(map: Map, data: CemeteryData) {
     type: "line",
     source: "lots",
     paint: {
-      "line-color": ["case", ["boolean", ["get", "selected"], false], "#ff1493", ["==", ["get", "geometryType"], "schematic"], "#b45309", "#f97316"],
+      "line-color": [
+        "case",
+        ["boolean", ["get", "selected"], false],
+        "#ff1493",
+        ["==", ["get", "burialUseStatus"], "non_burial"],
+        "#475569",
+        ["==", ["get", "burialUseStatus"], "partially_restricted"],
+        "#a16207",
+        ["==", ["get", "geometryType"], "schematic"],
+        "#b45309",
+        "#f97316",
+      ],
       "line-opacity": ["case", ["==", ["get", "geometryConfidence"], "estimated"], 0.72, ["==", ["get", "geometryConfidence"], "draft"], 0.56, 0.95],
       "line-width": ["case", ["boolean", ["get", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 1.8, 2.4],
+    },
+  });
+  map.addLayer({
+    id: "lot-restricted-areas-fill",
+    type: "fill",
+    source: "lot-restricted-areas",
+    paint: {
+      "fill-color": "#e2e8f0",
+      "fill-opacity": 0.28,
+      "fill-pattern": prohibitedLotPatternId,
+    },
+  });
+  map.addLayer({
+    id: "lot-restricted-areas-line",
+    type: "line",
+    source: "lot-restricted-areas",
+    paint: {
+      "line-color": "#334155",
+      "line-opacity": 0.95,
+      "line-width": 1.8,
+      "line-dasharray": [1.2, 0.8],
     },
   });
   map.addLayer({
@@ -400,7 +491,27 @@ export function applyMapViewMode(map: Map, mode: MapViewMode) {
     map.setPaintProperty(
       "lots-fill",
       "fill-opacity",
-      mode === "diagram" ? ["case", ["==", ["get", "geometryType"], "schematic"], 0.24, 0.08] : ["case", ["==", ["get", "geometryType"], "schematic"], 0.06, 0],
+      mode === "diagram"
+        ? [
+            "case",
+            ["==", ["get", "burialUseStatus"], "non_burial"],
+            0.3,
+            ["==", ["get", "burialUseStatus"], "partially_restricted"],
+            0.16,
+            ["==", ["get", "geometryType"], "schematic"],
+            0.24,
+            0.08,
+          ]
+        : [
+            "case",
+            ["==", ["get", "burialUseStatus"], "non_burial"],
+            0.2,
+            ["==", ["get", "burialUseStatus"], "partially_restricted"],
+            0.12,
+            ["==", ["get", "geometryType"], "schematic"],
+            0.06,
+            0,
+          ],
     );
   }
   if (map.getLayer("lots-line")) {

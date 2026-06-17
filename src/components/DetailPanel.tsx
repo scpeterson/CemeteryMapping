@@ -10,6 +10,7 @@ import type {
   Headstone,
   HeadstoneLookups,
   HeadstoneSummary,
+  LotRestrictedArea,
   LookupOption,
   MediaAsset,
   NorthHillsLinkedEvidence,
@@ -32,6 +33,7 @@ type DetailPanelProps = {
   summary?: GraveSpaceSummary;
   lot?: CemeteryLot;
   lotGraves?: GraveSpaceSummary[];
+  lotRestrictedAreas?: LotRestrictedArea[];
   grave?: GraveSpace;
   standaloneHeadstoneSummary?: HeadstoneSummary;
   standaloneHeadstone?: Headstone;
@@ -1108,7 +1110,24 @@ function AssociatedGravesiteList({
   );
 }
 
-function LotDetailPanel({ lot, graves, onSelectGrave }: { lot: CemeteryLot; graves: GraveSpaceSummary[]; onSelectGrave: (grave: GraveSpaceSummary) => void }) {
+const lotBurialUseLabels = {
+  standard: "Standard lot",
+  non_burial: "Gravesites and markers prohibited",
+  partially_restricted: "Partially restricted",
+} satisfies Record<NonNullable<CemeteryLot["burialUseStatus"]>, string>;
+
+function LotDetailPanel({
+  lot,
+  graves,
+  restrictedAreas,
+  onSelectGrave,
+}: {
+  lot: CemeteryLot;
+  graves: GraveSpaceSummary[];
+  restrictedAreas: LotRestrictedArea[];
+  onSelectGrave: (grave: GraveSpaceSummary) => void;
+}) {
+  const burialUseStatus = lot.burialUseStatus ?? "standard";
   return (
     <aside className="detail-panel">
       <div className="grave-title-row">
@@ -1147,9 +1166,37 @@ function LotDetailPanel({ lot, graves, onSelectGrave }: { lot: CemeteryLot; grav
               <dt>Name</dt>
               <dd>{lot.name || "Unknown"}</dd>
             </div>
+            <div>
+              <dt>Burial use</dt>
+              <dd>{lotBurialUseLabels[burialUseStatus]}</dd>
+            </div>
           </dl>
+          {lot.burialUseNotes ? <p className="lot-use-note">{lot.burialUseNotes}</p> : null}
         </article>
       </section>
+
+      {burialUseStatus !== "standard" || restrictedAreas.length ? (
+        <section className="detail-section">
+          <div className="section-title">
+            <Info size={17} aria-hidden="true" />
+            <h3>Lot Restrictions</h3>
+          </div>
+          <article className="grave-record">
+            {restrictedAreas.length ? (
+              <div className="lot-restriction-list">
+                {restrictedAreas.map((area) => (
+                  <div key={area.id} className="lot-restriction-row">
+                    <strong>{area.name}</strong>
+                    <span>{area.notes || "This area cannot contain gravesites or markers."}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="lot-use-note">This lot cannot contain gravesites or markers.</p>
+            )}
+          </article>
+        </section>
+      ) : null}
 
       <section className="detail-section">
         <div className="section-title">
@@ -1393,6 +1440,7 @@ export function DetailPanel({
   summary,
   lot,
   lotGraves = [],
+  lotRestrictedAreas = [],
   grave,
   standaloneHeadstoneSummary,
   standaloneHeadstone,
@@ -1438,7 +1486,7 @@ export function DetailPanel({
   }
 
   if (lot) {
-    return <LotDetailPanel lot={lot} graves={lotGraves} onSelectGrave={onSelectLotGrave} />;
+    return <LotDetailPanel lot={lot} graves={lotGraves} restrictedAreas={lotRestrictedAreas} onSelectGrave={onSelectLotGrave} />;
   }
 
   if (!summary) {

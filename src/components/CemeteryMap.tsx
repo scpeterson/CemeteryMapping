@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, Ruler, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, CemeteryLot, GraveSpaceSummary, GraveStatus, HeadstoneSummary } from "../types";
-import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
+import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotRestrictedAreasFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, lotSelectionKey, statusLabels } from "../lib/format";
 import { exteriorRing, fitMapToCemeteries, fitMapToData } from "./cemeteryMapBounds";
 import {
@@ -72,13 +72,15 @@ function refreshStaticSources(map: MapLibreMap, data: CemeteryData, selectedLot:
   const boundarySource = getGeoJsonSource(map, "boundary");
   const sectionsSource = getGeoJsonSource(map, "sections");
   const lotsSource = getGeoJsonSource(map, "lots");
+  const lotRestrictedAreasSource = getGeoJsonSource(map, "lot-restricted-areas");
   const selectedLotKey = selectedLot ? lotSelectionKey(selectedLot) : undefined;
 
   boundarySource?.setData(boundariesFeatureCollection(data));
   sectionsSource?.setData(sectionsFeatureCollection(data));
   lotsSource?.setData(lotsFeatureCollection(data, selectedLotKey));
+  lotRestrictedAreasSource?.setData(lotRestrictedAreasFeatureCollection(data));
 
-  return Boolean(boundarySource || sectionsSource || lotsSource);
+  return Boolean(boundarySource || sectionsSource || lotsSource || lotRestrictedAreasSource);
 }
 
 function refreshLotSource(map: MapLibreMap, data: CemeteryData, selectedLot: CemeteryLot | undefined) {
@@ -586,6 +588,10 @@ export function CemeteryMap({
           <span>
             <i className="legend-symbol legend-gravesite" />
             Gravesite polygon
+          </span>
+          <span>
+            <i className="legend-symbol legend-non-burial-lot" />
+            Gravesites and markers prohibited
           </span>
           <span>
             <i className="legend-symbol legend-marker" />

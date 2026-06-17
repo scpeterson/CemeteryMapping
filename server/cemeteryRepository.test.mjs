@@ -44,6 +44,7 @@ function queryRows(sql) {
     return [{ id: "11111111-1111-4111-8111-111111111111", name: "Sequential Cemetery", geometry: "{}" }];
   }
   if (sql.includes("FROM sections")) return [];
+  if (sql.includes("FROM lot_restricted_areas")) return [];
   if (sql.includes("FROM lots")) return [];
   if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
     return [
@@ -184,6 +185,80 @@ test("cemetery map data includes lightweight headstone point summaries", async (
       markerType: "Other marker",
       condition: "unknown",
       geometry: { type: "Point", coordinates: [-80.1, 40.1] },
+    },
+  ]);
+});
+
+test("cemetery map data includes lot burial use restrictions", async () => {
+  const polygon = '{"type":"MultiPolygon","coordinates":[[[[-80,40],[-80,40.1],[-79.9,40.1],[-79.9,40],[-80,40]]]]}';
+  const restrictedPolygon = '{"type":"MultiPolygon","coordinates":[[[[-80,40],[-80,40.04],[-79.9,40.04],[-79.9,40],[-80,40]]]]}';
+  const pool = {
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
+          if (sql.includes("FROM cemeteries")) {
+            return { rows: [{ id: "11111111-1111-4111-8111-111111111111", name: "Sequential Cemetery", geometry: polygon }] };
+          }
+          if (sql.includes("FROM sections")) return { rows: [] };
+          if (sql.includes("FROM lot_restricted_areas")) {
+            return {
+              rows: [
+                {
+                  id: "55555555-5555-4555-8555-555555555555",
+                  lot_id: "62",
+                  cemetery_id: "11111111-1111-4111-8111-111111111111",
+                  lot_name: "A-62",
+                  restriction_type: "no_gravesites_or_markers",
+                  name: "A-62 southern 2/5",
+                  notes: "Southern two possible gravesite positions cannot contain gravesites or markers.",
+                  geometry: restrictedPolygon,
+                },
+              ],
+            };
+          }
+          if (sql.includes("FROM lots")) {
+            return {
+              rows: [
+                {
+                  id: "44444444-4444-4444-8444-444444444444",
+                  cemetery_id: "11111111-1111-4111-8111-111111111111",
+                  lot_id: "61",
+                  section_id: "A",
+                  block_id: null,
+                  name: "A-61",
+                  burial_use_status: "non_burial",
+                  burial_use_notes: "Lot exists in the cemetery lot grid, but it cannot contain gravesites or markers.",
+                  geometry_type: "schematic",
+                  geometry_confidence: "reviewed",
+                  geometry: polygon,
+                },
+              ],
+            };
+          }
+          if (sql.includes("FROM gravesites")) return { rows: [] };
+          if (sql.includes("ST_AsGeoJSON(headstones.geometry)::json")) return { rows: [] };
+          throw new Error(`Unexpected query: ${sql}`);
+        },
+        release() {},
+      };
+    },
+  };
+
+  const data = await getCemeteryData(pool);
+
+  assert.equal(data.lots[0].burialUseStatus, "non_burial");
+  assert.equal(data.lots[0].burialUseNotes, "Lot exists in the cemetery lot grid, but it cannot contain gravesites or markers.");
+  assert.deepEqual(data.lotRestrictedAreas, [
+    {
+      id: "55555555-5555-4555-8555-555555555555",
+      lotId: "62",
+      cemeteryId: "11111111-1111-4111-8111-111111111111",
+      lotName: "A-62",
+      restrictionType: "no_gravesites_or_markers",
+      name: "A-62 southern 2/5",
+      notes: "Southern two possible gravesite positions cannot contain gravesites or markers.",
+      geometry: JSON.parse(restrictedPolygon),
     },
   ]);
 });

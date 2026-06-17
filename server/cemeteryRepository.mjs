@@ -642,11 +642,39 @@ async function selectLotsForCemeteries(client, cemeteryIds) {
         geometry_source,
         geometry_confidence,
         geometry_notes,
+        burial_use_status,
+        burial_use_notes,
         ST_AsGeoJSON(geometry)::json AS geometry
       FROM lots
       WHERE cemetery_id = ANY($1::uuid[])
         AND deleted_at IS NULL
       ORDER BY section_id, block_id, lot_id, name
+    `,
+    [cemeteryIds],
+  );
+
+  return result.rows;
+}
+
+async function selectLotRestrictedAreasForCemeteries(client, cemeteryIds) {
+  const result = await client.query(
+    `
+      SELECT
+        lot_restricted_areas.id::text,
+        lots.lot_id,
+        lots.cemetery_id::text,
+        COALESCE(lots.name, lots.lot_id) AS lot_name,
+        lot_restricted_areas.restriction_type,
+        lot_restricted_areas.name,
+        lot_restricted_areas.notes,
+        ST_AsGeoJSON(lot_restricted_areas.geometry)::json AS geometry
+      FROM lot_restricted_areas
+      JOIN lots
+        ON lots.id = lot_restricted_areas.lot_uuid
+      WHERE lots.cemetery_id = ANY($1::uuid[])
+        AND lots.deleted_at IS NULL
+        AND lot_restricted_areas.deleted_at IS NULL
+      ORDER BY lots.section_id, lots.lot_id, lot_restricted_areas.name
     `,
     [cemeteryIds],
   );
@@ -1680,11 +1708,26 @@ function toLot(lot) {
     name: lot.name,
     section: lot.section_id ?? "",
     block: lot.block_id ?? undefined,
+    burialUseStatus: lot.burial_use_status ?? "standard",
+    burialUseNotes: lot.burial_use_notes ?? undefined,
     geometryType: lot.geometry_type ?? "operational",
     geometrySource: lot.geometry_source ?? undefined,
     geometryConfidence: lot.geometry_confidence ?? "estimated",
     geometryNotes: lot.geometry_notes ?? undefined,
     geometry: parseGeometry(lot.geometry),
+  };
+}
+
+function toLotRestrictedArea(area) {
+  return {
+    id: area.id,
+    lotId: area.lot_id,
+    cemeteryId: area.cemetery_id,
+    lotName: area.lot_name,
+    restrictionType: area.restriction_type ?? "non_burial",
+    name: area.name,
+    notes: area.notes ?? undefined,
+    geometry: parseGeometry(area.geometry),
   };
 }
 
@@ -1719,6 +1762,7 @@ export async function getCemeteryData(pool) {
 
     const sections = await selectSectionsForCemeteries(client, cemeteryIds);
     const lots = await selectLotsForCemeteries(client, cemeteryIds);
+    const lotRestrictedAreas = await selectLotRestrictedAreasForCemeteries(client, cemeteryIds);
     const graves = await selectGravesForCemeteries(client, cemeteryIds);
     const headstones = await selectHeadstoneSummariesForCemeteries(client, cemeteryIds);
 
@@ -1731,6 +1775,7 @@ export async function getCemeteryData(pool) {
       },
       sections: sections.map(toSection),
       lots: lots.map(toLot),
+      lotRestrictedAreas: lotRestrictedAreas.map(toLotRestrictedArea),
       graves: graves.map(toGraveSummary),
       headstones: headstones.map(toHeadstoneSummary),
     };
@@ -1748,6 +1793,7 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
 
     const sections = await selectSectionsForCemeteries(client, cemeteryIds);
     const lots = await selectLotsForCemeteries(client, cemeteryIds);
+    const lotRestrictedAreas = await selectLotRestrictedAreasForCemeteries(client, cemeteryIds);
     const graves = await selectGravesForCemeteries(client, cemeteryIds, { includeCost: true });
     const owners = includeOwnership ? await selectOwnersForCemeteries(client, cemeteryIds) : [];
     const burials = await selectBurialsForCemeteries(client, cemeteryIds);
@@ -1764,6 +1810,7 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
       },
       sections: sections.map(toSection),
       lots: lots.map(toLot),
+      lotRestrictedAreas: lotRestrictedAreas.map(toLotRestrictedArea),
       graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], [], [], includeOwnership)),
       owners: owners.map(toOwner),
     };
