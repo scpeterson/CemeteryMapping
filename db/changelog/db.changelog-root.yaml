@@ -308,3 +308,21 @@ databaseChangeLog:
   - include:
       file: changes/103-enforce-lot-burial-use-restrictions.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/104-import-trinity-missing-shapefile-markers.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/105-create-gravesites-for-missing-shapefile-markers.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/106-update-trinity-marker-points-from-shapefile.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/107-correct-reviewed-shapefile-marker-associations.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/108-import-remaining-trinity-section-e-shapefile-markers.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/109-link-remaining-trinity-section-e-shapefile-markers.sql
+      relativeToChangelogFile: true
