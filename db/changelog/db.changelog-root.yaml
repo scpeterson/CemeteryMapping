@@ -332,3 +332,12 @@ databaseChangeLog:
   - include:
       file: changes/111-correct-section-a-gravesites-0038-0045-west-edge-marker-alignment.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/112-media-asset-display-order.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/113-split-c-0179-hein-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/114-burial-maiden-name.sql
+      relativeToChangelogFile: true

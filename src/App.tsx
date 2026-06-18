@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
+  deleteMediaAsset,
   fetchCemeteryData,
   fetchCurrentUser,
   fetchHeadstoneLookups,
@@ -9,6 +10,7 @@ import {
   updateBurial,
   updateGraveSpace,
   updateHeadstone,
+  moveMediaAsset,
   uploadGravePhoto,
   uploadHeadstonePhoto,
 } from "./api/cemeteryApi";
@@ -310,7 +312,7 @@ export default function App() {
     return saved;
   };
 
-  const saveGravePhoto = async ({ file, headstoneId, notes }: { file: File; headstoneId?: string; notes?: string }) => {
+  const saveGravePhoto = async ({ file, headstoneId, notes, capturedAt }: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => {
     const source = /iPhone|iPad|iPod/u.test(navigator.userAgent) ? "iphone" : "field_upload";
     if (selectedGrave) {
       await uploadGravePhoto({
@@ -319,6 +321,7 @@ export default function App() {
         file,
         headstoneId,
         notes,
+        capturedAt,
         source,
       });
     } else if (selectedHeadstone) {
@@ -327,12 +330,29 @@ export default function App() {
         headstoneId: selectedHeadstone.id,
         file,
         notes,
+        capturedAt,
         source,
       });
     } else {
       throw new Error("Select a grave site or marker before uploading a photo.");
     }
-    refreshDetails();
+    refreshDetails({ preserveCurrent: true });
+  };
+
+  const deletePhoto = async (assetId: string, reason?: string) => {
+    await deleteMediaAsset(assetId, reason);
+    refreshDetails({ preserveCurrent: true });
+  };
+
+  const movePhoto = async (asset: { id: string; mediaLinkId?: string; mediaLinkType?: "headstone" | "gravesite" }, direction: "earlier" | "later") => {
+    if (!asset.mediaLinkId || !asset.mediaLinkType) throw new Error("Photo link information is missing.");
+    await moveMediaAsset({
+      id: asset.id,
+      linkId: asset.mediaLinkId,
+      linkType: asset.mediaLinkType,
+      direction,
+    });
+    refreshDetails({ preserveCurrent: true });
   };
 
   const saveOwnershipEvent = async (event: SaveOwnershipEventInput) => {
@@ -450,6 +470,10 @@ export default function App() {
         onSelectLotGrave={selectGrave}
         onSelectMarkerGrave={selectGrave}
         onUploadPhoto={saveGravePhoto}
+        onDeletePhoto={deletePhoto}
+        onMovePhoto={movePhoto}
+        canDeletePhotos={currentUser?.permissions.canDeletePhotos ?? false}
+        canReorderPhotos={canUpdateSelectedHeadstones}
         isLoading={isDetailLoading}
         error={detailError}
         onRetry={refreshDetails}

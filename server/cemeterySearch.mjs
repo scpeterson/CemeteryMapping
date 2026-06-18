@@ -101,7 +101,14 @@ async function burialMilitaryServiceSearchState(pool) {
         WHERE table_schema = current_schema()
           AND table_name = 'burials'
           AND column_name = 'birth_date_text'
-      ) AS has_recorded_date_text_columns
+      ) AS has_recorded_date_text_columns,
+      EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'burials'
+          AND column_name = 'maiden_name'
+      ) AS has_maiden_name_column
   `);
 
   return {
@@ -111,16 +118,18 @@ async function burialMilitaryServiceSearchState(pool) {
     hasMilitaryBranchLookup: Boolean(result.rows[0]?.has_military_branch_lookup),
     hasMilitaryWarServiceLookup: Boolean(result.rows[0]?.has_military_war_service_lookup),
     hasRecordedDateTextColumns: Boolean(result.rows[0]?.has_recorded_date_text_columns),
+    hasMaidenNameColumn: Boolean(result.rows[0]?.has_maiden_name_column),
   };
 }
 
 export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds } = {}) {
   const cleanedQuery = normalize(query.trim());
   const scopedOwnershipCemeteryIds = ownershipCemeteryIds?.map((id) => String(id));
-  const { hasLegacyMilitaryBranchColumn, hasLegacyMilitaryWarsColumn, hasMilitaryBranchLookup, hasMilitaryWarServiceLookup, hasRecordedDateTextColumns } =
+  const { hasLegacyMilitaryBranchColumn, hasLegacyMilitaryWarsColumn, hasMilitaryBranchLookup, hasMilitaryWarServiceLookup, hasRecordedDateTextColumns, hasMaidenNameColumn } =
     await burialMilitaryServiceSearchState(pool);
   const birthDateSearchValue = hasRecordedDateTextColumns ? "COALESCE(burials.birth_date_text, burials.birth_date::text)" : "burials.birth_date::text";
   const deathDateSearchValue = hasRecordedDateTextColumns ? "COALESCE(burials.death_date_text, burials.death_date::text)" : "burials.death_date::text";
+  const maidenNameSearchValue = hasMaidenNameColumn ? "burials.maiden_name" : "NULL::text";
   const militaryBranchJoin = hasMilitaryBranchLookup ? "LEFT JOIN military_branch_types ON military_branch_types.id = burials.military_branch_type_id" : "";
   const militaryBranchValue = hasMilitaryBranchLookup ? "military_branch_types.label" : hasLegacyMilitaryBranchColumn ? "burials.military_branch" : "NULL::text";
   const militaryWarServiceJoin = hasMilitaryWarServiceLookup ? "LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id" : "";
@@ -274,12 +283,12 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND owners.sale_date::text LIKE '%' || $1 || '%'
 
         UNION ALL
-        SELECT 'Burial', COALESCE(NULLIF(concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, '')), ''), burials.full_name)
+        SELECT 'Burial', COALESCE(NULLIF(concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(${maidenNameSearchValue}, ''), NULLIF(burials.last_name, '')), ''), burials.full_name)
         FROM burials
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
-          AND lower(COALESCE(NULLIF(concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, '')), ''), burials.full_name, '')) LIKE '%' || $1 || '%'
+          AND lower(COALESCE(NULLIF(concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(${maidenNameSearchValue}, ''), NULLIF(burials.last_name, '')), ''), burials.full_name, '')) LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Birth', ${birthDateSearchValue}

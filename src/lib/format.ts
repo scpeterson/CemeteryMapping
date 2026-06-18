@@ -57,8 +57,9 @@ export function formatDate(date?: string) {
   }).format(parsedDate);
 }
 
-export function fullName(person: { firstName: string; middleName?: string; lastName: string }) {
-  return [person.firstName, person.middleName, person.lastName].filter(Boolean).join(" ");
+export function fullName(person: { firstName: string; middleName?: string; maidenName?: string; lastName: string }) {
+  const maidenName = person.maidenName ? `(${person.maidenName})` : undefined;
+  return [person.firstName, person.middleName, maidenName, person.lastName].filter(Boolean).join(" ");
 }
 
 export function formatGraveLabel(grave: Pick<GraveSpaceSummary, "section" | "lot" | "space">) {

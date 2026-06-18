@@ -57,6 +57,7 @@
     "db:promote:boundary-geometry": "node scripts/db-promote-boundary-geometry.mjs",
     "db:promote:section-geometry": "node scripts/db-promote-section-geometry.mjs",
     "db:seed:demo": "node scripts/db-seed-demo.mjs",
+    "db:backfill:media-captured-at": "node scripts/db-backfill-media-captured-at.mjs",
     "db:purge:audit": "node scripts/db-purge-audit-events.mjs",
     "db:purge:system-events": "node scripts/db-purge-system-events.mjs",
     "db:validate:spatial": "node scripts/db-validate-spatial.mjs",

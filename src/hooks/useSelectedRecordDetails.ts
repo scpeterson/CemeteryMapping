@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchGraveSpace, fetchHeadstone } from "../api/cemeteryApi";
 import type { GraveSpace, GraveSpaceSummary, Headstone, HeadstoneSummary, Owner } from "../types";
 
@@ -13,12 +13,23 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
   const [selectedGraveOwners, setSelectedGraveOwners] = useState<Owner[]>([]);
   const [detailError, setDetailError] = useState<string>();
   const [isDetailLoading, setIsDetailLoading] = useState(false);
-  const [detailRequestVersion, setDetailRequestVersion] = useState(0);
+  const [detailRequest, setDetailRequest] = useState({ version: 0, preserveCurrent: false });
+  const selectionKey = useMemo(() => {
+    if (selectedHeadstone) return `headstone:${selectedHeadstone.id}`;
+    if (selectedGrave) return `grave:${selectedGrave.cemeteryId}:${selectedGrave.id}`;
+    return "";
+  }, [selectedGrave, selectedHeadstone]);
+  const previousSelectionKey = useRef("");
 
   useEffect(() => {
-    setSelectedGraveDetails(undefined);
-    setSelectedHeadstoneDetails(undefined);
-    setSelectedGraveOwners([]);
+    const isSameSelection = previousSelectionKey.current === selectionKey;
+    previousSelectionKey.current = selectionKey;
+    const shouldPreserveCurrent = detailRequest.preserveCurrent && isSameSelection;
+    if (!shouldPreserveCurrent) {
+      setSelectedGraveDetails(undefined);
+      setSelectedHeadstoneDetails(undefined);
+      setSelectedGraveOwners([]);
+    }
     setDetailError(undefined);
 
     if (selectedHeadstone) {
@@ -68,7 +79,7 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
     return () => {
       isCurrent = false;
     };
-  }, [selectedGrave, selectedHeadstone, detailRequestVersion]);
+  }, [selectedGrave, selectedHeadstone, selectionKey, detailRequest]);
 
   return {
     selectedGraveDetails,
@@ -78,6 +89,6 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
     selectedGraveOwners,
     detailError,
     isDetailLoading,
-    refreshDetails: () => setDetailRequestVersion((version) => version + 1),
+    refreshDetails: ({ preserveCurrent = false } = {}) => setDetailRequest((current) => ({ version: current.version + 1, preserveCurrent })),
   };
 }

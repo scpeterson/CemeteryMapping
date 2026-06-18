@@ -203,7 +203,7 @@ export async function uploadGravePhoto(input: UploadGravePhotoInput): Promise<Me
   const params = new URLSearchParams();
   params.set("filename", input.file.name);
   params.set("notes", input.notes ?? "");
-  params.set("capturedAt", input.capturedAt ?? new Date(input.file.lastModified || Date.now()).toISOString());
+  if (input.capturedAt) params.set("capturedAt", input.capturedAt);
   params.set("source", input.source ?? "field_upload");
   if (input.headstoneId) params.set("headstoneId", input.headstoneId);
   if (input.latitude !== undefined) params.set("latitude", String(input.latitude));
@@ -229,7 +229,7 @@ export async function uploadHeadstonePhoto(input: UploadHeadstonePhotoInput): Pr
   const params = new URLSearchParams();
   params.set("filename", input.file.name);
   params.set("notes", input.notes ?? "");
-  params.set("capturedAt", input.capturedAt ?? new Date(input.file.lastModified || Date.now()).toISOString());
+  if (input.capturedAt) params.set("capturedAt", input.capturedAt);
   params.set("source", input.source ?? "field_upload");
   if (input.latitude !== undefined) params.set("latitude", String(input.latitude));
   if (input.longitude !== undefined) params.set("longitude", String(input.longitude));
@@ -241,6 +241,30 @@ export async function uploadHeadstonePhoto(input: UploadHeadstonePhotoInput): Pr
     body: input.file,
   });
   return jsonResponse<MediaAsset>(response, "Marker photo upload API");
+}
+
+export async function deleteMediaAsset(id: string, reason?: string): Promise<{ id: string; cemeteryId: string; deletedAt: string; alreadyDeleted: boolean }> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/media-assets/${encodeURIComponent(id)}`, jsonRequest("DELETE", { reason }));
+  return jsonResponse<{ id: string; cemeteryId: string; deletedAt: string; alreadyDeleted: boolean }>(response, "Photo delete API");
+}
+
+export type MoveMediaAssetInput = {
+  id: string;
+  linkId: string;
+  linkType: "headstone" | "gravesite";
+  direction: "earlier" | "later";
+};
+
+export async function moveMediaAsset(input: MoveMediaAssetInput): Promise<{ moved: boolean }> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/media-assets/${encodeURIComponent(input.id)}/order`,
+    jsonRequest("PATCH", {
+      linkId: input.linkId,
+      linkType: input.linkType,
+      direction: input.direction,
+    }),
+  );
+  return jsonResponse<{ moved: boolean }>(response, "Photo order API");
 }
 
 export async function fetchAdminRoles(): Promise<AppRole[]> {
