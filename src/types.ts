@@ -80,6 +80,7 @@ export type Person = {
   firstName: string;
   middleName?: string;
   lastName: string;
+  maidenName?: string;
   birthDate?: string;
   deathDate?: string;
 };
@@ -168,6 +169,9 @@ export type MediaAsset = {
   notes: string;
   source: string;
   status: "staged" | "linked" | "needs_review" | "rejected";
+  mediaLinkId?: string;
+  mediaLinkType?: "headstone" | "gravesite";
+  displayOrder?: number;
 };
 
 export type NorthHillsLinkedEvidence = {
@@ -273,6 +277,7 @@ export type SaveGraveSpaceInput = {
 export type SaveBurialInput = {
   firstName: string;
   lastName: string;
+  maidenName: string;
   birthDate: string;
   deathDate: string;
   burialDate: string;
@@ -398,6 +403,7 @@ export type CurrentUser = {
     canUpdateGravesites: boolean;
     canUpdateBurials: boolean;
     canDeleteCemeteryRecords: boolean;
+    canDeletePhotos: boolean;
   };
   assignedCemeteryIds: string[];
 };

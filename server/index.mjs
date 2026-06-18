@@ -29,7 +29,7 @@ import {
   updateDeedInvestigationCase,
 } from "./deedInvestigationCaseRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
-import { createGraveSpacePhoto, createHeadstonePhoto, mediaUploadRoot } from "./mediaRepository.mjs";
+import { createGraveSpacePhoto, createHeadstonePhoto, mediaUploadRoot, moveMediaAssetLink, softDeleteMediaAsset } from "./mediaRepository.mjs";
 import {
   deleteNorthHillsOcrEvidenceLink,
   listNorthHillsOcrReview,
@@ -262,6 +262,7 @@ export function validateBurialPayload(body) {
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
     lastName: optionalText(body?.lastName, "Last name", 100) ?? "",
+    maidenName: optionalText(body?.maidenName, "Maiden name", 150) ?? "",
     birthDate: optionalRecordedDate(body?.birthDate, "Birth date") ?? "",
     deathDate: optionalRecordedDate(body?.deathDate, "Death date") ?? "",
     burialDate: optionalDate(body?.burialDate, "Burial date") ?? "",
@@ -544,6 +545,7 @@ export function createApp(config, pool) {
         canUpdateGravesites: role === "admin" || hasScopedEditAccess,
         canUpdateBurials: role === "admin" || hasScopedEditAccess,
         canDeleteCemeteryRecords: role === "admin",
+        canDeletePhotos: role === "admin" || (role === "cemetery-admin" && assignedCemeteryIds.length > 0),
       },
     });
   });
@@ -842,6 +844,62 @@ export function createApp(config, pool) {
       }
     },
   );
+
+  app.delete("/api/media-assets/:id", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Media asset id");
+      const deleted = await softDeleteMediaAsset(pool, id, {
+        actorUser: request.user,
+        reason: validateMutationReason(request.body?.reason),
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!deleted) {
+        response.status(404).json({ error: "Photo not found" });
+        return;
+      }
+      if (deleted.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      response.json(deleted);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/media-assets/:id/order", requirePowerUser, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Media asset id");
+      const linkId = validateUuid(request.body?.linkId, "Media link id");
+      const linkType = optionalText(request.body?.linkType, "Media link type", 20);
+      const direction = optionalText(request.body?.direction, "Move direction", 20);
+      if (!["headstone", "gravesite"].includes(linkType)) throw new BadRequestError("Media link type is invalid.");
+      if (!["earlier", "later"].includes(direction)) throw new BadRequestError("Move direction is invalid.");
+      const result = await moveMediaAssetLink(pool, id, {
+        linkId,
+        linkType,
+        direction,
+        actorUser: request.user,
+        reason: validateMutationReason(request.body?.reason) ?? "Reordered photo display",
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!result) {
+        response.status(404).json({ error: "Photo not found" });
+        return;
+      }
+      if (result.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      if (!result.moved) {
+        response.status(404).json({ error: "Adjacent photo not found" });
+        return;
+      }
+      response.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   app.delete("/api/cemeteries/:cemeteryId/grave-spaces/:id", requireAdmin, async (request, response, next) => {
     try {

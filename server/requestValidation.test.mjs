@@ -117,6 +117,7 @@ test("burial payload validation accepts recorded cemetery date text", () => {
   const basePayload = {
     firstName: "Henry",
     lastName: "McWilliams",
+    maidenName: "Smith",
     birthDate: "1909",
     deathDate: "Dec 16, 1965",
     burialDate: "",
@@ -129,6 +130,7 @@ test("burial payload validation accepts recorded cemetery date text", () => {
   };
 
   assert.equal(validateBurialPayload(basePayload).deathDate, "Dec 16, 1965");
+  assert.equal(validateBurialPayload(basePayload).maidenName, "Smith");
   assert.equal(validateBurialPayload({ ...basePayload, birthDate: "Nov. 1929," }).birthDate, "Nov. 1929,");
   assert.equal(validateBurialPayload({ ...basePayload, deathDate: "December 16 1965" }).deathDate, "December 16 1965");
 });

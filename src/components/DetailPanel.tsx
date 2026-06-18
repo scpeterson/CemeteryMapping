@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import { Camera, FileText, History, Images, Info, Landmark, MapPinned, Pencil, UserRound } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, FileText, History, Images, Info, Landmark, MapPinned, Pencil, Trash2, UserRound } from "lucide-react";
 import type {
   Burial,
   CemeteryLot,
@@ -49,7 +49,11 @@ type DetailPanelProps = {
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onSelectLotGrave: (grave: GraveSpaceSummary) => void;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
-  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
+  onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  canDeletePhotos: boolean;
+  canReorderPhotos: boolean;
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
@@ -284,6 +288,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
   return {
     firstName: burial.person.firstName,
     lastName: burial.person.lastName === "Unknown" ? "" : burial.person.lastName,
+    maidenName: burial.person.maidenName ?? "",
     birthDate: burial.person.birthDate ?? "",
     deathDate: burial.person.deathDate ?? "",
     burialDate: burial.burialDate ?? "",
@@ -369,6 +374,10 @@ function BurialRecord({
         <label>
           Last name
           <input value={form.lastName} onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))} />
+        </label>
+        <label>
+          Maiden name
+          <input value={form.maidenName} onChange={(event) => setForm((current) => ({ ...current, maidenName: event.target.value }))} />
         </label>
         <label>
           Birth date
@@ -648,25 +657,112 @@ function mediaUrl(asset: MediaAsset) {
   return asset.fileUrl;
 }
 
-function newestMediaAsset(assets: MediaAsset[]) {
+function sortedMediaAssets(assets: MediaAsset[]) {
   return [...assets].sort((left, right) => {
+    const leftOrder = left.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = right.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
     const leftDate = Date.parse(left.capturedAt ?? left.uploadedAt ?? "");
     const rightDate = Date.parse(right.capturedAt ?? right.uploadedAt ?? "");
     return (Number.isNaN(rightDate) ? 0 : rightDate) - (Number.isNaN(leftDate) ? 0 : leftDate);
-  })[0];
+  });
 }
 
-function MediaGallery({ assets, emptyMessage = "No photos are linked yet." }: { assets: MediaAsset[]; emptyMessage?: string }) {
-  const asset = newestMediaAsset(assets);
-  if (!asset) return <p className="muted">{emptyMessage}</p>;
+function MediaGallery({
+  assets,
+  emptyMessage = "No photos are linked yet.",
+  canDelete = false,
+  onDelete,
+  onMove,
+}: {
+  assets: MediaAsset[];
+  emptyMessage?: string;
+  canDelete?: boolean;
+  onDelete?: (assetId: string, reason?: string) => Promise<void>;
+  onMove?: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+}) {
+  const sortedAssets = sortedMediaAssets(assets);
+  const [deletingId, setDeletingId] = useState<string>();
+  const [movingId, setMovingId] = useState<string>();
+  const [error, setError] = useState<string>();
+  if (!sortedAssets.length) return <p className="muted">{emptyMessage}</p>;
+
+  const deleteAsset = async (asset: MediaAsset) => {
+    if (!onDelete) return;
+    const reason = window.prompt("Reason for deleting this photo?", "Replacing incorrect photo");
+    if (reason === null) return;
+    setDeletingId(asset.id);
+    setError(undefined);
+    try {
+      await onDelete(asset.id, reason);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete photo.");
+    } finally {
+      setDeletingId(undefined);
+    }
+  };
+
+  const moveAsset = async (asset: MediaAsset, direction: "earlier" | "later") => {
+    if (!onMove) return;
+    setMovingId(asset.id);
+    setError(undefined);
+    try {
+      await onMove(asset, direction);
+    } catch (moveError) {
+      setError(moveError instanceof Error ? moveError.message : "Unable to reorder photo.");
+    } finally {
+      setMovingId(undefined);
+    }
+  };
 
   return (
-    <div className="media-gallery">
-      <a className="media-gallery-item" href={mediaUrl(asset)} target="_blank" rel="noreferrer">
-        <img src={mediaUrl(asset)} alt={asset.notes || asset.originalFilename || "Cemetery record photo"} loading="lazy" />
-        <span>{asset.capturedAt ? formatDate(asset.capturedAt) : formatDate(asset.uploadedAt)}</span>
-      </a>
-    </div>
+    <>
+      <div className="media-gallery">
+        {sortedAssets.map((asset, index) => (
+          <div key={asset.id} className="media-gallery-card">
+            <a className="media-gallery-item" href={mediaUrl(asset)} target="_blank" rel="noreferrer">
+              <img src={mediaUrl(asset)} alt={asset.notes || asset.originalFilename || "Cemetery record photo"} loading="lazy" />
+              <span>{asset.capturedAt ? `Date taken: ${formatDate(asset.capturedAt)}` : `Uploaded: ${formatDate(asset.uploadedAt)}`}</span>
+            </a>
+            {onMove && sortedAssets.length > 1 ? (
+              <div className="media-order-controls" aria-label="Photo display order">
+                <button
+                  type="button"
+                  onClick={() => void moveAsset(asset, "earlier")}
+                  disabled={index === 0 || movingId === asset.id}
+                  aria-label="Move photo earlier"
+                  title="Move photo earlier"
+                >
+                  <ChevronLeft size={14} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void moveAsset(asset, "later")}
+                  disabled={index === sortedAssets.length - 1 || movingId === asset.id}
+                  aria-label="Move photo later"
+                  title="Move photo later"
+                >
+                  <ChevronRight size={14} aria-hidden="true" />
+                </button>
+              </div>
+            ) : null}
+            {canDelete && onDelete ? (
+              <button
+                type="button"
+                className="media-delete-button"
+                onClick={() => void deleteAsset(asset)}
+                disabled={deletingId === asset.id}
+                aria-label={`Delete photo ${asset.originalFilename || asset.id}`}
+                title="Delete photo"
+              >
+                <Trash2 size={14} aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      {error ? <p className="detail-message is-error">{error}</p> : null}
+    </>
   );
 }
 
@@ -677,10 +773,11 @@ function PhotoUploadForm({
 }: {
   headstones: Headstone[];
   fixedHeadstone?: Headstone;
-  onUpload: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
+  onUpload: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
 }) {
   const [file, setFile] = useState<File>();
   const [headstoneId, setHeadstoneId] = useState(fixedHeadstone?.id ?? "");
+  const [capturedAt, setCapturedAt] = useState("");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
@@ -692,19 +789,21 @@ function PhotoUploadForm({
     setError(undefined);
   };
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = event.currentTarget;
     if (!file) return;
     setIsSaving(true);
     setError(undefined);
     setMessage(undefined);
     try {
-      await onUpload({ file, headstoneId: fixedHeadstone?.id ?? (headstoneId || undefined), notes });
+      await onUpload({ file, headstoneId: fixedHeadstone?.id ?? (headstoneId || undefined), notes, capturedAt: capturedAt || undefined });
       setFile(undefined);
       setHeadstoneId(fixedHeadstone?.id ?? "");
+      setCapturedAt("");
       setNotes("");
       setMessage("Photo uploaded and linked.");
-      (event.currentTarget as HTMLFormElement).reset();
+      form.reset();
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Unable to upload photo.");
     } finally {
@@ -736,6 +835,10 @@ function PhotoUploadForm({
           </select>
         </label>
       )}
+      <label>
+        Date taken
+        <input type="date" value={capturedAt} onChange={(event) => setCapturedAt(event.target.value)} />
+      </label>
       <label className="headstone-wide-field">
         Notes
         <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} />
@@ -777,12 +880,20 @@ function HeadstoneRecord({
   canUpdate,
   onSave,
   sectionName,
+  canDeletePhotos,
+  canReorderPhotos,
+  onDeletePhoto,
+  onMovePhoto,
 }: {
   headstone: Headstone;
   lookups: HeadstoneLookups;
   canUpdate: boolean;
   onSave: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   sectionName: string;
+  canDeletePhotos: boolean;
+  canReorderPhotos: boolean;
+  onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
+  onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
 }) {
   const isSectionG = sectionName.toUpperCase() === "G";
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
@@ -973,7 +1084,9 @@ function HeadstoneRecord({
       {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
-      {headstone.mediaAssets?.length ? <MediaGallery assets={headstone.mediaAssets} /> : null}
+      {headstone.mediaAssets?.length ? (
+        <MediaGallery assets={headstone.mediaAssets} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
+      ) : null}
       {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
         <p className="marker-relationship" title={relationshipTitle} aria-label={relationshipTitle}>
           <Info size={14} aria-hidden="true" />
@@ -997,6 +1110,10 @@ function MarkerDetailPanel({
   onSaveHeadstone,
   onSelectMarkerGrave,
   onUploadPhoto,
+  onDeletePhoto,
+  onMovePhoto,
+  canDeletePhotos,
+  canReorderPhotos,
   isLoading,
   error,
   onRetry,
@@ -1008,7 +1125,11 @@ function MarkerDetailPanel({
   headstoneLookups: HeadstoneLookups;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
-  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
+  onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  canDeletePhotos: boolean;
+  canReorderPhotos: boolean;
   isLoading: boolean;
   error?: string;
   onRetry?: () => void;
@@ -1023,7 +1144,7 @@ function MarkerDetailPanel({
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading && !headstone ? (
         <div className="detail-message" role="status">
           Loading marker details...
         </div>
@@ -1040,19 +1161,29 @@ function MarkerDetailPanel({
         </div>
       ) : null}
 
-      {!headstone || isLoading || error ? null : (
+      {!headstone || error ? null : (
         <section className="detail-section">
           <div className="section-title">
             <Landmark size={17} aria-hidden="true" />
             <h3>Marker</h3>
           </div>
           <div className="headstone-list">
-            <HeadstoneRecord headstone={headstone} lookups={headstoneLookups} canUpdate={canUpdateHeadstones} onSave={onSaveHeadstone} sectionName="" />
+            <HeadstoneRecord
+              headstone={headstone}
+              lookups={headstoneLookups}
+              canUpdate={canUpdateHeadstones}
+              onSave={onSaveHeadstone}
+              sectionName=""
+              canDeletePhotos={canDeletePhotos}
+              canReorderPhotos={canReorderPhotos}
+              onDeletePhoto={onDeletePhoto}
+              onMovePhoto={onMovePhoto}
+            />
           </div>
         </section>
       )}
 
-      {!headstone || isLoading || error || !canUpdateHeadstones ? null : (
+      {!headstone || error || !canUpdateHeadstones ? null : (
         <section className="detail-section">
           <div className="section-title">
             <Images size={17} aria-hidden="true" />
@@ -1062,7 +1193,7 @@ function MarkerDetailPanel({
         </section>
       )}
 
-      {isLoading || error ? null : (
+      {error ? null : (
         <section className="detail-section">
           <div className="section-title">
             <MapPinned size={17} aria-hidden="true" />
@@ -1238,6 +1369,10 @@ function GraveDetailPanel({
   onSaveHeadstone,
   onSaveOwnershipEvent,
   onUploadPhoto,
+  onDeletePhoto,
+  onMovePhoto,
+  canDeletePhotos,
+  canReorderPhotos,
   isLoading,
   error,
   onRetry,
@@ -1257,7 +1392,11 @@ function GraveDetailPanel({
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
-  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string }) => Promise<void>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
+  onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  canDeletePhotos: boolean;
+  canReorderPhotos: boolean;
   isLoading: boolean;
   error?: string;
   onRetry?: () => void;
@@ -1274,7 +1413,7 @@ function GraveDetailPanel({
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading && !grave ? (
         <div className="detail-message" role="status">
           Loading grave details...
         </div>
@@ -1291,7 +1430,7 @@ function GraveDetailPanel({
         </div>
       ) : null}
 
-      {!grave || isLoading || error ? null : (
+      {!grave || error ? null : (
         <>
           <section className="detail-section">
             <div className="section-title">
@@ -1357,6 +1496,10 @@ function GraveDetailPanel({
                     canUpdate={canUpdateHeadstones}
                     onSave={onSaveHeadstone}
                     sectionName={summary.section}
+                    canDeletePhotos={canDeletePhotos}
+                    canReorderPhotos={canReorderPhotos}
+                    onDeletePhoto={onDeletePhoto}
+                    onMovePhoto={onMovePhoto}
                   />
                 ))}
               </div>
@@ -1370,7 +1513,13 @@ function GraveDetailPanel({
               <Images size={17} aria-hidden="true" />
               <h3>Gravesite Photos</h3>
             </div>
-            <MediaGallery assets={mediaAssets} emptyMessage="No gravesite overview photos are linked yet." />
+            <MediaGallery
+              assets={mediaAssets}
+              emptyMessage="No gravesite overview photos are linked yet."
+              canDelete={canDeletePhotos}
+              onDelete={onDeletePhoto}
+              onMove={canReorderPhotos ? onMovePhoto : undefined}
+            />
             {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} onUpload={onUploadPhoto} /> : null}
           </section>
 
@@ -1457,6 +1606,10 @@ export function DetailPanel({
   onSelectLotGrave,
   onSelectMarkerGrave,
   onUploadPhoto,
+  onDeletePhoto,
+  onMovePhoto,
+  canDeletePhotos,
+  canReorderPhotos,
   isLoading = false,
   error,
   onRetry,
@@ -1478,6 +1631,10 @@ export function DetailPanel({
         onSaveHeadstone={onSaveHeadstone}
         onSelectMarkerGrave={onSelectMarkerGrave}
         onUploadPhoto={onUploadPhoto}
+        onDeletePhoto={onDeletePhoto}
+        onMovePhoto={onMovePhoto}
+        canDeletePhotos={canDeletePhotos}
+        canReorderPhotos={canReorderPhotos}
         isLoading={isLoading}
         error={error}
         onRetry={onRetry}
@@ -1511,6 +1668,10 @@ export function DetailPanel({
       onSaveHeadstone={onSaveHeadstone}
       onSaveOwnershipEvent={onSaveOwnershipEvent}
       onUploadPhoto={onUploadPhoto}
+      onDeletePhoto={onDeletePhoto}
+      onMovePhoto={onMovePhoto}
+      canDeletePhotos={canDeletePhotos}
+      canReorderPhotos={canReorderPhotos}
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}

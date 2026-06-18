@@ -902,6 +902,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     gravesite_uuid: "22222222-2222-4222-8222-222222222222",
     first_name: "Ruth M.",
     last_name: "Soergel",
+    maiden_name: "Brandt",
     full_name: "Ruth M. Soergel",
     birth_date: "1925-10-04",
     death_date: "2017-10-22",
@@ -945,6 +946,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     {
       firstName: "Ruth M.",
       lastName: "Soergel",
+      maidenName: "Brandt",
       birthDate: "1925-10-04",
       deathDate: "Dec 16, 1965",
       burialDate: "",
@@ -960,11 +962,13 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
 
   const updateQuery = queries.find((query) => query.sql.includes("UPDATE burials"));
   assert.match(updateQuery?.sql ?? "", /SET first_name = \$2/u);
-  assert.match(updateQuery?.sql ?? "", /interment_type_id = \(SELECT id FROM burial_interment_types WHERE code = \$8 AND is_active\)/u);
+  assert.match(updateQuery?.sql ?? "", /maiden_name = \$4/u);
+  assert.match(updateQuery?.sql ?? "", /interment_type_id = \(SELECT id FROM burial_interment_types WHERE code = \$9 AND is_active\)/u);
   assert.deepEqual(updateQuery?.values, [
     "88888888-8888-4888-8888-888888888888",
     "Ruth M.",
     "Soergel",
+    "Brandt",
     "Ruth M. Soergel",
     "1925-10-04",
     "1965-12-16",
@@ -980,6 +984,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
   ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");
+  assert.equal(updated?.person.maidenName, "Brandt");
   assert.equal(updated?.person.birthDate, "1925-10-04");
   assert.equal(updated?.person.deathDate, "2017-10-22");
   assert.equal(updated?.intermentType, "urn");

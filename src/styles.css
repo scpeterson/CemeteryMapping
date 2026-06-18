@@ -1366,6 +1366,11 @@ h3 {
   text-decoration: none;
 }
 
+.media-gallery-card {
+  position: relative;
+  min-width: 0;
+}
+
 .media-gallery-item img {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -1373,6 +1378,53 @@ h3 {
   border: 1px solid #d9e0d5;
   border-radius: 8px;
   background: #eef3eb;
+}
+
+.media-delete-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(105, 36, 36, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #9f2f2f;
+  cursor: pointer;
+}
+
+.media-delete-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.media-order-controls {
+  position: absolute;
+  right: 6px;
+  bottom: 34px;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.media-order-controls button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(47, 93, 80, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #2f5d50;
+  cursor: pointer;
+}
+
+.media-order-controls button:disabled {
+  cursor: default;
+  opacity: 0.42;
 }
 
 .photo-upload-form {
