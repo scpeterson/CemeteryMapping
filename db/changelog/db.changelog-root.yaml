@@ -326,3 +326,9 @@ databaseChangeLog:
   - include:
       file: changes/109-link-remaining-trinity-section-e-shapefile-markers.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/110-align-section-a-gravesites-0038-0045-to-markers.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/111-correct-section-a-gravesites-0038-0045-west-edge-marker-alignment.sql
+      relativeToChangelogFile: true
