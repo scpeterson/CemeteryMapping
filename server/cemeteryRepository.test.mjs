@@ -309,7 +309,7 @@ test("repository can redact ownership data from grave detail reads", async () =>
   assert.deepEqual(grave.mediaAssets, []);
 });
 
-test("lookup options include active military branches", async () => {
+test("lookup options include active military service lookups", async () => {
   const pool = {
     async connect() {
       return {
@@ -359,6 +359,11 @@ test("lookup options include active military branches", async () => {
               ],
             };
           }
+          if (sql.includes("FROM military_rank_types")) {
+            return {
+              rows: [{ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", code: "pfc", label: "Private First Class", abbreviation: "PFC", payGrade: "E-3", militaryBranchCode: "army" }],
+            };
+          }
           if (sql.includes("FROM military_war_service_types")) {
             return {
               rows: [
@@ -396,6 +401,9 @@ test("lookup options include active military branches", async () => {
     lookups.militaryBranches.map((branch) => branch.code),
     ["army", "marine_corps", "navy"],
   );
+  assert.deepEqual(lookups.militaryRanks, [
+    { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", code: "pfc", label: "Private First Class", abbreviation: "PFC", payGrade: "E-3", militaryBranchCode: "army" },
+  ]);
   assert.deepEqual(
     lookups.militaryWarServices.map((service) => service.code),
     ["world_war_i", "world_war_ii"],
@@ -912,6 +920,10 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     funeral_home: null,
     veteran: "No",
     military_branch: null,
+    military_rank_code: null,
+    military_rank: null,
+    military_rank_abbreviation: null,
+    military_rank_pay_grade: null,
     military_wars: null,
     notes: "Imported note",
     updated_at: "2026-05-31T12:00:00.000Z",
@@ -954,6 +966,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
       funeralHome: "Brandt Funeral Home",
       veteran: true,
       militaryBranchCode: "army",
+      militaryRankCode: "pfc",
       militaryWarServiceCode: "world_war_ii",
       notes: "Confirmed from marker photo.",
     },
@@ -978,6 +991,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "Yes",
     "army",
     "world_war_ii",
+    "pfc",
     "Confirmed from marker photo.",
     "1925-10-04",
     "Dec 16, 1965",

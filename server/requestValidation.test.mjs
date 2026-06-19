@@ -37,6 +37,7 @@ function emptyCemeteryPool() {
               has_legacy_military_wars_column: false,
               has_military_branch_lookup: true,
               has_military_war_service_lookup: true,
+              has_military_rank_lookup: true,
             },
           ],
         };
@@ -52,6 +53,7 @@ function emptyCemeteryPool() {
       assert.match(sql, /SELECT 'Lot number'/u);
       assert.match(sql, /SELECT 'Veteran'/u);
       assert.match(sql, /SELECT 'Military branch'/u);
+      assert.match(sql, /SELECT 'Military rank'/u);
       assert.match(sql, /SELECT 'War service'/u);
       assert.doesNotMatch(sql, /SELECT 'Cemetery ID'/u);
       assert.doesNotMatch(sql, /SELECT 'Lot ID'/u);
@@ -125,6 +127,7 @@ test("burial payload validation accepts recorded cemetery date text", () => {
     funeralHome: "",
     veteran: false,
     militaryBranchCode: "",
+    militaryRankCode: "",
     militaryWarServiceCode: "",
     notes: "",
   };
@@ -148,6 +151,7 @@ test("burial payload validation rejects unsupported date text", () => {
         funeralHome: "",
         veteran: false,
         militaryBranchCode: "",
+        militaryRankCode: "",
         militaryWarServiceCode: "",
         notes: "",
       }),

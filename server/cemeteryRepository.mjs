@@ -109,6 +109,10 @@ function toBurial(burial) {
     veteran: isVeteran,
     militaryBranchCode: burial.military_branch_code ?? "",
     militaryBranch: burial.military_branch ?? "",
+    militaryRankCode: burial.military_rank_code ?? "",
+    militaryRank: burial.military_rank ?? "",
+    militaryRankAbbreviation: burial.military_rank_abbreviation ?? "",
+    militaryRankPayGrade: burial.military_rank_pay_grade ?? "",
     militaryWarServiceCode: burial.military_war_service_code ?? "",
     militaryWars: burial.military_wars ?? "",
     recordNotes: burial.notes ?? "",
@@ -414,11 +418,11 @@ async function burialRecordedDateTextColumnsExist(client) {
   return Boolean(result.rows[0]?.exists);
 }
 
-async function burialRecordedDateTextSql(client) {
+async function burialRecordedDateTextSql(client, firstSetParameter = 15) {
   if (await burialRecordedDateTextColumnsExist(client)) {
     return {
       select: "burials.birth_date_text, burials.death_date_text",
-      set: "birth_date_text = $15,\n            death_date_text = $16",
+      set: `birth_date_text = $${firstSetParameter},\n            death_date_text = $${firstSetParameter + 1}`,
       return: "birth_date_text,\n          death_date_text",
       hasColumns: true,
     };
@@ -585,10 +589,38 @@ async function burialMilitaryWarServiceTypeColumnExists(client) {
   return Boolean(result.rows[0]?.exists);
 }
 
+async function burialMilitaryRankLookupExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = current_schema()
+        AND table_name = 'military_rank_types'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function burialMilitaryRankTypeColumnExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'burials'
+        AND column_name = 'military_rank_type_id'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
 async function burialMilitaryServiceSql(client) {
   if (!(await burialMilitaryServiceColumnsExist(client))) {
     return {
-      select: "NULL::text AS veteran, NULL::text AS military_branch_code, NULL::text AS military_branch, NULL::text AS military_war_service_code, NULL::text AS military_wars",
+      select:
+        "NULL::text AS veteran, NULL::text AS military_branch_code, NULL::text AS military_branch, NULL::text AS military_rank_code, NULL::text AS military_rank, NULL::text AS military_rank_abbreviation, NULL::text AS military_rank_pay_grade, NULL::text AS military_war_service_code, NULL::text AS military_wars",
       join: "",
       hasLookup: false,
     };
@@ -596,19 +628,25 @@ async function burialMilitaryServiceSql(client) {
 
   const hasBranchLookup = await burialMilitaryBranchTypeColumnExists(client);
   const hasWarServiceLookup = await burialMilitaryWarServiceTypeColumnExists(client);
+  const hasRankLookup = await burialMilitaryRankTypeColumnExists(client);
   const hasLegacyBranchColumn = !hasBranchLookup && (await legacyBurialMilitaryBranchColumnExists(client));
   const hasLegacyWarsColumn = !hasWarServiceLookup && (await legacyBurialMilitaryWarsColumnExists(client));
   const branchCodeSelect = hasBranchLookup ? "military_branch_types.code AS military_branch_code" : "NULL::text AS military_branch_code";
   const branchLabelSelect = hasBranchLookup ? "military_branch_types.label AS military_branch" : hasLegacyBranchColumn ? "burials.military_branch" : "NULL::text AS military_branch";
+  const rankCodeSelect = hasRankLookup ? "military_rank_types.code AS military_rank_code" : "NULL::text AS military_rank_code";
+  const rankLabelSelect = hasRankLookup ? "military_rank_types.label AS military_rank" : "NULL::text AS military_rank";
+  const rankAbbreviationSelect = hasRankLookup ? "military_rank_types.abbreviation AS military_rank_abbreviation" : "NULL::text AS military_rank_abbreviation";
+  const rankPayGradeSelect = hasRankLookup ? "military_rank_types.pay_grade AS military_rank_pay_grade" : "NULL::text AS military_rank_pay_grade";
   const warServiceCodeSelect = hasWarServiceLookup ? "military_war_service_types.code AS military_war_service_code" : "NULL::text AS military_war_service_code";
   const warServiceLabelSelect = hasWarServiceLookup ? "military_war_service_types.label AS military_wars" : hasLegacyWarsColumn ? "burials.military_wars" : "NULL::text AS military_wars";
   const branchJoin = hasBranchLookup ? "LEFT JOIN military_branch_types ON military_branch_types.id = burials.military_branch_type_id" : "";
+  const rankJoin = hasRankLookup ? "LEFT JOIN military_rank_types ON military_rank_types.id = burials.military_rank_type_id" : "";
   const warServiceJoin = hasWarServiceLookup ? "LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id" : "";
 
   return {
-    select: `burials.veteran, ${branchCodeSelect}, ${branchLabelSelect}, ${warServiceCodeSelect}, ${warServiceLabelSelect}`,
-    join: [branchJoin, warServiceJoin].filter(Boolean).join("\n"),
-    hasLookup: hasBranchLookup || hasWarServiceLookup,
+    select: `burials.veteran, ${branchCodeSelect}, ${branchLabelSelect}, ${rankCodeSelect}, ${rankLabelSelect}, ${rankAbbreviationSelect}, ${rankPayGradeSelect}, ${warServiceCodeSelect}, ${warServiceLabelSelect}`,
+    join: [branchJoin, rankJoin, warServiceJoin].filter(Boolean).join("\n"),
+    hasLookup: hasBranchLookup || hasRankLookup || hasWarServiceLookup,
   };
 }
 
@@ -1672,6 +1710,23 @@ export async function listHeadstoneLookupOptions(pool) {
     const militaryBranches = (await burialMilitaryBranchLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM military_branch_types WHERE is_active ORDER BY sort_order, label")
       : { rows: [] };
+    const militaryRanks = (await burialMilitaryRankLookupExists(client))
+      ? await client.query(`
+          SELECT
+            military_rank_types.id::text,
+            military_rank_types.code,
+            military_rank_types.label,
+            military_rank_types.abbreviation,
+            military_rank_types.pay_grade AS "payGrade",
+            military_branch_types.code AS "militaryBranchCode"
+          FROM military_rank_types
+          JOIN military_branch_types
+            ON military_branch_types.id = military_rank_types.military_branch_type_id
+          WHERE military_rank_types.is_active
+            AND military_branch_types.is_active
+          ORDER BY military_branch_types.sort_order, military_rank_types.sort_order, military_rank_types.label
+        `)
+      : { rows: [] };
     const militaryWarServices = (await burialMilitaryWarServiceLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM military_war_service_types WHERE is_active ORDER BY sort_order, label")
       : { rows: [] };
@@ -1685,6 +1740,7 @@ export async function listHeadstoneLookupOptions(pool) {
       vasePlacements: vasePlacements.rows,
       intermentTypes: intermentTypes.rows,
       militaryBranches: militaryBranches.rows,
+      militaryRanks: militaryRanks.rows,
       militaryWarServices: militaryWarServices.rows,
     };
   } finally {
@@ -1961,15 +2017,17 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
         : `'casket'::text AS interment_type,
           'Casket'::text AS interment_type_label`;
     const hasMilitaryServiceColumns = await burialMilitaryServiceColumnsExist(client);
-    const recordedDateTextSql = await burialRecordedDateTextSql(client);
+    const recordedDateTextSql = await burialRecordedDateTextSql(client, hasMilitaryServiceColumns ? 16 : 13);
     const birthDate = splitRecordedDate(burial.birthDate);
     const deathDate = splitRecordedDate(burial.deathDate);
     const hasMilitaryBranchLookup = hasMilitaryServiceColumns && (await burialMilitaryBranchTypeColumnExists(client));
     const hasMilitaryWarServiceLookup = hasMilitaryServiceColumns && (await burialMilitaryWarServiceTypeColumnExists(client));
+    const hasMilitaryRankLookup = hasMilitaryServiceColumns && (await burialMilitaryRankTypeColumnExists(client));
     const hasLegacyMilitaryBranchColumn = hasMilitaryServiceColumns && !hasMilitaryBranchLookup && (await legacyBurialMilitaryBranchColumnExists(client));
     const hasLegacyMilitaryWarsColumn = hasMilitaryServiceColumns && !hasMilitaryWarServiceLookup && (await legacyBurialMilitaryWarsColumnExists(client));
     const effectiveMilitaryBranchCode = burial.veteran ? burial.militaryBranchCode : "";
     const effectiveMilitaryWarServiceCode = burial.veteran ? burial.militaryWarServiceCode : "";
+    const effectiveMilitaryRankCode = burial.veteran && effectiveMilitaryBranchCode ? burial.militaryRankCode : "";
     const militaryBranchSetSql = hasMilitaryBranchLookup
       ? "military_branch_type_id = (SELECT id FROM military_branch_types WHERE code = NULLIF($12, '') AND is_active)"
       : hasLegacyMilitaryBranchColumn
@@ -1980,7 +2038,19 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
       : hasLegacyMilitaryWarsColumn
         ? "military_wars = $13"
         : "";
-    const militaryServiceAssignments = [militaryBranchSetSql, militaryWarServiceSetSql, "notes = $14"].filter(Boolean);
+    const militaryRankSetSql = hasMilitaryRankLookup
+      ? `military_rank_type_id = (
+              SELECT military_rank_types.id
+              FROM military_rank_types
+              JOIN military_branch_types
+                ON military_branch_types.id = military_rank_types.military_branch_type_id
+              WHERE military_rank_types.code = NULLIF($14, '')
+                AND military_branch_types.code = NULLIF($12, '')
+                AND military_rank_types.is_active
+                AND military_branch_types.is_active
+            )`
+      : "";
+    const militaryServiceAssignments = [militaryBranchSetSql, militaryWarServiceSetSql, militaryRankSetSql, "notes = $15"].filter(Boolean);
     const militaryServiceSetSql = hasMilitaryServiceColumns
       ? militaryServiceAssignments.join(",\n            ")
       : "notes = $12";
@@ -1988,10 +2058,18 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
       hasMilitaryServiceColumns
         ? `${hasMilitaryBranchLookup ? "(SELECT code FROM military_branch_types WHERE military_branch_types.id = burials.military_branch_type_id)" : "NULL::text"} AS military_branch_code,
           ${hasMilitaryBranchLookup ? "(SELECT label FROM military_branch_types WHERE military_branch_types.id = burials.military_branch_type_id)" : hasLegacyMilitaryBranchColumn ? "military_branch" : "NULL::text"} AS military_branch,
+          ${hasMilitaryRankLookup ? "(SELECT code FROM military_rank_types WHERE military_rank_types.id = burials.military_rank_type_id)" : "NULL::text"} AS military_rank_code,
+          ${hasMilitaryRankLookup ? "(SELECT label FROM military_rank_types WHERE military_rank_types.id = burials.military_rank_type_id)" : "NULL::text"} AS military_rank,
+          ${hasMilitaryRankLookup ? "(SELECT abbreviation FROM military_rank_types WHERE military_rank_types.id = burials.military_rank_type_id)" : "NULL::text"} AS military_rank_abbreviation,
+          ${hasMilitaryRankLookup ? "(SELECT pay_grade FROM military_rank_types WHERE military_rank_types.id = burials.military_rank_type_id)" : "NULL::text"} AS military_rank_pay_grade,
           ${hasMilitaryWarServiceLookup ? "(SELECT code FROM military_war_service_types WHERE military_war_service_types.id = burials.military_war_service_type_id)" : "NULL::text"} AS military_war_service_code,
           ${hasMilitaryWarServiceLookup ? "(SELECT label FROM military_war_service_types WHERE military_war_service_types.id = burials.military_war_service_type_id)" : hasLegacyMilitaryWarsColumn ? "military_wars" : "NULL::text"} AS military_wars`
         : `NULL::text AS military_branch_code,
           NULL::text AS military_branch,
+          NULL::text AS military_rank_code,
+          NULL::text AS military_rank,
+          NULL::text AS military_rank_abbreviation,
+          NULL::text AS military_rank_pay_grade,
           NULL::text AS military_war_service_code,
           NULL::text AS military_wars`;
     const updateValues = hasMilitaryServiceColumns
@@ -2009,6 +2087,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           burial.veteran ? "Yes" : "No",
           effectiveMilitaryBranchCode || null,
           effectiveMilitaryWarServiceCode || null,
+          effectiveMilitaryRankCode || null,
           burial.notes || null,
         ]
       : [
