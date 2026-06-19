@@ -53,6 +53,7 @@ const emptyHeadstoneLookups: HeadstoneLookups = {
   vasePlacements: [],
   intermentTypes: [],
   militaryBranches: [],
+  militaryRanks: [],
   militaryWarServices: [],
 };
 

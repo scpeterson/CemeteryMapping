@@ -296,6 +296,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     funeralHome: burial.funeralHome ?? "",
     veteran: burial.veteran ?? false,
     militaryBranchCode: burial.militaryBranchCode ?? "",
+    militaryRankCode: burial.militaryRankCode ?? "",
     militaryWarServiceCode: burial.militaryWarServiceCode ?? "",
     notes: burial.recordNotes ?? "",
     reason: "Burial detail update",
@@ -303,7 +304,11 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
 }
 
 function militaryServiceText(burial: Burial) {
-  const details = [burial.militaryBranch, burial.militaryWars].filter(Boolean).join(" | ");
+  const rankLabel =
+    burial.militaryRankAbbreviation && burial.militaryRank
+      ? `${burial.militaryRankAbbreviation} (${burial.militaryRank})`
+      : burial.militaryRankAbbreviation || burial.militaryRank;
+  const details = [rankLabel, burial.militaryBranch, burial.militaryWars].filter(Boolean).join(" | ");
   return details;
 }
 
@@ -332,6 +337,7 @@ function BurialRecord({
   const intermentOptions = intermentTypeOptions(lookups);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<SaveBurialInput>(() => blankBurialForm(burial));
+  const militaryRankOptions = lookups.militaryRanks.filter((option) => option.militaryBranchCode === form.militaryBranchCode);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -346,8 +352,20 @@ function BurialRecord({
       ...current,
       veteran: isVeteran,
       militaryBranchCode: isVeteran ? current.militaryBranchCode : "",
+      militaryRankCode: isVeteran ? current.militaryRankCode : "",
       militaryWarServiceCode: isVeteran ? current.militaryWarServiceCode : "",
     }));
+  };
+
+  const setMilitaryBranch = (militaryBranchCode: string) => {
+    setForm((current) => {
+      const selectedRank = lookups.militaryRanks.find((option) => option.code === current.militaryRankCode && option.militaryBranchCode === militaryBranchCode);
+      return {
+        ...current,
+        militaryBranchCode,
+        militaryRankCode: selectedRank ? current.militaryRankCode : "",
+      };
+    });
   };
 
   const save = async (event: FormEvent) => {
@@ -411,11 +429,26 @@ function BurialRecord({
         </label>
         <label>
           Military branch
-          <select value={form.militaryBranchCode} onChange={(event) => setForm((current) => ({ ...current, militaryBranchCode: event.target.value }))} disabled={!form.veteran}>
+          <select value={form.militaryBranchCode} onChange={(event) => setMilitaryBranch(event.target.value)} disabled={!form.veteran}>
             <option value="">Unknown / not recorded</option>
             {lookups.militaryBranches.map((option) => (
               <option key={option.id} value={option.code}>
                 {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Rank
+          <select
+            value={form.militaryRankCode}
+            onChange={(event) => setForm((current) => ({ ...current, militaryRankCode: event.target.value }))}
+            disabled={!form.veteran || !form.militaryBranchCode}
+          >
+            <option value="">Unknown / not recorded</option>
+            {militaryRankOptions.map((option) => (
+              <option key={option.id} value={option.code}>
+                {option.abbreviation ? `${option.abbreviation} - ${option.label}${option.payGrade ? ` (${option.payGrade})` : ""}` : option.label}
               </option>
             ))}
           </select>

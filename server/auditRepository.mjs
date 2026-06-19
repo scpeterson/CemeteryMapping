@@ -30,6 +30,7 @@ const allowedAuditTables = new Set([
   "marker_material_types",
   "marker_types",
   "military_branch_types",
+  "military_rank_types",
   "military_war_service_types",
   "gravesite_media_assets",
   "headstone_media_assets",

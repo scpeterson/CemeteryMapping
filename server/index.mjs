@@ -270,6 +270,7 @@ export function validateBurialPayload(body) {
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
     veteran: optionalBoolean(body?.veteran, "Veteran"),
     militaryBranchCode: optionalText(body?.militaryBranchCode, "Military branch", 50) ?? "",
+    militaryRankCode: optionalText(body?.militaryRankCode, "Military rank", 50) ?? "",
     militaryWarServiceCode: optionalText(body?.militaryWarServiceCode, "War service", 50) ?? "",
     notes: optionalText(body?.notes, "Burial notes", 4000) ?? "",
     reason: validateMutationReason(body?.reason),

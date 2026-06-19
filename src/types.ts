@@ -101,6 +101,10 @@ export type Burial = {
   veteran: boolean;
   militaryBranchCode?: string;
   militaryBranch?: string;
+  militaryRankCode?: string;
+  militaryRank?: string;
+  militaryRankAbbreviation?: string;
+  militaryRankPayGrade?: string;
   militaryWarServiceCode?: string;
   militaryWars?: string;
   recordNotes?: string;
@@ -214,6 +218,13 @@ export type HeadstoneLookups = {
   vasePlacements: LookupOption[];
   intermentTypes: LookupOption[];
   militaryBranches: LookupOption[];
+  militaryRanks: Array<
+    LookupOption & {
+      abbreviation: string;
+      payGrade?: string;
+      militaryBranchCode: string;
+    }
+  >;
   militaryWarServices: LookupOption[];
 };
 
@@ -285,6 +296,7 @@ export type SaveBurialInput = {
   funeralHome: string;
   veteran: boolean;
   militaryBranchCode: string;
+  militaryRankCode: string;
   militaryWarServiceCode: string;
   notes: string;
   reason?: string;

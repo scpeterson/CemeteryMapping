@@ -98,6 +98,7 @@ const auditTableLabels: Record<string, string> = {
   marker_material_types: "Marker materials",
   marker_types: "Marker types",
   military_branch_types: "Military branches",
+  military_rank_types: "Military ranks",
   military_war_service_types: "Military war service",
   memorials: "Memorials",
   north_hills_ocr_source_facts: "North Hills source facts",
