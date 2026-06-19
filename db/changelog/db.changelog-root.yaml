@@ -341,3 +341,9 @@ databaseChangeLog:
   - include:
       file: changes/114-burial-maiden-name.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/115-align-section-a-0062-west-edge-to-marker.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/116-split-c-0181-hieber-gravesites.sql
+      relativeToChangelogFile: true
