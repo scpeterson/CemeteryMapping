@@ -239,12 +239,14 @@ JOIN (
   ON seed.gravesite_id = g.gravesite_id
 WHERE g.facility_id = 'DEMO-MEMORIAL';
 
-INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, interment_type_id, funeral_home, veteran, notes, gravesite_id)
+INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, interment_type_id, burial_record_status_type_id, funeral_home, veteran, notes, gravesite_id)
 SELECT g.id, seed.first_name, seed.last_name, concat_ws(' ', seed.first_name, seed.last_name), seed.sex, seed.birth_date::date, seed.death_date::date,
-  seed.age, seed.burial_date::date, burial_interment_types.id, seed.funeral_home, seed.veteran, seed.notes, seed.gravesite_id
+  seed.age, seed.burial_date::date, burial_interment_types.id, burial_record_status_types.id, seed.funeral_home, seed.veteran, seed.notes, seed.gravesite_id
 FROM gravesites g
 JOIN burial_interment_types
   ON burial_interment_types.code = 'casket'
+JOIN burial_record_status_types
+  ON burial_record_status_types.code = 'interred'
 JOIN (
   VALUES
     ('A-01-01', 'Mary', 'Harris', 'F', '1931-04-12', '2011-09-02', 80, '2011-09-06', NULL, 'No', 'Interred beside spouse per family deed.'),
@@ -256,12 +258,14 @@ JOIN (
   ON seed.gravesite_id = g.gravesite_id
 WHERE g.facility_id = 'DEMO-ST-MARK';
 
-INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, interment_type_id, funeral_home, veteran, notes, gravesite_id)
+INSERT INTO burials (gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date, interment_type_id, burial_record_status_type_id, funeral_home, veteran, notes, gravesite_id)
 SELECT g.id, seed.first_name, seed.last_name, concat_ws(' ', seed.first_name, seed.last_name), seed.sex, seed.birth_date::date, seed.death_date::date,
-  seed.age, seed.burial_date::date, burial_interment_types.id, seed.funeral_home, seed.veteran, seed.notes, seed.gravesite_id
+  seed.age, seed.burial_date::date, burial_interment_types.id, burial_record_status_types.id, seed.funeral_home, seed.veteran, seed.notes, seed.gravesite_id
 FROM gravesites g
 JOIN burial_interment_types
   ON burial_interment_types.code = 'casket'
+JOIN burial_record_status_types
+  ON burial_record_status_types.code = 'interred'
 JOIN (
   VALUES
     ('A-01-01', 'Helen', 'Rivera', 'F', '1948-08-17', '2022-03-09', 73, '2022-03-14', NULL, 'No', 'Imported from headstone spreadsheet row 89. Memorial Grove burial sharing a grave identifier used by St. Mark.')

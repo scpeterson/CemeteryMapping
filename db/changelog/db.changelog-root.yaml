@@ -350,3 +350,12 @@ databaseChangeLog:
   - include:
       file: changes/117-military-marker-and-rank-lookup.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/118-split-c-0186-fowler-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/119-grave-feature-lookups.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/120-burial-record-status-and-split-c-0188.sql
+      relativeToChangelogFile: true

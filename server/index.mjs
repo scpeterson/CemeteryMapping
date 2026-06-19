@@ -8,6 +8,7 @@ import { loadApiConfig } from "./config.mjs";
 import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 import {
+  createGraveFeature,
   createOwnershipEvent,
   getCemeteryData,
   getGraveSpace,
@@ -212,6 +213,34 @@ function validateHeadstonePayload(body) {
   };
 }
 
+function validateGraveFeaturePayload(body) {
+  const sourceType = optionalText(body?.sourceType, "Feature source", 50) || "manual";
+  if (!["manual", "nhg", "photo", "field_survey", "import"].includes(sourceType)) {
+    throw new BadRequestError("Feature source is invalid.");
+  }
+  const status = optionalText(body?.status, "Feature status", 30) || "active";
+  if (!["active", "needs_review", "retired"].includes(status)) throw new BadRequestError("Feature status is invalid.");
+
+  const graveSpaceId = optionalText(body?.graveSpaceId, "Gravesite", 100) ?? "";
+  const headstoneId = body?.headstoneId ? validateUuid(body.headstoneId, "Marker") : "";
+  if (!graveSpaceId && !headstoneId) throw new BadRequestError("Feature must be linked to a gravesite or marker.");
+
+  return {
+    graveSpaceId,
+    headstoneId,
+    featureTypeId: validateUuid(body?.featureTypeId, "Feature type"),
+    featureSubtypeId: body?.featureSubtypeId ? validateUuid(body.featureSubtypeId, "Feature subtype") : "",
+    placementTypeId: body?.placementTypeId ? validateUuid(body.placementTypeId, "Feature placement") : "",
+    materialTypeId: body?.materialTypeId ? validateUuid(body.materialTypeId, "Feature material") : "",
+    symbolText: optionalText(body?.symbolText, "Symbol text", 200) ?? "",
+    sourceType,
+    sourceText: optionalText(body?.sourceText, "Source text", 4000) ?? "",
+    notes: optionalText(body?.notes, "Feature notes", 4000) ?? "",
+    status,
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
 function validateGraveSpacePayload(body) {
   const status = optionalText(body?.status, "Gravesite status", 30) || "unknown";
   if (!["available", "reserved", "occupied", "sold", "needs_review", "unknown"].includes(status)) {
@@ -258,6 +287,10 @@ function optionalBoolean(value, label) {
 export function validateBurialPayload(body) {
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "casket";
   if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");
+  const recordStatusCode = optionalText(body?.recordStatusCode, "Burial record status", 50) || "interred";
+  if (!["interred", "pre_need_inscription", "memorial", "unknown"].includes(recordStatusCode)) {
+    throw new BadRequestError("Burial record status is invalid.");
+  }
 
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
@@ -267,6 +300,7 @@ export function validateBurialPayload(body) {
     deathDate: optionalRecordedDate(body?.deathDate, "Death date") ?? "",
     burialDate: optionalDate(body?.burialDate, "Burial date") ?? "",
     intermentType,
+    recordStatusCode,
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
     veteran: optionalBoolean(body?.veteran, "Veteran"),
     militaryBranchCode: optionalText(body?.militaryBranchCode, "Military branch", 50) ?? "",
@@ -613,6 +647,29 @@ export function createApp(config, pool) {
         return;
       }
       response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/cemeteries/:cemeteryId/grave-features", requirePowerUser, async (request, response, next) => {
+    try {
+      const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+      if (!canEditCemetery(request.user, cemeteryId)) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      const feature = validateGraveFeaturePayload(request.body);
+      const created = await createGraveFeature(pool, cemeteryId, feature, {
+        actorUser: request.user,
+        reason: feature.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!created) {
+        response.status(404).json({ error: "Feature target not found" });
+        return;
+      }
+      response.status(201).json(created);
     } catch (error) {
       next(error);
     }

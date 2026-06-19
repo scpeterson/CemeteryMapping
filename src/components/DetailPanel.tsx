@@ -1,10 +1,11 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import { Camera, ChevronLeft, ChevronRight, FileText, History, Images, Info, Landmark, MapPinned, Pencil, Trash2, UserRound } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, FileText, Flag, History, Images, Info, Landmark, MapPinned, Pencil, Trash2, UserRound } from "lucide-react";
 import type {
   Burial,
   CemeteryLot,
   GraveSpace,
+  GraveFeature,
   GraveSpaceSummary,
   GraveStatus,
   Headstone,
@@ -19,6 +20,7 @@ import type {
   OwnershipTargetScope,
   SaveBurialInput,
   SaveGraveSpaceInput,
+  SaveGraveFeatureInput,
   SaveHeadstoneInput,
   SaveOwnershipEventInput,
   GeometryConfidence,
@@ -46,6 +48,7 @@ type DetailPanelProps = {
   onSaveGraveSpace: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onSelectLotGrave: (grave: GraveSpaceSummary) => void;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
@@ -293,6 +296,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     deathDate: burial.person.deathDate ?? "",
     burialDate: burial.burialDate ?? "",
     intermentType: burial.intermentType ?? "casket",
+    recordStatusCode: burial.recordStatusCode ?? "interred",
     funeralHome: burial.funeralHome ?? "",
     veteran: burial.veteran ?? false,
     militaryBranchCode: burial.militaryBranchCode ?? "",
@@ -321,6 +325,12 @@ function intermentTypeOptions(lookups: HeadstoneLookups) {
       ];
 }
 
+function burialRecordStatusOptions(lookups: HeadstoneLookups) {
+  return lookups.burialRecordStatuses?.length
+    ? lookups.burialRecordStatuses
+    : [{ id: "legacy-interred", code: "interred", label: "Interred" }];
+}
+
 function BurialRecord({
   burial,
   canUpdate,
@@ -335,6 +345,7 @@ function BurialRecord({
   const noteItems = burialNoteItems(burial.notes);
   const serviceText = militaryServiceText(burial);
   const intermentOptions = intermentTypeOptions(lookups);
+  const recordStatusOptions = burialRecordStatusOptions(lookups);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<SaveBurialInput>(() => blankBurialForm(burial));
   const militaryRankOptions = lookups.militaryRanks.filter((option) => option.militaryBranchCode === form.militaryBranchCode);
@@ -413,6 +424,16 @@ function BurialRecord({
           Interment
           <select value={form.intermentType} onChange={(event) => setForm((current) => ({ ...current, intermentType: event.target.value }))}>
             {intermentOptions.map((option) => (
+              <option key={option.id} value={option.code}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Record status
+          <select value={form.recordStatusCode} onChange={(event) => setForm((current) => ({ ...current, recordStatusCode: event.target.value }))}>
+            {recordStatusOptions.map((option) => (
               <option key={option.id} value={option.code}>
                 {option.label}
               </option>
@@ -512,6 +533,10 @@ function BurialRecord({
         <div>
           <dt>Interment</dt>
           <dd>{burial.intermentTypeLabel ?? intermentOptions.find((option) => option.code === burial.intermentType)?.label ?? "Casket"}</dd>
+        </div>
+        <div>
+          <dt>Record</dt>
+          <dd>{burial.recordStatusLabel ?? recordStatusOptions.find((option) => option.code === burial.recordStatusCode)?.label ?? "Interred"}</dd>
         </div>
       </dl>
       {burial.veteran || serviceText ? (
@@ -1117,6 +1142,7 @@ function HeadstoneRecord({
       {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
+      {headstone.features?.length ? <GraveFeatureList features={headstone.features} /> : null}
       {headstone.mediaAssets?.length ? (
         <MediaGallery assets={headstone.mediaAssets} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
       ) : null}
@@ -1141,6 +1167,7 @@ function MarkerDetailPanel({
   canUpdateHeadstones,
   headstoneLookups,
   onSaveHeadstone,
+  onSaveGraveFeature,
   onSelectMarkerGrave,
   onUploadPhoto,
   onDeletePhoto,
@@ -1157,6 +1184,7 @@ function MarkerDetailPanel({
   canUpdateHeadstones: boolean;
   headstoneLookups: HeadstoneLookups;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
@@ -1219,6 +1247,16 @@ function MarkerDetailPanel({
       {!headstone || error || !canUpdateHeadstones ? null : (
         <section className="detail-section">
           <div className="section-title">
+            <Flag size={17} aria-hidden="true" />
+            <h3>Marker Features</h3>
+          </div>
+          <GraveFeatureForm headstones={[headstone]} fixedHeadstone={headstone} lookups={headstoneLookups} onSave={onSaveGraveFeature} />
+        </section>
+      )}
+
+      {!headstone || error || !canUpdateHeadstones ? null : (
+        <section className="detail-section">
+          <div className="section-title">
             <Images size={17} aria-hidden="true" />
             <h3>Marker Photos</h3>
           </div>
@@ -1271,6 +1309,178 @@ function AssociatedGravesiteList({
         </button>
       ))}
     </div>
+  );
+}
+
+function GraveFeatureList({ features, emptyMessage = "No grave features are recorded." }: { features: GraveFeature[]; emptyMessage?: string }) {
+  if (!features.length) return <p className="muted">{emptyMessage}</p>;
+
+  return (
+    <div className="grave-feature-list">
+      {features.map((feature) => {
+        const details = [feature.featureSubtype?.label, feature.placement?.label, feature.material?.label].filter(Boolean).join(" | ");
+        return (
+          <article key={feature.id} className="grave-feature-row">
+            <strong>{feature.featureType.label}</strong>
+            {details ? <span>{details}</span> : null}
+            {feature.symbolText ? <span>Symbol: {feature.symbolText}</span> : null}
+            {feature.sourceText ? <p>{feature.sourceText}</p> : null}
+            {feature.notes ? <p>{feature.notes}</p> : null}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function GraveFeatureForm({
+  grave,
+  headstones,
+  fixedHeadstone,
+  lookups,
+  onSave,
+}: {
+  grave?: GraveSpace;
+  headstones: Headstone[];
+  fixedHeadstone?: Headstone;
+  lookups: HeadstoneLookups;
+  onSave: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+}) {
+  const defaultTypeId = lookups.graveFeatureTypes.find((option) => option.code === "flag_holder")?.id ?? lookups.graveFeatureTypes[0]?.id ?? "";
+  const defaultSubtypeId = lookups.graveFeatureSubtypes.find((option) => option.code === "us_veteran_star")?.id ?? "";
+  const defaultPlacementId = lookups.graveFeaturePlacements.find((option) => option.code === "separate")?.id ?? "";
+  const [form, setForm] = useState<SaveGraveFeatureInput>({
+    graveSpaceId: grave?.id ?? "",
+    headstoneId: fixedHeadstone?.id ?? "",
+    featureTypeId: defaultTypeId,
+    featureSubtypeId: defaultSubtypeId,
+    placementTypeId: defaultPlacementId,
+    materialTypeId: "",
+    symbolText: "US Veteran star",
+    sourceType: "nhg",
+    sourceText: "",
+    notes: "",
+    status: "active",
+    reason: "Add grave feature",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string>();
+  const [error, setError] = useState<string>();
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setError(undefined);
+    setMessage(undefined);
+    try {
+      await onSave(form);
+      setMessage("Feature recorded.");
+      setForm((current) => ({
+        ...current,
+        sourceText: "",
+        notes: "",
+      }));
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save feature.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!lookups.graveFeatureTypes.length) return null;
+
+  return (
+    <form className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
+      <label>
+        Feature
+        <select value={form.featureTypeId} onChange={(event) => setForm((current) => ({ ...current, featureTypeId: event.target.value }))}>
+          {lookups.graveFeatureTypes.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Subtype
+        <select value={form.featureSubtypeId} onChange={(event) => setForm((current) => ({ ...current, featureSubtypeId: event.target.value }))}>
+          <option value="">Not recorded</option>
+          {lookups.graveFeatureSubtypes.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Placement
+        <select value={form.placementTypeId} onChange={(event) => setForm((current) => ({ ...current, placementTypeId: event.target.value }))}>
+          <option value="">Not recorded</option>
+          {lookups.graveFeaturePlacements.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Material
+        <select value={form.materialTypeId} onChange={(event) => setForm((current) => ({ ...current, materialTypeId: event.target.value }))}>
+          <option value="">Not recorded</option>
+          {lookups.graveFeatureMaterials.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {fixedHeadstone ? (
+        <div className="photo-upload-linked-marker">
+          <span>Linked marker</span>
+          <strong>{fixedHeadstone.headstoneId}</strong>
+        </div>
+      ) : (
+        <label>
+          Linked marker
+          <select value={form.headstoneId} onChange={(event) => setForm((current) => ({ ...current, headstoneId: event.target.value }))}>
+            <option value="">Gravesite only</option>
+            {headstones.map((headstone) => (
+              <option key={headstone.id} value={headstone.id}>
+                {headstone.headstoneId}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label>
+        Symbol
+        <input value={form.symbolText} onChange={(event) => setForm((current) => ({ ...current, symbolText: event.target.value }))} />
+      </label>
+      <label>
+        Source
+        <select value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value }))}>
+          <option value="nhg">NHG</option>
+          <option value="photo">Photo</option>
+          <option value="field_survey">Field survey</option>
+          <option value="manual">Manual</option>
+          <option value="import">Import</option>
+        </select>
+      </label>
+      <label className="headstone-wide-field">
+        Source text
+        <textarea value={form.sourceText} onChange={(event) => setForm((current) => ({ ...current, sourceText: event.target.value }))} rows={2} />
+      </label>
+      <label className="headstone-wide-field">
+        Notes
+        <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={2} />
+      </label>
+      {message ? <p className="detail-message is-success">{message}</p> : null}
+      {error ? <p className="detail-message is-error">{error}</p> : null}
+      <button type="submit" disabled={isSaving || !form.featureTypeId || (!form.graveSpaceId && !form.headstoneId)}>
+        <Flag size={15} aria-hidden="true" />
+        {isSaving ? "Recording..." : "Add feature"}
+      </button>
+    </form>
   );
 }
 
@@ -1400,6 +1610,7 @@ function GraveDetailPanel({
   onSaveGraveSpace,
   onSaveBurial,
   onSaveHeadstone,
+  onSaveGraveFeature,
   onSaveOwnershipEvent,
   onUploadPhoto,
   onDeletePhoto,
@@ -1424,6 +1635,7 @@ function GraveDetailPanel({
   onSaveGraveSpace: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
@@ -1543,6 +1755,15 @@ function GraveDetailPanel({
 
           <section className="detail-section">
             <div className="section-title">
+              <Flag size={17} aria-hidden="true" />
+              <h3>Grave Features</h3>
+            </div>
+            <GraveFeatureList features={grave.features ?? []} />
+            {canUpdateHeadstones ? <GraveFeatureForm grave={grave} headstones={headstones} lookups={headstoneLookups} onSave={onSaveGraveFeature} /> : null}
+          </section>
+
+          <section className="detail-section">
+            <div className="section-title">
               <Images size={17} aria-hidden="true" />
               <h3>Gravesite Photos</h3>
             </div>
@@ -1635,6 +1856,7 @@ export function DetailPanel({
   onSaveGraveSpace,
   onSaveBurial,
   onSaveHeadstone,
+  onSaveGraveFeature,
   onSaveOwnershipEvent,
   onSelectLotGrave,
   onSelectMarkerGrave,
@@ -1661,7 +1883,8 @@ export function DetailPanel({
         markerGraves={markerGraves}
         canUpdateHeadstones={canUpdateHeadstones}
         headstoneLookups={headstoneLookups}
-        onSaveHeadstone={onSaveHeadstone}
+  onSaveHeadstone={onSaveHeadstone}
+        onSaveGraveFeature={onSaveGraveFeature}
         onSelectMarkerGrave={onSelectMarkerGrave}
         onUploadPhoto={onUploadPhoto}
         onDeletePhoto={onDeletePhoto}
@@ -1699,6 +1922,7 @@ export function DetailPanel({
       onSaveGraveSpace={onSaveGraveSpace}
       onSaveBurial={onSaveBurial}
       onSaveHeadstone={onSaveHeadstone}
+      onSaveGraveFeature={onSaveGraveFeature}
       onSaveOwnershipEvent={onSaveOwnershipEvent}
       onUploadPhoto={onUploadPhoto}
       onDeletePhoto={onDeletePhoto}

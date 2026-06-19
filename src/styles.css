@@ -1350,6 +1350,35 @@ h3 {
   color: var(--text-muted);
 }
 
+.grave-feature-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.grave-feature-row {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #d9e0d5;
+  border-left: 4px solid #2f5d50;
+  border-radius: 8px;
+  background: #fbfcfa;
+  color: #405048;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.grave-feature-row strong {
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.grave-feature-row span,
+.grave-feature-row p {
+  margin: 0;
+}
+
 .media-gallery {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

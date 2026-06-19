@@ -70,6 +70,15 @@ const lookupDefinitions = {
     usageLabel: "burials",
     usageWhere: "usage_records.deleted_at IS NULL",
   },
+  burial_record_status_types: {
+    table: "burial_record_status_types",
+    label: "Burial record statuses",
+    hasSourceFields: false,
+    usageTable: "burials",
+    usageColumn: "burial_record_status_type_id",
+    usageLabel: "burials",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
   lot_ownership_event_types: {
     table: "lot_ownership_event_types",
     label: "Lot ownership event types",

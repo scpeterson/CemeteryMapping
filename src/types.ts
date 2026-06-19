@@ -95,6 +95,8 @@ export type Burial = {
   id: string;
   person: Person;
   burialDate?: string;
+  recordStatusCode?: string;
+  recordStatusLabel?: string;
   intermentType?: string;
   intermentTypeLabel?: string;
   funeralHome?: string;
@@ -149,8 +151,25 @@ export type Headstone = {
   associatedGravesiteIds: string[];
   burialIds: string[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
+  features: GraveFeature[];
   mediaAssets: MediaAsset[];
   auditEventId?: string;
+};
+
+export type GraveFeature = {
+  id: string;
+  cemeteryId: string;
+  gravesiteUuid?: string;
+  headstoneUuid?: string;
+  featureType: LookupOption;
+  featureSubtype?: LookupOption;
+  placement?: LookupOption;
+  material?: LookupOption;
+  symbolText: string;
+  sourceType: string;
+  sourceText: string;
+  notes: string;
+  status: "active" | "needs_review" | "retired";
 };
 
 export type MediaAsset = {
@@ -216,7 +235,12 @@ export type HeadstoneLookups = {
   vaseTypes: LookupOption[];
   vaseMaterials: LookupOption[];
   vasePlacements: LookupOption[];
+  graveFeatureTypes: LookupOption[];
+  graveFeatureSubtypes: Array<LookupOption & { featureTypeCode?: string }>;
+  graveFeaturePlacements: LookupOption[];
+  graveFeatureMaterials: LookupOption[];
   intermentTypes: LookupOption[];
+  burialRecordStatuses: LookupOption[];
   militaryBranches: LookupOption[];
   militaryRanks: Array<
     LookupOption & {
@@ -242,6 +266,21 @@ export type SaveHeadstoneInput = {
   backDescription: string;
   photoUrl: string;
   lastInspectedAt: string;
+  reason?: string;
+};
+
+export type SaveGraveFeatureInput = {
+  graveSpaceId: string;
+  headstoneId: string;
+  featureTypeId: string;
+  featureSubtypeId: string;
+  placementTypeId: string;
+  materialTypeId: string;
+  symbolText: string;
+  sourceType: string;
+  sourceText: string;
+  notes: string;
+  status: "active" | "needs_review" | "retired";
   reason?: string;
 };
 
@@ -272,6 +311,7 @@ export type GraveSpace = GraveSpaceSummary & {
   currentOwnerIds: string[];
   burials: Burial[];
   headstones: Headstone[];
+  features: GraveFeature[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
   mediaAssets: MediaAsset[];
   ownershipHistory: OwnershipEvent[];
@@ -293,6 +333,7 @@ export type SaveBurialInput = {
   deathDate: string;
   burialDate: string;
   intermentType: string;
+  recordStatusCode: string;
   funeralHome: string;
   veteran: boolean;
   militaryBranchCode: string;

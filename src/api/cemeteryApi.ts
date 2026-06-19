@@ -11,6 +11,7 @@ import type {
   Burial,
   CemeteryAdminRecords,
   CemeteryData,
+  GraveFeature,
   CemeteryTextRecord,
   DeedInvestigationCase,
   DeedRegistryReview,
@@ -34,6 +35,7 @@ import type {
   ReviewNorthHillsSourceFactInput,
   SaveNorthHillsOcrEvidenceInput,
   SaveBurialInput,
+  SaveGraveFeatureInput,
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
   SaveDeedInvestigationCaseInput,
@@ -134,6 +136,11 @@ export async function updateBurial(id: string, burial: SaveBurialInput): Promise
   return jsonResponse<Burial>(response, "Update burial API");
 }
 
+export async function createGraveFeature(cemeteryId: string, feature: SaveGraveFeatureInput): Promise<GraveFeature> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-features`, jsonRequest("POST", feature));
+  return jsonResponse<GraveFeature>(response, "Grave feature API");
+}
+
 export async function createOwnershipEvent(cemeteryId: string, graveSpaceId: string, event: SaveOwnershipEventInput): Promise<{ id: string }> {
   const response = await authorizedFetch(
     `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(graveSpaceId)}/ownership-events`,
@@ -173,7 +180,24 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
 
 export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstone-lookups`);
-  return jsonResponse<HeadstoneLookups>(response, "Headstone lookup API");
+  const lookups = await jsonResponse<Partial<HeadstoneLookups>>(response, "Headstone lookup API");
+  return {
+    markerTypes: lookups.markerTypes ?? [],
+    materials: lookups.materials ?? [],
+    conditions: lookups.conditions ?? [],
+    vaseTypes: lookups.vaseTypes ?? [],
+    vaseMaterials: lookups.vaseMaterials ?? [],
+    vasePlacements: lookups.vasePlacements ?? [],
+    graveFeatureTypes: lookups.graveFeatureTypes ?? [],
+    graveFeatureSubtypes: lookups.graveFeatureSubtypes ?? [],
+    graveFeaturePlacements: lookups.graveFeaturePlacements ?? [],
+    graveFeatureMaterials: lookups.graveFeatureMaterials ?? [],
+    intermentTypes: lookups.intermentTypes ?? [],
+    burialRecordStatuses: lookups.burialRecordStatuses ?? [],
+    militaryBranches: lookups.militaryBranches ?? [],
+    militaryRanks: lookups.militaryRanks ?? [],
+    militaryWarServices: lookups.militaryWarServices ?? [],
+  };
 }
 
 export async function fetchHeadstone(id: string): Promise<Headstone> {
