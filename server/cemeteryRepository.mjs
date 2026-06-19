@@ -103,6 +103,8 @@ function toBurial(burial) {
       deathDate: recordedDate(burial.death_date_text, burial.death_date),
     },
     burialDate: dateOnly(burial.burial_date),
+    recordStatusCode: burial.record_status_code ?? "interred",
+    recordStatusLabel: burial.record_status_label ?? "Interred",
     intermentType: burial.interment_type ?? "casket",
     intermentTypeLabel: burial.interment_type_label ?? (burial.interment_type === "urn" ? "Funeral urn" : "Casket"),
     funeralHome: burial.funeral_home ?? "",
@@ -154,6 +156,24 @@ function toLookupValue(row, prefix) {
   };
 }
 
+function toGraveFeature(row) {
+  return {
+    id: row.id,
+    cemeteryId: row.cemetery_id,
+    gravesiteUuid: row.gravesite_uuid ?? "",
+    headstoneUuid: row.headstone_uuid ?? "",
+    featureType: toLookupValue(row, "feature_type"),
+    featureSubtype: row.feature_subtype_id ? toLookupValue(row, "feature_subtype") : undefined,
+    placement: row.placement_type_id ? toLookupValue(row, "placement") : undefined,
+    material: row.material_type_id ? toLookupValue(row, "material") : undefined,
+    symbolText: row.symbol_text ?? "",
+    sourceType: row.source_type ?? "manual",
+    sourceText: row.source_text ?? "",
+    notes: row.notes ?? "",
+    status: row.status ?? "active",
+  };
+}
+
 function toHeadstone(row) {
   return {
     id: row.id,
@@ -176,6 +196,7 @@ function toHeadstone(row) {
     associatedGravesiteIds: row.associated_gravesite_ids ?? [],
     burialIds: row.burial_ids ?? [],
     northHillsEvidence: row.north_hills_evidence ?? [],
+    features: (row.features ?? []).map(toGraveFeature),
     mediaAssets: row.media_assets ?? [],
   };
 }
@@ -535,6 +556,42 @@ async function activeIntermentTypeExists(client, code) {
   return Boolean(result.rows[0]?.exists);
 }
 
+async function burialRecordStatusColumnExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'burials'
+        AND column_name = 'burial_record_status_type_id'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function burialRecordStatusSql(client) {
+  if (await burialRecordStatusColumnExists(client)) {
+    return {
+      select: "burial_record_status_types.code AS record_status_code, burial_record_status_types.label AS record_status_label",
+      join: "JOIN burial_record_status_types ON burial_record_status_types.id = burials.burial_record_status_type_id",
+      hasLookup: true,
+    };
+  }
+
+  return {
+    select: "'interred'::text AS record_status_code, 'Interred'::text AS record_status_label",
+    join: "",
+    hasLookup: false,
+  };
+}
+
+async function activeBurialRecordStatusExists(client, code) {
+  if (!(await burialRecordStatusColumnExists(client))) return true;
+  const result = await client.query("SELECT EXISTS (SELECT 1 FROM burial_record_status_types WHERE code = $1 AND is_active) AS exists", [code]);
+  return Boolean(result.rows[0]?.exists);
+}
+
 async function burialMilitaryBranchLookupExists(client) {
   const result = await client.query(`
     SELECT EXISTS (
@@ -888,6 +945,7 @@ async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
 async function selectBurialMutationState(client, id) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
+  const recordStatusSql = await burialRecordStatusSql(client);
   const recordedDateTextSql = await burialRecordedDateTextSql(client);
   const result = await client.query(
     `
@@ -904,12 +962,14 @@ async function selectBurialMutationState(client, id) {
         burials.death_date,
         burials.burial_date,
         ${intermentTypeSql.select},
+        ${recordStatusSql.select},
         burials.funeral_home,
         ${militaryServiceSql.select},
         burials.notes,
         burials.updated_at
       FROM burials
       ${intermentTypeSql.join}
+      ${recordStatusSql.join}
       ${militaryServiceSql.join}
       JOIN gravesites
         ON gravesites.id = burials.gravesite_uuid
@@ -927,12 +987,14 @@ async function selectBurialMutationState(client, id) {
 async function selectBurialById(client, id) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
+  const recordStatusSql = await burialRecordStatusSql(client);
   const recordedDateTextSql = await burialRecordedDateTextSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
       ${intermentTypeSql.join}
+      ${recordStatusSql.join}
       ${militaryServiceSql.join}
       WHERE burials.id = $1
         AND burials.deleted_at IS NULL
@@ -1014,12 +1076,14 @@ async function selectOwnersForCemeteries(client, cemeteryIds) {
 async function selectBurialsForCemeteries(client, cemeteryIds) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
+  const recordStatusSql = await burialRecordStatusSql(client);
   const recordedDateTextSql = await burialRecordedDateTextSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
       ${intermentTypeSql.join}
+      ${recordStatusSql.join}
       ${militaryServiceSql.join}
       WHERE burials.deleted_at IS NULL
         AND burials.gravesite_uuid IN (SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL)
@@ -1274,12 +1338,14 @@ export async function createOwnershipEvent(
 async function selectBurialsForGrave(client, graveUuid) {
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
+  const recordStatusSql = await burialRecordStatusSql(client);
   const recordedDateTextSql = await burialRecordedDateTextSql(client);
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
       FROM burials
       ${intermentTypeSql.join}
+      ${recordStatusSql.join}
       ${militaryServiceSql.join}
       WHERE burials.gravesite_uuid = $1
         AND burials.deleted_at IS NULL
@@ -1288,7 +1354,106 @@ async function selectBurialsForGrave(client, graveUuid) {
     [graveUuid],
   );
 
+  const featuresByHeadstone = await selectFeaturesForHeadstones(
+    client,
+    result.rows.map((row) => row.id),
+  );
+
+  return result.rows.map((row) => ({
+    ...row,
+    features: featuresByHeadstone.get(row.id) ?? [],
+  }));
+}
+
+const graveFeatureSelectSql = `
+  grave_features.id::text,
+  grave_features.cemetery_id::text,
+  grave_features.gravesite_uuid::text,
+  grave_features.headstone_uuid::text,
+  grave_feature_types.id::text AS feature_type_id,
+  grave_feature_types.code AS feature_type_code,
+  grave_feature_types.label AS feature_type_label,
+  grave_feature_subtypes.id::text AS feature_subtype_id,
+  grave_feature_subtypes.code AS feature_subtype_code,
+  grave_feature_subtypes.label AS feature_subtype_label,
+  grave_feature_placement_types.id::text AS placement_id,
+  grave_feature_placement_types.code AS placement_code,
+  grave_feature_placement_types.label AS placement_label,
+  grave_feature_material_types.id::text AS material_id,
+  grave_feature_material_types.code AS material_code,
+  grave_feature_material_types.label AS material_label,
+  grave_features.symbol_text,
+  grave_features.source_type,
+  grave_features.source_text,
+  grave_features.notes,
+  grave_features.status
+`;
+
+const graveFeatureJoinSql = `
+  JOIN grave_feature_types
+    ON grave_feature_types.id = grave_features.feature_type_id
+  LEFT JOIN grave_feature_subtypes
+    ON grave_feature_subtypes.id = grave_features.feature_subtype_id
+  LEFT JOIN grave_feature_placement_types
+    ON grave_feature_placement_types.id = grave_features.placement_type_id
+  LEFT JOIN grave_feature_material_types
+    ON grave_feature_material_types.id = grave_features.material_type_id
+`;
+
+async function graveFeatureTablesExist(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = current_schema()
+        AND table_name = 'grave_features'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function selectFeaturesForGrave(client, graveUuid) {
+  if (!(await graveFeatureTablesExist(client))) return [];
+
+  const result = await client.query(
+    `
+      SELECT ${graveFeatureSelectSql}
+      FROM grave_features
+      ${graveFeatureJoinSql}
+      WHERE grave_features.deleted_at IS NULL
+        AND grave_features.gravesite_uuid = $1
+      ORDER BY grave_feature_types.sort_order, grave_feature_subtypes.sort_order NULLS LAST, grave_features.created_at
+    `,
+    [graveUuid],
+  );
+
   return result.rows;
+}
+
+async function selectFeaturesForHeadstones(client, headstoneUuids) {
+  if (!headstoneUuids.length || !(await graveFeatureTablesExist(client))) return new Map();
+
+  const result = await client.query(
+    `
+      SELECT ${graveFeatureSelectSql}
+      FROM grave_features
+      ${graveFeatureJoinSql}
+      WHERE grave_features.deleted_at IS NULL
+        AND grave_features.headstone_uuid = ANY($1::uuid[])
+      ORDER BY grave_feature_types.sort_order, grave_feature_subtypes.sort_order NULLS LAST, grave_features.created_at
+    `,
+    [headstoneUuids],
+  );
+
+  const byHeadstone = new Map();
+  for (const row of result.rows) {
+    const features = byHeadstone.get(row.headstone_uuid) ?? [];
+    features.push(row);
+    byHeadstone.set(row.headstone_uuid, features);
+  }
+
+  return byHeadstone;
 }
 
 const headstoneDetailColumnsSql = `
@@ -1553,7 +1718,14 @@ async function selectHeadstoneById(client, id) {
     [id],
   );
 
-  return result.rows[0];
+  const headstone = result.rows[0];
+  if (!headstone) return undefined;
+
+  const featuresByHeadstone = await selectFeaturesForHeadstones(client, [headstone.id]);
+  return {
+    ...headstone,
+    features: featuresByHeadstone.get(headstone.id) ?? [],
+  };
 }
 
 async function selectNorthHillsEvidenceForGrave(client, graveUuid) {
@@ -1699,6 +1871,24 @@ export async function listHeadstoneLookupOptions(pool) {
     const vaseTypes = await client.query("SELECT id::text, code, label FROM headstone_vase_types WHERE is_active ORDER BY sort_order, label");
     const vaseMaterials = await client.query("SELECT id::text, code, label FROM headstone_vase_material_types WHERE is_active ORDER BY sort_order, label");
     const vasePlacements = await client.query("SELECT id::text, code, label FROM headstone_vase_placement_types WHERE is_active ORDER BY sort_order, label");
+    const graveFeatureLookupExists = await graveFeatureTablesExist(client);
+    const graveFeatureTypes = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
+    const graveFeatureSubtypes = graveFeatureLookupExists
+      ? await client.query(`
+          SELECT
+            grave_feature_subtypes.id::text,
+            grave_feature_subtypes.code,
+            grave_feature_subtypes.label,
+            grave_feature_types.code AS "featureTypeCode"
+          FROM grave_feature_subtypes
+          LEFT JOIN grave_feature_types
+            ON grave_feature_types.id = grave_feature_subtypes.grave_feature_type_id
+          WHERE grave_feature_subtypes.is_active
+          ORDER BY grave_feature_subtypes.sort_order, grave_feature_subtypes.label
+        `)
+      : { rows: [] };
+    const graveFeaturePlacements = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_placement_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
+    const graveFeatureMaterials = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_material_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
     const intermentTypes = (await burialIntermentTypeLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM burial_interment_types WHERE is_active ORDER BY sort_order, label")
       : {
@@ -1707,6 +1897,9 @@ export async function listHeadstoneLookupOptions(pool) {
             { id: "legacy-urn", code: "urn", label: "Funeral urn" },
           ],
         };
+    const burialRecordStatuses = (await burialRecordStatusColumnExists(client))
+      ? await client.query("SELECT id::text, code, label FROM burial_record_status_types WHERE is_active ORDER BY sort_order, label")
+      : { rows: [{ id: "legacy-interred", code: "interred", label: "Interred" }] };
     const militaryBranches = (await burialMilitaryBranchLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM military_branch_types WHERE is_active ORDER BY sort_order, label")
       : { rows: [] };
@@ -1738,7 +1931,12 @@ export async function listHeadstoneLookupOptions(pool) {
       vaseTypes: vaseTypes.rows,
       vaseMaterials: vaseMaterials.rows,
       vasePlacements: vasePlacements.rows,
+      graveFeatureTypes: graveFeatureTypes.rows,
+      graveFeatureSubtypes: graveFeatureSubtypes.rows,
+      graveFeaturePlacements: graveFeaturePlacements.rows,
+      graveFeatureMaterials: graveFeatureMaterials.rows,
       intermentTypes: intermentTypes.rows,
+      burialRecordStatuses: burialRecordStatuses.rows,
       militaryBranches: militaryBranches.rows,
       militaryRanks: militaryRanks.rows,
       militaryWarServices: militaryWarServices.rows,
@@ -1795,7 +1993,7 @@ function toLotRestrictedArea(area) {
   };
 }
 
-function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, mediaAssets, includeOwnership) {
+function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, mediaAssets, graveFeatures, includeOwnership) {
   const detailedGrave = {
     ...toGraveSummary(grave),
     name: grave.name ?? "",
@@ -1804,6 +2002,7 @@ function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, nort
     currentOwnerIds: graveOwners.map((owner) => owner.id),
     burials: graveBurials.map(toBurial),
     headstones: graveHeadstones.map(toHeadstone),
+    features: graveFeatures.map(toGraveFeature),
     northHillsEvidence: northHillsEvidence.map(toNorthHillsEvidence),
     mediaAssets: mediaAssets.map(toMediaAsset),
     ownershipHistory: graveOwners.map(toOwnershipEvent),
@@ -1875,7 +2074,7 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
       sections: sections.map(toSection),
       lots: lots.map(toLot),
       lotRestrictedAreas: lotRestrictedAreas.map(toLotRestrictedArea),
-      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], [], [], includeOwnership)),
+      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], [], [], [], includeOwnership)),
       owners: owners.map(toOwner),
     };
   } finally {
@@ -1894,8 +2093,9 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
     const headstones = await selectHeadstonesForGrave(client, grave.uuid);
     const northHillsEvidence = await selectNorthHillsEvidenceForGrave(client, grave.uuid);
     const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
+    const features = await selectFeaturesForGrave(client, grave.uuid);
 
-    return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, includeOwnership);
+    return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, features, includeOwnership);
   } finally {
     client.release();
   }
@@ -1906,6 +2106,148 @@ export async function getHeadstone(pool, id) {
   try {
     const headstone = await selectHeadstoneById(client, id);
     return headstone ? toHeadstone(headstone) : undefined;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createGraveFeature(pool, cemeteryId, feature, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    let gravesiteUuid = null;
+    if (feature.graveSpaceId) {
+      const graveResult = await client.query(
+        `
+          SELECT id::text
+          FROM gravesites
+          WHERE cemetery_id = $1
+            AND gravesite_id = $2
+            AND deleted_at IS NULL
+          LIMIT 1
+        `,
+        [cemeteryId, feature.graveSpaceId],
+      );
+      gravesiteUuid = graveResult.rows[0]?.id ?? null;
+      if (!gravesiteUuid) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+    }
+
+    let headstoneUuid = feature.headstoneId || null;
+    if (headstoneUuid) {
+      const headstoneResult = await client.query(
+        `
+          SELECT headstones.id::text
+          FROM headstones
+          LEFT JOIN gravesites AS direct_gravesite
+            ON direct_gravesite.id = headstones.gravesite_uuid
+           AND direct_gravesite.deleted_at IS NULL
+          LEFT JOIN LATERAL (
+            SELECT gravesites.cemetery_id
+            FROM headstone_gravesites
+            JOIN gravesites
+              ON gravesites.id = headstone_gravesites.gravesite_uuid
+             AND gravesites.deleted_at IS NULL
+            WHERE headstone_gravesites.headstone_uuid = headstones.id
+              AND headstone_gravesites.deleted_at IS NULL
+              AND gravesites.cemetery_id = $2
+            LIMIT 1
+          ) linked_gravesite ON true
+          LEFT JOIN LATERAL (
+            SELECT cemeteries.id
+            FROM cemeteries
+            WHERE headstones.geometry IS NOT NULL
+              AND cemeteries.deleted_at IS NULL
+              AND ST_Covers(cemeteries.geometry, headstones.geometry)
+            ORDER BY cemeteries.name, cemeteries.id
+            LIMIT 1
+          ) containing_cemetery ON true
+          WHERE headstones.id = $1
+            AND headstones.deleted_at IS NULL
+            AND COALESCE(direct_gravesite.cemetery_id, linked_gravesite.cemetery_id, containing_cemetery.id) = $2
+          LIMIT 1
+        `,
+        [headstoneUuid, cemeteryId],
+      );
+      headstoneUuid = headstoneResult.rows[0]?.id ?? null;
+      if (!headstoneUuid) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+    }
+
+    const insertResult = await client.query(
+      `
+        INSERT INTO grave_features (
+          cemetery_id,
+          gravesite_uuid,
+          headstone_uuid,
+          feature_type_id,
+          feature_subtype_id,
+          placement_type_id,
+          material_type_id,
+          symbol_text,
+          source_type,
+          source_text,
+          notes,
+          status
+        )
+        VALUES (
+          $1,
+          $2::uuid,
+          $3::uuid,
+          $4::uuid,
+          NULLIF($5, '')::uuid,
+          NULLIF($6, '')::uuid,
+          NULLIF($7, '')::uuid,
+          $8,
+          $9,
+          $10,
+          $11,
+          $12
+        )
+        RETURNING id::text
+      `,
+      [
+        cemeteryId,
+        gravesiteUuid,
+        headstoneUuid,
+        feature.featureTypeId,
+        feature.featureSubtypeId || "",
+        feature.placementTypeId || "",
+        feature.materialTypeId || "",
+        feature.symbolText || null,
+        feature.sourceType || "manual",
+        feature.sourceText || null,
+        feature.notes || null,
+        feature.status || "active",
+      ],
+    );
+
+    const result = await client.query(
+      `
+        SELECT ${graveFeatureSelectSql}
+        FROM grave_features
+        ${graveFeatureJoinSql}
+        WHERE grave_features.id = $1
+      `,
+      [insertResult.rows[0].id],
+    );
+
+    await client.query("COMMIT");
+    return toGraveFeature(result.rows[0]);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
   } finally {
     client.release();
   }
@@ -1970,9 +2312,10 @@ export async function updateGraveSpace(pool, cemeteryId, gravesiteId, graveSpace
     const headstones = await selectHeadstonesForGrave(client, grave.uuid);
     const northHillsEvidence = await selectNorthHillsEvidenceForGrave(client, grave.uuid);
     const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
+    const features = await selectFeaturesForGrave(client, grave.uuid);
 
     await client.query("COMMIT");
-    return { ...toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, true), auditEventId };
+    return { ...toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, features, true), auditEventId };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -2001,13 +2344,28 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     if (!(await activeIntermentTypeExists(client, effectiveIntermentType))) {
       throw new Error(`Unsupported interment type: ${effectiveIntermentType}.`);
     }
+    const effectiveRecordStatusCode = burial.recordStatusCode || "interred";
+    if (!(await activeBurialRecordStatusExists(client, effectiveRecordStatusCode))) {
+      throw new Error(`Unsupported burial record status: ${effectiveRecordStatusCode}.`);
+    }
     const hasIntermentTypeLookup = await burialIntermentTypeColumnExists(client);
     const hasLegacyIntermentTypeColumn = !hasIntermentTypeLookup && (await legacyBurialIntermentTypeColumnExists(client));
+    const hasRecordStatusLookup = await burialRecordStatusColumnExists(client);
+    const hasMilitaryServiceColumns = await burialMilitaryServiceColumnsExist(client);
+    const recordStatusParameter = hasMilitaryServiceColumns ? 16 : 13;
     const intermentTypeSetSql = hasIntermentTypeLookup
       ? "interment_type_id = (SELECT id FROM burial_interment_types WHERE code = $9 AND is_active)"
       : hasLegacyIntermentTypeColumn
         ? "interment_type = $9"
         : "id = id";
+    const recordStatusSetSql = hasRecordStatusLookup
+      ? `burial_record_status_type_id = (
+              SELECT id
+              FROM burial_record_status_types
+              WHERE code = $${recordStatusParameter}
+                AND is_active
+            )`
+      : "";
     const intermentTypeReturnSql = hasIntermentTypeLookup
       ? `(SELECT code FROM burial_interment_types WHERE burial_interment_types.id = burials.interment_type_id) AS interment_type,
           (SELECT label FROM burial_interment_types WHERE burial_interment_types.id = burials.interment_type_id) AS interment_type_label`
@@ -2016,8 +2374,19 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           CASE WHEN interment_type = 'urn' THEN 'Funeral urn' ELSE 'Casket' END AS interment_type_label`
         : `'casket'::text AS interment_type,
           'Casket'::text AS interment_type_label`;
-    const hasMilitaryServiceColumns = await burialMilitaryServiceColumnsExist(client);
-    const recordedDateTextSql = await burialRecordedDateTextSql(client, hasMilitaryServiceColumns ? 16 : 13);
+    const recordStatusReturnSql = hasRecordStatusLookup
+      ? `(SELECT code FROM burial_record_status_types WHERE burial_record_status_types.id = burials.burial_record_status_type_id) AS record_status_code,
+          (SELECT label FROM burial_record_status_types WHERE burial_record_status_types.id = burials.burial_record_status_type_id) AS record_status_label`
+      : `'interred'::text AS record_status_code,
+          'Interred'::text AS record_status_label`;
+    const firstRecordedDateTextParameter = hasMilitaryServiceColumns
+      ? hasRecordStatusLookup
+        ? 17
+        : 16
+      : hasRecordStatusLookup
+        ? 14
+        : 13;
+    const recordedDateTextSql = await burialRecordedDateTextSql(client, firstRecordedDateTextParameter);
     const birthDate = splitRecordedDate(burial.birthDate);
     const deathDate = splitRecordedDate(burial.deathDate);
     const hasMilitaryBranchLookup = hasMilitaryServiceColumns && (await burialMilitaryBranchTypeColumnExists(client));
@@ -2050,10 +2419,10 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
                 AND military_branch_types.is_active
             )`
       : "";
-    const militaryServiceAssignments = [militaryBranchSetSql, militaryWarServiceSetSql, militaryRankSetSql, "notes = $15"].filter(Boolean);
+    const militaryServiceAssignments = [militaryBranchSetSql, militaryWarServiceSetSql, militaryRankSetSql, "notes = $15", recordStatusSetSql].filter(Boolean);
     const militaryServiceSetSql = hasMilitaryServiceColumns
       ? militaryServiceAssignments.join(",\n            ")
-      : "notes = $12";
+      : ["notes = $12", recordStatusSetSql].filter(Boolean).join(",\n            ");
     const militaryServiceReturnSql =
       hasMilitaryServiceColumns
         ? `${hasMilitaryBranchLookup ? "(SELECT code FROM military_branch_types WHERE military_branch_types.id = burials.military_branch_type_id)" : "NULL::text"} AS military_branch_code,
@@ -2104,6 +2473,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           burial.veteran ? "Yes" : "No",
           burial.notes || null,
         ];
+    if (hasRecordStatusLookup) updateValues.push(effectiveRecordStatusCode);
     if (recordedDateTextSql.hasColumns) updateValues.push(birthDate.text, deathDate.text);
     const recordedDateAssignments = recordedDateTextSql.hasColumns ? `,\n            ${recordedDateTextSql.set}` : "";
     const updateResult = await client.query(
@@ -2133,6 +2503,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           death_date,
           burial_date,
           ${intermentTypeReturnSql},
+          ${recordStatusReturnSql},
           funeral_home,
           veteran,
           ${militaryServiceReturnSql},

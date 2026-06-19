@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
+  createGraveFeature,
   deleteMediaAsset,
   fetchCemeteryData,
   fetchCurrentUser,
@@ -38,6 +39,7 @@ import type {
   HeadstoneSummary,
   SaveBurialInput,
   SaveGraveSpaceInput,
+  SaveGraveFeatureInput,
   SaveHeadstoneInput,
   SaveOwnershipEventInput,
   SearchMatch,
@@ -51,7 +53,12 @@ const emptyHeadstoneLookups: HeadstoneLookups = {
   vaseTypes: [],
   vaseMaterials: [],
   vasePlacements: [],
+  graveFeatureTypes: [],
+  graveFeatureSubtypes: [],
+  graveFeaturePlacements: [],
+  graveFeatureMaterials: [],
   intermentTypes: [],
+  burialRecordStatuses: [],
   militaryBranches: [],
   militaryRanks: [],
   militaryWarServices: [],
@@ -313,6 +320,26 @@ export default function App() {
     return saved;
   };
 
+  const saveGraveFeature = async (feature: SaveGraveFeatureInput) => {
+    const cemeteryId = selectedGrave?.cemeteryId ?? selectedHeadstone?.cemeteryId;
+    if (!cemeteryId) throw new Error("Select a grave site or marker before adding a feature.");
+    const saved = await createGraveFeature(cemeteryId, feature);
+    setSelectedGraveDetails((current) =>
+      current
+        ? {
+            ...current,
+            features: feature.graveSpaceId ? [...(current.features ?? []), saved] : (current.features ?? []),
+            headstones: current.headstones.map((headstone) => (headstone.id === saved.headstoneUuid ? { ...headstone, features: [...(headstone.features ?? []), saved] } : headstone)),
+          }
+        : current,
+    );
+    setSelectedHeadstoneDetails((current) => {
+      if (!current || current.id !== saved.headstoneUuid) return current;
+      return { ...current, features: [...(current.features ?? []), saved] };
+    });
+    return saved;
+  };
+
   const saveGravePhoto = async ({ file, headstoneId, notes, capturedAt }: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => {
     const source = /iPhone|iPad|iPod/u.test(navigator.userAgent) ? "iphone" : "field_upload";
     if (selectedGrave) {
@@ -465,9 +492,10 @@ export default function App() {
         canUpdateHeadstones={canUpdateSelectedHeadstones}
         headstoneLookups={headstoneLookups}
         onSaveGraveSpace={saveGraveSpace}
-        onSaveBurial={saveBurial}
-        onSaveHeadstone={saveHeadstone}
-        onSaveOwnershipEvent={saveOwnershipEvent}
+      onSaveBurial={saveBurial}
+      onSaveHeadstone={saveHeadstone}
+      onSaveGraveFeature={saveGraveFeature}
+      onSaveOwnershipEvent={saveOwnershipEvent}
         onSelectLotGrave={selectGrave}
         onSelectMarkerGrave={selectGrave}
         onUploadPhoto={saveGravePhoto}

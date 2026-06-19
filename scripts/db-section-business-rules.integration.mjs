@@ -96,9 +96,17 @@ async function insertBurial(client, { gravesiteId, firstName, lastName, intermen
         first_name,
         last_name,
         full_name,
-        interment_type_id
+        interment_type_id,
+        burial_record_status_type_id
       )
-      VALUES ($1, $2, $3, $4, (SELECT id FROM burial_interment_types WHERE code = $5))
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        (SELECT id FROM burial_interment_types WHERE code = $5),
+        (SELECT id FROM burial_record_status_types WHERE code = 'interred')
+      )
       RETURNING id::text
     `,
     [gravesiteId, firstName, lastName, [firstName, lastName].filter(Boolean).join(" "), intermentType],
@@ -245,9 +253,17 @@ test("database enforces Section F and Section G marker business rules", async ()
           first_name,
           last_name,
           full_name,
-          interment_type_id
+          interment_type_id,
+          burial_record_status_type_id
         )
-        VALUES ($1, 'Third', 'Urn', 'Third Urn', (SELECT id FROM burial_interment_types WHERE code = 'urn'))
+        VALUES (
+          $1,
+          'Third',
+          'Urn',
+          'Third Urn',
+          (SELECT id FROM burial_interment_types WHERE code = 'urn'),
+          (SELECT id FROM burial_record_status_types WHERE code = 'interred')
+        )
       `,
       [sectionGUrnGravesiteId],
       /Section G gravesites can contain either one casket burial or up to two funeral urn burials/u,
@@ -267,9 +283,17 @@ test("database enforces Section F and Section G marker business rules", async ()
           first_name,
           last_name,
           full_name,
-          interment_type_id
+          interment_type_id,
+          burial_record_status_type_id
         )
-        VALUES ($1, 'Additional', 'Urn', 'Additional Urn', (SELECT id FROM burial_interment_types WHERE code = 'urn'))
+        VALUES (
+          $1,
+          'Additional',
+          'Urn',
+          'Additional Urn',
+          (SELECT id FROM burial_interment_types WHERE code = 'urn'),
+          (SELECT id FROM burial_record_status_types WHERE code = 'interred')
+        )
       `,
       [sectionGCasketGravesiteId],
       /Section G gravesites can contain either one casket burial or up to two funeral urn burials/u,
