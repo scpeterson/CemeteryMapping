@@ -106,3 +106,25 @@ Franklin Park Borough                198   •          Allegheny County, PA`;
   assert.equal(entries[1].rawText.includes("December 16, 1965"), true);
   assert.deepEqual(entries[3].parsedYears, [1867, 1873, 1940, 1949]);
 });
+
+test("parseNorthHillsOcrText accepts OCR brace and J for row three", () => {
+  const text = `Section C, Row 3
+WILL {JC, 1, c) upright, pink granite, exc cond, candles, flowers,
+leaves "Will/ Albert R. / 1886-1959 /Father/   Elva Z. / 1889-1972 /
+Mother" On back: "Will"
+WILL (3C, 2, s) upright, gray granite, exc cond, tiny flowers "George
+J. Will/ 1877-1952 / Father"
+Franklin Park Borough               199                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 2);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["WILL", 199, "C", 3, 1, "couple"],
+      ["WILL", 199, "C", 3, 2, "single"],
+    ],
+  );
+  assert.deepEqual(entries[0].parsedYears, [1886, 1889, 1959, 1972]);
+});
