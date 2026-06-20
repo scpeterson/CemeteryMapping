@@ -3,14 +3,17 @@ import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
   createGraveFeature,
+  createMaintenanceRecord,
   deleteMediaAsset,
   fetchCemeteryData,
   fetchCurrentUser,
   fetchHeadstoneLookups,
   fetchSearchMatches,
   updateBurial,
+  updateGraveFeature,
   updateGraveSpace,
   updateHeadstone,
+  updateMaintenanceRecord,
   moveMediaAsset,
   uploadGravePhoto,
   uploadHeadstonePhoto,
@@ -41,6 +44,7 @@ import type {
   SaveGraveSpaceInput,
   SaveGraveFeatureInput,
   SaveHeadstoneInput,
+  SaveMaintenanceRecordInput,
   SaveOwnershipEventInput,
   SearchMatch,
 } from "./types";
@@ -62,6 +66,9 @@ const emptyHeadstoneLookups: HeadstoneLookups = {
   militaryBranches: [],
   militaryRanks: [],
   militaryWarServices: [],
+  maintenanceIssueTypes: [],
+  maintenanceActionTypes: [],
+  maintenancePriorities: [],
 };
 
 function includesAllStatuses(statuses: Set<GraveStatus>) {
@@ -340,6 +347,71 @@ export default function App() {
     return saved;
   };
 
+  const saveMaintenanceRecord = async (record: SaveMaintenanceRecordInput) => {
+    const cemeteryId = selectedGrave?.cemeteryId ?? selectedHeadstone?.cemeteryId;
+    if (!cemeteryId) throw new Error("Select a grave site or marker before adding maintenance.");
+    const saved = await createMaintenanceRecord(cemeteryId, record);
+    setSelectedGraveDetails((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        maintenanceRecords: record.graveSpaceId ? [...(current.maintenanceRecords ?? []), saved] : (current.maintenanceRecords ?? []),
+        headstones: current.headstones.map((headstone) =>
+          headstone.id === saved.headstoneUuid ? { ...headstone, maintenanceRecords: [...(headstone.maintenanceRecords ?? []), saved] } : headstone,
+        ),
+      };
+    });
+    setSelectedHeadstoneDetails((current) => {
+      if (!current || current.id !== saved.headstoneUuid) return current;
+      return { ...current, maintenanceRecords: [...(current.maintenanceRecords ?? []), saved] };
+    });
+    return saved;
+  };
+
+  const updateSavedGraveFeature = async (id: string, feature: SaveGraveFeatureInput) => {
+    const saved = await updateGraveFeature(id, feature);
+    setSelectedGraveDetails((current) =>
+      current
+        ? {
+            ...current,
+            features: (current.features ?? []).map((currentFeature) => (currentFeature.id === saved.id ? saved : currentFeature)),
+            headstones: current.headstones.map((headstone) =>
+              headstone.id === saved.headstoneUuid
+                ? { ...headstone, features: (headstone.features ?? []).map((currentFeature) => (currentFeature.id === saved.id ? saved : currentFeature)) }
+                : headstone,
+            ),
+          }
+        : current,
+    );
+    setSelectedHeadstoneDetails((current) => {
+      if (!current || current.id !== saved.headstoneUuid) return current;
+      return { ...current, features: (current.features ?? []).map((currentFeature) => (currentFeature.id === saved.id ? saved : currentFeature)) };
+    });
+    return saved;
+  };
+
+  const updateSavedMaintenanceRecord = async (id: string, record: SaveMaintenanceRecordInput) => {
+    const saved = await updateMaintenanceRecord(id, record);
+    setSelectedGraveDetails((current) =>
+      current
+        ? {
+            ...current,
+            maintenanceRecords: (current.maintenanceRecords ?? []).map((currentRecord) => (currentRecord.id === saved.id ? saved : currentRecord)),
+            headstones: current.headstones.map((headstone) =>
+              headstone.id === saved.headstoneUuid
+                ? { ...headstone, maintenanceRecords: (headstone.maintenanceRecords ?? []).map((currentRecord) => (currentRecord.id === saved.id ? saved : currentRecord)) }
+                : headstone,
+            ),
+          }
+        : current,
+    );
+    setSelectedHeadstoneDetails((current) => {
+      if (!current || current.id !== saved.headstoneUuid) return current;
+      return { ...current, maintenanceRecords: (current.maintenanceRecords ?? []).map((currentRecord) => (currentRecord.id === saved.id ? saved : currentRecord)) };
+    });
+    return saved;
+  };
+
   const saveGravePhoto = async ({ file, headstoneId, notes, capturedAt }: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => {
     const source = /iPhone|iPad|iPod/u.test(navigator.userAgent) ? "iphone" : "field_upload";
     if (selectedGrave) {
@@ -492,10 +564,13 @@ export default function App() {
         canUpdateHeadstones={canUpdateSelectedHeadstones}
         headstoneLookups={headstoneLookups}
         onSaveGraveSpace={saveGraveSpace}
-      onSaveBurial={saveBurial}
-      onSaveHeadstone={saveHeadstone}
-      onSaveGraveFeature={saveGraveFeature}
-      onSaveOwnershipEvent={saveOwnershipEvent}
+        onSaveBurial={saveBurial}
+        onSaveHeadstone={saveHeadstone}
+        onSaveGraveFeature={saveGraveFeature}
+        onUpdateGraveFeature={updateSavedGraveFeature}
+        onSaveMaintenanceRecord={saveMaintenanceRecord}
+        onUpdateMaintenanceRecord={updateSavedMaintenanceRecord}
+        onSaveOwnershipEvent={saveOwnershipEvent}
         onSelectLotGrave={selectGrave}
         onSelectMarkerGrave={selectGrave}
         onUploadPhoto={saveGravePhoto}

@@ -195,6 +195,9 @@ test("createHeadstonePhoto stores a local file and links it to a headstone", asy
     assert.deepEqual(await readFile(join(uploadRoot, photo.fileUrl.replace("/media/", "")), "utf8"), "marker-photo");
     assert.equal(queries[0].sql, "BEGIN");
     assert.equal(queries.at(-2).sql, "COMMIT");
+    const headstoneLookup = queries.find((query) => query.sql.includes("FROM headstones"));
+    assert.match(headstoneLookup?.sql ?? "", /COALESCE\(direct_gravesite\.cemetery_id, linked_gravesite\.cemetery_id, containing_cemetery\.id\)/u);
+    assert.doesNotMatch(headstoneLookup?.sql ?? "", /headstones\.cemetery_id/u);
     assert.match(queries.find((query) => query.sql.includes("INSERT INTO headstone_media_assets"))?.sql ?? "", /headstone_media_assets/u);
     assert.equal(queries.some((query) => query.sql.includes("INSERT INTO gravesite_media_assets")), false);
   } finally {

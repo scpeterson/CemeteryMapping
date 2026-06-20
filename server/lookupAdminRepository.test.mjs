@@ -18,6 +18,9 @@ test("lookupTables exposes only admin-maintained lookup tables", () => {
       "lot_ownership_event_types",
       "military_branch_types",
       "military_war_service_types",
+      "maintenance_issue_types",
+      "maintenance_action_types",
+      "maintenance_priority_types",
     ],
   );
 });
@@ -39,7 +42,7 @@ test("listLookupRecords reads source fields only for marker lookup tables", asyn
 
   const result = await listLookupRecords(pool);
 
-  assert.equal(result.tables.length, 12);
+  assert.equal(result.tables.length, 15);
   assert.match(queries[0], /source_notes, source_url/u);
   assert.match(queries[0], /usage_records\.marker_type_id = marker_types\.id/u);
   assert.doesNotMatch(queries[2], /source_notes, source_url/u);
@@ -51,6 +54,9 @@ test("listLookupRecords reads source fields only for marker lookup tables", asyn
   assert.match(queries[8], /usage_records\.burial_record_status_type_id = burial_record_status_types\.id/u);
   assert.match(queries[10], /usage_records\.military_branch_type_id = military_branch_types\.id/u);
   assert.match(queries[11], /usage_records\.military_war_service_type_id = military_war_service_types\.id/u);
+  assert.match(queries[12], /usage_records\.issue_type_id = maintenance_issue_types\.id/u);
+  assert.match(queries[13], /usage_records\.action_type_id = maintenance_action_types\.id/u);
+  assert.match(queries[14], /usage_records\.priority_type_id = maintenance_priority_types\.id/u);
 });
 
 test("updateLookupRecord uses an allowlisted table and audit transaction", async () => {

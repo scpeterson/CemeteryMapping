@@ -13,7 +13,7 @@ import {
 } from "./cemeteryRepository.mjs";
 
 function isGraveFeatureTableCheck(sql) {
-  return sql.includes("information_schema.tables") && sql.includes("grave_features");
+  return sql.includes("information_schema.tables") && (sql.includes("grave_features") || sql.includes("maintenance_records"));
 }
 
 function queryRows(sql) {
@@ -419,6 +419,21 @@ test("lookup options include active military service lookups", async () => {
               ],
             };
           }
+          if (sql.includes("FROM maintenance_issue_types")) {
+            return {
+              rows: [{ id: "abababab-abab-4aba-8bab-abababababab", code: "illegible", label: "Illegible" }],
+            };
+          }
+          if (sql.includes("FROM maintenance_action_types")) {
+            return {
+              rows: [{ id: "cdcdcdcd-cdcd-4cdc-8dcd-cdcdcdcdcdcd", code: "cleaned", label: "Cleaned" }],
+            };
+          }
+          if (sql.includes("FROM maintenance_priority_types")) {
+            return {
+              rows: [{ id: "efefefef-efef-4efe-8fef-efefefefefef", code: "normal", label: "Normal" }],
+            };
+          }
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
           throw new Error(`Unexpected query: ${sql}`);
         },
@@ -475,6 +490,18 @@ test("lookup options include active military service lookups", async () => {
   assert.deepEqual(
     lookups.militaryWarServices.map((service) => service.code),
     ["world_war_i", "world_war_ii"],
+  );
+  assert.deepEqual(
+    lookups.maintenanceIssueTypes.map((issue) => issue.code),
+    ["illegible"],
+  );
+  assert.deepEqual(
+    lookups.maintenanceActionTypes.map((action) => action.code),
+    ["cleaned"],
+  );
+  assert.deepEqual(
+    lookups.maintenancePriorities.map((priority) => priority.code),
+    ["normal"],
   );
 });
 

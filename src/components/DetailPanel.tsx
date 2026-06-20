@@ -13,6 +13,7 @@ import type {
   HeadstoneSummary,
   LotRestrictedArea,
   LookupOption,
+  MaintenanceRecord,
   MediaAsset,
   NorthHillsLinkedEvidence,
   Owner,
@@ -22,6 +23,7 @@ import type {
   SaveGraveSpaceInput,
   SaveGraveFeatureInput,
   SaveHeadstoneInput,
+  SaveMaintenanceRecordInput,
   SaveOwnershipEventInput,
   GeometryConfidence,
   GeometryType,
@@ -49,6 +51,9 @@ type DetailPanelProps = {
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
+  onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onSelectLotGrave: (grave: GraveSpaceSummary) => void;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
@@ -827,10 +832,12 @@ function MediaGallery({
 function PhotoUploadForm({
   headstones,
   fixedHeadstone,
+  gravesiteOnly = false,
   onUpload,
 }: {
   headstones: Headstone[];
   fixedHeadstone?: Headstone;
+  gravesiteOnly?: boolean;
   onUpload: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
 }) {
   const [file, setFile] = useState<File>();
@@ -879,6 +886,11 @@ function PhotoUploadForm({
         <div className="photo-upload-linked-marker">
           <span>Linked marker</span>
           <strong>{fixedHeadstone.headstoneId}</strong>
+        </div>
+      ) : gravesiteOnly ? (
+        <div className="photo-upload-linked-marker">
+          <span>Linked record</span>
+          <strong>Gravesite overview</strong>
         </div>
       ) : (
         <label>
@@ -937,21 +949,29 @@ function HeadstoneRecord({
   lookups,
   canUpdate,
   onSave,
+  grave,
   sectionName,
   canDeletePhotos,
   canReorderPhotos,
   onDeletePhoto,
   onMovePhoto,
+  canUploadPhotos,
+  onUploadPhoto,
+  onUpdateGraveFeature,
 }: {
   headstone: Headstone;
   lookups: HeadstoneLookups;
   canUpdate: boolean;
   onSave: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
+  grave?: GraveSpace;
   sectionName: string;
   canDeletePhotos: boolean;
   canReorderPhotos: boolean;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  canUploadPhotos: boolean;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
 }) {
   const isSectionG = sectionName.toUpperCase() === "G";
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
@@ -1142,10 +1162,13 @@ function HeadstoneRecord({
       {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
-      {headstone.features?.length ? <GraveFeatureList features={headstone.features} /> : null}
+      {headstone.features?.length ? (
+        <GraveFeatureList features={headstone.features} canUpdate={canUpdate} grave={grave} fixedHeadstone={headstone} lookups={lookups} onUpdate={onUpdateGraveFeature} />
+      ) : null}
       {headstone.mediaAssets?.length ? (
         <MediaGallery assets={headstone.mediaAssets} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
       ) : null}
+      {canUploadPhotos ? <PhotoUploadForm headstones={[headstone]} fixedHeadstone={headstone} onUpload={onUploadPhoto} /> : null}
       {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
         <p className="marker-relationship" title={relationshipTitle} aria-label={relationshipTitle}>
           <Info size={14} aria-hidden="true" />
@@ -1168,6 +1191,9 @@ function MarkerDetailPanel({
   headstoneLookups,
   onSaveHeadstone,
   onSaveGraveFeature,
+  onUpdateGraveFeature,
+  onSaveMaintenanceRecord,
+  onUpdateMaintenanceRecord,
   onSelectMarkerGrave,
   onUploadPhoto,
   onDeletePhoto,
@@ -1185,6 +1211,9 @@ function MarkerDetailPanel({
   headstoneLookups: HeadstoneLookups;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
+  onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
@@ -1239,6 +1268,9 @@ function MarkerDetailPanel({
               canReorderPhotos={canReorderPhotos}
               onDeletePhoto={onDeletePhoto}
               onMovePhoto={onMovePhoto}
+              canUploadPhotos={canUpdateHeadstones}
+              onUploadPhoto={onUploadPhoto}
+              onUpdateGraveFeature={onUpdateGraveFeature}
             />
           </div>
         </section>
@@ -1254,13 +1286,20 @@ function MarkerDetailPanel({
         </section>
       )}
 
-      {!headstone || error || !canUpdateHeadstones ? null : (
+      {!headstone || error ? null : (
         <section className="detail-section">
           <div className="section-title">
-            <Images size={17} aria-hidden="true" />
-            <h3>Marker Photos</h3>
+            <History size={17} aria-hidden="true" />
+            <h3>Maintenance</h3>
           </div>
-          <PhotoUploadForm headstones={[headstone]} fixedHeadstone={headstone} onUpload={onUploadPhoto} />
+          <MaintenanceRecordList
+            records={headstone.maintenanceRecords ?? []}
+            canUpdate={canUpdateHeadstones}
+            lookups={headstoneLookups}
+            fixedHeadstone={headstone}
+            onUpdate={onUpdateMaintenanceRecord}
+          />
+          {canUpdateHeadstones ? <MaintenanceRecordForm fixedHeadstone={headstone} lookups={headstoneLookups} onSave={onSaveMaintenanceRecord} /> : null}
         </section>
       )}
 
@@ -1312,16 +1351,74 @@ function AssociatedGravesiteList({
   );
 }
 
-function GraveFeatureList({ features, emptyMessage = "No grave features are recorded." }: { features: GraveFeature[]; emptyMessage?: string }) {
+function graveFeatureFormFromRecord(feature: GraveFeature, grave?: GraveSpace, fixedHeadstone?: Headstone): SaveGraveFeatureInput {
+  return {
+    graveSpaceId: feature.gravesiteUuid && grave ? grave.id : "",
+    headstoneId: feature.headstoneUuid ?? fixedHeadstone?.id ?? "",
+    featureTypeId: feature.featureType.id,
+    featureSubtypeId: feature.featureSubtype?.id ?? "",
+    placementTypeId: feature.placement?.id ?? "",
+    materialTypeId: feature.material?.id ?? "",
+    symbolText: feature.symbolText ?? "",
+    sourceType: feature.sourceType || "manual",
+    sourceText: feature.sourceText ?? "",
+    notes: feature.notes ?? "",
+    status: feature.status,
+    reason: "Update grave feature",
+  };
+}
+
+function GraveFeatureList({
+  features,
+  emptyMessage = "No grave features are recorded.",
+  canUpdate = false,
+  grave,
+  fixedHeadstone,
+  lookups,
+  onUpdate,
+}: {
+  features: GraveFeature[];
+  emptyMessage?: string;
+  canUpdate?: boolean;
+  grave?: GraveSpace;
+  fixedHeadstone?: Headstone;
+  lookups?: HeadstoneLookups;
+  onUpdate?: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+}) {
+  const [editingId, setEditingId] = useState<string>();
   if (!features.length) return <p className="muted">{emptyMessage}</p>;
 
   return (
     <div className="grave-feature-list">
       {features.map((feature) => {
         const details = [feature.featureSubtype?.label, feature.placement?.label, feature.material?.label].filter(Boolean).join(" | ");
+        if (editingId === feature.id && lookups && onUpdate) {
+          return (
+            <article key={feature.id} className="grave-feature-row">
+              <GraveFeatureForm
+                grave={grave}
+                headstones={fixedHeadstone ? [fixedHeadstone] : []}
+                fixedHeadstone={fixedHeadstone}
+                lookups={lookups}
+                initialFeature={feature}
+                onSave={(input) => onUpdate(feature.id, input)}
+                onCancel={() => setEditingId(undefined)}
+                submitLabel="Save feature"
+              />
+            </article>
+          );
+        }
         return (
           <article key={feature.id} className="grave-feature-row">
-            <strong>{feature.featureType.label}</strong>
+            <div className="record-heading">
+              <strong>{feature.featureType.label}</strong>
+              {canUpdate && lookups && onUpdate ? (
+                <button type="button" className="secondary-button compact-button" onClick={() => setEditingId(feature.id)}>
+                  <Pencil size={14} aria-hidden="true" />
+                  Edit
+                </button>
+              ) : null}
+            </div>
             {details ? <span>{details}</span> : null}
             {feature.symbolText ? <span>Symbol: {feature.symbolText}</span> : null}
             {feature.sourceText ? <p>{feature.sourceText}</p> : null}
@@ -1338,34 +1435,46 @@ function GraveFeatureForm({
   headstones,
   fixedHeadstone,
   lookups,
+  initialFeature,
+  submitLabel = "Add feature",
+  onCancel,
   onSave,
 }: {
   grave?: GraveSpace;
   headstones: Headstone[];
   fixedHeadstone?: Headstone;
   lookups: HeadstoneLookups;
+  initialFeature?: GraveFeature;
+  submitLabel?: string;
+  onCancel?: () => void;
   onSave: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
 }) {
   const defaultTypeId = lookups.graveFeatureTypes.find((option) => option.code === "flag_holder")?.id ?? lookups.graveFeatureTypes[0]?.id ?? "";
   const defaultSubtypeId = lookups.graveFeatureSubtypes.find((option) => option.code === "us_veteran_star")?.id ?? "";
   const defaultPlacementId = lookups.graveFeaturePlacements.find((option) => option.code === "separate")?.id ?? "";
-  const [form, setForm] = useState<SaveGraveFeatureInput>({
-    graveSpaceId: grave?.id ?? "",
-    headstoneId: fixedHeadstone?.id ?? "",
-    featureTypeId: defaultTypeId,
-    featureSubtypeId: defaultSubtypeId,
-    placementTypeId: defaultPlacementId,
-    materialTypeId: "",
-    symbolText: "US Veteran star",
-    sourceType: "nhg",
-    sourceText: "",
-    notes: "",
-    status: "active",
-    reason: "Add grave feature",
-  });
+  const [form, setForm] = useState<SaveGraveFeatureInput>(() =>
+    initialFeature
+      ? graveFeatureFormFromRecord(initialFeature, grave, fixedHeadstone)
+      : {
+          graveSpaceId: grave?.id ?? "",
+          headstoneId: fixedHeadstone?.id ?? "",
+          featureTypeId: defaultTypeId,
+          featureSubtypeId: defaultSubtypeId,
+          placementTypeId: defaultPlacementId,
+          materialTypeId: "",
+          symbolText: "",
+          sourceType: "nhg",
+          sourceText: "",
+          notes: "",
+          status: "active",
+          reason: "Add grave feature",
+        },
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
+  const selectedFeatureTypeCode = lookups.graveFeatureTypes.find((option) => option.id === form.featureTypeId)?.code;
+  const subtypeOptions = lookups.graveFeatureSubtypes.filter((option) => !option.featureTypeCode || !selectedFeatureTypeCode || option.featureTypeCode === selectedFeatureTypeCode);
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
@@ -1374,12 +1483,16 @@ function GraveFeatureForm({
     setMessage(undefined);
     try {
       await onSave(form);
-      setMessage("Feature recorded.");
-      setForm((current) => ({
-        ...current,
-        sourceText: "",
-        notes: "",
-      }));
+      if (initialFeature) {
+        onCancel?.();
+      } else {
+        setMessage("Feature recorded.");
+        setForm((current) => ({
+          ...current,
+          sourceText: "",
+          notes: "",
+        }));
+      }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save feature.");
     } finally {
@@ -1393,7 +1506,22 @@ function GraveFeatureForm({
     <form className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
       <label>
         Feature
-        <select value={form.featureTypeId} onChange={(event) => setForm((current) => ({ ...current, featureTypeId: event.target.value }))}>
+        <select
+          value={form.featureTypeId}
+          onChange={(event) =>
+            setForm((current) => {
+              const nextFeatureTypeCode = lookups.graveFeatureTypes.find((option) => option.id === event.target.value)?.code;
+              const subtypeStillApplies = lookups.graveFeatureSubtypes.some(
+                (option) => option.id === current.featureSubtypeId && (!option.featureTypeCode || !nextFeatureTypeCode || option.featureTypeCode === nextFeatureTypeCode),
+              );
+              return {
+                ...current,
+                featureTypeId: event.target.value,
+                featureSubtypeId: subtypeStillApplies ? current.featureSubtypeId : "",
+              };
+            })
+          }
+        >
           {lookups.graveFeatureTypes.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
@@ -1405,7 +1533,7 @@ function GraveFeatureForm({
         Subtype
         <select value={form.featureSubtypeId} onChange={(event) => setForm((current) => ({ ...current, featureSubtypeId: event.target.value }))}>
           <option value="">Not recorded</option>
-          {lookups.graveFeatureSubtypes.map((option) => (
+          {subtypeOptions.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
@@ -1466,6 +1594,14 @@ function GraveFeatureForm({
           <option value="import">Import</option>
         </select>
       </label>
+      <label>
+        Status
+        <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveGraveFeatureInput["status"] }))}>
+          <option value="active">Active</option>
+          <option value="needs_review">Needs review</option>
+          <option value="retired">Retired</option>
+        </select>
+      </label>
       <label className="headstone-wide-field">
         Source text
         <textarea value={form.sourceText} onChange={(event) => setForm((current) => ({ ...current, sourceText: event.target.value }))} rows={2} />
@@ -1476,10 +1612,275 @@ function GraveFeatureForm({
       </label>
       {message ? <p className="detail-message is-success">{message}</p> : null}
       {error ? <p className="detail-message is-error">{error}</p> : null}
-      <button type="submit" disabled={isSaving || !form.featureTypeId || (!form.graveSpaceId && !form.headstoneId)}>
-        <Flag size={15} aria-hidden="true" />
-        {isSaving ? "Recording..." : "Add feature"}
-      </button>
+      <div className="headstone-form-actions">
+        {onCancel ? (
+          <button type="button" className="secondary-button" onClick={onCancel} disabled={isSaving}>
+            Cancel
+          </button>
+        ) : null}
+        <button type="submit" disabled={isSaving || !form.featureTypeId || (!form.graveSpaceId && !form.headstoneId)}>
+          <Flag size={15} aria-hidden="true" />
+          {isSaving ? "Saving..." : submitLabel}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+const maintenanceStatusLabels: Record<MaintenanceRecord["status"], string> = {
+  open: "Open",
+  scheduled: "Scheduled",
+  completed: "Completed",
+  deferred: "Deferred",
+  not_needed: "Not needed",
+};
+
+const maintenanceSourceLabels: Record<SaveMaintenanceRecordInput["sourceType"], string> = {
+  manual: "Manual",
+  inspection: "Inspection",
+  work_order: "Work order",
+  photo: "Photo",
+  import: "Import",
+};
+
+function maintenanceFormFromRecord(record: MaintenanceRecord, grave?: GraveSpace, fixedHeadstone?: Headstone): SaveMaintenanceRecordInput {
+  return {
+    targetType: record.headstoneUuid ? "headstone" : "gravesite",
+    graveSpaceId: record.gravesiteUuid && grave ? grave.id : "",
+    headstoneId: record.headstoneUuid ?? fixedHeadstone?.id ?? "",
+    issueTypeId: record.issueType?.id ?? "",
+    actionTypeId: record.actionType?.id ?? "",
+    priorityTypeId: record.priority.id,
+    status: record.status,
+    observedAt: record.observedAt,
+    completedAt: record.completedAt ?? "",
+    performedBy: record.performedBy ?? "",
+    sourceType: record.sourceType,
+    notes: record.notes ?? "",
+    reason: "Update maintenance record",
+  };
+}
+
+function MaintenanceRecordList({
+  records,
+  canUpdate = false,
+  grave,
+  fixedHeadstone,
+  lookups,
+  onUpdate,
+}: {
+  records: MaintenanceRecord[];
+  canUpdate?: boolean;
+  grave?: GraveSpace;
+  fixedHeadstone?: Headstone;
+  lookups?: HeadstoneLookups;
+  onUpdate?: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
+}) {
+  const [editingId, setEditingId] = useState<string>();
+  if (!records.length) return <p className="muted">No maintenance records are recorded.</p>;
+
+  return (
+    <div className="maintenance-list">
+      {records.map((record) => {
+        const title = [record.issueType?.label, record.actionType?.label].filter(Boolean).join(" / ");
+        const dateParts = [`Observed ${formatDate(record.observedAt)}`];
+        if (record.completedAt) dateParts.push(`Completed ${formatDate(record.completedAt)}`);
+        if (editingId === record.id && lookups && onUpdate) {
+          return (
+            <article key={record.id} className={`maintenance-row maintenance-row-${record.status}`}>
+              <MaintenanceRecordForm
+                grave={grave}
+                fixedHeadstone={fixedHeadstone}
+                lookups={lookups}
+                initialRecord={record}
+                onSave={(input) => onUpdate(record.id, input)}
+                onCancel={() => setEditingId(undefined)}
+                submitLabel="Save maintenance"
+              />
+            </article>
+          );
+        }
+        return (
+          <article key={record.id} className={`maintenance-row maintenance-row-${record.status}`}>
+            <div>
+              <div className="record-heading">
+                <strong>{title || "Maintenance record"}</strong>
+                {canUpdate && lookups && onUpdate ? (
+                  <button type="button" className="secondary-button compact-button" onClick={() => setEditingId(record.id)}>
+                    <Pencil size={14} aria-hidden="true" />
+                    Edit
+                  </button>
+                ) : null}
+              </div>
+              <span>{dateParts.join(" | ")}</span>
+            </div>
+            <div className="maintenance-row-meta">
+              <span>{maintenanceStatusLabels[record.status]}</span>
+              <span>{record.priority.label}</span>
+            </div>
+            {record.performedBy ? <p>By {record.performedBy}</p> : null}
+            {record.notes ? <p>{record.notes}</p> : null}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function MaintenanceRecordForm({
+  grave,
+  fixedHeadstone,
+  lookups,
+  initialRecord,
+  submitLabel = "Add maintenance",
+  onCancel,
+  onSave,
+}: {
+  grave?: GraveSpace;
+  fixedHeadstone?: Headstone;
+  lookups: HeadstoneLookups;
+  initialRecord?: MaintenanceRecord;
+  submitLabel?: string;
+  onCancel?: () => void;
+  onSave: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultPriorityId = lookups.maintenancePriorities.find((option) => option.code === "normal")?.id ?? lookups.maintenancePriorities[0]?.id ?? "";
+  const [form, setForm] = useState<SaveMaintenanceRecordInput>(() =>
+    initialRecord
+      ? maintenanceFormFromRecord(initialRecord, grave, fixedHeadstone)
+      : {
+          targetType: fixedHeadstone ? "headstone" : "gravesite",
+          graveSpaceId: fixedHeadstone ? "" : (grave?.id ?? ""),
+          headstoneId: fixedHeadstone?.id ?? "",
+          issueTypeId: lookups.maintenanceIssueTypes[0]?.id ?? "",
+          actionTypeId: "",
+          priorityTypeId: defaultPriorityId,
+          status: "open",
+          observedAt: today,
+          completedAt: "",
+          performedBy: "",
+          sourceType: "manual",
+          notes: "",
+          reason: "Record maintenance",
+        },
+  );
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string>();
+  const [error, setError] = useState<string>();
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setError(undefined);
+    setMessage(undefined);
+    try {
+      await onSave(form);
+      if (initialRecord) {
+        onCancel?.();
+      } else {
+        setMessage("Maintenance recorded.");
+        setForm((current) => ({
+          ...current,
+          issueTypeId: lookups.maintenanceIssueTypes[0]?.id ?? "",
+          actionTypeId: "",
+          status: "open",
+          completedAt: "",
+          notes: "",
+        }));
+      }
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save maintenance record.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!lookups.maintenancePriorities.length || (!lookups.maintenanceIssueTypes.length && !lookups.maintenanceActionTypes.length)) return null;
+
+  return (
+    <form className="headstone-record headstone-form maintenance-form" onSubmit={(event) => void save(event)}>
+      <label>
+        Issue
+        <select value={form.issueTypeId} onChange={(event) => setForm((current) => ({ ...current, issueTypeId: event.target.value }))}>
+          <option value="">No issue</option>
+          {lookups.maintenanceIssueTypes.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Action
+        <select value={form.actionTypeId} onChange={(event) => setForm((current) => ({ ...current, actionTypeId: event.target.value }))}>
+          <option value="">No action</option>
+          {lookups.maintenanceActionTypes.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Status
+        <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveMaintenanceRecordInput["status"] }))}>
+          {Object.entries(maintenanceStatusLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Priority
+        <select value={form.priorityTypeId} onChange={(event) => setForm((current) => ({ ...current, priorityTypeId: event.target.value }))}>
+          {lookups.maintenancePriorities.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Observed
+        <input type="date" value={form.observedAt} onChange={(event) => setForm((current) => ({ ...current, observedAt: event.target.value }))} />
+      </label>
+      <label>
+        Completed
+        <input type="date" value={form.completedAt} onChange={(event) => setForm((current) => ({ ...current, completedAt: event.target.value }))} />
+      </label>
+      <label>
+        Source
+        <select value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value as SaveMaintenanceRecordInput["sourceType"] }))}>
+          {Object.entries(maintenanceSourceLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Performed by
+        <input value={form.performedBy} onChange={(event) => setForm((current) => ({ ...current, performedBy: event.target.value }))} />
+      </label>
+      <label className="headstone-wide-field">
+        Notes
+        <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={2} />
+      </label>
+      {message ? <p className="detail-message is-success">{message}</p> : null}
+      {error ? <p className="detail-message is-error">{error}</p> : null}
+      <div className="headstone-form-actions">
+        {onCancel ? (
+          <button type="button" className="secondary-button" onClick={onCancel} disabled={isSaving}>
+            Cancel
+          </button>
+        ) : null}
+        <button type="submit" disabled={isSaving || !form.priorityTypeId || (!form.issueTypeId && !form.actionTypeId)}>
+          <History size={15} aria-hidden="true" />
+          {isSaving ? "Saving..." : submitLabel}
+        </button>
+      </div>
     </form>
   );
 }
@@ -1611,6 +2012,9 @@ function GraveDetailPanel({
   onSaveBurial,
   onSaveHeadstone,
   onSaveGraveFeature,
+  onUpdateGraveFeature,
+  onSaveMaintenanceRecord,
+  onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
   onUploadPhoto,
   onDeletePhoto,
@@ -1636,6 +2040,9 @@ function GraveDetailPanel({
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
+  onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
@@ -1740,11 +2147,15 @@ function GraveDetailPanel({
                     lookups={headstoneLookups}
                     canUpdate={canUpdateHeadstones}
                     onSave={onSaveHeadstone}
+                    grave={grave}
                     sectionName={summary.section}
                     canDeletePhotos={canDeletePhotos}
                     canReorderPhotos={canReorderPhotos}
                     onDeletePhoto={onDeletePhoto}
                     onMovePhoto={onMovePhoto}
+                    canUploadPhotos={canUpdateHeadstones}
+                    onUploadPhoto={onUploadPhoto}
+                    onUpdateGraveFeature={onUpdateGraveFeature}
                   />
                 ))}
               </div>
@@ -1758,8 +2169,17 @@ function GraveDetailPanel({
               <Flag size={17} aria-hidden="true" />
               <h3>Grave Features</h3>
             </div>
-            <GraveFeatureList features={grave.features ?? []} />
+            <GraveFeatureList features={grave.features ?? []} canUpdate={canUpdateHeadstones} grave={grave} lookups={headstoneLookups} onUpdate={onUpdateGraveFeature} />
             {canUpdateHeadstones ? <GraveFeatureForm grave={grave} headstones={headstones} lookups={headstoneLookups} onSave={onSaveGraveFeature} /> : null}
+          </section>
+
+          <section className="detail-section">
+            <div className="section-title">
+              <History size={17} aria-hidden="true" />
+              <h3>Maintenance</h3>
+            </div>
+            <MaintenanceRecordList records={grave.maintenanceRecords ?? []} canUpdate={canUpdateGravesites} grave={grave} lookups={headstoneLookups} onUpdate={onUpdateMaintenanceRecord} />
+            {canUpdateGravesites ? <MaintenanceRecordForm grave={grave} lookups={headstoneLookups} onSave={onSaveMaintenanceRecord} /> : null}
           </section>
 
           <section className="detail-section">
@@ -1774,7 +2194,7 @@ function GraveDetailPanel({
               onDelete={onDeletePhoto}
               onMove={canReorderPhotos ? onMovePhoto : undefined}
             />
-            {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} onUpload={onUploadPhoto} /> : null}
+            {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} gravesiteOnly onUpload={onUploadPhoto} /> : null}
           </section>
 
           {northHillsEvidence.length ? (
@@ -1857,6 +2277,9 @@ export function DetailPanel({
   onSaveBurial,
   onSaveHeadstone,
   onSaveGraveFeature,
+  onUpdateGraveFeature,
+  onSaveMaintenanceRecord,
+  onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
   onSelectLotGrave,
   onSelectMarkerGrave,
@@ -1883,8 +2306,11 @@ export function DetailPanel({
         markerGraves={markerGraves}
         canUpdateHeadstones={canUpdateHeadstones}
         headstoneLookups={headstoneLookups}
-  onSaveHeadstone={onSaveHeadstone}
+        onSaveHeadstone={onSaveHeadstone}
         onSaveGraveFeature={onSaveGraveFeature}
+        onUpdateGraveFeature={onUpdateGraveFeature}
+        onSaveMaintenanceRecord={onSaveMaintenanceRecord}
+        onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
         onSelectMarkerGrave={onSelectMarkerGrave}
         onUploadPhoto={onUploadPhoto}
         onDeletePhoto={onDeletePhoto}
@@ -1923,6 +2349,9 @@ export function DetailPanel({
       onSaveBurial={onSaveBurial}
       onSaveHeadstone={onSaveHeadstone}
       onSaveGraveFeature={onSaveGraveFeature}
+      onUpdateGraveFeature={onUpdateGraveFeature}
+      onSaveMaintenanceRecord={onSaveMaintenanceRecord}
+      onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
       onSaveOwnershipEvent={onSaveOwnershipEvent}
       onUploadPhoto={onUploadPhoto}
       onDeletePhoto={onDeletePhoto}

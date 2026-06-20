@@ -152,6 +152,7 @@ export type Headstone = {
   burialIds: string[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
   features: GraveFeature[];
+  maintenanceRecords: MaintenanceRecord[];
   mediaAssets: MediaAsset[];
   auditEventId?: string;
 };
@@ -170,6 +171,23 @@ export type GraveFeature = {
   sourceText: string;
   notes: string;
   status: "active" | "needs_review" | "retired";
+};
+
+export type MaintenanceRecord = {
+  id: string;
+  cemeteryId: string;
+  targetType: "gravesite" | "headstone";
+  gravesiteUuid?: string;
+  headstoneUuid?: string;
+  issueType?: LookupOption;
+  actionType?: LookupOption;
+  priority: LookupOption;
+  status: "open" | "scheduled" | "completed" | "deferred" | "not_needed";
+  observedAt: string;
+  completedAt?: string;
+  performedBy: string;
+  sourceType: "manual" | "inspection" | "work_order" | "photo" | "import";
+  notes: string;
 };
 
 export type MediaAsset = {
@@ -250,6 +268,9 @@ export type HeadstoneLookups = {
     }
   >;
   militaryWarServices: LookupOption[];
+  maintenanceIssueTypes: LookupOption[];
+  maintenanceActionTypes: LookupOption[];
+  maintenancePriorities: LookupOption[];
 };
 
 export type SaveHeadstoneInput = {
@@ -284,6 +305,22 @@ export type SaveGraveFeatureInput = {
   reason?: string;
 };
 
+export type SaveMaintenanceRecordInput = {
+  targetType: "gravesite" | "headstone";
+  graveSpaceId: string;
+  headstoneId: string;
+  issueTypeId: string;
+  actionTypeId: string;
+  priorityTypeId: string;
+  status: "open" | "scheduled" | "completed" | "deferred" | "not_needed";
+  observedAt: string;
+  completedAt: string;
+  performedBy: string;
+  sourceType: "manual" | "inspection" | "work_order" | "photo" | "import";
+  notes: string;
+  reason?: string;
+};
+
 export type GraveSpaceSummary = {
   id: string;
   cemeteryId: string;
@@ -312,6 +349,7 @@ export type GraveSpace = GraveSpaceSummary & {
   burials: Burial[];
   headstones: Headstone[];
   features: GraveFeature[];
+  maintenanceRecords: MaintenanceRecord[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
   mediaAssets: MediaAsset[];
   ownershipHistory: OwnershipEvent[];
