@@ -12,6 +12,7 @@ import type {
   CemeteryAdminRecords,
   CemeteryData,
   GraveFeature,
+  MaintenanceRecord,
   CemeteryTextRecord,
   DeedInvestigationCase,
   DeedRegistryReview,
@@ -36,6 +37,7 @@ import type {
   SaveNorthHillsOcrEvidenceInput,
   SaveBurialInput,
   SaveGraveFeatureInput,
+  SaveMaintenanceRecordInput,
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
   SaveDeedInvestigationCaseInput,
@@ -141,6 +143,21 @@ export async function createGraveFeature(cemeteryId: string, feature: SaveGraveF
   return jsonResponse<GraveFeature>(response, "Grave feature API");
 }
 
+export async function updateGraveFeature(id: string, feature: SaveGraveFeatureInput): Promise<GraveFeature> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/grave-features/${encodeURIComponent(id)}`, jsonRequest("PATCH", feature));
+  return jsonResponse<GraveFeature>(response, "Update grave feature API");
+}
+
+export async function createMaintenanceRecord(cemeteryId: string, record: SaveMaintenanceRecordInput): Promise<MaintenanceRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/maintenance-records`, jsonRequest("POST", record));
+  return jsonResponse<MaintenanceRecord>(response, "Maintenance record API");
+}
+
+export async function updateMaintenanceRecord(id: string, record: SaveMaintenanceRecordInput): Promise<MaintenanceRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/maintenance-records/${encodeURIComponent(id)}`, jsonRequest("PATCH", record));
+  return jsonResponse<MaintenanceRecord>(response, "Update maintenance record API");
+}
+
 export async function createOwnershipEvent(cemeteryId: string, graveSpaceId: string, event: SaveOwnershipEventInput): Promise<{ id: string }> {
   const response = await authorizedFetch(
     `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(graveSpaceId)}/ownership-events`,
@@ -197,6 +214,9 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
     militaryBranches: lookups.militaryBranches ?? [],
     militaryRanks: lookups.militaryRanks ?? [],
     militaryWarServices: lookups.militaryWarServices ?? [],
+    maintenanceIssueTypes: lookups.maintenanceIssueTypes ?? [],
+    maintenanceActionTypes: lookups.maintenanceActionTypes ?? [],
+    maintenancePriorities: lookups.maintenancePriorities ?? [],
   };
 }
 

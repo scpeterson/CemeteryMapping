@@ -9,6 +9,7 @@ import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOw
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 import {
   createGraveFeature,
+  createMaintenanceRecord,
   createOwnershipEvent,
   getCemeteryData,
   getGraveSpace,
@@ -17,8 +18,10 @@ import {
   restoreGraveSpace,
   softDeleteGraveSpace,
   updateBurial,
+  updateGraveFeature,
   updateGraveSpace,
   updateHeadstone,
+  updateMaintenanceRecord,
 } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
 import {
@@ -213,7 +216,7 @@ function validateHeadstonePayload(body) {
   };
 }
 
-function validateGraveFeaturePayload(body) {
+function validateGraveFeaturePayload(body, { requireTarget = true } = {}) {
   const sourceType = optionalText(body?.sourceType, "Feature source", 50) || "manual";
   if (!["manual", "nhg", "photo", "field_survey", "import"].includes(sourceType)) {
     throw new BadRequestError("Feature source is invalid.");
@@ -223,7 +226,7 @@ function validateGraveFeaturePayload(body) {
 
   const graveSpaceId = optionalText(body?.graveSpaceId, "Gravesite", 100) ?? "";
   const headstoneId = body?.headstoneId ? validateUuid(body.headstoneId, "Marker") : "";
-  if (!graveSpaceId && !headstoneId) throw new BadRequestError("Feature must be linked to a gravesite or marker.");
+  if (requireTarget && !graveSpaceId && !headstoneId) throw new BadRequestError("Feature must be linked to a gravesite or marker.");
 
   return {
     graveSpaceId,
@@ -237,6 +240,46 @@ function validateGraveFeaturePayload(body) {
     sourceText: optionalText(body?.sourceText, "Source text", 4000) ?? "",
     notes: optionalText(body?.notes, "Feature notes", 4000) ?? "",
     status,
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateMaintenanceRecordPayload(body, { requireTarget = true } = {}) {
+  const targetType = optionalText(body?.targetType, "Maintenance target", 30) || "gravesite";
+  if (!["gravesite", "headstone"].includes(targetType)) throw new BadRequestError("Maintenance target is invalid.");
+
+  const status = optionalText(body?.status, "Maintenance status", 30) || "open";
+  if (!["open", "scheduled", "completed", "deferred", "not_needed"].includes(status)) throw new BadRequestError("Maintenance status is invalid.");
+
+  const sourceType = optionalText(body?.sourceType, "Maintenance source", 50) || "manual";
+  if (!["manual", "inspection", "work_order", "photo", "import"].includes(sourceType)) throw new BadRequestError("Maintenance source is invalid.");
+
+  const observedAt = optionalText(body?.observedAt, "Observed date", 10) || new Date().toISOString().slice(0, 10);
+  const completedAt = optionalText(body?.completedAt, "Completed date", 10) || "";
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(observedAt)) throw new BadRequestError("Observed date must use YYYY-MM-DD format.");
+  if (completedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(completedAt)) throw new BadRequestError("Completed date must use YYYY-MM-DD format.");
+
+  const graveSpaceId = optionalText(body?.graveSpaceId, "Gravesite", 100) ?? "";
+  const headstoneId = body?.headstoneId ? validateUuid(body.headstoneId, "Marker") : "";
+  if (requireTarget && !graveSpaceId && !headstoneId) throw new BadRequestError("Maintenance must be linked to a gravesite or marker.");
+
+  const issueTypeId = body?.issueTypeId ? validateUuid(body.issueTypeId, "Maintenance issue") : "";
+  const actionTypeId = body?.actionTypeId ? validateUuid(body.actionTypeId, "Maintenance action") : "";
+  if (!issueTypeId && !actionTypeId) throw new BadRequestError("Maintenance must include an issue or action.");
+
+  return {
+    targetType,
+    graveSpaceId,
+    headstoneId,
+    issueTypeId,
+    actionTypeId,
+    priorityTypeId: validateUuid(body?.priorityTypeId, "Maintenance priority"),
+    status,
+    observedAt,
+    completedAt,
+    performedBy: optionalText(body?.performedBy, "Performed by", 200) ?? "",
+    sourceType,
+    notes: optionalText(body?.notes, "Maintenance notes", 4000) ?? "",
     reason: validateMutationReason(body?.reason),
   };
 }
@@ -670,6 +713,67 @@ export function createApp(config, pool) {
         return;
       }
       response.status(201).json(created);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/grave-features/:id", requirePowerUser, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Feature");
+      const feature = validateGraveFeaturePayload(request.body, { requireTarget: false });
+      const updated = await updateGraveFeature(pool, id, feature, {
+        actorUser: request.user,
+        reason: feature.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!updated) {
+        response.status(404).json({ error: "Feature not found" });
+        return;
+      }
+      response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/cemeteries/:cemeteryId/maintenance-records", requirePowerUser, async (request, response, next) => {
+    try {
+      const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+      if (!canEditCemetery(request.user, cemeteryId)) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      const record = validateMaintenanceRecordPayload(request.body);
+      const created = await createMaintenanceRecord(pool, cemeteryId, record, {
+        actorUser: request.user,
+        reason: record.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!created) {
+        response.status(404).json({ error: "Maintenance target not found" });
+        return;
+      }
+      response.status(201).json(created);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/maintenance-records/:id", requirePowerUser, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Maintenance record");
+      const record = validateMaintenanceRecordPayload(request.body, { requireTarget: false });
+      const updated = await updateMaintenanceRecord(pool, id, record, {
+        actorUser: request.user,
+        reason: record.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!updated) {
+        response.status(404).json({ error: "Maintenance record not found" });
+        return;
+      }
+      response.json(updated);
     } catch (error) {
       next(error);
     }

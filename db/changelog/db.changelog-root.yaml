@@ -359,3 +359,9 @@ databaseChangeLog:
   - include:
       file: changes/120-burial-record-status-and-split-c-0188.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/121-maintenance-records.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/122-bedstead-grave-feature.sql
+      relativeToChangelogFile: true

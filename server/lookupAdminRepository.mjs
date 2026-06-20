@@ -106,6 +106,33 @@ const lookupDefinitions = {
     usageLabel: "burials",
     usageWhere: "usage_records.deleted_at IS NULL",
   },
+  maintenance_issue_types: {
+    table: "maintenance_issue_types",
+    label: "Maintenance issue types",
+    hasSourceFields: false,
+    usageTable: "maintenance_records",
+    usageColumn: "issue_type_id",
+    usageLabel: "maintenance records",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
+  maintenance_action_types: {
+    table: "maintenance_action_types",
+    label: "Maintenance action types",
+    hasSourceFields: false,
+    usageTable: "maintenance_records",
+    usageColumn: "action_type_id",
+    usageLabel: "maintenance records",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
+  maintenance_priority_types: {
+    table: "maintenance_priority_types",
+    label: "Maintenance priorities",
+    hasSourceFields: false,
+    usageTable: "maintenance_records",
+    usageColumn: "priority_type_id",
+    usageLabel: "maintenance records",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
 };
 
 function lookupDefinition(table) {

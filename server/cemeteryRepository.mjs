@@ -174,6 +174,25 @@ function toGraveFeature(row) {
   };
 }
 
+function toMaintenanceRecord(row) {
+  return {
+    id: row.id,
+    cemeteryId: row.cemetery_id,
+    targetType: row.headstone_uuid ? "headstone" : "gravesite",
+    gravesiteUuid: row.gravesite_uuid ?? "",
+    headstoneUuid: row.headstone_uuid ?? "",
+    issueType: row.issue_type_id ? toLookupValue(row, "issue_type") : undefined,
+    actionType: row.action_type_id ? toLookupValue(row, "action_type") : undefined,
+    priority: toLookupValue(row, "priority"),
+    status: row.status ?? "open",
+    observedAt: dateOnly(row.observed_at) ?? "",
+    completedAt: dateOnly(row.completed_at),
+    performedBy: row.performed_by ?? "",
+    sourceType: row.source_type ?? "manual",
+    notes: row.notes ?? "",
+  };
+}
+
 function toHeadstone(row) {
   return {
     id: row.id,
@@ -197,6 +216,7 @@ function toHeadstone(row) {
     burialIds: row.burial_ids ?? [],
     northHillsEvidence: row.north_hills_evidence ?? [],
     features: (row.features ?? []).map(toGraveFeature),
+    maintenanceRecords: (row.maintenance_records ?? []).map(toMaintenanceRecord),
     mediaAssets: row.media_assets ?? [],
   };
 }
@@ -1358,10 +1378,15 @@ async function selectBurialsForGrave(client, graveUuid) {
     client,
     result.rows.map((row) => row.id),
   );
+  const maintenanceByHeadstone = await selectMaintenanceForHeadstones(
+    client,
+    result.rows.map((row) => row.id),
+  );
 
   return result.rows.map((row) => ({
     ...row,
     features: featuresByHeadstone.get(row.id) ?? [],
+    maintenance_records: maintenanceByHeadstone.get(row.id) ?? [],
   }));
 }
 
@@ -1451,6 +1476,111 @@ async function selectFeaturesForHeadstones(client, headstoneUuids) {
     const features = byHeadstone.get(row.headstone_uuid) ?? [];
     features.push(row);
     byHeadstone.set(row.headstone_uuid, features);
+  }
+
+  return byHeadstone;
+}
+
+const maintenanceRecordSelectSql = `
+  maintenance_records.id::text,
+  maintenance_records.cemetery_id::text,
+  maintenance_records.gravesite_uuid::text,
+  maintenance_records.headstone_uuid::text,
+  maintenance_issue_types.id::text AS issue_type_id,
+  maintenance_issue_types.code AS issue_type_code,
+  maintenance_issue_types.label AS issue_type_label,
+  maintenance_action_types.id::text AS action_type_id,
+  maintenance_action_types.code AS action_type_code,
+  maintenance_action_types.label AS action_type_label,
+  maintenance_priority_types.id::text AS priority_id,
+  maintenance_priority_types.code AS priority_code,
+  maintenance_priority_types.label AS priority_label,
+  maintenance_records.status,
+  maintenance_records.observed_at,
+  maintenance_records.completed_at,
+  maintenance_records.performed_by,
+  maintenance_records.source_type,
+  maintenance_records.notes
+`;
+
+const maintenanceRecordJoinSql = `
+  LEFT JOIN maintenance_issue_types
+    ON maintenance_issue_types.id = maintenance_records.issue_type_id
+  LEFT JOIN maintenance_action_types
+    ON maintenance_action_types.id = maintenance_records.action_type_id
+  JOIN maintenance_priority_types
+    ON maintenance_priority_types.id = maintenance_records.priority_type_id
+`;
+
+async function maintenanceTablesExist(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = current_schema()
+        AND table_name = 'maintenance_records'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function selectMaintenanceForGrave(client, graveUuid) {
+  if (!(await maintenanceTablesExist(client))) return [];
+
+  const result = await client.query(
+    `
+      SELECT ${maintenanceRecordSelectSql}
+      FROM maintenance_records
+      ${maintenanceRecordJoinSql}
+      WHERE maintenance_records.deleted_at IS NULL
+        AND maintenance_records.gravesite_uuid = $1
+      ORDER BY
+        CASE maintenance_records.status
+          WHEN 'open' THEN 1
+          WHEN 'scheduled' THEN 2
+          WHEN 'deferred' THEN 3
+          WHEN 'completed' THEN 4
+          ELSE 5
+        END,
+        maintenance_records.observed_at DESC,
+        maintenance_records.created_at DESC
+    `,
+    [graveUuid],
+  );
+
+  return result.rows;
+}
+
+async function selectMaintenanceForHeadstones(client, headstoneUuids) {
+  if (!headstoneUuids.length || !(await maintenanceTablesExist(client))) return new Map();
+
+  const result = await client.query(
+    `
+      SELECT ${maintenanceRecordSelectSql}
+      FROM maintenance_records
+      ${maintenanceRecordJoinSql}
+      WHERE maintenance_records.deleted_at IS NULL
+        AND maintenance_records.headstone_uuid = ANY($1::uuid[])
+      ORDER BY
+        CASE maintenance_records.status
+          WHEN 'open' THEN 1
+          WHEN 'scheduled' THEN 2
+          WHEN 'deferred' THEN 3
+          WHEN 'completed' THEN 4
+          ELSE 5
+        END,
+        maintenance_records.observed_at DESC,
+        maintenance_records.created_at DESC
+    `,
+    [headstoneUuids],
+  );
+
+  const byHeadstone = new Map();
+  for (const row of result.rows) {
+    const records = byHeadstone.get(row.headstone_uuid) ?? [];
+    records.push(row);
+    byHeadstone.set(row.headstone_uuid, records);
   }
 
   return byHeadstone;
@@ -1722,9 +1852,11 @@ async function selectHeadstoneById(client, id) {
   if (!headstone) return undefined;
 
   const featuresByHeadstone = await selectFeaturesForHeadstones(client, [headstone.id]);
+  const maintenanceByHeadstone = await selectMaintenanceForHeadstones(client, [headstone.id]);
   return {
     ...headstone,
     features: featuresByHeadstone.get(headstone.id) ?? [],
+    maintenance_records: maintenanceByHeadstone.get(headstone.id) ?? [],
   };
 }
 
@@ -1923,6 +2055,10 @@ export async function listHeadstoneLookupOptions(pool) {
     const militaryWarServices = (await burialMilitaryWarServiceLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM military_war_service_types WHERE is_active ORDER BY sort_order, label")
       : { rows: [] };
+    const maintenanceLookupExists = await maintenanceTablesExist(client);
+    const maintenanceIssueTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_issue_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
+    const maintenanceActionTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_action_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
+    const maintenancePriorities = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_priority_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
 
     return {
       markerTypes: markerTypes.rows,
@@ -1940,6 +2076,9 @@ export async function listHeadstoneLookupOptions(pool) {
       militaryBranches: militaryBranches.rows,
       militaryRanks: militaryRanks.rows,
       militaryWarServices: militaryWarServices.rows,
+      maintenanceIssueTypes: maintenanceIssueTypes.rows,
+      maintenanceActionTypes: maintenanceActionTypes.rows,
+      maintenancePriorities: maintenancePriorities.rows,
     };
   } finally {
     client.release();
@@ -1993,7 +2132,7 @@ function toLotRestrictedArea(area) {
   };
 }
 
-function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, mediaAssets, graveFeatures, includeOwnership) {
+function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, mediaAssets, graveFeatures, maintenanceRecords, includeOwnership) {
   const detailedGrave = {
     ...toGraveSummary(grave),
     name: grave.name ?? "",
@@ -2003,6 +2142,7 @@ function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, nort
     burials: graveBurials.map(toBurial),
     headstones: graveHeadstones.map(toHeadstone),
     features: graveFeatures.map(toGraveFeature),
+    maintenanceRecords: maintenanceRecords.map(toMaintenanceRecord),
     northHillsEvidence: northHillsEvidence.map(toNorthHillsEvidence),
     mediaAssets: mediaAssets.map(toMediaAsset),
     ownershipHistory: graveOwners.map(toOwnershipEvent),
@@ -2074,7 +2214,7 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
       sections: sections.map(toSection),
       lots: lots.map(toLot),
       lotRestrictedAreas: lotRestrictedAreas.map(toLotRestrictedArea),
-      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], [], [], [], includeOwnership)),
+      graves: graves.map((grave) => toDetailedGrave(grave, ownersByGrave.get(grave.uuid) ?? [], burialsByGrave.get(grave.uuid) ?? [], [], [], [], [], [], includeOwnership)),
       owners: owners.map(toOwner),
     };
   } finally {
@@ -2094,8 +2234,9 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
     const northHillsEvidence = await selectNorthHillsEvidenceForGrave(client, grave.uuid);
     const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
     const features = await selectFeaturesForGrave(client, grave.uuid);
+    const maintenanceRecords = await selectMaintenanceForGrave(client, grave.uuid);
 
-    return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, features, includeOwnership);
+    return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, features, maintenanceRecords, includeOwnership);
   } finally {
     client.release();
   }
@@ -2253,6 +2394,290 @@ export async function createGraveFeature(pool, cemeteryId, feature, { actorUser,
   }
 }
 
+export async function createMaintenanceRecord(pool, cemeteryId, record, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    let gravesiteUuid = null;
+    if (record.graveSpaceId) {
+      const graveResult = await client.query(
+        `
+          SELECT id::text
+          FROM gravesites
+          WHERE cemetery_id = $1
+            AND gravesite_id = $2
+            AND deleted_at IS NULL
+          LIMIT 1
+        `,
+        [cemeteryId, record.graveSpaceId],
+      );
+      gravesiteUuid = graveResult.rows[0]?.id ?? null;
+      if (!gravesiteUuid) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+    }
+
+    let headstoneUuid = record.headstoneId || null;
+    if (headstoneUuid) {
+      const headstoneResult = await client.query(
+        `
+          SELECT headstones.id::text
+          FROM headstones
+          LEFT JOIN gravesites AS direct_gravesite
+            ON direct_gravesite.id = headstones.gravesite_uuid
+           AND direct_gravesite.deleted_at IS NULL
+          LEFT JOIN LATERAL (
+            SELECT gravesites.cemetery_id
+            FROM headstone_gravesites
+            JOIN gravesites
+              ON gravesites.id = headstone_gravesites.gravesite_uuid
+             AND gravesites.deleted_at IS NULL
+            WHERE headstone_gravesites.headstone_uuid = headstones.id
+              AND headstone_gravesites.deleted_at IS NULL
+              AND gravesites.cemetery_id = $2
+            LIMIT 1
+          ) linked_gravesite ON true
+          LEFT JOIN LATERAL (
+            SELECT cemeteries.id
+            FROM cemeteries
+            WHERE headstones.geometry IS NOT NULL
+              AND cemeteries.deleted_at IS NULL
+              AND ST_Covers(cemeteries.geometry, headstones.geometry)
+            ORDER BY cemeteries.name, cemeteries.id
+            LIMIT 1
+          ) containing_cemetery ON true
+          WHERE headstones.id = $1
+            AND headstones.deleted_at IS NULL
+            AND COALESCE(direct_gravesite.cemetery_id, linked_gravesite.cemetery_id, containing_cemetery.id) = $2
+          LIMIT 1
+        `,
+        [headstoneUuid, cemeteryId],
+      );
+      headstoneUuid = headstoneResult.rows[0]?.id ?? null;
+      if (!headstoneUuid) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+    }
+
+    const insertResult = await client.query(
+      `
+        INSERT INTO maintenance_records (
+          cemetery_id,
+          gravesite_uuid,
+          headstone_uuid,
+          issue_type_id,
+          action_type_id,
+          priority_type_id,
+          status,
+          observed_at,
+          completed_at,
+          performed_by,
+          source_type,
+          notes
+        )
+        VALUES (
+          $1,
+          $2::uuid,
+          $3::uuid,
+          NULLIF($4, '')::uuid,
+          NULLIF($5, '')::uuid,
+          $6::uuid,
+          $7,
+          $8::date,
+          NULLIF($9, '')::date,
+          NULLIF($10, ''),
+          $11,
+          NULLIF($12, '')
+        )
+        RETURNING id::text
+      `,
+      [
+        cemeteryId,
+        gravesiteUuid,
+        headstoneUuid,
+        record.issueTypeId || "",
+        record.actionTypeId || "",
+        record.priorityTypeId,
+        record.status || "open",
+        record.observedAt,
+        record.completedAt || "",
+        record.performedBy || "",
+        record.sourceType || "manual",
+        record.notes || "",
+      ],
+    );
+
+    const result = await client.query(
+      `
+        SELECT ${maintenanceRecordSelectSql}
+        FROM maintenance_records
+        ${maintenanceRecordJoinSql}
+        WHERE maintenance_records.id = $1
+      `,
+      [insertResult.rows[0].id],
+    );
+
+    await client.query("COMMIT");
+    return toMaintenanceRecord(result.rows[0]);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateGraveFeature(pool, id, feature, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    const existing = await client.query(
+      `
+        SELECT id::text, cemetery_id::text
+        FROM grave_features
+        WHERE id = $1
+          AND deleted_at IS NULL
+        FOR UPDATE
+      `,
+      [id],
+    );
+    const existingFeature = existing.rows[0];
+    if (!existingFeature || (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existingFeature.cemetery_id))) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    await client.query(
+      `
+        UPDATE grave_features
+        SET
+          feature_type_id = $2::uuid,
+          feature_subtype_id = NULLIF($3, '')::uuid,
+          placement_type_id = NULLIF($4, '')::uuid,
+          material_type_id = NULLIF($5, '')::uuid,
+          symbol_text = NULLIF($6, ''),
+          source_type = $7,
+          source_text = NULLIF($8, ''),
+          notes = NULLIF($9, ''),
+          status = $10
+        WHERE id = $1
+      `,
+      [
+        id,
+        feature.featureTypeId,
+        feature.featureSubtypeId || "",
+        feature.placementTypeId || "",
+        feature.materialTypeId || "",
+        feature.symbolText || "",
+        feature.sourceType || "manual",
+        feature.sourceText || "",
+        feature.notes || "",
+        feature.status || "active",
+      ],
+    );
+
+    const result = await client.query(
+      `
+        SELECT ${graveFeatureSelectSql}
+        FROM grave_features
+        ${graveFeatureJoinSql}
+        WHERE grave_features.id = $1
+      `,
+      [id],
+    );
+
+    await client.query("COMMIT");
+    return toGraveFeature(result.rows[0]);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateMaintenanceRecord(pool, id, record, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    const existing = await client.query(
+      `
+        SELECT id::text, cemetery_id::text
+        FROM maintenance_records
+        WHERE id = $1
+          AND deleted_at IS NULL
+        FOR UPDATE
+      `,
+      [id],
+    );
+    const existingRecord = existing.rows[0];
+    if (!existingRecord || (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existingRecord.cemetery_id))) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    await client.query(
+      `
+        UPDATE maintenance_records
+        SET
+          issue_type_id = NULLIF($2, '')::uuid,
+          action_type_id = NULLIF($3, '')::uuid,
+          priority_type_id = $4::uuid,
+          status = $5,
+          observed_at = $6::date,
+          completed_at = NULLIF($7, '')::date,
+          performed_by = NULLIF($8, ''),
+          source_type = $9,
+          notes = NULLIF($10, '')
+        WHERE id = $1
+      `,
+      [
+        id,
+        record.issueTypeId || "",
+        record.actionTypeId || "",
+        record.priorityTypeId,
+        record.status || "open",
+        record.observedAt,
+        record.completedAt || "",
+        record.performedBy || "",
+        record.sourceType || "manual",
+        record.notes || "",
+      ],
+    );
+
+    const result = await client.query(
+      `
+        SELECT ${maintenanceRecordSelectSql}
+        FROM maintenance_records
+        ${maintenanceRecordJoinSql}
+        WHERE maintenance_records.id = $1
+      `,
+      [id],
+    );
+
+    await client.query("COMMIT");
+    return toMaintenanceRecord(result.rows[0]);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function updateGraveSpace(pool, cemeteryId, gravesiteId, graveSpace, { actorUser, reason, allowedCemeteryIds } = {}) {
   const client = await pool.connect();
   try {
@@ -2313,9 +2738,10 @@ export async function updateGraveSpace(pool, cemeteryId, gravesiteId, graveSpace
     const northHillsEvidence = await selectNorthHillsEvidenceForGrave(client, grave.uuid);
     const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
     const features = await selectFeaturesForGrave(client, grave.uuid);
+    const maintenanceRecords = await selectMaintenanceForGrave(client, grave.uuid);
 
     await client.query("COMMIT");
-    return { ...toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, features, true), auditEventId };
+    return { ...toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, features, maintenanceRecords, true), auditEventId };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

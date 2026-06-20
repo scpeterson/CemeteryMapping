@@ -114,10 +114,35 @@ async function headstoneIsLinkedToGrave(client, headstoneId, graveUuid) {
 async function headstoneForId(client, headstoneId) {
   const result = await client.query(
     `
-      SELECT id::text, cemetery_id::text
+      SELECT
+        headstones.id::text,
+        COALESCE(direct_gravesite.cemetery_id, linked_gravesite.cemetery_id, containing_cemetery.id)::text AS cemetery_id
       FROM headstones
-      WHERE id = $1
-        AND deleted_at IS NULL
+      LEFT JOIN gravesites AS direct_gravesite
+        ON direct_gravesite.id = headstones.gravesite_uuid
+       AND direct_gravesite.deleted_at IS NULL
+      LEFT JOIN LATERAL (
+        SELECT gravesites.cemetery_id
+        FROM headstone_gravesites
+        JOIN gravesites
+          ON gravesites.id = headstone_gravesites.gravesite_uuid
+         AND gravesites.deleted_at IS NULL
+        WHERE headstone_gravesites.headstone_uuid = headstones.id
+          AND headstone_gravesites.deleted_at IS NULL
+        ORDER BY gravesites.gravesite_id, gravesites.id
+        LIMIT 1
+      ) linked_gravesite ON true
+      LEFT JOIN LATERAL (
+        SELECT cemeteries.id
+        FROM cemeteries
+        WHERE headstones.geometry IS NOT NULL
+          AND cemeteries.deleted_at IS NULL
+          AND ST_Covers(cemeteries.geometry, headstones.geometry)
+        ORDER BY cemeteries.name, cemeteries.id
+        LIMIT 1
+      ) containing_cemetery ON true
+      WHERE headstones.id = $1
+        AND headstones.deleted_at IS NULL
       LIMIT 1
     `,
     [headstoneId],

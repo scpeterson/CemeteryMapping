@@ -37,7 +37,7 @@ test("listReportsForUser filters reports by role", () => {
   );
   assert.deepEqual(
     listReportsForUser(powerUser).map((report) => report.id),
-    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "owner-holdings", "available-inventory"],
+    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "owner-holdings", "available-inventory", "maintenance-needs"],
   );
   assert.ok(listReportsForUser(adminUser).some((report) => report.id === "deed-claim-trace-guide"));
 });
@@ -50,6 +50,8 @@ test("matchReportQuery maps free text only to approved reports", () => {
   assert.equal(matchReportQuery("List markers by type.").report.id, "marker-type-inventory");
   assert.equal(matchReportQuery("What marker types are in section C?").report.id, "marker-type-inventory");
   assert.equal(matchReportQuery("What gravesites are available for purchase?").report.id, "available-inventory");
+  assert.equal(matchReportQuery("Which markers are illegible?").report.id, "maintenance-needs");
+  assert.equal(matchReportQuery("What markers have not been cleaned in a year?").parameters.daysSinceCleaned, "365");
   assert.equal(matchReportQuery("How do we trace a deed claim without paperwork for a lot?").report.id, "deed-claim-trace-guide");
   assert.equal(matchReportQuery("How do we trace a deed claim with no paperwork?").report.id, "deed-claim-trace-guide");
 
@@ -210,4 +212,54 @@ test("available inventory report uses derived gravesite status", async () => {
   assert.match(query.sql, /FROM burials status_burials/u);
   assert.match(query.sql, /FROM current_ownership_right_owners status_rights/u);
   assert.equal(result.rows.length, 1);
+});
+
+test("maintenance report lists open issues scoped to assigned cemeteries", async () => {
+  const pool = poolForRows([
+    {
+      includes: "FROM maintenance_records",
+      rows: [
+        {
+          cemetery: "Trinity",
+          target_type: "headstone",
+          target: "TLC-HS-0180",
+          grave: "C-0180",
+          issue: "Illegible",
+          action: null,
+          priority: "Normal",
+          status: "open",
+          observed_at: "2026-06-01",
+          completed_at: null,
+          performed_by: "",
+          notes: "",
+        },
+      ],
+    },
+  ]);
+
+  const result = await runReport(pool, "maintenance-needs", { issueCode: "illegible", targetType: "headstone" }, powerUser);
+  const query = pool.queries[0];
+
+  assert.match(query.sql, /maintenance_records\.cemetery_id = ANY\(\$1::uuid\[\]\)/u);
+  assert.match(query.sql, /maintenance_records\.status = \$2/u);
+  assert.match(query.sql, /maintenance_issue_types\.code = \$3/u);
+  assert.deepEqual(query.values, [["11111111-1111-4111-8111-111111111111"], "open", "illegible"]);
+  assert.equal(result.rows.length, 1);
+});
+
+test("maintenance report can find markers not cleaned recently", async () => {
+  const pool = poolForRows([
+    {
+      includes: "last_cleaned",
+      rows: [{ cemetery: "Trinity", target_type: "headstone", target: "TLC-HS-0180", grave: "C-0180", last_cleaned_at: null, days_since_cleaned: null }],
+    },
+  ]);
+
+  const result = await runReport(pool, "maintenance-needs", { daysSinceCleaned: "365" }, powerUser);
+  const query = pool.queries[0];
+
+  assert.match(query.sql, /maintenance_action_types\.code = 'cleaned'/u);
+  assert.match(query.sql, /marker_scope\.cemetery_id = ANY\(\$1::uuid\[\]\)/u);
+  assert.deepEqual(query.values, [["11111111-1111-4111-8111-111111111111"], 365]);
+  assert.match(result.summary, /not been cleaned in 365 days/u);
 });
