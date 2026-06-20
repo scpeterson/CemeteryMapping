@@ -54,6 +54,7 @@ function normalizeNumber(value) {
   const text = String(value ?? "")
     .trim()
     .replace(/[lI]/gu, "1")
+    .replace(/J/gu, "3")
     .replace(/S/gu, "5")
     .replace(/O/gu, "0");
   const number = Number.parseInt(text, 10);
@@ -141,8 +142,8 @@ function printedPageNumber(pageText) {
 }
 
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
-const entryStartPattern = /^\s*([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+\(\s*([0-9lISOS?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOS?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\)/u;
-const embeddedEntryStartPattern = /([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+\(\s*[0-9lISOS?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOS?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\)/gu;
+const entryStartPattern = /^\s*([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\)/u;
+const embeddedEntryStartPattern = /([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\)/gu;
 
 function isNonEntryBoundary(line) {
   return (
