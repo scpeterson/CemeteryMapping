@@ -365,3 +365,12 @@ databaseChangeLog:
   - include:
       file: changes/122-bedstead-grave-feature.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/123-split-c-0190-kempf-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/124-repair-c-0190-kempf-anna-scope.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/125-split-c-0192-will-gravesites.sql
+      relativeToChangelogFile: true
