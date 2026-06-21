@@ -82,7 +82,7 @@
     "@emnapi/runtime": "^1.10.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.48.0",
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.0.0",
     "eslint": "^10.4.1",
