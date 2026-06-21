@@ -128,3 +128,52 @@ Franklin Park Borough               199                Allegheny County, PA`;
   );
   assert.deepEqual(entries[0].parsedYears, [1886, 1889, 1959, 1972]);
 });
+
+test("parseNorthHillsOcrText splits Hamilton Woodruff after Ida Will", () => {
+  const text = `Section C, Row 3
+WILL (3C, 3, s) upright, gray granite, exc cond, tiny flowers "Ida V.
+Will/ 1884-1930 / Mother"
+
+HAMILTON/WOODRUFF         (JC, 4, s) upright, gray granite, exc cond,
+flowers, cross "George W. Hamilton/ 1885-1944" CR: Middle name
+Woodruff, d. August 29, 1944
+Franklin Park Borough               199                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 2);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["WILL", 199, "C", 3, 3, "single"],
+      ["HAMILTON/WOODRUFF", 199, "C", 3, 4, "single"],
+    ],
+  );
+  assert.deepEqual(entries[0].parsedYears, [1884, 1930]);
+  assert.deepEqual(entries[1].parsedYears, [1885, 1944]);
+});
+
+test("parseNorthHillsOcrText splits Hood Hamilton and Watenpool page 199 readings", () => {
+  const text = `Section C, Row 3
+HOOD/HAMILTON        (3C, 5, s) upright, gray granite, exc cond,
+flowers, cross "Genevieve Hamilton /Hood/     1898-1988" CR: Sept. 1,
+1898 - July 27, 1988, middle initital, L
+
+WATENPOOL (JC, 6, s) upright, gray granite., exc cond, flowers
+"Daughter/ Olive C. Watenpool / 1892-1935" CR: Middle name
+Caroline, d. December 3, 1935 -
+Franklin Park Borough               199                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 2);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["HOOD/HAMILTON", 199, "C", 3, 5, "single"],
+      ["WATENPOOL", 199, "C", 3, 6, "single"],
+    ],
+  );
+  assert.deepEqual(entries[0].parsedYears, [1898, 1988]);
+  assert.deepEqual(entries[1].parsedYears, [1892, 1935]);
+});
