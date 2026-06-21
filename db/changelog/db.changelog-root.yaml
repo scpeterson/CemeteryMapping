@@ -377,3 +377,15 @@ databaseChangeLog:
   - include:
       file: changes/126-repair-north-hills-will-page-199.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/127-repair-north-hills-hamilton-page-199.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/128-cleanup-north-hills-will-cr-facts-page-199.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/129-repair-north-hills-hood-watenpool-page-199.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/130-correct-north-hills-hood-hamilton-name-page-199.sql
+      relativeToChangelogFile: true
