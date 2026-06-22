@@ -416,3 +416,9 @@ databaseChangeLog:
   - include:
       file: changes/139-split-c-0205-wills-broerman-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/140-fit-c-0202-through-c-0205-into-lot-27.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/141-fit-c-0181-through-c-0184-into-lot-28.sql
+      relativeToChangelogFile: true
