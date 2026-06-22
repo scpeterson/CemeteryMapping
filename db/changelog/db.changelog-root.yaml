@@ -389,3 +389,12 @@ databaseChangeLog:
   - include:
       file: changes/130-correct-north-hills-hood-hamilton-name-page-199.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/131-split-c-0198-watenpool-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/132-fit-c-0195-through-c-0198-into-lot-49.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/133-clip-c-49-gravesites-to-lot-polygon.sql
+      relativeToChangelogFile: true
