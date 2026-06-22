@@ -144,6 +144,7 @@ function printedPageNumber(pageText) {
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
 const entryStartPattern = /^\s*([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\)/u;
 const embeddedEntryStartPattern = /([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\)/gu;
+const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,/u;
 
 function isNonEntryBoundary(line) {
   return (
@@ -154,8 +155,23 @@ function isNonEntryBoundary(line) {
   );
 }
 
+function embeddedEntryStartIndexes(text) {
+  return [
+    ...String(text ?? "")
+      .matchAll(embeddedEntryStartPattern),
+  ]
+    .map((match) => {
+      const matchText = match[0] ?? "";
+      const coordinateIndex = matchText.search(coordinateStartPattern);
+      const headingText = coordinateIndex === -1 ? matchText : matchText.slice(0, coordinateIndex);
+      const strayQuoteIndex = Math.max(headingText.lastIndexOf("'"), headingText.lastIndexOf("’"));
+      return (match.index ?? 0) + (strayQuoteIndex === -1 ? 0 : strayQuoteIndex + 1);
+    })
+    .filter((start, index, starts) => start >= 0 && starts.indexOf(start) === index);
+}
+
 function entryLineSegments(line) {
-  const starts = [...String(line ?? "").matchAll(embeddedEntryStartPattern)].map((match) => match.index ?? 0);
+  const starts = embeddedEntryStartIndexes(line);
   if (starts.length <= 1) return [line];
 
   const segments = [];
@@ -163,14 +179,16 @@ function entryLineSegments(line) {
   for (let index = 0; index < starts.length; index += 1) {
     segments.push(line.slice(starts[index], starts[index + 1]));
   }
-  return segments.filter((segment) => cleanText(segment));
+  return segments.map((segment) => cleanText(segment).replace(/\s+['’]$/u, "")).filter((segment) => cleanText(segment));
 }
 
 function entryTextSegments(text) {
-  const starts = [...String(text ?? "").matchAll(embeddedEntryStartPattern)].map((match) => match.index ?? 0);
+  const starts = embeddedEntryStartIndexes(text);
   if (starts.length <= 1 || starts[0] !== 0) return [text];
 
-  return starts.map((start, index) => text.slice(start, starts[index + 1])).filter((segment) => cleanText(segment));
+  return starts
+    .map((start, index) => cleanText(text.slice(start, starts[index + 1])).replace(/\s+['’]$/u, ""))
+    .filter((segment) => cleanText(segment));
 }
 
 export function parseNorthHillsOcrText(text) {
