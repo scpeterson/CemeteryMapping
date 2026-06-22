@@ -177,3 +177,37 @@ Franklin Park Borough               199                Allegheny County, PA`;
   assert.deepEqual(entries[0].parsedYears, [1898, 1988]);
   assert.deepEqual(entries[1].parsedYears, [1892, 1935]);
 });
+
+test("parseNorthHillsOcrText splits Watenpool through Wiskeman page 200 readings", () => {
+  const text = `Section C, Row 3
+WATENPOOL (3C, 7, c) upright, gray, exc cond, flowers "Watenpool /
+Peter/ 1859-1939 /Father/ A. Amelia/ 1868-1956 / Mother" On back
+"Watenpool" CR: Peter, d. September 29, 1939. Anna Amelia, d. January
+19, 1956, 87y 7m 27da DAVIS (JC, 8, s) pillow, pink granite, exc
+cond, flowers, scroll "Pearle H. Davis/ 1901-1988" WILLS (JC, 9, s)
+upright, gray granite, exc cond "'Aunt Bertie'/ Bertha L. Wills/
+1895-1982" CR: Middle name Louise, d. March 17, 1982, 86y 9m 11da
+WISKEMAN (JC, 10, s) upright, gray granite, exc cond "M. Elva Wiskeman
+/ 1891-1978" CR: First name Marie, d. June 6, 1978, 87y 4m 4da
+WISKEMAN/WHISKEMAN (JC, 11, s) upright, gray granite, exc cond "John
+G. Wiskeman / 1896-1926" Separate flag holder: "American/ US/ Legion",
+star CR: Whiskeman, d. August 9, 1926
+Franklin Park Borough               200                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 5);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["WATENPOOL", 200, "C", 3, 7, "couple"],
+      ["DAVIS", 200, "C", 3, 8, "single"],
+      ["WILLS", 200, "C", 3, 9, "single"],
+      ["WISKEMAN", 200, "C", 3, 10, "single"],
+      ["WISKEMAN/WHISKEMAN", 200, "C", 3, 11, "single"],
+    ],
+  );
+  assert.deepEqual(entries[0].parsedYears, [1859, 1868, 1939, 1956]);
+  assert.deepEqual(entries[4].parsedYears, [1896, 1926]);
+  assert.equal(entries[2].rawText.includes("86y 9m 11da"), true);
+});

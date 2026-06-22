@@ -16,6 +16,7 @@ import {
   getHeadstone,
   listHeadstoneLookupOptions,
   restoreGraveSpace,
+  softDeleteGraveFeature,
   softDeleteGraveSpace,
   updateBurial,
   updateGraveFeature,
@@ -623,6 +624,7 @@ export function createApp(config, pool) {
         canUpdateGravesites: role === "admin" || hasScopedEditAccess,
         canUpdateBurials: role === "admin" || hasScopedEditAccess,
         canDeleteCemeteryRecords: role === "admin",
+        canDeleteGraveFeatures: role === "admin" || (role === "cemetery-admin" && assignedCemeteryIds.length > 0),
         canDeletePhotos: role === "admin" || (role === "cemetery-admin" && assignedCemeteryIds.length > 0),
       },
     });
@@ -732,6 +734,28 @@ export function createApp(config, pool) {
         return;
       }
       response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/grave-features/:id", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Feature");
+      const deleted = await softDeleteGraveFeature(pool, id, {
+        actorUser: request.user,
+        reason: validateMutationReason(request.body?.reason),
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!deleted) {
+        response.status(404).json({ error: "Feature not found" });
+        return;
+      }
+      if (deleted.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      response.json(deleted);
     } catch (error) {
       next(error);
     }

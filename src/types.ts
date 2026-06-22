@@ -494,6 +494,7 @@ export type CurrentUser = {
     canUpdateGravesites: boolean;
     canUpdateBurials: boolean;
     canDeleteCemeteryRecords: boolean;
+    canDeleteGraveFeatures: boolean;
     canDeletePhotos: boolean;
   };
   assignedCemeteryIds: string[];

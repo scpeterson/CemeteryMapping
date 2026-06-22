@@ -1381,6 +1381,13 @@ h3 {
   gap: 10px;
 }
 
+.record-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .compact-button {
   display: inline-flex;
   align-items: center;
@@ -1388,6 +1395,16 @@ h3 {
   min-height: 28px;
   padding: 4px 8px;
   font-size: 0.75rem;
+}
+
+.danger-button {
+  border-color: rgba(159, 47, 47, 0.42);
+  color: #9f2f2f;
+}
+
+.danger-button:hover:not(:disabled) {
+  border-color: rgba(159, 47, 47, 0.64);
+  background: #fff4f2;
 }
 
 .grave-feature-row span,
