@@ -211,3 +211,26 @@ Franklin Park Borough               200                Allegheny County, PA`;
   assert.deepEqual(entries[4].parsedYears, [1896, 1926]);
   assert.equal(entries[2].rawText.includes("86y 9m 11da"), true);
 });
+
+test("parseNorthHillsOcrText splits Wills siblings and Broerman Will page 200 readings", () => {
+  const text = `Section C, Row 3
+WILLS (3C, 12, s) pillow, gray granite, exc cond, grapes, leaves, church window "John H. Wills/ 1875-1956 / Brother" CR: Middle name Henry, d. June 29, 1956, Sly 4m 17da 'WILLS (3C, 13, s) pillow, gray granite, exc cond, grapes, leaves, church window "Frank E. Wills/ 1880-1927 / Brother" CR: d. December 18, 1927 WILLS/BROERMAN/WILL (JC, 14, c) upright, gray granite, exc cond, ornate scrollwork at top with "W" "WIiis / Frank Wills/ 1843- ..1926 / Elizabeth Wills/ 1849-1920" Separate flag holder: "GAR/ 1861 / 1865" CR: Frank, Sr., d. May 28, 1926. Elizabeth Broerman Will, d. April 19, 1920
+Franklin Park Borough               200                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 3);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["WILLS", 200, "C", 3, 12, "single"],
+      ["WILLS", 200, "C", 3, 13, "single"],
+      ["WILLS/BROERMAN/WILL", 200, "C", 3, 14, "couple"],
+    ],
+  );
+  assert.equal(entries[0].rawText.endsWith("Sly 4m 17da"), true);
+  assert.equal(entries[1].rawText.startsWith("WILLS (3C, 13, s)"), true);
+  assert.deepEqual(entries[0].parsedYears, [1875, 1956]);
+  assert.deepEqual(entries[1].parsedYears, [1880, 1927]);
+  assert.deepEqual(entries[2].parsedYears, [1843, 1849, 1861, 1865, 1920, 1926]);
+});

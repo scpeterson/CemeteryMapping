@@ -407,3 +407,12 @@ databaseChangeLog:
   - include:
       file: changes/136-add-american-legion-military-branch.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/137-repair-north-hills-wills-page-200.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/138-complete-north-hills-wills-page-200-facts.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/139-split-c-0205-wills-broerman-gravesites.sql
+      relativeToChangelogFile: true
