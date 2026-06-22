@@ -52,6 +52,7 @@ type DetailPanelProps = {
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onDeleteGraveFeature: (id: string, reason?: string) => Promise<void>;
   onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
@@ -60,6 +61,7 @@ type DetailPanelProps = {
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  canDeleteGraveFeatures: boolean;
   canDeletePhotos: boolean;
   canReorderPhotos: boolean;
   isLoading?: boolean;
@@ -958,6 +960,8 @@ function HeadstoneRecord({
   canUploadPhotos,
   onUploadPhoto,
   onUpdateGraveFeature,
+  onDeleteGraveFeature,
+  canDeleteGraveFeatures,
 }: {
   headstone: Headstone;
   lookups: HeadstoneLookups;
@@ -972,6 +976,8 @@ function HeadstoneRecord({
   canUploadPhotos: boolean;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onDeleteGraveFeature: (id: string, reason?: string) => Promise<void>;
+  canDeleteGraveFeatures: boolean;
 }) {
   const isSectionG = sectionName.toUpperCase() === "G";
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
@@ -1163,7 +1169,16 @@ function HeadstoneRecord({
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
       {headstone.features?.length ? (
-        <GraveFeatureList features={headstone.features} canUpdate={canUpdate} grave={grave} fixedHeadstone={headstone} lookups={lookups} onUpdate={onUpdateGraveFeature} />
+        <GraveFeatureList
+          features={headstone.features}
+          canUpdate={canUpdate}
+          canDelete={canDeleteGraveFeatures}
+          grave={grave}
+          fixedHeadstone={headstone}
+          lookups={lookups}
+          onUpdate={onUpdateGraveFeature}
+          onDelete={onDeleteGraveFeature}
+        />
       ) : null}
       {headstone.mediaAssets?.length ? (
         <MediaGallery assets={headstone.mediaAssets} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
@@ -1192,12 +1207,14 @@ function MarkerDetailPanel({
   onSaveHeadstone,
   onSaveGraveFeature,
   onUpdateGraveFeature,
+  onDeleteGraveFeature,
   onSaveMaintenanceRecord,
   onUpdateMaintenanceRecord,
   onSelectMarkerGrave,
   onUploadPhoto,
   onDeletePhoto,
   onMovePhoto,
+  canDeleteGraveFeatures,
   canDeletePhotos,
   canReorderPhotos,
   isLoading,
@@ -1212,12 +1229,14 @@ function MarkerDetailPanel({
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onDeleteGraveFeature: (id: string, reason?: string) => Promise<void>;
   onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  canDeleteGraveFeatures: boolean;
   canDeletePhotos: boolean;
   canReorderPhotos: boolean;
   isLoading: boolean;
@@ -1271,6 +1290,8 @@ function MarkerDetailPanel({
               canUploadPhotos={canUpdateHeadstones}
               onUploadPhoto={onUploadPhoto}
               onUpdateGraveFeature={onUpdateGraveFeature}
+              onDeleteGraveFeature={onDeleteGraveFeature}
+              canDeleteGraveFeatures={canDeleteGraveFeatures}
             />
           </div>
         </section>
@@ -1372,21 +1393,42 @@ function GraveFeatureList({
   features,
   emptyMessage = "No grave features are recorded.",
   canUpdate = false,
+  canDelete = false,
   grave,
   fixedHeadstone,
   lookups,
   onUpdate,
+  onDelete,
 }: {
   features: GraveFeature[];
   emptyMessage?: string;
   canUpdate?: boolean;
+  canDelete?: boolean;
   grave?: GraveSpace;
   fixedHeadstone?: Headstone;
   lookups?: HeadstoneLookups;
   onUpdate?: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onDelete?: (id: string, reason?: string) => Promise<void>;
 }) {
   const [editingId, setEditingId] = useState<string>();
+  const [deletingId, setDeletingId] = useState<string>();
+  const [deleteError, setDeleteError] = useState<string>();
   if (!features.length) return <p className="muted">{emptyMessage}</p>;
+
+  const deleteFeature = async (feature: GraveFeature) => {
+    if (!onDelete) return;
+    const reason = window.prompt("Reason for deleting this grave feature?", "Recorded in error");
+    if (reason === null) return;
+    setDeletingId(feature.id);
+    setDeleteError(undefined);
+    try {
+      await onDelete(feature.id, reason);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Unable to delete grave feature.");
+    } finally {
+      setDeletingId(undefined);
+    }
+  };
 
   return (
     <div className="grave-feature-list">
@@ -1412,12 +1454,25 @@ function GraveFeatureList({
           <article key={feature.id} className="grave-feature-row">
             <div className="record-heading">
               <strong>{feature.featureType.label}</strong>
-              {canUpdate && lookups && onUpdate ? (
-                <button type="button" className="secondary-button compact-button" onClick={() => setEditingId(feature.id)}>
-                  <Pencil size={14} aria-hidden="true" />
-                  Edit
-                </button>
-              ) : null}
+              <div className="record-actions">
+                {canUpdate && lookups && onUpdate ? (
+                  <button type="button" className="secondary-button compact-button" onClick={() => setEditingId(feature.id)}>
+                    <Pencil size={14} aria-hidden="true" />
+                    Edit
+                  </button>
+                ) : null}
+                {canDelete && onDelete ? (
+                  <button
+                    type="button"
+                    className="secondary-button compact-button danger-button"
+                    onClick={() => void deleteFeature(feature)}
+                    disabled={deletingId === feature.id}
+                  >
+                    <Trash2 size={14} aria-hidden="true" />
+                    {deletingId === feature.id ? "Deleting..." : "Delete"}
+                  </button>
+                ) : null}
+              </div>
             </div>
             {details ? <span>{details}</span> : null}
             {feature.symbolText ? <span>Symbol: {feature.symbolText}</span> : null}
@@ -1426,6 +1481,7 @@ function GraveFeatureList({
           </article>
         );
       })}
+      {deleteError ? <p className="detail-message is-error">{deleteError}</p> : null}
     </div>
   );
 }
@@ -2013,12 +2069,14 @@ function GraveDetailPanel({
   onSaveHeadstone,
   onSaveGraveFeature,
   onUpdateGraveFeature,
+  onDeleteGraveFeature,
   onSaveMaintenanceRecord,
   onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
   onUploadPhoto,
   onDeletePhoto,
   onMovePhoto,
+  canDeleteGraveFeatures,
   canDeletePhotos,
   canReorderPhotos,
   isLoading,
@@ -2041,12 +2099,14 @@ function GraveDetailPanel({
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
+  onDeleteGraveFeature: (id: string, reason?: string) => Promise<void>;
   onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  canDeleteGraveFeatures: boolean;
   canDeletePhotos: boolean;
   canReorderPhotos: boolean;
   isLoading: boolean;
@@ -2156,6 +2216,8 @@ function GraveDetailPanel({
                     canUploadPhotos={canUpdateHeadstones}
                     onUploadPhoto={onUploadPhoto}
                     onUpdateGraveFeature={onUpdateGraveFeature}
+                    onDeleteGraveFeature={onDeleteGraveFeature}
+                    canDeleteGraveFeatures={canDeleteGraveFeatures}
                   />
                 ))}
               </div>
@@ -2169,7 +2231,15 @@ function GraveDetailPanel({
               <Flag size={17} aria-hidden="true" />
               <h3>Grave Features</h3>
             </div>
-            <GraveFeatureList features={grave.features ?? []} canUpdate={canUpdateHeadstones} grave={grave} lookups={headstoneLookups} onUpdate={onUpdateGraveFeature} />
+            <GraveFeatureList
+              features={grave.features ?? []}
+              canUpdate={canUpdateHeadstones}
+              canDelete={canDeleteGraveFeatures}
+              grave={grave}
+              lookups={headstoneLookups}
+              onUpdate={onUpdateGraveFeature}
+              onDelete={onDeleteGraveFeature}
+            />
             {canUpdateHeadstones ? <GraveFeatureForm grave={grave} headstones={headstones} lookups={headstoneLookups} onSave={onSaveGraveFeature} /> : null}
           </section>
 
@@ -2278,6 +2348,7 @@ export function DetailPanel({
   onSaveHeadstone,
   onSaveGraveFeature,
   onUpdateGraveFeature,
+  onDeleteGraveFeature,
   onSaveMaintenanceRecord,
   onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
@@ -2286,6 +2357,7 @@ export function DetailPanel({
   onUploadPhoto,
   onDeletePhoto,
   onMovePhoto,
+  canDeleteGraveFeatures,
   canDeletePhotos,
   canReorderPhotos,
   isLoading = false,
@@ -2309,12 +2381,14 @@ export function DetailPanel({
         onSaveHeadstone={onSaveHeadstone}
         onSaveGraveFeature={onSaveGraveFeature}
         onUpdateGraveFeature={onUpdateGraveFeature}
+        onDeleteGraveFeature={onDeleteGraveFeature}
         onSaveMaintenanceRecord={onSaveMaintenanceRecord}
         onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
         onSelectMarkerGrave={onSelectMarkerGrave}
         onUploadPhoto={onUploadPhoto}
         onDeletePhoto={onDeletePhoto}
         onMovePhoto={onMovePhoto}
+        canDeleteGraveFeatures={canDeleteGraveFeatures}
         canDeletePhotos={canDeletePhotos}
         canReorderPhotos={canReorderPhotos}
         isLoading={isLoading}
@@ -2350,12 +2424,14 @@ export function DetailPanel({
       onSaveHeadstone={onSaveHeadstone}
       onSaveGraveFeature={onSaveGraveFeature}
       onUpdateGraveFeature={onUpdateGraveFeature}
+      onDeleteGraveFeature={onDeleteGraveFeature}
       onSaveMaintenanceRecord={onSaveMaintenanceRecord}
       onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
       onSaveOwnershipEvent={onSaveOwnershipEvent}
       onUploadPhoto={onUploadPhoto}
       onDeletePhoto={onDeletePhoto}
       onMovePhoto={onMovePhoto}
+      canDeleteGraveFeatures={canDeleteGraveFeatures}
       canDeletePhotos={canDeletePhotos}
       canReorderPhotos={canReorderPhotos}
       isLoading={isLoading}

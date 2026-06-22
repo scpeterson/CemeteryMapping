@@ -166,6 +166,13 @@ function entryLineSegments(line) {
   return segments.filter((segment) => cleanText(segment));
 }
 
+function entryTextSegments(text) {
+  const starts = [...String(text ?? "").matchAll(embeddedEntryStartPattern)].map((match) => match.index ?? 0);
+  if (starts.length <= 1 || starts[0] !== 0) return [text];
+
+  return starts.map((start, index) => text.slice(start, starts[index + 1])).filter((segment) => cleanText(segment));
+}
+
 export function parseNorthHillsOcrText(text) {
   const entries = [];
   const pages = String(text ?? "").split("\f");
@@ -174,32 +181,42 @@ export function parseNorthHillsOcrText(text) {
   const flushEntry = () => {
     if (!currentEntry) return;
     const rawText = cleanText(currentEntry.lines.join(" "));
-    const descriptor = descriptorText(rawText);
-    const entry = {
-      sourcePageIndex: currentEntry.sourcePageIndex,
-      sourcePageNumber: currentEntry.sourcePageNumber,
-      sourceLineStart: currentEntry.sourceLineStart,
-      sourceLineEnd: currentEntry.sourceLineEnd,
-      rawText,
-      nameText: normalizeNameText(currentEntry.nameText),
-      surnames: surnameList(normalizeNameText(currentEntry.nameText)),
-      parsedSectionName: currentEntry.parsedSectionName,
-      parsedRowNumber: currentEntry.parsedRowNumber,
-      parsedPositionNumber: currentEntry.parsedPositionNumber,
-      parsedMarkerScope: currentEntry.parsedMarkerScope,
-      markerTypeText: markerType(descriptor),
-      materialText: markerMaterial(descriptor),
-      conditionText: markerCondition(descriptor),
-      inscriptionText: quotedText(rawText),
-      parsedYears: yearsFromText(rawText),
-      sourceEntry: {
-        heading: currentEntry.heading,
-        descriptor,
-      },
-    };
-    entry.parseConfidence = entryConfidence(entry);
-    entry.parseNotes = entryNotes(entry);
-    entries.push(entry);
+    const rawSegments = entryTextSegments(rawText);
+
+    rawSegments.forEach((rawSegment, segmentIndex) => {
+      const entryMatch = rawSegment.match(entryStartPattern);
+      if (!entryMatch) return;
+
+      const parsedRowNumber = normalizeNumber(entryMatch[2]) ?? currentEntry.parsedRowNumber;
+      const parsedSectionName = entryMatch[3].toUpperCase() === "O" ? currentEntry.parsedSectionName : entryMatch[3].toUpperCase();
+      const descriptor = descriptorText(rawSegment);
+      const sourceLineStart = Math.min(currentEntry.sourceLineEnd, currentEntry.sourceLineStart + segmentIndex);
+      const entry = {
+        sourcePageIndex: currentEntry.sourcePageIndex,
+        sourcePageNumber: currentEntry.sourcePageNumber,
+        sourceLineStart,
+        sourceLineEnd: segmentIndex === rawSegments.length - 1 ? currentEntry.sourceLineEnd : sourceLineStart,
+        rawText: rawSegment,
+        nameText: normalizeNameText(entryMatch[1]),
+        surnames: surnameList(normalizeNameText(entryMatch[1])),
+        parsedSectionName,
+        parsedRowNumber,
+        parsedPositionNumber: normalizeNumber(entryMatch[4]),
+        parsedMarkerScope: normalizeScope(entryMatch[5]),
+        markerTypeText: markerType(descriptor),
+        materialText: markerMaterial(descriptor),
+        conditionText: markerCondition(descriptor),
+        inscriptionText: quotedText(rawSegment),
+        parsedYears: yearsFromText(rawSegment),
+        sourceEntry: {
+          heading: segmentIndex === 0 ? currentEntry.heading : cleanText(rawSegment),
+          descriptor,
+        },
+      };
+      entry.parseConfidence = entryConfidence(entry);
+      entry.parseNotes = entryNotes(entry);
+      entries.push(entry);
+    });
     currentEntry = undefined;
   };
 

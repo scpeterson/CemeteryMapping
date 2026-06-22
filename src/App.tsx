@@ -4,6 +4,7 @@ import {
   createOwnershipEvent,
   createGraveFeature,
   createMaintenanceRecord,
+  deleteGraveFeature,
   deleteMediaAsset,
   fetchCemeteryData,
   fetchCurrentUser,
@@ -390,6 +391,11 @@ export default function App() {
     return saved;
   };
 
+  const deleteSavedGraveFeature = async (id: string, reason?: string) => {
+    await deleteGraveFeature(id, reason);
+    refreshDetails({ preserveCurrent: true });
+  };
+
   const updateSavedMaintenanceRecord = async (id: string, record: SaveMaintenanceRecordInput) => {
     const saved = await updateMaintenanceRecord(id, record);
     setSelectedGraveDetails((current) =>
@@ -568,6 +574,7 @@ export default function App() {
         onSaveHeadstone={saveHeadstone}
         onSaveGraveFeature={saveGraveFeature}
         onUpdateGraveFeature={updateSavedGraveFeature}
+        onDeleteGraveFeature={deleteSavedGraveFeature}
         onSaveMaintenanceRecord={saveMaintenanceRecord}
         onUpdateMaintenanceRecord={updateSavedMaintenanceRecord}
         onSaveOwnershipEvent={saveOwnershipEvent}
@@ -576,6 +583,7 @@ export default function App() {
         onUploadPhoto={saveGravePhoto}
         onDeletePhoto={deletePhoto}
         onMovePhoto={movePhoto}
+        canDeleteGraveFeatures={currentUser?.permissions.canDeleteGraveFeatures ?? false}
         canDeletePhotos={currentUser?.permissions.canDeletePhotos ?? false}
         canReorderPhotos={canUpdateSelectedHeadstones}
         isLoading={isDetailLoading}

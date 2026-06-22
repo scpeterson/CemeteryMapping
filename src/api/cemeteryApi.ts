@@ -148,6 +148,11 @@ export async function updateGraveFeature(id: string, feature: SaveGraveFeatureIn
   return jsonResponse<GraveFeature>(response, "Update grave feature API");
 }
 
+export async function deleteGraveFeature(id: string, reason?: string): Promise<{ id: string; cemeteryId: string; deletedAt: string; alreadyDeleted: boolean }> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/grave-features/${encodeURIComponent(id)}`, jsonRequest("DELETE", { reason }));
+  return jsonResponse<{ id: string; cemeteryId: string; deletedAt: string; alreadyDeleted: boolean }>(response, "Delete grave feature API");
+}
+
 export async function createMaintenanceRecord(cemeteryId: string, record: SaveMaintenanceRecordInput): Promise<MaintenanceRecord> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/maintenance-records`, jsonRequest("POST", record));
   return jsonResponse<MaintenanceRecord>(response, "Maintenance record API");

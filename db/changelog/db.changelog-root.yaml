@@ -398,3 +398,12 @@ databaseChangeLog:
   - include:
       file: changes/133-clip-c-49-gravesites-to-lot-polygon.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/134-repair-north-hills-watenpool-page-200.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/135-complete-north-hills-watenpool-page-200-facts.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/136-add-american-legion-military-branch.sql
+      relativeToChangelogFile: true

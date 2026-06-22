@@ -2607,6 +2607,71 @@ export async function updateGraveFeature(pool, id, feature, { actorUser, reason,
   }
 }
 
+export async function softDeleteGraveFeature(pool, id, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    const existing = await client.query(
+      `
+        SELECT id::text, cemetery_id::text, deleted_at
+        FROM grave_features
+        WHERE id = $1
+        LIMIT 1
+      `,
+      [id],
+    );
+    const existingFeature = existing.rows[0];
+    if (!existingFeature) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    if (existingFeature.deleted_at) {
+      await client.query("COMMIT");
+      return {
+        id: existingFeature.id,
+        cemeteryId: existingFeature.cemetery_id,
+        deletedAt: existingFeature.deleted_at,
+        alreadyDeleted: true,
+      };
+    }
+
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existingFeature.cemetery_id)) {
+      await client.query("ROLLBACK");
+      return { forbidden: true };
+    }
+
+    const updateResult = await client.query(
+      `
+        UPDATE grave_features
+        SET deleted_at = now(),
+            deleted_by = $2,
+            delete_reason = $3
+        WHERE id = $1
+          AND deleted_at IS NULL
+        RETURNING id::text, cemetery_id::text, deleted_at
+      `,
+      [id, actorUser?.id ?? actorUser?.subject ?? null, reason ?? null],
+    );
+    const updated = updateResult.rows[0];
+
+    await client.query("COMMIT");
+    return {
+      id: updated.id,
+      cemeteryId: updated.cemetery_id,
+      deletedAt: updated.deleted_at,
+      alreadyDeleted: false,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function updateMaintenanceRecord(pool, id, record, { actorUser, reason, allowedCemeteryIds } = {}) {
   const client = await pool.connect();
   try {
