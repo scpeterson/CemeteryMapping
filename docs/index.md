@@ -13,6 +13,7 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 - [Rebuild Guide](rebuild.md)
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
+- [Data Model](data-model.md)
 - [Admin Workflow Roadmap](admin-workflows.md)
 - [Operator Workflows](operator-workflows.md)
 - [Database Auditing](database-auditing.md)

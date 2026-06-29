@@ -6,6 +6,8 @@
   url: /rebuild.html
 - title: "Data Sources"
   url: /data-sources.html
+- title: "Data Model"
+  url: /data-model.html
 - title: "Admin Workflows"
   url: /admin-workflows.html
 - title: "Operator Workflows"
