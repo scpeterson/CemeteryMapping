@@ -467,3 +467,6 @@ databaseChangeLog:
   - include:
       file: changes/156-backfill-north-hills-page-191.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/157-add-relationship-performance-indexes.sql
+      relativeToChangelogFile: true
