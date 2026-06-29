@@ -16,77 +16,51 @@ This page is a logical guide to the schema. It is not meant to list every column
 - Soft deletes preserve cemetery records when removal has business meaning. Normal reads exclude deleted rows; admin and audit workflows can inspect them.
 - Audit and system-event tables are separate. `audit_events` records data changes, while `system_events` records operational failures, jobs, and health events.
 
-## High-Level Relationship Diagram
+## Data Domains
+
+The schema is easier to understand as a set of connected domains instead of one all-in diagram. The map and inventory tables sit in the center. Other domains either describe what is in those mapped places, attach evidence to them, or govern who can change them.
+
+```mermaid
+flowchart LR
+  map["Cemetery Map<br/>cemeteries, sections,<br/>lots, gravesites"]
+  burials["Burials and Service<br/>burials, interment,<br/>military lookups"]
+  markers["Markers and Features<br/>headstones, feature,<br/>marker lookups"]
+  ownership["Ownership and Deeds<br/>events, rights,<br/>parties, claims"]
+  evidence["Source Evidence<br/>NHG OCR, spatial imports,<br/>reviewed links"]
+  media["Media<br/>photos, captured dates,<br/>display order"]
+  maintenance["Maintenance<br/>issues, actions,<br/>work history"]
+  security["Security and Operations<br/>users, roles,<br/>audit, system events"]
+
+  map --> burials
+  map --> markers
+  map --> ownership
+  evidence --> map
+  evidence --> burials
+  evidence --> markers
+  markers --> media
+  map --> media
+  markers --> maintenance
+  map --> maintenance
+  security --> map
+  security --> ownership
+```
+
+## Cemetery Map And Inventory
+
+These tables hold the current operational map and cemetery inventory.
 
 ```mermaid
 erDiagram
   CEMETERIES ||--o{ SECTIONS : contains
   CEMETERIES ||--o{ LOTS : contains
   CEMETERIES ||--o{ GRAVESITES : contains
-  CEMETERIES ||--o{ HEADSTONES : contains
   SECTIONS ||--o{ LOTS : groups
   SECTIONS ||--o{ GRAVESITES : groups
   LOTS ||--o{ GRAVESITES : contains
-
-  GRAVESITES ||--o{ BURIALS : holds
-  BURIAL_INTERMENT_TYPES ||--o{ BURIALS : classifies
-  BURIAL_RECORD_STATUS_TYPES ||--o{ BURIALS : classifies
-  MILITARY_BRANCH_TYPES ||--o{ MILITARY_RANK_TYPES : has
-  MILITARY_BRANCH_TYPES ||--o{ BURIALS : records
-  MILITARY_RANK_TYPES ||--o{ BURIALS : records
-  MILITARY_WAR_SERVICE_TYPES ||--o{ BURIALS : records
-
-  HEADSTONES ||--o{ HEADSTONE_GRAVESITES : marks
-  GRAVESITES ||--o{ HEADSTONE_GRAVESITES : marked_by
-  HEADSTONES ||--o{ HEADSTONE_BURIALS : names
-  BURIALS ||--o{ HEADSTONE_BURIALS : appears_on
-  MARKER_TYPES ||--o{ HEADSTONES : classifies
-  MARKER_MATERIAL_TYPES ||--o{ HEADSTONES : classifies
-  HEADSTONE_CONDITION_TYPES ||--o{ HEADSTONES : classifies
-
-  GRAVESITES ||--o{ GRAVE_FEATURES : has
-  HEADSTONES ||--o{ GRAVE_FEATURES : has
-  GRAVE_FEATURE_TYPES ||--o{ GRAVE_FEATURE_SUBTYPES : groups
-  GRAVE_FEATURE_TYPES ||--o{ GRAVE_FEATURES : classifies
-  GRAVE_FEATURE_SUBTYPES ||--o{ GRAVE_FEATURES : classifies
-
-  GRAVESITES ||--o{ MAINTENANCE_RECORDS : receives
-  HEADSTONES ||--o{ MAINTENANCE_RECORDS : receives
-  MAINTENANCE_ISSUE_TYPES ||--o{ MAINTENANCE_RECORDS : classifies
-  MAINTENANCE_ACTION_TYPES ||--o{ MAINTENANCE_RECORDS : classifies
-
-  MEDIA_ASSETS ||--o{ GRAVESITE_MEDIA_ASSETS : attaches
-  GRAVESITES ||--o{ GRAVESITE_MEDIA_ASSETS : has
-  MEDIA_ASSETS ||--o{ HEADSTONE_MEDIA_ASSETS : attaches
-  HEADSTONES ||--o{ HEADSTONE_MEDIA_ASSETS : has
-
-  OWNERSHIP_EVENTS ||--o{ OWNERSHIP_EVENT_RIGHTS : grants
-  OWNERSHIP_EVENTS ||--o{ OWNERSHIP_EVENT_PARTIES : involves
-  OWNERSHIP_PARTIES ||--o{ OWNERSHIP_EVENT_PARTIES : participates
-  LOTS ||--o{ OWNERSHIP_EVENT_RIGHTS : may_target
-  GRAVESITES ||--o{ OWNERSHIP_EVENT_RIGHTS : may_target
-  SECTIONS ||--o{ OWNERSHIP_EVENT_RIGHTS : may_target
-
-  DEED_REGISTRY_IMPORT_BATCHES ||--o{ DEED_REGISTRY_ENTRIES : imports
-  DEED_REGISTRY_ENTRIES ||--o{ DEED_REGISTRY_ENTRY_ALLOCATIONS : allocates
-  DEED_INVESTIGATION_CASES ||--o{ DEED_INVESTIGATION_CASE_ENTRIES : reviews
-  DEED_INVESTIGATION_CASES ||--o{ DEED_INVESTIGATION_CASE_ACTIONS : records
-
-  NORTH_HILLS_OCR_IMPORT_BATCHES ||--o{ NORTH_HILLS_OCR_ENTRIES : imports
-  NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_SOURCE_FACTS : yields
-  NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_ENTRY_GRAVESITE_LINKS : links
-  NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_ENTRY_HEADSTONE_LINKS : links
-
-  APP_ROLES ||--o{ APP_USERS : grants
-  APP_USERS ||--o{ APP_USER_CEMETERY_ACCESS : assigned
-  CEMETERIES ||--o{ APP_USER_CEMETERY_ACCESS : scopes
-  APP_USERS ||--o{ AUDIT_EVENTS : causes
-  SYSTEM_EVENT_RETENTION_POLICIES ||--o{ SYSTEM_EVENTS : retains
+  BLOCKS ||--o{ LOTS : groups
+  BLOCKS ||--o{ GRAVESITES : groups
+  LOTS ||--o{ LOT_RESTRICTED_AREAS : restricts
 ```
-
-## Cemetery Map And Inventory
-
-These tables hold the current operational map and cemetery inventory.
 
 | Table | Purpose |
 | --- | --- |
@@ -105,6 +79,18 @@ Geometry is stored in PostGIS using EPSG:4326. The application also stores geome
 
 Burial records connect people to gravesites, but they also preserve uncertainty. A marker can name a living person, a burial can have partial date information, and a grave can be sold or reserved without containing a burial.
 
+```mermaid
+erDiagram
+  GRAVESITES ||--o{ BURIALS : holds
+  BURIAL_INTERMENT_TYPES ||--o{ BURIALS : classifies
+  BURIAL_RECORD_STATUS_TYPES ||--o{ BURIALS : classifies
+  MILITARY_BRANCH_TYPES ||--o{ BURIALS : records
+  MILITARY_BRANCH_TYPES ||--o{ MILITARY_RANK_TYPES : has
+  MILITARY_RANK_TYPES ||--o{ BURIALS : records
+  MILITARY_WAR_SERVICE_TYPES ||--o{ BURIALS : records
+  BURIALS ||--o{ MEMORIALS : memorialized_by
+```
+
 | Table | Purpose |
 | --- | --- |
 | `burials` | Person/burial facts associated with a gravesite, including names, date display values, interment type, record status, veteran status, branch, rank, and war service. |
@@ -120,6 +106,40 @@ Partial dates should be stored as known precision, not forced into fake dates. F
 ## Markers, Features, Photos, And Maintenance
 
 Markers and gravesites can each have their own physical condition, photos, and features. The schema keeps these concepts separate so a marker can span more than one gravesite and a feature can belong to either the grave, the marker, or both.
+
+```mermaid
+erDiagram
+  HEADSTONES ||--o{ HEADSTONE_GRAVESITES : marks
+  GRAVESITES ||--o{ HEADSTONE_GRAVESITES : marked
+  HEADSTONES ||--o{ HEADSTONE_BURIALS : names
+  BURIALS ||--o{ HEADSTONE_BURIALS : named
+  MARKER_TYPES ||--o{ HEADSTONES : classifies
+  MARKER_MATERIAL_TYPES ||--o{ HEADSTONES : classifies
+  HEADSTONE_CONDITION_TYPES ||--o{ HEADSTONES : classifies
+```
+
+```mermaid
+erDiagram
+  GRAVESITES ||--o{ GRAVE_FEATURES : has
+  HEADSTONES ||--o{ GRAVE_FEATURES : has
+  GRAVE_FEATURE_TYPES ||--o{ GRAVE_FEATURE_SUBTYPES : groups
+  GRAVE_FEATURE_TYPES ||--o{ GRAVE_FEATURES : classifies
+  GRAVE_FEATURE_SUBTYPES ||--o{ GRAVE_FEATURES : classifies
+  GRAVE_FEATURE_MATERIAL_TYPES ||--o{ GRAVE_FEATURES : classifies
+  GRAVE_FEATURE_PLACEMENT_TYPES ||--o{ GRAVE_FEATURES : classifies
+```
+
+```mermaid
+erDiagram
+  MEDIA_ASSETS ||--o{ GRAVESITE_MEDIA_ASSETS : attaches
+  GRAVESITES ||--o{ GRAVESITE_MEDIA_ASSETS : has
+  MEDIA_ASSETS ||--o{ HEADSTONE_MEDIA_ASSETS : attaches
+  HEADSTONES ||--o{ HEADSTONE_MEDIA_ASSETS : has
+  GRAVESITES ||--o{ MAINTENANCE_RECORDS : receives
+  HEADSTONES ||--o{ MAINTENANCE_RECORDS : receives
+  MAINTENANCE_ISSUE_TYPES ||--o{ MAINTENANCE_RECORDS : classifies
+  MAINTENANCE_ACTION_TYPES ||--o{ MAINTENANCE_RECORDS : classifies
+```
 
 | Table | Purpose |
 | --- | --- |
@@ -143,6 +163,24 @@ Maintenance is history, not just a current attribute. That lets reports answer q
 
 Ownership is modeled as history because deeds, transfers, partial rights, and unlocated claims need provenance. Older lot-only ownership tables still exist for compatibility, while newer generalized ownership tables can target lots, gravesites, sections, or unlocated rights.
 
+```mermaid
+erDiagram
+  OWNERSHIP_EVENTS ||--o{ OWNERSHIP_EVENT_RIGHTS : grants
+  OWNERSHIP_EVENTS ||--o{ OWNERSHIP_EVENT_PARTIES : involves
+  OWNERSHIP_PARTIES ||--o{ OWNERSHIP_EVENT_PARTIES : participates
+  LOTS ||--o{ OWNERSHIP_EVENT_RIGHTS : target
+  GRAVESITES ||--o{ OWNERSHIP_EVENT_RIGHTS : target
+  SECTIONS ||--o{ OWNERSHIP_EVENT_RIGHTS : target
+```
+
+```mermaid
+erDiagram
+  DEED_REGISTRY_IMPORT_BATCHES ||--o{ DEED_REGISTRY_ENTRIES : imports
+  DEED_REGISTRY_ENTRIES ||--o{ DEED_REGISTRY_ENTRY_ALLOCATIONS : allocates
+  DEED_INVESTIGATION_CASES ||--o{ DEED_INVESTIGATION_CASE_ENTRIES : reviews
+  DEED_INVESTIGATION_CASES ||--o{ DEED_INVESTIGATION_CASE_ACTIONS : records
+```
+
 | Table | Purpose |
 | --- | --- |
 | `ownership_events` | Generalized deed, transfer, claim, or administrative ownership event. |
@@ -161,6 +199,18 @@ This structure avoids flattening ownership into a single "current owner" column.
 
 The application deliberately separates staged source evidence from authoritative operational records. That lets administrators review source material, promote useful facts, and still keep the original wording.
 
+```mermaid
+erDiagram
+  SPATIAL_IMPORT_BATCHES ||--o{ SPATIAL_IMPORT_FEATURES : imports
+  SPATIAL_IMPORT_FEATURES ||--o{ SPATIAL_VALIDATION_ISSUES : reports
+  NORTH_HILLS_OCR_IMPORT_BATCHES ||--o{ NORTH_HILLS_OCR_ENTRIES : imports
+  NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_SOURCE_FACTS : yields
+  NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_ENTRY_GRAVESITE_LINKS : links
+  NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_ENTRY_HEADSTONE_LINKS : links
+  GRAVESITES ||--o{ NORTH_HILLS_OCR_ENTRY_GRAVESITE_LINKS : supported
+  HEADSTONES ||--o{ NORTH_HILLS_OCR_ENTRY_HEADSTONE_LINKS : supported
+```
+
 | Table | Purpose |
 | --- | --- |
 | `spatial_import_batches` | A raw spatial import run from a source such as an Esri File Geodatabase or shapefile. |
@@ -176,6 +226,16 @@ Keeping evidence separate from operational rows is especially important for NHG 
 ## Users, Roles, Audit, And Operations
 
 Security and operational observability are part of the database model because the cemetery records need accountability.
+
+```mermaid
+erDiagram
+  APP_ROLES ||--o{ APP_USERS : grants
+  APP_USERS ||--o{ APP_USER_CEMETERY_ACCESS : assigned
+  CEMETERIES ||--o{ APP_USER_CEMETERY_ACCESS : scopes
+  APP_USERS ||--o{ AUDIT_EVENTS : causes
+  AUDIT_RETENTION_POLICIES ||--o{ AUDIT_EVENTS : retains
+  SYSTEM_EVENT_RETENTION_POLICIES ||--o{ SYSTEM_EVENTS : retains
+```
 
 | Table | Purpose |
 | --- | --- |
