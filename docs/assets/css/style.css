@@ -187,6 +187,20 @@ a:hover {
   overflow-x: auto;
 }
 
+.content .mermaid {
+  margin: 22px 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcf7;
+  overflow-x: auto;
+}
+
+.content .mermaid svg {
+  display: block;
+  max-width: none;
+}
+
 .content code {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
