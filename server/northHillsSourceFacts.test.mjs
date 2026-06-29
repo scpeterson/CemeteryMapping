@@ -23,3 +23,17 @@ test("parseNorthHillsSourceFacts supports CRG segments separately from CR", () =
   assert.equal(facts.find((fact) => fact.sourceCode === "CRG" && fact.factType === "death_date")?.factDate, "1929-11-02");
   assert.equal(facts.find((fact) => fact.sourceCode === "CR")?.sourceLabel, "Church Records");
 });
+
+test("parseNorthHillsSourceFacts excludes trailing flower holder physical observations from CR notes", () => {
+  const facts = parseNorthHillsSourceFacts(
+    'SCOTT (3A, 1, s) pillow "Roy C. Scott/ May 26, 1913 / Aug. 26, 1961 /Father" CR: Middle name Charles. Councilman Flower holder with flowers',
+  );
+
+  assert.deepEqual(
+    facts.map((fact) => [fact.sourceCode, fact.factType, fact.factValue, fact.factDate, fact.confidence]),
+    [
+      ["CR", "note", "Middle name Charles. Church position: Councilman", undefined, "review"],
+      ["CR", "note", "Church position: Councilman", undefined, "medium"],
+    ],
+  );
+});

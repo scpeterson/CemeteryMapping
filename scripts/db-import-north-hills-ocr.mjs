@@ -80,7 +80,9 @@ function surnameList(nameText) {
 }
 
 function normalizeNameText(nameText) {
-  return cleanText(nameText).replace(/\b([A-Z])\[-[0-9Il]\b/gu, "$1[-]");
+  return cleanText(nameText)
+    .replace(/\b([A-Z])\[-[0-9Il]\b/gu, "$1[-]")
+    .replace(/\bBRAND['’]r\b/giu, "BRANDT");
 }
 
 function yearsFromText(text) {
@@ -137,13 +139,13 @@ function entryNotes(entry) {
 }
 
 function printedPageNumber(pageText) {
-  const match = String(pageText ?? "").match(/Franklin\s+Park\.?\s+Borough\s+(\d{3})\b[\s\S]*?Allegheny\s+County/iu);
+  const match = String(pageText ?? "").match(/Franklin\s*Par(?:k|le)\.?\s+Borough\s+(\d{3})\b[\s\S]*?Allegheny\s+County/iu);
   return match ? Number.parseInt(match[1], 10) : null;
 }
 
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
-const entryStartPattern = /^\s*([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\)/u;
-const embeddedEntryStartPattern = /([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\)/gu;
+const entryStartPattern = /^\s*([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\s*,?\)/u;
+const embeddedEntryStartPattern = /([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\s*,?\)/gu;
 const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,/u;
 
 function isNonEntryBoundary(line) {
@@ -164,30 +166,43 @@ function embeddedEntryStartIndexes(text) {
       const matchText = match[0] ?? "";
       const coordinateIndex = matchText.search(coordinateStartPattern);
       const headingText = coordinateIndex === -1 ? matchText : matchText.slice(0, coordinateIndex);
-      const strayQuoteIndex = Math.max(headingText.lastIndexOf("'"), headingText.lastIndexOf("’"));
+      const strayQuoteMatch = [...headingText.matchAll(/(?:^|\s)['’](?=[A-Z])/gu)].at(-1);
+      const strayQuoteIndex = strayQuoteMatch ? (strayQuoteMatch.index ?? 0) + strayQuoteMatch[0].length - 1 : -1;
       return (match.index ?? 0) + (strayQuoteIndex === -1 ? 0 : strayQuoteIndex + 1);
     })
     .filter((start, index, starts) => start >= 0 && starts.indexOf(start) === index);
 }
 
+function stripTrailingGapNote(segment) {
+  return cleanText(segment).replace(/\s+Gap,?\s+a(?:b|o)?out\s+[0-9]+\s+feet\.?$/iu, "");
+}
+
+function stripTrailingPageFooter(segment) {
+  return cleanText(segment).replace(/\s+Franklin\s*Par(?:k|le)\.?\s+Borough\s+\d{3}\s+Allegheny\s+County(?:,?\s+PA\.?)?$/iu, "");
+}
+
+function cleanEntrySegment(segment) {
+  return stripTrailingPageFooter(stripTrailingGapNote(segment)).replace(/\s+['’]$/u, "");
+}
+
 function entryLineSegments(line) {
   const starts = embeddedEntryStartIndexes(line);
-  if (starts.length <= 1) return [line];
+  if (starts.length <= 1) return [cleanEntrySegment(line)];
 
   const segments = [];
   if (starts[0] > 0) segments.push(line.slice(0, starts[0]));
   for (let index = 0; index < starts.length; index += 1) {
     segments.push(line.slice(starts[index], starts[index + 1]));
   }
-  return segments.map((segment) => cleanText(segment).replace(/\s+['’]$/u, "")).filter((segment) => cleanText(segment));
+  return segments.map((segment) => cleanEntrySegment(segment)).filter((segment) => cleanText(segment));
 }
 
 function entryTextSegments(text) {
   const starts = embeddedEntryStartIndexes(text);
-  if (starts.length <= 1 || starts[0] !== 0) return [text];
+  if (starts.length <= 1 || starts[0] !== 0) return [cleanEntrySegment(text)];
 
   return starts
-    .map((start, index) => cleanText(text.slice(start, starts[index + 1])).replace(/\s+['’]$/u, ""))
+    .map((start, index) => cleanEntrySegment(text.slice(start, starts[index + 1])))
     .filter((segment) => cleanText(segment));
 }
 

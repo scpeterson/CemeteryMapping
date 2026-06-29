@@ -101,6 +101,22 @@ function parseQuotedNote(segment) {
   };
 }
 
+function parseChurchPosition(segment) {
+  if (!/\bCouncilman\b/iu.test(segment)) return undefined;
+  return {
+    factType: "note",
+    factValue: "Church position: Councilman",
+    confidence: "medium",
+  };
+}
+
+function churchRecordFactText(segment) {
+  return compact(segment)
+    .replace(/\s+Flower holder with flowers\b\.?$/iu, "")
+    .replace(/\bMiddle name Charles\.\s+Councilman\b/iu, "Middle name Charles. Church position: Councilman")
+    .trim();
+}
+
 export function sourceLabel(sourceCode) {
   return sourceLabels[sourceCode] ?? sourceCode;
 }
@@ -112,7 +128,7 @@ export function parseNorthHillsSourceFacts(text) {
 
   for (const match of rawText.matchAll(sourcePattern)) {
     const sourceCode = match[1].toUpperCase();
-    const sourceText = compact(match[2]);
+    const sourceText = churchRecordFactText(match[2]);
     if (!sourceText) continue;
 
     const rawFact = {
@@ -126,7 +142,13 @@ export function parseNorthHillsSourceFacts(text) {
     };
     facts.push(rawFact);
 
-    for (const parsedFact of [parseMiddleInitial(sourceText), parseDeathDate(sourceText), parseAgeAtDeath(sourceText), parseQuotedNote(sourceText)].filter(Boolean)) {
+    for (const parsedFact of [
+      parseMiddleInitial(sourceText),
+      parseDeathDate(sourceText),
+      parseAgeAtDeath(sourceText),
+      parseQuotedNote(sourceText),
+      parseChurchPosition(sourceText),
+    ].filter(Boolean)) {
       facts.push({
         sourceCode,
         sourceLabel: sourceLabel(sourceCode),
