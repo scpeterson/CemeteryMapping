@@ -75,6 +75,85 @@ Franklin Park. Borough                   185                Allegheny County, PA
   );
 });
 
+test("parseNorthHillsOcrText splits page 184 Pfeiffer and Kelley readings after gap note", () => {
+  const text = `Section A, Row 3
+PFEIFFER (3A, 3, c) upright, gray granite·, exc _cond,flowers, basket- weave design "pfeiffer / Edward·G. / 1877-1967 / Edna M. j 1887- 1963" CR: Edward George, d. De.cember 18, 1.967, 90y 18da. Edna, d. January 27, 1963, 75y 3m 25da. Note: "Dr. J. J; Myers buried I . was in Florida" Gap, aoout 15 feet. KELlEY (3A, 4, s) flat, gray granite, exc cond, cross in circle "Paul S Kelley / A2C US Air Force,/ Vietnam / Feb:8 1940 May 17 1986" Funeral home marker: "Paul S Kelley/ 1940-1986 / Rlchard·D. Cole· Fune.ralHome" Sep?rate flag holder: "Korea US/ 1950-1955"
+Franklin Park Borough                   184                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 2);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["PFEIFFER", "A", 3, 3, "couple"],
+      ["KELlEY", "A", 3, 4, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("Gap, aoout 15 feet"), false);
+  assert.equal(entries[0].rawText.includes("KELlEY"), false);
+  assert.equal(entries[1].rawText.startsWith("KELlEY (3A, 4, s)"), true);
+});
+
+test("parseNorthHillsOcrText splits page 184 Brandt readings with OCR variants", () => {
+  const text = `Section A, Row 3
+BRANDT (3A, 5, s) flat, gray granite; exc cond, flower, leaves "Edward P. Brandt/ August 27~ 1877 / Sept. 17, 1963" BRANDT (3A, 6, s,) upright, gray granite, exc cond "Susan Br~ndt / - 1867 - [blank)" CR: Note: She is listed in funeral records between June 29 and November 15, 1956, but· there is no date of death. "Dr. Myers did not officiate~" ,-'
+BRANDT (3A, 7, s) upright, gray granitei exc·cond "Margaret Brandt/ ·• 1871-1939." CR: Mlddle n~me Anna, d. October 28, 1939 ..
+BRANDT (3A, 8, s) upright, gray granite, exc cond "Sophia Brandt/ 1869-1929" CR: d. March 13, 1929, 60y BRAND'r (3A, 9, c) upright, gray granite, exccond, flower, leaf, scrolls "Brandt/ Walter C. / 1882-1945 / Mary M. / 1882-1956" CR: Walter, d. March 18, 1945
+Franklin Park Borough                   184                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 5);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["BRANDT", 184, "A", 3, 5, "single"],
+      ["BRANDT", 184, "A", 3, 6, "single"],
+      ["BRANDT", 184, "A", 3, 7, "single"],
+      ["BRANDT", 184, "A", 3, 8, "single"],
+      ["BRANDT", 184, "A", 3, 9, "couple"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("Susan"), false);
+  assert.equal(entries[3].rawText.includes("BRAND'r"), false);
+  assert.equal(entries[4].rawText.startsWith("BRAND'r (3A, 9, c)"), true);
+  assert.deepEqual(entries[4].parsedYears, [1882, 1945, 1956]);
+});
+
+test("parseNorthHillsOcrText splits entries when OCR drops the comma before marker scope", () => {
+  const text = `Section A, Row 2
+STERTZ (2A, 4, c) upright, gray granite, exc cond, leaves, scroll, flower "Stertz / Alexander F. / Mar. 28, 1896 / Jan. 9, 1954 /Father/ Emma S. / Nov. 25, 1891 [blank]/ Mother" CR: Emma, d. Jan. 23, 1985 STERTZ (2A, 5 s) flat, bronze, exc cond "James F Stertz / AMN US Air Force/ Korea/ Sep 5 1928 / Nov 1 1984" Separate flag holder: "World War II / Veteran"
+Franklin Park Borough                   183                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 2);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["STERTZ", "A", 2, 4, "couple"],
+      ["STERTZ", "A", 2, 5, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("James F Stertz"), false);
+  assert.equal(entries[1].rawText.startsWith("STERTZ (2A, 5 s)"), true);
+});
+
+test("parseNorthHillsOcrText trims inline page footers from final readings", () => {
+  const text = `Section A, Row 5
+PFEIFFER (SA, 1, c) upright, orange granite, exc cond "?feiffer / 1890 Harry R. 1986 / waiter H. / Nov. 7, 1886 / Sept. 2, 1973 / Lynn C. / June 7, 1894 / April 18, 1981" CR: Hany, middle name Ralph, Aug. 29, 1890 - Jan. 23, 1986 Franklin Park. Borough 185 Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 1);
+  assert.deepEqual(
+    [entries[0].nameText, entries[0].sourcePageNumber, entries[0].parsedSectionName, entries[0].parsedRowNumber, entries[0].parsedPositionNumber],
+    ["PFEIFFER", 185, "A", 5, 1],
+  );
+  assert.equal(entries[0].rawText.includes("Franklin Park"), false);
+});
+
 test("parseNorthHillsOcrText accepts mixed-case OCR names and page footer punctuation", () => {
   const text = `Section C, Row 1
 B[-1 (lC, 7, s) upright, gray granite, exc cond "F. B."
@@ -233,4 +312,51 @@ Franklin Park Borough               200                Allegheny County, PA`;
   assert.deepEqual(entries[0].parsedYears, [1875, 1956]);
   assert.deepEqual(entries[1].parsedYears, [1880, 1927]);
   assert.deepEqual(entries[2].parsedYears, [1843, 1849, 1861, 1865, 1920, 1926]);
+});
+
+test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
+  const text = `Section A, Row 6
+SCOTT (6A, 4, s) pillow, pink granite, exc cond, flowers "Son/ Donald
+A. Scott/ 1923-1934"
+
+KIND (7A, 6, s) upright, gray granite, exc cond, border, flower
+"Mother/ Florence B. / Kind/ 1908-2002" CR: Aug. 3, 1908 - Nov. 31,
+2002 FranklinPark Borough 187 Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 2);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["SCOTT", 187, "A", 6, 4],
+      ["KIND", 187, "A", 7, 6],
+    ],
+  );
+  assert.equal(entries[1].rawText.endsWith("Allegheny County, PA"), false);
+});
+
+test("parseNorthHillsOcrText detects page number when OCR reads Park as Parle", () => {
+  const text = `OPPERMAN (1B, 6, c) upright, gray granite, exc cond, flowers
+"Opperman/ Caroline M. / 1887-1966 / Ida 0. / 1884-1924" On back:
+"Opperman/ Carl/ 1892-1893 / Anna A. / 1889-1899 / Mary 5. /
+1858-1909 /William/ 1880-1953"
+
+MASHEY /GOLLMAR (2B, 9, c) upright, gray granite, exc cond,
+flowers, leaves "M / Amos Mashey 1839-1912 / Mary, his wife/ 1845-
+1911 / Mashey" On back: "M" CR: Amos, d. July 3, 1912. Mary
+Gollmar Mashey, d. April 24, 1911
+Franklin Parle Borough               191                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 2);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["OPPERMAN", 191, "B", 1, 6],
+      ["MASHEY /GOLLMAR", 191, "B", 2, 9],
+    ],
+  );
+  assert.equal(entries[1].rawText.includes("Franklin Parle Borough"), false);
 });
