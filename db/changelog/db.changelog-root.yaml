@@ -476,3 +476,6 @@ databaseChangeLog:
   - include:
       file: changes/159-correct-north-hills-miller-muller-page-191.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/160-repair-north-hills-page-192.sql
+      relativeToChangelogFile: true
