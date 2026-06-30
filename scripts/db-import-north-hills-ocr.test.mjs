@@ -397,3 +397,66 @@ Franklin Park Borough               191                Allegheny County, PA`;
   assert.deepEqual(entries[1].surnames, ["DEER"]);
   assert.equal(entries[2].rawText.includes("[DEER] (2B, 6"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 192 row two readings", () => {
+  const text = `MASHEY (2B, 10, s) flat, bronze, exc cond, leaves
+"William A. Mashey / Feb. 12, 1891 Nov. 11, 1973"
+
+STEIGERWALD (2B, 11, s) upright, gray marble, poor cond, sunken,
+fallen "Andrew / Steigerwald / born / June 16, 1887 / died / June 3,
+1896 / At rest" SK: June 16, 1867 - June 8, 1896
+
+STEIGERWALD (2B, 12, s) upright, poor cond, sunken, fallen
+"Hier ruht in Gott / Johann Steigerwald / geboren in / [ -] / [ -] Baiern /
+22 Marz 1819 / gestorben / 19 Marz 1885" CRG: Steigerwald, Johann from
+Partenstein Bavaria, b. 22 March 18(?), d. 18 March 1885, age 65y llm 27da,
+f. March 21
+
+BRANDT (2B, 14, s) upright with open ledger, gray granite, exc cond
+"Sophia Brandt / 1839-1922 / At rest / Mother" CR: Mrs. Philip,
+d. December 2, 1922, 83y 5m 9da
+
+CUPPS/BRANDT (2B, 15, s) upright, gray granite, exc cond, sunken, fallen,
+leaves "C / Catherine / wife of / George Cupps, / born May 1, 1864 /
+died Nov. 25, 1891" CRG: Katharina Cupps nee Brandt, b. 1 May 1864
+Allegheny Co., married 2 April 1888, d. 25 November 1891, age 27y 5m 25da,
+f. November 28
+
+WALLSCMIEDT/WALDSCHMIDT (2B, 16, s) upright, white marble, poor cond,
+sunken, fallen, clasped hands "Hier Ruth / Katharina / Wallscmiedt / Geb,
+1 Mai 1810 / Gest, 11, Juli/ 1878 / [illegible lines)" CRG: Katharina
+Waldschmidt, b. 10 May 1810, f. July 13, 1878, d. 11 July at about 8:30 pm,
+age 67y 2m 11d
+
+GROETZINGER (2B, 17, s) upright, gray granite, exc cond
+"Christopher/ Groetzinger / 1827-1902 / Father"
+
+GROETZINGER/GERBIG (2B, 18, s) upright, gray granite, exc cond
+"Sarah Groetzinger / 1832-1909 / Mother" CR: d. May 12, 1909. Mrs. Sarah
+Gerbig Groetzinger
+
+GROETZINGER/GERWIG (2B, 19, s) upright, gray granite, exc cond
+"G / Emil Albert / Groetzinger / born / Jan. 18, 1858: / died /
+Nov. 14, 1884 / 'For his soul pleased the Lord / Therefore hasted He to
+take him / Away from amoung the wicked" CRG: Emil Albert Groetzinger, son of
+Christoph & Sarah nee Gerwig, b. 13 January 1838 in Westmoreland Ct,
+f. November 16, 1884, d. 14 November, age 26y, 9m, 27d
+Franklin Park Borough               192                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["MASHEY", 192, "B", 2, 10],
+      ["STEIGERWALD", 192, "B", 2, 11],
+      ["STEIGERWALD", 192, "B", 2, 12],
+      ["BRANDT", 192, "B", 2, 14],
+      ["CUPPS/BRANDT", 192, "B", 2, 15],
+      ["WALLSCMIEDT/WALDSCHMIDT", 192, "B", 2, 16],
+      ["GROETZINGER", 192, "B", 2, 17],
+      ["GROETZINGER/GERBIG", 192, "B", 2, 18],
+      ["GROETZINGER/GERWIG", 192, "B", 2, 19],
+    ],
+  );
+});
