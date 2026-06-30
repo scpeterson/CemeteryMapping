@@ -144,7 +144,7 @@ function printedPageNumber(pageText) {
 }
 
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
-const entryNamePattern = String.raw`(?:\[\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?\]|\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?)`;
+const entryNamePattern = String.raw`(?:\[\p{Lu}[\p{L}0-9/[\]()? !.'&-]{1,90}?\]|\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?)`;
 const entryStartPattern = new RegExp(
   String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\s*,?\)`,
   "u",
