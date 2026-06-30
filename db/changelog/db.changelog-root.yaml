@@ -470,3 +470,9 @@ databaseChangeLog:
   - include:
       file: changes/157-add-relationship-performance-indexes.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/158-repair-north-hills-page-191-deer-opperman.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/159-correct-north-hills-miller-muller-page-191.sql
+      relativeToChangelogFile: true

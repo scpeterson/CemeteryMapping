@@ -73,7 +73,7 @@ function surnameList(nameText) {
       cleanText(nameText)
         .replace(/^\[|\]$/gu, "")
         .split("/")
-        .map((item) => item.replace(/[^A-Za-z'-]/gu, "").trim())
+        .map((item) => item.replace(/[^\p{L}'-]/gu, "").trim())
         .filter((item) => item.length > 1),
     ),
   ];
@@ -144,8 +144,15 @@ function printedPageNumber(pageText) {
 }
 
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
-const entryStartPattern = /^\s*([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\s*,?\)/u;
-const embeddedEntryStartPattern = /([A-Z][A-Za-z0-9/[\]()? .'&-]{1,90}?)\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\s*,?\)/gu;
+const entryNamePattern = String.raw`(?:\[\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?\]|\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?)`;
+const entryStartPattern = new RegExp(
+  String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\s*,?\)`,
+  "u",
+);
+const embeddedEntryStartPattern = new RegExp(
+  String.raw`(${entryNamePattern})\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\s*,?\)`,
+  "gu",
+);
 const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,/u;
 
 function isNonEntryBoundary(line) {

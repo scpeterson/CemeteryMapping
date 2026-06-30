@@ -12,6 +12,20 @@ function compact(value) {
   return text || undefined;
 }
 
+function displayName(value) {
+  return String(value ?? "")
+    .replace(/^[\s"“”]+|[\s"“”]+$/gu, "")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
+function toCandidateMatch(candidate) {
+  return {
+    ...candidate,
+    fullName: displayName(candidate.fullName),
+  };
+}
+
 function normalizeLimit(value) {
   const limit = Number.parseInt(String(value ?? ""), 10);
   if (!Number.isFinite(limit)) return 100;
@@ -65,7 +79,7 @@ function toEntry(row) {
     parseNotes: row.parse_notes ?? [],
     status: row.status,
     candidateMatchCount: Number(row.candidate_match_count ?? 0),
-    candidateMatches: row.candidate_matches ?? [],
+    candidateMatches: (row.candidate_matches ?? []).map(toCandidateMatch),
     sourceFacts: row.source_facts ?? [],
   };
 }

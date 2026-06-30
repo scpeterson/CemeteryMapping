@@ -360,3 +360,40 @@ Franklin Parle Borough               191                Allegheny County, PA`;
   );
   assert.equal(entries[1].rawText.includes("Franklin Parle Borough"), false);
 });
+
+test("parseNorthHillsOcrText accepts accented and bracketed NHG headings on page 191", () => {
+  const text = `MILLER/MÜLLER (2B, 3, c) obelisk, gray marble, good cond
+"John / Miller / 1803-1875 / Mary Miller / 1810-1902" CRG: Johannes Müller,
+b. 24 June 1803, d. 20 April 1876, age 73y, f. 22 April. He was from
+Dudenhofen, Kreis Wetzlar, Prussia
+
+[DEER] (2B, 4, s) upright, small white marble, poor cond "Mother"
+See Deer family obelisk, (2B, 5)
+
+DEER (2B, 5, c) obelisk, white marble, poor cond. On front: "F. Myrtle /
+Deer / 1871-1898 / Nannie N /Deer/ 1868-1905" On left: "Mary, / wife of /
+Wm Deer, / born / Oct. 20, 1838 / died / June 8, 1893 / Weep not she is not /
+dead, but sleepeth" On back: "William / Deer, / born / Sep. 3, 1828 / died /
+Sep. 22, 1911" CR: William, d. Sept. 24, 1911. SK: F. Myrtle, d. 1895 Note:
+See marker for Nannie at (1B, 4) and for Myrtle at (1B, 5)
+
+[DEER] (2B, 6, s) upright, small white marble, poor cond "Father"
+See Deer family obelisk, (2B, 5)
+Franklin Park Borough               191                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 4);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["MILLER/MÜLLER", 191, "B", 2, 3],
+      ["[DEER]", 191, "B", 2, 4],
+      ["DEER", 191, "B", 2, 5],
+      ["[DEER]", 191, "B", 2, 6],
+    ],
+  );
+  assert.deepEqual(entries[0].surnames, ["MILLER", "MÜLLER"]);
+  assert.deepEqual(entries[1].surnames, ["DEER"]);
+  assert.equal(entries[2].rawText.includes("[DEER] (2B, 6"), false);
+});
