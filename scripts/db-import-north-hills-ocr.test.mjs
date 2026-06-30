@@ -563,3 +563,55 @@ Franklin Park Borough               194                Allegheny County, PA`;
     ],
   );
 });
+
+test("parseNorthHillsOcrText splits corrected page 195 Hieber, Schnabel, and Loeffler readings", () => {
+  const text = `BRANDT (3B, 20, s) upright, gray granite, exc cond. On top·:
+"Baby" On front: "Russell L. Brandt/ born/ Mar. 20, 1897 / died Jun,e 13.,
+1897" Cement slab in front of stone. Could be a base. CRG: Russel Layton
+Brandt b. 20 March 1897, d. 13 June 1897, buried 15 June, age 2m 23da
+Plot marker: "H"
+
+HIEBER (3B, 23, s) upright, black marble, poor cond, sunken, fallen, heart
+"Esther / dau. of / D. L. & A. C. Hieber/ Nov. 15, 1898 / Dec. 16, 1905"
+Note: Stone located at foot of (3B, 22)
+
+HIEBER (3B, 24, s) upright, black marble, poor cond, sunken., fallen., heart
+"Alfred/ son of / D. L. & A. C. Hieber/ May 10, 1906 / June 24 / 1909"
+Note: Stone located at foot o( (3B, 22) CR: Alfred David
+
+SCHNABEL/VOGAL (3B, 25, s) upright, gray granite, exc concl
+"Carl Schnabel/ born/ March 12, 1867, /died/ Jan. 22, 1895." CRG:
+Carl Schnabel, son of Philipp & wife Maria Katharina nee Vogal, b. 12 March
+1867 in Allegheny Co. Pa., d. 22 January 1895 In Pittsburgh, age 27y 10m 10da,
+f. January 22
+
+SCHNABEL (3B, 26, s) upright with open ledger, gray granite, ,exc cond
+"Henry Schnabel / 1856-1904"
+
+LOEFFLER (4B, 1, s) upright, white marble, poor cond, sunken, fallen, lamb
+"John E / [-] / Loeffler / [-] / [-] Aug. 1887 / [2 Illegible lines]''
+
+LOEFFLER (4B, 2, s) upright, white marble, poor cond, sunken, fallen, lamb
+"Frank J. / [-] / Loeffler/ [3 illegible lines]"
+
+LOEFFLER (4B, 3, s) upright, gray granite, good cond, leaves, wheel
+"Elizebeth/ Loeffler/ 1851-1911 /A. noble wife &./ Devoted mother / At rest''
+CR: d. March 2, 1911, 59y
+Franklin Park Borough               195                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["BRANDT", 195, "B", 3, 20],
+      ["HIEBER", 195, "B", 3, 23],
+      ["HIEBER", 195, "B", 3, 24],
+      ["SCHNABEL/VOGAL", 195, "B", 3, 25],
+      ["SCHNABEL", 195, "B", 3, 26],
+      ["LOEFFLER", 195, "B", 4, 1],
+      ["LOEFFLER", 195, "B", 4, 2],
+      ["LOEFFLER", 195, "B", 4, 3],
+    ],
+  );
+});

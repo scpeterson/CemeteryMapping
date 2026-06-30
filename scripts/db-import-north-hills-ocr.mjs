@@ -67,6 +67,13 @@ function normalizeScope(value) {
   return "unknown";
 }
 
+function normalizeSectionName(value, fallback) {
+  const text = String(value ?? "").toUpperCase();
+  if (text === "O") return fallback;
+  if (text === "8") return "B";
+  return text;
+}
+
 function surnameList(nameText) {
   return [
     ...new Set(
@@ -146,14 +153,14 @@ function printedPageNumber(pageText) {
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
 const entryNamePattern = String.raw`(?:\[\p{Lu}[\p{L}0-9/[\]()? !.'&-]{1,90}?\]|\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?)`;
 const entryStartPattern = new RegExp(
-  String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\s*,?\)`,
+  String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO8])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)([sc])\s*,?\)`,
   "u",
 );
 const embeddedEntryStartPattern = new RegExp(
-  String.raw`(${entryNamePattern})\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\s*,?\)`,
+  String.raw`(${entryNamePattern})\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)[sc]\s*,?\)`,
   "gu",
 );
-const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO]\s*,/u;
+const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8]\s*,/u;
 
 function isNonEntryBoundary(line) {
   return (
@@ -228,7 +235,7 @@ export function parseNorthHillsOcrText(text) {
       if (!entryMatch) return;
 
       const parsedRowNumber = normalizeNumber(entryMatch[2]) ?? currentEntry.parsedRowNumber;
-      const parsedSectionName = entryMatch[3].toUpperCase() === "O" ? currentEntry.parsedSectionName : entryMatch[3].toUpperCase();
+      const parsedSectionName = normalizeSectionName(entryMatch[3], currentEntry.parsedSectionName);
       const descriptor = descriptorText(rawSegment);
       const sourceLineStart = Math.min(currentEntry.sourceLineEnd, currentEntry.sourceLineStart + segmentIndex);
       const entry = {
@@ -280,7 +287,7 @@ export function parseNorthHillsOcrText(text) {
         if (entryMatch) {
           flushEntry();
           const parsedRowNumber = normalizeNumber(entryMatch[2]) ?? currentRowNumber;
-          const parsedSectionName = entryMatch[3].toUpperCase() === "O" ? currentSectionName : entryMatch[3].toUpperCase();
+          const parsedSectionName = normalizeSectionName(entryMatch[3], currentSectionName);
           currentEntry = {
             sourcePageIndex: pageIndex + 1,
             sourcePageNumber: pageNumber,
