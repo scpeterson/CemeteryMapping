@@ -460,3 +460,56 @@ Franklin Park Borough               192                Allegheny County, PA`;
     ],
   );
 });
+
+test("parseNorthHillsOcrText splits corrected page 193 Pfeiffer readings", () => {
+  const text = `PFEIFFER/PFEIFER (3B, 1, c) upright, gray granite, exc cond, flower, leaves,
+lattice "Pfeiffer / Jacob/ 1858-1954 / Father / Pauline A. / 1863-1945 /
+Mother" On base: "Rock of Ages" in circle. On back: "Pfeiffer" CR: Jacob,
+d. July 22, 1954. Mrs. Jacob Pfeifer (Pauline), d. October 11, 1945
+
+PFEIFFER (3B, 2, s) upright, gray granite, exc cond, palm leaf
+"Howard E. / Pfeiffer / 1903-1905"
+
+PFEIFFER (3B, 5, s) upright, gray granite, exc cond ''Gotlieb Pfeiffer /
+May 21, 1821 / Feb. 25, 1889 / Father" CRG: Gottlieb Pfeifer b. 21 May
+in Lautbomsar Kussel (Rhein Baiern), f. February 27, 1889, d. 25 February,
+age 67y 9m 4d
+
+PFEIFFER (3B, 6, s) upright, gray granite, exc cond "Anna Dorothea/
+wife of / Gotlieb Pfeiffer / Aug. 12, 1816 / Mar, 7, 1888 / Wife"
+
+PFEIFFER/SCHULZ (3B, 7, s) upright, gray granite, exc cond "Caroline M.
+Schulz/ wife of / John Pfeiffer / Oct. 28, 1854 / Oct. 21, 1879 / Mother /
+In labour and in love allied, / In death they here sleep side by side /
+Resting in peace - the aged twain - / Till Christ shall raise them up again"
+
+PFEIFFER/BRANDT (3B, 8, c) upright, gray granite, exc cond, scrolls
+"Pfeiffer/ George/ 18,51-1887 / Regina, / 1853-1930" CRG: Geo.,
+f. December 10, 1887, age 36y, 9m, 15d. CR: Regina Brandt Pfeiffer,
+d. September 8, 1930, 77y 7m 5da
+
+ROBINSON/PFEIFFER (3B, 9, s) upright, gray granite, exc cond, picket fence,
+leaves, scrolls "Amanda Pfeiffer / Robinson / 1876-1960" CR: d. February 22,
+1960, 84y 1m 7da
+
+PFEIFFER (3B, 10, s) upright, gray granite, exc cond, picket fence, leaves,
+scrolls "Albert F. Pfeiffer / 1882-1963" CR: d. November 15, 1963,
+81y 1m 16da. Lived with Ernest
+Franklin Park Borough               193                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["PFEIFFER/PFEIFER", 193, "B", 3, 1],
+      ["PFEIFFER", 193, "B", 3, 2],
+      ["PFEIFFER", 193, "B", 3, 5],
+      ["PFEIFFER", 193, "B", 3, 6],
+      ["PFEIFFER/SCHULZ", 193, "B", 3, 7],
+      ["PFEIFFER/BRANDT", 193, "B", 3, 8],
+      ["ROBINSON/PFEIFFER", 193, "B", 3, 9],
+      ["PFEIFFER", 193, "B", 3, 10],
+    ],
+  );
+});
