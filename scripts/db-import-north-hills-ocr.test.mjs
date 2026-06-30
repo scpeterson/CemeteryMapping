@@ -513,3 +513,53 @@ Franklin Park Borough               193                Allegheny County, PA`;
     ],
   );
 });
+
+test("parseNorthHillsOcrText splits corrected page 194 Schnabel and Beuerman readings", () => {
+  const text = `SCHNABEL/SCHNOBEL (3B, 11, s) upright, gray granite, exc cond,
+scroll, leaves "PS /  Philip Schnabel / born Sept. 7, 1821, / died Dec. 17,
+1921. / age 100 years / Selig sind die todten, / die in dem herrn sterben /
+Rev. 14-18." CR: Philip Schnobel, Sr., d. December 19, 1921, l00y 3m 11da
+
+SCHNABEL (3B, 13, s) upright, gray granite, exc cond, scroll, leaves
+"SL / Hlerruhet in Gott / Louise Schnabel / geboren / 1, Juli 1860, /
+gestorben / 14, Juli 1887. / Ich habe eihen guten kampf gekampft, /
+Ich habe den lauf vollendet ich habe / Glauben gehalten hinfort ist mir /
+beigelegt die krone der gerechtickeit" CRG: Louise Schnabel, f. July 17,
+1887, d. 14 July, age 27y 14 d
+
+BEUERMAN (3B, 15, s) upright, white marble, exc cond
+"Marie Louise / Beuerman / Sept. 1849 / Sept. 1870" CRG: Marie Luise
+Beuerman, dau. of Adolph Daniel & Charlotte, f. September 15, 1871,
+d. 13 September, age 22y 4da
+
+[BEUERMAl!f] (3B, 16, s) upright, white marble, poor cond, lamb "Franz"
+
+[BEUERMANN] (3B, 17, s) upright, white marble, poor cond. On top: "Father"
+On front: "A light Is from our/ Household gone / A voice we loved is /
+Stilled / A vacant place / Around our hearth / That never can be/ Filled"
+
+BEUERMANN (3B, 18, c) obelisk, red granite, exc cond, vase on ornate top
+On front: "Beuermannn On left: "Adolph / Beuermann / born / Dec. 24, 1819,
+/ died / Oct. 27, 1896" On right: "Charlotte/ Beuermann / born /
+Nov. 20, 1824, / died / Jan. 25, 1905"
+
+[BEUERMANN] (3B, 19, s) upright, white marble, poor cond. On top: "Mother''
+On front: "Dearest loved one we / have laid her in the / peaceful graves
+embrace / but thy memory will / be cherished till we I meet thy heavenly face."
+Franklin Park Borough               194                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["SCHNABEL/SCHNOBEL", 194, "B", 3, 11],
+      ["SCHNABEL", 194, "B", 3, 13],
+      ["BEUERMAN", 194, "B", 3, 15],
+      ["[BEUERMAl!f]", 194, "B", 3, 16],
+      ["[BEUERMANN]", 194, "B", 3, 17],
+      ["BEUERMANN", 194, "B", 3, 18],
+      ["[BEUERMANN]", 194, "B", 3, 19],
+    ],
+  );
+});
