@@ -55,8 +55,11 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
             parse_confidence: "high",
             parse_notes: [],
             status: "staged",
-            candidate_match_count: "1",
-            candidate_matches: [{ burialId: "burial-1", gravesiteId: "TLC-GPS-0009", sectionId: "A", fullName: "George L Burgess", score: 9 }],
+            candidate_match_count: "2",
+            candidate_matches: [
+              { burialId: "burial-1", gravesiteId: "TLC-GPS-0009", sectionId: "A", fullName: "George L Burgess", score: 9 },
+              { burialId: "burial-2", gravesiteId: "TLC-GPS-0448", sectionId: "D", fullName: '"" Frederick Miller', score: 5 },
+            ],
             source_facts: [{ id: "fact-1", sourceCode: "CR", factType: "death_date", factValue: "December 16, 1965", status: "staged" }],
           },
         ],
@@ -70,6 +73,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
   assert.equal(review.batches[0].matchedCount, 2);
   assert.deepEqual(review.summary[0], { parseConfidence: "high", status: "staged", count: 2 });
   assert.equal(review.entries[0].candidateMatches[0].gravesiteId, "TLC-GPS-0009");
+  assert.equal(review.entries[0].candidateMatches[1].fullName, "Frederick Miller");
   assert.equal(review.entries[0].sourceFacts[0].factValue, "December 16, 1965");
 });
 
