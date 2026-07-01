@@ -742,3 +742,36 @@ Franklin Park Borough               197                Allegheny County, PA`;
   );
   assert.equal(entries[8].rawText.includes("Balance of row"), false);
 });
+
+test("parseNorthHillsOcrText accepts corrected page 198 section C readings", () => {
+  const text = `WATENPOOL (2C, 3, s) upright, gray granite, exc cond, flower, scroll
+"William A. Watenpool / 1890-1960 / Father" CR: d. December 25, 1960,
+70y 11m 10da
+
+HEIN (2C, 6, c) upright, gray granite, exc cond, flowers, leaves
+"Hein / Michael J. / 1876-1954 /Father/ Mathilda K. / 1874-1956 / Mother''
+On base: "Rock of Ages" In circle. On back: "Hein"
+
+HIEBER (2C, 10, s) pillow, gray granite, exc cond, flowers, leaves
+"Bertha L. Hieber / 1903-1975"
+
+FOWLER (2C, 13, c) upright, gray granite, exc cond
+"Fowler/ Chester J. / 1893-1981 / Helen E. / 1897-1973" CR: Chester,
+d. May 23, 1981, 87y 5m 25da
+Franklin Park Borough               198                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["WATENPOOL", 198, "C", 2, 3],
+      ["HEIN", 198, "C", 2, 6],
+      ["HIEBER", 198, "C", 2, 10],
+      ["FOWLER", 198, "C", 2, 13],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("Watenpoot"), false);
+  assert.equal(entries[2].rawText.includes("Hle,ber"), false);
+  assert.equal(entries[3].rawText.includes("5m_25da"), false);
+});
