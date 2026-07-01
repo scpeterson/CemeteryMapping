@@ -679,3 +679,66 @@ Franklin Park Borough               196                Allegheny County, PA`;
   assert.equal(entries[0].rawText.includes("30 feet to end of row"), false);
   assert.equal(entries.at(-1).rawText.includes("Sunken area to east toward road"), false);
 });
+
+test("parseNorthHillsOcrText accepts corrected page 197 section B and C readings", () => {
+  const text = `WILL/BRUERMANN/PFEIFFER (6B, 2, s) upright, marble, poor cond,
+sunken, fallen, lamb "Amanda L. / tochter von(?) / F. & E. Will/ geboren /
+24 Jan. 1883 / gestorben / 11 April 1888 / [Illegible lines]" CRG:
+Amanda Luella Will, daughter of Frank & Elisabeth nee Bruermann/Pfeiffer wife
+of Gottlieb Pfeiffer, f. April 11, 1888
+
+HECK/HÖCH (6B, 3, s) upright, marble, poor cond, sunken, fallen, hand with
+upraised index finger, shield "Wilhelm J. / sohn von J(?) / Heck / [-] Feb.
+187(?) / [-] Jan. 187(?) / alter 1 Jahr / 10 mo. u. 21 tag /
+[Illegible lines]" CRG: Wilhelm Jacob Höch, little son of Jacob & Carlina
+Elisabeth, f. January 21, 1875, d. 19 January, age 1y 10m 21 [da]
+
+SOERGEL (1C, 1, c) upright, gray granite, exc cond
+"Soergel / Roy R. / 1895 - 1974 / Ruby l. / 1897 - 1994" CR: Roy Robert,
+October 27, 1974, 78y11m 15da. Ruby, April 28, 1897 - July 15, 1994
+
+SOERGEL (1C, 2, s) upright, gray granite, exc cond, flowers
+"Clarence W. / son of / Roy & Ruby Soergel / 1925-1931" CR: Middle name
+Wesley, d. June 25, 1925 - June 28, 1931
+
+FLANDERS (1C, 3, s) pillow, pink granite, exc cond, flowers, leaves
+"Mary (May) Flanders/ 1903-1998 / Mother" CR: Dec. 28, 1903 - Nov. 5, 1998
+
+GILLEN (1C, 4, s) pillow, pink granite, exc cond
+"Arthur l. Gillen/ 1902-1938 / Husband"
+
+GILLEN/HEEP (1C, 5, c) pillow, gray granite, exc cond
+"Gillen / James D. / 1875-1953 / Father / Emma Heep/ 1878-1971 / Mother"
+
+SIMPSON (1C, 6, c) upright, gray granite, exc cond, airplane
+"Simpson / James H. / Aug. 15, 1922 / Sept. 13, 1995" Second side Is blank.
+On back: "Simpson" Separate flag holder: "US / Veteran", star CR: buried
+September 16, 1995, 73y
+
+B[-] (1C, 7, s) upright, gray granite, exc cond "F. B."
+Balance of row, approximately 100 feet, is empty
+
+McWILLIAMS (2C, 1, s) pillow, gray granite, good cond, flower
+"Brother/ Henry McWilllams / 1909-1965" CR: Middle Initial T., d.
+December 16, 1965, 56y 5m 25da, "our janitor"
+Franklin Park Borough               197                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["WILL/BRUERMANN/PFEIFFER", 197, "B", 6, 2],
+      ["HECK/HÖCH", 197, "B", 6, 3],
+      ["SOERGEL", 197, "C", 1, 1],
+      ["SOERGEL", 197, "C", 1, 2],
+      ["FLANDERS", 197, "C", 1, 3],
+      ["GILLEN", 197, "C", 1, 4],
+      ["GILLEN/HEEP", 197, "C", 1, 5],
+      ["SIMPSON", 197, "C", 1, 6],
+      ["B[-]", 197, "C", 1, 7],
+      ["McWILLIAMS", 197, "C", 2, 1],
+    ],
+  );
+  assert.equal(entries[8].rawText.includes("Balance of row"), false);
+});
