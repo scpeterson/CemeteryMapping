@@ -509,3 +509,12 @@ databaseChangeLog:
   - include:
       file: changes/170-repair-north-hills-page-201.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/171-repair-north-hills-page-202.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/172-complete-north-hills-page-202-facts.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/173-repair-north-hills-page-203.sql
+      relativeToChangelogFile: true

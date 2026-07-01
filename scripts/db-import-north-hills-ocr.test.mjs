@@ -398,6 +398,133 @@ Franklin Park Borough               201                Allegheny County, PA`;
   assert.equal(entries[2].rawText.includes("Franklin Park Borough"), false);
 });
 
+test("parseNorthHillsOcrText splits corrected page 202 section C readings", () => {
+  const text = `Section C, Row 4
+HAGUE (4C, 5, s) upright, gray granite, exc cond, flower spray "Amanda
+L. Hague / 1886-1929" CR: d. June 30, 1929
+
+HAGUE/BROERMAN (4C, 6, c) upright, gray granite, exc cond, scroll, ivy
+"Hague/ Jacob Hague/ 1841-1922 / Margaret Caroline, / His wife /
+1841-1918" CR: Jacob, d. March 26, 1922, 80y 7m 3da. Caroline
+Broerman, d. Sept. 14, 1918
+
+SARVER (4C, 7, s) pillow, gray granite, exc cond "Father/ C. Dale Sarver
+/ 1877-1944'' CR: Clarence Dale Sarver, d. January 5, 1944
+TAYLOR/SARVER (4C, 8, s) pillow, gray granite, exc cond "Mother/ Olive
+Sarver / Taylor / 1888-1967" CR: d. April 2, 1967, 78y 4m 10da NOTE:
+Foundation stone(?), small concrete flat stone in ground, no inscription
+BROERMAN/SCHARF (4C, 9, s) pillow, gray granite, exc cond "Mother /
+Marie B. Broerman / 1854-1944" CR: Marie Scharf, d. November 25, 1944
+
+HEINTZ (4C, 13, s) pillow, gray granite, exc cond, grapes "Jacob
+Heinl:2,Jr /·1886-1949" CR: Jacob A., d. October 16, 1949, 63y 28da
+SCHUG (4C, 14, c) flat, gray granite, exc cond, crosses "Schug / 1910
+Emile J. 1994 / 1912 Hazel M. 1997"
+ZIEGENTHALER (4C, 15, s) upright, gray granite, exc cond, ivy "Z /
+George / Ziegenthaler / born / Jan. 7, 1859 / died / May 30, 1902 / At
+rest"
+
+WITTMER (4C, 16, s) pillow, gray granite, exc cond "William J. Wittmer /
+1848-1923 / Father" CR: d. September 4, 1923, 78y 3m 15da
+Franklin Park Borough               202                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 9);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["HAGUE", 202, "C", 4, 5, "single"],
+      ["HAGUE/BROERMAN", 202, "C", 4, 6, "couple"],
+      ["SARVER", 202, "C", 4, 7, "single"],
+      ["TAYLOR/SARVER", 202, "C", 4, 8, "single"],
+      ["BROERMAN/SCHARF", 202, "C", 4, 9, "single"],
+      ["HEINTZ", 202, "C", 4, 13, "single"],
+      ["SCHUG", 202, "C", 4, 14, "couple"],
+      ["ZIEGENTHALER", 202, "C", 4, 15, "single"],
+      ["WITTMER", 202, "C", 4, 16, "single"],
+    ],
+  );
+  assert.equal(entries[1].rawText.includes("80y 7m 3da"), true);
+  assert.equal(entries[3].rawText.includes("78y 4m 10da"), true);
+  assert.equal(entries[3].rawText.includes("Foundation stone(?)"), true);
+  assert.deepEqual(entries[6].parsedYears, [1910, 1912, 1994, 1997]);
+  assert.equal(entries[7].inscriptionText.includes("Ziegenthaler"), true);
+  assert.equal(entries[8].rawText.includes("78y 3m 15da"), true);
+});
+
+test("parseNorthHillsOcrText splits corrected page 203 section C readings", () => {
+  const text = `Section C, Row 4
+WITTMER/WITMER (4C, 17, s) pillow, gray granite, exc cond "Barbara
+Wittmer/ 1854-1925 / Mother" CR: Barbara Witmer, d. & buried April 21,
+1925
+
+SARVER (4C, 18, c) upright, gray granite, exc cond, scroll, ivy "Philip
+Sarver / 1858-1919 / Catherine, his wife / 1865-1927" CR: Philip B., d.
+February 8, 1919, 61y. Catherine, d. January 27, 1927
+
+HAGUE (4C, 20, c) upright, gray granite, exc cond, ivy "Hague/ Laverne
+J. / 1897-1974 / Father / Clara H. / 1897-1948 / Mother" On back:
+"Hague" CR: Laverne, d. June· 1, 1974
+
+Section C, Row 5
+SOERGEL (5C, 1, c) upright, gray granite, exc cond, flowers "Soergel /
+Kenneth B. / Dec. 12, 1932 / Apr. 1993 / Clara Pearle / May 24, 1932
+[blank]" On back: "Soergel" Separate flag holder: "US / Veteran" CR:
+Kenneth, d. April 17, 1993
+
+SOERGEL (5C, 2, c) flat, bronze, exc cond, roses "Howard L. / 1898-
+1968 / Elsie G. / 1900-1986 / Soergel" CR: Howard, d, November 9, 1968,
+70y 3m 7da. Elsie, Jan. 2, 1900 - September 15, 1986
+
+SOERGEL (5C, 3, c) upright, gray granite, exc cond, rose "Soergel /
+Wilbert J. / 1891-1968 / Father / Hazel A. / 1892-1983 / Mother" On
+back: "Soergel" CR: Hazel, d. March 16, 1983, 90y 9m 21da
+
+MURRAY (5C, 4, s) upright, gray granite, exc cond "M / Charles W. /
+Murray / 1879-1919" On back: "Murray" CR: d. February 14, 1919
+
+STEWART/MURRAY/WATENPOOL (5C, S, s) upright, gray, exc cond, flowers
+"Mother/ Hilda Murray / Stewart / July 27, 1888 / June 13, 1970'' CR:
+Hilda Watenpool Stewart, d. June 13, 1970
+
+MURRAY (5C, 6, c) flat, gray granite, exc cond, flowers "Murray / C.
+Wesley / Oct. 9, 1915 / Feb. 15, 2005 / Helen I. / May 23, 1913 / June
+17, 2003" CR: Helen, birthdate, May 28
+
+BLEAKLEY (5C, 7, c) upright, gray granite, exc cond, flowers "Bleakley/
+Adam / 1875-1939 / Father/  Effie / 1885-1944 / Mother''
+McCLELLAND/SARVER (5C, 8, s) upright, gray granite, exc cond "Clara R. /
+Sarver / McClelland / 1868-1916" CR: d. January 28, 1916
+Franklin Park Borough               203                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 11);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["WITTMER/WITMER", 203, "C", 4, 17, "single"],
+      ["SARVER", 203, "C", 4, 18, "couple"],
+      ["HAGUE", 203, "C", 4, 20, "couple"],
+      ["SOERGEL", 203, "C", 5, 1, "couple"],
+      ["SOERGEL", 203, "C", 5, 2, "couple"],
+      ["SOERGEL", 203, "C", 5, 3, "couple"],
+      ["MURRAY", 203, "C", 5, 4, "single"],
+      ["STEWART/MURRAY/WATENPOOL", 203, "C", 5, 5, "single"],
+      ["MURRAY", 203, "C", 5, 6, "couple"],
+      ["BLEAKLEY", 203, "C", 5, 7, "couple"],
+      ["McCLELLAND/SARVER", 203, "C", 5, 8, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("Barbara Witmer, d. & buried April 21, 1925"), true);
+  assert.equal(entries[1].inscriptionText.includes("Catherine, his wife"), true);
+  assert.equal(entries[5].inscriptionText.includes("Hazel A."), true);
+  assert.equal(entries[7].rawText.includes("Hilda Watenpool Stewart"), true);
+  assert.deepEqual(entries[9].parsedYears, [1875, 1885, 1939, 1944]);
+  assert.deepEqual(entries[10].parsedYears, [1868, 1916]);
+});
+
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
   const text = `Section A, Row 6
 SCOTT (6A, 4, s) pillow, pink granite, exc cond, flowers "Son/ Donald
