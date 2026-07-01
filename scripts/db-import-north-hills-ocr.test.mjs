@@ -364,6 +364,40 @@ Franklin Park Borough               200                Allegheny County, PA`;
   assert.equal(entries[0].rawText.includes("93y 11m 17da"), true);
 });
 
+test("parseNorthHillsOcrText accepts corrected page 201 section C readings", () => {
+  const text = `Section C, Row 3
+NESBITT/BARTZ/PINKERTON/NESBIT (3C, 23, s) upright, pink granite, good
+cond "Nesbitt / Linda Bartz / 1949-1998 / Not gone, only gone before /
+Hugh Pinkerton / 1938 [blank]" CR: Linda Nesbit Dec. 23, 1949 - July
+24, 1998
+
+Section C, Row 4
+SOERGEL (4C, 1, s) upright, gray granite, exc cond, name on open book
+"Floyd Soergel / 1896-1947 / Father" CR: Middle name Walter, d. June
+16, 1947, 51y 1m 27da
+
+HAGUE (4C, 4, s) upright, gray granite, exc cond, flower spray "Albert
+E. Hague / 1880-1940" CR: Middle name Emil, d. December 10, 1940, 60y
+8m 28da
+Franklin Park Borough               201                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 3);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["NESBITT/BARTZ/PINKERTON/NESBIT", 201, "C", 3, 23, "single"],
+      ["SOERGEL", 201, "C", 4, 1, "single"],
+      ["HAGUE", 201, "C", 4, 4, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("About 35 feet to end of row"), false);
+  assert.equal(entries[1].rawText.includes("51y 1m 27da"), true);
+  assert.equal(entries[2].rawText.includes("60y 8m 28da"), true);
+  assert.equal(entries[2].rawText.includes("Franklin Park Borough"), false);
+});
+
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
   const text = `Section A, Row 6
 SCOTT (6A, 4, s) pillow, pink granite, exc cond, flowers "Son/ Donald
