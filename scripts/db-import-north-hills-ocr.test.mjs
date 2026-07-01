@@ -257,6 +257,39 @@ Franklin Park Borough               199                Allegheny County, PA`;
   assert.deepEqual(entries[1].parsedYears, [1892, 1935]);
 });
 
+test("parseNorthHillsOcrText accepts corrected page 199 section C follow-up readings", () => {
+  const text = `Section C, Row 2
+HUBERT (2C, 14, c) upright, gray granite, exc cond, cross, roses &
+leaves across top "Hubert / Regis T. / Dec. 16, 1935 / April 20, 1996"
+Second side is blank. Bottom of stone: "Dedicated to God and their fellow
+man." Small stone with engraved sprig of leaves in ground in front:
+"Psalm 25" Separate flag holder: "US / Veteran", star. Vase in ground
+
+PFEIFFER (2C, 16, s) upright with open ledger, gray granite, exc cond,
+"Mary Pfeiffer / 1847-1904 / Asleep in Jesus"
+
+Section C, Row 3
+WATENPOOL (3C, 6, s) upright, gray granite, exc cond, flowers
+"Daughter/ Olive C. Watenpool / 1892-1935" CR: Middle name Caroline, d.
+December 3, 1935
+Franklin Park Borough               199                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 3);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["HUBERT", 199, "C", 2, 14, "couple"],
+      ["PFEIFFER", 199, "C", 2, 16, "single"],
+      ["WATENPOOL", 199, "C", 3, 6, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("•"), false);
+  assert.equal(entries[1].inscriptionText, "Mary Pfeiffer / 1847-1904 / Asleep in Jesus");
+  assert.equal(entries[2].rawText.endsWith("-"), false);
+});
+
 test("parseNorthHillsOcrText splits Watenpool through Wiskeman page 200 readings", () => {
   const text = `Section C, Row 3
 WATENPOOL (3C, 7, c) upright, gray, exc cond, flowers "Watenpool /
