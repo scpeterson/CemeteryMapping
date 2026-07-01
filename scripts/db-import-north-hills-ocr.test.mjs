@@ -326,7 +326,7 @@ Franklin Park Borough               200                Allegheny County, PA`;
 
 test("parseNorthHillsOcrText splits Wills siblings and Broerman Will page 200 readings", () => {
   const text = `Section C, Row 3
-WILLS (3C, 12, s) pillow, gray granite, exc cond, grapes, leaves, church window "John H. Wills/ 1875-1956 / Brother" CR: Middle name Henry, d. June 29, 1956, Sly 4m 17da 'WILLS (3C, 13, s) pillow, gray granite, exc cond, grapes, leaves, church window "Frank E. Wills/ 1880-1927 / Brother" CR: d. December 18, 1927 WILLS/BROERMAN/WILL (JC, 14, c) upright, gray granite, exc cond, ornate scrollwork at top with "W" "WIiis / Frank Wills/ 1843- ..1926 / Elizabeth Wills/ 1849-1920" Separate flag holder: "GAR/ 1861 / 1865" CR: Frank, Sr., d. May 28, 1926. Elizabeth Broerman Will, d. April 19, 1920
+WILLS (3C, 12, s) pillow, gray granite, exc cond, grapes, leaves, church window "John H. Wills/ 1875-1956 / Brother" CR: Middle name Henry, d. June 29, 1956, 81y 4m 17da 'WILLS (3C, 13, s) pillow, gray granite, exc cond, grapes, leaves, church window "Frank E. Wills/ 1880-1927 / Brother" CR: d. December 18, 1927 WILLS/BROERMAN/WILL (JC, 14, c) upright, gray granite, exc cond, ornate scrollwork at top with "W" "WIiis / Frank Wills/ 1843- ..1926 / Elizabeth Wills/ 1849-1920" Separate flag holder: "GAR/ 1861 / 1865" CR: Frank, Sr., d. May 28, 1926. Elizabeth Broerman Will, d. April 19, 1920
 Franklin Park Borough               200                Allegheny County, PA`;
 
   const entries = parseNorthHillsOcrText(text);
@@ -340,11 +340,28 @@ Franklin Park Borough               200                Allegheny County, PA`;
       ["WILLS/BROERMAN/WILL", 200, "C", 3, 14, "couple"],
     ],
   );
-  assert.equal(entries[0].rawText.endsWith("Sly 4m 17da"), true);
+  assert.equal(entries[0].rawText.endsWith("81y 4m 17da"), true);
   assert.equal(entries[1].rawText.startsWith("WILLS (3C, 13, s)"), true);
   assert.deepEqual(entries[0].parsedYears, [1875, 1956]);
   assert.deepEqual(entries[1].parsedYears, [1880, 1927]);
   assert.deepEqual(entries[2].parsedYears, [1843, 1849, 1861, 1865, 1920, 1926]);
+});
+
+test("parseNorthHillsOcrText accepts corrected page 200 Soergel age text", () => {
+  const text = `Section C, Row 3
+SOERGEL (3C, 17, s) pillow, gray granite, exc cond "Susan Soergel /
+1872-1966" CR: d. January 5, 1966, 93y 11m 17da. "Oldest member"
+Franklin Park Borough               200                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].nameText, "SOERGEL");
+  assert.equal(entries[0].sourcePageNumber, 200);
+  assert.equal(entries[0].parsedSectionName, "C");
+  assert.equal(entries[0].parsedRowNumber, 3);
+  assert.equal(entries[0].parsedPositionNumber, 17);
+  assert.equal(entries[0].rawText.includes("93y 11m 17da"), true);
 });
 
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
