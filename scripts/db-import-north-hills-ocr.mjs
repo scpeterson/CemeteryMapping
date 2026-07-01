@@ -194,6 +194,7 @@ function stripTrailingGapNote(segment) {
 function stripTrailingStandaloneNote(segment) {
   return cleanText(segment)
     .replace(/\s+[0-9]+\s+feet\s+to\s+end\s+of\s+row\.?$/iu, "")
+    .replace(/\s+Balance\s+of\s+row,?\s+approximately\s+[0-9]+\s+feet,?\s+is\s+empty\.?$/iu, "")
     .replace(/\s+Sunken\s+area\s+to\s+east\s+toward\s+road\.?$/iu, "");
 }
 
