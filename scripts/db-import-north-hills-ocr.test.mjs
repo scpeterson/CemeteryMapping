@@ -525,6 +525,54 @@ Franklin Park Borough               203                Allegheny County, PA`;
   assert.deepEqual(entries[10].parsedYears, [1868, 1916]);
 });
 
+test("parseNorthHillsOcrText accepts corrected page 204 section C readings", () => {
+  const text = `Section C, Row 5
+HARRIS (5C, 9, s) flat, bronze, exc cond "Lester C Harris / Pfc US Army/
+World War II / Aug 14 1926 Apr 16, 1989" CR: Middle name, Clyde
+
+Section C, Row 6
+WISKEMAN (6C, 1, c) upright, gray granite, exc cond, flower, leaves
+"Wiskeman / William C. / 1898-1955 / Edith L. / 1900-1992" CR: W. C. d.
+May 10, 1955 in Jonesboro, Ark., cremated and ashes buried June 6. Edith,
+Oct. 12, 1900 - July 18, 1992
+
+MURRAY (6C, 3, s) pillow, gray granite, exc cond "Infant son of / Martha
+& Herbert / Murray / died 1945" CR: Jeffry Herbert Murray, d. September
+29, 1945, 2 ½ da
+
+SOERGEL (6C, 6, s) upright, gray granite, exc cond, flower, leaves
+"Mother / Marie C. Soergel / July 8, 1897 / May 2, 1989"
+
+FORD/RHODES (6C, 8, s) upright, gray granite, exc cond, flower, leaves
+"Hanna Ford / June 10, 1893 / Sept. 5, 1953 / Mother" CR: Mrs. Hannah
+Rhodes Ford
+
+FORD (6C, 9, s) upright, gray granite, exc cond, flower, leaves "John E.
+Ford / 1885-1971"
+Franklin Park Borough               204                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 6);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["HARRIS", 204, "C", 5, 9, "single"],
+      ["WISKEMAN", 204, "C", 6, 1, "couple"],
+      ["MURRAY", 204, "C", 6, 3, "single"],
+      ["SOERGEL", 204, "C", 6, 6, "single"],
+      ["FORD/RHODES", 204, "C", 6, 8, "single"],
+      ["FORD", 204, "C", 6, 9, "single"],
+    ],
+  );
+  assert.deepEqual(entries[0].parsedYears, [1926, 1989]);
+  assert.equal(entries[1].inscriptionText.includes("Wiskeman / William C."), true);
+  assert.equal(entries[2].rawText.includes("2 ½ da"), true);
+  assert.equal(entries[3].inscriptionText.includes("Marie C. Soergel"), true);
+  assert.equal(entries[4].rawText.includes("Mrs. Hannah Rhodes Ford"), true);
+  assert.deepEqual(entries[5].parsedYears, [1885, 1971]);
+});
+
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
   const text = `Section A, Row 6
 SCOTT (6A, 4, s) pillow, pink granite, exc cond, flowers "Son/ Donald
