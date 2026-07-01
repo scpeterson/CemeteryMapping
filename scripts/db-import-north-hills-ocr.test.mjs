@@ -615,3 +615,67 @@ Franklin Park Borough               195                Allegheny County, PA`;
     ],
   );
 });
+
+test("parseNorthHillsOcrText splits corrected page 196 Purucker and Will readings", () => {
+  const text = `WILLS (4B, 4, s) in ground, white marble, poor cond
+"Willie J. / son of / Jacob & ME Wills / died / Jan 7 1871 / aged 6 years/
+[illegible lines]"
+30 feet to end of row
+
+PURUCKER (5B, 1, s) upright, white marble, poor cond, sunken, fallen
+"Emma C. / daughter of / G. Purucker /[ illegible dates]" CRG: Emma
+Christiane Purucker, daughter of Georg & Margarethe Catharine, f. January 24,
+1875, d. 22 January, age 6y 9da
+
+PURUCKER/PÜRÜCKER/WÖLFEL (5B, 2, s) upright, white marble, poor cond, sunken,
+fallen "Catharina / gattin von / Geo. Purucker / geboren / 10 Sept. 1826 /
+gest. / 10. Aug 1892" CRG: Katharina Pürücker nee Wölfel, b. 10 September
+1826 In Groseneuren Bavaria, married Loh. on 5 August 1847, d. 10 August 1892,
+age 65 y 11 m, f. August
+
+PURUCKER/PURNUCKER (5B, 3, s) upright, white marble, poor cond
+"Georg / Purucker / geboren / 21, Oct. 1820(?) / gest. / 20, Apr. 1898 /
+[illegible lines]" CRG: Georg Purnucker, b. October 31st 1820 in Golzmühl
+Oberfranken Bavaria, d. 20 April 1898 in Allegheny, buried April 23 in
+Franklin T. Pa.
+
+WILL (5B, 4, s) upright, white marble, poor cond, hand with upraised index
+finger, flowers "Hier Ruht / Anna [-] / Tocter von / Jacob u. Charlotte/ Will
+/ geb. d. 29 [-] 1853 / Gest. d. 20 Juli 1871 / [illegible lines]" CRG:
+Anna Elisabeth Will, daughter of Jacob & Charlotte Will, f. July 22, 1871,
+d. 20 July, age 18y 1m
+
+WILL/BAUER (5B, 5, s) upright, white marble, poor cond, hand with upraised Index
+finger, flowers"[-]/ Charlotte(?)/ gattin von / Jacob Will / 10 Mar. 1810 /
+gestorben / 17 Jun, 18(?) / Alter 70 Jahre / [-], 7 tag/ [illegible lines]"
+CRG: Charlotte Will nee Bauer in Fischbach, Rhein-Bavaria, f. June 19, 1880,
+age 70y
+
+WILL (5B, 6, s) upright, white marble, good cond, hand with upraised index
+finger, flower "Jacob Will / died / Nov. 16, 1889 / aged / 77 years 1 mo /
+5 days 'In labor and love allied / In death they sleep here side by side"
+CRG: Jacob Will, b. October 10 in Fischbach near Kaiserslautern, Rhein-Bavaria,
+d. 16 November 1889 in Allegheny, age 77y lm 6da, f. November 18
+
+[WILL] ( 5B, 7, s) upright, white marble, good cond ''A. E. W."
+Sunken area to east toward road
+Franklin Park Borough               196                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber]),
+    [
+      ["WILLS", 196, "B", 4, 4],
+      ["PURUCKER", 196, "B", 5, 1],
+      ["PURUCKER/PÜRÜCKER/WÖLFEL", 196, "B", 5, 2],
+      ["PURUCKER/PURNUCKER", 196, "B", 5, 3],
+      ["WILL", 196, "B", 5, 4],
+      ["WILL/BAUER", 196, "B", 5, 5],
+      ["WILL", 196, "B", 5, 6],
+      ["[WILL]", 196, "B", 5, 7],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("30 feet to end of row"), false);
+  assert.equal(entries.at(-1).rawText.includes("Sunken area to east toward road"), false);
+});

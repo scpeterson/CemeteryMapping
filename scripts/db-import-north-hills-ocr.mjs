@@ -191,12 +191,18 @@ function stripTrailingGapNote(segment) {
   return cleanText(segment).replace(/\s+Gap,?\s+a(?:b|o)?out\s+[0-9]+\s+feet\.?$/iu, "");
 }
 
+function stripTrailingStandaloneNote(segment) {
+  return cleanText(segment)
+    .replace(/\s+[0-9]+\s+feet\s+to\s+end\s+of\s+row\.?$/iu, "")
+    .replace(/\s+Sunken\s+area\s+to\s+east\s+toward\s+road\.?$/iu, "");
+}
+
 function stripTrailingPageFooter(segment) {
   return cleanText(segment).replace(/\s+Franklin\s*Par(?:k|le)\.?\s+Borough\s+\d{3}\s+Allegheny\s+County(?:,?\s+PA\.?)?$/iu, "");
 }
 
 function cleanEntrySegment(segment) {
-  return stripTrailingPageFooter(stripTrailingGapNote(segment)).replace(/\s+['’]$/u, "");
+  return stripTrailingPageFooter(stripTrailingStandaloneNote(stripTrailingGapNote(segment))).replace(/\s+['’]$/u, "");
 }
 
 function entryLineSegments(line) {
