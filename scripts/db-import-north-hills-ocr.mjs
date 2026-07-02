@@ -181,6 +181,12 @@ function embeddedEntryStartIndexes(text) {
       const matchText = match[0] ?? "";
       const coordinateIndex = matchText.search(coordinateStartPattern);
       const headingText = coordinateIndex === -1 ? matchText : matchText.slice(0, coordinateIndex);
+      const headingPrefixMatch = headingText
+        .trimEnd()
+        .match(/(?:^|\s)(\[?[A-Z][A-Z0-9/[\]()? .'&-]{1,90}?\]?)[\s'’]*$/u);
+      if (headingPrefixMatch && /[a-z]/u.test(headingText.slice(0, headingPrefixMatch.index ?? 0))) {
+        return (match.index ?? 0) + (headingPrefixMatch.index ?? 0) + headingPrefixMatch[0].search(/[A-Z[]/u);
+      }
       const strayQuoteMatch = [...headingText.matchAll(/(?:^|\s)['’](?=[A-Z])/gu)].at(-1);
       const strayQuoteIndex = strayQuoteMatch ? (strayQuoteMatch.index ?? 0) + strayQuoteMatch[0].length - 1 : -1;
       return (match.index ?? 0) + (strayQuoteIndex === -1 ? 0 : strayQuoteIndex + 1);
@@ -196,7 +202,8 @@ function stripTrailingStandaloneNote(segment) {
   return cleanText(segment)
     .replace(/\s+[0-9]+\s+feet\s+to\s+end\s+of\s+row\.?$/iu, "")
     .replace(/\s+Balance\s+of\s+row,?\s+approximately\s+[0-9]+\s+feet,?\s+is\s+empty\.?$/iu, "")
-    .replace(/\s+Sunken\s+area\s+to\s+east\s+toward\s+road\.?$/iu, "");
+    .replace(/\s+Sunken\s+area\s+to\s+east\s+toward\s+road\.?$/iu, "")
+    .replace(/\s+Plot\s+marker,?(?:\s+\w+\s+marble)?\s+"[^"]+"\s*\.?$/iu, "");
 }
 
 function stripTrailingPageFooter(segment) {
