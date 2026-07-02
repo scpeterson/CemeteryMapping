@@ -1267,3 +1267,66 @@ Franklin Park Borough               198                Allegheny County, PA`;
   assert.equal(entries[2].rawText.includes("Hle,ber"), false);
   assert.equal(entries[3].rawText.includes("5m_25da"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 209 section C readings", () => {
+  const text = `Section C, Row 9
+KEMPF/SCHOLERT(?)/KEMPT (9C, 5, c) upright, gray granite, exc cond, church
+window, flowers "Kempf/ John P. / 1879-1964 / Husband / Anna /
+1881-1978 / Wife" On back: "Kempf" CR: John Peter, d. June 20, 1964,
+85y 4m 12da. Anna Scholert(?) Kempt, d. October 10, 1978. 97y 7m 15da
+
+PEGHER (9C, 6, s) pillow, gray granite, good cond "Simon W. Pegher /
+Pvt. Co. G. 330th Inf. / enlisted / Oct. 2, 1942 / discharged /
+Feb. 13, 1943 / born Nov. 8, 1899 died Nov. 10, 1949" Separate flag
+holder: "American / US / Legion", star CR: d. June 20, 1964, 85y 4m 12da
+
+PEGHER/BRANDT (9C, 7, s) upright, gray granite, lilies "Mother/
+Margaret Pegher / 1864-1920 / erected by her son Wilbert'' CR: Mrs.
+Margaret Brandt Pegher, d. May 21, 1920
+Plot marker "K"
+
+LUSKEY/BERINGER (9C, 9, s) upright, gray granite, exc cond, flowers
+"Emma C. Luskey / June 10, 1888 / June 2, 1955 / Wife" CR: Mrs. Emma C.
+Beringer Luskey, buried June 5, 66y 11m 22da
+
+LUSKEY (9C, 10, c) upright, gray granite, exc cond "Luskey / Edward P. /
+Mar. 12, 1921 / Sept. 28, 1989 / Viola L. / Mar. 13, 1920 /
+May 26, 2002." BLANCHARD (9C, 11, s) pillow, gray granite, exc cond,
+cross, flowers "Marion A. Blanchard/ 1930 1980 / The Lord is my Sheperd"
+[sic] CR: d. August 1, 1980, 49y 10m 25da
+
+Section C, Row 10
+KNOBELOCH/DEXTER (10C, 1 c) upright, gray granite, exc cond, grapes,
+leaves "Knobeloch/ Christy C. / Mar. 15, 1908 / Sept. 27, 1979 / Father /
+Grace D. / Apr. 29, 1905 / Sept. 17, 1964 / Mother" On back: "Knobeloch"
+CR: Grace Dexter, Christy's wife WATTS (10C, 2, s) pillow, gray granite,
+exc cond, cross, flower, leaves "Walter J. Watts / Jan. 27, 1931 /
+Apr. 18, 1986"
+
+REASEY (10C, 3, s) upright, gray granite, exc cond, angel, sad face, cross,
+flowers "Our special angel / Courtney Jane / Reasey / April 12, 1985 /
+Sept. 19, / 1985" On back: "Reasey"
+Franklin Park Borough               209                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["KEMPF/SCHOLERT(?)/KEMPT", 209, "C", 9, 5, "couple"],
+      ["PEGHER", 209, "C", 9, 6, "single"],
+      ["PEGHER/BRANDT", 209, "C", 9, 7, "single"],
+      ["LUSKEY/BERINGER", 209, "C", 9, 9, "single"],
+      ["LUSKEY", 209, "C", 9, 10, "couple"],
+      ["BLANCHARD", 209, "C", 9, 11, "single"],
+      ["KNOBELOCH/DEXTER", 209, "C", 10, 1, "couple"],
+      ["WATTS", 209, "C", 10, 2, "single"],
+      ["REASEY", 209, "C", 10, 3, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("KEMPF /"), false);
+  assert.equal(entries[2].rawText.includes("Plot marker"), false);
+  assert.equal(entries[4].rawText.includes("BLANCHARD"), false);
+  assert.equal(entries[6].rawText.includes("WATTS"), false);
+  assert.deepEqual(entries[8].parsedYears, [1985]);
+});
