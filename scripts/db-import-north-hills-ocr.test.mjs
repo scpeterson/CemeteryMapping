@@ -1330,3 +1330,66 @@ Franklin Park Borough               209                Allegheny County, PA`;
   assert.equal(entries[6].rawText.includes("WATTS"), false);
   assert.deepEqual(entries[8].parsedYears, [1985]);
 });
+
+test("parseNorthHillsOcrText splits corrected page 210 section C readings", () => {
+  const text = `Section C, Row 10
+ALT (10C, 4,s) upright, gray granite, exc cond, flower, leaves
+"Mother / Kate Alt / 1870-1940"
+A white stone rabbit with brown stone eyes was observed on top of stone at
+first reading. It was beside the stone on a second reading.
+
+ALT (10C, 5, s) upright, gray granite, exc cond
+"Father / Charles H. Alt / 1898-1956"
+
+SCHMIDT (10C, 6, c) upright, gray granite, exc cond, 2 crosses
+"Schmidt / Elmer G. / 1899-1977 / Husband / Magdeline P. / 1903-1989 /
+Wife" CR: Magdeline, May 18, 2003 - Oct. 7, 1989
+
+Section C, Row 11
+WAGNER/SCHAEFER (11C, 1, c) upright, gray, granite, exc cond, flowers, leaves
+"Wagner / Anthony / Sept. 17, 1891 / Sept. 22, 1989 / Helen Schaefer /
+Dec. 17, 1900/Jan.28, 1992 / I said goodbye" On back: "Wagner"
+
+CLABAUGH (11C, 2, s) flat, gray granite, exc cond, cross, flower
+"Laura Louise / Clabaugh/ 1930-1989 / Daughter"
+
+SCHAEFER (11C, 3, s) pillow, gray granite, exc cond, flowers
+"Father / Charles H. Schaefer / 1874-1957"
+
+SCHAEFER (11C, 4, s) pillow, gray granite, exc cond, flowers
+"Mother / Louisa A. Schaefer / 1878-1964" Gap, about 12 feet.
+
+KING (11C, 5, c) upright, gray granite, exc cond "King / William F. King /
+1856-1931 / Elizabeth, His Wife/ 1860-1950 / Lorena, 1881- 1924 /
+Coretta, 1888-1961 / Anna, 1884-1971"
+
+WATENPOOL/BEHLER/WATTENPOOL (11C, 6, s) flat, bronze, exc cond, cross
+"Hazel G. Watenpool / 1891-1923" CR: Hazel Behler Wattenpool, d. April 2,
+1923, 31y 7m 27da
+
+WATENPOOL/STEELE (11C, 7, s) pillow, gray granite, exc cond, flowers, leaves
+"'Mom'/ Velma Ann/ Watenpool / Aug. 28, 1914 / July 17, 1983" CR: George
+Steele's sister
+Franklin Park Borough               210                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["ALT", 210, "C", 10, 4, "single"],
+      ["ALT", 210, "C", 10, 5, "single"],
+      ["SCHMIDT", 210, "C", 10, 6, "couple"],
+      ["WAGNER/SCHAEFER", 210, "C", 11, 1, "couple"],
+      ["CLABAUGH", 210, "C", 11, 2, "single"],
+      ["SCHAEFER", 210, "C", 11, 3, "single"],
+      ["SCHAEFER", 210, "C", 11, 4, "single"],
+      ["KING", 210, "C", 11, 5, "couple"],
+      ["WATENPOOL/BEHLER/WATTENPOOL", 210, "C", 11, 6, "single"],
+      ["WATENPOOL/STEELE", 210, "C", 11, 7, "single"],
+    ],
+  );
+  assert.equal(entries[3].rawText.includes("CLABAUGH"), false);
+  assert.equal(entries[0].rawText.includes("l0C"), false);
+  assert.equal(entries[2].rawText.includes("Magdellne"), false);
+});
