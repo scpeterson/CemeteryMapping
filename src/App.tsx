@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
@@ -19,11 +19,8 @@ import {
   uploadGravePhoto,
   uploadHeadstonePhoto,
 } from "./api/cemeteryApi";
-import { AdminPanel } from "./components/AdminPanel";
 import { CemeteryMap } from "./components/CemeteryMap";
-import { ControlPointCollector } from "./components/ControlPointCollector";
 import { DetailPanel } from "./components/DetailPanel";
-import { ReportsPanel } from "./components/ReportsPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
@@ -49,6 +46,12 @@ import type {
   SaveOwnershipEventInput,
   SearchMatch,
 } from "./types";
+
+const AdminPanel = lazy(() => import("./components/AdminPanel").then((module) => ({ default: module.AdminPanel })));
+const ControlPointCollector = lazy(() =>
+  import("./components/ControlPointCollector").then((module) => ({ default: module.ControlPointCollector })),
+);
+const ReportsPanel = lazy(() => import("./components/ReportsPanel").then((module) => ({ default: module.ReportsPanel })));
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 const emptyHeadstoneLookups: HeadstoneLookups = {
@@ -525,11 +528,13 @@ export default function App() {
             </>
           ) : null}
         </div>
-        {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onClose={() => setIsReportsPanelOpen(false)} /> : null}
-        {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onClose={() => setIsAdminPanelOpen(false)} /> : null}
-        {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
-          <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
-        ) : null}
+        <Suspense fallback={null}>
+          {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onClose={() => setIsReportsPanelOpen(false)} /> : null}
+          {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onClose={() => setIsAdminPanelOpen(false)} /> : null}
+          {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
+            <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
+          ) : null}
+        </Suspense>
         {isLoading || loadError ? (
           <div className={`data-status ${loadError ? "is-error" : ""}`} role="status">
             {loadError ? `API unavailable: ${loadError}` : "Loading cemetery records..."}
