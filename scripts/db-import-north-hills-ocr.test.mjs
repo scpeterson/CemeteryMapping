@@ -1564,3 +1564,64 @@ Franklin Park Borough               213                Allegheny County, PA`;
   assert.equal(entries[2].rawText.includes("Daughte~"), false);
   assert.equal(entries[3].rawText.includes("8Sy"), false);
 });
+
+test("parseNorthHillsOcrText accepts corrected page 214 section C readings", () => {
+  const text = `Section C, Row 13
+WALTERS/SANDROCK (13C, 17, s) upright, gray granite, exc cond, ivy, cross
+"James W. / Walters / Husband / 1919-1973 / Helen S." CR: James, d.
+October 8, 1973, Clara Sandrock's sister-In-law's second husband. Helen,
+July 6, 1915 - June 3, 1998
+
+STEINAUER (13C, 20, s) pillow, gray granite, exc cond "Charles / Steinauer /
+1842-1904"
+
+Section C, Row 14
+BRANDT (14C, 1, c) upright, gray granite, exc cond, flower, leaves
+"Brandt / Herman P. / 1877-1936 / Allie H. / 1881-1972 / 1910 Ruth Anna
+1913" On back: "Brandt" CR: Herman, d. September 7, 1936. Ruth Brandt
+burled Highland Presbyterian, daughter of H. P. Brandt. Note: No date on CR
+but listed In 1912-1913 period
+
+NULL (14C, 2, s) flat, bronze, exc cond, flower holder "Sara E. Null /
+Sept. 7, 1ai9 - May 13, 1936"
+
+NULL (14C, 3, s) flat, bronze, exc cond, flower holder "James W. Null /
+Feb. 3, 1881 - June 2, 1959" CR: Burled June 6, 78y 4m
+
+STEWART (14C, 4, s) upright, gray granite, exc cond, flowers "Frederick B /
+Stewart / 1898-1945" CR: d. January 9, 1945
+
+BERKSHIRE (14C, 5, s) pillow, gray granite, exc cond, flowers "Daughter /
+Barbara Sue / Berkshire / 1946-1949" CR: d, December 24, 1949, 2y 11m 24da
+
+CAPENOS (14C, 6, s) upright, pink granite, exc cond, flowers "Father /
+John A. Capenos / April 5, 1910 / February 19, 1963" On back: "Capenos" CR:
+52y 10m 14da, Councilman
+
+CAPENOS/HAGUE (14C, 7, s) upright, pink granite, exc cond, flowers "Mother /
+E. Pearl Capenos / July 3, 1910 / May 7, 1977" CR: Evelyn Pearl Hague
+Capenos
+
+Gap, about 30 feet.
+Franklin Park Borough               214                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["WALTERS/SANDROCK", 214, "C", 13, 17, "single"],
+      ["STEINAUER", 214, "C", 13, 20, "single"],
+      ["BRANDT", 214, "C", 14, 1, "couple"],
+      ["NULL", 214, "C", 14, 2, "single"],
+      ["NULL", 214, "C", 14, 3, "single"],
+      ["STEWART", 214, "C", 14, 4, "single"],
+      ["BERKSHIRE", 214, "C", 14, 5, "single"],
+      ["CAPENOS", 214, "C", 14, 6, "single"],
+      ["CAPENOS/HAGUE", 214, "C", 14, 7, "single"],
+    ],
+  );
+  assert.equal(entries[1].rawText.includes("\\\\"), false);
+  assert.equal(entries[2].rawText.includes("Hlghland"), false);
+  assert.equal(entries[8].rawText.includes("Gap, about 30 feet"), false);
+});
