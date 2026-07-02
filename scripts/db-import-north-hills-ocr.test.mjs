@@ -1512,3 +1512,55 @@ Franklin Park Borough               212                Allegheny County, PA`;
   assert.equal(entries[3].rawText.includes("John~ton"), false);
   assert.equal(entries[8].rawText.includes("F,ather"), false);
 });
+
+test("parseNorthHillsOcrText accepts corrected page 213 section C readings", () => {
+  const text = `Section C, Row 13
+CAIRNS (13C, 8, s) pillow, gray granite, exc cond "Bessie G. Cairns /
+wife of / Arthur J. Cairns / 1906-1992" CR: Sept. 22, 1906 - Sept. 14,
+1992
+
+HAGUE (13C, 9, c) upright, gray granite, exc cond, vine of flower, leaves
+"Hague / Arthur J. / Oct. 7, 1904 / July 24, 1976 / Father / Isabelle M. /
+Sept. 26, 1908 / July 24, 1997 / Mother" On back: "Hague" CR: Arthur
+Julius. Isabelle, Glenn-Kildoo Funeral Home
+
+HAGUE (13C, 10, s) pillow, gray granite, exc cond "Isabelle R. Hague /
+1926-1932 / Daughter" CR: Middle name Ruth, d. April 2, 1932, 5y 6m 9da
+
+KNOBELOCH/KNOBLOCH (13C, 11, c) upright, gray granite, exc cond, flowers,
+leaves "Knobeloch / Karl C. / 1835-1915 / Father / At rest / Clara D. /
+1845-1930 / Mother / At rest" CR: Karl Charles, d. November 15, 1915.
+Clara Dorthea Knobloch, d. November 23, 1930, 85y 10m 8da
+
+EHRHARDT (13C, 12, c) upright, gray granite, exc cond, oak leaves, acorns
+"J. V. Ehrhardt/ 1860-1909. / Anna M. Ehrhardt / 1867-1943. / Ehrhardt"
+
+BRANT (13C, 14, s) upright, gray granite, exc cond, child's head, shoulders,
+arms with cover in bassinette, angel on top "Baby Brant / Infant son of /
+Clifford & Jacqueline / Brant / January 20, 1949" CR: Buried January 21, 1y
+
+BRANT (13C, 16, c) upright, gray granite, exc cond, flowers, leaves "Brant/
+Herbert G. / 1908-1943 / Helen S. / 1915-1998" Three loose mementos were
+observed on base on both reading days: 2 kneeling children on book with
+flowers, terracotta praying angel, basket of flowers. CR: Middle name
+George, d. December 6, 1943
+Franklin Park Borough               213                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["CAIRNS", 213, "C", 13, 8, "single"],
+      ["HAGUE", 213, "C", 13, 9, "couple"],
+      ["HAGUE", 213, "C", 13, 10, "single"],
+      ["KNOBELOCH/KNOBLOCH", 213, "C", 13, 11, "couple"],
+      ["EHRHARDT", 213, "C", 13, 12, "couple"],
+      ["BRANT", 213, "C", 13, 14, "single"],
+      ["BRANT", 213, "C", 13, 16, "couple"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("1~2"), false);
+  assert.equal(entries[2].rawText.includes("Daughte~"), false);
+  assert.equal(entries[3].rawText.includes("8Sy"), false);
+});

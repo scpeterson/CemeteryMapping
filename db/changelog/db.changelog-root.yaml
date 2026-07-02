@@ -554,3 +554,6 @@ databaseChangeLog:
   - include:
       file: changes/186-correct-north-hills-page-212-schaefer.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/187-repair-north-hills-page-213.sql
+      relativeToChangelogFile: true
