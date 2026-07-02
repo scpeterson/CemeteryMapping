@@ -635,6 +635,48 @@ Franklin Park Borough               205                Allegheny County, PA`;
   assert.deepEqual(entries[7].parsedYears, [1859, 1943]);
 });
 
+test("parseNorthHillsOcrText accepts corrected page 206 section C readings", () => {
+  const text = `Section C, Row 7
+SCHARF/HAYS (7C, 3, c) flat, red granite, exc cond, lilac, rose "Edward
+C. / May 14, 1900 / July 11, 1980 / Son / Glenn S. / Scharf / Jan. 1,
+1932 / Nov. 11, 1998 / Katherine A. / June 10, 1900 / Feb. 11, 1975"
+CR: Mrs. Katherine Hays Scharf
+
+HAGUE/HAGUR/SKILES (7C, 11, c) upright, gray granite, exc cond, lilies
+"H / Edward G. Hague / 1874-1923 / Amelia, his wife / 1877- 1915" CR:
+Edward George Hagur, d. August 14, 1923, 48y 5m 4da. Amelia Skiles, d.
+October 27, 1915
+
+DERSTINE (7C, 12, s) flat, bronze, exc cond, cross "John E. Derstine /
+T Sgt US Army / World War II / July 20 1919 - Aug 25 1997" Separate flag
+holder: "1941 World War II 1942", eagle. Six inch Celtic cross by stone
+
+DERSTINE (7C, 13, s) flat, bronze, exc cond "Elizabeth S. Derstine /
+Beloved wife Mother / Grandmother and Greatgrandmother / June 11, 1920 -
+Mar.23, 2005" Tombstone is at foot of (7C, 12) grave
+Franklin Park Borough               206                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 4);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["SCHARF/HAYS", 206, "C", 7, 3, "couple"],
+      ["HAGUE/HAGUR/SKILES", 206, "C", 7, 11, "couple"],
+      ["DERSTINE", 206, "C", 7, 12, "single"],
+      ["DERSTINE", 206, "C", 7, 13, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("?C"), false);
+  assert.equal(entries[0].inscriptionText.includes("Glenn S. / Scharf"), true);
+  assert.equal(entries[1].rawText.includes("48y 5m 4da"), true);
+  assert.equal(entries[2].inscriptionText.includes("T Sgt US Army"), true);
+  assert.equal(entries[2].rawText.includes("1942H"), false);
+  assert.equal(entries[3].inscriptionText.includes("Elizabeth S. Derstine"), true);
+  assert.deepEqual(entries[3].parsedYears, [1920, 2005]);
+});
+
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
   const text = `Section A, Row 6
 SCOTT (6A, 4, s) pillow, pink granite, exc cond, flowers "Son/ Donald
