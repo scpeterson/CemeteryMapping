@@ -683,6 +683,77 @@ Franklin Park Borough               206                Allegheny County, PA`;
   assert.deepEqual(entries[4].parsedYears, [1920, 2005]);
 });
 
+test("parseNorthHillsOcrText splits corrected page 207 section C readings", () => {
+  const text = `Section C, Row 7
+MORAN/ DERSTINE (7C, 14, s) flat, bronze, exc cond, oak leaves "Ruby M.
+Moran / 11-11-11 wife 8-17-80" CR: Middle name Mae, sister of Betty Derstine
+
+STIRLING (7C, 15, s) pillow, gray granite, exc cond "Anna E. Stirling /
+1906-1952 / Daughter"
+
+HARPER (7C, 17, s) pillow, gray granite, exc cond "Elsie K. Harper /
+1903-1947 / Daughter"
+
+Section C, Row 8
+EADIE (8C, 1, s) flat, white marble, cross "William L Eadie / Pfc US
+Army / WW II Bronze Star Medal / Jan 8 1926 Jul 12 2004 / God Bless You
+& Yours / See you in Heaven - - Bill" CR: Believed to be in plot • with
+Hilda G. Eadie (9C, 4)
+
+KNOBLOCH (8C, 2, s) plllow, gray granite, exc cond "George R. Knobloch /
+1874-1916 / Father" CR: d. June 24, 1916
+
+KNOBLOCH (8C, 3, s) pillow, gray granite, exc cond "Sara C. Knobloch /
+1881-1964 / Mother''
+
+KNOBLOCH (8C, 4, monolith) upright, gray granite, exc cond, flowers
+"Knobloch" On back: "Knobloch" Behind (8C, 5)
+
+KNOBLOCH (8C, 5, s) pillow, gray granite, exc cond "John W. Knobloch /
+1915·1918 / Son" In front of monolith (8C, 4)
+
+HARPER (8C, 6, s) pillow, gray granite, exc cond "Carl N. Harper /
+1931-1933 / Grandson"
+
+HARPER (8C, 7, s) pillow, gray granite, exc cond "Edwin B. Harper/ Sgt.
+Btry. D 2nd F. A. R. D. / enlisted / July 26, 1918 / discharged / Apr.
+16, 1919 / born May 5, 1897 / died June 7, 1939" Separate flag holder:
+"American / US / Legion", star in circle
+
+SOERGEL/HILLMAN (8C, 8, c) upright, gray granite, exc cond "Soergel /
+Peter Soergel / 1862-1936 / Margaret M. His Wife/ 1862- 1919" CR:
+Peter, d. November 18, 1936. Margaret Hillman Soergel d. Jan. 30, 1919
+Franklin Park Borough               207                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 11);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["MORAN/ DERSTINE", 207, "C", 7, 14, "single"],
+      ["STIRLING", 207, "C", 7, 15, "single"],
+      ["HARPER", 207, "C", 7, 17, "single"],
+      ["EADIE", 207, "C", 8, 1, "single"],
+      ["KNOBLOCH", 207, "C", 8, 2, "single"],
+      ["KNOBLOCH", 207, "C", 8, 3, "single"],
+      ["KNOBLOCH", 207, "C", 8, 4, "monolith"],
+      ["KNOBLOCH", 207, "C", 8, 5, "single"],
+      ["HARPER", 207, "C", 8, 6, "single"],
+      ["HARPER", 207, "C", 8, 7, "single"],
+      ["SOERGEL/HILLMAN", 207, "C", 8, 8, "couple"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("STIRLING"), false);
+  assert.deepEqual(entries[1].parsedYears, [1906, 1952]);
+  assert.equal(entries[2].rawText.includes("About 55 feet"), false);
+  assert.equal(entries[3].rawText.includes("Bronze Star Medal"), true);
+  assert.equal(entries[6].markerTypeText, "upright");
+  assert.equal(entries[8].rawText.includes("(SC"), false);
+  assert.equal(entries[9].rawText.includes("American / US / Legion"), true);
+  assert.equal(entries[10].nameText, "SOERGEL/HILLMAN");
+});
+
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
   const text = `Section A, Row 6
 SCOTT (6A, 4, s) pillow, pink granite, exc cond, flowers "Son/ Donald
