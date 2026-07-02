@@ -21,6 +21,46 @@ export default defineConfig({
     __GIT_SHA__: JSON.stringify(process.env.GIT_SHA ?? gitSha()),
     __BUILD_TIME__: JSON.stringify(process.env.BUILD_TIME ?? new Date().toISOString()),
   },
+  build: {
+    // MapLibre is the core map engine and ships as one large module; keep the
+    // warning threshold close to that known dependency so app chunks still stand out.
+    chunkSizeWarningLimit: 1200,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "vendor-map",
+              test: /node_modules[\\/](maplibre-gl|@mapbox)[\\/]/,
+              priority: 30,
+              maxSize: 450 * 1024,
+            },
+            {
+              name: "vendor-react",
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor-icons",
+              test: /node_modules[\\/](lucide-react|lucide)[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor-auth",
+              test: /node_modules[\\/]@auth0[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor",
+              test: /node_modules[\\/]/,
+              priority: 10,
+              maxSize: 450 * 1024,
+            },
+          ],
+        },
+      },
+    },
+  },
   server: {
     host: "127.0.0.1",
     port: 5173,
