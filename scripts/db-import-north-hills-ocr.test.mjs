@@ -1393,3 +1393,59 @@ Franklin Park Borough               210                Allegheny County, PA`;
   assert.equal(entries[0].rawText.includes("l0C"), false);
   assert.equal(entries[2].rawText.includes("Magdellne"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 211 section C readings", () => {
+  const text = `Section C, Row 11
+KNOBELOCH (11C, 8, c) upright, gray granite, exc cond, grapes, leaves
+"William G. / 1877-1957 / Father / Emma M. / 1882-1968 / Mother"
+On back: "Knobeloch" CR: William, d. December 21, 1957, 80y 1m 13da.
+Emma, d. October 6, 1968
+
+KNOBELOCH/KNOBLOCK (11C, 9, s) upright, gray granite, exc cond
+"Evelyn M. / Knobeloch / 1916-1917 / Daughter" CR: Evelyn Marie
+Knoblock, d. February 16, 1917, 3m, dau of Wm K.
+
+BRANDT/BRANT (11C, 10, s) pillow, gray granite, exc cond, grapes, leaves
+"Robert D. Brandt/ 1936-1969" CR: Brant, d. February 23, 1969, 32y
+
+BRANT (11C, 11, c) upright, gray granite, exc cond, church windows
+"Brant / George W. / 1868-1931 / Father / Anna C. / 1885-1968 / Mother"
+CR: George, d. February 10, 1931, 62y 11m 19da. Anna, d. May 3, 1968,
+82y 9m 27da
+
+BRANT/HARTMAN (11C, 12, s) upright, gray granite, exc cond, grapes, leaves
+"Charles Hartman Brant / June 19, 1911 - Sept. 23, 1981 / Beloved Son /
+'I worked the land/ And now we are one'"
+Plot marker, white marble, "B"
+
+BRANDT (11C, 13, s) upright, gray granite, exc cond, vine of flowers, leaves
+"Brother/ Henry G. Brandt / 1862-1921 / At rest" CR: d. July 2, 1921, 59y
+
+BRANDT (11C, 14, s) upright, gray granite, exc cond
+"George S. Brandt / 1872-1926" CR: d. October 14, 1926
+Plot marker, white marble, "B"
+6 inch by 6 inch white marble square marker, no inscription
+
+HABBERT/ALT (11C, 15, s) upright, gray granite, exc cond, wild rose
+"Mother / Mabel M. Alt / Habbert / July 17, 1905 / May 1, 2000"
+Franklin Park Borough               211                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["KNOBELOCH", 211, "C", 11, 8, "couple"],
+      ["KNOBELOCH/KNOBLOCK", 211, "C", 11, 9, "single"],
+      ["BRANDT/BRANT", 211, "C", 11, 10, "single"],
+      ["BRANT", 211, "C", 11, 11, "couple"],
+      ["BRANT/HARTMAN", 211, "C", 11, 12, "single"],
+      ["BRANDT", 211, "C", 11, 13, "single"],
+      ["BRANDT", 211, "C", 11, 14, "single"],
+      ["HABBERT/ALT", 211, "C", 11, 15, "single"],
+    ],
+  );
+  assert.equal(entries[2].rawText.includes("BRANT (11C, 11"), false);
+  assert.equal(entries[4].rawText.includes("BRANDT (11C, 13"), false);
+  assert.equal(entries[6].rawText.includes("HABBERT/ALT"), false);
+});
