@@ -573,6 +573,68 @@ Franklin Park Borough               204                Allegheny County, PA`;
   assert.deepEqual(entries[5].parsedYears, [1885, 1971]);
 });
 
+test("parseNorthHillsOcrText splits corrected page 205 section C readings", () => {
+  const text = `Section C, Row 6
+FORD/BERINGER (6C, 10, s) upright, gray granite, exc cond, band lozenges
+"Mother / Amelia E. Beringer / wife of / John E. Ford / 1882- 1916" CR:
+d. November 30, 1916
+
+HIEBER (6C, 12, c) pillow, gray granite, exc cond, cross, grapes, leaves
+"Hieber / George / 1865-1936 / Olive / 1871-1953"
+
+HIEBER (6C, 13, s) pillow, gray granite, exc cond "George W. Hieber / T /
+Sgt. 244th BU AAF / enlisted / Oct. 9, 1942 / born Oct. 28, 1906 /
+discharged / Oct 11, 1945 / died May 13, 1961" Separate flag holder:
+"World War II, eagle
+
+SARVER/BROERMAN (6C, 14, c) upright, gray granite, exc cond, candle,
+flowers, leaves "Sarver / James M. / 1871-1948 / Father /  Margaret E. /
+1873-1958 / Mother" CR: James, d. February 26, 1948, 75y 2mo. Margaret
+Broerman Sarver, d. December 7, 1958, 85y 1m 27d
+
+SCHUESSLER (6C, 15, s) upright, gray granite, exc cond, cross, lily,
+leaves "Armella 'June' / Schuessler / Sept. 30, 1936 / Sept. 10, 1984 /
+Beloved wife & mother" Black wrought Iron plant holder
+
+BROERMAN (6C, 16, s) upright, gray granite, exc cond "Harry T. Broerman /
+1891-1923 / Sargt. Co. C 8, Field Div. / Signal Corps" Separate flag
+holder: "American / US / Legion", star CR: Harry Theodore, d. November
+7, 1923, 33y 8m 13da
+
+BERINGER (6C, 18, s) upright, gray granite, exc cond, scrolls, flower in
+window "Balthasar / Beringer / 1847-1925" CR: Baltzar, d. January 11,
+1925, 77y 7m 23da
+
+BERINGER (6C, 19, s) upright, gray granite, exc cond, scrolls "Katherine
+/ Beringer 1859-1943" CR: d. January 17, 1943
+Franklin Park Borough               205                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 8);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["FORD/BERINGER", 205, "C", 6, 10, "single"],
+      ["HIEBER", 205, "C", 6, 12, "couple"],
+      ["HIEBER", 205, "C", 6, 13, "single"],
+      ["SARVER/BROERMAN", 205, "C", 6, 14, "couple"],
+      ["SCHUESSLER", 205, "C", 6, 15, "single"],
+      ["BROERMAN", 205, "C", 6, 16, "single"],
+      ["BERINGER", 205, "C", 6, 18, "single"],
+      ["BERINGER", 205, "C", 6, 19, "single"],
+    ],
+  );
+  assert.equal(entries[0].inscriptionText.includes("Amelia E. Beringer"), true);
+  assert.deepEqual(entries[1].parsedYears, [1865, 1871, 1936, 1953]);
+  assert.deepEqual(entries[2].parsedYears, [1906, 1942, 1945, 1961]);
+  assert.equal(entries[3].rawText.includes("85y 1m 27d"), true);
+  assert.equal(entries[4].rawText.includes("Plot marker"), false);
+  assert.equal(entries[5].rawText.includes("33y 8m 13da"), true);
+  assert.deepEqual(entries[6].parsedYears, [1847, 1925]);
+  assert.deepEqual(entries[7].parsedYears, [1859, 1943]);
+});
+
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
   const text = `Section A, Row 6
 SCOTT (6A, 4, s) pillow, pink granite, exc cond, flowers "Son/ Donald
