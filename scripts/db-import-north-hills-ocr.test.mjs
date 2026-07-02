@@ -1449,3 +1449,66 @@ Franklin Park Borough               211                Allegheny County, PA`;
   assert.equal(entries[4].rawText.includes("BRANDT (11C, 13"), false);
   assert.equal(entries[6].rawText.includes("HABBERT/ALT"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 212 section C readings", () => {
+  const text = `Section C, Row 12
+PHILLIPS ( 12C, 3, s) pillow, gray granite, exc cond, cross, flower
+"Roy A. Phillips/ 1887-1965 / Father"
+
+PHILLIPS (12C, 4, s) pillow, gray granite, exc cond, cross, flowers
+"Hilda K. Phillips/ 1889-1984 / Mother"
+
+WINSLOW/FISKE (12C, 5, s) pillow, gray granite, exc cond
+"Russell Fiske/ Winslow / 1923·1923" CR: d. August 8, 1923, 2m
+
+JOHNSTON/WINSLOW (12C, 6, s) pillow, gray granite, exc cond
+"Ethel F. Winslow/ Johnston / 1902-1967"
+
+KNOBELOCH (12C, 7, c) upright, pink granite, exc cond, flowers, leaves
+"Knobeloch / Howard W. / 1914-1972 / Father / June O. / 1920-1992 /
+Mother/ Together forever"
+2 bronze vases in front of stone
+
+KNOBELOCH (12C, 8, s) upright, pink granite, exc cond, flowers, leaves
+"Knobeloch / Judith A. / Knobeloch / 1940-2004 / Vietnam Army" Right side
+of stone is blank. Separate flag holder: "Vietnam / US/ 1964-1975", star
+CR: d. March 7, 2004
+About 60 feet to end of row
+
+Section C, Row 13
+TITLEY (13C, 1, s) upright, gray granite, exc cond
+"Father / William E. Titley / 1867-1942"
+
+SCHAEFER (13C, 3, s) upright, gray granite, exc cond, tulips, leaves
+"Blanche S. Schaefer / May 4, 1906 / March 3, 1995" On back: "Schaefer"
+Bronze vase in front of stone
+
+CAIRNS (13C, 4, s) pillow, gray granite, exc cond
+"Lewis B. Cairns / 1877-1944 / Father" CR: d. February 17, 1944
+
+CAIRNS (13C, 5, s) pillow, gray granite, exc cond
+"Catherine A. Cairns/ 1881-1940 / Mother" CR: Mrs. Lewis Cairns, d,
+November 3, 1941
+Franklin Park Borough               212                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["PHILLIPS", 212, "C", 12, 3, "single"],
+      ["PHILLIPS", 212, "C", 12, 4, "single"],
+      ["WINSLOW/FISKE", 212, "C", 12, 5, "single"],
+      ["JOHNSTON/WINSLOW", 212, "C", 12, 6, "single"],
+      ["KNOBELOCH", 212, "C", 12, 7, "couple"],
+      ["KNOBELOCH", 212, "C", 12, 8, "single"],
+      ["TITLEY", 212, "C", 13, 1, "single"],
+      ["SCHAEFER", 212, "C", 13, 3, "single"],
+      ["CAIRNS", 212, "C", 13, 4, "single"],
+      ["CAIRNS", 212, "C", 13, 5, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("PHILLIPS (12C, 4"), false);
+  assert.equal(entries[3].rawText.includes("John~ton"), false);
+  assert.equal(entries[8].rawText.includes("F,ather"), false);
+});
