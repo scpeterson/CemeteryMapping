@@ -642,6 +642,9 @@ C. / May 14, 1900 / July 11, 1980 / Son / Glenn S. / Scharf / Jan. 1,
 1932 / Nov. 11, 1998 / Katherine A. / June 10, 1900 / Feb. 11, 1975"
 CR: Mrs. Katherine Hays Scharf
 
+DUNBAR (7C, 5, s) upright, gray granite, exc cond, flower, leaves
+''George R. Dunbar/ Sept. 5, 1872 / Feb. 29, 1932"
+
 HAGUE/HAGUR/SKILES (7C, 11, c) upright, gray granite, exc cond, lilies
 "H / Edward G. Hague / 1874-1923 / Amelia, his wife / 1877- 1915" CR:
 Edward George Hagur, d. August 14, 1923, 48y 5m 4da. Amelia Skiles, d.
@@ -658,11 +661,12 @@ Franklin Park Borough               206                Allegheny County, PA`;
 
   const entries = parseNorthHillsOcrText(text);
 
-  assert.equal(entries.length, 4);
+  assert.equal(entries.length, 5);
   assert.deepEqual(
     entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
     [
       ["SCHARF/HAYS", 206, "C", 7, 3, "couple"],
+      ["DUNBAR", 206, "C", 7, 5, "single"],
       ["HAGUE/HAGUR/SKILES", 206, "C", 7, 11, "couple"],
       ["DERSTINE", 206, "C", 7, 12, "single"],
       ["DERSTINE", 206, "C", 7, 13, "single"],
@@ -670,11 +674,13 @@ Franklin Park Borough               206                Allegheny County, PA`;
   );
   assert.equal(entries[0].rawText.includes("?C"), false);
   assert.equal(entries[0].inscriptionText.includes("Glenn S. / Scharf"), true);
-  assert.equal(entries[1].rawText.includes("48y 5m 4da"), true);
-  assert.equal(entries[2].inscriptionText.includes("T Sgt US Army"), true);
-  assert.equal(entries[2].rawText.includes("1942H"), false);
-  assert.equal(entries[3].inscriptionText.includes("Elizabeth S. Derstine"), true);
-  assert.deepEqual(entries[3].parsedYears, [1920, 2005]);
+  assert.equal(entries[1].rawText.includes("(7C, 5, s)"), true);
+  assert.equal(entries[1].rawText.includes("(7C, S, s)"), false);
+  assert.equal(entries[2].rawText.includes("48y 5m 4da"), true);
+  assert.equal(entries[3].inscriptionText.includes("T Sgt US Army"), true);
+  assert.equal(entries[3].rawText.includes("1942H"), false);
+  assert.equal(entries[4].inscriptionText.includes("Elizabeth S. Derstine"), true);
+  assert.deepEqual(entries[4].parsedYears, [1920, 2005]);
 });
 
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
