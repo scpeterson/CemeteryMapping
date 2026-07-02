@@ -754,6 +754,58 @@ Franklin Park Borough               207                Allegheny County, PA`;
   assert.equal(entries[10].nameText, "SOERGEL/HILLMAN");
 });
 
+test("parseNorthHillsOcrText splits corrected page 208 section C readings", () => {
+  const text = `Section C, Row 8
+KUMMER (8C, 9, c) upright, gray granite, exc cond, flowers "Kummer /
+George H. / 1860-1903 / Father / Margaret E. / 1870-1959 / Mother /
+Chester T. / 1901-1921 / Son" On back: "Kummer" CR: Margaret, d.
+January 16, 1959, 88y 9m 10da
+
+KUMMER (8C, 10, s) upright, gray granite, exc cond "Dora Kummer /
+1826-1926" On common base with (8C, 11). CR: Dorothy, d. September 18,
+1926
+
+KUMMER (8C, 11, s) upright, gray granite, exc cond "Christ Kummer /
+1827-1895" On common base with (BC, 10). CRG: Christian Kummer, b. 16
+March 1827 in Krahenbhal. Al Württemberg, d. 22 February 1895, age 67y
+11m 8da, f. February 22, 1895
+
+Section C, Row 9
+GRAHAM/STEELE (9C, 1, s) upright, gray granite, exc cond, flowers "Mother
+/ 1897·1973 / Pearl Steele / Graham / God bless you" CR: d. April 19,
+1973, 76y 1m 24da
+
+BROERMAN (9C, 3, s) pillow, bronze over stone, poor cond, US American
+Legion rosette "Joseph L. Broerman/ Private / Co. 1 / 161st / Infantry /
+enlisted July 23, 1918 discharged Mar. 4, 1919 / born June 14, 1886 died
+July 4, 1934"
+
+EADIE (9C, 4, s) flat, pink granite, exc cond, cross, flowers "Hilda G.
+Eadie/ Nov. 18, 1929 / Aug. 28, 1988 / Beloved Mother / and Stepmother''
+Franklin Park Borough               208                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.equal(entries.length, 6);
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["KUMMER", 208, "C", 8, 9, "couple"],
+      ["KUMMER", 208, "C", 8, 10, "single"],
+      ["KUMMER", 208, "C", 8, 11, "single"],
+      ["GRAHAM/STEELE", 208, "C", 9, 1, "single"],
+      ["BROERMAN", 208, "C", 9, 3, "single"],
+      ["EADIE", 208, "C", 9, 4, "single"],
+    ],
+  );
+  assert.deepEqual(entries[0].parsedYears, [1860, 1870, 1901, 1903, 1921, 1959]);
+  assert.equal(entries[1].rawText.includes("(SC"), false);
+  assert.equal(entries[2].rawText.includes("Württemberg"), true);
+  assert.equal(entries[3].rawText.includes("76y 1m 24da"), true);
+  assert.equal(entries[4].rawText.includes("seated child"), false);
+  assert.equal(entries[5].rawText.includes("N.ov."), false);
+});
+
 test("parseNorthHillsOcrText detects page number when OCR joins Franklin Park footer", () => {
   const text = `Section A, Row 6
 SCOTT (6A, 4, s) pillow, pink granite, exc cond, flowers "Son/ Donald
