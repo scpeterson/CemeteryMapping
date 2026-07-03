@@ -154,11 +154,11 @@ function printedPageNumber(pageText) {
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
 const entryNamePattern = String.raw`(?:\[\p{Lu}[\p{L}0-9/[\]()? !.'&-]{1,90}?\]|\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?)`;
 const entryStartPattern = new RegExp(
-  String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO8a-go])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)(s|c|monolith)\s*,?\)`,
+  String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO8a-go])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)(s|c|monolith)\s*,?[)}]`,
   "u",
 );
 const embeddedEntryStartPattern = new RegExp(
-  String.raw`(${entryNamePattern})\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8a-go]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)(?:s|c|monolith)\s*,?\)`,
+  String.raw`(${entryNamePattern})\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8a-go]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)(?:s|c|monolith)\s*,?[)}]`,
   "gu",
 );
 const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8a-go]\s*,/u;
@@ -203,6 +203,7 @@ function stripTrailingStandaloneNote(segment) {
     .replace(/\s+[0-9]+\s+feet\s+to\s+end\s+of\s+row\.?$/iu, "")
     .replace(/\s+Balance\s+of\s+row,?\s+approximately\s+[0-9]+\s+feet,?\s+is\s+empty\.?$/iu, "")
     .replace(/\s+Sunken\s+area\s+to\s+east\s+toward\s+road\.?$/iu, "")
+    .replace(/\s+(?:Section\s+[A-Z],?\s+Row\s+[0-9]+\s+)?Row\s+begins\s+about\s+[0-9]+\s+feet\s+from\s+the\s+road\.?$/iu, "")
     .replace(/\s+Plot\s+marker,?(?:\s+\w+\s+marble)?\s+"[^"]+"\s*\.?$/iu, "");
 }
 

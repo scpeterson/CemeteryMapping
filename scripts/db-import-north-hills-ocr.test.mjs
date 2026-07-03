@@ -1805,3 +1805,56 @@ Franklin Park Borough               217                Allegheny County, PA`;
   assert.equal(entries[3].rawText.includes(";: ."), false);
   assert.equal(entries[5].rawText.includes("Plot marker"), true);
 });
+
+test("parseNorthHillsOcrText splits corrected page 218 section C readings", () => {
+  const text = `Section C, Row 16
+BRUECKMAN (16C, 9, s) flat, bronze, exc cond, cross "William W. Brueckman /
+Sgt Army Air Forces / Aug 5 1924  May 31 1974" RANKER/BRUECKMAN (16C, 10,
+s) flat, bronze, exc cond, cross "Carol Brueckman/ Ranker / Loving wife and
+mother / Jul 17 1929 - May 22, 1999"
+
+KAELIN (16C, 11, c) upright, gray granite, exc cond, flower, leaves "Kaelin /
+Elmer B. / May 4, 1900 / July 11, 1958 / Father  Elizabeth A. / June 22,
+1896 / Feb. 27, 1974 / Mother" On back: "Kaelin"
+
+LEIDECKER (16C, 12, s) flat, green metal, exc cond, open Bible "George Henry
+Leidecker / 1877-1943" CR: d. July 2, 1943
+
+LEIDECKER/SHENOT (16C, 13, s) flat, green metal, exc cond, open Bible "Emma
+Shenot Leidecker / 1876-1955" CR: Emma E., d. January 6, 1955, 77y 4m 5da
+
+WOCHLEY/LEIDECKER (16C, 14, c) upright, gray granite, exc cond, ivy "Wochley
+/ Arthur / Dennis/ Feb. 8, 1903 / Mar. 21, 1984 / Lucell / Leidecker / Jan.
+3, 1907 / June 28, 1965 / Lo, I am with your always" On back: "Wochley"
+
+WOLFARTH (16C, 15, s) flat, gray granite, exc cond, cross ''Raymond A.
+Woifarth / Tec 5 US Army / World War II / Jan 24 1921 - Jul 4 1990" Separate
+flag holder: "US / Veteran", star
+
+DENT (16C, 16, s) upright, gray granite, exc cond "Andrew J. Dent / 1866-1947
+/ Father" CR: Middle name James, d. January 19, 1947, 80y 11m 26da
+
+LUSTER (16C, 18, s) upright, orange granite, good cond, airplane, flowers,
+leaves "Luster / George Wm. Jr. / 1937-1957" CR: d. November 1, 1957, 20y 7m
+20da, son of Mary Section C, Row 17 Row begins about 30 feet from the road
+Franklin Park Borough               218                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["BRUECKMAN", 218, "C", 16, 9, "single"],
+      ["RANKER/BRUECKMAN", 218, "C", 16, 10, "single"],
+      ["KAELIN", 218, "C", 16, 11, "couple"],
+      ["LEIDECKER", 218, "C", 16, 12, "single"],
+      ["LEIDECKER/SHENOT", 218, "C", 16, 13, "single"],
+      ["WOCHLEY/LEIDECKER", 218, "C", 16, 14, "couple"],
+      ["WOLFARTH", 218, "C", 16, 15, "single"],
+      ["DENT", 218, "C", 16, 16, "single"],
+      ["LUSTER", 218, "C", 16, 18, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("RANKER/BRUECKMAN"), false);
+  assert.equal(entries[8].rawText.includes("Row begins"), false);
+});
