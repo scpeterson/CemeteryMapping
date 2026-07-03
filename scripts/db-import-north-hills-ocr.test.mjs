@@ -1690,3 +1690,64 @@ Franklin Park Borough               215                Allegheny County, PA`;
   assert.equal(entries[8].rawText.includes("GILES"), false);
   assert.equal(entries[9].rawText.includes("SCHARF"), false);
 });
+
+test("parseNorthHillsOcrText accepts corrected page 216 section C readings", () => {
+  const text = `Section C, Row 15
+MCKEE/SCHARF (15C, 10, s) upright, gray granite, exc cond, flower, leaves
+"Margaret Scharf / McKee/ 1884-1953" CR: Anna Margaret, d, February 11,
+1953, 68y 4m 15da
+
+GRAU/SCHARF (15C, 11, s) upright, gray granite, exc cond, flower, leaves
+"Christina E. Grau / nee Scharf / 1887-1938" CR: Christine, d. December
+28, 1938
+
+HAYS (15C, 12, s) pillow, gray granite, exc cond, jonquil, leaves "Father /
+Henry R. Hays / 1898-1953"
+
+PROIE (15C, 14, c) pillow, gray granite, exc cond, lilies, leaves, eternal
+flame holder "Proie / James A., Jr. / Nov. 17, 1931 / April 9, 2006 /
+Evelyn C. / April 25, 1932 / April 8, 2000" CR: James, d. April 9, 2006,
+f. April 12, 2006
+
+ULLOM (15C, 16, s) pillow, gray granite, exc cond "Rufus K. Ullom / Sgt Co D
+111th Inf / enlisted / June 22, 1916 / born Mar. 4, 1877 / discharged /
+May 14, 1919 / died Sept. 29, 1942" Separate flag holder: "US / Veteran",
+star CR: buried October 1, 1942, 78y
+
+UHLENBURG (15C, 17, s) upright, gray granite, exc cond, flower "Husband /
+Elmer E. Uhlenburg / 1869-1942"
+
+UHLENBURG/ULEMBERG (15C, 18, s) upright, gray granite, exc cond, flower
+"Wife / Christine Uhlenburg / 1873-1955" CR: Christina F Ulemberg., d.
+October 14, 1955. Funeral conducted by Rev. Martin, member of Salem
+Methodist
+
+HIEBER (15C, 19, c) upright, gray granite, exc cond, flowers, leaves "Hieber
+/ Albert D. / 1872-1947 / Ida C. / 1872-[blank] / Wife"
+
+SANDROCK (15C, 20, c) flat, bronze, exc cond, roses, leaves, Masonic '
+insignia "Adam / 1900 - [blank] / Clara B. / 1906-1978 / Sandrock" Bronze
+vase. CR: Adam, d. January 30, 1983. Clara E., d. November 3, 1978, 72y
+8m 7da
+Franklin Park Borough               216                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["MCKEE/SCHARF", 216, "C", 15, 10, "single"],
+      ["GRAU/SCHARF", 216, "C", 15, 11, "single"],
+      ["HAYS", 216, "C", 15, 12, "single"],
+      ["PROIE", 216, "C", 15, 14, "couple"],
+      ["ULLOM", 216, "C", 15, 16, "single"],
+      ["UHLENBURG", 216, "C", 15, 17, "single"],
+      ["UHLENBURG/ULEMBERG", 216, "C", 15, 18, "single"],
+      ["HIEBER", 216, "C", 15, 19, "couple"],
+      ["SANDROCK", 216, "C", 15, 20, "couple"],
+    ],
+  );
+  assert.equal(entries[1].rawText.includes("Plot marker"), false);
+  assert.equal(entries[5].rawText.includes("UHLENBURG/ULEMBERG"), false);
+  assert.equal(entries[6].rawText.includes("HIEBER"), false);
+});
