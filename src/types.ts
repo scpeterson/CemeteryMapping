@@ -831,6 +831,8 @@ export type NorthHillsOcrCandidateMatch = {
 
 export type NorthHillsOcrEvidenceStatus = "linked" | "rejected" | "needs_field_check";
 export type NorthHillsSourceFactStatus = "staged" | "reviewed" | "promoted" | "rejected";
+export type NorthHillsObservationType = "plot_marker" | "gap" | "marker_observation" | "entry_note";
+export type NorthHillsObservationStatus = "staged" | "reviewed" | "rejected";
 
 export type NorthHillsOcrEvidenceLink = {
   id: string;
@@ -884,6 +886,60 @@ export type PromoteNorthHillsSourceFactInput = {
   reason: string;
 };
 
+export type NorthHillsOcrObservation = {
+  id: string;
+  entryId: string;
+  observationType: NorthHillsObservationType;
+  observationText: string;
+  status: NorthHillsObservationStatus;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SaveNorthHillsSourceFactInput = {
+  id?: string;
+  sourceCode: "CR" | "CRG";
+  factType: NorthHillsSourceFact["factType"];
+  factValue: string;
+  factDate?: string;
+  rawText: string;
+  confidence: NorthHillsSourceFact["confidence"];
+  status: NorthHillsSourceFactStatus;
+  reviewNotes?: string;
+};
+
+export type SaveNorthHillsOcrObservationInput = {
+  id?: string;
+  observationType: NorthHillsObservationType;
+  observationText: string;
+  status: NorthHillsObservationStatus;
+};
+
+export type SaveNorthHillsOcrEntryInput = {
+  sourcePageNumber?: number | null;
+  sourceLineStart?: number | null;
+  sourceLineEnd?: number | null;
+  rawText: string;
+  nameText: string;
+  surnames: string[];
+  parsedSectionName: string;
+  parsedRowNumber?: number | null;
+  parsedPositionNumber?: number | null;
+  parsedMarkerScope: string;
+  markerTypeText: string;
+  materialText: string;
+  conditionText: string;
+  inscriptionText: string;
+  parsedYears: number[];
+  parseConfidence: string;
+  parseNotes: string[];
+  status: string;
+  sourceEntry?: Record<string, unknown>;
+  sourceFacts: SaveNorthHillsSourceFactInput[];
+  observations: SaveNorthHillsOcrObservationInput[];
+  reason: string;
+};
+
 export type NorthHillsOcrReviewEntry = {
   id: string;
   batchId: string;
@@ -909,6 +965,7 @@ export type NorthHillsOcrReviewEntry = {
   candidateMatchCount: number;
   candidateMatches: NorthHillsOcrCandidateMatch[];
   sourceFacts: NorthHillsSourceFact[];
+  observations: NorthHillsOcrObservation[];
 };
 
 export type NorthHillsOcrReviewFilters = {

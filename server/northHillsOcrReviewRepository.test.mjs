@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { deleteNorthHillsOcrEvidenceLink, listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink } from "./northHillsOcrReviewRepository.mjs";
+import { deleteNorthHillsOcrEvidenceLink, listNorthHillsOcrReview, saveNorthHillsOcrEvidenceLink, updateNorthHillsOcrEntry } from "./northHillsOcrReviewRepository.mjs";
 
 test("listNorthHillsOcrReview returns batches, summaries, staged readings, and candidate matches", async () => {
   const pool = {
@@ -292,4 +292,147 @@ test("deleteNorthHillsOcrEvidenceLink removes reviewed headstone evidence with a
     "11111111-1111-4111-8111-111111111111",
     "22222222-2222-4222-8222-222222222222",
   ]);
+});
+
+test("updateNorthHillsOcrEntry saves entry fields, source facts, and typed observations together", async () => {
+  const queries = [];
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql.includes("SELECT id, cemetery_id")) {
+            return {
+              rows: [
+                {
+                  id: "11111111-1111-4111-8111-111111111111",
+                  cemetery_id: "22222222-2222-4222-8222-222222222222",
+                },
+              ],
+            };
+          }
+          if (sql.includes("UPDATE north_hills_ocr_entries")) return { rows: [{ id: "11111111-1111-4111-8111-111111111111" }] };
+          if (sql.includes("FROM north_hills_ocr_entries entry") && sql.includes("COALESCE(observations.observations")) {
+            return {
+              rows: [
+                {
+                  id: "11111111-1111-4111-8111-111111111111",
+                  batch_id: "33333333-3333-4333-8333-333333333333",
+                  source_page_number: 220,
+                  source_page_index: 41,
+                  source_line_start: 10,
+                  source_line_end: 12,
+                  name_text: "STETTLER",
+                  surnames: ["STETTLER"],
+                  raw_text: "STETTLER corrected",
+                  parsed_section_name: "C",
+                  parsed_row_number: 17,
+                  parsed_position_number: 14,
+                  parsed_marker_scope: "single",
+                  marker_type_text: "upright",
+                  material_text: "granite",
+                  condition_text: "excellent",
+                  inscription_text: "George T. Stettler",
+                  parsed_years: [1896, 1951],
+                  parse_confidence: "high",
+                  parse_notes: [],
+                  status: "reviewed",
+                  candidate_match_count: "0",
+                  candidate_matches: [],
+                  source_facts: [],
+                  observations: [
+                    {
+                      id: "44444444-4444-4444-8444-444444444444",
+                      entryId: "11111111-1111-4111-8111-111111111111",
+                      observationType: "plot_marker",
+                      observationText: "Plot marker H nearby",
+                      status: "staged",
+                    },
+                    {
+                      id: "55555555-5555-4555-8555-555555555555",
+                      entryId: "11111111-1111-4111-8111-111111111111",
+                      observationType: "gap",
+                      observationText: "About 30 feet to end of row",
+                      status: "staged",
+                    },
+                  ],
+                },
+              ],
+            };
+          }
+
+          return { rows: [] };
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const updated = await updateNorthHillsOcrEntry(
+    pool,
+    "11111111-1111-4111-8111-111111111111",
+    {
+      sourcePageNumber: 220,
+      sourceLineStart: 10,
+      sourceLineEnd: 12,
+      rawText: "STETTLER corrected",
+      nameText: "STETTLER",
+      surnames: ["STETTLER"],
+      parsedSectionName: "C",
+      parsedRowNumber: 17,
+      parsedPositionNumber: 14,
+      parsedMarkerScope: "single",
+      markerTypeText: "upright",
+      materialText: "granite",
+      conditionText: "excellent",
+      inscriptionText: "George T. Stettler",
+      parsedYears: [1951, 1896],
+      parseConfidence: "high",
+      parseNotes: [],
+      status: "reviewed",
+      sourceEntry: { heading: "STETTLER" },
+      sourceFacts: [
+        {
+          sourceCode: "CR",
+          factType: "death_date",
+          factValue: "October 7, 1951",
+          factDate: "1951-10-07",
+          rawText: "CR: d. October 7, 1951",
+          confidence: "high",
+          status: "staged",
+        },
+      ],
+      observations: [
+        { observationType: "plot_marker", observationText: "Plot marker H nearby", status: "staged" },
+        { observationType: "gap", observationText: "About 30 feet to end of row", status: "staged" },
+      ],
+    },
+    {
+      actorUser: {
+        id: "66666666-6666-4666-8666-666666666666",
+        subject: "auth0|admin",
+        email: "admin@example.test",
+        role: "cemetery-admin",
+      },
+      allowedCemeteryIds: ["22222222-2222-4222-8222-222222222222"],
+    },
+  );
+
+  assert.equal(updated?.nameText, "STETTLER");
+  assert.deepEqual(updated?.observations.map((observation) => observation.observationType), ["plot_marker", "gap"]);
+  assert.equal(queries[0].sql, "BEGIN");
+  assert.equal(queries.at(-2).sql, "COMMIT");
+  assert.equal(queries.at(-1).sql, "RELEASE");
+  assert.match(queries.find((query) => query.sql.includes("INSERT INTO north_hills_ocr_source_facts"))?.sql ?? "", /ON CONFLICT/u);
+  const observationInserts = queries.filter((query) => query.sql.includes("INSERT INTO north_hills_ocr_entry_observations"));
+  assert.equal(observationInserts.length, 2);
+  assert.deepEqual(
+    observationInserts.map((query) => query.values.slice(1, 4)),
+    [
+      ["plot_marker", "Plot marker H nearby", "staged"],
+      ["gap", "About 30 feet to end of row", "staged"],
+    ],
+  );
 });

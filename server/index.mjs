@@ -41,6 +41,7 @@ import {
   promoteNorthHillsSourceFact,
   reviewNorthHillsSourceFact,
   saveNorthHillsOcrEvidenceLink,
+  updateNorthHillsOcrEntry,
 } from "./northHillsOcrReviewRepository.mjs";
 import { listReportsForUser, matchReportQuery, runReport } from "./reportsRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
@@ -434,6 +435,106 @@ function validateNorthHillsSourceFactPromotionPayload(body) {
   return {
     burialId: validateUuid(body?.burialId, "Burial"),
     notes: optionalText(body?.notes, "Promotion notes", 4000),
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateOptionalInteger(value, label) {
+  if (value === undefined || value === null || value === "") return null;
+  const number = Number.parseInt(String(value), 10);
+  if (!Number.isFinite(number)) throw new BadRequestError(`${label} must be a number.`);
+  return number;
+}
+
+function validateOptionalTextArray(value, label, maxItems = 50, maxLength = 500) {
+  if (!Array.isArray(value)) return [];
+  if (value.length > maxItems) throw new BadRequestError(`${label} has too many values.`);
+  return value.map((item, index) => optionalText(item, `${label} ${index + 1}`, maxLength)).filter(Boolean);
+}
+
+function validateOptionalIntegerArray(value, label, maxItems = 50) {
+  if (!Array.isArray(value)) return [];
+  if (value.length > maxItems) throw new BadRequestError(`${label} has too many values.`);
+  return value
+    .map((item, index) => validateOptionalInteger(item, `${label} ${index + 1}`))
+    .filter((item) => item !== null);
+}
+
+function validateNorthHillsSourceFactInput(fact, index) {
+  const id = optionalText(fact?.id, `Source fact ${index + 1} id`, 50);
+  if (id) validateUuid(id, `Source fact ${index + 1}`);
+  const sourceCode = requiredText(fact?.sourceCode, `Source fact ${index + 1} source`, 10).toUpperCase();
+  if (!["CR", "CRG"].includes(sourceCode)) throw new BadRequestError("Source fact source must be CR or CRG.");
+  const factType = requiredText(fact?.factType, `Source fact ${index + 1} type`, 50);
+  if (!["death_date", "middle_initial", "age_at_death", "note"].includes(factType)) throw new BadRequestError("Source fact type is invalid.");
+  const confidence = optionalText(fact?.confidence, `Source fact ${index + 1} confidence`, 50) || "review";
+  if (!["high", "medium", "low", "review"].includes(confidence)) throw new BadRequestError("Source fact confidence is invalid.");
+  const status = optionalText(fact?.status, `Source fact ${index + 1} status`, 50) || "staged";
+  if (!["staged", "reviewed", "promoted", "rejected"].includes(status)) throw new BadRequestError("Source fact status is invalid.");
+
+  return {
+    id,
+    sourceCode,
+    factType,
+    factValue: requiredText(fact?.factValue, `Source fact ${index + 1} value`, 2000),
+    factDate: optionalText(fact?.factDate, `Source fact ${index + 1} date`, 20),
+    rawText: optionalText(fact?.rawText, `Source fact ${index + 1} raw text`, 4000),
+    confidence,
+    status,
+    reviewNotes: optionalText(fact?.reviewNotes, `Source fact ${index + 1} review notes`, 4000),
+  };
+}
+
+function validateNorthHillsObservationInput(observation, index) {
+  const id = optionalText(observation?.id, `Observation ${index + 1} id`, 50);
+  if (id) validateUuid(id, `Observation ${index + 1}`);
+  const observationType = requiredText(observation?.observationType, `Observation ${index + 1} type`, 50);
+  if (!["plot_marker", "gap", "marker_observation", "entry_note"].includes(observationType)) throw new BadRequestError("Observation type is invalid.");
+  const status = optionalText(observation?.status, `Observation ${index + 1} status`, 50) || "staged";
+  if (!["staged", "reviewed", "rejected"].includes(status)) throw new BadRequestError("Observation status is invalid.");
+
+  return {
+    id,
+    observationType,
+    observationText: requiredText(observation?.observationText, `Observation ${index + 1} text`, 4000),
+    status,
+  };
+}
+
+function validateNorthHillsEntryPayload(body) {
+  const parsedMarkerScope = optionalText(body?.parsedMarkerScope, "Marker scope", 50);
+  if (parsedMarkerScope && !["single", "couple", "monolith", "unknown"].includes(parsedMarkerScope)) throw new BadRequestError("Marker scope is invalid.");
+  const parseConfidence = optionalText(body?.parseConfidence, "Parse confidence", 50) || "review";
+  if (!["high", "medium", "low", "review"].includes(parseConfidence)) throw new BadRequestError("Parse confidence is invalid.");
+  const status = optionalText(body?.status, "Reading status", 50) || "staged";
+  if (!["staged", "reviewed", "promoted", "rejected"].includes(status)) throw new BadRequestError("Reading status is invalid.");
+  const sourceFacts = Array.isArray(body?.sourceFacts) ? body.sourceFacts.map(validateNorthHillsSourceFactInput) : [];
+  if (sourceFacts.length > 50) throw new BadRequestError("A North Hills entry can have at most 50 source facts.");
+  const observations = Array.isArray(body?.observations) ? body.observations.map(validateNorthHillsObservationInput) : [];
+  if (observations.length > 50) throw new BadRequestError("A North Hills entry can have at most 50 observations.");
+
+  return {
+    sourcePageNumber: validateOptionalInteger(body?.sourcePageNumber, "Source page"),
+    sourceLineStart: validateOptionalInteger(body?.sourceLineStart, "Source line start"),
+    sourceLineEnd: validateOptionalInteger(body?.sourceLineEnd, "Source line end"),
+    rawText: requiredText(body?.rawText, "Raw entry text", 12000),
+    nameText: optionalText(body?.nameText, "Parsed name", 500),
+    surnames: validateOptionalTextArray(body?.surnames, "Surname", 25, 250),
+    parsedSectionName: optionalText(body?.parsedSectionName, "Parsed section", 50).toUpperCase(),
+    parsedRowNumber: validateOptionalInteger(body?.parsedRowNumber, "Parsed row"),
+    parsedPositionNumber: validateOptionalInteger(body?.parsedPositionNumber, "Parsed position"),
+    parsedMarkerScope,
+    markerTypeText: optionalText(body?.markerTypeText, "Marker type", 250),
+    materialText: optionalText(body?.materialText, "Material", 250),
+    conditionText: optionalText(body?.conditionText, "Condition", 250),
+    inscriptionText: optionalText(body?.inscriptionText, "Inscription", 12000),
+    parsedYears: validateOptionalIntegerArray(body?.parsedYears, "Parsed year", 50),
+    parseConfidence,
+    parseNotes: validateOptionalTextArray(body?.parseNotes, "Parser note", 50, 1000),
+    status,
+    sourceEntry: body?.sourceEntry && typeof body.sourceEntry === "object" ? body.sourceEntry : {},
+    sourceFacts,
+    observations,
     reason: validateMutationReason(body?.reason),
   };
 }
@@ -1332,6 +1433,29 @@ export function createApp(config, pool) {
       const entryId = validateUuid(request.params.entryId, "North Hills reading");
       const evidence = validateNorthHillsEvidencePayload(request.body);
       response.status(201).json(await saveNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser: request.user }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/north-hills-ocr-review/:entryId", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const entryId = validateUuid(request.params.entryId, "North Hills reading");
+      const entry = validateNorthHillsEntryPayload(request.body);
+      const updated = await updateNorthHillsOcrEntry(pool, entryId, entry, {
+        actorUser: request.user,
+        reason: entry.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!updated) {
+        response.status(404).json({ error: "North Hills reading not found." });
+        return;
+      }
+      if (updated.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      response.json(updated);
     } catch (error) {
       next(error);
     }
