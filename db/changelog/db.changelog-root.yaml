@@ -575,3 +575,9 @@ databaseChangeLog:
   - include:
       file: changes/193-repair-north-hills-page-217.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/194-repair-north-hills-page-218.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/195-correct-north-hills-page-218-ranker-scope.sql
+      relativeToChangelogFile: true
