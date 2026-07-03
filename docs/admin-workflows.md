@@ -39,7 +39,7 @@ The same tab also supports deed investigation cases for real-world requests such
 
 Deed investigation cases are documentation and recommendation workflows. They do not directly create lots, gravesites, burials, owners, or ownership rights. If a recommendation results in an actual deed or ownership transfer, use the regular ownership maintenance workflow after the investigation and Council decision are resolved.
 
-The Admin UI also has a Readings tab for staged North Hills Genealogists OCR imports. The OCR importer preserves each raw reading entry, parsed section/row/position, marker descriptor text, surnames, inscription text, detected years, parser confidence, and parser notes. The review screen compares staged readings to existing burial rows by source page, surname, and birth/death years. Admins can link a reading to a candidate gravesite, link it to a candidate headstone, reject a candidate match, or flag a candidate for field checking. These review actions write evidence-link rows with reviewer identity, timestamp, confidence, status, and optional notes; they do not overwrite burials, headstones, lots, owners, or deeds. Linked North Hills evidence appears in the regular grave-detail panel for the associated gravesite or headstone.
+The Admin UI also has a Readings tab for staged North Hills Genealogists OCR imports. The OCR importer preserves each raw reading entry, parsed section/row/position, marker descriptor text, surnames, inscription text, detected years, parser confidence, and parser notes. The review screen compares staged readings to existing burial rows by source page, surname, and birth/death years. Admins can edit a staged reading when OCR or parser cleanup is needed, link a reading to a candidate gravesite, link it to a candidate headstone, reject a candidate match, or flag a candidate for field checking. These review actions write evidence-link rows with reviewer identity, timestamp, confidence, status, and optional notes; they do not overwrite burials, headstones, lots, owners, or deeds. Linked North Hills evidence appears in the regular grave-detail panel for the associated gravesite or headstone.
 
 How to use the Readings tab:
 
@@ -47,12 +47,13 @@ How to use the Readings tab:
 2. Select the North Hills OCR import batch to review.
 3. Use the confidence, status, section, search, and sort controls to narrow the staged readings. The page-order sort is useful when reviewing against the original printed source.
 4. Open a staged reading and compare its raw OCR text, parsed section/row/position, marker details, detected years, and parser notes against the possible existing matches.
-5. Use `Link gravesite` when the reading belongs to the candidate gravesite. This creates a linked gravesite evidence record.
-6. Use `Link headstone` when the reading belongs to a candidate physical marker/headstone. This creates a linked headstone evidence record.
-7. Use `Reject match` or `Reject headstone` when the candidate appears incorrect. This records the review decision without deleting the staged reading or changing production cemetery records.
-8. Use `Needs field check` or `Field check` when the source and database do not provide enough certainty. This keeps the candidate visible as reviewed but unresolved for later field verification.
-9. Add optional reviewer notes when prompted. Notes should capture why the match was linked, rejected, or deferred.
-10. After linking evidence, open the normal grave-detail panel for the gravesite or headstone to confirm that the North Hills evidence appears where regular users review cemetery records.
+5. Use `Edit entry` when the staged OCR text, parsed location, marker descriptors, notes, or extracted source facts need correction before review.
+6. Use `Link gravesite` when the reading belongs to the candidate gravesite. This creates a linked gravesite evidence record.
+7. Use `Link headstone` when the reading belongs to a candidate physical marker/headstone. This creates a linked headstone evidence record.
+8. Use `Reject match` or `Reject headstone` when the candidate appears incorrect. This records the review decision without deleting the staged reading or changing production cemetery records.
+9. Use `Needs field check` or `Field check` when the source and database do not provide enough certainty. This keeps the candidate visible as reviewed but unresolved for later field verification.
+10. Add optional reviewer notes when prompted. Notes should capture why the match was linked, rejected, or deferred.
+11. After linking evidence, open the normal grave-detail panel for the gravesite or headstone to confirm that the North Hills evidence appears where regular users review cemetery records.
 
 Readings review is an evidence workflow, not a promotion workflow. A linked reading supports interpretation of a gravesite or headstone, but it does not change burial names, dates, marker condition, owner/deed data, geometry, or lot/gravesite structure.
 
@@ -78,6 +79,10 @@ First regular record-editing workflow.
 Readers can see marker/headstone details in the normal grave detail panel. Power users and cemetery admins can edit marker details for assigned cemeteries from that same panel without opening the Admin UI; global admins can edit marker details anywhere. This keeps operational cemetery record work near the map and leaves Admin focused on users, lookups, audit review, and setup data.
 
 Standalone markers that are not linked to an active gravesite, such as graveyard markers or field markers, can also be opened and edited from the Markers panel. These records use the same marker edit form and authorization rules as gravesite-linked headstones.
+
+The marker detail panel also has a Related Markers section. This is where editors record physical marker-to-marker relationships such as a small marker referring to a family obelisk, two markers sharing a common base, or a foot marker belonging with a primary marker. Related-marker records store relationship type, source, source text, confidence, status, and notes. Power users, cemetery admins, and admins can add or edit related markers when they have edit access to the marker's cemetery; deletes are soft deletes with an audit reason.
+
+Do not use Related Markers for general gap notes or unavailable grave/lot observations. Gap notes are source observations. Plot markers should be modeled as actual marker records once their locations are known, and then linked only if there is a real marker-to-marker relationship.
 
 Editable fields:
 
