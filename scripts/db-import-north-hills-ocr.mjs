@@ -168,6 +168,7 @@ function isNonEntryBoundary(line) {
     sectionRowPattern.test(line) ||
     /^\s*Franklin Park Borough\b/u.test(line) ||
     /^\s*Trinity German Evangelical Lutheran Church\b/u.test(line) ||
+    /^\s*[A-Z][A-Z/ .'&-]{1,80}\s+new\s+grave,?\s+no\s+tombstone\b/iu.test(line) ||
     /^\s*Gap,?\s+about\b/iu.test(line)
   );
 }
