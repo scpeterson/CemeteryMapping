@@ -13,7 +13,7 @@ import {
 } from "./cemeteryRepository.mjs";
 
 function isGraveFeatureTableCheck(sql) {
-  return sql.includes("information_schema.tables") && (sql.includes("grave_features") || sql.includes("maintenance_records"));
+  return sql.includes("information_schema.tables") && (sql.includes("grave_features") || sql.includes("maintenance_records") || sql.includes("headstone_relationships"));
 }
 
 function queryRows(sql) {
@@ -432,6 +432,11 @@ test("lookup options include active military service lookups", async () => {
           if (sql.includes("FROM maintenance_priority_types")) {
             return {
               rows: [{ id: "efefefef-efef-4efe-8fef-efefefefefef", code: "normal", label: "Normal" }],
+            };
+          }
+          if (sql.includes("FROM headstones")) {
+            return {
+              rows: [{ id: "33333333-3333-4333-8333-333333333333", code: "TLC-HS-0001", label: "TLC-HS-0001" }],
             };
           }
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };

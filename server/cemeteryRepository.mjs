@@ -27,6 +27,7 @@ import {
   toBurial,
   toGraveFeature,
   toHeadstone,
+  toHeadstoneRelationship,
   toMaintenanceRecord,
   toMediaAsset,
   toNorthHillsEvidence,
@@ -1019,6 +1020,19 @@ async function maintenanceTablesExist(client) {
   return Boolean(result.rows[0]?.exists);
 }
 
+async function headstoneRelationshipTableExists(client) {
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = current_schema()
+        AND table_name = 'headstone_relationships'
+    ) AS exists
+  `);
+
+  return Boolean(result.rows[0]?.exists);
+}
+
 async function selectMaintenanceForGrave(client, graveUuid) {
   if (!(await maintenanceTablesExist(client))) return [];
 
@@ -1078,6 +1092,69 @@ async function selectMaintenanceForHeadstones(client, headstoneUuids) {
   }
 
   return byHeadstone;
+}
+
+const headstoneRelationshipSelectSql = `
+  headstone_relationships.id::text,
+  headstone_relationships.from_headstone_uuid::text,
+  from_headstones.headstone_id AS from_headstone_id,
+  headstone_relationships.to_headstone_uuid::text,
+  to_headstones.headstone_id AS to_headstone_id,
+  CASE
+    WHEN headstone_relationships.from_headstone_uuid = $1::uuid THEN headstone_relationships.to_headstone_uuid::text
+    ELSE headstone_relationships.from_headstone_uuid::text
+  END AS related_headstone_uuid,
+  CASE
+    WHEN headstone_relationships.from_headstone_uuid = $1::uuid THEN to_headstones.headstone_id
+    ELSE from_headstones.headstone_id
+  END AS related_headstone_id,
+  headstone_relationships.relationship_type,
+  headstone_relationships.source_type,
+  headstone_relationships.source_text,
+  headstone_relationships.confidence,
+  headstone_relationships.notes,
+  headstone_relationships.status,
+  CASE
+    WHEN headstone_relationships.from_headstone_uuid = $1::uuid THEN 'outgoing'
+    ELSE 'incoming'
+  END AS direction
+`;
+
+const headstoneRelationshipJoinSql = `
+  JOIN headstones AS from_headstones
+    ON from_headstones.id = headstone_relationships.from_headstone_uuid
+   AND from_headstones.deleted_at IS NULL
+  JOIN headstones AS to_headstones
+    ON to_headstones.id = headstone_relationships.to_headstone_uuid
+   AND to_headstones.deleted_at IS NULL
+`;
+
+async function selectRelationshipsForHeadstone(client, headstoneUuid) {
+  if (!(await headstoneRelationshipTableExists(client))) return [];
+
+  const result = await client.query(
+    `
+      SELECT ${headstoneRelationshipSelectSql}
+      FROM headstone_relationships
+      ${headstoneRelationshipJoinSql}
+      WHERE headstone_relationships.deleted_at IS NULL
+        AND (
+          headstone_relationships.from_headstone_uuid = $1
+          OR headstone_relationships.to_headstone_uuid = $1
+        )
+      ORDER BY
+        CASE headstone_relationships.status
+          WHEN 'active' THEN 1
+          WHEN 'needs_review' THEN 2
+          ELSE 3
+        END,
+        headstone_relationships.relationship_type,
+        related_headstone_id
+    `,
+    [headstoneUuid],
+  );
+
+  return result.rows;
 }
 
 const headstoneDetailColumnsSql = `
@@ -1347,10 +1424,12 @@ async function selectHeadstoneById(client, id) {
 
   const featuresByHeadstone = await selectFeaturesForHeadstones(client, [headstone.id]);
   const maintenanceByHeadstone = await selectMaintenanceForHeadstones(client, [headstone.id]);
+  const relationships = await selectRelationshipsForHeadstone(client, headstone.id);
   return {
     ...headstone,
     features: featuresByHeadstone.get(headstone.id) ?? [],
     maintenance_records: maintenanceByHeadstone.get(headstone.id) ?? [],
+    relationships,
   };
 }
 
@@ -1488,7 +1567,7 @@ async function selectHeadstoneMutationState(client, id) {
   return result.rows[0];
 }
 
-export async function listHeadstoneLookupOptions(pool) {
+export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = {}) {
   const client = await pool.connect();
   try {
     const markerTypes = await client.query("SELECT id::text, code, label FROM marker_types WHERE is_active ORDER BY sort_order, label");
@@ -1553,8 +1632,37 @@ export async function listHeadstoneLookupOptions(pool) {
     const maintenanceIssueTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_issue_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
     const maintenanceActionTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_action_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
     const maintenancePriorities = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_priority_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
+    const headstones = await client.query(
+      `
+        SELECT
+          headstones.id::text,
+          headstones.headstone_id AS code,
+          headstones.headstone_id AS label
+        FROM headstones
+        LEFT JOIN gravesites AS direct_gravesite
+          ON direct_gravesite.id = headstones.gravesite_uuid
+         AND direct_gravesite.deleted_at IS NULL
+        LEFT JOIN LATERAL (
+          SELECT cemeteries.id
+          FROM cemeteries
+          WHERE headstones.geometry IS NOT NULL
+            AND cemeteries.deleted_at IS NULL
+            AND ST_Covers(cemeteries.geometry, headstones.geometry)
+          ORDER BY cemeteries.name, cemeteries.id
+          LIMIT 1
+        ) containing_cemetery ON true
+        WHERE headstones.deleted_at IS NULL
+          AND (
+            $1::uuid[] IS NULL
+            OR COALESCE(direct_gravesite.cemetery_id, containing_cemetery.id) = ANY($1::uuid[])
+          )
+        ORDER BY headstones.headstone_id
+      `,
+      [Array.isArray(allowedCemeteryIds) ? allowedCemeteryIds : null],
+    );
 
     return {
+      headstones: headstones.rows,
       markerTypes: markerTypes.rows,
       materials: materials.rows,
       conditions: conditions.rows,
@@ -2606,6 +2714,235 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
 
     await client.query("COMMIT");
     return { ...toHeadstone(updated), auditEventId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function selectHeadstoneRelationshipById(client, id, currentHeadstoneUuid) {
+  if (!(await headstoneRelationshipTableExists(client))) return undefined;
+
+  const result = await client.query(
+    `
+      SELECT ${headstoneRelationshipSelectSql}
+      FROM headstone_relationships
+      ${headstoneRelationshipJoinSql}
+      WHERE headstone_relationships.id = $2
+        AND headstone_relationships.deleted_at IS NULL
+      LIMIT 1
+    `,
+    [currentHeadstoneUuid, id],
+  );
+
+  return result.rows[0];
+}
+
+export async function createHeadstoneRelationship(pool, headstoneId, relationship, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    const fromHeadstone = await selectHeadstoneMutationState(client, headstoneId);
+    const toHeadstone = await selectHeadstoneMutationState(client, relationship.relatedHeadstoneId);
+    if (!fromHeadstone || !toHeadstone) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    if (fromHeadstone.id === toHeadstone.id) {
+      await client.query("ROLLBACK");
+      return { invalid: "same_marker" };
+    }
+    if (!fromHeadstone.cemetery_id || fromHeadstone.cemetery_id !== toHeadstone.cemetery_id) {
+      await client.query("ROLLBACK");
+      return { invalid: "different_cemetery" };
+    }
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(fromHeadstone.cemetery_id)) {
+      await client.query("ROLLBACK");
+      return { forbidden: true };
+    }
+
+    const insertResult = await client.query(
+      `
+        INSERT INTO headstone_relationships (
+          from_headstone_uuid,
+          to_headstone_uuid,
+          relationship_type,
+          source_type,
+          source_text,
+          confidence,
+          notes,
+          status
+        )
+        VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, NULLIF($7, ''), $8)
+        ON CONFLICT (from_headstone_uuid, to_headstone_uuid, relationship_type)
+        WHERE deleted_at IS NULL
+        DO UPDATE
+        SET source_type = EXCLUDED.source_type,
+            source_text = EXCLUDED.source_text,
+            confidence = EXCLUDED.confidence,
+            notes = EXCLUDED.notes,
+            status = EXCLUDED.status
+        RETURNING id::text
+      `,
+      [
+        fromHeadstone.id,
+        toHeadstone.id,
+        relationship.relationshipType,
+        relationship.sourceType || "manual",
+        relationship.sourceText || "",
+        relationship.confidence || "review",
+        relationship.notes || "",
+        relationship.status || "active",
+      ],
+    );
+
+    const created = await selectHeadstoneRelationshipById(client, insertResult.rows[0].id, fromHeadstone.id);
+    await client.query("COMMIT");
+    return toHeadstoneRelationship(created);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateHeadstoneRelationship(pool, id, relationship, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    const existingResult = await client.query(
+      `
+        SELECT
+          headstone_relationships.id::text,
+          headstone_relationships.from_headstone_uuid::text,
+          headstone_relationships.to_headstone_uuid::text
+        FROM headstone_relationships
+        WHERE headstone_relationships.id = $1
+          AND headstone_relationships.deleted_at IS NULL
+        FOR UPDATE
+      `,
+      [id],
+    );
+    const existing = existingResult.rows[0];
+    if (!existing) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+
+    const fromHeadstone = await selectHeadstoneMutationState(client, existing.from_headstone_uuid);
+    const toHeadstone = await selectHeadstoneMutationState(client, relationship.relatedHeadstoneId || existing.to_headstone_uuid);
+    if (!fromHeadstone || !toHeadstone) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    if (fromHeadstone.id === toHeadstone.id) {
+      await client.query("ROLLBACK");
+      return { invalid: "same_marker" };
+    }
+    if (!fromHeadstone.cemetery_id || fromHeadstone.cemetery_id !== toHeadstone.cemetery_id) {
+      await client.query("ROLLBACK");
+      return { invalid: "different_cemetery" };
+    }
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(fromHeadstone.cemetery_id)) {
+      await client.query("ROLLBACK");
+      return { forbidden: true };
+    }
+
+    await client.query(
+      `
+        UPDATE headstone_relationships
+        SET to_headstone_uuid = $2,
+            relationship_type = $3,
+            source_type = $4,
+            source_text = NULLIF($5, ''),
+            confidence = $6,
+            notes = NULLIF($7, ''),
+            status = $8
+        WHERE id = $1
+      `,
+      [
+        id,
+        toHeadstone.id,
+        relationship.relationshipType,
+        relationship.sourceType || "manual",
+        relationship.sourceText || "",
+        relationship.confidence || "review",
+        relationship.notes || "",
+        relationship.status || "active",
+      ],
+    );
+
+    const updated = await selectHeadstoneRelationshipById(client, id, fromHeadstone.id);
+    await client.query("COMMIT");
+    return toHeadstoneRelationship(updated);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function softDeleteHeadstoneRelationship(pool, id, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    const existingResult = await client.query(
+      `
+        SELECT
+          headstone_relationships.id::text,
+          headstone_relationships.from_headstone_uuid::text,
+          headstone_relationships.deleted_at
+        FROM headstone_relationships
+        WHERE headstone_relationships.id = $1
+        LIMIT 1
+      `,
+      [id],
+    );
+    const existing = existingResult.rows[0];
+    if (!existing) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    if (existing.deleted_at) {
+      await client.query("COMMIT");
+      return { id: existing.id, deletedAt: existing.deleted_at, alreadyDeleted: true };
+    }
+
+    const fromHeadstone = await selectHeadstoneMutationState(client, existing.from_headstone_uuid);
+    if (!fromHeadstone) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(fromHeadstone.cemetery_id)) {
+      await client.query("ROLLBACK");
+      return { forbidden: true };
+    }
+
+    const updateResult = await client.query(
+      `
+        UPDATE headstone_relationships
+        SET deleted_at = now(),
+            deleted_by = $2,
+            delete_reason = $3
+        WHERE id = $1
+          AND deleted_at IS NULL
+        RETURNING id::text, deleted_at
+      `,
+      [id, actorUser?.id ?? actorUser?.subject ?? null, reason ?? null],
+    );
+
+    await client.query("COMMIT");
+    return { id: updateResult.rows[0].id, deletedAt: updateResult.rows[0].deleted_at, alreadyDeleted: false };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

@@ -26,6 +26,7 @@ const allowedAuditTables = new Set([
   "headstone_burials",
   "headstone_condition_types",
   "headstone_gravesites",
+  "headstone_relationships",
   "headstone_vase_material_types",
   "headstone_vase_placement_types",
   "headstone_vase_types",

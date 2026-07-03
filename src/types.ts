@@ -130,6 +130,25 @@ export type LookupOption = {
   label: string;
 };
 
+export type HeadstoneRelationshipType = "family_obelisk" | "references_marker" | "common_base" | "foot_marker" | "related_marker";
+
+export type HeadstoneRelationship = {
+  id: string;
+  fromHeadstoneUuid: string;
+  fromHeadstoneId: string;
+  toHeadstoneUuid: string;
+  toHeadstoneId: string;
+  relatedHeadstoneUuid: string;
+  relatedHeadstoneId: string;
+  relationshipType: HeadstoneRelationshipType;
+  sourceType: "manual" | "nhg" | "field_observation" | "import";
+  sourceText: string;
+  confidence: "high" | "medium" | "low" | "review";
+  notes: string;
+  status: "active" | "needs_review" | "retired";
+  direction: "outgoing" | "incoming";
+};
+
 export type Headstone = {
   id: string;
   headstoneId: string;
@@ -153,6 +172,7 @@ export type Headstone = {
   northHillsEvidence: NorthHillsLinkedEvidence[];
   features: GraveFeature[];
   maintenanceRecords: MaintenanceRecord[];
+  relationships: HeadstoneRelationship[];
   mediaAssets: MediaAsset[];
   auditEventId?: string;
 };
@@ -247,6 +267,7 @@ export type HeadstoneSummary = {
 };
 
 export type HeadstoneLookups = {
+  headstones: LookupOption[];
   markerTypes: LookupOption[];
   materials: LookupOption[];
   conditions: LookupOption[];
@@ -271,6 +292,17 @@ export type HeadstoneLookups = {
   maintenanceIssueTypes: LookupOption[];
   maintenanceActionTypes: LookupOption[];
   maintenancePriorities: LookupOption[];
+};
+
+export type SaveHeadstoneRelationshipInput = {
+  relatedHeadstoneId: string;
+  relationshipType: HeadstoneRelationshipType;
+  sourceType: "manual" | "nhg" | "field_observation" | "import";
+  sourceText: string;
+  confidence: "high" | "medium" | "low" | "review";
+  notes: string;
+  status: "active" | "needs_review" | "retired";
+  reason?: string;
 };
 
 export type SaveHeadstoneInput = {

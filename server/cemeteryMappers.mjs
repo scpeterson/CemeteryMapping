@@ -128,6 +128,25 @@ export function toMaintenanceRecord(row) {
   };
 }
 
+export function toHeadstoneRelationship(row) {
+  return {
+    id: row.id,
+    fromHeadstoneUuid: row.from_headstone_uuid,
+    fromHeadstoneId: row.from_headstone_id,
+    toHeadstoneUuid: row.to_headstone_uuid,
+    toHeadstoneId: row.to_headstone_id,
+    relatedHeadstoneUuid: row.related_headstone_uuid,
+    relatedHeadstoneId: row.related_headstone_id,
+    relationshipType: row.relationship_type,
+    sourceType: row.source_type ?? "manual",
+    sourceText: row.source_text ?? "",
+    confidence: row.confidence ?? "review",
+    notes: row.notes ?? "",
+    status: row.status ?? "active",
+    direction: row.direction ?? "outgoing",
+  };
+}
+
 export function toHeadstone(row) {
   return {
     id: row.id,
@@ -152,6 +171,7 @@ export function toHeadstone(row) {
     northHillsEvidence: row.north_hills_evidence ?? [],
     features: (row.features ?? []).map(toGraveFeature),
     maintenanceRecords: (row.maintenance_records ?? []).map(toMaintenanceRecord),
+    relationships: (row.relationships ?? []).map(toHeadstoneRelationship),
     mediaAssets: row.media_assets ?? [],
   };
 }

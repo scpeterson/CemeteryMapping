@@ -3,17 +3,21 @@ import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
   createGraveFeature,
+  createHeadstoneRelationship,
   createMaintenanceRecord,
+  deleteHeadstoneRelationship,
   deleteGraveFeature,
   deleteMediaAsset,
   fetchCemeteryData,
   fetchCurrentUser,
+  fetchHeadstone,
   fetchHeadstoneLookups,
   fetchSearchMatches,
   updateBurial,
   updateGraveFeature,
   updateGraveSpace,
   updateHeadstone,
+  updateHeadstoneRelationship,
   updateMaintenanceRecord,
   moveMediaAsset,
   uploadGravePhoto,
@@ -42,6 +46,7 @@ import type {
   SaveGraveSpaceInput,
   SaveGraveFeatureInput,
   SaveHeadstoneInput,
+  SaveHeadstoneRelationshipInput,
   SaveMaintenanceRecordInput,
   SaveOwnershipEventInput,
   SearchMatch,
@@ -55,6 +60,7 @@ const ReportsPanel = lazy(() => import("./components/ReportsPanel").then((module
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 const emptyHeadstoneLookups: HeadstoneLookups = {
+  headstones: [],
   markerTypes: [],
   materials: [],
   conditions: [],
@@ -304,6 +310,35 @@ export default function App() {
       ),
     }));
     return saved;
+  };
+
+  const refreshHeadstoneDetails = async (id: string) => {
+    const refreshed = await fetchHeadstone(id);
+    setSelectedHeadstoneDetails((current) => (current?.id === refreshed.id ? refreshed : current));
+    setSelectedGraveDetails((current) =>
+      current
+        ? {
+            ...current,
+            headstones: current.headstones.map((candidate) => (candidate.id === refreshed.id ? refreshed : candidate)),
+          }
+        : current,
+    );
+    return refreshed;
+  };
+
+  const saveHeadstoneRelationship = async (headstoneId: string, relationship: SaveHeadstoneRelationshipInput) => {
+    await createHeadstoneRelationship(headstoneId, relationship);
+    return refreshHeadstoneDetails(headstoneId);
+  };
+
+  const updateSavedHeadstoneRelationship = async (headstoneId: string, relationshipId: string, relationship: SaveHeadstoneRelationshipInput) => {
+    await updateHeadstoneRelationship(relationshipId, relationship);
+    return refreshHeadstoneDetails(headstoneId);
+  };
+
+  const deleteSavedHeadstoneRelationship = async (headstoneId: string, relationshipId: string, reason?: string) => {
+    await deleteHeadstoneRelationship(relationshipId, reason);
+    await refreshHeadstoneDetails(headstoneId);
   };
 
   const saveGraveSpace = async (graveSpace: SaveGraveSpaceInput): Promise<GraveSpace> => {
@@ -577,6 +612,9 @@ export default function App() {
         onSaveGraveSpace={saveGraveSpace}
         onSaveBurial={saveBurial}
         onSaveHeadstone={saveHeadstone}
+        onSaveHeadstoneRelationship={saveHeadstoneRelationship}
+        onUpdateHeadstoneRelationship={updateSavedHeadstoneRelationship}
+        onDeleteHeadstoneRelationship={deleteSavedHeadstoneRelationship}
         onSaveGraveFeature={saveGraveFeature}
         onUpdateGraveFeature={updateSavedGraveFeature}
         onDeleteGraveFeature={deleteSavedGraveFeature}

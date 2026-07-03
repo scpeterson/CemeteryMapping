@@ -97,6 +97,7 @@ const auditTableLabels: Record<string, string> = {
   headstone_burials: "Headstone burials",
   headstone_condition_types: "Headstone conditions",
   headstone_gravesites: "Headstone gravesites",
+  headstone_relationships: "Headstone relationships",
   headstones: "Headstones",
   lot_owner_parties: "Lot owners",
   lot_ownership_event_types: "Lot ownership events",
