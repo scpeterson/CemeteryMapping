@@ -53,6 +53,8 @@ Add physical marker tables:
 
 `headstone_burials` links one physical marker to one or more burial records.
 
+`headstone_relationships` links one physical marker to another physical marker. This is used for cases such as family obelisk references, markers on a common base, foot markers, and other explicit marker references found during field review or in source text. It is not a substitute for marker-to-gravesite or marker-to-burial links. Plot markers should first be represented as marker records when they have locations; gap notes remain source observations rather than marker relationships.
+
 ## Rationale
 
 This model supports:
@@ -60,6 +62,7 @@ This model supports:
 - One headstone listing multiple people.
 - Multiple headstones at one gravesite if that is ever discovered.
 - One headstone associated with multiple gravesites.
+- One marker explicitly referencing another marker, such as an obelisk or foot marker relationship.
 - A burial with no known headstone.
 - A headstone condition workflow independent of burial identity.
 - A controlled marker type/material list without hard-coding an enum into application code.

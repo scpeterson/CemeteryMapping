@@ -133,6 +133,8 @@ Every real-data import or source change should update this file and the relevant
 | Known limitations | OCR contains normal scan artifacts such as `lA` for `1A`, punctuation drift, and occasional word/name errors. The importer stages entries for review and candidate matching only. Reviewed links surface as evidence in the detail panel, but they do not overwrite burials, headstones, lots, owners, or deeds. |
 | Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
 
+NHG text may also mention physical relationships such as "See obelisk," common bases, foot markers, plot markers, or gap observations. Reviewed marker-to-marker references can be recorded as marker relationships in the marker detail panel. Plot marker notes should wait until a plot marker is represented as an actual marker record with a location; gap notes should remain source observations rather than operational marker relationships.
+
 ## Demo Seed Data
 
 | Field | Value |

@@ -113,6 +113,8 @@ erDiagram
   GRAVESITES ||--o{ HEADSTONE_GRAVESITES : marked
   HEADSTONES ||--o{ HEADSTONE_BURIALS : names
   BURIALS ||--o{ HEADSTONE_BURIALS : named
+  HEADSTONES ||--o{ HEADSTONE_RELATIONSHIPS : from
+  HEADSTONES ||--o{ HEADSTONE_RELATIONSHIPS : to
   MARKER_TYPES ||--o{ HEADSTONES : classifies
   MARKER_MATERIAL_TYPES ||--o{ HEADSTONES : classifies
   HEADSTONE_CONDITION_TYPES ||--o{ HEADSTONES : classifies
@@ -146,6 +148,7 @@ erDiagram
 | `headstones` | Marker/headstone point geometry and marker metadata. The name is historical in the schema; the UI generally calls these markers. |
 | `headstone_gravesites` | Many-to-many link between markers and gravesites. This supports shared family markers and markers spanning adjacent graves. |
 | `headstone_burials` | Many-to-many link between markers and the burials or named people shown on them. |
+| `headstone_relationships` | Marker-to-marker relationships, such as family obelisk references, common-base relationships, foot markers, and other physical marker references. Plot markers should become actual marker records before they are related here; gap notes remain observations rather than marker relationships. |
 | `marker_types` | Marker form/type dropdown values, such as upright, flat, pillow, military marker, cradle grave, and other local marker types. |
 | `marker_material_types` | Controlled marker materials. |
 | `headstone_condition_types` | Controlled marker condition values. |
@@ -221,7 +224,7 @@ erDiagram
 | `north_hills_ocr_source_facts` | Extracted facts from CR, CRG, SK, and similar annotations. These can support or update operational records after review. |
 | `north_hills_ocr_entry_gravesite_links`, `north_hills_ocr_entry_headstone_links` | Reviewed links between NHG evidence and the operational gravesites or markers it supports. |
 
-Keeping evidence separate from operational rows is especially important for NHG corrections. The OCR text can be corrected and reviewed without immediately overwriting burial, marker, or gravesite records.
+Keeping evidence separate from operational rows is especially important for NHG corrections. The OCR text can be corrected and reviewed without immediately overwriting burial, marker, or gravesite records. When an NHG entry says one marker refers to another, such as an obelisk reference or common-base note, the reviewed operational relationship belongs in `headstone_relationships` rather than only in free text.
 
 ## Users, Roles, Audit, And Operations
 
