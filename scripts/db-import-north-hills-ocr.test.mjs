@@ -1751,3 +1751,57 @@ Franklin Park Borough               216                Allegheny County, PA`;
   assert.equal(entries[5].rawText.includes("UHLENBURG/ULEMBERG"), false);
   assert.equal(entries[6].rawText.includes("HIEBER"), false);
 });
+
+test("parseNorthHillsOcrText accepts corrected page 217 section C readings", () => {
+  const text = `Section C, Row 15
+BRANDT (15c, 21, c) upright, gray granite, exc cond "Brandt / H. Carl /
+1912 -1997 / Alice R. / 1911-1991" On back: "Brandt"
+
+Section C, Row 16
+DeCOURCY/DeWITT/HAMILTON (16C, 1, c) upright, gray granite, exc cond,
+flower, leaves "DeCourcy / William / DeWitt / 1921 - [blank) / Louise /
+Hamilton / 1925-1990" On base: small stone memento with stars "Perhaps
+they are not/  stars in the sky, / but rather openings / where our loved
+ones / shine down / to let us know they are happy" On back: "DeCourcy"
+
+DeCOURCY/HAMILTON/DeCOURCEY (16C, 2, s) upright, gray granite, exc cond
+"William Hamilton/ DeCourcy / Nov. 4, 1957" CR: Son o,f William Decourcey,
+d. December 2, 1957
+
+WATENPOOL (16C, 3, s) upright, gray granite, exc cond, flower, leaves "Allan
+J. / Watenpool / 1911-1944" CR: Middle name Joseph, d. December 9, 1944
+
+BLACKFORD/WATENPOOL (16C, 4, s) upright, gray granite, exc cond, flowers,
+leaves "Margaret/ Watenpool / Blackford/ 1909 - 2004"
+
+BLACKFORD (16C, 5, s) upright, gray granite, exc cond, flowers, leaves
+"Byron H. / Blackford / 1902-1983" CR: d. November 28, 1983, 81y 1m 5da
+Plot marker, stone "W"
+
+BUCHHOLZ (16C, 6, s) upright, gray granite, exc cond, ivy "Aunt / Carrie
+Buchholz / 1898-1981" Bronze urn in ground CR: Caroline Louise, d.
+November 11, 1981, 83y 3m 9da
+
+BUCHHOLZ/CLEESE/BUCKHOLZ (16C, 7, s) upright, gray granite, exc cond, ivy
+"Mother / Nettie Buchholz / 1861-1960" Bronze urn in ground CR: Nettie
+(Cleese) Buckholz, d. June 6, 1960, 90 y 20 da, born in Germany
+Franklin Park Borough               217                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["BRANDT", 217, "C", 15, 21, "couple"],
+      ["DeCOURCY/DeWITT/HAMILTON", 217, "C", 16, 1, "couple"],
+      ["DeCOURCY/HAMILTON/DeCOURCEY", 217, "C", 16, 2, "single"],
+      ["WATENPOOL", 217, "C", 16, 3, "single"],
+      ["BLACKFORD/WATENPOOL", 217, "C", 16, 4, "single"],
+      ["BLACKFORD", 217, "C", 16, 5, "single"],
+      ["BUCHHOLZ", 217, "C", 16, 6, "single"],
+      ["BUCHHOLZ/CLEESE/BUCKHOLZ", 217, "C", 16, 7, "single"],
+    ],
+  );
+  assert.equal(entries[3].rawText.includes(";: ."), false);
+  assert.equal(entries[5].rawText.includes("Plot marker"), true);
+});

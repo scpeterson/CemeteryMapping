@@ -154,14 +154,14 @@ function printedPageNumber(pageText) {
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
 const entryNamePattern = String.raw`(?:\[\p{Lu}[\p{L}0-9/[\]()? !.'&-]{1,90}?\]|\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?)`;
 const entryStartPattern = new RegExp(
-  String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO8])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)(s|c|monolith)\s*,?\)`,
+  String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO8a-go])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)(s|c|monolith)\s*,?\)`,
   "u",
 );
 const embeddedEntryStartPattern = new RegExp(
-  String.raw`(${entryNamePattern})\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)(?:s|c|monolith)\s*,?\)`,
+  String.raw`(${entryNamePattern})\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8a-go]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)(?:s|c|monolith)\s*,?\)`,
   "gu",
 );
-const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8]\s*,/u;
+const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8a-go]\s*,/u;
 
 function isNonEntryBoundary(line) {
   return (
