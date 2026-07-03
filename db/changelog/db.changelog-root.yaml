@@ -563,3 +563,9 @@ databaseChangeLog:
   - include:
       file: changes/189-correct-north-hills-page-214-walters-heading.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/190-repair-north-hills-page-215.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/191-correct-existing-north-hills-page-215-rows.sql
+      relativeToChangelogFile: true
