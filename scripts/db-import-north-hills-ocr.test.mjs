@@ -1625,3 +1625,129 @@ Franklin Park Borough               214                Allegheny County, PA`;
   assert.equal(entries[2].rawText.includes("Hlghland"), false);
   assert.equal(entries[8].rawText.includes("Gap, about 30 feet"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 215 section C readings", () => {
+  const text = `Section C, Row 14
+CRERAR (14C, 8, s) upright, gray granite, exc cond, flowers "James Crerar /
+May 6, 1905 / Jan. 19, 1954 / Father" CR: d. January 19, 1954, 48y 8m 13da
+
+BRANT/SARVER (14C, 10, c) upright, gray granite, exc cond, flowers "Brant /
+Elmer H. / 1914-1977 / Eleanor S. / 1918-1947'' CR: Elmer, d. October 18,
+1977, 63y 3m 5da. Mrs. Eleanor Sarver Brant, d. January 25, 1947, 28y 2m
+28da
+
+Section C, Row 15
+ROBERTSON (15C, 1, s) flat, bronze, exc cond, cross "Albert E Robertson /
+US Army / World War I / July 29 1895 Jul 17 1985" Separate flag holder:
+"US / Veteran", star
+
+ROBERTSON (15C, 2, s) flat, bronze, exc cond, cross "Helen W Robertson /
+Beloved wife / Sep 9 1899 Nov 10 1992"
+
+HOERR (15C, 3, s) upright, red granite, exc cond, flowers, leaves "Daughter /
+Margaret M. Hoerr / May 31, 1904 / Sept. 17, 1942"
+
+HOERR/ BERDURG(?) (15C, 4, s) upright, red granite, exc cond, archway,
+flowers, leaves "Mother/ Wilhelmine A. Hoerr / Oct. 16, 1869 / July 3,
+1944" CR: Wilhelmine Berdurg(?) Hoerr
+
+HOERR (15C, 5, s) flat, bronze, exc cond, cross "William H. Hoerr / June 18
+1902 - Oct 8 1984" Separate flag holder: "US / Veteran", star
+
+DODSON (15C, 6, s) flat, red granite, exc cond "In loving memory / Paul G.
+Dodson / 1914-1992"
+
+KOHLER (15C, 7, c) upright, red granite, exc cond, 7 foot stele., flowers,
+leaves, "Kohler" On base "Edmund / 1894-1971 / Marie / 1894-1973"
+
+GILES (15C, 8, s) pillow, red granite, exc cond 'Tornelia Giles/ 1900- 1953"
+Plot marker, gray granite "W"
+
+SCHARF (15C, 9, s) flat, bronze, exc cond, ivy "John P. Scharf / Aug. 27,
+1894 / Nov. 29, 1964" CR: Middle name Peter
+Franklin Park Borough               215                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["CRERAR", 215, "C", 14, 8, "single"],
+      ["BRANT/SARVER", 215, "C", 14, 10, "couple"],
+      ["ROBERTSON", 215, "C", 15, 1, "single"],
+      ["ROBERTSON", 215, "C", 15, 2, "single"],
+      ["HOERR", 215, "C", 15, 3, "single"],
+      ["HOERR/ BERDURG(?)", 215, "C", 15, 4, "single"],
+      ["HOERR", 215, "C", 15, 5, "single"],
+      ["DODSON", 215, "C", 15, 6, "single"],
+      ["KOHLER", 215, "C", 15, 7, "couple"],
+      ["GILES", 215, "C", 15, 8, "single"],
+      ["SCHARF", 215, "C", 15, 9, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("48y Bm"), false);
+  assert.equal(entries[1].rawText.includes("BRANT/ SARVER"), false);
+  assert.equal(entries[8].rawText.includes("GILES"), false);
+  assert.equal(entries[9].rawText.includes("SCHARF"), false);
+});
+
+test("parseNorthHillsOcrText accepts corrected page 216 section C readings", () => {
+  const text = `Section C, Row 15
+MCKEE/SCHARF (15C, 10, s) upright, gray granite, exc cond, flower, leaves
+"Margaret Scharf / McKee/ 1884-1953" CR: Anna Margaret, d, February 11,
+1953, 68y 4m 15da
+
+GRAU/SCHARF (15C, 11, s) upright, gray granite, exc cond, flower, leaves
+"Christina E. Grau / nee Scharf / 1887-1938" CR: Christine, d. December
+28, 1938
+
+HAYS (15C, 12, s) pillow, gray granite, exc cond, jonquil, leaves "Father /
+Henry R. Hays / 1898-1953"
+
+PROIE (15C, 14, c) pillow, gray granite, exc cond, lilies, leaves, eternal
+flame holder "Proie / James A., Jr. / Nov. 17, 1931 / April 9, 2006 /
+Evelyn C. / April 25, 1932 / April 8, 2000" CR: James, d. April 9, 2006,
+f. April 12, 2006
+
+ULLOM (15C, 16, s) pillow, gray granite, exc cond "Rufus K. Ullom / Sgt Co D
+111th Inf / enlisted / June 22, 1916 / born Mar. 4, 1877 / discharged /
+May 14, 1919 / died Sept. 29, 1942" Separate flag holder: "US / Veteran",
+star CR: buried October 1, 1942, 78y
+
+UHLENBURG (15C, 17, s) upright, gray granite, exc cond, flower "Husband /
+Elmer E. Uhlenburg / 1869-1942"
+
+UHLENBURG/ULEMBERG (15C, 18, s) upright, gray granite, exc cond, flower
+"Wife / Christine Uhlenburg / 1873-1955" CR: Christina F Ulemberg., d.
+October 14, 1955. Funeral conducted by Rev. Martin, member of Salem
+Methodist
+
+HIEBER (15C, 19, c) upright, gray granite, exc cond, flowers, leaves "Hieber
+/ Albert D. / 1872-1947 / Ida C. / 1872-[blank] / Wife"
+
+SANDROCK (15C, 20, c) flat, bronze, exc cond, roses, leaves, Masonic '
+insignia "Adam / 1900 - [blank] / Clara B. / 1906-1978 / Sandrock" Bronze
+vase. CR: Adam, d. January 30, 1983. Clara E., d. November 3, 1978, 72y
+8m 7da
+Franklin Park Borough               216                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["MCKEE/SCHARF", 216, "C", 15, 10, "single"],
+      ["GRAU/SCHARF", 216, "C", 15, 11, "single"],
+      ["HAYS", 216, "C", 15, 12, "single"],
+      ["PROIE", 216, "C", 15, 14, "couple"],
+      ["ULLOM", 216, "C", 15, 16, "single"],
+      ["UHLENBURG", 216, "C", 15, 17, "single"],
+      ["UHLENBURG/ULEMBERG", 216, "C", 15, 18, "single"],
+      ["HIEBER", 216, "C", 15, 19, "couple"],
+      ["SANDROCK", 216, "C", 15, 20, "couple"],
+    ],
+  );
+  assert.equal(entries[1].rawText.includes("Plot marker"), false);
+  assert.equal(entries[5].rawText.includes("UHLENBURG/ULEMBERG"), false);
+  assert.equal(entries[6].rawText.includes("HIEBER"), false);
+});
