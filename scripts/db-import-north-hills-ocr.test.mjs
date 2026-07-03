@@ -1858,3 +1858,38 @@ Franklin Park Borough               218                Allegheny County, PA`;
   assert.equal(entries[0].rawText.includes("RANKER/BRUECKMAN"), false);
   assert.equal(entries[8].rawText.includes("Row begins"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 219 section C readings", () => {
+  const text = `Section C, Row 17
+MORRIS (17C, 1, s) pillow, red granite, exc cond "Loretta Morris/ 1906-1960"
+
+KIVLAN new grave, no tombstone. CR: Harold B. Kivlan, Jr. b. June 2, 1924,
+d. July 21, 2006
+
+PAGANO (17C, 2, c) upright, gray granite, exc cond, cross in center of flowers
+"Pagano / Connie / 1955-1995 / Pat / 1954 [blank]" On back: "Pagano" Flower
+holder in front of gravestone. CR: Constance, Sept. 12, 1955 - Sept. 30, 1995
+BOHN/BUCHHOLZ (17C, 3, c) upright, gray granite, exc cond, flowers "Bohn /
+George J. / 1891-1975 / Emma E. / 1893-1977" On back: "Bohn" Separate flag
+holder: "American / US / Legion" CR: George, d. January 9, 1975, 83y 20da.
+Emma E. Buchholz Bohn, d. September 16, 1977, 84y 4m 4da
+
+BOWES/BERINGER (17C, 6, s) upright, gray granite, exc cond, bowl of flowers
+"Olive M. Bowes/ July 16, 1897 / May 1, 1977 / Mother" On back: ''Bowes"
+CR: Olive Malinda Beringer Bowes
+Franklin Park Borough               219                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["MORRIS", 219, "C", 17, 1, "single"],
+      ["PAGANO", 219, "C", 17, 2, "couple"],
+      ["BOHN/BUCHHOLZ", 219, "C", 17, 3, "couple"],
+      ["BOWES/BERINGER", 219, "C", 17, 6, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("KIVLAN"), false);
+  assert.equal(entries[1].rawText.includes("BOHN/BUCHHOLZ"), false);
+});
