@@ -9,6 +9,7 @@ import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOw
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
 import {
   createGraveFeature,
+  createHeadstoneRelationship,
   createMaintenanceRecord,
   createOwnershipEvent,
   getCemeteryData,
@@ -18,10 +19,12 @@ import {
   restoreGraveSpace,
   softDeleteGraveFeature,
   softDeleteGraveSpace,
+  softDeleteHeadstoneRelationship,
   updateBurial,
   updateGraveFeature,
   updateGraveSpace,
   updateHeadstone,
+  updateHeadstoneRelationship,
   updateMaintenanceRecord,
 } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
@@ -214,6 +217,36 @@ function validateHeadstonePayload(body) {
     backDescription: optionalText(body?.backDescription, "Back description", 20_000),
     photoUrl: optionalText(body?.photoUrl, "Photo URL", 300),
     lastInspectedAt,
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateHeadstoneRelationshipPayload(body) {
+  const relationshipType = optionalText(body?.relationshipType, "Relationship type", 50) || "related_marker";
+  if (!["family_obelisk", "references_marker", "common_base", "foot_marker", "related_marker"].includes(relationshipType)) {
+    throw new BadRequestError("Relationship type is invalid.");
+  }
+  const sourceType = optionalText(body?.sourceType, "Relationship source", 50) || "manual";
+  if (!["manual", "nhg", "field_observation", "import"].includes(sourceType)) {
+    throw new BadRequestError("Relationship source is invalid.");
+  }
+  const confidence = optionalText(body?.confidence, "Relationship confidence", 50) || "review";
+  if (!["high", "medium", "low", "review"].includes(confidence)) {
+    throw new BadRequestError("Relationship confidence is invalid.");
+  }
+  const status = optionalText(body?.status, "Relationship status", 50) || "active";
+  if (!["active", "needs_review", "retired"].includes(status)) {
+    throw new BadRequestError("Relationship status is invalid.");
+  }
+
+  return {
+    relatedHeadstoneId: validateUuid(body?.relatedHeadstoneId, "Related marker"),
+    relationshipType,
+    sourceType,
+    sourceText: optionalText(body?.sourceText, "Relationship source text", 4000) ?? "",
+    confidence,
+    notes: optionalText(body?.notes, "Relationship notes", 4000) ?? "",
+    status,
     reason: validateMutationReason(body?.reason),
   };
 }
@@ -1010,9 +1043,13 @@ export function createApp(config, pool) {
     }
   });
 
-  app.get("/api/headstone-lookups", requireReader, async (_request, response, next) => {
+  app.get("/api/headstone-lookups", requireReader, async (request, response, next) => {
     try {
-      response.json(await listHeadstoneLookupOptions(pool));
+      response.json(
+        await listHeadstoneLookupOptions(pool, {
+          allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+        }),
+      );
     } catch (error) {
       next(error);
     }
@@ -1047,6 +1084,90 @@ export function createApp(config, pool) {
         return;
       }
       response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/headstones/:id/relationships", requirePowerUser, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Headstone id");
+      const relationship = validateHeadstoneRelationshipPayload(request.body);
+      const created = await createHeadstoneRelationship(pool, id, relationship, {
+        actorUser: request.user,
+        reason: relationship.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!created) {
+        response.status(404).json({ error: "Marker relationship target not found" });
+        return;
+      }
+      if (created.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      if (created.invalid === "same_marker") {
+        response.status(400).json({ error: "A marker cannot be related to itself." });
+        return;
+      }
+      if (created.invalid === "different_cemetery") {
+        response.status(400).json({ error: "Related markers must belong to the same cemetery." });
+        return;
+      }
+      response.status(201).json(created);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/headstone-relationships/:id", requirePowerUser, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Marker relationship");
+      const relationship = validateHeadstoneRelationshipPayload(request.body);
+      const updated = await updateHeadstoneRelationship(pool, id, relationship, {
+        actorUser: request.user,
+        reason: relationship.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!updated) {
+        response.status(404).json({ error: "Marker relationship not found" });
+        return;
+      }
+      if (updated.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      if (updated.invalid === "same_marker") {
+        response.status(400).json({ error: "A marker cannot be related to itself." });
+        return;
+      }
+      if (updated.invalid === "different_cemetery") {
+        response.status(400).json({ error: "Related markers must belong to the same cemetery." });
+        return;
+      }
+      response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/headstone-relationships/:id", requirePowerUser, async (request, response, next) => {
+    try {
+      const id = validateUuid(request.params.id, "Marker relationship");
+      const deleted = await softDeleteHeadstoneRelationship(pool, id, {
+        actorUser: request.user,
+        reason: validateMutationReason(request.body?.reason),
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!deleted) {
+        response.status(404).json({ error: "Marker relationship not found" });
+        return;
+      }
+      if (deleted.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      response.json(deleted);
     } catch (error) {
       next(error);
     }
