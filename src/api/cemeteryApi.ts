@@ -28,6 +28,7 @@ import type {
   MediaAsset,
   NorthHillsOcrReview,
   NorthHillsOcrReviewFilters,
+  SaveNorthHillsOcrEntryInput,
   NorthHillsSourceFact,
   PromoteNorthHillsSourceFactInput,
   ReportDefinition,
@@ -492,6 +493,11 @@ export async function fetchNorthHillsOcrReview(filters: NorthHillsOcrReviewFilte
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-ocr-review${query ? `?${query}` : ""}`);
   return jsonResponse<NorthHillsOcrReview>(response, "North Hills readings review API");
+}
+
+export async function updateNorthHillsOcrEntry(entryId: string, entry: SaveNorthHillsOcrEntryInput): Promise<void> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-ocr-review/${encodeURIComponent(entryId)}`, jsonRequest("PUT", entry));
+  await jsonResponse<unknown>(response, "Update North Hills reading API");
 }
 
 export async function saveNorthHillsOcrEvidence(entryId: string, evidence: SaveNorthHillsOcrEvidenceInput): Promise<void> {

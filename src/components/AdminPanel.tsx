@@ -19,6 +19,7 @@ import {
   reviewNorthHillsSourceFact,
   saveNorthHillsOcrEvidence,
   type SaveUserInput,
+  updateNorthHillsOcrEntry,
   updateAdminUser,
   updateCemeteryText,
   updateDeedInvestigationAction,
@@ -51,10 +52,14 @@ import type {
   LotTextRecord,
   NorthHillsOcrReview,
   NorthHillsOcrEvidenceStatus,
+  NorthHillsOcrObservation,
   NorthHillsOcrReviewEntry,
   NorthHillsOcrReviewFilters,
   NorthHillsSourceFact,
   NorthHillsSourceFactStatus,
+  SaveNorthHillsOcrEntryInput,
+  SaveNorthHillsOcrObservationInput,
+  SaveNorthHillsSourceFactInput,
   SaveDeedInvestigationActionInput,
   SaveDeedInvestigationCaseInput,
   SectionTextRecord,
@@ -71,6 +76,11 @@ type UserFormState = SaveUserInput & {
 };
 
 type AdminTab = "users" | "records" | "deeds" | "readings" | "audit" | "lookups" | "system";
+type NorthHillsEditForm = SaveNorthHillsOcrEntryInput & {
+  surnamesText: string;
+  parsedYearsText: string;
+  parseNotesText: string;
+};
 
 const blankUser: UserFormState = {
   externalSubject: "",
@@ -313,6 +323,102 @@ const sourceFactTypeLabels: Record<NorthHillsSourceFact["factType"], string> = {
   age_at_death: "Age at death",
   note: "Source note",
 };
+const observationTypeLabels: Record<NorthHillsOcrObservation["observationType"], string> = {
+  plot_marker: "Plot marker observed",
+  gap: "Gap observed",
+  marker_observation: "Marker observation",
+  entry_note: "Entry note",
+};
+const observationStatusLabels: Record<NorthHillsOcrObservation["status"], string> = {
+  staged: "Staged",
+  reviewed: "Reviewed",
+  rejected: "Rejected",
+};
+const markerScopeOptions = ["", "single", "couple", "monolith", "unknown"];
+const entryStatusOptions = ["staged", "reviewed", "promoted", "rejected"];
+
+function splitAdminList(value: string) {
+  return [...new Set(value.split(/[\n,;]+/u).map((item) => item.trim()).filter(Boolean))];
+}
+
+function splitAdminYears(value: string) {
+  return [...new Set(value.split(/[\n,;]+/u).map((item) => Number.parseInt(item.trim(), 10)).filter((item) => Number.isFinite(item)))].sort((left, right) => left - right);
+}
+
+function northHillsEditFormFromEntry(entry: NorthHillsOcrReviewEntry): NorthHillsEditForm {
+  const base: SaveNorthHillsOcrEntryInput = {
+    sourcePageNumber: entry.sourcePageNumber ?? null,
+    sourceLineStart: entry.sourceLineStart,
+    sourceLineEnd: entry.sourceLineEnd,
+    rawText: entry.rawText,
+    nameText: entry.nameText,
+    surnames: entry.surnames,
+    parsedSectionName: entry.parsedSectionName,
+    parsedRowNumber: entry.parsedRowNumber ?? null,
+    parsedPositionNumber: entry.parsedPositionNumber ?? null,
+    parsedMarkerScope: entry.parsedMarkerScope,
+    markerTypeText: entry.markerTypeText,
+    materialText: entry.materialText,
+    conditionText: entry.conditionText,
+    inscriptionText: entry.inscriptionText,
+    parsedYears: entry.parsedYears,
+    parseConfidence: entry.parseConfidence,
+    parseNotes: entry.parseNotes,
+    status: entry.status,
+    sourceFacts: entry.sourceFacts.map((fact) => ({
+      id: fact.id,
+      sourceCode: fact.sourceCode,
+      factType: fact.factType,
+      factValue: fact.factValue,
+      factDate: fact.factDate ?? "",
+      rawText: fact.rawText,
+      confidence: fact.confidence,
+      status: fact.status,
+      reviewNotes: fact.reviewNotes ?? "",
+    })),
+    observations: entry.observations.map((observation) => ({
+      id: observation.id,
+      observationType: observation.observationType,
+      observationText: observation.observationText,
+      status: observation.status,
+    })),
+    reason: "Edit North Hills reading.",
+  };
+  return {
+    ...base,
+    surnamesText: entry.surnames.join(", "),
+    parsedYearsText: entry.parsedYears.join(", "),
+    parseNotesText: entry.parseNotes.join("\n"),
+  };
+}
+
+function northHillsEditPayload(form: NorthHillsEditForm): SaveNorthHillsOcrEntryInput {
+  return {
+    ...form,
+    surnames: splitAdminList(form.surnamesText),
+    parsedYears: splitAdminYears(form.parsedYearsText),
+    parseNotes: splitAdminList(form.parseNotesText),
+    sourceFacts: form.sourceFacts.filter((fact) => fact.factValue.trim()),
+    observations: form.observations.filter((observation) => observation.observationText.trim()),
+  };
+}
+
+const blankNorthHillsSourceFact = (): SaveNorthHillsSourceFactInput => ({
+  sourceCode: "CR",
+  factType: "note",
+  factValue: "",
+  factDate: "",
+  rawText: "",
+  confidence: "review",
+  status: "staged",
+  reviewNotes: "",
+});
+
+const blankNorthHillsObservation = (): SaveNorthHillsOcrObservationInput => ({
+  observationType: "entry_note",
+  observationText: "",
+  status: "staged",
+});
 
 function deedSearchTerms(value: string) {
   return [
@@ -1116,6 +1222,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [deedActionForm, setDeedActionForm] = useState<SaveDeedInvestigationActionInput>(() => blankDeedActionForm());
   const [northHillsOcrReview, setNorthHillsOcrReview] = useState<NorthHillsOcrReview>(emptyNorthHillsOcrReview);
   const [northHillsReviewFilters, setNorthHillsReviewFilters] = useState<NorthHillsOcrReviewFilters>(defaultNorthHillsReviewFilters);
+  const [editingNorthHillsEntryId, setEditingNorthHillsEntryId] = useState("");
+  const [northHillsEntryForm, setNorthHillsEntryForm] = useState<NorthHillsEditForm | null>(null);
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
   const [selectedLookupTable, setSelectedLookupTable] = useState("");
   const [showInactiveLookups, setShowInactiveLookups] = useState(false);
@@ -1219,6 +1327,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const canManageUsers = currentUser.permissions.canManageUsers;
   const canUseSystemAdminTabs = currentUser.role === "admin";
   const canUnlinkNorthHillsEvidence = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
+  const canEditNorthHillsEntries = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
   const canEditSelectedCemetery = currentUser.role === "admin" || (selectedCemeteryId ? currentUser.assignedCemeteryIds.includes(selectedCemeteryId) : false);
 
   useEffect(() => {
@@ -1476,6 +1585,63 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const openNorthHillsReviewTab = () => {
     setActiveTab("readings");
     if (northHillsOcrReview.batches.length === 0 && !isLoadingNorthHillsReview) void loadNorthHillsOcrReview();
+  };
+
+  const startNorthHillsEntryEdit = (entry: NorthHillsOcrReviewEntry) => {
+    setEditingNorthHillsEntryId(entry.id);
+    setNorthHillsEntryForm(northHillsEditFormFromEntry(entry));
+    setMessage(undefined);
+    setError(undefined);
+  };
+
+  const cancelNorthHillsEntryEdit = () => {
+    setEditingNorthHillsEntryId("");
+    setNorthHillsEntryForm(null);
+  };
+
+  const updateNorthHillsEntryForm = (patch: Partial<NorthHillsEditForm>) => {
+    setNorthHillsEntryForm((current) => (current ? { ...current, ...patch } : current));
+  };
+
+  const updateNorthHillsSourceFactForm = (index: number, patch: Partial<SaveNorthHillsSourceFactInput>) => {
+    setNorthHillsEntryForm((current) =>
+      current
+        ? {
+            ...current,
+            sourceFacts: current.sourceFacts.map((fact, factIndex) => (factIndex === index ? { ...fact, ...patch } : fact)),
+          }
+        : current,
+    );
+  };
+
+  const updateNorthHillsObservationForm = (index: number, patch: Partial<SaveNorthHillsOcrObservationInput>) => {
+    setNorthHillsEntryForm((current) =>
+      current
+        ? {
+            ...current,
+            observations: current.observations.map((observation, observationIndex) => (observationIndex === index ? { ...observation, ...patch } : observation)),
+          }
+        : current,
+    );
+  };
+
+  const saveNorthHillsEntryEdit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingNorthHillsEntryId || !northHillsEntryForm) return;
+    setSavingEvidenceKey(`${editingNorthHillsEntryId}:entry-edit`);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      await updateNorthHillsOcrEntry(editingNorthHillsEntryId, northHillsEditPayload(northHillsEntryForm));
+      setMessage(`Saved North Hills reading ${northHillsEntryForm.nameText || "entry"}.`);
+      cancelNorthHillsEntryEdit();
+      await loadNorthHillsOcrReview(northHillsReviewFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save North Hills reading.");
+    } finally {
+      setSavingEvidenceKey(undefined);
+    }
   };
 
   const saveNorthHillsEvidence = async (
@@ -2879,6 +3045,19 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                       <strong>{entry.candidateMatchCount} possible match{entry.candidateMatchCount === 1 ? "" : "es"}</strong>
                       <small>{entry.status}</small>
                     </span>
+                    {canEditNorthHillsEntries ? (
+                      <span className="reading-entry-header-actions">
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => startNorthHillsEntryEdit(entry)}
+                          disabled={Boolean(savingEvidenceKey)}
+                          title="Edit this staged North Hills reading, parsed fields, source facts, and observations."
+                        >
+                          Edit
+                        </button>
+                      </span>
+                    ) : null}
                   </header>
                   <dl className="deed-entry-fields">
                     <div title="Parsed section, row, and position from the North Hills coordinate.">
@@ -2917,6 +3096,259 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                         <li key={note}>{note}</li>
                       ))}
                     </ul>
+                  ) : null}
+                  {entry.observations.length ? (
+                    <section className="deed-investigation-links" aria-label="North Hills observations">
+                      <h4>Observations</h4>
+                      {entry.observations.map((observation) => (
+                        <article key={observation.id} className="reading-match-review">
+                          <p>
+                            <strong>{observationTypeLabels[observation.observationType]}:</strong> {observation.observationText}
+                          </p>
+                          <small>{observationStatusLabels[observation.status]}</small>
+                        </article>
+                      ))}
+                    </section>
+                  ) : null}
+                  {editingNorthHillsEntryId === entry.id && northHillsEntryForm ? (
+                    <form className="reading-entry-edit-form" onSubmit={saveNorthHillsEntryEdit}>
+                      <div className="section-title">
+                        <FileText size={16} aria-hidden="true" />
+                        <h4>Edit NHG Entry</h4>
+                      </div>
+                      <label className="wide-field">
+                        Raw entry text
+                        <textarea
+                          value={northHillsEntryForm.rawText}
+                          onChange={(event) => updateNorthHillsEntryForm({ rawText: event.target.value })}
+                          rows={5}
+                        />
+                      </label>
+                      <div className="reading-edit-grid">
+                        <label>
+                          Name
+                          <input value={northHillsEntryForm.nameText} onChange={(event) => updateNorthHillsEntryForm({ nameText: event.target.value })} />
+                        </label>
+                        <label>
+                          Surnames
+                          <input value={northHillsEntryForm.surnamesText} onChange={(event) => updateNorthHillsEntryForm({ surnamesText: event.target.value })} />
+                        </label>
+                        <label>
+                          Page
+                          <input
+                            type="number"
+                            value={northHillsEntryForm.sourcePageNumber ?? ""}
+                            onChange={(event) => updateNorthHillsEntryForm({ sourcePageNumber: event.target.value ? Number(event.target.value) : null })}
+                          />
+                        </label>
+                        <label>
+                          Line start
+                          <input
+                            type="number"
+                            value={northHillsEntryForm.sourceLineStart ?? ""}
+                            onChange={(event) => updateNorthHillsEntryForm({ sourceLineStart: event.target.value ? Number(event.target.value) : null })}
+                          />
+                        </label>
+                        <label>
+                          Line end
+                          <input
+                            type="number"
+                            value={northHillsEntryForm.sourceLineEnd ?? ""}
+                            onChange={(event) => updateNorthHillsEntryForm({ sourceLineEnd: event.target.value ? Number(event.target.value) : null })}
+                          />
+                        </label>
+                        <label>
+                          Section
+                          <input value={northHillsEntryForm.parsedSectionName} onChange={(event) => updateNorthHillsEntryForm({ parsedSectionName: event.target.value.toUpperCase() })} />
+                        </label>
+                        <label>
+                          Row
+                          <input
+                            type="number"
+                            value={northHillsEntryForm.parsedRowNumber ?? ""}
+                            onChange={(event) => updateNorthHillsEntryForm({ parsedRowNumber: event.target.value ? Number(event.target.value) : null })}
+                          />
+                        </label>
+                        <label>
+                          Position
+                          <input
+                            type="number"
+                            value={northHillsEntryForm.parsedPositionNumber ?? ""}
+                            onChange={(event) => updateNorthHillsEntryForm({ parsedPositionNumber: event.target.value ? Number(event.target.value) : null })}
+                          />
+                        </label>
+                        <label>
+                          Scope
+                          <select value={northHillsEntryForm.parsedMarkerScope} onChange={(event) => updateNorthHillsEntryForm({ parsedMarkerScope: event.target.value })}>
+                            {markerScopeOptions.map((scope) => (
+                              <option key={scope || "blank"} value={scope}>
+                                {scope || "Not recorded"}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Marker
+                          <input value={northHillsEntryForm.markerTypeText} onChange={(event) => updateNorthHillsEntryForm({ markerTypeText: event.target.value })} />
+                        </label>
+                        <label>
+                          Material
+                          <input value={northHillsEntryForm.materialText} onChange={(event) => updateNorthHillsEntryForm({ materialText: event.target.value })} />
+                        </label>
+                        <label>
+                          Condition
+                          <input value={northHillsEntryForm.conditionText} onChange={(event) => updateNorthHillsEntryForm({ conditionText: event.target.value })} />
+                        </label>
+                        <label>
+                          Years
+                          <input value={northHillsEntryForm.parsedYearsText} onChange={(event) => updateNorthHillsEntryForm({ parsedYearsText: event.target.value })} />
+                        </label>
+                        <label>
+                          Confidence
+                          <select value={northHillsEntryForm.parseConfidence} onChange={(event) => updateNorthHillsEntryForm({ parseConfidence: event.target.value })}>
+                            {Object.entries(confidenceLabels).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Status
+                          <select value={northHillsEntryForm.status} onChange={(event) => updateNorthHillsEntryForm({ status: event.target.value })}>
+                            {entryStatusOptions.map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <label className="wide-field">
+                        Inscription text
+                        <textarea
+                          value={northHillsEntryForm.inscriptionText}
+                          onChange={(event) => updateNorthHillsEntryForm({ inscriptionText: event.target.value })}
+                          rows={3}
+                        />
+                      </label>
+                      <label className="wide-field">
+                        Parser notes
+                        <textarea
+                          value={northHillsEntryForm.parseNotesText}
+                          onChange={(event) => updateNorthHillsEntryForm({ parseNotesText: event.target.value })}
+                          rows={2}
+                        />
+                      </label>
+                      <section className="reading-edit-subsection">
+                        <div className="reading-edit-subsection-title">
+                          <h5>CR/CRG source facts</h5>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => updateNorthHillsEntryForm({ sourceFacts: [...northHillsEntryForm.sourceFacts, blankNorthHillsSourceFact()] })}
+                          >
+                            Add fact
+                          </button>
+                        </div>
+                        {northHillsEntryForm.sourceFacts.map((fact, index) => (
+                          <div key={fact.id || `new-fact-${index}`} className="reading-edit-repeat-row">
+                            <select value={fact.sourceCode} onChange={(event) => updateNorthHillsSourceFactForm(index, { sourceCode: event.target.value as "CR" | "CRG" })}>
+                              <option value="CR">CR</option>
+                              <option value="CRG">CRG</option>
+                            </select>
+                            <select value={fact.factType} onChange={(event) => updateNorthHillsSourceFactForm(index, { factType: event.target.value as NorthHillsSourceFact["factType"] })}>
+                              {Object.entries(sourceFactTypeLabels).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                            <input value={fact.factValue} onChange={(event) => updateNorthHillsSourceFactForm(index, { factValue: event.target.value })} placeholder="Value" />
+                            <input type="date" value={fact.factDate ?? ""} onChange={(event) => updateNorthHillsSourceFactForm(index, { factDate: event.target.value })} />
+                            <select value={fact.confidence} onChange={(event) => updateNorthHillsSourceFactForm(index, { confidence: event.target.value as NorthHillsSourceFact["confidence"] })}>
+                              {Object.entries(confidenceLabels).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                            <select value={fact.status} onChange={(event) => updateNorthHillsSourceFactForm(index, { status: event.target.value as NorthHillsSourceFactStatus })}>
+                              {Object.entries(sourceFactStatusLabels).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                            <textarea value={fact.rawText} onChange={(event) => updateNorthHillsSourceFactForm(index, { rawText: event.target.value })} placeholder="Raw source text" rows={2} />
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => updateNorthHillsEntryForm({ sourceFacts: northHillsEntryForm.sourceFacts.filter((_, factIndex) => factIndex !== index) })}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </section>
+                      <section className="reading-edit-subsection">
+                        <div className="reading-edit-subsection-title">
+                          <h5>Observations</h5>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => updateNorthHillsEntryForm({ observations: [...northHillsEntryForm.observations, blankNorthHillsObservation()] })}
+                          >
+                            Add observation
+                          </button>
+                        </div>
+                        {northHillsEntryForm.observations.map((observation, index) => (
+                          <div key={observation.id || `new-observation-${index}`} className="reading-edit-repeat-row reading-edit-observation-row">
+                            <select
+                              value={observation.observationType}
+                              onChange={(event) => updateNorthHillsObservationForm(index, { observationType: event.target.value as NorthHillsOcrObservation["observationType"] })}
+                            >
+                              {Object.entries(observationTypeLabels).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                            <select value={observation.status} onChange={(event) => updateNorthHillsObservationForm(index, { status: event.target.value as NorthHillsOcrObservation["status"] })}>
+                              {Object.entries(observationStatusLabels).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                            <textarea
+                              value={observation.observationText}
+                              onChange={(event) => updateNorthHillsObservationForm(index, { observationText: event.target.value })}
+                              rows={2}
+                            />
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => updateNorthHillsEntryForm({ observations: northHillsEntryForm.observations.filter((_, observationIndex) => observationIndex !== index) })}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </section>
+                      <label className="wide-field">
+                        Change reason
+                        <input value={northHillsEntryForm.reason} onChange={(event) => updateNorthHillsEntryForm({ reason: event.target.value })} />
+                      </label>
+                      <div className="admin-form-actions">
+                        <button type="submit" disabled={savingEvidenceKey === `${entry.id}:entry-edit`}>
+                          {savingEvidenceKey === `${entry.id}:entry-edit` ? "Saving..." : "Save entry"}
+                        </button>
+                        <button type="button" className="secondary-button" onClick={cancelNorthHillsEntryEdit}>
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
                   ) : null}
                   {entry.sourceFacts.length ? (
                     <section className="deed-investigation-links" aria-label="Church record source facts">
