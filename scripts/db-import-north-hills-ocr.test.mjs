@@ -1893,3 +1893,45 @@ Franklin Park Borough               219                Allegheny County, PA`;
   assert.equal(entries[0].rawText.includes("KIVLAN"), false);
   assert.equal(entries[1].rawText.includes("BOHN/BUCHHOLZ"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 220 section C and D readings", () => {
+  const text = `Section C, Row 17
+STETTLER (17C, 14, s) upright, gray granite, exc cond, flower "Husband / George T.
+Stettler / 1896-1951" CR: d. October 7, 1951, 55y 7m 22da McCANDLESS/SOERGEL
+(17C, 15, s) upright, gray granite, exc cond, flower "Mabel Soergel / McCandless /
+1903-1994" CR: March 9, 1903 - October 3, 1994, Kings Funeral Home
+
+SARVER/STEELE (17C, 16, c) flat, bronze, exc cond, roses, wheat "Sarver / Howard L.
+/ 1894-1962 / Ellen C. / 1898-1966 / Together forever" CR: Howard, d. September 1,
+1962, 68y 30da, Bertie Steele's brother. Ellen Clara, d. November 3, 1966, 68y 6m
+16da
+
+BRASSES (18C, 1, c) upright, gray & pink granite, exc cond "Brasses / Paul J. /
+1890-1950 / Alice M. / 1884-1974" On back: "Brasses" CR: Middle name John, d.
+March 17, 1950, 60y 26da. Alice, d. April 9, 1974, 90y 1m 11da
+
+MAYER (1D, 1, s) upright, gray granite, exc cond "Father / Geo. C. Mayer'' Separate
+flag holder: "American / US / Legion", star SK: George G.
+MAYER/ENSMIGER/MÖYER/ENZINGER/LEONARD/EMSINGER (1D, 2, c) obelisk, gray
+granite, good cond, urn with drape on top, geometric pattern on sides On front:
+"Geo. G. Mayer. / geb. / 31. Aug. 1831. / gest. / 6. Jan. 1901. / Magd. Mayer/
+geb. / 23. Aug, 1841. / gest. / 29. Dec. 1915." On base: ''G. G. Mayer" CR:
+Mrs. George G. Mayer, d. December 29, 1915, 73y.
+Franklin Park Borough               220                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["STETTLER", 220, "C", 17, 14, "single"],
+      ["McCANDLESS/SOERGEL", 220, "C", 17, 15, "single"],
+      ["SARVER/STEELE", 220, "C", 17, 16, "couple"],
+      ["BRASSES", 220, "C", 18, 1, "couple"],
+      ["MAYER", 220, "D", 1, 1, "single"],
+      ["MAYER/ENSMIGER/MÖYER/ENZINGER/LEONARD/EMSINGER", 220, "D", 1, 2, "couple"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("McCANDLESS/SOERGEL"), false);
+  assert.equal(entries[4].rawText.includes("ENSMIGER"), false);
+});
