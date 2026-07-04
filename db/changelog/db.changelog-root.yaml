@@ -614,3 +614,12 @@ databaseChangeLog:
   - include:
       file: changes/206-repair-north-hills-page-226.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/207-repair-north-hills-page-227.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/208-add-north-hills-page-227-steele-entry.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/209-remove-duplicate-north-hills-page-227-steele-entry.sql
+      relativeToChangelogFile: true
