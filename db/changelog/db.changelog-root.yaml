@@ -593,3 +593,9 @@ databaseChangeLog:
   - include:
       file: changes/199-headstone-relationships.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/200-repair-north-hills-page-221.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/201-cleanup-north-hills-page-221-middle-name-fact.sql
+      relativeToChangelogFile: true
