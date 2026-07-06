@@ -87,6 +87,11 @@ export async function listDataQualityDashboard(pool, options = {}) {
         FROM north_hills_ocr_entries
         JOIN scoped_cemeteries ON scoped_cemeteries.id = north_hills_ocr_entries.cemetery_id
       ),
+      scoped_source_person_records AS (
+        SELECT source_person_records.*
+        FROM source_person_records
+        JOIN scoped_cemeteries ON scoped_cemeteries.id = source_person_records.cemetery_id
+      ),
       scoped_media_assets AS (
         SELECT media_assets.*
         FROM media_assets
@@ -130,6 +135,18 @@ export async function listDataQualityDashboard(pool, options = {}) {
             WHERE link.entry_id = entry.id
               AND link.status = 'linked'
           )
+
+        UNION ALL
+
+        SELECT
+          'source_person_records_unmatched' AS id,
+          'Source person records needing matches' AS label,
+          'Church, funeral, or source-only person records that are not yet linked to a burial, gravesite, or marker.' AS description,
+          count(*)::int AS count,
+          'medium' AS severity,
+          'Readings' AS category
+        FROM scoped_source_person_records record
+        WHERE record.status IN ('unmatched', 'candidate_match')
 
         UNION ALL
 

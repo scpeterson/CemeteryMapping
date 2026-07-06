@@ -119,6 +119,8 @@ const auditTableLabels: Record<string, string> = {
   north_hills_ocr_import_batches: "North Hills OCR imports",
   owners: "Owners",
   sections: "Sections",
+  source_person_record_links: "Source person record links",
+  source_person_records: "Source person records",
   system_event_retention_policies: "System event retention policies",
 };
 

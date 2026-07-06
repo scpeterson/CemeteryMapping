@@ -208,10 +208,16 @@ erDiagram
   SPATIAL_IMPORT_FEATURES ||--o{ SPATIAL_VALIDATION_ISSUES : reports
   NORTH_HILLS_OCR_IMPORT_BATCHES ||--o{ NORTH_HILLS_OCR_ENTRIES : imports
   NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_SOURCE_FACTS : yields
+  NORTH_HILLS_OCR_ENTRIES ||--o{ SOURCE_PERSON_RECORDS : supports
+  NORTH_HILLS_OCR_SOURCE_FACTS ||--o{ SOURCE_PERSON_RECORDS : supports
+  SOURCE_PERSON_RECORDS ||--o{ SOURCE_PERSON_RECORD_LINKS : matches
   NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_ENTRY_GRAVESITE_LINKS : links
   NORTH_HILLS_OCR_ENTRIES ||--o{ NORTH_HILLS_OCR_ENTRY_HEADSTONE_LINKS : links
+  BURIALS ||--o{ SOURCE_PERSON_RECORD_LINKS : matched
   GRAVESITES ||--o{ NORTH_HILLS_OCR_ENTRY_GRAVESITE_LINKS : supported
+  GRAVESITES ||--o{ SOURCE_PERSON_RECORD_LINKS : matched
   HEADSTONES ||--o{ NORTH_HILLS_OCR_ENTRY_HEADSTONE_LINKS : supported
+  HEADSTONES ||--o{ SOURCE_PERSON_RECORD_LINKS : matched
 ```
 
 | Table | Purpose |
@@ -223,8 +229,12 @@ erDiagram
 | `north_hills_ocr_entries` | Staged NHG entries with raw text, parsed location, marker descriptors, surnames, years, and review state. |
 | `north_hills_ocr_source_facts` | Extracted facts from CR, CRG, SK, and similar annotations. These can support or update operational records after review. |
 | `north_hills_ocr_entry_gravesite_links`, `north_hills_ocr_entry_headstone_links` | Reviewed links between NHG evidence and the operational gravesites or markers it supports. |
+| `source_person_records` | Source-only person records from church records, funeral-home notes, family-history notes, or other evidence that may not have a known gravesite or marker. These rows preserve the person/date/source wording without inventing map geometry. |
+| `source_person_record_links` | Candidate, matched, or rejected links from a source-only person record to an operational burial, gravesite, or marker when a match is later found. |
 
 Keeping evidence separate from operational rows is especially important for NHG corrections. The OCR text can be corrected and reviewed without immediately overwriting burial, marker, or gravesite records. When an NHG entry says one marker refers to another, such as an obelisk reference or common-base note, the reviewed operational relationship belongs in `headstone_relationships` rather than only in free text.
+
+Some NHG pages list church or funeral records where NHG found no matching tombstone. Those people should be entered in `source_person_records`, not as fake gravesites, fake markers, or normal `burials`. If later research finds the physical grave, `source_person_record_links` can connect the source record to the real burial, gravesite, or marker while preserving the original source-only evidence.
 
 ## Users, Roles, Audit, And Operations
 
