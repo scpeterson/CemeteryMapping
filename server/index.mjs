@@ -4,6 +4,12 @@ import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
 import { getAuditRetentionPolicy, listAuditEvents, updateAuditRetentionPolicy } from "./auditRepository.mjs";
 import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from "./auth0Management.mjs";
+import {
+  bulkAddNorthHillsEntryNote,
+  bulkAssignGravesitesToLot,
+  bulkMarkNorthHillsReviewed,
+  bulkUpdateHeadstones,
+} from "./bulkEditRepository.mjs";
 import { loadApiConfig } from "./config.mjs";
 import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
@@ -93,6 +99,17 @@ function validateUuid(value, label) {
   const text = String(value ?? "").trim();
   if (!uuidPattern.test(text)) throw new BadRequestError(`${label} must be a UUID.`);
   return text;
+}
+
+function validateIdentifierList(value, label, maxItems = 100) {
+  const identifiers = Array.isArray(value) ? value.map((item) => String(item ?? "").trim()).filter(Boolean) : [];
+  const uniqueIdentifiers = [...new Set(identifiers)];
+  if (uniqueIdentifiers.length === 0) throw new BadRequestError(`${label} is required.`);
+  if (uniqueIdentifiers.length > maxItems) throw new BadRequestError(`${label} can include at most ${maxItems} records.`);
+  uniqueIdentifiers.forEach((identifier) => {
+    if (identifier.length > 100) throw new BadRequestError(`${label} contains an identifier that is too long.`);
+  });
+  return uniqueIdentifiers;
 }
 
 function validateAdminUserPayload(body, roles) {
@@ -619,6 +636,43 @@ function validateSourcePersonRecordPayload(body) {
     ageText: optionalText(body?.ageText, "Age text", 100),
     rawText: requiredText(body?.rawText, "Raw source text", 12000),
     notes: optionalText(body?.notes, "Notes", 4000),
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateBulkHeadstoneUpdatePayload(body) {
+  const markerTypeId = body?.markerTypeId ? validateUuid(body.markerTypeId, "Marker type") : "";
+  const materialId = body?.materialId ? validateUuid(body.materialId, "Marker material") : "";
+  const conditionId = body?.conditionId ? validateUuid(body.conditionId, "Marker condition") : "";
+  if (!markerTypeId && !materialId && !conditionId) throw new BadRequestError("At least one marker field is required.");
+  return {
+    identifiers: validateIdentifierList(body?.identifiers, "Marker identifiers"),
+    markerTypeId,
+    materialId,
+    conditionId,
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateBulkGravesiteLotPayload(body) {
+  return {
+    identifiers: validateIdentifierList(body?.identifiers, "Gravesite identifiers"),
+    lotId: validateUuid(body?.lotId, "Lot"),
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateBulkNorthHillsReviewedPayload(body) {
+  return {
+    entryIds: validateIdentifierList(body?.entryIds, "North Hills reading identifiers"),
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateBulkNorthHillsNotePayload(body) {
+  return {
+    entryIds: validateIdentifierList(body?.entryIds, "North Hills reading identifiers"),
+    note: requiredText(body?.note, "Shared note", 4000),
     reason: validateMutationReason(body?.reason),
   };
 }
@@ -1512,6 +1566,73 @@ export function createApp(config, pool) {
       });
       if (!deleted) response.status(404).json({ error: "Source person record not found." });
       else response.json(deleted);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/bulk/headstones", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const update = validateBulkHeadstoneUpdatePayload(request.body);
+      response.json(
+        await bulkUpdateHeadstones(pool, update, {
+          actorUser: request.user,
+          reason: update.reason,
+          allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/bulk/gravesites/lot", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const update = validateBulkGravesiteLotPayload(request.body);
+      const result = await bulkAssignGravesitesToLot(pool, update, {
+        actorUser: request.user,
+        reason: update.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (result.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      if (result.invalid === "lot_not_found") {
+        response.status(404).json({ error: "Lot not found." });
+        return;
+      }
+      response.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/bulk/north-hills/reviewed", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const update = validateBulkNorthHillsReviewedPayload(request.body);
+      response.json(
+        await bulkMarkNorthHillsReviewed(pool, update, {
+          actorUser: request.user,
+          reason: update.reason,
+          allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/bulk/north-hills/entry-note", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const update = validateBulkNorthHillsNotePayload(request.body);
+      response.json(
+        await bulkAddNorthHillsEntryNote(pool, update, {
+          actorUser: request.user,
+          reason: update.reason,
+          allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+        }),
+      );
     } catch (error) {
       next(error);
     }
