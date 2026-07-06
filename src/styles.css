@@ -3120,6 +3120,151 @@ h3 {
   font-weight: 760;
 }
 
+.data-quality-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: stretch;
+  padding: 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+}
+
+.data-quality-overview > div {
+  min-width: 0;
+}
+
+.data-quality-overview strong,
+.data-quality-overview span,
+.data-quality-overview small {
+  display: block;
+}
+
+.data-quality-overview strong {
+  color: #26342d;
+  font-size: 1.28rem;
+  line-height: 1.1;
+}
+
+.data-quality-overview span {
+  margin-top: 2px;
+  color: #26342d;
+  font-size: 0.86rem;
+  font-weight: 780;
+}
+
+.data-quality-overview small {
+  margin-top: 4px;
+  color: #4f5d52;
+  font-size: 0.74rem;
+  font-weight: 680;
+}
+
+.data-quality-overview .secondary-button {
+  align-self: center;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.data-quality-group-list {
+  display: grid;
+  gap: 14px;
+}
+
+.data-quality-group {
+  display: grid;
+  gap: 8px;
+}
+
+.data-quality-group h4 {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.92rem;
+}
+
+.data-quality-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.data-quality-card {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid #d9e0d5;
+  border-left-width: 5px;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.data-quality-card strong,
+.data-quality-card span,
+.data-quality-card small {
+  display: block;
+}
+
+.data-quality-card strong {
+  color: #26342d;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.data-quality-card span {
+  margin-top: 5px;
+  color: #26342d;
+  font-size: 0.82rem;
+  font-weight: 780;
+  overflow-wrap: anywhere;
+}
+
+.data-quality-card small {
+  flex: 0 0 auto;
+  align-self: start;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef4ee;
+  color: #4f5d52;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.data-quality-card.severity-high {
+  border-left-color: #c84f4f;
+}
+
+.data-quality-card.severity-high small {
+  background: #f8e7e4;
+  color: #9f3434;
+}
+
+.data-quality-card.severity-medium {
+  border-left-color: #d5962e;
+}
+
+.data-quality-card.severity-medium small {
+  background: #f8efd9;
+  color: #805711;
+}
+
+.data-quality-card.severity-low {
+  border-left-color: #4e82a7;
+}
+
+.data-quality-card.severity-low small {
+  background: #e6f0f5;
+  color: #315f7f;
+}
+
+.data-quality-card.severity-info {
+  border-left-color: #7e8a84;
+}
+
 .deed-batch-summary dd,
 .deed-investigation-summary dd,
 .deed-entry-fields dd,
@@ -3880,6 +4025,10 @@ h3 {
   .control-point-list-card {
     min-height: 360px;
   }
+
+  .data-quality-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -3947,6 +4096,8 @@ h3 {
   .admin-form,
   .admin-workspace,
   .admin-nav,
+  .data-quality-grid,
+  .data-quality-overview,
   .audit-filter-form,
   .audit-retention-grid,
   .system-event-filter-form,

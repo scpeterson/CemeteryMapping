@@ -287,6 +287,8 @@ Audit retention is controlled by the singleton `audit_retention_policies` row. T
 
 Operational failure reporting uses `system_events`, separate from row-level data auditing. Unexpected API 500s, failed health checks, and scheduled job start/end/failure records are stored there and visible to admins from the Admin UI System tab.
 
+The Admin UI Quality tab is query-only. It derives cleanup counts from existing cemetery, North Hills OCR, media, veteran, and maintenance tables rather than storing separate data-quality issue rows.
+
 Database triggers also maintain `updated_at` on current tables that expose that lifecycle column. Application code should not set `updated_at` manually for normal row updates.
 
 Current API authorization modes:

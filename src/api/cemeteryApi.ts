@@ -18,6 +18,7 @@ import type {
   DeedRegistryReview,
   DeedRegistryReviewFilters,
   CurrentUser,
+  DataQualityDashboard,
   GraveSpace,
   GraveStatus,
   Headstone,
@@ -394,6 +395,11 @@ export type SaveSystemEventRetentionPolicyInput = Pick<SystemEventRetentionPolic
 export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records`);
   return jsonResponse<CemeteryAdminRecords>(response, "Cemetery admin records API");
+}
+
+export async function fetchDataQualityDashboard(): Promise<DataQualityDashboard> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/data-quality-dashboard`);
+  return jsonResponse<DataQualityDashboard>(response, "Data quality dashboard API");
 }
 
 export async function fetchAdminAuditEvents(filters: AuditEventFilters = {}): Promise<AuditEvent[]> {

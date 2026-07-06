@@ -73,6 +73,18 @@ Gravesite status labels are not all manually assigned. `reserved` and `needs_rev
 
 Avoid renaming a lookup value to mean something unrelated. Add a new value when the meaning changes, then deactivate the old one after records are reviewed.
 
+### Data Quality Dashboard
+
+Use `Admin -> Quality` to find cleanup work that is spread across readings, cemetery geometry, burials, veterans, photos, and maintenance records.
+
+1. Open `Admin -> Quality`.
+2. Review the total open item count and the individual metric cards.
+3. Start with high-severity metrics, such as staged readings needing review, unlinked source readings, gravesites or markers missing expected links, and open maintenance records.
+4. Use the appropriate workflow to fix the underlying records. For example, use `Admin -> Readings` for NHG cleanup, the map detail panel for gravesite and marker links, burial edit forms for partial dates and veteran details, photo tools for missing date-taken metadata, and maintenance forms for open work.
+5. Refresh the dashboard after a cleanup pass to confirm the count moved as expected.
+
+The dashboard is read-only. Power users and cemetery admins see cleanup counts scoped to their assigned cemetery. System admins can review all cemeteries or select a cemetery when cemetery filtering is available.
+
 ### Readings Review
 
 Use `Admin -> Readings` for staged North Hills Genealogists OCR readings.
@@ -492,6 +504,7 @@ During PROD promotion:
    - Power user can edit assigned cemetery data.
    - Cemetery admin can manage assigned cemetery data.
    - Admin can access Admin UI.
+   - Power user or higher can open `Admin -> Quality` and see cemetery-scoped cleanup counts.
    - Deed/owner data remains hidden from read-only users.
    - Photos render and uploads work if field collection is in scope.
 7. Review recent audit events for expected migration or application writes.
@@ -500,8 +513,9 @@ After PROD promotion:
 
 1. Record the PRs, commit, migration numbers, data scripts, and smoke-test result.
 2. Review **Admin -> System** for recent errors, failed health checks, and failed scheduled jobs.
-3. Monitor API logs and database errors.
-4. Keep the backup from before the release until the next stable backup cycle.
+3. Review **Admin -> Quality** for any new cleanup counts introduced by the release or data import.
+4. Monitor API logs and database errors.
+5. Keep the backup from before the release until the next stable backup cycle.
 
 ### System Events
 

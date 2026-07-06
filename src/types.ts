@@ -603,6 +603,24 @@ export type CemeteryAdminRecords = {
   lots: LotTextRecord[];
 };
 
+export type DataQualitySeverity = "high" | "medium" | "low" | "info";
+
+export type DataQualityMetric = {
+  id: string;
+  label: string;
+  description: string;
+  count: number;
+  severity: DataQualitySeverity;
+  category: string;
+};
+
+export type DataQualityDashboard = {
+  generatedAt: string;
+  scope: "all" | "assigned";
+  totalOpenItems: number;
+  metrics: DataQualityMetric[];
+};
+
 export type LookupTableDefinition = {
   table: string;
   label: string;
