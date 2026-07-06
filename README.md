@@ -70,6 +70,7 @@ If another local PostgreSQL service already uses port `5432`, create `db/env/dev
 - Esri File Geodatabase inspection, GeoJSON export, staging import, and cemetery/section promotion helpers
 - Excel headstone coordinate import that generates gravesite polygons, headstone points, and linked burials
 - Admin-only cemetery record editor with searchable cemetery, section, and lot pickers for cemetery names/notes, section names and alternate names, and lot names
+- Admin data quality dashboard with cemetery-scoped cleanup counts for staged readings, marker/gravesite links, partial dates, veterans, photos, and open maintenance work
 - Admin deed evidence review with deed investigation cases, linked evidence rows, repeatable recommended actions, Council decision tracking, affidavit status, and final outcomes
 - Liquibase-managed PostgreSQL/PostGIS schema under `db/changelog`
 - Express API backed by PostgreSQL/PostGIS

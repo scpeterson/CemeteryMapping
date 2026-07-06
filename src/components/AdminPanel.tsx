@@ -1,5 +1,5 @@
 import { type Dispatch, FormEvent, type SetStateAction, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, ArrowDown, ArrowUp, FileSearch, FileText, History, Landmark, ListChecks, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, FileSearch, FileText, History, Landmark, ListChecks, ShieldAlert, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
   createDeedInvestigationAction,
@@ -30,6 +30,7 @@ import {
 } from "../api/cemeteryApi";
 import { defaultAuditFilters } from "./AdminEventDefaults";
 import { AuditAdminTab, SystemEventsAdminTab } from "./AdminEventTabs";
+import { DataQualityAdminTab } from "./DataQualityAdminTab";
 import type {
   AppRole,
   AppRoleName,
@@ -75,7 +76,7 @@ type UserFormState = SaveUserInput & {
   id?: string;
 };
 
-type AdminTab = "users" | "records" | "deeds" | "readings" | "audit" | "lookups" | "system";
+type AdminTab = "users" | "records" | "quality" | "deeds" | "readings" | "audit" | "lookups" | "system";
 type NorthHillsEditForm = SaveNorthHillsOcrEntryInput & {
   surnamesText: string;
   parsedYearsText: string;
@@ -2110,6 +2111,16 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
             <Landmark size={16} aria-hidden="true" />
             <span>Records</span>
           </button>
+          <button
+            type="button"
+            aria-current={activeTab === "quality" ? "page" : undefined}
+            className={activeTab === "quality" ? "is-active" : undefined}
+            onClick={() => setActiveTab("quality")}
+            title="Review data cleanup counts for readings, map links, burials, photos, and maintenance."
+          >
+            <ShieldAlert size={16} aria-hidden="true" />
+            <span>Quality</span>
+          </button>
           {canUseSystemAdminTabs ? <button
             type="button"
             aria-current={activeTab === "lookups" ? "page" : undefined}
@@ -2606,6 +2617,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
             </div>
           </section>
         </>
+      ) : activeTab === "quality" ? (
+        <DataQualityAdminTab onError={setError} />
       ) : activeTab === "lookups" ? (
         <>
           <section className="admin-section">

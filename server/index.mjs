@@ -7,6 +7,7 @@ import { Auth0ProvisioningNotConfiguredError, createAuth0ManagementClient } from
 import { loadApiConfig } from "./config.mjs";
 import { assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, requireRole } from "./auth.mjs";
 import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSectionText } from "./cemeteryAdminRepository.mjs";
+import { listDataQualityDashboard } from "./dataQualityRepository.mjs";
 import {
   createGraveFeature,
   createHeadstoneRelationship,
@@ -1384,6 +1385,18 @@ export function createApp(config, pool) {
   app.get("/api/admin/cemetery-records", requirePowerUser, async (_request, response, next) => {
     try {
       response.json(await listCemeteryAdminRecords(pool));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/data-quality-dashboard", requirePowerUser, async (request, response, next) => {
+    try {
+      response.json(
+        await listDataQualityDashboard(pool, {
+          cemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+        }),
+      );
     } catch (error) {
       next(error);
     }

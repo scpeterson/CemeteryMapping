@@ -25,7 +25,7 @@ Implemented admin foundation.
 
 Only admins can manage application users and roles. User management lives in a dedicated admin drawer rather than the left search panel or right grave-detail panel, so map workflows remain focused on cemetery records.
 
-The Admin drawer uses compact left-side navigation instead of large top tabs. This keeps the panel usable as admin areas grow: Users, Cemetery Records, Lookups, Deed Evidence, and Audit Log each get one focused workspace.
+The Admin drawer uses compact left-side navigation instead of large top tabs. This keeps the panel usable as admin areas grow: Users, Cemetery Records, Lookups, Deed Evidence, Readings, Quality, Audit Log, and System each get one focused workspace.
 
 The Admin UI stores the Auth0 `user_id` as the local Auth0 user ID. When Management API credentials are configured, adding a new user can search Auth0 by email or create a database-connection Auth0 user before saving the local role assignment.
 
@@ -56,6 +56,8 @@ How to use the Readings tab:
 11. After linking evidence, open the normal grave-detail panel for the gravesite or headstone to confirm that the North Hills evidence appears where regular users review cemetery records.
 
 Readings review is an evidence workflow, not a promotion workflow. A linked reading supports interpretation of a gravesite or headstone, but it does not change burial names, dates, marker condition, owner/deed data, geometry, or lot/gravesite structure.
+
+The Admin UI also has a Quality tab for data cleanup triage. The dashboard is read-only and counts records that likely need review, including staged North Hills readings, unlinked readings, gravesites without markers, markers without gravesites, lots without gravesites, burials with partial date text, veterans missing service details, photos without a date taken, and open maintenance records. Power users and cemetery admins see only assigned cemetery counts; admins can view all cemeteries or select a cemetery when the dashboard exposes cemetery filtering. The dashboard points reviewers toward cleanup work but does not mutate cemetery records by itself.
 
 The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Lookup rows use UUID primary keys; lowercase codes remain hidden stable identifiers for imports, seed data, and compatibility. Obsolete values should be marked inactive instead of deleted. The lookup editor hides inactive values by default, shows reference counts, confirms deactivation of values that are already in use, supports move up/down sort-order controls, warns about duplicate sort orders, and can jump to the Audit Log filtered to a lookup row.
 
