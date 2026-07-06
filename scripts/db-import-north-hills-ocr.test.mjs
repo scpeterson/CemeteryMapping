@@ -2004,3 +2004,55 @@ Franklin Park Borough               230                Allegheny County, PA`;
   assert.equal(entries[2].rawText.startsWith("SPERBER/HOFFMAN/SPERGER"), true);
   assert.equal(entries[8].rawText.includes(".J"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 231 section E readings", () => {
+  const text = `Section E, Row 6
+HECK (6E, 4, s) upright, white marble, poor cond, sunken, fallen, lamb
+"[-] / Heck / geb. 26 [-] / gest. 6 Juni [-] / [illegible lines]"
+
+UNKNOWN (6E, 5, s) upright, white marble, poor cond, fallen, lamb "[-] / Hier
+ruht in gott / Johann / sohn von / W. u C. [-] / gest. d. 2 Aug(?) 1871 or 4
+/ alter von / mn. U. 7"
+
+BRANT (6E, 7, s) upright, white marble, poor cond "Heinrich Brant / geboren
+den 29 Feb / 1773 / gest. den 14 Feb. 1849 / unalter von 75 jahr 11 monad und
+[-] tag / [illegible lines]"
+
+UNKNOWN (6E, 11, s) upright, white marble, poor cond, fallen "Johann J. / sohn
+van/ G & Ch [J-] / gest. Juni 19 1857 / alter 3 jahr 7 monad [ - ] tag / Wie
+wohl ist meinen leib" Note: Last line of epitaph is broken off KÖENIG (6E, 12,
+c} obelisk, gray granite, exc cond. On front "Der todt kommt / nicht zu frueh
+zu / dennen die bereited / sind / Köenig" On left "Nicholas / Köenig /
+gestorben / D. 14, Sep. 1857 / im alter von / 46 Jahren / U. 7 monate" On
+right: "Margareta / Köenig / gestorben / d. 9 Sept. 1882 / im alter von / 67
+Jahren / 2 mo. U. 25 tage" UNKNOWN (6E, 13, s) upright, white marble,
+illegible
+
+GRAFF/GRAF (7E, 1, s) obelisk, gray metal, exc cond, loose on base, rose on
+front and back, upright hand & lamb on left side, dove on right side. On front
+"Sarah / M. / daughter / of / Geo. A & Mary A / Graff / died Oct. 7. 1878 /
+aged 3 yrs. 3 mos. / Graff" On left: "Our darling / safely resting" On right:
+"Gone but / not forgotten / He doeth all things well" On back: "We shall /
+meet again / 1880" Note: A broken piece of metal was found beside base "M.G."
+CRG: Graf, Sarah Margareta, b. 9 July 1876 in McCandless Township, Allegheny
+Co. PA, f. October 8, 1879, d. October 7 at 8:30 in the morning, 3 y+
+Franklin Park Borough               231                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["HECK", 231, "E", 6, 4, "single"],
+      ["UNKNOWN", 231, "E", 6, 5, "single"],
+      ["BRANT", 231, "E", 6, 7, "single"],
+      ["UNKNOWN", 231, "E", 6, 11, "single"],
+      ["KÖENIG", 231, "E", 6, 12, "couple"],
+      ["UNKNOWN", 231, "E", 6, 13, "single"],
+      ["GRAFF/GRAF", 231, "E", 7, 1, "single"],
+    ],
+  );
+  assert.equal(entries[3].rawText.includes("KÖENIG"), false);
+  assert.equal(entries[4].rawText.startsWith("KÖENIG"), true);
+  assert.equal(entries[5].rawText, "UNKNOWN (6E, 13, s) upright, white marble, illegible");
+});
