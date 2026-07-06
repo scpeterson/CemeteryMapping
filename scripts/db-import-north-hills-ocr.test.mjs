@@ -2115,3 +2115,33 @@ Franklin Park Borough               232                Allegheny County, PA`;
   assert.equal(entries[1].rawText.includes("Illegible"), false);
   assert.equal(entries[5].markerTypeText, "upright");
 });
+
+test("parseNorthHillsOcrText accepts corrected page 233 section E readings", () => {
+  const text = `Section E, Row 8
+KNOBLOCH (8E, 2, s) upright, granite, exc cond, ivy "John M. Knobloch /
+1871-1900 / Asleep in Jesus"
+
+[KNOBLOCH] (8E, 3, s) upright, white marble, poor cond, fallen, clasped hands,
+inscription in shield "[-] [Knobloch] / geboren / den 18 Sept. 1811 /
+gestorben / den 20 Aug. 1863" Note: Same shape & design as (8E, 4, s) Note:
+her husband, Casper Knobloch
+
+KNOBLOCH (8E, 4, s) upright, white marble, poor cond, fallen, writing hand,
+inscription in shield "Hier ruht / Anna Charlotte / Knobloch / geboren / den
+13 Marz; 1800 / gestorben / den 1 Marz 1862 / [illegible lines]" Note: Same
+shape & design as (8E, 3, s)
+Franklin Park Borough               233                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["KNOBLOCH", 233, "E", 8, 2, "single"],
+      ["[KNOBLOCH]", 233, "E", 8, 3, "single"],
+      ["KNOBLOCH", 233, "E", 8, 4, "single"],
+    ],
+  );
+  assert.deepEqual(entries[1].surnames, ["KNOBLOCH"]);
+  assert.equal(entries[2].parsedYears.includes(1862), true);
+});

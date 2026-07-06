@@ -187,6 +187,7 @@ function embeddedEntryStartIndexes(text) {
       const matchText = match[0] ?? "";
       const coordinateIndex = matchText.search(coordinateStartPattern);
       const headingText = coordinateIndex === -1 ? matchText : matchText.slice(0, coordinateIndex);
+      if (/\bSame shape\s*&\s*design as\s*$/iu.test(headingText)) return -1;
       const headingPrefixMatch = headingText
         .trimEnd()
         .match(/(?:^|\s)(\[?[A-Z][A-Z0-9/[\]()? .'&-]{1,90}?\]?)[\s'’]*$/u);
