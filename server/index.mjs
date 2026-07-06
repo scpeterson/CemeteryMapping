@@ -47,6 +47,12 @@ import {
   saveNorthHillsOcrEvidenceLink,
   updateNorthHillsOcrEntry,
 } from "./northHillsOcrReviewRepository.mjs";
+import {
+  createSourcePersonRecord,
+  listSourcePersonRecords,
+  softDeleteSourcePersonRecord,
+  updateSourcePersonRecord,
+} from "./sourcePersonRecordRepository.mjs";
 import { listReportsForUser, matchReportQuery, runReport } from "./reportsRepository.mjs";
 import { searchCemetery } from "./cemeterySearch.mjs";
 import {
@@ -569,6 +575,50 @@ function validateNorthHillsEntryPayload(body) {
     sourceEntry: body?.sourceEntry && typeof body.sourceEntry === "object" ? body.sourceEntry : {},
     sourceFacts,
     observations,
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateSourcePersonRecordPayload(body) {
+  const sourceCode = optionalText(body?.sourceCode, "Source code", 20).toUpperCase() || "OTHER";
+  if (!["CR", "CRG", "FH", "SK", "NOTE", "OTHER"].includes(sourceCode)) throw new BadRequestError("Source code is invalid.");
+  const recordType = optionalText(body?.recordType, "Record type", 50) || "death_record";
+  if (!["death_record", "burial_record", "funeral_record", "church_record", "family_history", "other"].includes(recordType)) {
+    throw new BadRequestError("Record type is invalid.");
+  }
+  const status = optionalText(body?.status, "Status", 50) || "unmatched";
+  if (!["unmatched", "candidate_match", "linked", "rejected"].includes(status)) throw new BadRequestError("Status is invalid.");
+  const confidence = optionalText(body?.confidence, "Confidence", 50) || "review";
+  if (!["high", "medium", "low", "review"].includes(confidence)) throw new BadRequestError("Confidence is invalid.");
+
+  return {
+    cemeteryId: validateUuid(body?.cemeteryId, "Cemetery"),
+    northHillsOcrEntryId: body?.northHillsOcrEntryId ? validateUuid(body.northHillsOcrEntryId, "North Hills entry") : "",
+    northHillsOcrSourceFactId: body?.northHillsOcrSourceFactId ? validateUuid(body.northHillsOcrSourceFactId, "North Hills source fact") : "",
+    sourceName: optionalText(body?.sourceName, "Source name", 250) || "North Hills Genealogists Trinity OCR",
+    sourceCode,
+    sourceLabel: optionalText(body?.sourceLabel, "Source label", 150),
+    sourcePageNumber: validateOptionalInteger(body?.sourcePageNumber, "Source page"),
+    sourceLocationText: optionalText(body?.sourceLocationText, "Source location", 250),
+    recordType,
+    status,
+    confidence,
+    firstName: optionalText(body?.firstName, "First name", 150),
+    middleName: optionalText(body?.middleName, "Middle name", 150),
+    lastName: optionalText(body?.lastName, "Last name", 150),
+    maidenName: optionalText(body?.maidenName, "Maiden name", 150),
+    fullName: requiredText(body?.fullName, "Full name", 500),
+    birthDate: optionalDate(body?.birthDate, "Birth date"),
+    birthDateText: optionalText(body?.birthDateText, "Birth date text", 100),
+    deathDate: optionalDate(body?.deathDate, "Death date"),
+    deathDateText: optionalText(body?.deathDateText, "Death date text", 100),
+    burialDate: optionalDate(body?.burialDate, "Burial date"),
+    burialDateText: optionalText(body?.burialDateText, "Burial date text", 100),
+    funeralDate: optionalDate(body?.funeralDate, "Funeral date"),
+    funeralDateText: optionalText(body?.funeralDateText, "Funeral date text", 100),
+    ageText: optionalText(body?.ageText, "Age text", 100),
+    rawText: requiredText(body?.rawText, "Raw source text", 12000),
+    notes: optionalText(body?.notes, "Notes", 4000),
     reason: validateMutationReason(body?.reason),
   };
 }
@@ -1397,6 +1447,71 @@ export function createApp(config, pool) {
           cemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
         }),
       );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/source-person-records", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      response.json(
+        await listSourcePersonRecords(pool, request.query, {
+          allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/source-person-records", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const record = validateSourcePersonRecordPayload(request.body);
+      if (!canEditCemetery(request.user, record.cemeteryId)) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      response.status(201).json(
+        await createSourcePersonRecord(pool, record, {
+          actorUser: request.user,
+          reason: record.reason,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/source-person-records/:recordId", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const recordId = validateUuid(request.params.recordId, "Source person record");
+      const record = validateSourcePersonRecordPayload(request.body);
+      if (!canEditCemetery(request.user, record.cemeteryId)) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      const updated = await updateSourcePersonRecord(pool, recordId, record, {
+        actorUser: request.user,
+        reason: record.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!updated) response.status(404).json({ error: "Source person record not found." });
+      else response.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/admin/source-person-records/:recordId", requireCemeteryAdmin, async (request, response, next) => {
+    try {
+      const recordId = validateUuid(request.params.recordId, "Source person record");
+      const deleted = await softDeleteSourcePersonRecord(pool, recordId, {
+        actorUser: request.user,
+        reason: validateMutationReason(request.body?.reason),
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!deleted) response.status(404).json({ error: "Source person record not found." });
+      else response.json(deleted);
     } catch (error) {
       next(error);
     }

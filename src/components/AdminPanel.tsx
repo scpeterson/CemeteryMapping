@@ -1,10 +1,12 @@
 import { type Dispatch, FormEvent, type SetStateAction, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, ArrowDown, ArrowUp, FileSearch, FileText, History, Landmark, ListChecks, ShieldAlert, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, BookOpenText, FileSearch, FileText, History, Landmark, ListChecks, ShieldAlert, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
   createAdminUser,
   createDeedInvestigationAction,
   createDeedInvestigationCase,
   createLookupRecord,
+  createSourcePersonRecord,
+  deleteSourcePersonRecord,
   deleteNorthHillsOcrEvidence,
   fetchAdminRoles,
   fetchAdminUsers,
@@ -13,6 +15,7 @@ import {
   fetchDeedRegistryReview,
   fetchLookupAdminRecords,
   fetchNorthHillsOcrReview,
+  fetchSourcePersonRecords,
   linkDeedInvestigationCaseEntry,
   promoteNorthHillsSourceFact,
   resolveAuth0User,
@@ -27,6 +30,7 @@ import {
   updateLookupRecord,
   updateLotText,
   updateSectionText,
+  updateSourcePersonRecord,
 } from "../api/cemeteryApi";
 import { defaultAuditFilters } from "./AdminEventDefaults";
 import { AuditAdminTab, SystemEventsAdminTab } from "./AdminEventTabs";
@@ -61,9 +65,17 @@ import type {
   SaveNorthHillsOcrEntryInput,
   SaveNorthHillsOcrObservationInput,
   SaveNorthHillsSourceFactInput,
+  SaveSourcePersonRecordInput,
   SaveDeedInvestigationActionInput,
   SaveDeedInvestigationCaseInput,
   SectionTextRecord,
+  SourcePersonRecord,
+  SourcePersonRecordConfidence,
+  SourcePersonRecordFilters,
+  SourcePersonRecordReview,
+  SourcePersonRecordSourceCode,
+  SourcePersonRecordStatus,
+  SourcePersonRecordType,
   CurrentUser,
 } from "../types";
 
@@ -76,7 +88,7 @@ type UserFormState = SaveUserInput & {
   id?: string;
 };
 
-type AdminTab = "users" | "records" | "quality" | "deeds" | "readings" | "audit" | "lookups" | "system";
+type AdminTab = "users" | "records" | "quality" | "deeds" | "readings" | "sourcePeople" | "audit" | "lookups" | "system";
 type NorthHillsEditForm = SaveNorthHillsOcrEntryInput & {
   surnamesText: string;
   parsedYearsText: string;
@@ -212,6 +224,19 @@ const emptyNorthHillsOcrReview: NorthHillsOcrReview = {
   entries: [],
 };
 
+const defaultSourcePersonFilters: SourcePersonRecordFilters = {
+  q: "",
+  status: "",
+  sourceCode: "",
+  cemeteryId: "",
+  limit: 50,
+};
+
+const emptySourcePersonReview: SourcePersonRecordReview = {
+  cemeteries: [],
+  records: [],
+};
+
 const emptyLookupAdminRecords: LookupAdminRecords = {
   tables: [],
   lookups: {},
@@ -337,6 +362,38 @@ const observationStatusLabels: Record<NorthHillsOcrObservation["status"], string
 };
 const markerScopeOptions = ["", "single", "couple", "monolith", "unknown"];
 const entryStatusOptions = ["staged", "reviewed", "promoted", "rejected"];
+const sourcePersonSourceLabels: Record<SourcePersonRecordSourceCode, string> = {
+  CR: "Church Records",
+  CRG: "Church Records in German",
+  FH: "Family history",
+  SK: "SK",
+  NOTE: "Note",
+  OTHER: "Other",
+};
+const sourcePersonTypeLabels: Record<SourcePersonRecordType, string> = {
+  death_record: "Death record",
+  burial_record: "Burial record",
+  funeral_record: "Funeral record",
+  church_record: "Church record",
+  family_history: "Family history",
+  other: "Other",
+};
+const sourcePersonStatusLabels: Record<SourcePersonRecordStatus, string> = {
+  unmatched: "Unmatched",
+  candidate_match: "Candidate match",
+  linked: "Linked",
+  rejected: "Rejected",
+};
+const sourcePersonConfidenceLabels: Record<SourcePersonRecordConfidence, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+  review: "Review",
+};
+const sourcePersonSourceOptions = Object.keys(sourcePersonSourceLabels) as SourcePersonRecordSourceCode[];
+const sourcePersonTypeOptions = Object.keys(sourcePersonTypeLabels) as SourcePersonRecordType[];
+const sourcePersonStatusOptions = Object.keys(sourcePersonStatusLabels) as SourcePersonRecordStatus[];
+const sourcePersonConfidenceOptions = Object.keys(sourcePersonConfidenceLabels) as SourcePersonRecordConfidence[];
 
 function splitAdminList(value: string) {
   return [...new Set(value.split(/[\n,;]+/u).map((item) => item.trim()).filter(Boolean))];
@@ -420,6 +477,73 @@ const blankNorthHillsObservation = (): SaveNorthHillsOcrObservationInput => ({
   observationText: "",
   status: "staged",
 });
+
+const blankSourcePersonRecordForm = (cemeteryId = ""): SaveSourcePersonRecordInput => ({
+  cemeteryId,
+  northHillsOcrEntryId: "",
+  northHillsOcrSourceFactId: "",
+  sourceName: "North Hills Genealogists Trinity OCR",
+  sourceCode: "CR",
+  sourceLabel: "",
+  sourcePageNumber: null,
+  sourceLocationText: "",
+  recordType: "death_record",
+  status: "unmatched",
+  confidence: "review",
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  maidenName: "",
+  fullName: "",
+  birthDate: "",
+  birthDateText: "",
+  deathDate: "",
+  deathDateText: "",
+  burialDate: "",
+  burialDateText: "",
+  funeralDate: "",
+  funeralDateText: "",
+  ageText: "",
+  rawText: "",
+  notes: "",
+  reason: "Updated source-only person record.",
+});
+
+function sourcePersonFormFromRecord(record: SourcePersonRecord): SaveSourcePersonRecordInput {
+  return {
+    cemeteryId: record.cemeteryId,
+    northHillsOcrEntryId: record.northHillsOcrEntryId ?? "",
+    northHillsOcrSourceFactId: record.northHillsOcrSourceFactId ?? "",
+    sourceName: record.sourceName,
+    sourceCode: record.sourceCode,
+    sourceLabel: record.sourceLabel,
+    sourcePageNumber: record.sourcePageNumber ?? null,
+    sourceLocationText: record.sourceLocationText,
+    recordType: record.recordType,
+    status: record.status,
+    confidence: record.confidence,
+    firstName: record.firstName,
+    middleName: record.middleName,
+    lastName: record.lastName,
+    maidenName: record.maidenName,
+    fullName: record.fullName,
+    birthDate: record.birthDate ?? "",
+    birthDateText: record.birthDateText,
+    deathDate: record.deathDate ?? "",
+    deathDateText: record.deathDateText,
+    burialDate: record.burialDate ?? "",
+    burialDateText: record.burialDateText,
+    funeralDate: record.funeralDate ?? "",
+    funeralDateText: record.funeralDateText,
+    ageText: record.ageText,
+    rawText: record.rawText,
+    notes: record.notes,
+    reason: "Updated source-only person record.",
+  };
+}
+
+const sourcePersonRecordTitle = (record: SourcePersonRecord) =>
+  `${record.fullName}. ${sourcePersonSourceLabels[record.sourceCode] ?? record.sourceCode}. ${sourcePersonStatusLabels[record.status] ?? record.status}.`;
 
 function deedSearchTerms(value: string) {
   return [
@@ -1225,6 +1349,10 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [northHillsReviewFilters, setNorthHillsReviewFilters] = useState<NorthHillsOcrReviewFilters>(defaultNorthHillsReviewFilters);
   const [editingNorthHillsEntryId, setEditingNorthHillsEntryId] = useState("");
   const [northHillsEntryForm, setNorthHillsEntryForm] = useState<NorthHillsEditForm | null>(null);
+  const [sourcePersonReview, setSourcePersonReview] = useState<SourcePersonRecordReview>(emptySourcePersonReview);
+  const [sourcePersonFilters, setSourcePersonFilters] = useState<SourcePersonRecordFilters>(defaultSourcePersonFilters);
+  const [selectedSourcePersonRecordId, setSelectedSourcePersonRecordId] = useState("");
+  const [sourcePersonForm, setSourcePersonForm] = useState<SaveSourcePersonRecordInput>(() => blankSourcePersonRecordForm());
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
   const [selectedLookupTable, setSelectedLookupTable] = useState("");
   const [showInactiveLookups, setShowInactiveLookups] = useState(false);
@@ -1243,6 +1371,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [isLoadingDeedReview, setIsLoadingDeedReview] = useState(false);
   const [isLoadingDeedCases, setIsLoadingDeedCases] = useState(false);
   const [isLoadingNorthHillsReview, setIsLoadingNorthHillsReview] = useState(false);
+  const [isLoadingSourcePersonRecords, setIsLoadingSourcePersonRecords] = useState(false);
   const [isLoadingLookups, setIsLoadingLookups] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
@@ -1250,6 +1379,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [savingRecordKey, setSavingRecordKey] = useState<string>();
   const [savingLookupKey, setSavingLookupKey] = useState<string>();
   const [savingEvidenceKey, setSavingEvidenceKey] = useState<string>();
+  const [savingSourcePersonKey, setSavingSourcePersonKey] = useState<string>();
   const [savingDeedCaseKey, setSavingDeedCaseKey] = useState<string>();
   const [savingDeedActionKey, setSavingDeedActionKey] = useState<string>();
   const [recentlyMovedLookupIds, setRecentlyMovedLookupIds] = useState<Set<string>>(() => new Set());
@@ -1315,6 +1445,10 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     () => northHillsOcrReview.batches.find((batch) => batch.id === northHillsOcrReview.selectedBatchId),
     [northHillsOcrReview.batches, northHillsOcrReview.selectedBatchId],
   );
+  const selectedSourcePersonRecord = useMemo(
+    () => sourcePersonReview.records.find((record) => record.id === selectedSourcePersonRecordId),
+    [sourcePersonReview.records, selectedSourcePersonRecordId],
+  );
   const selectedLookupDefinition = useMemo(
     () => lookupRecords.tables.find((table) => table.table === selectedLookupTable),
     [lookupRecords.tables, selectedLookupTable],
@@ -1327,6 +1461,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const duplicateLookupSortOrders = useMemo(() => lookupDuplicateSortOrders(selectedLookupAllRows), [selectedLookupAllRows]);
   const canManageUsers = currentUser.permissions.canManageUsers;
   const canUseSystemAdminTabs = currentUser.role === "admin";
+  const canUseSourcePersonTab = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
   const canUnlinkNorthHillsEvidence = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
   const canEditNorthHillsEntries = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
   const canEditSelectedCemetery = currentUser.role === "admin" || (selectedCemeteryId ? currentUser.assignedCemeteryIds.includes(selectedCemeteryId) : false);
@@ -1586,6 +1721,112 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const openNorthHillsReviewTab = () => {
     setActiveTab("readings");
     if (northHillsOcrReview.batches.length === 0 && !isLoadingNorthHillsReview) void loadNorthHillsOcrReview();
+  };
+
+  const loadSourcePersonRecords = async (filters = sourcePersonFilters) => {
+    setIsLoadingSourcePersonRecords(true);
+    setError(undefined);
+
+    try {
+      const nextReview = await fetchSourcePersonRecords(filters);
+      const defaultCemeteryId = nextReview.cemeteries[0]?.id ?? sourcePersonForm.cemeteryId;
+      setSourcePersonReview(nextReview);
+      setSourcePersonFilters((current) => ({
+        ...current,
+        cemeteryId: current.cemeteryId || (nextReview.cemeteries.length === 1 ? nextReview.cemeteries[0].id : ""),
+      }));
+      setSelectedSourcePersonRecordId((current) => (nextReview.records.some((record) => record.id === current) ? current : ""));
+      if (!sourcePersonForm.cemeteryId && defaultCemeteryId) {
+        setSourcePersonForm((current) => ({ ...current, cemeteryId: defaultCemeteryId }));
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load source-only person records.");
+    } finally {
+      setIsLoadingSourcePersonRecords(false);
+    }
+  };
+
+  const updateSourcePersonFilter = (patch: Partial<SourcePersonRecordFilters>) => {
+    setSourcePersonFilters((current) => ({ ...current, ...patch }));
+  };
+
+  const applySourcePersonFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void loadSourcePersonRecords(sourcePersonFilters);
+  };
+
+  const openSourcePeopleTab = () => {
+    setActiveTab("sourcePeople");
+    if (sourcePersonReview.records.length === 0 && !isLoadingSourcePersonRecords) void loadSourcePersonRecords();
+  };
+
+  const startNewSourcePersonRecord = () => {
+    const defaultCemeteryId = sourcePersonFilters.cemeteryId || sourcePersonReview.cemeteries[0]?.id || "";
+    setSelectedSourcePersonRecordId("");
+    setSourcePersonForm(blankSourcePersonRecordForm(defaultCemeteryId));
+    setMessage(undefined);
+    setError(undefined);
+  };
+
+  const startSourcePersonRecordEdit = (record: SourcePersonRecord) => {
+    setSelectedSourcePersonRecordId(record.id);
+    setSourcePersonForm(sourcePersonFormFromRecord(record));
+    setMessage(undefined);
+    setError(undefined);
+  };
+
+  const updateSourcePersonForm = (patch: Partial<SaveSourcePersonRecordInput>) => {
+    setSourcePersonForm((current) => ({ ...current, ...patch }));
+  };
+
+  const saveSourcePersonRecord = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingSourcePersonKey(selectedSourcePersonRecordId || "new");
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const saved = selectedSourcePersonRecordId
+        ? await updateSourcePersonRecord(selectedSourcePersonRecordId, sourcePersonForm)
+        : await createSourcePersonRecord(sourcePersonForm);
+      setSelectedSourcePersonRecordId(saved.id);
+      setSourcePersonForm(sourcePersonFormFromRecord(saved));
+      setSourcePersonReview((current) => ({
+        ...current,
+        records: [saved, ...current.records.filter((record) => record.id !== saved.id)],
+      }));
+      setMessage(`Saved source-only person record for ${saved.fullName}.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save source-only person record.");
+    } finally {
+      setSavingSourcePersonKey(undefined);
+    }
+  };
+
+  const softDeleteSourcePersonRecord = async (record: SourcePersonRecord) => {
+    if (!window.confirm(`Soft delete source-only person record for ${record.fullName}?`)) return;
+    const reason = window.prompt("Reason for soft delete:", "Soft-delete source-only person record.");
+    if (reason === null) return;
+    setSavingSourcePersonKey(`delete:${record.id}`);
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      await deleteSourcePersonRecord(record.id, reason);
+      setSourcePersonReview((current) => ({
+        ...current,
+        records: current.records.filter((currentRecord) => currentRecord.id !== record.id),
+      }));
+      if (selectedSourcePersonRecordId === record.id) {
+        setSelectedSourcePersonRecordId("");
+        setSourcePersonForm(blankSourcePersonRecordForm(sourcePersonFilters.cemeteryId || sourcePersonReview.cemeteries[0]?.id || ""));
+      }
+      setMessage(`Soft-deleted source-only person record for ${record.fullName}.`);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Unable to soft delete source-only person record.");
+    } finally {
+      setSavingSourcePersonKey(undefined);
+    }
   };
 
   const startNorthHillsEntryEdit = (entry: NorthHillsOcrReviewEntry) => {
@@ -2150,6 +2391,16 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
           >
             <FileText size={16} aria-hidden="true" />
             <span>Readings</span>
+          </button> : null}
+          {canUseSourcePersonTab ? <button
+            type="button"
+            aria-current={activeTab === "sourcePeople" ? "page" : undefined}
+            className={activeTab === "sourcePeople" ? "is-active" : undefined}
+            onClick={openSourcePeopleTab}
+            title="Enter and review source-only people from church records, family history, and other source notes."
+          >
+            <BookOpenText size={16} aria-hidden="true" />
+            <span>Source People</span>
           </button> : null}
           {canUseSystemAdminTabs ? <button
             type="button"
@@ -2895,6 +3146,317 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
           attachEntryToSelectedDeedCase={attachEntryToSelectedDeedCase}
           removedOriginalDeedEntries={removedOriginalDeedEntries}
         />
+      ) : activeTab === "sourcePeople" ? (
+        <>
+          <section className="admin-section">
+            <div className="section-title">
+              <BookOpenText size={17} aria-hidden="true" />
+              <h3>Source People</h3>
+            </div>
+
+            <form className="deed-review-filter-form" onSubmit={applySourcePersonFilters}>
+              <label>
+                Cemetery
+                <select
+                  value={sourcePersonFilters.cemeteryId ?? ""}
+                  onChange={(event) => updateSourcePersonFilter({ cemeteryId: event.target.value })}
+                  title="Filter source-only people by cemetery."
+                >
+                  <option value="">All available cemeteries</option>
+                  {sourcePersonReview.cemeteries.map((cemetery) => (
+                    <option key={cemetery.id} value={cemetery.id}>
+                      {cemetery.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Source
+                <select
+                  value={sourcePersonFilters.sourceCode ?? ""}
+                  onChange={(event) => updateSourcePersonFilter({ sourceCode: event.target.value })}
+                  title="Filter by source code."
+                >
+                  <option value="">All sources</option>
+                  {sourcePersonSourceOptions.map((sourceCode) => (
+                    <option key={sourceCode} value={sourceCode}>
+                      {sourcePersonSourceLabels[sourceCode]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Status
+                <select
+                  value={sourcePersonFilters.status ?? ""}
+                  onChange={(event) => updateSourcePersonFilter({ status: event.target.value })}
+                  title="Filter by review/link status."
+                >
+                  <option value="">All statuses</option>
+                  {sourcePersonStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {sourcePersonStatusLabels[status]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Search
+                <input
+                  value={sourcePersonFilters.q ?? ""}
+                  onChange={(event) => updateSourcePersonFilter({ q: event.target.value })}
+                  placeholder="Name, page, source text, or notes"
+                  title="Search names, source page numbers, raw source text, source location text, and notes."
+                />
+              </label>
+              <label>
+                Limit
+                <select
+                  value={sourcePersonFilters.limit ?? 50}
+                  onChange={(event) => updateSourcePersonFilter({ limit: Number(event.target.value) })}
+                  title="Limit the number of source-only person records returned."
+                >
+                  <option value={25}>25 records</option>
+                  <option value={50}>50 records</option>
+                  <option value={100}>100 records</option>
+                  <option value={250}>250 records</option>
+                </select>
+              </label>
+              <div className="admin-form-actions deed-review-filter-actions">
+                <button type="submit" disabled={isLoadingSourcePersonRecords}>
+                  {isLoadingSourcePersonRecords ? "Loading..." : "Apply filters"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setSourcePersonFilters(defaultSourcePersonFilters);
+                    void loadSourcePersonRecords(defaultSourcePersonFilters);
+                  }}
+                >
+                  Clear
+                </button>
+                <button type="button" className="secondary-button" onClick={startNewSourcePersonRecord}>
+                  New record
+                </button>
+              </div>
+            </form>
+
+            {isLoadingSourcePersonRecords ? <div className="admin-message" role="status">Loading source-only people...</div> : null}
+
+            <div className="source-person-workspace">
+              <div className="deed-entry-list" role="table" aria-label="Source-only person records">
+                {sourcePersonReview.records.length === 0 && !isLoadingSourcePersonRecords ? <p className="record-editor-empty">No source-only person records match these filters.</p> : null}
+                {sourcePersonReview.records.map((record) => (
+                  <article
+                    key={record.id}
+                    className={`deed-entry-row confidence-${record.confidence} ${selectedSourcePersonRecordId === record.id ? "is-selected" : ""}`}
+                    title={sourcePersonRecordTitle(record)}
+                  >
+                    <header>
+                      <span>
+                        <strong>{record.sourcePageNumber ? `Page ${record.sourcePageNumber}` : "No page"}</strong>
+                        <small>{record.sourceLocationText || record.sourceLabel || record.sourceName}</small>
+                      </span>
+                      <span>
+                        <strong>{record.fullName}</strong>
+                        <small>{record.cemeteryName || "No cemetery"}</small>
+                      </span>
+                      <span>
+                        <strong>{sourcePersonSourceLabels[record.sourceCode] ?? record.sourceCode}</strong>
+                        <small>{sourcePersonTypeLabels[record.recordType] ?? record.recordType}</small>
+                      </span>
+                      <span>
+                        <strong>{sourcePersonStatusLabels[record.status] ?? record.status}</strong>
+                        <small>{sourcePersonConfidenceLabels[record.confidence] ?? record.confidence}</small>
+                      </span>
+                      <button type="button" className="deed-entry-link-button" onClick={() => startSourcePersonRecordEdit(record)}>
+                        Edit
+                      </button>
+                    </header>
+                    <p className="deed-entry-remarks">{record.rawText}</p>
+                    {record.links.length ? (
+                      <ul className="deed-entry-notes" aria-label="Linked cemetery records">
+                        {record.links.map((link) => (
+                          <li key={link.id}>
+                            {link.linkType}: {link.targetLabel || link.targetId}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+
+              <form className="reading-entry-edit-form source-person-editor" onSubmit={saveSourcePersonRecord}>
+                <div className="section-title">
+                  <BookOpenText size={16} aria-hidden="true" />
+                  <h4>{selectedSourcePersonRecord ? `Edit ${selectedSourcePersonRecord.fullName}` : "New source-only person"}</h4>
+                </div>
+                <div className="reading-edit-grid">
+                  <label>
+                    Cemetery
+                    <select value={sourcePersonForm.cemeteryId} onChange={(event) => updateSourcePersonForm({ cemeteryId: event.target.value })} required>
+                      <option value="">Select cemetery</option>
+                      {sourcePersonReview.cemeteries.map((cemetery) => (
+                        <option key={cemetery.id} value={cemetery.id}>
+                          {cemetery.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Source
+                    <select value={sourcePersonForm.sourceCode} onChange={(event) => updateSourcePersonForm({ sourceCode: event.target.value as SourcePersonRecordSourceCode })}>
+                      {sourcePersonSourceOptions.map((sourceCode) => (
+                        <option key={sourceCode} value={sourceCode}>
+                          {sourcePersonSourceLabels[sourceCode]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Record type
+                    <select value={sourcePersonForm.recordType} onChange={(event) => updateSourcePersonForm({ recordType: event.target.value as SourcePersonRecordType })}>
+                      {sourcePersonTypeOptions.map((recordType) => (
+                        <option key={recordType} value={recordType}>
+                          {sourcePersonTypeLabels[recordType]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Status
+                    <select value={sourcePersonForm.status} onChange={(event) => updateSourcePersonForm({ status: event.target.value as SourcePersonRecordStatus })}>
+                      {sourcePersonStatusOptions.map((status) => (
+                        <option key={status} value={status}>
+                          {sourcePersonStatusLabels[status]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Confidence
+                    <select value={sourcePersonForm.confidence} onChange={(event) => updateSourcePersonForm({ confidence: event.target.value as SourcePersonRecordConfidence })}>
+                      {sourcePersonConfidenceOptions.map((confidence) => (
+                        <option key={confidence} value={confidence}>
+                          {sourcePersonConfidenceLabels[confidence]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Page
+                    <input
+                      type="number"
+                      min="1"
+                      value={sourcePersonForm.sourcePageNumber ?? ""}
+                      onChange={(event) => updateSourcePersonForm({ sourcePageNumber: event.target.value ? Number(event.target.value) : null })}
+                    />
+                  </label>
+                  <label>
+                    First name
+                    <input value={sourcePersonForm.firstName} onChange={(event) => updateSourcePersonForm({ firstName: event.target.value })} />
+                  </label>
+                  <label>
+                    Middle name
+                    <input value={sourcePersonForm.middleName} onChange={(event) => updateSourcePersonForm({ middleName: event.target.value })} />
+                  </label>
+                  <label>
+                    Last name
+                    <input value={sourcePersonForm.lastName} onChange={(event) => updateSourcePersonForm({ lastName: event.target.value })} />
+                  </label>
+                  <label>
+                    Maiden name
+                    <input value={sourcePersonForm.maidenName} onChange={(event) => updateSourcePersonForm({ maidenName: event.target.value })} />
+                  </label>
+                  <label className="wide-field">
+                    Full name
+                    <input value={sourcePersonForm.fullName} onChange={(event) => updateSourcePersonForm({ fullName: event.target.value })} required />
+                  </label>
+                  <label>
+                    Birth date
+                    <input type="date" value={sourcePersonForm.birthDate ?? ""} onChange={(event) => updateSourcePersonForm({ birthDate: event.target.value })} />
+                  </label>
+                  <label>
+                    Birth text
+                    <input value={sourcePersonForm.birthDateText} onChange={(event) => updateSourcePersonForm({ birthDateText: event.target.value })} placeholder="1876 or Sept. 1876" />
+                  </label>
+                  <label>
+                    Death date
+                    <input type="date" value={sourcePersonForm.deathDate ?? ""} onChange={(event) => updateSourcePersonForm({ deathDate: event.target.value })} />
+                  </label>
+                  <label>
+                    Death text
+                    <input value={sourcePersonForm.deathDateText} onChange={(event) => updateSourcePersonForm({ deathDateText: event.target.value })} placeholder="1876 or Sept. 1876" />
+                  </label>
+                  <label>
+                    Burial date
+                    <input type="date" value={sourcePersonForm.burialDate ?? ""} onChange={(event) => updateSourcePersonForm({ burialDate: event.target.value })} />
+                  </label>
+                  <label>
+                    Burial text
+                    <input value={sourcePersonForm.burialDateText} onChange={(event) => updateSourcePersonForm({ burialDateText: event.target.value })} placeholder="1876 or Sept. 1876" />
+                  </label>
+                  <label>
+                    Funeral date
+                    <input type="date" value={sourcePersonForm.funeralDate ?? ""} onChange={(event) => updateSourcePersonForm({ funeralDate: event.target.value })} />
+                  </label>
+                  <label>
+                    Funeral text
+                    <input value={sourcePersonForm.funeralDateText} onChange={(event) => updateSourcePersonForm({ funeralDateText: event.target.value })} placeholder="1876 or Sept. 1876" />
+                  </label>
+                  <label>
+                    Age text
+                    <input value={sourcePersonForm.ageText} onChange={(event) => updateSourcePersonForm({ ageText: event.target.value })} />
+                  </label>
+                  <label>
+                    Source label
+                    <input value={sourcePersonForm.sourceLabel} onChange={(event) => updateSourcePersonForm({ sourceLabel: event.target.value })} />
+                  </label>
+                  <label className="wide-field">
+                    Source location
+                    <input value={sourcePersonForm.sourceLocationText} onChange={(event) => updateSourcePersonForm({ sourceLocationText: event.target.value })} />
+                  </label>
+                  <label className="wide-field">
+                    Source name
+                    <input value={sourcePersonForm.sourceName} onChange={(event) => updateSourcePersonForm({ sourceName: event.target.value })} required />
+                  </label>
+                  <label className="wide-field">
+                    Raw source text
+                    <textarea value={sourcePersonForm.rawText} onChange={(event) => updateSourcePersonForm({ rawText: event.target.value })} rows={4} required />
+                  </label>
+                  <label className="wide-field">
+                    Notes
+                    <textarea value={sourcePersonForm.notes} onChange={(event) => updateSourcePersonForm({ notes: event.target.value })} rows={3} />
+                  </label>
+                  <label className="wide-field">
+                    Change reason
+                    <input value={sourcePersonForm.reason} onChange={(event) => updateSourcePersonForm({ reason: event.target.value })} required />
+                  </label>
+                </div>
+                <div className="admin-form-actions">
+                  <button type="submit" disabled={Boolean(savingSourcePersonKey) || !sourcePersonForm.cemeteryId || !sourcePersonForm.fullName.trim() || !sourcePersonForm.rawText.trim()}>
+                    {savingSourcePersonKey === (selectedSourcePersonRecordId || "new") ? "Saving..." : "Save record"}
+                  </button>
+                  <button type="button" className="secondary-button" onClick={startNewSourcePersonRecord}>
+                    Clear form
+                  </button>
+                  {selectedSourcePersonRecord ? (
+                    <button
+                      type="button"
+                      className="danger-button"
+                      disabled={Boolean(savingSourcePersonKey)}
+                      onClick={() => void softDeleteSourcePersonRecord(selectedSourcePersonRecord)}
+                    >
+                      {savingSourcePersonKey === `delete:${selectedSourcePersonRecord.id}` ? "Deleting..." : "Soft delete"}
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+            </div>
+          </section>
+        </>
       ) : activeTab === "readings" ? (
         <>
           <section className="admin-section">
