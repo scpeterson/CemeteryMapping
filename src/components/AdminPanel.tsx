@@ -3245,35 +3245,45 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
             {isLoadingSourcePersonRecords ? <div className="admin-message" role="status">Loading source-only people...</div> : null}
 
             <div className="source-person-workspace">
-              <div className="deed-entry-list" role="table" aria-label="Source-only person records">
+              <div className="source-person-list" role="table" aria-label="Source-only person records">
                 {sourcePersonReview.records.length === 0 && !isLoadingSourcePersonRecords ? <p className="record-editor-empty">No source-only person records match these filters.</p> : null}
                 {sourcePersonReview.records.map((record) => (
                   <article
                     key={record.id}
-                    className={`deed-entry-row confidence-${record.confidence} ${selectedSourcePersonRecordId === record.id ? "is-selected" : ""}`}
+                    className={`source-person-row confidence-${record.confidence} ${selectedSourcePersonRecordId === record.id ? "is-selected" : ""}`}
                     title={sourcePersonRecordTitle(record)}
                   >
                     <header>
-                      <span>
-                        <strong>{record.sourcePageNumber ? `Page ${record.sourcePageNumber}` : "No page"}</strong>
-                        <small>{record.sourceLocationText || record.sourceLabel || record.sourceName}</small>
-                      </span>
-                      <span>
+                      <div className="source-person-heading">
                         <strong>{record.fullName}</strong>
                         <small>{record.cemeteryName || "No cemetery"}</small>
-                      </span>
-                      <span>
-                        <strong>{sourcePersonSourceLabels[record.sourceCode] ?? record.sourceCode}</strong>
-                        <small>{sourcePersonTypeLabels[record.recordType] ?? record.recordType}</small>
-                      </span>
-                      <span>
-                        <strong>{sourcePersonStatusLabels[record.status] ?? record.status}</strong>
-                        <small>{sourcePersonConfidenceLabels[record.confidence] ?? record.confidence}</small>
-                      </span>
+                      </div>
                       <button type="button" className="deed-entry-link-button" onClick={() => startSourcePersonRecordEdit(record)}>
                         Edit
                       </button>
                     </header>
+                    <dl className="source-person-meta">
+                      <div>
+                        <dt>Source</dt>
+                        <dd>{sourcePersonSourceLabels[record.sourceCode] ?? record.sourceCode}</dd>
+                      </div>
+                      <div>
+                        <dt>Type</dt>
+                        <dd>{sourcePersonTypeLabels[record.recordType] ?? record.recordType}</dd>
+                      </div>
+                      <div>
+                        <dt>Status</dt>
+                        <dd>{sourcePersonStatusLabels[record.status] ?? record.status}</dd>
+                      </div>
+                      <div>
+                        <dt>Confidence</dt>
+                        <dd>{sourcePersonConfidenceLabels[record.confidence] ?? record.confidence}</dd>
+                      </div>
+                      <div>
+                        <dt>Location</dt>
+                        <dd>{record.sourcePageNumber ? `Page ${record.sourcePageNumber}` : record.sourceLocationText || "No page"}</dd>
+                      </div>
+                    </dl>
                     <p className="deed-entry-remarks">{record.rawText}</p>
                     {record.links.length ? (
                       <ul className="deed-entry-notes" aria-label="Linked cemetery records">
@@ -3293,7 +3303,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                   <BookOpenText size={16} aria-hidden="true" />
                   <h4>{selectedSourcePersonRecord ? `Edit ${selectedSourcePersonRecord.fullName}` : "New source-only person"}</h4>
                 </div>
-                <div className="reading-edit-grid">
+                <div className="reading-edit-grid source-person-edit-grid">
                   <label>
                     Cemetery
                     <select value={sourcePersonForm.cemeteryId} onChange={(event) => updateSourcePersonForm({ cemeteryId: event.target.value })} required>
