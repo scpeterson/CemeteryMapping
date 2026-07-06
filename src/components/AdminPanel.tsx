@@ -3445,7 +3445,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                     <input value={sourcePersonForm.reason} onChange={(event) => updateSourcePersonForm({ reason: event.target.value })} required />
                   </label>
                 </div>
-                <div className="admin-form-actions">
+                <div className="admin-form-actions source-person-editor-actions">
                   <button type="submit" disabled={Boolean(savingSourcePersonKey) || !sourcePersonForm.cemeteryId || !sourcePersonForm.fullName.trim() || !sourcePersonForm.rawText.trim()}>
                     {savingSourcePersonKey === (selectedSourcePersonRecordId || "new") ? "Saving..." : "Save record"}
                   </button>

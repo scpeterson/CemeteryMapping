@@ -3479,6 +3479,7 @@ h3 {
   grid-template-columns: minmax(320px, 0.75fr) minmax(580px, 1.25fr);
   gap: 14px;
   align-items: start;
+  min-height: 0;
 }
 
 .source-person-list {
@@ -3578,7 +3579,10 @@ h3 {
 .source-person-editor {
   position: sticky;
   top: 0;
+  max-height: calc(100vh - 180px);
+  overflow: auto;
   min-width: 0;
+  padding-bottom: 0;
 }
 
 .source-person-edit-grid {
@@ -3589,6 +3593,18 @@ h3 {
 .source-person-edit-grid select,
 .source-person-edit-grid textarea {
   min-height: 34px;
+}
+
+.source-person-editor-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex-wrap: wrap;
+  margin: 0 -11px -11px;
+  padding: 10px 11px;
+  border-top: 1px solid #d9e0d5;
+  background: rgba(251, 253, 249, 0.96);
+  backdrop-filter: blur(6px);
 }
 
 .deed-investigation-links {
