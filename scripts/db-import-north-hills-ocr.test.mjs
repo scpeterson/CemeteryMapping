@@ -1935,3 +1935,72 @@ Franklin Park Borough               220                Allegheny County, PA`;
   assert.equal(entries[0].rawText.includes("McCANDLESS/SOERGEL"), false);
   assert.equal(entries[4].rawText.includes("ENSMIGER"), false);
 });
+
+test("parseNorthHillsOcrText splits corrected page 230 section E readings", () => {
+  const text = `Section E, Row 5
+[BA]UMSCHUSSEL (5E, 6, s) upright, white marble, poor cond, fallen, weeping
+willow "Sophia / [Ba]umschussel / geboren / [-] Aug. 1813(?) / gestorben /
+Den 11 Apr. 1857(?) / [-] der die led[-]mlige / [-] todlen."
+
+SPERBER/SOERGEL/SPERGER (SE, 7, s) upright, white marble, good cond, broken,
+fallen, weeping willow "Johann Hein [broken] / Sperber'' Note: rest of stone
+Is missing. FH:Soergel Johann Heinrich Sperger, 1819-1854. Walburga Soergel's
+brother SPERBER/HOFFMAN/SPERGER {SE, 8, s) upright, white marble, poor cond,
+broken about 8 Inchesfrom base, sunken, fallen, weeping· wlllow "Marg.
+Barbara/ Sperber/ [-] / [-] / [1851]", Note: Balance on upright portion of
+base Is Illegible. Stone is same shape and matches SE, 7. FH:Soergel Margaret
+Hoffman Sperger, 1817-1854, Johann'swife
+
+SPERBER (SE, 9, s) upright, white marble, poor cond, lamb "Johann Sperber /
+Geb d. 18 Mai / 1872 gest d. 7 Oct. / 1876 / Aber der Herr / nimmt mich auf"
+FH: Soergel 1852-1856, Johann & Margaret's son
+
+SOERGEL (5E, 10, s) upright, poor cond, fallen, lamb "Heinrich Soergel / Geb.
+den 19 Juni 18(?) / gest. den 7 Oct. 1861(?) / [Illegible lines]" FH: Soergel
+1852-1861, Johann's son
+
+SOERGEL/SÖRGEL (5E, 11, s) upright, white marble, good cond "John H. Soergel /
+Geboren / den 5ten Mar. 1869 / Gestorben / den 9ten Mar 1869." CRG: Johann
+Heinrich, little son of Johann Conrad & Walburga Sörgel, f. Mar. 10, 1869, d.
+9 Mar. 1869, 4da
+
+SPERBER/SOERGEL (5E, 12, s) upright, white marble, good cond, fallen flat
+"Unser Vater / Johann G. Sperber / geboren / den 10ten Dec. 1798 / gestorben /
+den 10ten / Feb. 1877." CRG: Johann Georg Sperber, b. 6 December 1798 In
+Rublanden Landgericht Lauf, In the Kingdom of Bavaria, f. February 12, 1877,
+d. 10 February at 1 am, 78y 2m, 4 da. FH: Soergel Walburga Soergel's father
+
+BRAURMANN (6E, 1, s) upright, white marble, poor cond, fallen, hand with
+upraised Index finger "Johann Heinrich / sohn von / William u. [-] / [-] /
+geb. d. 2 Mal 1851 / gest. d. 23 Jan. 1875 / alter 23 jahren / 8 mon. 21 [-]"
+CRG: Braurmann, Heinrich, f, January 25, 1875, d. 23 January, 23y 8m 23da, b
+May 2, 1851
+
+ZIEGENTHALER (6E, 2, s) upright, white marble, poor cond, fallen, drape "Hier
+ruht In.gott / Elizabeth(?) / gatt In von / [-] Ziegenthaler / [-] 17 Mai
+188(7?) / alter 71 jahr / 10 mn. 17 [- ]"
+
+UNKNOWN (6E, 3, s) upright, marble(?), illegible, fallen
+Franklin Park Borough               230                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["[BA]UMSCHUSSEL", 230, "E", 5, 6, "single"],
+      ["SPERBER/SOERGEL/SPERGER", 230, "E", 5, 7, "single"],
+      ["SPERBER/HOFFMAN/SPERGER", 230, "E", 5, 8, "single"],
+      ["SPERBER", 230, "E", 5, 9, "single"],
+      ["SOERGEL", 230, "E", 5, 10, "single"],
+      ["SOERGEL/SÖRGEL", 230, "E", 5, 11, "single"],
+      ["SPERBER/SOERGEL", 230, "E", 5, 12, "single"],
+      ["BRAURMANN", 230, "E", 6, 1, "single"],
+      ["ZIEGENTHALER", 230, "E", 6, 2, "single"],
+      ["UNKNOWN", 230, "E", 6, 3, "single"],
+    ],
+  );
+  assert.equal(entries[1].rawText.includes("SPERBER/HOFFMAN"), false);
+  assert.equal(entries[2].rawText.startsWith("SPERBER/HOFFMAN/SPERGER"), true);
+  assert.equal(entries[8].rawText.includes(".J"), false);
+});
