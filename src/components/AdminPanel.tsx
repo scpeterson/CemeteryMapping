@@ -1,6 +1,10 @@
 import { type Dispatch, FormEvent, type SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowDown, ArrowUp, BookOpenText, FileSearch, FileText, History, Landmark, ListChecks, ShieldAlert, ShieldCheck, UserCheck, UserCog, UserPlus, UserX, X } from "lucide-react";
 import {
+  bulkAddNorthHillsEntryNote,
+  bulkAssignGravesitesToLot,
+  bulkMarkNorthHillsReviewed,
+  bulkUpdateHeadstones,
   createAdminUser,
   createDeedInvestigationAction,
   createDeedInvestigationCase,
@@ -14,6 +18,7 @@ import {
   fetchDeedInvestigationCases,
   fetchDeedRegistryReview,
   fetchLookupAdminRecords,
+  fetchHeadstoneLookups,
   fetchNorthHillsOcrReview,
   fetchSourcePersonRecords,
   linkDeedInvestigationCaseEntry,
@@ -40,6 +45,7 @@ import type {
   AppRoleName,
   AppUser,
   AuditEventFilters,
+  BulkEditResult,
   CemeteryAdminRecords,
   CemeteryTextRecord,
   DeedInvestigationAction,
@@ -52,6 +58,7 @@ import type {
   DeedRegistryReview,
   DeedRegistryReviewEntry,
   DeedRegistryReviewFilters,
+  HeadstoneLookups,
   LookupAdminRecords,
   LookupRecord,
   LotTextRecord,
@@ -88,7 +95,7 @@ type UserFormState = SaveUserInput & {
   id?: string;
 };
 
-type AdminTab = "users" | "records" | "quality" | "deeds" | "readings" | "sourcePeople" | "audit" | "lookups" | "system";
+type AdminTab = "users" | "records" | "quality" | "bulk" | "deeds" | "readings" | "sourcePeople" | "audit" | "lookups" | "system";
 type NorthHillsEditForm = SaveNorthHillsOcrEntryInput & {
   surnamesText: string;
   parsedYearsText: string;
@@ -142,10 +149,41 @@ function userFormFromUser(user: AppUser): UserFormState {
   };
 }
 
+function parseBulkIdentifiers(value: string) {
+  return [...new Set(value.split(/[\s,;]+/u).map((identifier) => identifier.trim()).filter(Boolean))];
+}
+
+function bulkResultMessage(label: string, result: BulkEditResult) {
+  const missing = result.notFound.length ? ` ${result.notFound.length} not found: ${result.notFound.slice(0, 6).join(", ")}${result.notFound.length > 6 ? ", ..." : ""}.` : "";
+  return `${label}: updated ${result.updatedCount} of ${result.requestedCount} selected record${result.requestedCount === 1 ? "" : "s"}.${missing}`;
+}
+
 const emptyCemeteryRecords: CemeteryAdminRecords = {
   cemeteries: [],
   sections: [],
   lots: [],
+};
+
+const emptyHeadstoneLookups: HeadstoneLookups = {
+  markerTypes: [],
+  materials: [],
+  conditions: [],
+  vaseTypes: [],
+  vaseMaterials: [],
+  vasePlacements: [],
+  graveFeatureTypes: [],
+  graveFeatureSubtypes: [],
+  graveFeaturePlacements: [],
+  graveFeatureMaterials: [],
+  intermentTypes: [],
+  burialRecordStatuses: [],
+  militaryBranches: [],
+  militaryRanks: [],
+  militaryWarServices: [],
+  maintenanceIssueTypes: [],
+  maintenanceActionTypes: [],
+  maintenancePriorities: [],
+  headstones: [],
 };
 
 const defaultDeedReviewFilters: DeedRegistryReviewFilters = {
@@ -216,6 +254,8 @@ const defaultNorthHillsReviewFilters: NorthHillsOcrReviewFilters = {
   q: "",
   limit: 100,
 };
+
+const defaultBulkReason = "Bulk cleanup from admin tools.";
 
 const emptyNorthHillsOcrReview: NorthHillsOcrReview = {
   batches: [],
@@ -1349,11 +1389,13 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [northHillsReviewFilters, setNorthHillsReviewFilters] = useState<NorthHillsOcrReviewFilters>(defaultNorthHillsReviewFilters);
   const [editingNorthHillsEntryId, setEditingNorthHillsEntryId] = useState("");
   const [northHillsEntryForm, setNorthHillsEntryForm] = useState<NorthHillsEditForm | null>(null);
+  const [selectedNorthHillsEntryIds, setSelectedNorthHillsEntryIds] = useState<Set<string>>(() => new Set());
   const [sourcePersonReview, setSourcePersonReview] = useState<SourcePersonRecordReview>(emptySourcePersonReview);
   const [sourcePersonFilters, setSourcePersonFilters] = useState<SourcePersonRecordFilters>(defaultSourcePersonFilters);
   const [selectedSourcePersonRecordId, setSelectedSourcePersonRecordId] = useState("");
   const [sourcePersonForm, setSourcePersonForm] = useState<SaveSourcePersonRecordInput>(() => blankSourcePersonRecordForm());
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
+  const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
   const [selectedLookupTable, setSelectedLookupTable] = useState("");
   const [showInactiveLookups, setShowInactiveLookups] = useState(false);
   const [newLookupRecord, setNewLookupRecord] = useState<LookupRecord>(blankLookupRecord);
@@ -1382,6 +1424,15 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [savingSourcePersonKey, setSavingSourcePersonKey] = useState<string>();
   const [savingDeedCaseKey, setSavingDeedCaseKey] = useState<string>();
   const [savingDeedActionKey, setSavingDeedActionKey] = useState<string>();
+  const [savingBulkKey, setSavingBulkKey] = useState<string>();
+  const [bulkMarkerIdentifiers, setBulkMarkerIdentifiers] = useState("");
+  const [bulkMarkerTypeId, setBulkMarkerTypeId] = useState("");
+  const [bulkMarkerMaterialId, setBulkMarkerMaterialId] = useState("");
+  const [bulkMarkerConditionId, setBulkMarkerConditionId] = useState("");
+  const [bulkGravesiteIdentifiers, setBulkGravesiteIdentifiers] = useState("");
+  const [bulkLotId, setBulkLotId] = useState("");
+  const [bulkNorthHillsNote, setBulkNorthHillsNote] = useState("");
+  const [bulkReason, setBulkReason] = useState(defaultBulkReason);
   const [recentlyMovedLookupIds, setRecentlyMovedLookupIds] = useState<Set<string>>(() => new Set());
   const movedLookupTimeoutRef = useRef<number | undefined>(undefined);
 
@@ -1445,6 +1496,11 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     () => northHillsOcrReview.batches.find((batch) => batch.id === northHillsOcrReview.selectedBatchId),
     [northHillsOcrReview.batches, northHillsOcrReview.selectedBatchId],
   );
+  const selectedNorthHillsEntries = useMemo(
+    () => northHillsOcrReview.entries.filter((entry) => selectedNorthHillsEntryIds.has(entry.id)),
+    [northHillsOcrReview.entries, selectedNorthHillsEntryIds],
+  );
+  const visibleNorthHillsEntryIds = useMemo(() => northHillsOcrReview.entries.map((entry) => entry.id), [northHillsOcrReview.entries]);
   const selectedSourcePersonRecord = useMemo(
     () => sourcePersonReview.records.find((record) => record.id === selectedSourcePersonRecordId),
     [sourcePersonReview.records, selectedSourcePersonRecordId],
@@ -1461,6 +1517,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const duplicateLookupSortOrders = useMemo(() => lookupDuplicateSortOrders(selectedLookupAllRows), [selectedLookupAllRows]);
   const canManageUsers = currentUser.permissions.canManageUsers;
   const canUseSystemAdminTabs = currentUser.role === "admin";
+  const canUseBulkTools = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
   const canUseSourcePersonTab = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
   const canUnlinkNorthHillsEvidence = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
   const canEditNorthHillsEntries = currentUser.role === "cemetery-admin" || currentUser.role === "admin";
@@ -1474,6 +1531,14 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
+
+  useEffect(() => {
+    setSelectedNorthHillsEntryIds((current) => {
+      const visible = new Set(visibleNorthHillsEntryIds);
+      const next = new Set([...current].filter((id) => visible.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [visibleNorthHillsEntryIds]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -1718,6 +1783,23 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     void loadNorthHillsOcrReview(northHillsReviewFilters);
   };
 
+  const toggleNorthHillsEntrySelection = (entryId: string) => {
+    setSelectedNorthHillsEntryIds((current) => {
+      const next = new Set(current);
+      if (next.has(entryId)) next.delete(entryId);
+      else next.add(entryId);
+      return next;
+    });
+  };
+
+  const toggleVisibleNorthHillsEntries = () => {
+    setSelectedNorthHillsEntryIds((current) => {
+      const allVisibleSelected = visibleNorthHillsEntryIds.length > 0 && visibleNorthHillsEntryIds.every((id) => current.has(id));
+      if (allVisibleSelected) return new Set();
+      return new Set(visibleNorthHillsEntryIds);
+    });
+  };
+
   const openNorthHillsReviewTab = () => {
     setActiveTab("readings");
     if (northHillsOcrReview.batches.length === 0 && !isLoadingNorthHillsReview) void loadNorthHillsOcrReview();
@@ -1758,6 +1840,128 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const openSourcePeopleTab = () => {
     setActiveTab("sourcePeople");
     if (sourcePersonReview.records.length === 0 && !isLoadingSourcePersonRecords) void loadSourcePersonRecords();
+  };
+
+  const loadHeadstoneLookupRecords = async () => {
+    if (headstoneLookups.markerTypes.length || savingBulkKey === "lookups") return;
+    setSavingBulkKey("lookups");
+    setError(undefined);
+    try {
+      setHeadstoneLookups(await fetchHeadstoneLookups());
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load marker lookup values.");
+    } finally {
+      setSavingBulkKey(undefined);
+    }
+  };
+
+  const openBulkToolsTab = () => {
+    setActiveTab("bulk");
+    void loadHeadstoneLookupRecords();
+  };
+
+  const saveBulkHeadstoneUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const identifiers = parseBulkIdentifiers(bulkMarkerIdentifiers);
+    if (identifiers.length === 0) {
+      setError("Enter at least one marker ID.");
+      return;
+    }
+    if (!bulkMarkerTypeId && !bulkMarkerMaterialId && !bulkMarkerConditionId) {
+      setError("Choose at least one marker field to update.");
+      return;
+    }
+
+    setSavingBulkKey("headstones");
+    setMessage(undefined);
+    setError(undefined);
+    try {
+      const result = await bulkUpdateHeadstones({
+        identifiers,
+        markerTypeId: bulkMarkerTypeId || undefined,
+        materialId: bulkMarkerMaterialId || undefined,
+        conditionId: bulkMarkerConditionId || undefined,
+        reason: bulkReason,
+      });
+      setMessage(bulkResultMessage("Bulk marker update", result));
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to update selected markers.");
+    } finally {
+      setSavingBulkKey(undefined);
+    }
+  };
+
+  const saveBulkGravesiteLotAssignment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const identifiers = parseBulkIdentifiers(bulkGravesiteIdentifiers);
+    if (identifiers.length === 0) {
+      setError("Enter at least one gravesite ID.");
+      return;
+    }
+    if (!bulkLotId) {
+      setError("Choose a target lot.");
+      return;
+    }
+
+    setSavingBulkKey("gravesites");
+    setMessage(undefined);
+    setError(undefined);
+    try {
+      const result = await bulkAssignGravesitesToLot({ identifiers, lotId: bulkLotId, reason: bulkReason });
+      setMessage(bulkResultMessage("Bulk gravesite lot assignment", result));
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to assign selected gravesites to the lot.");
+    } finally {
+      setSavingBulkKey(undefined);
+    }
+  };
+
+  const markSelectedNorthHillsReviewed = async () => {
+    const entryIds = [...selectedNorthHillsEntryIds];
+    if (entryIds.length === 0) {
+      setError("Select at least one NHG reading.");
+      return;
+    }
+
+    setSavingBulkKey("northHillsReviewed");
+    setMessage(undefined);
+    setError(undefined);
+    try {
+      const result = await bulkMarkNorthHillsReviewed({ entryIds, reason: bulkReason });
+      setMessage(bulkResultMessage("Bulk NHG review", result));
+      setSelectedNorthHillsEntryIds(new Set());
+      await loadNorthHillsOcrReview(northHillsReviewFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to mark selected NHG readings reviewed.");
+    } finally {
+      setSavingBulkKey(undefined);
+    }
+  };
+
+  const addNoteToSelectedNorthHillsEntries = async () => {
+    const entryIds = [...selectedNorthHillsEntryIds];
+    if (entryIds.length === 0) {
+      setError("Select at least one NHG reading.");
+      return;
+    }
+    if (!bulkNorthHillsNote.trim()) {
+      setError("Enter a note to apply to selected NHG readings.");
+      return;
+    }
+
+    setSavingBulkKey("northHillsNote");
+    setMessage(undefined);
+    setError(undefined);
+    try {
+      const result = await bulkAddNorthHillsEntryNote({ entryIds, note: bulkNorthHillsNote, reason: bulkReason });
+      setMessage(bulkResultMessage("Bulk NHG note", result));
+      setBulkNorthHillsNote("");
+      await loadNorthHillsOcrReview(northHillsReviewFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to add the note to selected NHG readings.");
+    } finally {
+      setSavingBulkKey(undefined);
+    }
   };
 
   const startNewSourcePersonRecord = () => {
@@ -2362,6 +2566,16 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
             <ShieldAlert size={16} aria-hidden="true" />
             <span>Quality</span>
           </button>
+          {canUseBulkTools ? <button
+            type="button"
+            aria-current={activeTab === "bulk" ? "page" : undefined}
+            className={activeTab === "bulk" ? "is-active" : undefined}
+            onClick={openBulkToolsTab}
+            title="Apply carefully scoped updates to selected markers, gravesites, and NHG readings."
+          >
+            <ListChecks size={16} aria-hidden="true" />
+            <span>Bulk</span>
+          </button> : null}
           {canUseSystemAdminTabs ? <button
             type="button"
             aria-current={activeTab === "lookups" ? "page" : undefined}
@@ -2870,6 +3084,132 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
         </>
       ) : activeTab === "quality" ? (
         <DataQualityAdminTab onError={setError} />
+      ) : activeTab === "bulk" && canUseBulkTools ? (
+        <>
+          <section className="admin-section">
+            <div className="section-title">
+              <ListChecks size={17} aria-hidden="true" />
+              <h3>Bulk Edit Tools</h3>
+            </div>
+            <label>
+              Change reason
+              <input
+                value={bulkReason}
+                onChange={(event) => setBulkReason(event.target.value)}
+                title="Required audit reason used for all bulk edits from this tab."
+              />
+            </label>
+          </section>
+
+          <section className="admin-section bulk-tool-grid">
+            <form className="admin-form bulk-tool-card" onSubmit={(event) => void saveBulkHeadstoneUpdate(event)}>
+              <h4>Markers</h4>
+              <label className="wide-field">
+                Marker IDs
+                <textarea
+                  value={bulkMarkerIdentifiers}
+                  onChange={(event) => setBulkMarkerIdentifiers(event.target.value)}
+                  rows={5}
+                  placeholder={"TLC-HS-0179\nTLC-HS-0180"}
+                  title="Enter marker public IDs or UUIDs separated by lines, commas, semicolons, or spaces."
+                />
+              </label>
+              <label>
+                Marker type
+                <select value={bulkMarkerTypeId} onChange={(event) => setBulkMarkerTypeId(event.target.value)}>
+                  <option value="">No change</option>
+                  {headstoneLookups.markerTypes.map((option) => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Material
+                <select value={bulkMarkerMaterialId} onChange={(event) => setBulkMarkerMaterialId(event.target.value)}>
+                  <option value="">No change</option>
+                  {headstoneLookups.materials.map((option) => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Condition
+                <select value={bulkMarkerConditionId} onChange={(event) => setBulkMarkerConditionId(event.target.value)}>
+                  <option value="">No change</option>
+                  {headstoneLookups.conditions.map((option) => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="admin-form-actions">
+                <button type="submit" disabled={savingBulkKey === "headstones" || !bulkReason.trim()}>
+                  {savingBulkKey === "headstones" ? "Saving..." : "Update markers"}
+                </button>
+              </div>
+            </form>
+
+            <form className="admin-form bulk-tool-card" onSubmit={(event) => void saveBulkGravesiteLotAssignment(event)}>
+              <h4>Gravesites</h4>
+              <label className="wide-field">
+                Gravesite IDs
+                <textarea
+                  value={bulkGravesiteIdentifiers}
+                  onChange={(event) => setBulkGravesiteIdentifiers(event.target.value)}
+                  rows={5}
+                  placeholder={"C-0198A\nC-0198B"}
+                  title="Enter gravesite public IDs or UUIDs separated by lines, commas, semicolons, or spaces."
+                />
+              </label>
+              <label className="wide-field">
+                Assign to lot
+                <select value={bulkLotId} onChange={(event) => setBulkLotId(event.target.value)}>
+                  <option value="">Select lot</option>
+                  {cemeteryRecords.lots.map((lot) => (
+                    <option key={lot.id} value={lot.id}>
+                      {lot.sectionId ? `${lot.sectionId}-` : ""}{lot.lotId}{lot.name ? `: ${lot.name}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="admin-form-actions">
+                <button type="submit" disabled={savingBulkKey === "gravesites" || !bulkReason.trim()}>
+                  {savingBulkKey === "gravesites" ? "Saving..." : "Assign lot"}
+                </button>
+              </div>
+            </form>
+
+            <section className="admin-form bulk-tool-card">
+              <h4>NHG Readings</h4>
+              <p className="bulk-tool-help">Select NHG readings on the Readings tab, then apply one of these actions.</p>
+              <dl className="bulk-tool-summary">
+                <div>
+                  <dt>Selected</dt>
+                  <dd>{selectedNorthHillsEntries.length}</dd>
+                </div>
+              </dl>
+              <label className="wide-field">
+                Shared note
+                <textarea
+                  value={bulkNorthHillsNote}
+                  onChange={(event) => setBulkNorthHillsNote(event.target.value)}
+                  rows={4}
+                  placeholder="Apply this source note to selected readings"
+                />
+              </label>
+              <div className="admin-form-actions">
+                <button type="button" onClick={() => void markSelectedNorthHillsReviewed()} disabled={savingBulkKey === "northHillsReviewed" || !selectedNorthHillsEntries.length || !bulkReason.trim()}>
+                  {savingBulkKey === "northHillsReviewed" ? "Saving..." : "Mark reviewed"}
+                </button>
+                <button type="button" className="secondary-button" onClick={() => void addNoteToSelectedNorthHillsEntries()} disabled={savingBulkKey === "northHillsNote" || !selectedNorthHillsEntries.length || !bulkNorthHillsNote.trim() || !bulkReason.trim()}>
+                  {savingBulkKey === "northHillsNote" ? "Saving..." : "Apply note"}
+                </button>
+                <button type="button" className="secondary-button" onClick={openNorthHillsReviewTab}>
+                  Go to Readings
+                </button>
+              </div>
+            </section>
+          </section>
+        </>
       ) : activeTab === "lookups" ? (
         <>
           <section className="admin-section">
@@ -3613,11 +3953,53 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
               </div>
             ) : null}
 
+            {canEditNorthHillsEntries ? (
+              <div className="bulk-selection-toolbar" aria-label="Selected North Hills reading actions">
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={visibleNorthHillsEntryIds.length > 0 && visibleNorthHillsEntryIds.every((id) => selectedNorthHillsEntryIds.has(id))}
+                    onChange={toggleVisibleNorthHillsEntries}
+                  />
+                  Select visible
+                </label>
+                <span>{selectedNorthHillsEntries.length} selected</span>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => void markSelectedNorthHillsReviewed()}
+                  disabled={!selectedNorthHillsEntries.length || Boolean(savingBulkKey)}
+                  title="Mark the selected NHG readings as reviewed."
+                >
+                  Mark reviewed
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={openBulkToolsTab}
+                  disabled={!selectedNorthHillsEntries.length}
+                  title="Open Bulk tools to apply a shared source note to selected readings."
+                >
+                  Bulk note
+                </button>
+              </div>
+            ) : null}
+
             <div className="deed-entry-list" role="table" aria-label="Staged North Hills readings">
               {northHillsOcrReview.entries.length === 0 && !isLoadingNorthHillsReview ? <p className="record-editor-empty">No North Hills readings match these filters.</p> : null}
               {northHillsOcrReview.entries.map((entry) => (
                 <article key={entry.id} className={`deed-entry-row confidence-${entry.parseConfidence}`} title={readingEntryTitle(entry)}>
                   <header>
+                    {canEditNorthHillsEntries ? (
+                      <label className="reading-select-checkbox" title="Select this NHG reading for bulk actions.">
+                        <input
+                          type="checkbox"
+                          checked={selectedNorthHillsEntryIds.has(entry.id)}
+                          onChange={() => toggleNorthHillsEntrySelection(entry.id)}
+                        />
+                        <span className="sr-only">Select {entry.nameText || "NHG reading"}</span>
+                      </label>
+                    ) : null}
                     <span>
                       <strong>Page {entry.sourcePageNumber ?? entry.sourcePageIndex}</strong>
                       <small>Lines {entry.sourceLineStart}-{entry.sourceLineEnd}</small>

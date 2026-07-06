@@ -990,6 +990,13 @@ export type SaveNorthHillsOcrEntryInput = {
   reason: string;
 };
 
+export type BulkEditResult = {
+  requestedCount: number;
+  matchedCount: number;
+  updatedCount: number;
+  notFound: string[];
+};
+
 export type NorthHillsOcrReviewEntry = {
   id: string;
   batchId: string;

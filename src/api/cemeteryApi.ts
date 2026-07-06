@@ -9,6 +9,7 @@ import type {
   AuditEventFilters,
   Auth0ResolvedUser,
   Burial,
+  BulkEditResult,
   CemeteryAdminRecords,
   CemeteryData,
   GraveFeature,
@@ -549,6 +550,34 @@ export async function reviewNorthHillsSourceFact(factId: string, review: ReviewN
 export async function promoteNorthHillsSourceFact(factId: string, promotion: PromoteNorthHillsSourceFactInput): Promise<NorthHillsSourceFact> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-source-facts/${encodeURIComponent(factId)}/promote`, jsonRequest("POST", promotion));
   return jsonResponse<NorthHillsSourceFact>(response, "North Hills source fact promotion API");
+}
+
+export type BulkHeadstoneUpdateInput = {
+  identifiers: string[];
+  markerTypeId?: string;
+  materialId?: string;
+  conditionId?: string;
+  reason: string;
+};
+
+export async function bulkUpdateHeadstones(input: BulkHeadstoneUpdateInput): Promise<BulkEditResult> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/bulk/headstones`, jsonRequest("POST", input));
+  return jsonResponse<BulkEditResult>(response, "Bulk marker update API");
+}
+
+export async function bulkAssignGravesitesToLot(input: { identifiers: string[]; lotId: string; reason: string }): Promise<BulkEditResult> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/bulk/gravesites/lot`, jsonRequest("POST", input));
+  return jsonResponse<BulkEditResult>(response, "Bulk gravesite lot assignment API");
+}
+
+export async function bulkMarkNorthHillsReviewed(input: { entryIds: string[]; reason: string }): Promise<BulkEditResult> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/bulk/north-hills/reviewed`, jsonRequest("POST", input));
+  return jsonResponse<BulkEditResult>(response, "Bulk North Hills review API");
+}
+
+export async function bulkAddNorthHillsEntryNote(input: { entryIds: string[]; note: string; reason: string }): Promise<BulkEditResult> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/bulk/north-hills/entry-note`, jsonRequest("POST", input));
+  return jsonResponse<BulkEditResult>(response, "Bulk North Hills note API");
 }
 
 export async function fetchSourcePersonRecords(filters: SourcePersonRecordFilters = {}): Promise<SourcePersonRecordReview> {
