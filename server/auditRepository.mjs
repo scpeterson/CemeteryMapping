@@ -56,6 +56,8 @@ const allowedAuditTables = new Set([
   "ownership_events",
   "ownership_parties",
   "sections",
+  "source_person_record_links",
+  "source_person_records",
   "system_event_retention_policies",
 ]);
 
