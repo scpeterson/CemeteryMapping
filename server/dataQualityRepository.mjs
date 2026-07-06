@@ -91,6 +91,7 @@ export async function listDataQualityDashboard(pool, options = {}) {
         SELECT source_person_records.*
         FROM source_person_records
         JOIN scoped_cemeteries ON scoped_cemeteries.id = source_person_records.cemetery_id
+        WHERE source_person_records.deleted_at IS NULL
       ),
       scoped_media_assets AS (
         SELECT media_assets.*

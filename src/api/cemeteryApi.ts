@@ -44,11 +44,15 @@ import type {
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
   SaveHeadstoneRelationshipInput,
+  SaveSourcePersonRecordInput,
   SaveDeedInvestigationCaseInput,
   SaveDeedInvestigationActionInput,
   SaveOwnershipEventInput,
   SearchMatch,
   SectionTextRecord,
+  SourcePersonRecord,
+  SourcePersonRecordFilters,
+  SourcePersonRecordReview,
   SystemEvent,
   SystemEventFilters,
   SystemEventRetentionPolicy,
@@ -545,6 +549,31 @@ export async function reviewNorthHillsSourceFact(factId: string, review: ReviewN
 export async function promoteNorthHillsSourceFact(factId: string, promotion: PromoteNorthHillsSourceFactInput): Promise<NorthHillsSourceFact> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-source-facts/${encodeURIComponent(factId)}/promote`, jsonRequest("POST", promotion));
   return jsonResponse<NorthHillsSourceFact>(response, "North Hills source fact promotion API");
+}
+
+export async function fetchSourcePersonRecords(filters: SourcePersonRecordFilters = {}): Promise<SourcePersonRecordReview> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/source-person-records${query ? `?${query}` : ""}`);
+  return jsonResponse<SourcePersonRecordReview>(response, "Source-only person records API");
+}
+
+export async function createSourcePersonRecord(record: SaveSourcePersonRecordInput): Promise<SourcePersonRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/source-person-records`, jsonRequest("POST", record));
+  return jsonResponse<SourcePersonRecord>(response, "Create source-only person record API");
+}
+
+export async function updateSourcePersonRecord(id: string, record: SaveSourcePersonRecordInput): Promise<SourcePersonRecord> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/source-person-records/${encodeURIComponent(id)}`, jsonRequest("PUT", record));
+  return jsonResponse<SourcePersonRecord>(response, "Update source-only person record API");
+}
+
+export async function deleteSourcePersonRecord(id: string, reason?: string): Promise<{ id: string; cemeteryId: string; deletedAt: string; alreadyDeleted: boolean }> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/source-person-records/${encodeURIComponent(id)}`, jsonRequest("DELETE", { reason }));
+  return jsonResponse<{ id: string; cemeteryId: string; deletedAt: string; alreadyDeleted: boolean }>(response, "Delete source-only person record API");
 }
 
 export async function fetchLookupAdminRecords(): Promise<LookupAdminRecords> {

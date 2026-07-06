@@ -2493,6 +2493,17 @@ h3 {
   color: #405048;
 }
 
+.admin-form-actions .danger-button {
+  border-color: rgba(159, 47, 47, 0.42);
+  background: #fff;
+  color: #9f2f2f;
+}
+
+.admin-form-actions .danger-button:hover:not(:disabled) {
+  border-color: rgba(159, 47, 47, 0.64);
+  background: #fff4f2;
+}
+
 .audit-filter-form {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3355,6 +3366,10 @@ h3 {
   border-left-color: #2f684f;
 }
 
+.deed-entry-row.is-selected {
+  box-shadow: 0 0 0 2px rgba(47, 93, 80, 0.18);
+}
+
 .deed-entry-row.comparison-added {
   background: linear-gradient(90deg, rgba(47, 104, 79, 0.08), #fff 22%);
 }
@@ -3457,6 +3472,18 @@ h3 {
   padding-left: 18px;
   color: #59675d;
   font-size: 0.82rem;
+}
+
+.source-person-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.source-person-editor {
+  position: sticky;
+  top: 0;
 }
 
 .deed-investigation-links {
@@ -3608,8 +3635,13 @@ h3 {
 @media (max-width: 860px) {
   .reading-edit-grid,
   .reading-edit-repeat-row,
-  .reading-edit-observation-row {
+  .reading-edit-observation-row,
+  .source-person-workspace {
     grid-template-columns: 1fr;
+  }
+
+  .source-person-editor {
+    position: static;
   }
 }
 
