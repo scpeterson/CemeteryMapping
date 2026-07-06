@@ -162,6 +162,10 @@ const embeddedEntryStartPattern = new RegExp(
   String.raw`(${entryNamePattern})\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8a-go]\s*,\s*[0-9lISOSJ?]{1,3}\s*(?:[,.]\s*|\s+)(?:s|c|monolith)\s*,?[)}]`,
   "gu",
 );
+const leadingNoteBeforeEntryPattern = new RegExp(
+  String.raw`^(?:Note:\s+.+?|Last line of epitaph is broken off)\s+(${entryNamePattern}\s+[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8a-go]\s*,)`,
+  "u",
+);
 const coordinateStartPattern = /[({]\s*[0-9lISOSJ?]{1,3}\s*[A-GO8a-go]\s*,/u;
 
 function isNonEntryBoundary(line) {
@@ -189,6 +193,12 @@ function embeddedEntryStartIndexes(text) {
       if (headingPrefixMatch && /[a-z]/u.test(headingText.slice(0, headingPrefixMatch.index ?? 0))) {
         return (match.index ?? 0) + (headingPrefixMatch.index ?? 0) + headingPrefixMatch[0].search(/[A-Z[]/u);
       }
+      if (headingPrefixMatch && /[a-z]/u.test(headingPrefixMatch[1] ?? "")) {
+        const tailMatch = (headingPrefixMatch[1] ?? "").match(/\s+(\[?[\p{Lu}][\p{Lu}0-9/[\]()? .'&-]{1,90}?\]?)$/u);
+        if (tailMatch) {
+          return (match.index ?? 0) + headingText.lastIndexOf(tailMatch[1]);
+        }
+      }
       const strayQuoteMatch = [...headingText.matchAll(/(?:^|\s)['’](?=[A-Z])/gu)].at(-1);
       const strayQuoteIndex = strayQuoteMatch ? (strayQuoteMatch.index ?? 0) + strayQuoteMatch[0].length - 1 : -1;
       return (match.index ?? 0) + (strayQuoteIndex === -1 ? 0 : strayQuoteIndex + 1);
@@ -214,7 +224,9 @@ function stripTrailingPageFooter(segment) {
 }
 
 function cleanEntrySegment(segment) {
-  return stripTrailingPageFooter(stripTrailingStandaloneNote(stripTrailingGapNote(segment))).replace(/\s+['’]$/u, "");
+  return stripTrailingPageFooter(stripTrailingStandaloneNote(stripTrailingGapNote(segment)))
+    .replace(leadingNoteBeforeEntryPattern, "$1")
+    .replace(/\s+['’]$/u, "");
 }
 
 function entryLineSegments(line) {
