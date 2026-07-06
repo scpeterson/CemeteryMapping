@@ -2056,3 +2056,62 @@ Franklin Park Borough               231                Allegheny County, PA`;
   assert.equal(entries[4].rawText.startsWith("KÖENIG"), true);
   assert.equal(entries[5].rawText, "UNKNOWN (6E, 13, s) upright, white marble, illegible");
 });
+
+test("parseNorthHillsOcrText accepts corrected page 232 section E readings", () => {
+  const text = `Section E, Row 7
+ECKE/ECKEY/GRAF (7E, 2, s) obelisk, gray metal, exc cond, rose on front, lamb
+on left side, shield with dove & angels on right side, lily on rear. On front:
+"Infant son / of / Robert & Anne M / Ecke / died Jan. 18, 1877 / Ecke" On
+left: "We careth for / the lambs." On right: "Our darling / safe, / safe at
+home" On back: "Suffer little / children / to come unto Me / 1880" CRG:
+Eckey, little son of Robert Eckey and Anna Margaretha nee Graf, f. January 30,
+1877, b. January 28, 1877 at 8:30 am, died after 10 hours
+
+UNKNOWN (7E, 3, s) upright, white marble, illegible, lamb
+
+GRAFF/GRAF (7E, 5, s) upright with barrel-shaped ledger, gray granite, exc
+cond "J. Mlchael Graff/ 1820-1867" CRG: Graf, Johann Michael, b. Seib,
+Bavaria, d. 3 November 1867, 46y, 10m, 18da, f. November 5
+
+GRAFF/GRAF/METZ (7E, 6, s) upright with barrel-shaped ledger, small-size, gray
+granite, exc cond "Elizabeth Graff / 1866-1867" CRG: Elisabeth Graf, little
+daughter of Michael and Anna Margarethe nee Metz, d. 29 September 1867 4 a. m.,
+2y 8m 18da, f. September 30
+
+SHARF/SCHARF (7E, 8, s) upright white marble, poor cond, sunken, fallen, rose
+"Hire ruhet in Gott / Catharina C. Sharf / geboren / 10 Jan 1803 / gestorben 6
+Dec. 1877 / alter 74 jahren / m u d 26 tagen" CRG: Catharina, wife of the
+deceased Georg Adam Scharf who died 5 December 1864, b. 10 January 1803
+Felden, Kingdom of Bavaria, f. December 8, 1877, d. 6 December at 7 am, 74y
+11m 6da
+
+SCHMELTZ/SCHMELZ/SCHUSTER (7E, 9, s) upright, white marble, poor cond, sunken,
+fallen, weeping willow "Anna D. Schmeltz / gestorben / d. 8 Juli 1868 / ln
+alter von / 70 Jahren / [broken]" Note: Same round top design as stones (7E,
+7) and (7E, 8). CRG: Dorthea Schmelz nee Schuster, b. Connefeld, Kreis
+Melsungen, Hessen Cassel, f. July 9, 1868, d. 8 July
+
+TRAUT/SPANKNEBEL (8E, 1, s) upright, gray granite, exc cond, fallen "T /
+Martha E. / wife of / William Traut/ born Dec, 14, 1829 / died June 18, 1886"
+CRG: Traut, Martha Elisabeth nee Spanknebel, wife of Wilhelm, b. 1829, f. June
+20, 18861 d. 18 June, 56y 5m 29da
+Franklin Park Borough               232                Allegheny County, PA`;
+
+  const entries = parseNorthHillsOcrText(text);
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.nameText, entry.sourcePageNumber, entry.parsedSectionName, entry.parsedRowNumber, entry.parsedPositionNumber, entry.parsedMarkerScope]),
+    [
+      ["ECKE/ECKEY/GRAF", 232, "E", 7, 2, "single"],
+      ["UNKNOWN", 232, "E", 7, 3, "single"],
+      ["GRAFF/GRAF", 232, "E", 7, 5, "single"],
+      ["GRAFF/GRAF/METZ", 232, "E", 7, 6, "single"],
+      ["SHARF/SCHARF", 232, "E", 7, 8, "single"],
+      ["SCHMELTZ/SCHMELZ/SCHUSTER", 232, "E", 7, 9, "single"],
+      ["TRAUT/SPANKNEBEL", 232, "E", 8, 1, "single"],
+    ],
+  );
+  assert.equal(entries[0].rawText.includes("Illy"), false);
+  assert.equal(entries[1].rawText.includes("Illegible"), false);
+  assert.equal(entries[5].markerTypeText, "upright");
+});
