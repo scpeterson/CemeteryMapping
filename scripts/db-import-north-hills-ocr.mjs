@@ -79,6 +79,7 @@ function surnameList(nameText) {
   return [
     ...new Set(
       cleanText(nameText)
+        .replace(/\[(\p{Lu}+)\]/gu, "$1")
         .replace(/^\[|\]$/gu, "")
         .split("/")
         .map((item) => item.replace(/[^\p{L}'-]/gu, "").trim())
@@ -152,7 +153,7 @@ function printedPageNumber(pageText) {
 }
 
 const sectionRowPattern = /^\s*Section\s+([A-G])\s*,\s*Row\s+([0-9lISOS]+)\b/iu;
-const entryNamePattern = String.raw`(?:\[\p{Lu}[\p{L}0-9/[\]()? !.'&-]{1,90}?\]|\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?)`;
+const entryNamePattern = String.raw`(?:\[\p{Lu}[\p{L}0-9/[\]()? !.'&-]{1,90}?\]|\[\p{Lu}{1,10}\]\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?|\p{Lu}[\p{L}0-9/[\]()? .'&-]{1,90}?)`;
 const entryStartPattern = new RegExp(
   String.raw`^\s*(${entryNamePattern})\s+[({]\s*([0-9lISOSJ?]{1,3})\s*([A-GO8a-go])\s*,\s*([0-9lISOSJ?]{1,3})\s*(?:[,.]\s*|\s+)(s|c|monolith)\s*,?[)}]`,
   "u",
