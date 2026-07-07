@@ -37,6 +37,19 @@
           <span>{{ site.title }}</span>
         </a>
 
+        <search class="site-search" aria-label="Documentation search">
+          <label for="docs-search-input">Search documentation</label>
+          <input
+            id="docs-search-input"
+            type="search"
+            autocomplete="off"
+            placeholder="Search docs"
+            aria-controls="docs-search-results"
+            aria-describedby="docs-search-status">
+          <p id="docs-search-status" class="site-search-status" aria-live="polite"></p>
+          <div id="docs-search-results" class="site-search-results" hidden></div>
+        </search>
+
         <nav class="site-nav">
           {% for item in ordered_pages %}
             <a href="{{ item.url | relative_url }}" {% if item.url == current_url %}aria-current="page"{% endif %}>
@@ -100,6 +113,91 @@
         });
 
         await mermaid.run({ querySelector: ".mermaid" });
+      }
+
+      const searchInput = document.getElementById("docs-search-input");
+      const searchResults = document.getElementById("docs-search-results");
+      const searchStatus = document.getElementById("docs-search-status");
+      let searchIndex = [];
+
+      const escapeHtml = (value) =>
+        value.replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[character]);
+
+      const resultSnippet = (content, query) => {
+        const normalizedContent = content.toLowerCase();
+        const normalizedQuery = query.toLowerCase();
+        const matchIndex = normalizedContent.indexOf(normalizedQuery);
+        const start = Math.max(matchIndex - 70, 0);
+        const end = Math.min(start + 170, content.length);
+        const snippet = content.slice(start, end).trim();
+        return `${start > 0 ? "... " : ""}${escapeHtml(snippet)}${end < content.length ? " ..." : ""}`;
+      };
+
+      const scoreResult = (page, terms) => {
+        const title = page.title.toLowerCase();
+        const content = page.content.toLowerCase();
+        return terms.reduce((score, term) => {
+          if (title.includes(term)) return score + 8;
+          if (content.includes(term)) return score + 1;
+          return score;
+        }, 0);
+      };
+
+      const renderSearchResults = () => {
+        const query = searchInput.value.trim();
+        const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+
+        if (query.length < 2) {
+          searchResults.hidden = true;
+          searchResults.innerHTML = "";
+          searchStatus.textContent = "";
+          return;
+        }
+
+        const matches = searchIndex
+          .map((page) => ({ page, score: scoreResult(page, terms) }))
+          .filter((match) => match.score > 0)
+          .sort((left, right) => right.score - left.score || left.page.title.localeCompare(right.page.title))
+          .slice(0, 8);
+
+        searchResults.hidden = false;
+        searchStatus.textContent = matches.length === 0
+          ? "No documentation pages matched."
+          : `${matches.length} documentation result${matches.length === 1 ? "" : "s"}.`;
+
+        searchResults.innerHTML = matches.length === 0
+          ? '<p class="site-search-empty">No results found.</p>'
+          : matches.map(({ page }) => `
+              <a href="${page.url}">
+                <strong>${escapeHtml(page.title)}</strong>
+                <span>${resultSnippet(page.content, query)}</span>
+              </a>
+            `).join("");
+      };
+
+      if (searchInput && searchResults && searchStatus) {
+        fetch("{{ '/search.json' | relative_url }}")
+          .then((response) => response.json())
+          .then((pages) => {
+            searchIndex = pages;
+          })
+          .catch(() => {
+            searchStatus.textContent = "Search index unavailable.";
+          });
+
+        searchInput.addEventListener("input", renderSearchResults);
+        searchInput.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            searchInput.value = "";
+            renderSearchResults();
+          }
+        });
       }
     </script>
   </body>
