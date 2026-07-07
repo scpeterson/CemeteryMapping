@@ -222,6 +222,46 @@ async function sectionAlternateNamesSelect(client) {
   return result.rows[0]?.exists ? "alternate_names" : "'{}'::text[] AS alternate_names";
 }
 
+async function tableColumnExists(client, tableName, columnName) {
+  const result = await client.query(
+    `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = $1
+          AND column_name = $2
+      ) AS exists
+    `,
+    [tableName, columnName],
+  );
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function recordReviewColumnsSql(client, tableAlias) {
+  const tableName = tableAlias === "headstones" ? "headstones" : "burials";
+  if (!(await tableColumnExists(client, tableName, "data_confidence"))) {
+    return `
+      'unknown'::text AS data_confidence,
+      'unreviewed'::text AS review_status,
+      NULL::text AS review_notes,
+      false AS source_conflict,
+      NULL::text AS reviewed_by,
+      NULL::timestamptz AS reviewed_at
+    `;
+  }
+
+  return `
+    ${tableAlias}.data_confidence,
+    ${tableAlias}.review_status,
+    ${tableAlias}.review_notes,
+    ${tableAlias}.source_conflict,
+    ${tableAlias}.reviewed_by,
+    ${tableAlias}.reviewed_at
+  `;
+}
+
 async function selectSectionsForCemeteries(client, cemeteryIds) {
   const alternateNamesSelect = await sectionAlternateNamesSelect(client);
   const result = await client.query(
@@ -462,6 +502,7 @@ async function selectBurialMutationState(client, id) {
   const intermentTypeSql = await burialIntermentTypeSql(client);
   const recordStatusSql = await burialRecordStatusSql(client);
   const recordedDateTextSql = await burialRecordedDateTextSql(client);
+  const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
       SELECT
@@ -481,6 +522,7 @@ async function selectBurialMutationState(client, id) {
         burials.funeral_home,
         ${militaryServiceSql.select},
         burials.notes,
+        ${reviewColumnsSql},
         burials.updated_at
       FROM burials
       ${intermentTypeSql.join}
@@ -504,9 +546,10 @@ async function selectBurialById(client, id) {
   const intermentTypeSql = await burialIntermentTypeSql(client);
   const recordStatusSql = await burialRecordStatusSql(client);
   const recordedDateTextSql = await burialRecordedDateTextSql(client);
+  const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
       FROM burials
       ${intermentTypeSql.join}
       ${recordStatusSql.join}
@@ -593,9 +636,10 @@ async function selectBurialsForCemeteries(client, cemeteryIds) {
   const intermentTypeSql = await burialIntermentTypeSql(client);
   const recordStatusSql = await burialRecordStatusSql(client);
   const recordedDateTextSql = await burialRecordedDateTextSql(client);
+  const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
       FROM burials
       ${intermentTypeSql.join}
       ${recordStatusSql.join}
@@ -855,9 +899,10 @@ async function selectBurialsForGrave(client, graveUuid) {
   const intermentTypeSql = await burialIntermentTypeSql(client);
   const recordStatusSql = await burialRecordStatusSql(client);
   const recordedDateTextSql = await burialRecordedDateTextSql(client);
+  const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
       FROM burials
       ${intermentTypeSql.join}
       ${recordStatusSql.join}
@@ -1301,7 +1346,26 @@ const headstoneDetailGroupBySql = `
   headstones.last_inspected_at
 `;
 
+async function headstoneDetailReviewSql(client) {
+  const selectSql = await recordReviewColumnsSql(client, "headstones");
+  const hasReviewColumns = await tableColumnExists(client, "headstones", "data_confidence");
+  return {
+    select: selectSql,
+    groupBy: hasReviewColumns
+      ? `
+          headstones.data_confidence,
+          headstones.review_status,
+          headstones.review_notes,
+          headstones.source_conflict,
+          headstones.reviewed_by,
+          headstones.reviewed_at
+        `
+      : "",
+  };
+}
+
 async function selectHeadstonesForGrave(client, graveUuid) {
+  const reviewSql = await headstoneDetailReviewSql(client);
   const result = await client.query(
     `
       WITH selected_headstones AS (
@@ -1322,6 +1386,7 @@ async function selectHeadstonesForGrave(client, graveUuid) {
       )
       SELECT
         ${headstoneDetailColumnsSql},
+        ${reviewSql.select},
         headstones.selected_relationship_type AS relationship_type,
         headstones.selected_relationship_notes AS relationship_notes,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
@@ -1336,6 +1401,7 @@ async function selectHeadstonesForGrave(client, graveUuid) {
       ${headstoneMediaJoinSql}
       GROUP BY
         ${headstoneDetailGroupBySql},
+        ${reviewSql.groupBy ? `${reviewSql.groupBy},` : ""}
         headstones.selected_relationship_type,
         headstones.selected_relationship_notes,
         headstone_evidence.evidence,
@@ -1349,6 +1415,7 @@ async function selectHeadstonesForGrave(client, graveUuid) {
 }
 
 async function selectHeadstoneById(client, id) {
+  const reviewSql = await headstoneDetailReviewSql(client);
   const result = await client.query(
     `
       WITH selected_headstones AS (
@@ -1359,6 +1426,7 @@ async function selectHeadstoneById(client, id) {
       )
       SELECT
         ${headstoneDetailColumnsSql},
+        ${reviewSql.select},
         COALESCE(headstone_relationship.relationship_type, 'primary') AS relationship_type,
         headstone_relationship.notes AS relationship_notes,
         COALESCE(associated_gravesites.gravesite_ids, ARRAY[]::text[]) AS associated_gravesite_ids,
@@ -1409,6 +1477,7 @@ async function selectHeadstoneById(client, id) {
       ${headstoneMediaJoinSql}
       GROUP BY
         ${headstoneDetailGroupBySql},
+        ${reviewSql.groupBy ? `${reviewSql.groupBy},` : ""}
         headstone_relationship.relationship_type,
         headstone_relationship.notes,
         associated_gravesites.gravesite_ids,
@@ -2482,6 +2551,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     const recordedDateTextSql = await burialRecordedDateTextSql(client, firstRecordedDateTextParameter);
     const birthDate = splitRecordedDate(burial.birthDate);
     const deathDate = splitRecordedDate(burial.deathDate);
+    const reviewedBy = actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? "";
     const hasMilitaryBranchLookup = hasMilitaryServiceColumns && (await burialMilitaryBranchTypeColumnExists(client));
     const hasMilitaryWarServiceLookup = hasMilitaryServiceColumns && (await burialMilitaryWarServiceTypeColumnExists(client));
     const hasMilitaryRankLookup = hasMilitaryServiceColumns && (await burialMilitaryRankTypeColumnExists(client));
@@ -2569,6 +2639,30 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     if (hasRecordStatusLookup) updateValues.push(effectiveRecordStatusCode);
     if (recordedDateTextSql.hasColumns) updateValues.push(birthDate.text, deathDate.text);
     const recordedDateAssignments = recordedDateTextSql.hasColumns ? `,\n            ${recordedDateTextSql.set}` : "";
+    const hasRecordReviewColumns = await tableColumnExists(client, "burials", "data_confidence");
+    const reviewReturnSql = await recordReviewColumnsSql(client, "burials");
+    let reviewAssignments = "";
+    if (hasRecordReviewColumns) {
+      const reviewParameterStart = updateValues.length + 1;
+      updateValues.push(
+        burial.dataConfidence || "unknown",
+        burial.reviewStatus || "unreviewed",
+        burial.reviewNotes || "",
+        Boolean(burial.sourceConflict),
+        reviewedBy,
+      );
+      reviewAssignments = `,
+            data_confidence = $${reviewParameterStart},
+            review_status = $${reviewParameterStart + 1},
+            review_notes = NULLIF($${reviewParameterStart + 2}, ''),
+            source_conflict = $${reviewParameterStart + 3}::boolean,
+            reviewed_by = CASE WHEN $${reviewParameterStart + 1} = 'reviewed' THEN NULLIF($${reviewParameterStart + 4}, '') ELSE reviewed_by END,
+            reviewed_at = CASE
+              WHEN $${reviewParameterStart + 1} = 'reviewed' AND burials.review_status <> 'reviewed' THEN now()
+              WHEN $${reviewParameterStart + 1} = 'reviewed' THEN COALESCE(reviewed_at, now())
+              ELSE reviewed_at
+            END`;
+    }
     const updateResult = await client.query(
       `
         UPDATE burials
@@ -2582,7 +2676,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
             ${intermentTypeSetSql},
             funeral_home = $10,
             veteran = $11,
-            ${militaryServiceSetSql}${recordedDateAssignments}
+            ${militaryServiceSetSql}${recordedDateAssignments}${reviewAssignments}
         WHERE id = $1
         RETURNING
           id::text,
@@ -2601,6 +2695,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           veteran,
           ${militaryServiceReturnSql},
           notes,
+          ${reviewReturnSql},
           updated_at
       `,
       updateValues,
@@ -2642,6 +2737,47 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       return undefined;
     }
 
+    const reviewedBy = actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? "";
+    const hasRecordReviewColumns = await tableColumnExists(client, "headstones", "data_confidence");
+    const reviewReturnSql = await recordReviewColumnsSql(client, "headstones");
+    const reviewAssignments = hasRecordReviewColumns
+      ? `,
+            data_confidence = $15,
+            review_status = $16,
+            review_notes = NULLIF($17, ''),
+            source_conflict = $18::boolean,
+            reviewed_by = CASE WHEN $16 = 'reviewed' THEN NULLIF($19, '') ELSE reviewed_by END,
+            reviewed_at = CASE
+              WHEN $16 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
+              WHEN $16 = 'reviewed' THEN COALESCE(reviewed_at, now())
+              ELSE reviewed_at
+            END`
+      : "";
+    const updateValues = [
+      id,
+      headstone.markerTypeId,
+      headstone.materialId,
+      headstone.conditionId,
+      headstone.vaseTypeId || "",
+      headstone.vaseMaterialId || "",
+      headstone.vasePlacementId || "",
+      headstone.vaseNotes || null,
+      headstone.conditionNotes || null,
+      headstone.inscription || null,
+      headstone.designNotes || null,
+      headstone.backDescription || null,
+      headstone.photoUrl || null,
+      headstone.lastInspectedAt || null,
+    ];
+    if (hasRecordReviewColumns) {
+      updateValues.push(
+        headstone.dataConfidence || "unknown",
+        headstone.reviewStatus || "unreviewed",
+        headstone.reviewNotes || "",
+        Boolean(headstone.sourceConflict),
+        reviewedBy,
+      );
+    }
     const updateResult = await client.query(
       `
         UPDATE headstones
@@ -2657,7 +2793,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
             design_notes = $11,
             back_description = $12,
             photo_url = $13,
-            last_inspected_at = $14::date
+            last_inspected_at = $14::date${reviewAssignments}
         WHERE id = $1
         RETURNING
           id::text,
@@ -2681,24 +2817,10 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           back_description,
           photo_url,
           last_inspected_at,
+          ${reviewReturnSql},
           updated_at
       `,
-      [
-        id,
-        headstone.markerTypeId,
-        headstone.materialId,
-        headstone.conditionId,
-        headstone.vaseTypeId || "",
-        headstone.vaseMaterialId || "",
-        headstone.vasePlacementId || "",
-        headstone.vaseNotes || null,
-        headstone.conditionNotes || null,
-        headstone.inscription || null,
-        headstone.designNotes || null,
-        headstone.backDescription || null,
-        headstone.photoUrl || null,
-        headstone.lastInspectedAt || null,
-      ],
+      updateValues,
     );
     const updatedState = updateResult.rows[0];
     const auditEventId = await auditEventIdForMutation(client, {

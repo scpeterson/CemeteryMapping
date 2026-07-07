@@ -241,6 +241,10 @@ function validateHeadstonePayload(body) {
     backDescription: optionalText(body?.backDescription, "Back description", 20_000),
     photoUrl: optionalText(body?.photoUrl, "Photo URL", 300),
     lastInspectedAt,
+    dataConfidence: validateDataConfidence(body?.dataConfidence),
+    reviewStatus: validateReviewStatus(body?.reviewStatus),
+    reviewNotes: optionalText(body?.reviewNotes, "Review notes", 4000) ?? "",
+    sourceConflict: optionalBoolean(body?.sourceConflict, "Source conflict"),
     reason: validateMutationReason(body?.reason),
   };
 }
@@ -386,6 +390,18 @@ function optionalBoolean(value, label) {
   return value;
 }
 
+function validateDataConfidence(value) {
+  const confidence = optionalText(value, "Data confidence", 30) || "unknown";
+  if (!["unknown", "low", "medium", "high"].includes(confidence)) throw new BadRequestError("Data confidence is invalid.");
+  return confidence;
+}
+
+function validateReviewStatus(value) {
+  const status = optionalText(value, "Review status", 30) || "unreviewed";
+  if (!["unreviewed", "needs_review", "reviewed", "conflict"].includes(status)) throw new BadRequestError("Review status is invalid.");
+  return status;
+}
+
 export function validateBurialPayload(body) {
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "casket";
   if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");
@@ -409,6 +425,10 @@ export function validateBurialPayload(body) {
     militaryRankCode: optionalText(body?.militaryRankCode, "Military rank", 50) ?? "",
     militaryWarServiceCode: optionalText(body?.militaryWarServiceCode, "War service", 50) ?? "",
     notes: optionalText(body?.notes, "Burial notes", 4000) ?? "",
+    dataConfidence: validateDataConfidence(body?.dataConfidence),
+    reviewStatus: validateReviewStatus(body?.reviewStatus),
+    reviewNotes: optionalText(body?.reviewNotes, "Review notes", 4000) ?? "",
+    sourceConflict: optionalBoolean(body?.sourceConflict, "Source conflict"),
     reason: validateMutationReason(body?.reason),
   };
 }

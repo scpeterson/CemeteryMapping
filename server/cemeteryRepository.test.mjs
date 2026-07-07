@@ -846,6 +846,7 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
           queries.push({ sql, values });
           if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
           if (sql.includes("SELECT set_config")) return { rows: [] };
+          if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
           if (sql.includes("FOR UPDATE")) return { rows: [headstoneRow] };
           if (sql.includes("UPDATE headstones")) return { rows: [headstoneRow] };
           if (sql.includes("FROM audit_events") && sql.includes("transaction_id")) return { rows: [] };
@@ -922,6 +923,7 @@ test("getHeadstone returns standalone marker detail without a gravesite", async 
       return {
         async query(sql, values = []) {
           queries.push({ sql, values });
+          if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
           if (sql.includes("FROM headstones") && sql.includes("WHERE headstones.id = $1")) return { rows: [headstoneRow] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
           throw new Error(`Unexpected query: ${sql}`);
@@ -939,7 +941,8 @@ test("getHeadstone returns standalone marker detail without a gravesite", async 
   assert.equal(headstone?.inscription, "F.B.");
   assert.equal(headstone?.markerType.code, "other");
   assert.deepEqual(headstone?.associatedGravesiteIds, ["TLC-GPS-0173"]);
-  assert.deepEqual(queries[0]?.values, ["44444444-4444-4444-8444-444444444444"]);
+  const detailQuery = queries.find((query) => query.sql.includes("FROM headstones") && query.sql.includes("WHERE headstones.id = $1"));
+  assert.deepEqual(detailQuery?.values, ["44444444-4444-4444-8444-444444444444"]);
 });
 
 test("updateGraveSpace updates editable gravesite fields with cemetery scope", async () => {
@@ -1108,6 +1111,11 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "interred",
     "1925-10-04",
     "Dec 16, 1965",
+    "unknown",
+    "unreviewed",
+    "",
+    false,
+    "",
   ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");

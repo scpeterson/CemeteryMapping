@@ -25,8 +25,40 @@ function toMetric(row) {
   };
 }
 
+async function recordReviewColumnsExist(pool) {
+  const result = await pool.query(`
+    SELECT
+      EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'burials'
+          AND column_name = 'data_confidence'
+      ) AS burial_columns_exist,
+      EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'headstones'
+          AND column_name = 'data_confidence'
+      ) AS headstone_columns_exist
+  `);
+
+  return {
+    burials: Boolean(result.rows[0]?.burial_columns_exist),
+    headstones: Boolean(result.rows[0]?.headstone_columns_exist),
+  };
+}
+
 export async function listDataQualityDashboard(pool, options = {}) {
   const cemeteryIds = cemeteryScopeValues(options.cemeteryIds);
+  const reviewColumns = await recordReviewColumnsExist(pool);
+  const burialReviewCondition = reviewColumns.burials
+    ? "burial.review_status IN ('needs_review', 'conflict') OR burial.source_conflict OR burial.data_confidence = 'low'"
+    : "false";
+  const markerReviewCondition = reviewColumns.headstones
+    ? "headstone.review_status IN ('needs_review', 'conflict') OR headstone.source_conflict OR headstone.data_confidence = 'low'"
+    : "false";
   const result = await pool.query(
     `
       WITH scoped_cemeteries AS (
@@ -238,6 +270,30 @@ export async function listDataQualityDashboard(pool, options = {}) {
             OR burial.military_rank_type_id IS NULL
             OR burial.military_war_service_type_id IS NULL
           )
+
+        UNION ALL
+
+        SELECT
+          'burials_review_needed' AS id,
+          'Burials needing data review' AS label,
+          'Burial records flagged as needing review, having conflicting source evidence, or carrying low confidence.' AS description,
+          count(*)::int AS count,
+          'high' AS severity,
+          'Burials' AS category
+        FROM scoped_burials burial
+        WHERE ${burialReviewCondition}
+
+        UNION ALL
+
+        SELECT
+          'markers_review_needed' AS id,
+          'Markers needing data review' AS label,
+          'Marker records flagged as needing review, having conflicting source evidence, or carrying low confidence.' AS description,
+          count(*)::int AS count,
+          'high' AS severity,
+          'Markers' AS category
+        FROM scoped_headstones headstone
+        WHERE ${markerReviewCondition}
 
         UNION ALL
 
