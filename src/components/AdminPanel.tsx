@@ -400,56 +400,8 @@ const observationStatusLabels: Record<NorthHillsOcrObservation["status"], string
   reviewed: "Reviewed",
   rejected: "Rejected",
 };
-type NorthHillsProcessingSummary = {
-  isProcessed: boolean;
-  pendingCount: number;
-  totalCount: number;
-  label: string;
-  detail: string;
-};
 const hasNorthHillsEvidenceStatus = (evidence: { status: NorthHillsOcrEvidenceStatus }[], status: NorthHillsOcrEvidenceStatus) =>
   evidence.some((item) => item.status === status);
-const northHillsProcessingSummary = (entry: NorthHillsOcrReviewEntry): NorthHillsProcessingSummary => {
-  const pendingSourceFacts = entry.sourceFacts.filter((fact) => fact.status === "staged").length;
-  const pendingObservations = entry.observations.filter((observation) => observation.status === "staged").length;
-  const pendingGravesites = entry.candidateMatches.filter((match) => match.gravesiteEvidence.length === 0).length;
-  const headstoneCandidates = entry.candidateMatches.flatMap((match) => match.headstoneCandidates);
-  const pendingHeadstones = headstoneCandidates.filter((headstone) => headstone.evidence.length === 0).length;
-  const totalCount = entry.sourceFacts.length + entry.observations.length + entry.candidateMatches.length + headstoneCandidates.length;
-  const pendingCount = pendingSourceFacts + pendingObservations + pendingGravesites + pendingHeadstones;
-  if (!totalCount) {
-    return {
-      isProcessed: false,
-      pendingCount: 0,
-      totalCount: 0,
-      label: "No review items",
-      detail: "No candidate matches, source facts, or observations are available for this reading yet.",
-    };
-  }
-  if (pendingCount === 0) {
-    return {
-      isProcessed: true,
-      pendingCount,
-      totalCount,
-      label: "Processed",
-      detail: "All visible matches, source facts, and observations have been linked, rejected, reviewed, promoted, or flagged.",
-    };
-  }
-  return {
-    isProcessed: false,
-    pendingCount,
-    totalCount,
-    label: `${pendingCount} pending`,
-    detail: [
-      pendingGravesites ? `${pendingGravesites} gravesite match${pendingGravesites === 1 ? "" : "es"}` : "",
-      pendingHeadstones ? `${pendingHeadstones} headstone match${pendingHeadstones === 1 ? "" : "es"}` : "",
-      pendingSourceFacts ? `${pendingSourceFacts} source fact${pendingSourceFacts === 1 ? "" : "s"}` : "",
-      pendingObservations ? `${pendingObservations} observation${pendingObservations === 1 ? "" : "s"}` : "",
-    ]
-      .filter(Boolean)
-      .join(", "),
-  };
-};
 const markerScopeOptions = ["", "single", "couple", "monolith", "unknown"];
 const entryStatusOptions = ["staged", "reviewed", "promoted", "rejected"];
 const sourcePersonSourceLabels: Record<SourcePersonRecordSourceCode, string> = {
@@ -4038,7 +3990,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
             <div className="deed-entry-list" role="table" aria-label="Staged North Hills readings">
               {northHillsOcrReview.entries.length === 0 && !isLoadingNorthHillsReview ? <p className="record-editor-empty">No North Hills readings match these filters.</p> : null}
               {northHillsOcrReview.entries.map((entry) => {
-                const processingSummary = northHillsProcessingSummary(entry);
+                const processingSummary = entry.processingSummary;
                 return (
                 <article key={entry.id} className={`deed-entry-row confidence-${entry.parseConfidence}`} title={readingEntryTitle(entry)}>
                   <header>

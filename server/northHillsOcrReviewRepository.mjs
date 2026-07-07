@@ -21,10 +21,76 @@ function displayName(value) {
     .trim();
 }
 
+function mergeEvidenceLinks(left = [], right = []) {
+  const linksByKey = new Map();
+  for (const link of [...left, ...right]) {
+    const key = link?.id ? `id:${link.id}` : `${link?.status ?? ""}:${link?.reviewedAt ?? ""}:${link?.notes ?? ""}`;
+    if (key) linksByKey.set(key, link);
+  }
+  return [...linksByKey.values()];
+}
+
+function dedupeHeadstoneCandidates(candidates = []) {
+  const candidatesById = new Map();
+  for (const candidate of Array.isArray(candidates) ? candidates : []) {
+    if (!candidate?.id) continue;
+    const existing = candidatesById.get(candidate.id);
+    if (existing) {
+      candidatesById.set(candidate.id, {
+        ...existing,
+        evidence: mergeEvidenceLinks(existing.evidence, candidate.evidence),
+      });
+    } else {
+      candidatesById.set(candidate.id, {
+        ...candidate,
+        evidence: Array.isArray(candidate.evidence) ? candidate.evidence : [],
+      });
+    }
+  }
+  return [...candidatesById.values()].sort((left, right) => String(left.headstoneId ?? "").localeCompare(String(right.headstoneId ?? "")) || String(left.id).localeCompare(String(right.id)));
+}
+
 function toCandidateMatch(candidate) {
   return {
     ...candidate,
     fullName: displayName(candidate.fullName),
+    gravesiteEvidence: Array.isArray(candidate.gravesiteEvidence) ? candidate.gravesiteEvidence : [],
+    headstoneCandidates: dedupeHeadstoneCandidates(candidate.headstoneCandidates),
+  };
+}
+
+function buildProcessingSummary({ candidateMatches, sourceFacts, observations }) {
+  const pendingSourceFacts = sourceFacts.filter((fact) => fact.status === "staged").length;
+  const pendingObservations = observations.filter((observation) => observation.status === "staged").length;
+  const pendingGravesites = candidateMatches.filter((match) => match.gravesiteEvidence.length === 0).length;
+  const headstoneCandidates = candidateMatches.flatMap((match) => match.headstoneCandidates);
+  const pendingHeadstones = headstoneCandidates.filter((headstone) => headstone.evidence.length === 0).length;
+  const totalCount = sourceFacts.length + observations.length + candidateMatches.length + headstoneCandidates.length;
+  const pendingCount = pendingSourceFacts + pendingObservations + pendingGravesites + pendingHeadstones;
+  if (!totalCount) {
+    return {
+      isProcessed: false,
+      pendingCount: 0,
+      totalCount: 0,
+      label: "No review items",
+      detail: "No candidate matches, source facts, or observations are available for this reading yet.",
+    };
+  }
+  if (pendingCount === 0) {
+    return {
+      isProcessed: true,
+      pendingCount,
+      totalCount,
+      label: "Processed",
+      detail: "All matches, source facts, and observations returned by the review service have been linked, rejected, reviewed, promoted, or flagged.",
+    };
+  }
+  return {
+    isProcessed: false,
+    pendingCount,
+    totalCount,
+    label: `${pendingCount} pending`,
+    detail: `${pendingCount} of ${totalCount} review item${totalCount === 1 ? "" : "s"} still need a link, rejection, review, promotion, or field-check decision.`,
   };
 }
 
@@ -58,6 +124,9 @@ function toSummary(row) {
 }
 
 function toEntry(row) {
+  const candidateMatches = (row.candidate_matches ?? []).map(toCandidateMatch);
+  const sourceFacts = row.source_facts ?? [];
+  const observations = row.observations ?? [];
   return {
     id: row.id,
     batchId: row.batch_id,
@@ -81,9 +150,10 @@ function toEntry(row) {
     parseNotes: row.parse_notes ?? [],
     status: row.status,
     candidateMatchCount: Number(row.candidate_match_count ?? 0),
-    candidateMatches: (row.candidate_matches ?? []).map(toCandidateMatch),
-    sourceFacts: row.source_facts ?? [],
-    observations: row.observations ?? [],
+    candidateMatches,
+    sourceFacts,
+    observations,
+    processingSummary: buildProcessingSummary({ candidateMatches, sourceFacts, observations }),
   };
 }
 
@@ -448,13 +518,22 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
               )
               ORDER BY candidate_headstone.headstone_id, candidate_headstone.id
             ) AS candidates
-            FROM headstones candidate_headstone
-            LEFT JOIN headstone_gravesites candidate_headstone_grave
-              ON candidate_headstone_grave.headstone_uuid = candidate_headstone.id
-             AND candidate_headstone_grave.deleted_at IS NULL
-            LEFT JOIN headstone_burials candidate_headstone_burial
-              ON candidate_headstone_burial.headstone_uuid = candidate_headstone.id
-             AND candidate_headstone_burial.deleted_at IS NULL
+            FROM (
+              SELECT DISTINCT candidate_headstone.id, candidate_headstone.headstone_id
+              FROM headstones candidate_headstone
+              LEFT JOIN headstone_gravesites candidate_headstone_grave
+                ON candidate_headstone_grave.headstone_uuid = candidate_headstone.id
+               AND candidate_headstone_grave.deleted_at IS NULL
+              LEFT JOIN headstone_burials candidate_headstone_burial
+                ON candidate_headstone_burial.headstone_uuid = candidate_headstone.id
+               AND candidate_headstone_burial.deleted_at IS NULL
+              WHERE candidate_headstone.deleted_at IS NULL
+                AND (
+                  candidate_headstone.gravesite_uuid = gravesite.id
+                  OR candidate_headstone_grave.gravesite_uuid = gravesite.id
+                  OR candidate_headstone_burial.burial_uuid = burial.id
+                )
+            ) candidate_headstone
             LEFT JOIN LATERAL (
               SELECT jsonb_agg(
                 jsonb_build_object(
@@ -471,12 +550,6 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
               WHERE headstone_link.entry_id = entry.id
                 AND headstone_link.headstone_uuid = candidate_headstone.id
             ) headstone_evidence ON true
-            WHERE candidate_headstone.deleted_at IS NULL
-              AND (
-                candidate_headstone.gravesite_uuid = gravesite.id
-                OR candidate_headstone_grave.gravesite_uuid = gravesite.id
-                OR candidate_headstone_burial.burial_uuid = burial.id
-              )
           ) headstone_candidates ON true
           WHERE gravesite.cemetery_id = entry.cemetery_id
             AND burial.deleted_at IS NULL
