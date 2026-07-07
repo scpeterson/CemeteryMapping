@@ -124,7 +124,7 @@ Every real-data import or source change should update this file and the relevant
 | Source path used during development | `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/FedEx Scan 2026-05-29_10-13-35.pdf` |
 | Source coverage | Trinity German Evangelical Lutheran Church narrative and cemetery readings, printed pages 180-236 |
 | Application import command | `APP_ENV=<env> npm run db:import:north-hills-ocr -- "/path/to/FedEx Scan 2026-05-29_10-13-35.pdf"` |
-| Staging tables | `north_hills_ocr_import_batches`, `north_hills_ocr_entries` |
+| Staging tables | `north_hills_ocr_import_batches`, `north_hills_ocr_entries`; source-only church/funeral records can also be preserved in `source_person_records` |
 | Evidence link tables | `north_hills_ocr_entry_gravesite_links`, `north_hills_ocr_entry_headstone_links` |
 | Review UI | Admin -> Readings; admins can link, reject, flag candidate gravesite/headstone matches, select multiple readings, mark selected readings reviewed, or send selected readings to Admin -> Bulk for a shared source note |
 | Data owner | North Hills Genealogists |
@@ -134,6 +134,8 @@ Every real-data import or source change should update this file and the relevant
 | Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
 
 NHG text may also mention physical relationships such as "See obelisk," common bases, foot markers, plot markers, or gap observations. Reviewed marker-to-marker references can be recorded as marker relationships in the marker detail panel. Plot marker notes should wait until a plot marker is represented as an actual marker record with a location; gap notes should remain source observations rather than operational marker relationships.
+
+NHG pages 233-236 include church records where NHG found no matching tombstones. These people should be reviewed in `Admin -> Source People` and stored as source-only person records until later evidence supports linking them to a real burial, gravesite, or marker.
 
 ## Demo Seed Data
 
