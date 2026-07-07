@@ -126,7 +126,7 @@ Every real-data import or source change should update this file and the relevant
 | Application import command | `APP_ENV=<env> npm run db:import:north-hills-ocr -- "/path/to/FedEx Scan 2026-05-29_10-13-35.pdf"` |
 | Staging tables | `north_hills_ocr_import_batches`, `north_hills_ocr_entries` |
 | Evidence link tables | `north_hills_ocr_entry_gravesite_links`, `north_hills_ocr_entry_headstone_links` |
-| Review UI | Admin -> Readings; admins can link, reject, or flag candidate gravesite/headstone matches |
+| Review UI | Admin -> Readings; admins can link, reject, flag candidate gravesite/headstone matches, select multiple readings, mark selected readings reviewed, or send selected readings to Admin -> Bulk for a shared source note |
 | Data owner | North Hills Genealogists |
 | Date received | 2026-05-29 |
 | Publication context | Published in 1997, Library of Congress Catalog Card #97-68576. Deaths that occurred close to or after publication may not appear in the NHG document, so absence from NHG should not be treated as strong negative evidence for those later burials. |
