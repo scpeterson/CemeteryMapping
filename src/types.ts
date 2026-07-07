@@ -3,6 +3,8 @@ export type AppRoleName = "reader" | "power-user" | "cemetery-admin" | "admin";
 export type AreaGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 export type GeometryType = "evidence" | "operational" | "schematic";
 export type GeometryConfidence = "gps" | "surveyed" | "reviewed" | "estimated" | "draft" | "unknown";
+export type DataConfidence = "unknown" | "low" | "medium" | "high";
+export type DataReviewStatus = "unreviewed" | "needs_review" | "reviewed" | "conflict";
 
 export type AppVersion = {
   version: string;
@@ -110,6 +112,12 @@ export type Burial = {
   militaryWarServiceCode?: string;
   militaryWars?: string;
   recordNotes?: string;
+  dataConfidence?: DataConfidence;
+  reviewStatus?: DataReviewStatus;
+  reviewNotes?: string;
+  sourceConflict?: boolean;
+  reviewedBy?: string;
+  reviewedAt?: string;
   notes?: string;
   auditEventId?: string;
 };
@@ -165,6 +173,12 @@ export type Headstone = {
   backDescription: string;
   photoUrl: string;
   lastInspectedAt?: string;
+  dataConfidence?: DataConfidence;
+  reviewStatus?: DataReviewStatus;
+  reviewNotes: string;
+  sourceConflict: boolean;
+  reviewedBy?: string;
+  reviewedAt?: string;
   relationshipType: string;
   relationshipNotes: string;
   associatedGravesiteIds: string[];
@@ -319,6 +333,10 @@ export type SaveHeadstoneInput = {
   backDescription: string;
   photoUrl: string;
   lastInspectedAt: string;
+  dataConfidence: DataConfidence;
+  reviewStatus: DataReviewStatus;
+  reviewNotes: string;
+  sourceConflict: boolean;
   reason?: string;
 };
 
@@ -410,6 +428,10 @@ export type SaveBurialInput = {
   militaryRankCode: string;
   militaryWarServiceCode: string;
   notes: string;
+  dataConfidence: DataConfidence;
+  reviewStatus: DataReviewStatus;
+  reviewNotes: string;
+  sourceConflict: boolean;
   reason?: string;
 };
 

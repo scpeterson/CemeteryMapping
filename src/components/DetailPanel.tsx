@@ -351,6 +351,10 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     militaryRankCode: burial.militaryRankCode ?? "",
     militaryWarServiceCode: burial.militaryWarServiceCode ?? "",
     notes: burial.recordNotes ?? "",
+    dataConfidence: burial.dataConfidence ?? "unknown",
+    reviewStatus: burial.reviewStatus ?? "unreviewed",
+    reviewNotes: burial.reviewNotes ?? "",
+    sourceConflict: burial.sourceConflict ?? false,
     reason: "Burial detail update",
   };
 }
@@ -377,6 +381,52 @@ function burialRecordStatusOptions(lookups: HeadstoneLookups) {
   return lookups.burialRecordStatuses?.length
     ? lookups.burialRecordStatuses
     : [{ id: "legacy-interred", code: "interred", label: "Interred" }];
+}
+
+const dataConfidenceOptions = [
+  { value: "unknown", label: "Unknown" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+] as const;
+
+const reviewStatusOptions = [
+  { value: "unreviewed", label: "Unreviewed" },
+  { value: "needs_review", label: "Needs review" },
+  { value: "reviewed", label: "Reviewed" },
+  { value: "conflict", label: "Source conflict" },
+] as const;
+
+function dataConfidenceLabel(value?: string) {
+  return dataConfidenceOptions.find((option) => option.value === value)?.label ?? "Unknown";
+}
+
+function reviewStatusLabel(value?: string) {
+  return reviewStatusOptions.find((option) => option.value === value)?.label ?? "Unreviewed";
+}
+
+function ReviewBadgeGroup({
+  dataConfidence,
+  reviewStatus,
+  sourceConflict,
+  reviewNotes,
+}: {
+  dataConfidence?: string;
+  reviewStatus?: string;
+  sourceConflict?: boolean;
+  reviewNotes?: string;
+}) {
+  const shouldShow = dataConfidence === "low" || dataConfidence === "medium" || reviewStatus === "needs_review" || reviewStatus === "conflict" || sourceConflict || Boolean(reviewNotes);
+  if (!shouldShow) return null;
+
+  return (
+    <div className="record-review-badges" aria-label="Data review status">
+      {dataConfidence && dataConfidence !== "unknown" ? <span className={`record-review-badge confidence-${dataConfidence}`}>{dataConfidenceLabel(dataConfidence)} confidence</span> : null}
+      {reviewStatus && reviewStatus !== "unreviewed" ? <span className={`record-review-badge review-${reviewStatus}`}>{reviewStatusLabel(reviewStatus)}</span> : null}
+      {sourceConflict ? <span className="record-review-badge review-conflict">Source conflict</span> : null}
+      {reviewNotes ? <p>{reviewNotes}</p> : null}
+    </div>
+  );
 }
 
 function BurialRecord({
@@ -541,6 +591,34 @@ function BurialRecord({
           Notes
           <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={4} />
         </label>
+        <label>
+          Data confidence
+          <select value={form.dataConfidence} onChange={(event) => setForm((current) => ({ ...current, dataConfidence: event.target.value as SaveBurialInput["dataConfidence"] }))}>
+            {dataConfidenceOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Review status
+          <select value={form.reviewStatus} onChange={(event) => setForm((current) => ({ ...current, reviewStatus: event.target.value as SaveBurialInput["reviewStatus"] }))}>
+            {reviewStatusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="burial-checkbox-field">
+          <input type="checkbox" checked={form.sourceConflict} onChange={(event) => setForm((current) => ({ ...current, sourceConflict: event.target.checked }))} />
+          Source conflict
+        </label>
+        <label className="burial-wide-field">
+          Review notes
+          <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
+        </label>
         {error ? <p className="detail-message is-error">{error}</p> : null}
         <div className="burial-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
@@ -593,6 +671,7 @@ function BurialRecord({
           {serviceText ? <span>{serviceText}</span> : null}
         </p>
       ) : null}
+      <ReviewBadgeGroup dataConfidence={burial.dataConfidence} reviewStatus={burial.reviewStatus} sourceConflict={burial.sourceConflict} reviewNotes={burial.reviewNotes} />
       {noteItems.length ? (
         <ul className="burial-notes">
           {noteItems.map((note) => (
@@ -983,6 +1062,10 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     backDescription: headstone.backDescription ?? "",
     photoUrl: headstone.photoUrl ?? "",
     lastInspectedAt: headstone.lastInspectedAt ?? "",
+    dataConfidence: headstone.dataConfidence ?? "unknown",
+    reviewStatus: headstone.reviewStatus ?? "unreviewed",
+    reviewNotes: headstone.reviewNotes ?? "",
+    sourceConflict: headstone.sourceConflict ?? false,
     reason: "Headstone detail update",
   };
 }
@@ -1141,6 +1224,34 @@ function HeadstoneRecord({
           Back of stone
           <textarea value={form.backDescription} onChange={(event) => setForm((current) => ({ ...current, backDescription: event.target.value }))} rows={3} />
         </label>
+        <label>
+          Data confidence
+          <select value={form.dataConfidence} onChange={(event) => setForm((current) => ({ ...current, dataConfidence: event.target.value as SaveHeadstoneInput["dataConfidence"] }))}>
+            {dataConfidenceOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Review status
+          <select value={form.reviewStatus} onChange={(event) => setForm((current) => ({ ...current, reviewStatus: event.target.value as SaveHeadstoneInput["reviewStatus"] }))}>
+            {reviewStatusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="headstone-checkbox-field">
+          <input type="checkbox" checked={form.sourceConflict} onChange={(event) => setForm((current) => ({ ...current, sourceConflict: event.target.checked }))} />
+          Source conflict
+        </label>
+        <label className="headstone-wide-field">
+          Review notes
+          <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
+        </label>
         {error ? <p className="detail-message is-error">{error}</p> : null}
         <div className="headstone-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
@@ -1206,6 +1317,7 @@ function HeadstoneRecord({
       </dl>
       {headstone.vaseNotes ? <p className="note-box">Vase: {headstone.vaseNotes}</p> : null}
       {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
+      <ReviewBadgeGroup dataConfidence={headstone.dataConfidence} reviewStatus={headstone.reviewStatus} sourceConflict={headstone.sourceConflict} reviewNotes={headstone.reviewNotes} />
       {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}

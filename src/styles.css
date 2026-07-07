@@ -1104,6 +1104,60 @@ h3 {
   color: #c98200;
 }
 
+.record-review-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.record-review-badges p {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid #c9a44a;
+  border-radius: 6px;
+  background: #fff9e8;
+  color: #59461c;
+  font-size: 0.82rem;
+}
+
+.record-review-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid #cbd6c7;
+  border-radius: 999px;
+  background: #f6f8f4;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.record-review-badge.confidence-low,
+.record-review-badge.review-conflict {
+  border-color: rgba(199, 82, 79, 0.45);
+  background: #fff0ef;
+  color: #8c302d;
+}
+
+.record-review-badge.confidence-medium,
+.record-review-badge.review-needs_review {
+  border-color: rgba(201, 164, 74, 0.55);
+  background: #fff9e8;
+  color: #69501a;
+}
+
+.record-review-badge.confidence-high,
+.record-review-badge.review-reviewed {
+  border-color: rgba(47, 93, 80, 0.35);
+  background: #eef7f1;
+  color: #2f5d50;
+}
+
 .grave-record,
 .headstone-record {
   display: grid;
@@ -1269,6 +1323,21 @@ h3 {
   display: grid;
   gap: 5px;
   text-transform: none;
+}
+
+.headstone-form .headstone-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  min-height: 38px;
+}
+
+.headstone-form .headstone-checkbox-field input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
 }
 
 .grave-form select,
