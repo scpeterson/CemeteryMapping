@@ -400,6 +400,56 @@ const observationStatusLabels: Record<NorthHillsOcrObservation["status"], string
   reviewed: "Reviewed",
   rejected: "Rejected",
 };
+type NorthHillsProcessingSummary = {
+  isProcessed: boolean;
+  pendingCount: number;
+  totalCount: number;
+  label: string;
+  detail: string;
+};
+const hasNorthHillsEvidenceStatus = (evidence: { status: NorthHillsOcrEvidenceStatus }[], status: NorthHillsOcrEvidenceStatus) =>
+  evidence.some((item) => item.status === status);
+const northHillsProcessingSummary = (entry: NorthHillsOcrReviewEntry): NorthHillsProcessingSummary => {
+  const pendingSourceFacts = entry.sourceFacts.filter((fact) => fact.status === "staged").length;
+  const pendingObservations = entry.observations.filter((observation) => observation.status === "staged").length;
+  const pendingGravesites = entry.candidateMatches.filter((match) => match.gravesiteEvidence.length === 0).length;
+  const headstoneCandidates = entry.candidateMatches.flatMap((match) => match.headstoneCandidates);
+  const pendingHeadstones = headstoneCandidates.filter((headstone) => headstone.evidence.length === 0).length;
+  const totalCount = entry.sourceFacts.length + entry.observations.length + entry.candidateMatches.length + headstoneCandidates.length;
+  const pendingCount = pendingSourceFacts + pendingObservations + pendingGravesites + pendingHeadstones;
+  if (!totalCount) {
+    return {
+      isProcessed: false,
+      pendingCount: 0,
+      totalCount: 0,
+      label: "No review items",
+      detail: "No candidate matches, source facts, or observations are available for this reading yet.",
+    };
+  }
+  if (pendingCount === 0) {
+    return {
+      isProcessed: true,
+      pendingCount,
+      totalCount,
+      label: "Processed",
+      detail: "All visible matches, source facts, and observations have been linked, rejected, reviewed, promoted, or flagged.",
+    };
+  }
+  return {
+    isProcessed: false,
+    pendingCount,
+    totalCount,
+    label: `${pendingCount} pending`,
+    detail: [
+      pendingGravesites ? `${pendingGravesites} gravesite match${pendingGravesites === 1 ? "" : "es"}` : "",
+      pendingHeadstones ? `${pendingHeadstones} headstone match${pendingHeadstones === 1 ? "" : "es"}` : "",
+      pendingSourceFacts ? `${pendingSourceFacts} source fact${pendingSourceFacts === 1 ? "" : "s"}` : "",
+      pendingObservations ? `${pendingObservations} observation${pendingObservations === 1 ? "" : "s"}` : "",
+    ]
+      .filter(Boolean)
+      .join(", "),
+  };
+};
 const markerScopeOptions = ["", "single", "couple", "monolith", "unknown"];
 const entryStatusOptions = ["staged", "reviewed", "promoted", "rejected"];
 const sourcePersonSourceLabels: Record<SourcePersonRecordSourceCode, string> = {
@@ -3987,7 +4037,9 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
 
             <div className="deed-entry-list" role="table" aria-label="Staged North Hills readings">
               {northHillsOcrReview.entries.length === 0 && !isLoadingNorthHillsReview ? <p className="record-editor-empty">No North Hills readings match these filters.</p> : null}
-              {northHillsOcrReview.entries.map((entry) => (
+              {northHillsOcrReview.entries.map((entry) => {
+                const processingSummary = northHillsProcessingSummary(entry);
+                return (
                 <article key={entry.id} className={`deed-entry-row confidence-${entry.parseConfidence}`} title={readingEntryTitle(entry)}>
                   <header>
                     {canEditNorthHillsEntries ? (
@@ -4011,6 +4063,10 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                     <span>
                       <strong>{entry.candidateMatchCount} possible match{entry.candidateMatchCount === 1 ? "" : "es"}</strong>
                       <small>{entry.status}</small>
+                    </span>
+                    <span className={`reading-processing-status ${processingSummary.isProcessed ? "processed" : "pending"}`} title={processingSummary.detail}>
+                      <strong>{processingSummary.label}</strong>
+                      <small>{processingSummary.totalCount ? `${processingSummary.totalCount - processingSummary.pendingCount}/${processingSummary.totalCount} handled` : "Nothing to review"}</small>
                     </span>
                     {canEditNorthHillsEntries ? (
                       <span className="reading-entry-header-actions">
@@ -4320,7 +4376,10 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                   {entry.sourceFacts.length ? (
                     <section className="deed-investigation-links" aria-label="Church record source facts">
                       <h4>Church record facts</h4>
-                      {entry.sourceFacts.map((fact) => (
+                      {entry.sourceFacts.map((fact) => {
+                        const factReviewed = fact.status === "reviewed";
+                        const factRejected = fact.status === "rejected";
+                        return (
                         <article key={fact.id} className="reading-match-review">
                           <p>
                             <strong>{fact.sourceCode} {sourceFactTypeLabels[fact.factType]}:</strong> {fact.factValue}
@@ -4338,18 +4397,18 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                                 <button
                                   type="button"
                                   className="secondary-button"
-                                  disabled={Boolean(savingEvidenceKey)}
+                                  disabled={Boolean(savingEvidenceKey) || factReviewed}
                                   onClick={() => void saveNorthHillsSourceFactReview(fact, "reviewed")}
-                                  title="Mark this church record fact as reviewed."
+                                  title={factReviewed ? "This church record fact is already reviewed." : "Mark this church record fact as reviewed."}
                                 >
                                   Mark reviewed
                                 </button>
                                 <button
                                   type="button"
                                   className="secondary-button"
-                                  disabled={Boolean(savingEvidenceKey)}
+                                  disabled={Boolean(savingEvidenceKey) || factRejected}
                                   onClick={() => void saveNorthHillsSourceFactReview(fact, "rejected")}
-                                  title="Reject this church record fact."
+                                  title={factRejected ? "This church record fact is already rejected." : "Reject this church record fact."}
                                 >
                                   Reject fact
                                 </button>
@@ -4361,7 +4420,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                                     key={`${fact.id}:${match.burialId}`}
                                     type="button"
                                     className="secondary-button"
-                                    disabled={Boolean(savingEvidenceKey)}
+                                    disabled={Boolean(savingEvidenceKey) || fact.promotedBurialId === match.burialId}
                                     onClick={() => void promoteNorthHillsDeathDate(fact, match)}
                                     title={`Promote this church record death date to ${match.fullName || match.gravesiteId}.`}
                                   >
@@ -4371,13 +4430,18 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                               : null}
                           </div>
                         </article>
-                      ))}
+                        );
+                      })}
                     </section>
                   ) : null}
                   {entry.candidateMatches.length ? (
                     <section className="deed-investigation-links" aria-label="Possible existing burial matches">
                       <h4>Possible existing matches</h4>
-                      {entry.candidateMatches.map((match) => (
+                      {entry.candidateMatches.map((match) => {
+                        const gravesiteLinked = hasNorthHillsEvidenceStatus(match.gravesiteEvidence, "linked");
+                        const gravesiteRejected = hasNorthHillsEvidenceStatus(match.gravesiteEvidence, "rejected");
+                        const gravesiteNeedsFieldCheck = hasNorthHillsEvidenceStatus(match.gravesiteEvidence, "needs_field_check");
+                        return (
                         <article key={`${entry.id}:${match.burialId}`} className="reading-match-review">
                           <p>
                             <strong>{match.fullName || "Unnamed burial"}:</strong> {match.gravesiteId} · Section {match.sectionId} · score {match.score}
@@ -4392,27 +4456,27 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                             <button
                               type="button"
                               className="secondary-button"
-                              disabled={Boolean(savingEvidenceKey)}
+                              disabled={Boolean(savingEvidenceKey) || gravesiteLinked}
                               onClick={() => void saveNorthHillsEvidence(entry.id, "gravesite", match.gravesiteUuid, "linked", `gravesite ${match.gravesiteId}`)}
-                              title="Confirm this North Hills reading belongs to this gravesite."
+                              title={gravesiteLinked ? "This North Hills reading is already linked to this gravesite." : "Confirm this North Hills reading belongs to this gravesite."}
                             >
                               Link gravesite
                             </button>
                             <button
                               type="button"
                               className="secondary-button"
-                              disabled={Boolean(savingEvidenceKey)}
+                              disabled={Boolean(savingEvidenceKey) || gravesiteRejected}
                               onClick={() => void saveNorthHillsEvidence(entry.id, "gravesite", match.gravesiteUuid, "rejected", `gravesite ${match.gravesiteId}`)}
-                              title="Reject this possible gravesite match."
+                              title={gravesiteRejected ? "This possible gravesite match is already rejected." : "Reject this possible gravesite match."}
                             >
                               Reject match
                             </button>
                             <button
                               type="button"
                               className="secondary-button"
-                              disabled={Boolean(savingEvidenceKey)}
+                              disabled={Boolean(savingEvidenceKey) || gravesiteNeedsFieldCheck}
                               onClick={() => void saveNorthHillsEvidence(entry.id, "gravesite", match.gravesiteUuid, "needs_field_check", `gravesite ${match.gravesiteId}`)}
-                              title="Mark this possible match for field review."
+                              title={gravesiteNeedsFieldCheck ? "This possible gravesite match is already marked for field review." : "Mark this possible match for field review."}
                             >
                               Needs field check
                             </button>
@@ -4430,34 +4494,38 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                           </div>
                           {match.headstoneCandidates.length ? (
                             <div className="reading-headstone-candidates">
-                              {match.headstoneCandidates.map((headstone) => (
+                              {match.headstoneCandidates.map((headstone) => {
+                                const headstoneLinked = hasNorthHillsEvidenceStatus(headstone.evidence, "linked");
+                                const headstoneRejected = hasNorthHillsEvidenceStatus(headstone.evidence, "rejected");
+                                const headstoneNeedsFieldCheck = hasNorthHillsEvidenceStatus(headstone.evidence, "needs_field_check");
+                                return (
                                 <span key={headstone.id}>
                                   <strong>{headstone.headstoneId}</strong>
                                   {headstone.evidence.length ? ` (${headstone.evidence.map((evidence) => evidenceStatusLabels[evidence.status] ?? evidence.status).join(", ")})` : ""}
                                   <button
                                     type="button"
                                     className="secondary-button"
-                                    disabled={Boolean(savingEvidenceKey)}
+                                    disabled={Boolean(savingEvidenceKey) || headstoneLinked}
                                     onClick={() => void saveNorthHillsEvidence(entry.id, "headstone", headstone.id, "linked", `headstone ${headstone.headstoneId}`)}
-                                    title="Confirm this North Hills reading belongs to this headstone."
+                                    title={headstoneLinked ? "This North Hills reading is already linked to this headstone." : "Confirm this North Hills reading belongs to this headstone."}
                                   >
                                     Link headstone
                                   </button>
                                   <button
                                     type="button"
                                     className="secondary-button"
-                                    disabled={Boolean(savingEvidenceKey)}
+                                    disabled={Boolean(savingEvidenceKey) || headstoneRejected}
                                     onClick={() => void saveNorthHillsEvidence(entry.id, "headstone", headstone.id, "rejected", `headstone ${headstone.headstoneId}`)}
-                                    title="Reject this possible headstone match."
+                                    title={headstoneRejected ? "This possible headstone match is already rejected." : "Reject this possible headstone match."}
                                   >
                                     Reject headstone
                                   </button>
                                   <button
                                     type="button"
                                     className="secondary-button"
-                                    disabled={Boolean(savingEvidenceKey)}
+                                    disabled={Boolean(savingEvidenceKey) || headstoneNeedsFieldCheck}
                                     onClick={() => void saveNorthHillsEvidence(entry.id, "headstone", headstone.id, "needs_field_check", `headstone ${headstone.headstoneId}`)}
-                                    title="Mark this possible headstone match for field review."
+                                    title={headstoneNeedsFieldCheck ? "This possible headstone match is already marked for field review." : "Mark this possible headstone match for field review."}
                                   >
                                     Field check
                                   </button>
@@ -4473,15 +4541,18 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                                     </button>
                                   ) : null}
                                 </span>
-                              ))}
+                                );
+                              })}
                             </div>
                           ) : null}
                         </article>
-                      ))}
+                        );
+                      })}
                     </section>
                   ) : null}
                 </article>
-              ))}
+                );
+              })}
             </div>
           </section>
         </>

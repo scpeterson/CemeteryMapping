@@ -3837,6 +3837,38 @@ h3 {
   justify-self: end;
 }
 
+.reading-processing-status {
+  width: max-content;
+  min-width: 108px;
+  padding: 5px 8px;
+  border: 1px solid #d8e1d7;
+  border-radius: 7px;
+  background: #f7faf5;
+}
+
+.reading-processing-status strong,
+.reading-processing-status small {
+  display: block;
+}
+
+.reading-processing-status strong {
+  color: #27342d;
+}
+
+.reading-processing-status small {
+  color: #657267;
+}
+
+.reading-processing-status.processed {
+  border-color: #9fc5aa;
+  background: #edf7ef;
+}
+
+.reading-processing-status.pending {
+  border-color: #e1c98c;
+  background: #fff8e8;
+}
+
 .reading-entry-edit-form {
   display: grid;
   gap: 11px;

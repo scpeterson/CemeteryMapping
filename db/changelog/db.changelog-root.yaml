@@ -653,3 +653,9 @@ databaseChangeLog:
   - include:
       file: changes/219-record-confidence-review-fields.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/220-split-c-0214-nesbitt-bartz-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/221-repair-c-0214-linda-burial-gravesite-id.sql
+      relativeToChangelogFile: true
