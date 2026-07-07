@@ -85,6 +85,19 @@ Use `Admin -> Quality` to find cleanup work that is spread across readings, ceme
 
 The dashboard is read-only. Power users and cemetery admins see cleanup counts scoped to their assigned cemetery. System admins can review all cemeteries or select a cemetery when cemetery filtering is available.
 
+### Bulk Edit Tools
+
+Use `Admin -> Bulk` only when the same correction should apply to an explicit set of records. Bulk actions are audited and require a change reason.
+
+1. Open `Admin -> Bulk`.
+2. Review or replace the change reason before running an action.
+3. For marker cleanup, paste marker public IDs or UUIDs, choose one or more marker fields to change, and run `Update markers`.
+4. For gravesite lot assignment, paste gravesite public IDs or UUIDs, choose the target lot, and run `Assign lot`.
+5. For NHG cleanup, select readings in `Admin -> Readings`, then return to `Admin -> Bulk` to apply a shared note or mark the selected readings reviewed.
+6. Review the result message. Any unmatched identifiers should be checked before assuming the cleanup is complete.
+
+Use bulk tools for repeated, evidence-consistent edits such as setting the same marker material on several selected markers, assigning several known gravesites to the same lot, marking reviewed NHG entries, or applying the same source note to related NHG entries. Use the normal detail panel or Readings editor when records need individual review, different notes, different lookup values, or geometry work.
+
 ### Readings Review
 
 Use `Admin -> Readings` for staged North Hills Genealogists OCR readings.
@@ -93,12 +106,15 @@ Use `Admin -> Readings` for staged North Hills Genealogists OCR readings.
 2. Select the North Hills OCR import batch to review.
 3. Use confidence, status, section, search, and sort controls to narrow the staged readings. Page-order sort is useful when comparing against the printed source.
 4. Open a staged reading and compare raw OCR text, parsed section/row/position, marker details, detected years, and parser notes against possible existing matches.
-5. Use `Link gravesite` when the reading belongs to the candidate gravesite.
-6. Use `Link headstone` when the reading belongs to the candidate physical marker.
-7. Use `Reject match` or `Reject headstone` when the candidate appears incorrect.
-8. Use `Needs field check` or `Field check` when the source and database do not provide enough certainty.
-9. Add optional reviewer notes when prompted.
-10. Open the regular grave-detail panel afterward to confirm linked North Hills evidence appears for the associated gravesite or headstone.
+5. Use the row checkboxes and `Select visible` when several visible readings should be marked reviewed or receive the same source note.
+6. Use `Mark reviewed` from the Readings toolbar for selected readings that are ready to close without individual edits.
+7. Use `Bulk note` to open `Admin -> Bulk` and apply the same source note to selected readings.
+8. Use `Link gravesite` when the reading belongs to the candidate gravesite.
+9. Use `Link headstone` when the reading belongs to the candidate physical marker.
+10. Use `Reject match` or `Reject headstone` when the candidate appears incorrect.
+11. Use `Needs field check` or `Field check` when the source and database do not provide enough certainty.
+12. Add optional reviewer notes when prompted.
+13. Open the regular grave-detail panel afterward to confirm linked North Hills evidence appears for the associated gravesite or headstone.
 
 Readings review is an evidence workflow. It does not change burial names, dates, marker condition, owner/deed data, geometry, or lot/gravesite structure.
 
