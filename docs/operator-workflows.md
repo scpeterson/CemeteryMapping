@@ -118,6 +118,20 @@ Use `Admin -> Readings` for staged North Hills Genealogists OCR readings.
 
 Readings review is an evidence workflow. It does not change burial names, dates, marker condition, owner/deed data, geometry, or lot/gravesite structure.
 
+### Source-Only People Review
+
+Use `Admin -> Source People` for people found in church records, funeral-home notes, family-history notes, or similar source material when no matching tombstone, gravesite, marker, or burial record is known yet.
+
+1. Open `Admin -> Source People`.
+2. Filter by cemetery, source, status, or search text to find records needing review.
+3. Open a source person when the source text, parsed name, dates, age, source label, source location, status, or confidence needs correction.
+4. Preserve uncertain or partial dates in the text fields when the source does not support an exact date.
+5. Use status and confidence to separate unmatched records from candidate or reviewed records.
+6. Use soft delete only for duplicates or entries that should be removed from normal review. Enter a clear delete reason so the audit trail explains why the record was hidden.
+7. Do not create a normal burial, gravesite, or marker until there is enough evidence for an operational cemetery record.
+
+Source-only people are evidence records. They keep source names and dates visible for future research without inventing map geometry or implying that a person is definitely buried in a known gravesite.
+
 ### Deed Evidence Review And Investigations
 
 Use `Admin -> Deed Evidence` to review staged deed registry imports and document deed investigations before any future promotion workflow writes ownership data.
