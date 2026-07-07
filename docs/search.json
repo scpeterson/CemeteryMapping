@@ -1,0 +1,17 @@
+---
+layout: null
+permalink: /search.json
+---
+[
+{% for item in site.data.navigation %}
+  {% assign matched_pages = site.pages | where: "url", item.url %}
+  {% assign indexed_page = matched_pages.first %}
+  {% if indexed_page %}
+  {
+    "title": {{ item.title | jsonify }},
+    "url": {{ item.url | relative_url | jsonify }},
+    "content": {{ indexed_page.content | markdownify | strip_html | normalize_whitespace | jsonify }}
+  }{% unless forloop.last %},{% endunless %}
+  {% endif %}
+{% endfor %}
+]
