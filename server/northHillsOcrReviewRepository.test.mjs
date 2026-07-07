@@ -30,6 +30,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
       }
 
       assert.match(sql, /CASE entry\.parse_confidence/u);
+      assert.match(sql, /SELECT DISTINCT candidate_headstone\.id/u);
       assert.deepEqual(values, ["batch-1", "high", "A", "%burgess%", 50]);
       return {
         rows: [
@@ -57,7 +58,18 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
             status: "staged",
             candidate_match_count: "2",
             candidate_matches: [
-              { burialId: "burial-1", gravesiteId: "TLC-GPS-0009", sectionId: "A", fullName: "George L Burgess", score: 9 },
+              {
+                burialId: "burial-1",
+                gravesiteId: "TLC-GPS-0009",
+                sectionId: "A",
+                fullName: "George L Burgess",
+                score: 9,
+                gravesiteEvidence: [{ id: "gravesite-link-1", status: "linked" }],
+                headstoneCandidates: [
+                  { id: "headstone-1", headstoneId: "TLC-HS-0009", evidence: [{ id: "headstone-link-1", status: "linked" }] },
+                  { id: "headstone-1", headstoneId: "TLC-HS-0009", evidence: [{ id: "headstone-link-1", status: "linked" }] },
+                ],
+              },
               { burialId: "burial-2", gravesiteId: "TLC-GPS-0448", sectionId: "D", fullName: '"" Frederick Miller', score: 5 },
             ],
             source_facts: [{ id: "fact-1", sourceCode: "CR", factType: "death_date", factValue: "December 16, 1965", status: "staged" }],
@@ -73,8 +85,16 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
   assert.equal(review.batches[0].matchedCount, 2);
   assert.deepEqual(review.summary[0], { parseConfidence: "high", status: "staged", count: 2 });
   assert.equal(review.entries[0].candidateMatches[0].gravesiteId, "TLC-GPS-0009");
+  assert.equal(review.entries[0].candidateMatches[0].headstoneCandidates.length, 1);
   assert.equal(review.entries[0].candidateMatches[1].fullName, "Frederick Miller");
   assert.equal(review.entries[0].sourceFacts[0].factValue, "December 16, 1965");
+  assert.deepEqual(review.entries[0].processingSummary, {
+    isProcessed: false,
+    pendingCount: 2,
+    totalCount: 4,
+    label: "2 pending",
+    detail: "2 of 4 review items still need a link, rejection, review, promotion, or field-check decision.",
+  });
 });
 
 test("listNorthHillsOcrReview can sort staged readings by printed page order", async () => {

@@ -921,6 +921,14 @@ export type NorthHillsOcrHeadstoneCandidate = {
   evidence: NorthHillsOcrEvidenceLink[];
 };
 
+export type NorthHillsProcessingSummary = {
+  isProcessed: boolean;
+  pendingCount: number;
+  totalCount: number;
+  label: string;
+  detail: string;
+};
+
 export type SaveNorthHillsOcrEvidenceInput = {
   targetType: "headstone" | "gravesite";
   targetId: string;
@@ -1045,6 +1053,7 @@ export type NorthHillsOcrReviewEntry = {
   candidateMatches: NorthHillsOcrCandidateMatch[];
   sourceFacts: NorthHillsSourceFact[];
   observations: NorthHillsOcrObservation[];
+  processingSummary: NorthHillsProcessingSummary;
 };
 
 export type NorthHillsOcrReviewFilters = {

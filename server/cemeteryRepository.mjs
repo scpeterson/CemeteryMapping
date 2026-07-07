@@ -914,20 +914,7 @@ async function selectBurialsForGrave(client, graveUuid) {
     [graveUuid],
   );
 
-  const featuresByHeadstone = await selectFeaturesForHeadstones(
-    client,
-    result.rows.map((row) => row.id),
-  );
-  const maintenanceByHeadstone = await selectMaintenanceForHeadstones(
-    client,
-    result.rows.map((row) => row.id),
-  );
-
-  return result.rows.map((row) => ({
-    ...row,
-    features: featuresByHeadstone.get(row.id) ?? [],
-    maintenance_records: maintenanceByHeadstone.get(row.id) ?? [],
-  }));
+  return result.rows;
 }
 
 const graveFeatureSelectSql = `
