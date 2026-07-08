@@ -35,6 +35,8 @@ type CemeteryMapProps = {
   onSelectGrave: (grave: GraveSpaceSummary) => void;
   onSelectLot: (lot: CemeteryLot) => void;
   onSelectHeadstone: (headstone: HeadstoneSummary) => void;
+  isPickingMarkerPoint?: boolean;
+  onPickMarkerPoint?: (point: { latitude: number; longitude: number }) => void;
 };
 
 const center: [number, number] = [-76.70431, 39.19604];
@@ -149,15 +151,15 @@ function formatMeasurementDistance(feet: number) {
   return `${feet.toFixed(1)} ft`;
 }
 
-function registerSelectableLayerHandlers(map: MapLibreMap, layers: readonly string[], isMeasuring: () => boolean) {
+function registerSelectableLayerHandlers(map: MapLibreMap, layers: readonly string[], isBusy: () => boolean) {
   layers.forEach((layer) => {
     map.on("mouseenter", layer, () => {
-      if (isMeasuring()) return;
+      if (isBusy()) return;
       map.getCanvas().style.cursor = "pointer";
     });
 
     map.on("mouseleave", layer, () => {
-      if (isMeasuring()) return;
+      if (isBusy()) return;
       map.getCanvas().style.cursor = "";
     });
   });
@@ -175,6 +177,8 @@ export function CemeteryMap({
   onSelectGrave,
   onSelectLot,
   onSelectHeadstone,
+  isPickingMarkerPoint = false,
+  onPickMarkerPoint,
 }: CemeteryMapProps) {
   const [scale, setScale] = useState<MapScale>();
   const [mapViewMode, setMapViewMode] = useState<MapViewMode>("geographic");
@@ -186,6 +190,7 @@ export function CemeteryMap({
   const mapViewModeRef = useRef<MapViewMode>("geographic");
   const selectionModeRef = useRef<SelectionMode>("gravesites");
   const isMeasuringRef = useRef(false);
+  const isPickingMarkerPointRef = useRef(false);
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
   const dataRef = useRef(data);
   const initialFitCemeteryIdsRef = useRef(initialFitCemeteryIds);
@@ -200,6 +205,7 @@ export function CemeteryMap({
   const onSelectRef = useRef(onSelectGrave);
   const onSelectLotRef = useRef(onSelectLot);
   const onSelectHeadstoneRef = useRef(onSelectHeadstone);
+  const onPickMarkerPointRef = useRef(onPickMarkerPoint);
   const didSkipInitialSelectionFitRef = useRef(false);
   const didFitInitialScopeRef = useRef(false);
 
@@ -217,7 +223,9 @@ export function CemeteryMap({
     onSelectRef.current = onSelectGrave;
     onSelectLotRef.current = onSelectLot;
     onSelectHeadstoneRef.current = onSelectHeadstone;
-  }, [data, initialFitCemeteryIds, isInitialFitReady, onSelectGrave, onSelectHeadstone, onSelectLot, searchResultIds, selectedGrave, selectedHeadstone, selectedLot, visibleGraves]);
+    isPickingMarkerPointRef.current = isPickingMarkerPoint;
+    onPickMarkerPointRef.current = onPickMarkerPoint;
+  }, [data, initialFitCemeteryIds, isInitialFitReady, isPickingMarkerPoint, onPickMarkerPoint, onSelectGrave, onSelectHeadstone, onSelectLot, searchResultIds, selectedGrave, selectedHeadstone, selectedLot, visibleGraves]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -308,10 +316,15 @@ export function CemeteryMap({
         didFitInitialScopeRef.current = true;
       }
 
-      registerSelectableLayerHandlers(map, selectableGraveLayers, () => isMeasuringRef.current);
-      registerSelectableLayerHandlers(map, selectableLotLayers, () => isMeasuringRef.current);
-      registerSelectableLayerHandlers(map, selectableHeadstoneLayers, () => isMeasuringRef.current);
+      registerSelectableLayerHandlers(map, selectableGraveLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current);
+      registerSelectableLayerHandlers(map, selectableLotLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current);
+      registerSelectableLayerHandlers(map, selectableHeadstoneLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current);
       map.on("click", (event) => {
+        if (isPickingMarkerPointRef.current) {
+          onPickMarkerPointRef.current?.({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
+          return;
+        }
+
         if (isMeasuringRef.current) {
           const nextPoint: MeasurementPoint = [event.lngLat.lng, event.lngLat.lat];
           setMeasurementPoints((currentPoints) => [...currentPoints, nextPoint]);
@@ -371,8 +384,8 @@ export function CemeteryMap({
   useEffect(() => {
     isMeasuringRef.current = isMeasuring;
     const map = mapRef.current;
-    if (map) map.getCanvas().style.cursor = isMeasuring ? "crosshair" : "";
-  }, [isMeasuring]);
+    if (map) map.getCanvas().style.cursor = isMeasuring || isPickingMarkerPoint ? "crosshair" : "";
+  }, [isMeasuring, isPickingMarkerPoint]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -527,7 +540,7 @@ export function CemeteryMap({
           <Ruler size={18} aria-hidden="true" />
         </button>
       </div>
-      {isMeasuring || measurementPoints.length ? (
+      {!isPickingMarkerPoint && (isMeasuring || measurementPoints.length) ? (
         <div className="map-measurement" aria-live="polite">
           <div>
             <strong>{measurementPoints.length > 1 ? formatMeasurementDistance(measurementDistanceFeet) : "Click map points"}</strong>
@@ -542,6 +555,14 @@ export function CemeteryMap({
           <button type="button" onClick={clearMeasurement} disabled={!measurementPoints.length} aria-label="Clear measurement" title="Clear measurement">
             <Trash2 size={16} aria-hidden="true" />
           </button>
+        </div>
+      ) : null}
+      {isPickingMarkerPoint ? (
+        <div className="map-measurement map-placement" aria-live="polite">
+          <div>
+            <strong>Pick marker point</strong>
+            <span>Click the map where the new marker is located.</span>
+          </div>
         </div>
       ) : null}
       {scale ? (

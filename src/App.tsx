@@ -3,6 +3,7 @@ import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
   createGraveFeature,
+  createGravesiteHeadstone,
   createHeadstoneRelationship,
   createMaintenanceRecord,
   deleteHeadstoneRelationship,
@@ -46,6 +47,7 @@ import type {
   SaveGraveSpaceInput,
   SaveGraveFeatureInput,
   SaveHeadstoneInput,
+  SaveHeadstoneCreateInput,
   SaveHeadstoneRelationshipInput,
   SaveMaintenanceRecordInput,
   SaveOwnershipEventInput,
@@ -81,6 +83,12 @@ const emptyHeadstoneLookups: HeadstoneLookups = {
   maintenancePriorities: [],
 };
 
+type PickedMarkerPoint = {
+  latitude: number;
+  longitude: number;
+  pickedAt: number;
+};
+
 function includesAllStatuses(statuses: Set<GraveStatus>) {
   return allStatuses.every((status) => statuses.has(status));
 }
@@ -101,6 +109,8 @@ export default function App() {
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isReportsPanelOpen, setIsReportsPanelOpen] = useState(false);
   const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
+  const [isPickingMarkerPoint, setIsPickingMarkerPoint] = useState(false);
+  const [pickedMarkerPoint, setPickedMarkerPoint] = useState<PickedMarkerPoint>();
   const {
     selectedGraveDetails,
     setSelectedGraveDetails,
@@ -310,6 +320,38 @@ export default function App() {
       ),
     }));
     return saved;
+  };
+
+  const createHeadstoneForGrave = async (grave: GraveSpace, headstone: SaveHeadstoneCreateInput): Promise<Headstone> => {
+    const saved = await createGravesiteHeadstone(grave.cemeteryId, grave.id, headstone);
+    setSelectedGraveDetails((current) =>
+      current?.id === grave.id
+        ? {
+            ...current,
+            headstones: [...current.headstones, saved],
+          }
+        : current,
+    );
+    refreshDetails({ preserveCurrent: true });
+    fetchCemeteryData()
+      .then((nextData) => setData(nextData))
+      .catch(() => undefined);
+    return saved;
+  };
+
+  const startMarkerPointPick = () => {
+    setPickedMarkerPoint(undefined);
+    setIsPickingMarkerPoint(true);
+  };
+
+  const cancelMarkerPointPick = () => {
+    setIsPickingMarkerPoint(false);
+    setPickedMarkerPoint(undefined);
+  };
+
+  const pickMarkerPoint = (point: { latitude: number; longitude: number }) => {
+    setPickedMarkerPoint({ ...point, pickedAt: Date.now() });
+    setIsPickingMarkerPoint(false);
   };
 
   const refreshHeadstoneDetails = async (id: string) => {
@@ -589,9 +631,11 @@ export default function App() {
           searchResultIds={searchResultIds}
           initialFitCemeteryIds={initialMapFitCemeteryIds}
           isInitialFitReady={isInitialMapFitReady}
+          isPickingMarkerPoint={isPickingMarkerPoint}
           onSelectGrave={selectGrave}
           onSelectLot={selectLot}
           onSelectHeadstone={selectHeadstone}
+          onPickMarkerPoint={pickMarkerPoint}
         />
       </section>
       <DetailPanel
@@ -609,9 +653,12 @@ export default function App() {
         canUpdateBurials={canUpdateSelectedBurials}
         canUpdateHeadstones={canUpdateSelectedHeadstones}
         headstoneLookups={headstoneLookups}
+        pickedMarkerPoint={pickedMarkerPoint}
+        isPickingMarkerPoint={isPickingMarkerPoint}
         onSaveGraveSpace={saveGraveSpace}
         onSaveBurial={saveBurial}
         onSaveHeadstone={saveHeadstone}
+        onCreateHeadstone={createHeadstoneForGrave}
         onSaveHeadstoneRelationship={saveHeadstoneRelationship}
         onUpdateHeadstoneRelationship={updateSavedHeadstoneRelationship}
         onDeleteHeadstoneRelationship={deleteSavedHeadstoneRelationship}
@@ -626,6 +673,8 @@ export default function App() {
         onUploadPhoto={saveGravePhoto}
         onDeletePhoto={deletePhoto}
         onMovePhoto={movePhoto}
+        onStartMarkerPointPick={startMarkerPointPick}
+        onCancelMarkerPointPick={cancelMarkerPointPick}
         canDeleteGraveFeatures={currentUser?.permissions.canDeleteGraveFeatures ?? false}
         canDeletePhotos={currentUser?.permissions.canDeletePhotos ?? false}
         canReorderPhotos={canUpdateSelectedHeadstones}

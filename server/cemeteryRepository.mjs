@@ -489,7 +489,7 @@ async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
       WHERE gravesites.cemetery_id = $1
         AND gravesites.gravesite_id = $2
         AND gravesites.deleted_at IS NULL
-      FOR UPDATE
+      FOR UPDATE OF gravesites
     `,
     [cemeteryId, gravesiteId],
   );
@@ -2825,6 +2825,128 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     return { ...toHeadstone(updated), auditEventId };
   } catch (error) {
     await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, headstone, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+
+    const grave = await selectGraveUpdateState(client, cemeteryId, gravesiteId);
+    if (!grave) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(grave.cemetery_id)) {
+      await client.query("ROLLBACK");
+      return { forbidden: true };
+    }
+
+    const insertResult = await client.query(
+      `
+        INSERT INTO headstones (
+          gravesite_uuid,
+          headstone_id,
+          marker_type,
+          marker_type_id,
+          material_type_id,
+          condition_type_id,
+          latitude,
+          longitude,
+          geometry,
+          condition_notes,
+          inscription,
+          design_notes,
+          back_description,
+          photo_url,
+          last_inspected_at,
+          data_confidence,
+          review_status,
+          review_notes,
+          source_conflict,
+          updated_at
+        )
+        VALUES (
+          $1,
+          $2,
+          'headstone',
+          $3::uuid,
+          $4::uuid,
+          $5::uuid,
+          $6::numeric,
+          $7::numeric,
+          CASE
+            WHEN $6::numeric IS NULL OR $7::numeric IS NULL THEN NULL
+            ELSE ST_SetSRID(ST_MakePoint($7::double precision, $6::double precision), 4326)::geometry(Point, 4326)
+          END,
+          NULLIF($8, ''),
+          NULLIF($9, ''),
+          NULLIF($10, ''),
+          NULLIF($11, ''),
+          NULLIF($12, ''),
+          NULLIF($13, '')::date,
+          $14,
+          $15,
+          NULLIF($16, ''),
+          $17::boolean,
+          now()
+        )
+        RETURNING id::text
+      `,
+      [
+        grave.uuid,
+        headstone.headstoneId,
+        headstone.markerTypeId,
+        headstone.materialId,
+        headstone.conditionId,
+        headstone.latitude ?? null,
+        headstone.longitude ?? null,
+        headstone.conditionNotes || "",
+        headstone.inscription || "",
+        headstone.designNotes || "",
+        headstone.backDescription || "",
+        headstone.photoUrl || "",
+        headstone.lastInspectedAt || "",
+        headstone.dataConfidence || "unknown",
+        headstone.reviewStatus || "needs_review",
+        headstone.reviewNotes || "",
+        Boolean(headstone.sourceConflict),
+      ],
+    );
+    const headstoneUuid = insertResult.rows[0].id;
+
+    await client.query(
+      `
+        INSERT INTO headstone_gravesites (
+          headstone_uuid,
+          gravesite_uuid,
+          relationship_type,
+          notes,
+          updated_at
+        )
+        VALUES ($1, $2, $3, NULLIF($4, ''), now())
+        ON CONFLICT (headstone_uuid, gravesite_uuid) DO UPDATE SET
+          relationship_type = EXCLUDED.relationship_type,
+          notes = EXCLUDED.notes,
+          updated_at = now(),
+          deleted_at = NULL,
+          deleted_by = NULL,
+          delete_reason = NULL
+      `,
+      [headstoneUuid, grave.uuid, headstone.relationshipType || "secondary", headstone.relationshipNotes || ""],
+    );
+
+    const created = await selectHeadstoneById(client, headstoneUuid);
+    await client.query("COMMIT");
+    return toHeadstone(created);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    if (error?.code === "23505") return { invalid: "duplicate_headstone_id" };
     throw error;
   } finally {
     client.release();

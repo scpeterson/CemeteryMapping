@@ -44,6 +44,7 @@ import type {
   SaveMaintenanceRecordInput,
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
+  SaveHeadstoneCreateInput,
   SaveHeadstoneRelationshipInput,
   SaveSourcePersonRecordInput,
   SaveDeedInvestigationCaseInput,
@@ -243,6 +244,14 @@ export async function fetchHeadstone(id: string): Promise<Headstone> {
 export async function updateHeadstone(id: string, headstone: SaveHeadstoneInput): Promise<Headstone> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(id)}`, jsonRequest("PATCH", headstone));
   return jsonResponse<Headstone>(response, "Update headstone API");
+}
+
+export async function createGravesiteHeadstone(cemeteryId: string, graveSpaceId: string, headstone: SaveHeadstoneCreateInput): Promise<Headstone> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/gravesites/${encodeURIComponent(graveSpaceId)}/headstones`,
+    jsonRequest("POST", headstone),
+  );
+  return jsonResponse<Headstone>(response, "Create marker API");
 }
 
 export async function createHeadstoneRelationship(headstoneId: string, relationship: SaveHeadstoneRelationshipInput): Promise<HeadstoneRelationship> {
