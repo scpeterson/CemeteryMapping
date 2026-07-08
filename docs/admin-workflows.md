@@ -88,6 +88,8 @@ Readers can see marker/headstone details in the normal grave detail panel. Power
 
 Standalone markers that are not linked to an active gravesite, such as graveyard markers or field markers, can also be opened and edited from the Markers panel. These records use the same marker edit form and authorization rules as gravesite-linked headstones.
 
+When a gravesite has more than one physical marker, editors can add the additional marker from the selected gravesite's marker section. The `Add marker` workflow creates a new marker record, links it to that gravesite, and records whether the relationship is primary, spanning, nearby, inferred, footstone, or secondary. The map point picker can populate the new marker's coordinates from a map click, which is useful for footstones and other secondary markers recorded after the initial import.
+
 The marker detail panel also has a Related Markers section. This is where editors record physical marker-to-marker relationships such as a small marker referring to a family obelisk, two markers sharing a common base, or a foot marker belonging with a primary marker. Related-marker records store relationship type, source, source text, confidence, status, and notes. Power users, cemetery admins, and admins can add or edit related markers when they have edit access to the marker's cemetery; deletes are soft deletes with an audit reason.
 
 Do not use Related Markers for general gap notes or unavailable grave/lot observations. Gap notes are source observations. Plot markers should be modeled as actual marker records once their locations are known, and then linked only if there is a real marker-to-marker relationship.
@@ -108,6 +110,7 @@ Implemented API:
 
 - `GET /api/headstone-lookups`
 - `PATCH /api/headstones/:id`
+- `POST /api/cemeteries/:cemeteryId/gravesites/:graveSpaceId/headstones`
 
 Authorization:
 

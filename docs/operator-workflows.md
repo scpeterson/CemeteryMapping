@@ -216,7 +216,9 @@ Use the normal grave-detail panel or the Markers panel, not the Admin drawer, fo
 8. Section G gravesites can contain either one casket burial or up to two funeral urn burials. The database enforces this capacity rule when burial rows are created, restored, or updated.
 9. Save the marker and confirm the detail panel reflects the update.
 
-For standalone cemetery markers that are not tied to a gravesite, open the marker from the Markers panel and use the same edit flow. The marker relationship label explains how a marker relates to a gravesite when one exists: `primary` is the normal relationship, `spans` means one marker covers multiple gravesites, `nearby` means the marker is close but not confidently placed on that gravesite, and `inferred` means the link came from records or import logic and may need field confirmation.
+To add a secondary marker, such as a footstone, select the gravesite first and use `Markers -> Add marker` in the detail panel. Choose the marker type and marker-to-gravesite relationship, such as `Footstone` or `Secondary marker`. Enter coordinates manually or use `Pick point on map`, then click the map where the marker is located; the form fills latitude and longitude from that click. Saving creates the marker record and links it to the selected gravesite.
+
+For standalone cemetery markers that are not tied to a gravesite, open the marker from the Markers panel and use the same edit flow. The marker relationship label explains how a marker relates to a gravesite when one exists: `primary` is the normal relationship, `spans` means one marker covers multiple gravesites, `nearby` means the marker is close but not confidently placed on that gravesite, `inferred` means the link came from records or import logic and may need field confirmation, `footstone` means a smaller marker is placed at the foot of the gravesite, and `secondary` means another marker belongs to the gravesite separately from the primary headstone or monument.
 
 Linked North Hills evidence supports interpretation of a headstone or gravesite, but editing marker condition/material/type does not alter the linked reading evidence.
 

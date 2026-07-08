@@ -49,7 +49,16 @@ Add physical marker tables:
 
 `headstone_condition_types` provides controlled lookup values for marker condition: excellent, good, fair, poor, damaged, and unknown.
 
-`headstone_gravesites` links one physical marker to one or more gravesites. `headstones.gravesite_uuid` remains as a compatibility anchor for the primary gravesite, while `headstone_gravesites` is the relationship table to use when a marker spans, is near, or is inferred to relate to additional gravesites.
+`headstone_gravesites` links one physical marker to one or more gravesites. `headstones.gravesite_uuid` remains as a compatibility anchor for the primary gravesite, while `headstone_gravesites` is the relationship table to use when a marker spans, is near, or is inferred to relate to additional gravesites. The relationship type also distinguishes footstones and other secondary markers from the primary marker relationship.
+
+Current marker-to-gravesite relationship values are:
+
+- `primary`
+- `spans`
+- `nearby`
+- `inferred`
+- `footstone`
+- `secondary`
 
 `headstone_burials` links one physical marker to one or more burial records.
 
@@ -62,6 +71,7 @@ This model supports:
 - One headstone listing multiple people.
 - Multiple headstones at one gravesite if that is ever discovered.
 - One headstone associated with multiple gravesites.
+- Secondary markers or footstones for a gravesite.
 - One marker explicitly referencing another marker, such as an obelisk or foot marker relationship.
 - A burial with no known headstone.
 - A headstone condition workflow independent of burial identity.
