@@ -39,7 +39,7 @@ import {
 } from "../api/cemeteryApi";
 import { defaultAuditFilters } from "./AdminEventDefaults";
 import { AuditAdminTab, SystemEventsAdminTab } from "./AdminEventTabs";
-import { DataQualityAdminTab } from "./DataQualityAdminTab";
+import { DataQualityAdminTab, type DataQualityReviewTarget } from "./DataQualityAdminTab";
 import type {
   AppRole,
   AppRoleName,
@@ -1390,11 +1390,13 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const [northHillsOcrReview, setNorthHillsOcrReview] = useState<NorthHillsOcrReview>(emptyNorthHillsOcrReview);
   const [northHillsReviewFilters, setNorthHillsReviewFilters] = useState<NorthHillsOcrReviewFilters>(defaultNorthHillsReviewFilters);
   const [editingNorthHillsEntryId, setEditingNorthHillsEntryId] = useState("");
+  const [focusedNorthHillsEntryId, setFocusedNorthHillsEntryId] = useState("");
   const [northHillsEntryForm, setNorthHillsEntryForm] = useState<NorthHillsEditForm | null>(null);
   const [selectedNorthHillsEntryIds, setSelectedNorthHillsEntryIds] = useState<Set<string>>(() => new Set());
   const [sourcePersonReview, setSourcePersonReview] = useState<SourcePersonRecordReview>(emptySourcePersonReview);
   const [sourcePersonFilters, setSourcePersonFilters] = useState<SourcePersonRecordFilters>(defaultSourcePersonFilters);
   const [selectedSourcePersonRecordId, setSelectedSourcePersonRecordId] = useState("");
+  const [focusedSourcePersonRecordId, setFocusedSourcePersonRecordId] = useState("");
   const [sourcePersonForm, setSourcePersonForm] = useState<SaveSourcePersonRecordInput>(() => blankSourcePersonRecordForm());
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
   const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
@@ -1503,9 +1505,17 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     [northHillsOcrReview.entries, selectedNorthHillsEntryIds],
   );
   const visibleNorthHillsEntryIds = useMemo(() => northHillsOcrReview.entries.map((entry) => entry.id), [northHillsOcrReview.entries]);
+  const nextUnresolvedNorthHillsEntry = useMemo(
+    () => northHillsOcrReview.entries.find((entry) => entry.processingSummary.pendingCount > 0),
+    [northHillsOcrReview.entries],
+  );
   const selectedSourcePersonRecord = useMemo(
     () => sourcePersonReview.records.find((record) => record.id === selectedSourcePersonRecordId),
     [sourcePersonReview.records, selectedSourcePersonRecordId],
+  );
+  const nextUnresolvedSourcePersonRecord = useMemo(
+    () => sourcePersonReview.records.find((record) => record.status === "unmatched" || record.status === "candidate_match"),
+    [sourcePersonReview.records],
   );
   const selectedLookupDefinition = useMemo(
     () => lookupRecords.tables.find((table) => table.table === selectedLookupTable),
@@ -1596,6 +1606,12 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     },
     [],
   );
+
+  const scrollAdminItemIntoView = (elementId: string) => {
+    window.requestAnimationFrame(() => {
+      document.getElementById(elementId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   const openSystemTab = () => {
     setActiveTab("system");
@@ -1807,6 +1823,14 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     if (northHillsOcrReview.batches.length === 0 && !isLoadingNorthHillsReview) void loadNorthHillsOcrReview();
   };
 
+  const openNorthHillsReviewQueue = () => {
+    const filters = { ...defaultNorthHillsReviewFilters, sort: "review" as const, limit: 100 };
+    setActiveTab("readings");
+    setNorthHillsReviewFilters(filters);
+    void loadNorthHillsOcrReview(filters);
+    setMessage("Showing North Hills readings in review-priority order.");
+  };
+
   const loadSourcePersonRecords = async (filters = sourcePersonFilters) => {
     setIsLoadingSourcePersonRecords(true);
     setError(undefined);
@@ -1844,6 +1868,14 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     if (sourcePersonReview.records.length === 0 && !isLoadingSourcePersonRecords) void loadSourcePersonRecords();
   };
 
+  const openSourcePeopleReviewQueue = () => {
+    const filters = { ...defaultSourcePersonFilters, status: "unmatched", limit: 50 };
+    setActiveTab("sourcePeople");
+    setSourcePersonFilters(filters);
+    void loadSourcePersonRecords(filters);
+    setMessage("Showing unmatched source-only people first.");
+  };
+
   const loadHeadstoneLookupRecords = async () => {
     if (headstoneLookups.markerTypes.length || savingBulkKey === "lookups") return;
     setSavingBulkKey("lookups");
@@ -1860,6 +1892,46 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   const openBulkToolsTab = () => {
     setActiveTab("bulk");
     void loadHeadstoneLookupRecords();
+  };
+
+  const openDataQualityReviewTarget = (target: DataQualityReviewTarget) => {
+    setError(undefined);
+    if (target === "northHills") {
+      openNorthHillsReviewQueue();
+      return;
+    }
+    if (target === "sourcePeople") {
+      openSourcePeopleReviewQueue();
+      return;
+    }
+
+    openBulkToolsTab();
+    setMessage(
+      target === "bulkMarkers"
+        ? "Use Bulk marker tools for marker type, material, and condition cleanup."
+        : "Use Bulk tools and the Readings panel for marker-to-gravesite link cleanup.",
+    );
+  };
+
+  const goToNextUnresolvedNorthHillsEntry = () => {
+    if (!nextUnresolvedNorthHillsEntry) {
+      setMessage("No unresolved North Hills readings are visible with the current filters.");
+      return;
+    }
+    setFocusedNorthHillsEntryId(nextUnresolvedNorthHillsEntry.id);
+    scrollAdminItemIntoView(`north-hills-entry-${nextUnresolvedNorthHillsEntry.id}`);
+    setMessage(`Next unresolved NHG reading: ${nextUnresolvedNorthHillsEntry.nameText || "unnamed reading"}.`);
+  };
+
+  const goToNextUnresolvedSourcePersonRecord = () => {
+    if (!nextUnresolvedSourcePersonRecord) {
+      setMessage("No unresolved source-only people are visible with the current filters.");
+      return;
+    }
+    setFocusedSourcePersonRecordId(nextUnresolvedSourcePersonRecord.id);
+    startSourcePersonRecordEdit(nextUnresolvedSourcePersonRecord);
+    scrollAdminItemIntoView(`source-person-record-${nextUnresolvedSourcePersonRecord.id}`);
+    setMessage(`Next unresolved source-only person: ${nextUnresolvedSourcePersonRecord.fullName || "unnamed record"}.`);
   };
 
   const saveBulkHeadstoneUpdate = async (event: FormEvent<HTMLFormElement>) => {
@@ -3085,7 +3157,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
           </section>
         </>
       ) : activeTab === "quality" ? (
-        <DataQualityAdminTab onError={setError} />
+        <DataQualityAdminTab onError={setError} onOpenReviewTarget={openDataQualityReviewTarget} />
       ) : activeTab === "bulk" && canUseBulkTools ? (
         <>
           <section className="admin-section">
@@ -3586,13 +3658,32 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
 
             {isLoadingSourcePersonRecords ? <div className="admin-message" role="status">Loading source-only people...</div> : null}
 
+            <div className="review-workbench-toolbar" aria-label="Source-only person review queue">
+              <div>
+                <strong>Review queue</strong>
+                <span>{nextUnresolvedSourcePersonRecord ? "Jump to the next unmatched or candidate record in this filtered list." : "No unresolved source-only people are visible."}</span>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={goToNextUnresolvedSourcePersonRecord}
+                disabled={!nextUnresolvedSourcePersonRecord || isLoadingSourcePersonRecords}
+                title="Open the next visible source-only person that still needs matching or review."
+              >
+                Next unresolved
+              </button>
+            </div>
+
             <div className="source-person-workspace">
               <div className="source-person-list" role="table" aria-label="Source-only person records">
                 {sourcePersonReview.records.length === 0 && !isLoadingSourcePersonRecords ? <p className="record-editor-empty">No source-only person records match these filters.</p> : null}
                 {sourcePersonReview.records.map((record) => (
                   <article
+                    id={`source-person-record-${record.id}`}
                     key={record.id}
-                    className={`source-person-row confidence-${record.confidence} ${selectedSourcePersonRecordId === record.id ? "is-selected" : ""}`}
+                    className={`source-person-row confidence-${record.confidence} ${selectedSourcePersonRecordId === record.id ? "is-selected" : ""} ${
+                      focusedSourcePersonRecordId === record.id ? "is-review-target" : ""
+                    }`}
                     title={sourcePersonRecordTitle(record)}
                   >
                     <header>
@@ -3955,6 +4046,22 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
               </div>
             ) : null}
 
+            <div className="review-workbench-toolbar" aria-label="North Hills reading review queue">
+              <div>
+                <strong>Review queue</strong>
+                <span>{nextUnresolvedNorthHillsEntry ? "Jump to the next visible NHG reading with pending links, matches, or facts." : "No unresolved NHG readings are visible."}</span>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={goToNextUnresolvedNorthHillsEntry}
+                disabled={!nextUnresolvedNorthHillsEntry || isLoadingNorthHillsReview}
+                title="Scroll to the next visible NHG reading that still has pending work."
+              >
+                Next unresolved
+              </button>
+            </div>
+
             {canEditNorthHillsEntries ? (
               <div className="bulk-selection-toolbar" aria-label="Selected North Hills reading actions">
                 <label className="checkbox-row">
@@ -3992,7 +4099,12 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
               {northHillsOcrReview.entries.map((entry) => {
                 const processingSummary = entry.processingSummary;
                 return (
-                <article key={entry.id} className={`deed-entry-row confidence-${entry.parseConfidence}`} title={readingEntryTitle(entry)}>
+                <article
+                  id={`north-hills-entry-${entry.id}`}
+                  key={entry.id}
+                  className={`deed-entry-row confidence-${entry.parseConfidence} ${focusedNorthHillsEntryId === entry.id ? "is-review-target" : ""}`}
+                  title={readingEntryTitle(entry)}
+                >
                   <header>
                     {canEditNorthHillsEntries ? (
                       <label className="reading-select-checkbox" title="Select this NHG reading for bulk actions.">

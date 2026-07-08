@@ -3384,6 +3384,10 @@ h3 {
   background: #fff;
 }
 
+.data-quality-card > div:first-child {
+  min-width: 0;
+}
+
 .data-quality-card strong,
 .data-quality-card span,
 .data-quality-card small {
@@ -3404,8 +3408,14 @@ h3 {
   overflow-wrap: anywhere;
 }
 
-.data-quality-card small {
+.data-quality-card-meta {
   flex: 0 0 auto;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.data-quality-card small {
   align-self: start;
   padding: 3px 7px;
   border-radius: 999px;
@@ -3413,6 +3423,16 @@ h3 {
   color: #4f5d52;
   font-size: 0.68rem;
   font-weight: 800;
+}
+
+.data-quality-review-button {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 7px;
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 
 .data-quality-card.severity-high {
@@ -3687,6 +3707,43 @@ h3 {
 
 .source-person-row.is-selected {
   box-shadow: 0 0 0 2px rgba(47, 93, 80, 0.18);
+}
+
+.source-person-row.is-review-target,
+.deed-entry-row.is-review-target {
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.22);
+}
+
+.review-workbench-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 11px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+}
+
+.review-workbench-toolbar > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.review-workbench-toolbar strong {
+  color: #26342d;
+  font-size: 0.84rem;
+}
+
+.review-workbench-toolbar span {
+  color: #59675d;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.review-workbench-toolbar button {
+  flex: 0 0 auto;
 }
 
 .source-person-row header {

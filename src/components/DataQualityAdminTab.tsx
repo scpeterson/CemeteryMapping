@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshCw, ShieldAlert } from "lucide-react";
+import { ArrowRight, RefreshCw, ShieldAlert } from "lucide-react";
 import { fetchDataQualityDashboard } from "../api/cemeteryApi";
 import type { DataQualityDashboard, DataQualityMetric, DataQualitySeverity } from "../types";
 
+export type DataQualityReviewTarget = "northHills" | "sourcePeople" | "bulkMarkers" | "bulkMapLinks";
+
 type DataQualityAdminTabProps = {
   onError: (message: string | undefined) => void;
+  onOpenReviewTarget?: (target: DataQualityReviewTarget) => void;
 };
 
 const severityLabels: Record<DataQualitySeverity, string> = {
@@ -32,7 +35,31 @@ function groupMetrics(metrics: DataQualityMetric[]) {
   }, {});
 }
 
-export function DataQualityAdminTab({ onError }: DataQualityAdminTabProps) {
+function reviewTargetForMetric(metric: DataQualityMetric): DataQualityReviewTarget | undefined {
+  switch (metric.id) {
+    case "nhg_review_needed":
+    case "nhg_unlinked":
+      return "northHills";
+    case "source_person_records_unmatched":
+      return "sourcePeople";
+    case "markers_review_needed":
+      return "bulkMarkers";
+    case "gravesites_without_markers":
+    case "markers_without_gravesites":
+      return "bulkMapLinks";
+    default:
+      return undefined;
+  }
+}
+
+const reviewTargetLabels: Record<DataQualityReviewTarget, string> = {
+  northHills: "Review readings",
+  sourcePeople: "Review people",
+  bulkMarkers: "Open marker tools",
+  bulkMapLinks: "Open bulk tools",
+};
+
+export function DataQualityAdminTab({ onError, onOpenReviewTarget }: DataQualityAdminTabProps) {
   const [dashboard, setDashboard] = useState<DataQualityDashboard>();
   const [isLoading, setIsLoading] = useState(false);
   const groupedMetrics = useMemo(() => groupMetrics(dashboard?.metrics ?? []), [dashboard?.metrics]);
@@ -85,15 +112,31 @@ export function DataQualityAdminTab({ onError }: DataQualityAdminTabProps) {
           <section key={category} className="data-quality-group" aria-label={`${category} data quality metrics`}>
             <h4>{category}</h4>
             <div className="data-quality-grid">
-              {metrics.map((metric) => (
-                <article key={metric.id} className={`data-quality-card severity-${metric.severity}`} title={metric.description}>
-                  <div>
-                    <strong>{metric.count}</strong>
-                    <span>{metric.label}</span>
-                  </div>
-                  <small>{severityLabels[metric.severity]}</small>
-                </article>
-              ))}
+              {metrics.map((metric) => {
+                const reviewTarget = metric.count > 0 ? reviewTargetForMetric(metric) : undefined;
+                return (
+                  <article key={metric.id} className={`data-quality-card severity-${metric.severity}`} title={metric.description}>
+                    <div>
+                      <strong>{metric.count}</strong>
+                      <span>{metric.label}</span>
+                    </div>
+                    <div className="data-quality-card-meta">
+                      <small>{severityLabels[metric.severity]}</small>
+                      {reviewTarget && onOpenReviewTarget ? (
+                        <button
+                          type="button"
+                          className="secondary-button data-quality-review-button"
+                          onClick={() => onOpenReviewTarget(reviewTarget)}
+                          title={metric.description}
+                        >
+                          {reviewTargetLabels[reviewTarget]}
+                          <ArrowRight size={14} aria-hidden="true" />
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         ))}

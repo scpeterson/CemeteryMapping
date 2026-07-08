@@ -80,8 +80,9 @@ Use `Admin -> Quality` to find cleanup work that is spread across readings, ceme
 1. Open `Admin -> Quality`.
 2. Review the total open item count and the individual metric cards.
 3. Start with high-severity metrics, such as staged readings needing review, unlinked source readings, gravesites or markers missing expected links, and open maintenance records.
-4. Use the appropriate workflow to fix the underlying records. For example, use `Admin -> Readings` for NHG cleanup, the map detail panel for gravesite and marker links, burial edit forms for partial dates and veteran details, photo tools for missing date-taken metadata, and maintenance forms for open work.
-5. Refresh the dashboard after a cleanup pass to confirm the count moved as expected.
+4. Use a card action button when one is available. Action buttons open the related workspace, such as `Admin -> Readings`, `Admin -> Source People`, or `Admin -> Bulk`, with cleanup-oriented defaults.
+5. Use the appropriate workflow to fix the underlying records. For example, use `Admin -> Readings` for NHG cleanup, the map detail panel for gravesite and marker links, burial edit forms for partial dates and veteran details, photo tools for missing date-taken metadata, and maintenance forms for open work.
+6. Refresh the dashboard after a cleanup pass to confirm the count moved as expected.
 
 The dashboard is read-only. Power users and cemetery admins see cleanup counts scoped to their assigned cemetery. System admins can review all cemeteries or select a cemetery when cemetery filtering is available.
 
@@ -105,16 +106,17 @@ Use `Admin -> Readings` for staged North Hills Genealogists OCR readings.
 1. Open `Admin -> Readings`.
 2. Select the North Hills OCR import batch to review.
 3. Use confidence, status, section, search, and sort controls to narrow the staged readings. Page-order sort is useful when comparing against the printed source.
-4. Open a staged reading and compare raw OCR text, parsed section/row/position, marker details, detected years, and parser notes against possible existing matches.
-5. Use the row checkboxes and `Select visible` when several visible readings should be marked reviewed or receive the same source note.
-6. Use `Mark reviewed` from the Readings toolbar for selected readings that are ready to close without individual edits.
-7. Use `Bulk note` to open `Admin -> Bulk` and apply the same source note to selected readings.
-8. Use `Link gravesite` when the reading belongs to the candidate gravesite.
-9. Use `Link headstone` when the reading belongs to the candidate physical marker.
-10. Use `Reject match` or `Reject headstone` when the candidate appears incorrect.
-11. Use `Needs field check` or `Field check` when the source and database do not provide enough certainty.
-12. Add optional reviewer notes when prompted.
-13. Open the regular grave-detail panel afterward to confirm linked North Hills evidence appears for the associated gravesite or headstone.
+4. Use `Next unresolved` to jump to the next visible reading whose processing summary still has pending work. The button respects the current filters, so filter first when reviewing a specific page, section, or search result.
+5. Open a staged reading and compare raw OCR text, parsed section/row/position, marker details, detected years, and parser notes against possible existing matches.
+6. Use the row checkboxes and `Select visible` when several visible readings should be marked reviewed or receive the same source note.
+7. Use `Mark reviewed` from the Readings toolbar for selected readings that are ready to close without individual edits.
+8. Use `Bulk note` to open `Admin -> Bulk` and apply the same source note to selected readings.
+9. Use `Link gravesite` when the reading belongs to the candidate gravesite.
+10. Use `Link headstone` when the reading belongs to the candidate physical marker.
+11. Use `Reject match` or `Reject headstone` when the candidate appears incorrect.
+12. Use `Needs field check` or `Field check` when the source and database do not provide enough certainty.
+13. Add optional reviewer notes when prompted.
+14. Open the regular grave-detail panel afterward to confirm linked North Hills evidence appears for the associated gravesite or headstone.
 
 Readings review is an evidence workflow. It does not change burial names, dates, marker condition, owner/deed data, geometry, or lot/gravesite structure.
 
@@ -124,11 +126,12 @@ Use `Admin -> Source People` for people found in church records, funeral-home no
 
 1. Open `Admin -> Source People`.
 2. Filter by cemetery, source, status, or search text to find records needing review.
-3. Open a source person when the source text, parsed name, dates, age, source label, source location, status, or confidence needs correction.
-4. Preserve uncertain or partial dates in the text fields when the source does not support an exact date.
-5. Use status and confidence to separate unmatched records from candidate or reviewed records.
-6. Use soft delete only for duplicates or entries that should be removed from normal review. Enter a clear delete reason so the audit trail explains why the record was hidden.
-7. Do not create a normal burial, gravesite, or marker until there is enough evidence for an operational cemetery record.
+3. Use `Next unresolved` to open the next visible record with `unmatched` or `candidate_match` status. The button respects the current filters.
+4. Open a source person when the source text, parsed name, dates, age, source label, source location, status, or confidence needs correction.
+5. Preserve uncertain or partial dates in the text fields when the source does not support an exact date.
+6. Use status and confidence to separate unmatched records from candidate or reviewed records.
+7. Use soft delete only for duplicates or entries that should be removed from normal review. Enter a clear delete reason so the audit trail explains why the record was hidden.
+8. Do not create a normal burial, gravesite, or marker until there is enough evidence for an operational cemetery record.
 
 Source-only people are evidence records. They keep source names and dates visible for future research without inventing map geometry or implying that a person is definitely buried in a known gravesite.
 
