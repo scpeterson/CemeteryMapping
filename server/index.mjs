@@ -16,6 +16,7 @@ import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSect
 import { listDataQualityDashboard } from "./dataQualityRepository.mjs";
 import {
   createGraveFeature,
+  createHeadstoneForGrave,
   createHeadstoneRelationship,
   createMaintenanceRecord,
   createOwnershipEvent,
@@ -93,6 +94,14 @@ function optionalText(value, label, maxLength) {
   const text = String(value).trim();
   if (text.length > maxLength) throw new BadRequestError(`${label} is too long.`);
   return text;
+}
+
+function optionalCoordinate(value, label, { min, max }) {
+  const text = optionalText(value, label, 50);
+  if (!text) return null;
+  const number = Number(text);
+  if (!Number.isFinite(number) || number < min || number > max) throw new BadRequestError(`${label} is invalid.`);
+  return number;
 }
 
 function validateUuid(value, label) {
@@ -246,6 +255,31 @@ function validateHeadstonePayload(body) {
     reviewNotes: optionalText(body?.reviewNotes, "Review notes", 4000) ?? "",
     sourceConflict: optionalBoolean(body?.sourceConflict, "Source conflict"),
     reason: validateMutationReason(body?.reason),
+  };
+}
+
+function validateHeadstoneGravesiteRelationshipType(value) {
+  const relationshipType = optionalText(value, "Marker gravesite relationship", 50) || "secondary";
+  if (!["primary", "spans", "nearby", "inferred", "footstone", "secondary"].includes(relationshipType)) {
+    throw new BadRequestError("Marker gravesite relationship is invalid.");
+  }
+  return relationshipType;
+}
+
+function validateCreateHeadstonePayload(body, graveSpaceId) {
+  const latitude = optionalCoordinate(body?.latitude, "Latitude", { min: -90, max: 90 });
+  const longitude = optionalCoordinate(body?.longitude, "Longitude", { min: -180, max: 180 });
+  if ((latitude === null) !== (longitude === null)) throw new BadRequestError("Latitude and longitude must be provided together.");
+  const headstone = validateHeadstonePayload(body);
+
+  return {
+    ...headstone,
+    headstoneId: requiredText(body?.headstoneId, "Marker ID", 50),
+    graveSpaceId,
+    relationshipType: validateHeadstoneGravesiteRelationshipType(body?.relationshipType),
+    relationshipNotes: optionalText(body?.relationshipNotes, "Marker relationship notes", 1000),
+    latitude,
+    longitude,
   };
 }
 
@@ -1189,6 +1223,34 @@ export function createApp(config, pool) {
         return;
       }
       response.json(headstone);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/cemeteries/:cemeteryId/gravesites/:graveSpaceId/headstones", requirePowerUser, async (request, response, next) => {
+    try {
+      const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+      const graveSpaceId = validateGraveSpaceId(request.params.graveSpaceId);
+      const headstone = validateCreateHeadstonePayload(request.body, graveSpaceId);
+      const created = await createHeadstoneForGrave(pool, cemeteryId, graveSpaceId, headstone, {
+        actorUser: request.user,
+        reason: headstone.reason,
+        allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+      });
+      if (!created) {
+        response.status(404).json({ error: "Gravesite not found" });
+        return;
+      }
+      if (created.forbidden) {
+        response.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      if (created.invalid === "duplicate_headstone_id") {
+        response.status(400).json({ error: "Marker ID already exists." });
+        return;
+      }
+      response.status(201).json(created);
     } catch (error) {
       next(error);
     }

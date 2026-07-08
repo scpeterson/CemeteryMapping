@@ -340,6 +340,15 @@ export type SaveHeadstoneInput = {
   reason?: string;
 };
 
+export type SaveHeadstoneCreateInput = SaveHeadstoneInput & {
+  headstoneId: string;
+  graveSpaceId: string;
+  relationshipType: "primary" | "spans" | "nearby" | "inferred" | "footstone" | "secondary";
+  relationshipNotes: string;
+  latitude: string;
+  longitude: string;
+};
+
 export type SaveGraveFeatureInput = {
   graveSpaceId: string;
   headstoneId: string;

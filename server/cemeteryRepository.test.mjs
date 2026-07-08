@@ -1003,6 +1003,8 @@ test("updateGraveSpace updates editable gravesite fields with cemetery scope", a
   );
 
   const updateQuery = queries.find((query) => query.sql.includes("UPDATE gravesites"));
+  const mutationStateQuery = queries.find((query) => query.sql.includes("FOR UPDATE"))?.sql ?? "";
+  assert.match(mutationStateQuery, /FOR UPDATE OF gravesites/u);
   assert.match(updateQuery?.sql ?? "", /SET name = \$2/u);
   assert.match(updateQuery?.sql ?? "", /status_type_id = \(/u);
   assert.doesNotMatch(updateQuery?.sql ?? "", /status = \$3/u);
