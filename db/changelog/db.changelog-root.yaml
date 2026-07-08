@@ -659,3 +659,6 @@ databaseChangeLog:
   - include:
       file: changes/221-repair-c-0214-linda-burial-gravesite-id.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/222-fit-c-0192-through-c-0194-into-lot-72.sql
+      relativeToChangelogFile: true
