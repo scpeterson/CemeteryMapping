@@ -1,6 +1,13 @@
 import { setAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
-import { selectActiveCemeteries, selectLotRestrictedAreasForCemeteries, selectLotsForCemeteries, selectSectionsForCemeteries } from "./cemeteryMapQueries.mjs";
+import {
+  selectActiveCemeteries,
+  selectGravesForCemeteries,
+  selectHeadstoneSummariesForCemeteries,
+  selectLotRestrictedAreasForCemeteries,
+  selectLotsForCemeteries,
+  selectSectionsForCemeteries,
+} from "./cemeteryMapQueries.mjs";
 import { recordReviewColumnsSql, tableColumnExists } from "./cemeterySchema.mjs";
 import {
   activeBurialRecordStatusExists,
@@ -134,102 +141,6 @@ function groupBy(rows, key) {
     groups.set(value, existing);
     return groups;
   }, new Map());
-}
-
-async function selectGravesForCemeteries(client, cemeteryIds, { includeCost = false } = {}) {
-  const result = await client.query(
-    `
-      SELECT
-        ${includeCost ? "gravesites.id::text AS uuid," : ""}
-        gravesites.cemetery_id::text,
-        cemeteries.name AS cemetery_name,
-        gravesites.section_id,
-        gravesites.lot_id,
-        gravesites.grave_id,
-        gravesites.gravesite_id,
-        gravesites.name,
-        ${statusCodeSelect()} AS status,
-        gravesites.geometry_type,
-        gravesites.geometry_source,
-        gravesites.geometry_confidence,
-        gravesites.geometry_notes,
-        EXISTS (
-          SELECT 1
-          FROM burials veteran_burials
-          WHERE (
-              veteran_burials.gravesite_uuid = gravesites.id
-              OR (
-                veteran_burials.gravesite_uuid IS NULL
-                AND veteran_burials.gravesite_id = gravesites.gravesite_id
-              )
-            )
-            AND veteran_burials.deleted_at IS NULL
-            AND lower(btrim(coalesce(veteran_burials.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran')
-        ) AS has_veteran,
-        ${includeCost ? "gravesites.cost," : ""}
-        ST_AsGeoJSON(gravesites.geometry)::json AS geometry
-      FROM gravesites
-      JOIN cemeteries
-        ON cemeteries.id = gravesites.cemetery_id
-      LEFT JOIN gravesite_status_types status_type
-        ON status_type.id = gravesites.status_type_id
-      WHERE gravesites.cemetery_id = ANY($1::uuid[])
-        AND gravesites.deleted_at IS NULL
-      ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
-    `,
-    [cemeteryIds],
-  );
-
-  return result.rows;
-}
-
-async function selectHeadstoneSummariesForCemeteries(client, cemeteryIds) {
-  const result = await client.query(
-    `
-      SELECT
-        headstones.id::text,
-        headstones.headstone_id,
-        cemeteries.id::text AS cemetery_id,
-        cemeteries.name AS cemetery_name,
-        gravesites.gravesite_id,
-        marker_types.code AS marker_type_code,
-        marker_types.label AS marker_type_label,
-        headstone_condition_types.code AS condition_code,
-        ST_AsGeoJSON(headstones.geometry)::json AS geometry
-      FROM headstones
-      LEFT JOIN gravesites
-        ON gravesites.id = headstones.gravesite_uuid
-       AND gravesites.deleted_at IS NULL
-      JOIN LATERAL (
-        SELECT cemeteries.id, cemeteries.name
-        FROM cemeteries
-        WHERE cemeteries.deleted_at IS NULL
-          AND cemeteries.id = ANY($1::uuid[])
-          AND (
-            cemeteries.id = gravesites.cemetery_id
-            OR (
-              gravesites.id IS NULL
-              AND cemeteries.geometry IS NOT NULL
-              AND ST_Covers(cemeteries.geometry, headstones.geometry)
-            )
-          )
-        ORDER BY
-          CASE WHEN cemeteries.id = gravesites.cemetery_id THEN 0 ELSE 1 END,
-          cemeteries.name
-        LIMIT 1
-      ) cemeteries ON TRUE
-      JOIN marker_types
-        ON marker_types.id = headstones.marker_type_id
-      JOIN headstone_condition_types
-        ON headstone_condition_types.id = headstones.condition_type_id
-      WHERE headstones.deleted_at IS NULL
-        AND headstones.geometry IS NOT NULL
-      ORDER BY cemeteries.name, COALESCE(gravesites.gravesite_id, headstones.headstone_id), headstones.headstone_id
-    `,
-    [cemeteryIds],
-  );
-
-  return result.rows;
 }
 
 async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
