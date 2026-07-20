@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { searchCemetery } from "./cemeterySearch.mjs";
-import { validateBurialPayload } from "./index.mjs";
+import { validateBurialPayload } from "./routes/cemeteryRouteValidation.mjs";
 import {
   BadRequestError,
   validateCemeteryId,
