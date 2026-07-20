@@ -49,31 +49,13 @@ function toLotRecord(row) {
 }
 
 async function hasSectionAlternateNamesColumn(clientOrPool) {
-  const result = await clientOrPool.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'sections'
-        AND column_name = 'alternate_names'
-    ) AS exists
-  `);
-
-  return result.rows[0]?.exists === true;
+  void clientOrPool;
+  return true;
 }
 
 async function hasSectionNotesColumn(clientOrPool) {
-  const result = await clientOrPool.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'sections'
-        AND column_name = 'notes'
-    ) AS exists
-  `);
-
-  return result.rows[0]?.exists === true;
+  void clientOrPool;
+  return true;
 }
 
 export async function listCemeteryAdminRecords(pool) {

@@ -7,9 +7,6 @@ test("listDataQualityDashboard scopes admins to all cemeteries and totals action
   const pool = {
     async query(sql, values) {
       queries.push({ sql, values });
-      if (sql.includes("information_schema.columns")) {
-        return { rows: [{ burial_columns_exist: true, headstone_columns_exist: true }] };
-      }
       return {
         rows: [
           {
@@ -43,12 +40,12 @@ test("listDataQualityDashboard scopes admins to all cemeteries and totals action
 
   const dashboard = await listDataQualityDashboard(pool);
 
-  assert.equal(queries.length, 2);
-  assert.equal(queries[1].values[0], null);
-  assert.match(queries[1].sql, /scoped_cemeteries/u);
-  assert.match(queries[1].sql, /headstone_gravesites/u);
-  assert.match(queries[1].sql, /burials_review_needed/u);
-  assert.match(queries[1].sql, /markers_review_needed/u);
+  assert.equal(queries.length, 1);
+  assert.equal(queries[0].values[0], null);
+  assert.match(queries[0].sql, /scoped_cemeteries/u);
+  assert.match(queries[0].sql, /headstone_gravesites/u);
+  assert.match(queries[0].sql, /burials_review_needed/u);
+  assert.match(queries[0].sql, /markers_review_needed/u);
   assert.equal(dashboard.scope, "all");
   assert.equal(dashboard.totalOpenItems, 5);
   assert.deepEqual(
@@ -62,9 +59,6 @@ test("listDataQualityDashboard deduplicates assigned cemetery scope", async () =
   const pool = {
     async query(_sql, values) {
       queries.push(values);
-      if (_sql.includes("information_schema.columns")) {
-        return { rows: [{ burial_columns_exist: true, headstone_columns_exist: true }] };
-      }
       return { rows: [] };
     },
   };
@@ -72,7 +66,7 @@ test("listDataQualityDashboard deduplicates assigned cemetery scope", async () =
   const cemeteryId = "11111111-1111-4111-8111-111111111111";
   const dashboard = await listDataQualityDashboard(pool, { cemeteryIds: [cemeteryId, cemeteryId, ""] });
 
-  assert.deepEqual(queries[1][0], [cemeteryId]);
+  assert.deepEqual(queries[0][0], [cemeteryId]);
   assert.equal(dashboard.scope, "assigned");
   assert.equal(dashboard.totalOpenItems, 0);
 });

@@ -25,40 +25,10 @@ function toMetric(row) {
   };
 }
 
-async function recordReviewColumnsExist(pool) {
-  const result = await pool.query(`
-    SELECT
-      EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = current_schema()
-          AND table_name = 'burials'
-          AND column_name = 'data_confidence'
-      ) AS burial_columns_exist,
-      EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = current_schema()
-          AND table_name = 'headstones'
-          AND column_name = 'data_confidence'
-      ) AS headstone_columns_exist
-  `);
-
-  return {
-    burials: Boolean(result.rows[0]?.burial_columns_exist),
-    headstones: Boolean(result.rows[0]?.headstone_columns_exist),
-  };
-}
-
 export async function listDataQualityDashboard(pool, options = {}) {
   const cemeteryIds = cemeteryScopeValues(options.cemeteryIds);
-  const reviewColumns = await recordReviewColumnsExist(pool);
-  const burialReviewCondition = reviewColumns.burials
-    ? "burial.review_status IN ('needs_review', 'conflict') OR burial.source_conflict OR burial.data_confidence = 'low'"
-    : "false";
-  const markerReviewCondition = reviewColumns.headstones
-    ? "headstone.review_status IN ('needs_review', 'conflict') OR headstone.source_conflict OR headstone.data_confidence = 'low'"
-    : "false";
+  const burialReviewCondition = "burial.review_status IN ('needs_review', 'conflict') OR burial.source_conflict OR burial.data_confidence = 'low'";
+  const markerReviewCondition = "headstone.review_status IN ('needs_review', 'conflict') OR headstone.source_conflict OR headstone.data_confidence = 'low'";
   const result = await pool.query(
     `
       WITH scoped_cemeteries AS (

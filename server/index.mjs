@@ -75,6 +75,7 @@ import { registerAdminRoutes } from "./routes/adminRoutes.mjs";
 import { registerCemeteryRoutes } from "./routes/cemeteryRoutes.mjs";
 import { registerMediaRoutes } from "./routes/mediaRoutes.mjs";
 import { canEditLot, canEditSection, validateHeadstoneBusinessRules } from "./routes/routeBusinessRules.mjs";
+import { assertCurrentSchema } from "./schemaContract.mjs";
 
 const { Pool } = pg;
 
@@ -161,7 +162,8 @@ export function createApp(config, pool) {
   return app;
 }
 
-export function startServer(config = loadApiConfig(), pool = new Pool(config.database)) {
+export async function startServer(config = loadApiConfig(), pool = new Pool(config.database)) {
+  await assertCurrentSchema(pool);
   const app = createApp(config, pool);
   const server = app.listen(config.apiPort, "127.0.0.1", () => {
     console.log(`Cemetery API listening on http://127.0.0.1:${config.apiPort} (${config.appEnv.toUpperCase()})`);
@@ -186,5 +188,8 @@ export function startServer(config = loadApiConfig(), pool = new Pool(config.dat
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  startServer();
+  startServer().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }

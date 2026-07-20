@@ -30,13 +30,8 @@ export const graveFeatureJoinSql = `
 `;
 
 export async function graveFeatureTablesExist(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1 FROM information_schema.tables
-      WHERE table_schema = current_schema() AND table_name = 'grave_features'
-    ) AS exists
-  `);
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function selectFeaturesForGrave(client, graveUuid) {
