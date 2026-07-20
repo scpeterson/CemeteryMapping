@@ -86,6 +86,8 @@ npm run db:up
 npm run db:migrate
 ```
 
+The API verifies the current Liquibase changeset before it begins listening and exits with migration guidance when the database schema is out of date.
+
 More database details are in `db/README.md`.
 
 ## Architecture Decisions and Rebuild Documentation

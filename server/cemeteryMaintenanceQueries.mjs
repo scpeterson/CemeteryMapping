@@ -27,13 +27,8 @@ export const maintenanceRecordJoinSql = `
 `;
 
 export async function maintenanceTablesExist(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1 FROM information_schema.tables
-      WHERE table_schema = current_schema() AND table_name = 'maintenance_records'
-    ) AS exists
-  `);
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 const maintenanceOrderSql = `

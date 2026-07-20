@@ -23,13 +23,8 @@ export const headstoneRelationshipJoinSql = `
 `;
 
 export async function headstoneRelationshipTableExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1 FROM information_schema.tables
-      WHERE table_schema = current_schema() AND table_name = 'headstone_relationships'
-    ) AS exists
-  `);
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function selectRelationshipsForHeadstone(client, headstoneUuid) {

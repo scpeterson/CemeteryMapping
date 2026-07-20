@@ -164,7 +164,7 @@ test("search runs SQL-like text without expanding results or building dynamic SQ
   const matches = await searchCemetery(pool, { query: validateSearchQuery("Garcia'; DROP TABLE gravesites; --"), statuses: [] });
 
   assert.deepEqual(matches, []);
-  assert.equal(pool.queryCount, 2);
+  assert.equal(pool.queryCount, 1);
 });
 
 test("search includes generalized ownership rights only through ownership-aware search", async () => {

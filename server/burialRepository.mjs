@@ -42,31 +42,13 @@ export function splitRecordedDate(value) {
 }
 
 export async function burialMilitaryServiceColumnsExist(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'veteran'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 async function burialRecordedDateTextColumnsExist(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'birth_date_text'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialRecordedDateTextSql(client, firstSetParameter = 15) {
@@ -88,72 +70,28 @@ export async function burialRecordedDateTextSql(client, firstSetParameter = 15) 
 }
 
 export async function legacyBurialMilitaryBranchColumnExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'military_branch'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return false;
 }
 
 export async function legacyBurialMilitaryWarsColumnExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'military_wars'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return false;
 }
 
 export async function burialIntermentTypeLookupExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = current_schema()
-        AND table_name = 'burial_interment_types'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialIntermentTypeColumnExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'interment_type_id'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function legacyBurialIntermentTypeColumnExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'interment_type'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return false;
 }
 
 export async function burialIntermentTypeSql(client) {
@@ -187,17 +125,8 @@ export async function activeIntermentTypeExists(client, code) {
 }
 
 export async function burialRecordStatusColumnExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'burial_record_status_type_id'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialRecordStatusSql(client) {
@@ -223,84 +152,33 @@ export async function activeBurialRecordStatusExists(client, code) {
 }
 
 export async function burialMilitaryBranchLookupExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = current_schema()
-        AND table_name = 'military_branch_types'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialMilitaryBranchTypeColumnExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'military_branch_type_id'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialMilitaryWarServiceLookupExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = current_schema()
-        AND table_name = 'military_war_service_types'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialMilitaryWarServiceTypeColumnExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'military_war_service_type_id'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialMilitaryRankLookupExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = current_schema()
-        AND table_name = 'military_rank_types'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialMilitaryRankTypeColumnExists(client) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = 'burials'
-        AND column_name = 'military_rank_type_id'
-    ) AS exists
-  `);
-
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  return true;
 }
 
 export async function burialMilitaryServiceSql(client) {

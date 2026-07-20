@@ -1,24 +1,18 @@
 export async function tableColumnExists(client, tableName, columnName) {
-  const result = await client.query(
-    `
-      SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = current_schema()
-          AND table_name = $1
-          AND column_name = $2
-      ) AS exists
-    `,
-    [tableName, columnName],
-  );
-  return Boolean(result.rows[0]?.exists);
+  void client;
+  const currentColumns = {
+    sections: new Set(["alternate_names"]),
+    burials: new Set(["data_confidence"]),
+    headstones: new Set(["data_confidence"]),
+  };
+  return currentColumns[tableName]?.has(columnName) ?? false;
 }
 
 export async function sectionAlternateNamesSelect(client) {
   return (await tableColumnExists(client, "sections", "alternate_names")) ? "alternate_names" : "'{}'::text[] AS alternate_names";
 }
 
-/** Supplies neutral review fields while supporting databases before the review-columns migration. */
+/** Selects review fields guaranteed by the current schema contract. */
 export async function recordReviewColumnsSql(client, tableAlias) {
   const tableName = tableAlias === "headstones" ? "headstones" : "burials";
   if (!(await tableColumnExists(client, tableName, "data_confidence"))) {

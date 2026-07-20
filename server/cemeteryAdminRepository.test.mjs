@@ -243,7 +243,7 @@ test("updateLotText returns lot audit timestamps", async () => {
   assert.equal(lot.updatedAt, "2026-01-03T13:00:00.000Z");
 });
 
-test("listCemeteryAdminRecords tolerates databases before the alternate names migration", async () => {
+test("listCemeteryAdminRecords uses current section columns", async () => {
   const pool = {
     async connect() {
       return {
@@ -251,9 +251,8 @@ test("listCemeteryAdminRecords tolerates databases before the alternate names mi
           if (sql.includes("FROM cemeteries")) {
             return { rows: [{ id: "cemetery-1", name: "St. Mark", notes: null, created_at: "2026-01-01T12:00:00.000Z", updated_at: "2026-01-02T12:00:00.000Z" }] };
           }
-          if (sql.includes("information_schema.columns")) return { rows: [{ exists: false }] };
           if (sql.includes("FROM sections")) {
-            assert.match(sql, /'\{\}'::text\[\] AS alternate_names/);
+            assert.match(sql, /name, alternate_names, notes, created_at/u);
             return {
               rows: [
                 {

@@ -16,9 +16,16 @@ function isGraveFeatureTableCheck(sql) {
   return sql.includes("information_schema.tables") && (sql.includes("grave_features") || sql.includes("maintenance_records") || sql.includes("headstone_relationships"));
 }
 
+function isOptionalDetailQuery(sql) {
+  return sql.includes("FROM grave_features") || sql.includes("FROM maintenance_records") || sql.includes("FROM headstone_relationships");
+}
+
 function queryRows(sql) {
   if (isGraveFeatureTableCheck(sql)) return [{ exists: false }];
   if (sql.includes("information_schema.columns")) return [{ exists: true }];
+  if (sql.includes("FROM grave_features")) return [];
+  if (sql.includes("FROM maintenance_records")) return [];
+  if (sql.includes("FROM headstone_relationships")) return [];
   if (sql.includes("ST_AsGeoJSON(headstones.geometry)::json")) {
     return [
       {
@@ -246,6 +253,7 @@ test("cemetery map data includes lot burial use restrictions", async () => {
           if (sql.includes("FROM gravesites")) return { rows: [] };
           if (sql.includes("ST_AsGeoJSON(headstones.geometry)::json")) return { rows: [] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {},
@@ -440,6 +448,7 @@ test("lookup options include active military service lookups", async () => {
             };
           }
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {},
@@ -510,12 +519,11 @@ test("lookup options include active military service lookups", async () => {
   );
 });
 
-test("grave detail reads tolerate databases before burial military service migration", async () => {
+test("grave detail reads use the current military service schema", async () => {
   const pool = {
     async connect() {
       return {
         async query(sql) {
-          if (sql.includes("information_schema.columns")) return { rows: [{ exists: false }] };
           if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) {
             return {
               rows: [
@@ -534,9 +542,9 @@ test("grave detail reads tolerate databases before burial military service migra
             };
           }
           if (sql.includes("FROM burials")) {
-            assert.match(sql, /NULL::text AS military_branch/u);
-            assert.match(sql, /NULL::text AS military_war_service_code/u);
-            assert.match(sql, /NULL::text AS military_wars/u);
+            assert.match(sql, /military_branch_types\.label AS military_branch/u);
+            assert.match(sql, /military_war_service_types\.code AS military_war_service_code/u);
+            assert.match(sql, /military_war_service_types\.label AS military_wars/u);
             return {
               rows: [
                 {
@@ -562,6 +570,7 @@ test("grave detail reads tolerate databases before burial military service migra
           if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return { rows: [] };
           if (sql.includes("FROM gravesite_media_assets")) return { rows: [] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {},
@@ -632,6 +641,7 @@ test("repository maps generalized gravesite ownership rights into owner detail",
           if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return { rows: [] };
           if (sql.includes("FROM gravesite_media_assets")) return { rows: [] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {},
@@ -716,6 +726,7 @@ test("repository maps generalized lot ownership rights into grave owner detail",
           if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return { rows: [] };
           if (sql.includes("FROM gravesite_media_assets")) return { rows: [] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {},
@@ -758,6 +769,7 @@ test("createOwnershipEvent records a scoped whole-lot ownership event", async ()
           if (sql.includes("INSERT INTO ownership_event_parties")) return { rows: [] };
           if (sql.includes("INSERT INTO ownership_event_rights")) return { rows: [] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {
@@ -853,6 +865,7 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
           if (sql.includes("INSERT INTO audit_events")) return { rows: [{ id: "77777777-7777-4777-8777-777777777777" }] };
           if (sql.includes("FROM headstones") && sql.includes("WHERE headstones.id = $1")) return { rows: [headstoneRow] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {
@@ -926,6 +939,7 @@ test("getHeadstone returns standalone marker detail without a gravesite", async 
           if (sql.includes("information_schema.columns")) return { rows: [{ exists: true }] };
           if (sql.includes("FROM headstones") && sql.includes("WHERE headstones.id = $1")) return { rows: [headstoneRow] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {
@@ -981,6 +995,7 @@ test("updateGraveSpace updates editable gravesite fields with cemetery scope", a
           if (sql.includes("FROM north_hills_ocr_entry_gravesite_links")) return { rows: [] };
           if (sql.includes("FROM gravesite_media_assets")) return { rows: [] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
+          if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
         },
         release() {
