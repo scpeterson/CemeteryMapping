@@ -40,6 +40,7 @@ import {
 import { defaultAuditFilters } from "./AdminEventDefaults";
 import { AuditAdminTab, SystemEventsAdminTab } from "./AdminEventTabs";
 import { DataQualityAdminTab, type DataQualityReviewTarget } from "./DataQualityAdminTab";
+import { formatAdminTimestamp } from "../lib/format";
 import type {
   AppRole,
   AppRoleName,
@@ -303,7 +304,6 @@ const parseAlternateNames = (value: string) =>
 const cemeteryPickerLabel = (cemetery: CemeteryTextRecord) => cemetery.name;
 const sectionPickerLabel = (section: SectionTextRecord) => `Section ${section.name}`;
 const lotPickerLabel = (lot: LotTextRecord) => `Lot ${lot.lotId} - ${lot.name}`;
-const formatAdminTimestamp = (value: string) => (value ? new Date(value).toLocaleString() : "Not recorded");
 const scopeLabels: Record<string, string> = {
   grave_count_only: "Grave count only",
   multiple_lots: "Multiple lots",

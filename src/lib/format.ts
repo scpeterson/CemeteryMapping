@@ -57,6 +57,11 @@ export function formatDate(date?: string) {
   }).format(parsedDate);
 }
 
+/** Formats API timestamps for administrative screens, with a consistent empty state. */
+export function formatAdminTimestamp(value?: string) {
+  return value ? new Date(value).toLocaleString() : "Not recorded";
+}
+
 export function fullName(person: { firstName: string; middleName?: string; maidenName?: string; lastName: string }) {
   const maidenName = person.maidenName ? `(${person.maidenName})` : undefined;
   return [person.firstName, person.middleName, maidenName, person.lastName].filter(Boolean).join(" ");
