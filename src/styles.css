@@ -2368,6 +2368,24 @@ h3 {
   font-size: 0.78rem;
 }
 
+.report-result-meta > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.report-print-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid rgba(47, 104, 79, 0.28);
+  border-radius: 7px;
+  background: #fff;
+  color: #2f684f;
+  font-weight: 760;
+}
+
 .report-table-wrap {
   overflow: auto;
   border: 1px solid #d8dfd3;
@@ -2403,6 +2421,205 @@ h3 {
   padding-left: 18px;
   color: #57645b;
   font-size: 0.8rem;
+}
+
+.marker-burial-pages {
+  display: grid;
+  gap: 18px;
+}
+
+.marker-burial-page {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid #d8dfd3;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2d25;
+}
+
+.marker-burial-marker-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.marker-burial-marker-header h1,
+.marker-burial-page h2,
+.marker-burial-page h3,
+.marker-burial-marker-header p {
+  margin: 0;
+}
+
+.marker-burial-marker-header h1 {
+  margin-top: 2px;
+  font-size: 1.65rem;
+}
+
+.marker-burial-marker-header > div > p:last-child,
+.marker-burial-marker-header > span {
+  color: #667268;
+  font-size: 0.78rem;
+}
+
+.marker-burial-kicker {
+  color: #2f684f;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.marker-burial-photo,
+.marker-burial-photo-placeholder {
+  width: 100%;
+  height: 3in;
+  border-radius: 6px;
+  background: #eef1eb;
+}
+
+.marker-burial-photo {
+  object-fit: contain;
+}
+
+.marker-burial-photo-placeholder {
+  display: grid;
+  place-items: center;
+  border: 1px dashed #bfc9bb;
+  color: #68756b;
+}
+
+.marker-burial-page section {
+  display: grid;
+  gap: 7px;
+}
+
+.marker-burial-page h2 {
+  padding-bottom: 4px;
+  border-bottom: 1px solid #dfe5da;
+  color: #2f684f;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.marker-burial-page h3 {
+  font-size: 1.15rem;
+}
+
+.marker-burial-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 14px;
+  margin: 0;
+}
+
+.marker-burial-detail {
+  display: grid;
+  grid-template-columns: minmax(70px, auto) minmax(0, 1fr);
+  gap: 6px;
+  font-size: 0.78rem;
+}
+
+.marker-burial-detail dt {
+  color: #657268;
+  font-weight: 760;
+}
+
+.marker-burial-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.marker-burial-nhg p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.5in;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .marker-burial-pages,
+  .marker-burial-pages * {
+    visibility: visible;
+  }
+
+  .marker-burial-pages {
+    position: absolute;
+    inset: 0;
+  }
+
+  body > *:not(#root),
+  #root > *:not(.app-shell) {
+    display: none !important;
+  }
+
+  .reports-panel {
+    position: static;
+    display: block;
+    width: auto;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  .reports-header,
+  .report-question,
+  .report-scope,
+  .report-message,
+  .report-list,
+  .report-runner > :not(.report-result),
+  .report-result-meta,
+  .report-notes {
+    display: none !important;
+  }
+
+  .reports-layout,
+  .report-runner,
+  .report-result,
+  .marker-burial-pages {
+    display: block;
+    width: auto;
+    height: auto;
+    overflow: visible;
+  }
+
+  .marker-burial-page {
+    min-height: 10in;
+    padding: 0;
+    break-after: page;
+    break-inside: avoid;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .marker-burial-page:last-child {
+    break-after: auto;
+  }
+
+  .marker-burial-photo,
+  .marker-burial-photo-placeholder {
+    height: 3in;
+    min-height: 3in;
+  }
 }
 
 .report-empty {

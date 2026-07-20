@@ -33,11 +33,11 @@ function poolForRows(rowsByQuery) {
 test("listReportsForUser filters reports by role", () => {
   assert.deepEqual(
     listReportsForUser(readerUser).map((report) => report.id),
-    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory"],
+    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "marker-burial-pages"],
   );
   assert.deepEqual(
     listReportsForUser(powerUser).map((report) => report.id),
-    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "owner-holdings", "available-inventory", "maintenance-needs"],
+    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "marker-burial-pages", "owner-holdings", "available-inventory", "maintenance-needs"],
   );
   assert.ok(listReportsForUser(adminUser).some((report) => report.id === "deed-claim-trace-guide"));
 });
@@ -49,6 +49,10 @@ test("matchReportQuery maps free text only to approved reports", () => {
   assert.equal(matchReportQuery("How many gravesites are in the cemetery?").report.id, "spatial-inventory-counts");
   assert.equal(matchReportQuery("List markers by type.").report.id, "marker-type-inventory");
   assert.equal(matchReportQuery("What marker types are in section C?").report.id, "marker-type-inventory");
+  assert.equal(matchReportQuery("Print burial pages for marker TLC-HS-0228.").report.id, "marker-burial-pages");
+  assert.equal(matchReportQuery("Print burial pages for marker TLC-HS-0228.").parameters.markerId, "TLC-HS-0228");
+  assert.equal(matchReportQuery("Show marker burial pages for Schug.").parameters.personName, "Schug");
+  assert.equal(matchReportQuery("Print marker burial pages for section C.").parameters.sectionName, "C");
   assert.equal(matchReportQuery("What gravesites are available for purchase?").report.id, "available-inventory");
   assert.equal(matchReportQuery("Which markers are illegible?").report.id, "maintenance-needs");
   assert.equal(matchReportQuery("What markers have not been cleaned in a year?").parameters.daysSinceCleaned, "365");
@@ -159,6 +163,46 @@ test("marker type inventory groups markers by lookup type", async () => {
   assert.doesNotMatch(query.sql, /sections\.id\b/u);
   assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"], "C", "%upright%"]);
   assert.equal(result.summary, '3 markers listed by type for section C, type matching "upright".');
+});
+
+test("marker burial pages filter linked burials and include photos and NHG evidence", async () => {
+  const pool = poolForRows([
+    {
+      includes: "FROM headstones",
+      rows: [
+        {
+          marker_uuid: "marker-1",
+          marker_id: "TLC-HS-0228",
+          cemetery: "Trinity",
+          section: "C",
+          grave: "C-0228",
+          photo_url: "/media/schug.jpg",
+          burial_uuid: "burial-1",
+          person: "Hazel M Schug",
+          nhg_text: "Page 202: SCHUG marker transcription",
+        },
+      ],
+    },
+  ]);
+
+  const result = await runReport(
+    pool,
+    "marker-burial-pages",
+    { markerId: "TLC-HS-0228", personName: "Schug", sectionName: "C" },
+    readerUser,
+  );
+  const query = pool.queries[0];
+
+  assert.match(query.sql, /JOIN headstone_burials/u);
+  assert.match(query.sql, /headstone_media_assets/u);
+  assert.match(query.sql, /north_hills_ocr_entry_headstone_links/u);
+  assert.match(query.sql, /north_hills_ocr_entry_gravesite_links/u);
+  assert.match(query.sql, /gravesites\.cemetery_id = ANY\(\$1::uuid\[\]\)/u);
+  assert.match(query.sql, /headstones\.headstone_id ILIKE \$2/u);
+  assert.match(query.sql, /upper\(gravesites\.section_id\) = upper\(\$4\)/u);
+  assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"], "%TLC-HS-0228%", "%Schug%", "C"]);
+  assert.equal(result.layout, "marker-burial-pages");
+  assert.equal(result.rows[0].nhg_text, "Page 202: SCHUG marker transcription");
 });
 
 test("non-admin reports ignore client supplied cemetery filters", async () => {
