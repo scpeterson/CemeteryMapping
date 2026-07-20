@@ -6,7 +6,7 @@
 - Status: Accepted
 - Date: 2026-05-20
 - Owners: Project maintainers
-- Related changes: Database changelog implementation
+- Related changes: Database changelog implementation, PR #298 fail-fast schema contract
 
 ## Context
 
@@ -15,6 +15,8 @@ The schema includes spatial tables, constraints, indexes, validation views, stag
 ## Decision
 
 Use Liquibase formatted SQL changesets under `db/changelog/changes`, included by `db/changelog/db.changelog-root.yaml`.
+
+The API verifies its required Liquibase changeset in `databasechangelog` before it begins listening. If the required changeset is absent or the changelog table cannot be read, startup fails with instructions to run `npm run db:migrate`. Request handlers therefore target one current schema instead of probing `information_schema` for tables and columns on every request.
 
 Core software:
 
@@ -30,6 +32,8 @@ Liquibase gives the project an ordered changelog, a database changelog table, va
 ## Consequences
 
 Every schema change must be a new changeset. Migration files must include rollback instructions. CI runs changelog validation, rollback testing, migrations, and status checks.
+
+The required changeset exported by `server/schemaContract.mjs` must advance when a new changelog tip becomes mandatory for the running API. Deployments must apply migrations before starting the corresponding API build. This makes schema drift visible at startup and removes the latency and maintenance cost of supporting several historical query shapes at runtime.
 
 Because formatted SQL is explicit, maintainers must be careful with destructive changes and rollback quality.
 
@@ -59,6 +63,8 @@ Check status:
 APP_ENV=test npm run db:status
 ```
 
+Start the API only after status reports no pending changesets. An out-of-date database intentionally prevents the API from listening.
+
 Current changelog files:
 
 - `001-initial-schema.sql`
@@ -73,4 +79,4 @@ Current changelog files:
 
 ## Update Triggers
 
-Update this ADR when the migration tool changes, the changelog layout changes, rollback requirements change, or CI no longer exercises Liquibase validation and rollback.
+Update this ADR when the migration tool changes, the changelog layout changes, the startup schema contract changes, rollback requirements change, or CI no longer exercises Liquibase validation and rollback.

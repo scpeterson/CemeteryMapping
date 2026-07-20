@@ -131,6 +131,9 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/health` for API, database, and version health metadata
 - `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` for full grave details fetched when a grave is selected
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
+- `GET /api/reports` for the role-filtered approved report catalog
+- `POST /api/reports/run` to run an approved report with validated parameters and cemetery scoping
+- `POST /api/reports/query` to match a natural-language cemetery question to an approved report and run it when all required parameters are available
 - `GET /api/admin/cemetery-records` for admin-only cemetery, section, and lot text records
 - `PUT /api/admin/cemetery-records/cemeteries/:id`, `/sections/:id`, and `/lots/:id` for admin-only text updates
 - `GET /api/admin/deed-registry-review` for staged deed registry evidence review
