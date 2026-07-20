@@ -70,6 +70,7 @@ import {
 } from "./systemEventRepository.mjs";
 import { runAuditRetentionPurgeJob, runSystemEventRetentionPurgeJob } from "./retentionJobs.mjs";
 import { appVersionMetadata } from "./version.mjs";
+import { optionalCoordinate, optionalText, requiredText, validateIdentifierList, validateUuid } from "./inputValidation.mjs";
 import {
   BadRequestError,
   validateCemeteryId,
@@ -80,47 +81,6 @@ import {
 } from "./requestValidation.mjs";
 
 const { Pool } = pg;
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-
-function requiredText(value, label, maxLength) {
-  const text = String(value ?? "").trim();
-  if (!text) throw new BadRequestError(`${label} is required.`);
-  if (text.length > maxLength) throw new BadRequestError(`${label} is too long.`);
-  return text;
-}
-
-function optionalText(value, label, maxLength) {
-  if (value === undefined || value === null) return "";
-  const text = String(value).trim();
-  if (text.length > maxLength) throw new BadRequestError(`${label} is too long.`);
-  return text;
-}
-
-function optionalCoordinate(value, label, { min, max }) {
-  const text = optionalText(value, label, 50);
-  if (!text) return null;
-  const number = Number(text);
-  if (!Number.isFinite(number) || number < min || number > max) throw new BadRequestError(`${label} is invalid.`);
-  return number;
-}
-
-function validateUuid(value, label) {
-  const text = String(value ?? "").trim();
-  if (!uuidPattern.test(text)) throw new BadRequestError(`${label} must be a UUID.`);
-  return text;
-}
-
-function validateIdentifierList(value, label, maxItems = 100) {
-  const identifiers = Array.isArray(value) ? value.map((item) => String(item ?? "").trim()).filter(Boolean) : [];
-  const uniqueIdentifiers = [...new Set(identifiers)];
-  if (uniqueIdentifiers.length === 0) throw new BadRequestError(`${label} is required.`);
-  if (uniqueIdentifiers.length > maxItems) throw new BadRequestError(`${label} can include at most ${maxItems} records.`);
-  uniqueIdentifiers.forEach((identifier) => {
-    if (identifier.length > 100) throw new BadRequestError(`${label} contains an identifier that is too long.`);
-  });
-  return uniqueIdentifiers;
-}
-
 function validateAdminUserPayload(body, roles) {
   const role = requiredText(body?.role, "Role", 50);
   if (!roles.includes(role)) throw new BadRequestError(`Unsupported role: ${role}.`);
