@@ -1,6 +1,7 @@
 import { setAuditContext } from "./auditContext.mjs";
 import { maintenanceRecordJoinSql, maintenanceRecordSelectSql } from "./cemeteryMaintenanceQueries.mjs";
 import { toMaintenanceRecord } from "./cemeteryMappers.mjs";
+import { resolveCemeteryMutationTargets } from "./cemeteryMutationTargets.mjs";
 
 export async function createMaintenanceRecord(pool, cemeteryId, record, { actorUser, reason, allowedCemeteryIds } = {}) {
   const client = await pool.connect();
@@ -13,68 +14,12 @@ export async function createMaintenanceRecord(pool, cemeteryId, record, { actorU
       return undefined;
     }
 
-    let gravesiteUuid = null;
-    if (record.graveSpaceId) {
-      const graveResult = await client.query(
-        `
-          SELECT id::text
-          FROM gravesites
-          WHERE cemetery_id = $1
-            AND gravesite_id = $2
-            AND deleted_at IS NULL
-          LIMIT 1
-        `,
-        [cemeteryId, record.graveSpaceId],
-      );
-      gravesiteUuid = graveResult.rows[0]?.id ?? null;
-      if (!gravesiteUuid) {
-        await client.query("ROLLBACK");
-        return undefined;
-      }
+    const targets = await resolveCemeteryMutationTargets(client, cemeteryId, record);
+    if (!targets) {
+      await client.query("ROLLBACK");
+      return undefined;
     }
-
-    let headstoneUuid = record.headstoneId || null;
-    if (headstoneUuid) {
-      const headstoneResult = await client.query(
-        `
-          SELECT headstones.id::text
-          FROM headstones
-          LEFT JOIN gravesites AS direct_gravesite
-            ON direct_gravesite.id = headstones.gravesite_uuid
-           AND direct_gravesite.deleted_at IS NULL
-          LEFT JOIN LATERAL (
-            SELECT gravesites.cemetery_id
-            FROM headstone_gravesites
-            JOIN gravesites
-              ON gravesites.id = headstone_gravesites.gravesite_uuid
-             AND gravesites.deleted_at IS NULL
-            WHERE headstone_gravesites.headstone_uuid = headstones.id
-              AND headstone_gravesites.deleted_at IS NULL
-              AND gravesites.cemetery_id = $2
-            LIMIT 1
-          ) linked_gravesite ON true
-          LEFT JOIN LATERAL (
-            SELECT cemeteries.id
-            FROM cemeteries
-            WHERE headstones.geometry IS NOT NULL
-              AND cemeteries.deleted_at IS NULL
-              AND ST_Covers(cemeteries.geometry, headstones.geometry)
-            ORDER BY cemeteries.name, cemeteries.id
-            LIMIT 1
-          ) containing_cemetery ON true
-          WHERE headstones.id = $1
-            AND headstones.deleted_at IS NULL
-            AND COALESCE(direct_gravesite.cemetery_id, linked_gravesite.cemetery_id, containing_cemetery.id) = $2
-          LIMIT 1
-        `,
-        [headstoneUuid, cemeteryId],
-      );
-      headstoneUuid = headstoneResult.rows[0]?.id ?? null;
-      if (!headstoneUuid) {
-        await client.query("ROLLBACK");
-        return undefined;
-      }
-    }
+    const { gravesiteUuid, headstoneUuid } = targets;
 
     const insertResult = await client.query(
       `
@@ -214,4 +159,3 @@ export async function updateMaintenanceRecord(pool, id, record, { actorUser, rea
     client.release();
   }
 }
-

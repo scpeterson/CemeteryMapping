@@ -7,7 +7,7 @@ const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
 const cemeteryMap = readFileSync(new URL("../src/components/CemeteryMap.tsx", import.meta.url), "utf8");
 const api = readFileSync(new URL("../src/api/cemeteryApi.ts", import.meta.url), "utf8");
 const serverIndex = readFileSync(new URL("../server/index.mjs", import.meta.url), "utf8");
-const repository = readFileSync(new URL("../server/cemeteryRepository.mjs", import.meta.url), "utf8");
+const headstoneMutations = readFileSync(new URL("../server/cemeteryHeadstoneMutations.mjs", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../db/changelog/changes/224-headstone-gravesite-secondary-relationships.sql", import.meta.url), "utf8");
 const changelog = readFileSync(new URL("../db/changelog/db.changelog-root.yaml", import.meta.url), "utf8");
 
@@ -38,8 +38,8 @@ test("create marker API posts to the selected gravesite route", () => {
 });
 
 test("created markers are linked to the selected gravesite with secondary relationship types", () => {
-  assert.match(repository, /INSERT INTO headstones/u);
-  assert.match(repository, /INSERT INTO headstone_gravesites/u);
+  assert.match(headstoneMutations, /INSERT INTO headstones/u);
+  assert.match(headstoneMutations, /INSERT INTO headstone_gravesites/u);
   assert.match(serverIndex, /\["primary", "spans", "nearby", "inferred", "footstone", "secondary"\]/u);
   assert.match(migration, /'footstone'/u);
   assert.match(migration, /'secondary'/u);
