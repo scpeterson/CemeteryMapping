@@ -40,6 +40,17 @@ import {
 import { defaultAuditFilters } from "./AdminEventDefaults";
 import { AuditAdminTab, SystemEventsAdminTab } from "./AdminEventTabs";
 import { DataQualityAdminTab, type DataQualityReviewTarget } from "./DataQualityAdminTab";
+import {
+  affidavitStatusLabels,
+  blankDeedActionForm,
+  blankDeedCaseForm,
+  councilStatusLabels,
+  deedActionTypeLabels,
+  deedStatusLabels,
+  defaultDeedCaseFilters,
+  defaultDeedReviewFilters,
+  investigationStatusLabels,
+} from "./AdminPanelDeedConfig";
 import { formatAdminTimestamp } from "../lib/format";
 import type {
   AppRole,
@@ -187,56 +198,6 @@ const emptyHeadstoneLookups: HeadstoneLookups = {
   headstones: [],
 };
 
-const defaultDeedReviewFilters: DeedRegistryReviewFilters = {
-  batchId: "",
-  confidence: "",
-  ownershipScope: "",
-  q: "",
-  limit: 100,
-};
-
-const defaultDeedCaseFilters = {
-  q: "",
-  status: "",
-  limit: 25,
-};
-
-const todayIsoDate = () => new Date().toISOString().slice(0, 10);
-
-const blankDeedCaseForm = (): SaveDeedInvestigationCaseInput => ({
-  cemeteryId: "",
-  caseNumber: `DI-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
-  status: "open",
-  subjectName: "",
-  requesterName: "",
-  requesterContact: "",
-  plotReference: "",
-  requestSummary: "",
-  familySummary: "",
-  findings: "",
-  councilDecision: "",
-  affidavitStatus: "not_needed",
-  outcome: "",
-  openedAt: todayIsoDate(),
-  closedAt: "",
-  reason: "Updated deed investigation case.",
-});
-
-const blankDeedActionForm = (): SaveDeedInvestigationActionInput => ({
-  subjectName: "",
-  actionType: "issue_deed",
-  plotReference: "",
-  councilStatus: "recommended",
-  councilDecisionDate: "",
-  councilDocumentReference: "",
-  affidavitStatus: "needed",
-  deedStatus: "pending",
-  outcome: "",
-  notes: "",
-  sortOrder: 100,
-  reason: "Updated deed investigation recommended action.",
-});
-
 const emptyDeedRegistryReview: DeedRegistryReview = {
   batches: [],
   selectedBatchId: "",
@@ -323,46 +284,6 @@ const comparisonLabels: Record<string, string> = {
   added: "Added since Original 2017",
   changed: "Changed since Original 2017",
   unchanged: "Unchanged from Original 2017",
-};
-const investigationStatusLabels: Record<DeedInvestigationStatus, string> = {
-  open: "Open",
-  researching: "Researching",
-  awaiting_family: "Awaiting family",
-  awaiting_council: "Awaiting council",
-  approved: "Approved",
-  denied: "Denied",
-  closed: "Closed",
-};
-const affidavitStatusLabels: Record<DeedInvestigationAffidavitStatus, string> = {
-  not_needed: "Not needed",
-  needed: "Needed",
-  sent: "Sent",
-  received: "Received",
-  waived: "Waived",
-};
-const deedActionTypeLabels: Record<DeedInvestigationActionType, string> = {
-  issue_deed: "Issue deed",
-  replacement_deed: "Replacement deed",
-  inter_ashes: "Inter ashes",
-  approve_marker: "Approve marker",
-  deny_request: "Deny request",
-  document_only: "Document only",
-  other: "Other",
-};
-const councilStatusLabels: Record<DeedInvestigationCouncilStatus, string> = {
-  not_submitted: "Not submitted",
-  recommended: "Recommended",
-  submitted: "Submitted",
-  approved: "Approved",
-  denied: "Denied",
-  not_required: "Not required",
-};
-const deedStatusLabels: Record<DeedInvestigationDeedStatus, string> = {
-  not_started: "Not started",
-  pending: "Pending",
-  issued: "Issued",
-  not_issued: "Not issued",
-  not_applicable: "Not applicable",
 };
 const deedScopeLabel = (scope: string) => scopeLabels[scope] ?? scope;
 const deedConfidenceLabel = (confidence: string) => confidenceLabels[confidence] ?? confidence;
