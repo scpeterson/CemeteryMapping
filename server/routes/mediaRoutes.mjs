@@ -1,9 +1,11 @@
+import { optionalText, validateUuid } from "../inputValidation.mjs";
+import { BadRequestError, validateCemeteryId, validateGraveSpaceId, validateMutationReason } from "../requestValidation.mjs";
+import { validateMediaUploadMetadata } from "./mediaRouteValidation.mjs";
+
 export function registerMediaRoutes(app, context) {
   const {
-    BadRequestError, assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto,
-    createHeadstonePhoto, express, moveMediaAssetLink, optionalText, pool, requireCemeteryAdmin,
-    requirePowerUser, softDeleteMediaAsset, validateCemeteryId, validateGraveSpaceId,
-    validateMediaUploadMetadata, validateMutationReason, validateUuid,
+    assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto, createHeadstonePhoto,
+    express, moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset,
   } = context;
     app.post(
       "/api/headstones/:id/media-assets",

@@ -1,3 +1,17 @@
+import { validateUuid } from "../inputValidation.mjs";
+import { validateMutationReason } from "../requestValidation.mjs";
+import {
+  validateAdminUserPayload, validateAuth0UserResolutionPayload, validateBulkGravesiteLotPayload,
+  validateBulkHeadstoneUpdatePayload, validateBulkNorthHillsNotePayload,
+  validateBulkNorthHillsReviewedPayload, validateCemeteryTextPayload,
+  validateDeedInvestigationCaseActionPayload, validateDeedInvestigationCaseLinkPayload,
+  validateDeedInvestigationCasePayload, validateLookupPayload, validateLookupTable,
+  validateLotTextPayload, validateNorthHillsEntryPayload, validateNorthHillsEvidencePayload,
+  validateNorthHillsEvidenceTargetPayload, validateNorthHillsSourceFactPromotionPayload,
+  validateNorthHillsSourceFactReviewPayload, validateSectionTextPayload,
+  validateSourcePersonRecordPayload,
+} from "./adminRouteValidation.mjs";
+
 export function registerAdminRoutes(app, context) {
   const {
     Auth0ProvisioningNotConfiguredError, assignedEditableCemeteryIds, auth0ManagementClient,
@@ -14,16 +28,7 @@ export function registerAdminRoutes(app, context) {
     softDeleteSourcePersonRecord, updateAuditRetentionPolicy, updateCemeteryText,
     updateDeedInvestigationCase, updateDeedInvestigationCaseAction, updateLookupRecord, updateLotText,
     updateNorthHillsOcrEntry, updateSectionText, updateSourcePersonRecord,
-    updateSystemEventRetentionPolicy, updateUser, validateAdminUserPayload,
-    validateAuth0UserResolutionPayload, validateBulkGravesiteLotPayload,
-    validateBulkHeadstoneUpdatePayload, validateBulkNorthHillsNotePayload,
-    validateBulkNorthHillsReviewedPayload, validateCemeteryTextPayload,
-    validateDeedInvestigationCaseActionPayload, validateDeedInvestigationCaseLinkPayload,
-    validateDeedInvestigationCasePayload, validateLookupPayload, validateLookupTable,
-    validateLotTextPayload, validateMutationReason, validateNorthHillsEntryPayload,
-    validateNorthHillsEvidencePayload, validateNorthHillsEvidenceTargetPayload,
-    validateNorthHillsSourceFactPromotionPayload, validateNorthHillsSourceFactReviewPayload,
-    validateSectionTextPayload, validateSourcePersonRecordPayload, validateUuid, versionMetadata,
+    updateSystemEventRetentionPolicy, updateUser, versionMetadata,
   } = context;
     app.get("/api/admin/roles", requireAdmin, async (_request, response, next) => {
       try {

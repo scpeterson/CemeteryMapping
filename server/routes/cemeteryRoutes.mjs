@@ -1,3 +1,14 @@
+import { validateUuid } from "../inputValidation.mjs";
+import {
+  validateCemeteryId, validateGraveSpaceId, validateMutationReason, validateSearchQuery, validateStatuses,
+} from "../requestValidation.mjs";
+import {
+  validateBurialPayload, validateCreateHeadstonePayload, validateGraveFeaturePayload,
+  validateGraveSpacePayload, validateHeadstonePayload, validateHeadstoneRelationshipPayload,
+  validateMaintenanceRecordPayload, validateOwnershipEventPayload, validateReportParameters,
+  validateReportQueryPayload, validateReportRunPayload,
+} from "./cemeteryRouteValidation.mjs";
+
 export function registerCemeteryRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
@@ -7,12 +18,8 @@ export function registerCemeteryRoutes(app, context) {
     requireReader, restoreGraveSpace, runReport,
     safelyRecordSystemEvent, searchCemetery, softDeleteGraveFeature, softDeleteGraveSpace,
     softDeleteHeadstoneRelationship, updateBurial, updateGraveFeature, updateGraveSpace, updateHeadstone,
-    updateHeadstoneRelationship, updateMaintenanceRecord, validateBurialPayload, validateCemeteryId,
-    validateCreateHeadstonePayload, validateGraveFeaturePayload, validateGraveSpaceId,
-    validateGraveSpacePayload, validateHeadstoneBusinessRules, validateHeadstonePayload,
-    validateHeadstoneRelationshipPayload, validateMaintenanceRecordPayload, validateMutationReason,
-    validateOwnershipEventPayload, validateReportParameters, validateReportQueryPayload,
-    validateReportRunPayload, validateSearchQuery, validateStatuses, validateUuid, versionMetadata,
+    updateHeadstoneRelationship, updateMaintenanceRecord, validateHeadstoneBusinessRules,
+    versionMetadata,
   } = context;
     app.get("/api/health", async (_request, response, next) => {
       try {
