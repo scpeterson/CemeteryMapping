@@ -53,6 +53,19 @@ const reportDefinitions = [
     examples: ["List markers by type.", "What marker types are in section C?", "List flat markers."],
   },
   {
+    id: "marker-burial-pages",
+    title: "Marker burial pages",
+    description: "Creates one printable page per burial linked to a marker, including marker photo, marker details, burial details, and NHG text.",
+    category: "Burials",
+    requiredRole: "reader",
+    parameters: [
+      { name: "markerId", label: "Marker ID", type: "text", required: false },
+      { name: "personName", label: "Burial name", type: "text", required: false },
+      { name: "sectionName", label: "Section", type: "text", required: false },
+    ],
+    examples: ["Print burial pages for marker TLC-HS-0228.", "Show marker burial pages for Schug.", "Print marker burial pages for section C."],
+  },
+  {
     id: "owner-holdings",
     title: "Owner holdings",
     description: "Lists lots and gravesites currently associated with an owner name.",
@@ -186,7 +199,7 @@ function scopedWhere(columnName, values, cemeteryIds) {
   return ` AND ${columnName} = ANY($${values.length}::uuid[])`;
 }
 
-function reportResult({ definition, summary, columns, rows, notes = [] }) {
+function reportResult({ definition, summary, columns, rows, notes = [], layout }) {
   return {
     report: toDefinition(definition),
     summary,
@@ -194,7 +207,135 @@ function reportResult({ definition, summary, columns, rows, notes = [] }) {
     rows,
     notes,
     generatedAt: new Date().toISOString(),
+    ...(layout ? { layout } : {}),
   };
+}
+
+async function runMarkerBurialPages(client, definition, parameters, cemeteryIds) {
+  const markerId = optionalTextParameter(parameters, "markerId", 80);
+  const personName = optionalTextParameter(parameters, "personName", 120);
+  const sectionName = optionalTextParameter(parameters, "sectionName", 80);
+  const values = [];
+  const filters = [];
+  const scope = scopedWhere("gravesites.cemetery_id", values, cemeteryIds);
+
+  if (markerId) {
+    values.push(`%${markerId}%`);
+    filters.push(`headstones.headstone_id ILIKE $${values.length}`);
+  }
+  if (personName) {
+    values.push(`%${personName}%`);
+    filters.push(`COALESCE(NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''))) ILIKE $${values.length}`);
+  }
+  if (sectionName) {
+    values.push(sectionName);
+    filters.push(`upper(gravesites.section_id) = upper($${values.length})`);
+  }
+
+  const result = await client.query(
+    `
+      SELECT
+        headstones.id::text AS marker_uuid,
+        headstones.headstone_id AS marker_id,
+        cemeteries.name AS cemetery,
+        gravesites.section_id AS section,
+        gravesites.gravesite_id,
+        concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS grave,
+        COALESCE(NULLIF(marker_types.label, ''), marker_types.code) AS marker_type,
+        COALESCE(NULLIF(marker_material_types.label, ''), marker_material_types.code) AS marker_material,
+        COALESCE(NULLIF(headstone_condition_types.label, ''), headstone_condition_types.code) AS marker_condition,
+        headstones.inscription,
+        headstones.design_notes,
+        headstones.back_description,
+        headstones.condition_notes,
+        COALESCE(marker_photo.file_url, NULLIF(headstones.photo_url, '')) AS photo_url,
+        burials.id::text AS burial_uuid,
+        COALESCE(NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.maiden_name, ''), NULLIF(burials.last_name, ''))) AS person,
+        burials.first_name,
+        burials.last_name,
+        burials.maiden_name,
+        COALESCE(burials.birth_date_text, burials.birth_date::text) AS birth_date,
+        COALESCE(burials.death_date_text, burials.death_date::text) AS death_date,
+        burials.burial_date,
+        burial_interment_types.label AS interment_type,
+        burial_record_status_types.label AS record_status,
+        burials.funeral_home,
+        burials.veteran,
+        military_branch_types.label AS military_branch,
+        military_rank_types.label AS military_rank,
+        military_war_service_types.label AS military_war_service,
+        burials.notes AS burial_notes,
+        nhg_evidence.nhg_text
+      FROM headstones
+      JOIN headstone_burials
+        ON headstone_burials.headstone_uuid = headstones.id
+       AND headstone_burials.deleted_at IS NULL
+      JOIN burials
+        ON burials.id = headstone_burials.burial_uuid
+       AND burials.deleted_at IS NULL
+      JOIN gravesites
+        ON gravesites.id = burials.gravesite_uuid
+       AND gravesites.deleted_at IS NULL
+      JOIN cemeteries
+        ON cemeteries.id = gravesites.cemetery_id
+       AND cemeteries.deleted_at IS NULL
+      LEFT JOIN marker_types ON marker_types.id = headstones.marker_type_id
+      LEFT JOIN marker_material_types ON marker_material_types.id = headstones.material_type_id
+      LEFT JOIN headstone_condition_types ON headstone_condition_types.id = headstones.condition_type_id
+      LEFT JOIN burial_interment_types ON burial_interment_types.id = burials.interment_type_id
+      LEFT JOIN burial_record_status_types ON burial_record_status_types.id = burials.burial_record_status_type_id
+      LEFT JOIN military_branch_types ON military_branch_types.id = burials.military_branch_type_id
+      LEFT JOIN military_rank_types ON military_rank_types.id = burials.military_rank_type_id
+      LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id
+      LEFT JOIN LATERAL (
+        SELECT media_assets.file_url
+        FROM headstone_media_assets
+        JOIN media_assets ON media_assets.id = headstone_media_assets.media_asset_id
+        WHERE headstone_media_assets.headstone_uuid = headstones.id
+          AND headstone_media_assets.deleted_at IS NULL
+          AND headstone_media_assets.status = 'linked'
+          AND media_assets.deleted_at IS NULL
+          AND media_assets.status = 'linked'
+          AND media_assets.asset_type = 'photo'
+        ORDER BY headstone_media_assets.display_order, media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC
+        LIMIT 1
+      ) marker_photo ON true
+      LEFT JOIN LATERAL (
+        SELECT string_agg(
+          concat_ws(' ', CASE WHEN entries.source_page_number IS NOT NULL THEN 'Page ' || entries.source_page_number || ':' END, entries.raw_text),
+          E'\n\n' ORDER BY entries.source_page_number NULLS LAST, entries.source_line_start, entries.id
+        ) AS nhg_text
+        FROM north_hills_ocr_entries entries
+        WHERE EXISTS (
+          SELECT 1
+          FROM north_hills_ocr_entry_headstone_links links
+          WHERE links.entry_id = entries.id
+            AND links.headstone_uuid = headstones.id
+            AND links.status = 'linked'
+        ) OR EXISTS (
+          SELECT 1
+          FROM north_hills_ocr_entry_gravesite_links links
+          WHERE links.entry_id = entries.id
+            AND links.gravesite_uuid = gravesites.id
+            AND links.status = 'linked'
+        )
+      ) nhg_evidence ON true
+      WHERE headstones.deleted_at IS NULL
+        ${scope}
+        ${filters.length ? `AND ${filters.join(" AND ")}` : ""}
+      ORDER BY cemeteries.name, gravesites.section_id, headstones.headstone_id, person, burials.id
+    `,
+    values,
+  );
+
+  return reportResult({
+    definition,
+    summary: `${result.rows.length} burial page${result.rows.length === 1 ? "" : "s"} generated.`,
+    columns: [],
+    rows: result.rows,
+    layout: "marker-burial-pages",
+    notes: ["Each burial linked to a marker begins on a separate printed page."],
+  });
 }
 
 async function runBurialDateExtremes(client, definition, cemeteryIds) {
@@ -948,6 +1089,13 @@ export function matchReportQuery(query) {
     reportId = "burial-date-extremes";
   } else if (/\bveterans?\b/u.test(lower) || /\bmilitary\b/u.test(lower) || /\bwar(?:s)?\b/u.test(lower) || /\bservice branches?\b/u.test(lower)) {
     reportId = "veteran-service-summary";
+  } else if (/\b(marker|headstone)\s+burial\s+pages?\b/u.test(lower) || (/\b(print|page|pages)\b/u.test(lower) && /\b(markers?|headstones?)\b/u.test(lower) && /\bburials?\b/u.test(lower))) {
+    reportId = "marker-burial-pages";
+    const markerMatch = text.match(/\b(?:marker|headstone)\s+(TLC-HS-[A-Z0-9-]+)\b/iu);
+    if (markerMatch) parameters.markerId = markerMatch[1];
+    parameters.sectionName = extractSectionName(text);
+    const personMatch = text.match(/\bfor\s+(?!marker\b|headstone\b|section\b)([a-z][a-z .,'-]{1,119})[?.!]*$/iu);
+    if (personMatch) parameters.personName = compactText(personMatch[1].replace(/[?.!,;:]+$/u, ""), 120);
   } else if (/\b(markers?|headstones?)\b/u.test(lower) && /\b(types?|by type|list)\b/u.test(lower)) {
     reportId = "marker-type-inventory";
     parameters.sectionName = extractSectionName(text);
@@ -1028,6 +1176,7 @@ export async function runReport(pool, reportId, parameters = {}, user) {
     if (reportId === "veteran-service-summary") return await runVeteranServiceSummary(client, definition, cemeteryIds);
     if (reportId === "spatial-inventory-counts") return await runSpatialInventoryCounts(client, definition, parameters, cemeteryIds);
     if (reportId === "marker-type-inventory") return await runMarkerTypeInventory(client, definition, parameters, cemeteryIds);
+    if (reportId === "marker-burial-pages") return await runMarkerBurialPages(client, definition, parameters, cemeteryIds);
     if (reportId === "owner-holdings") return await runOwnerHoldings(client, definition, parameters, cemeteryIds);
     if (reportId === "available-inventory") return await runAvailableInventory(client, definition, cemeteryIds);
     if (reportId === "maintenance-needs") return await runMaintenanceNeeds(client, definition, parameters, cemeteryIds);

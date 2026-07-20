@@ -530,6 +530,7 @@ export type ReportResult = {
   rows: Record<string, unknown>[];
   notes: string[];
   generatedAt: string;
+  layout?: "marker-burial-pages";
 };
 
 export type ReportQueryResponse = {

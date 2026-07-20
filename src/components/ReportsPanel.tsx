@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Play, Search, X } from "lucide-react";
+import { Play, Printer, Search, X } from "lucide-react";
 import { fetchReports, queryReports, runReport } from "../api/cemeteryApi";
 import type { CemeteryData, CurrentUser, ReportDefinition, ReportResult } from "../types";
 
@@ -19,6 +19,76 @@ function formatReportValue(value: unknown) {
 
 function initialParameters(report?: ReportDefinition) {
   return Object.fromEntries((report?.parameters ?? []).map((parameter) => [parameter.name, ""]));
+}
+
+function reportText(row: Record<string, unknown>, key: string) {
+  return formatReportValue(row[key]);
+}
+
+function DetailItem({ label, value }: { label: string; value: unknown }) {
+  if (value === null || value === undefined || value === "") return null;
+  return (
+    <div className="marker-burial-detail">
+      <dt>{label}</dt>
+      <dd>{formatReportValue(value)}</dd>
+    </div>
+  );
+}
+
+function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
+  if (!rows.length) return <div className="report-empty">No linked marker burials matched these filters.</div>;
+  return (
+    <div className="marker-burial-pages">
+      {rows.map((row, index) => (
+        <article className="marker-burial-page" key={`${String(row.marker_uuid)}:${String(row.burial_uuid)}`}>
+          <header className="marker-burial-marker-header">
+            <div>
+              <p className="marker-burial-kicker">Marker burial record</p>
+              <h1>{reportText(row, "marker_id")}</h1>
+              <p>{[row.cemetery, row.section ? `Section ${row.section}` : "", row.grave].filter(Boolean).join(" · ")}</p>
+            </div>
+            <span>Page {index + 1} of {rows.length}</span>
+          </header>
+          {row.photo_url ? <img className="marker-burial-photo" src={String(row.photo_url)} alt={`Marker ${String(row.marker_id)}`} /> : <div className="marker-burial-photo-placeholder">No marker photo available</div>}
+          <section>
+            <h2>Marker information</h2>
+            <dl className="marker-burial-details">
+              <DetailItem label="Marker ID" value={row.marker_id} />
+              <DetailItem label="Type" value={row.marker_type} />
+              <DetailItem label="Material" value={row.marker_material} />
+              <DetailItem label="Condition" value={row.marker_condition} />
+              <DetailItem label="Gravesite" value={row.gravesite_id} />
+              <DetailItem label="Inscription" value={row.inscription} />
+              <DetailItem label="Design" value={row.design_notes} />
+              <DetailItem label="Back" value={row.back_description} />
+              <DetailItem label="Condition notes" value={row.condition_notes} />
+            </dl>
+          </section>
+          <section>
+            <h2>Burial information</h2>
+            <h3>{reportText(row, "person")}</h3>
+            <dl className="marker-burial-details">
+              <DetailItem label="Birth" value={row.birth_date} />
+              <DetailItem label="Death" value={row.death_date} />
+              <DetailItem label="Burial" value={row.burial_date} />
+              <DetailItem label="Interment" value={row.interment_type} />
+              <DetailItem label="Record status" value={row.record_status} />
+              <DetailItem label="Funeral home" value={row.funeral_home} />
+              <DetailItem label="Veteran" value={row.veteran === true ? "Yes" : row.veteran ? row.veteran : undefined} />
+              <DetailItem label="Branch" value={row.military_branch} />
+              <DetailItem label="Rank" value={row.military_rank} />
+              <DetailItem label="War/service" value={row.military_war_service} />
+              <DetailItem label="Notes" value={row.burial_notes} />
+            </dl>
+          </section>
+          <section className="marker-burial-nhg">
+            <h2>North Hills Genealogists text</h2>
+            <p>{row.nhg_text ? String(row.nhg_text) : "No linked NHG text."}</p>
+          </section>
+        </article>
+      ))}
+    </div>
+  );
 }
 
 export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) {
@@ -276,9 +346,17 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
             <div className="report-result">
               <div className="report-result-meta">
                 <strong>{result.report.title}</strong>
-                <span>{new Date(result.generatedAt).toLocaleString()}</span>
+                <div>
+                  <span>{new Date(result.generatedAt).toLocaleString()}</span>
+                  {result.layout === "marker-burial-pages" ? (
+                    <button type="button" className="report-print-button" onClick={() => window.print()}>
+                      <Printer size={15} aria-hidden="true" />
+                      Print
+                    </button>
+                  ) : null}
+                </div>
               </div>
-              <div className="report-table-wrap">
+              {result.layout === "marker-burial-pages" ? <MarkerBurialPages rows={result.rows} /> : <div className="report-table-wrap">
                 <table className="report-table">
                   <thead>
                     <tr>
@@ -303,7 +381,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
                     )}
                   </tbody>
                 </table>
-              </div>
+              </div>}
               {result.notes.length ? (
                 <ul className="report-notes">
                   {result.notes.map((note) => (
