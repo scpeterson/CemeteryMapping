@@ -279,7 +279,7 @@ When a user-facing field is a stable controlled list, prefer a lookup table. Whe
 
 ## Where To Make Schema Changes
 
-Schema changes should be made with a new Liquibase changeset under `db/changelog/changes` and included from `db/changelog/db.changelog-master.xml`. Update this page when a change adds a new table group, changes a relationship, or changes the purpose of an existing table.
+Schema changes should be made with a new Liquibase changeset under `db/changelog/changes` and included from `db/changelog/db.changelog-root.yaml`. Update this page when a change adds a new table group, changes a relationship, or changes the purpose of an existing table.
 
 Related documentation:
 

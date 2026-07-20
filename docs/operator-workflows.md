@@ -18,6 +18,21 @@ For a brand-new cemetery, start with the one-time onboarding workflows, verify t
 
 ## Ongoing Maintenance Workflows
 
+### Marker Burial Pages Report
+
+Use `Reports -> Marker burial pages` when you need a printable record for every burial linked to one or more markers. The report is available to readers and higher roles and remains scoped to the cemeteries the signed-in user may access.
+
+1. Open `Reports` from the main application toolbar.
+2. Select `Marker burial pages` under Burials.
+3. Narrow the output with any combination of marker ID, burial name, and section. Marker ID and burial name accept partial text; section matching is case-insensitive.
+4. Run the report and review the returned pages before printing. Every marker-to-burial link produces one page, so a shared marker with two linked burials produces two pages.
+5. Confirm the marker photo, marker metadata, gravesite, burial details, and North Hills Genealogists text are correct. NHG text can come from reviewed evidence linked to either the marker or the burial's gravesite.
+6. Select `Print`. The print layout uses letter-sized portrait pages, starts each burial on a new page, and renders the marker photo three inches high.
+
+You can also ask an approved report question such as `Print burial pages for marker TLC-HS-0228`, `Show marker burial pages for Schug`, or `Print marker burial pages for section C`. Use the explicit fields when combining filters or when a name could be interpreted more than one way.
+
+No photo or NHG placeholder means no qualifying linked record is currently available; it does not prove that the physical marker lacks a photograph or that NHG contains no relevant entry. Review marker media and NHG evidence links before treating missing report content as a data conclusion.
+
 ### Admin User Management
 
 Use `Admin -> Users` when adding, editing, deactivating, or reactivating application users.
@@ -743,6 +758,15 @@ Treat `A` and `B` gravesite suffixes as evidence-based splits from one original 
 The original `C-0166` gravesite was created from the Geo-locations spreadsheet as one gravesite. Ruth and Charles Soergel died after NHG was published in 1997, so there is no NHG entry and there likely was no headstone there when NHG was published. A later field photo shows one shared headstone for both gravesites, so `C-0166` was split into `C-0166A` and `C-0166B`.
 
 The `C-0172A` and `C-0172B` split comes from a shared couple headstone. James H. Simpson died in 1995 and is listed in NHG; Ruth F. Simpson died in 2011, after NHG publication, and is in a separate gravesite using the same headstone.
+
+Later Section C shared-marker corrections use a consistent north/south split: the original gravesite is retained for one burial and repositioned south when necessary, a new letter-suffixed gravesite is created to the north for the other burial, and the observed marker point remains fixed while the marker is linked to both gravesites with a `spans` relationship.
+
+- `C-0217` retains Julius L Hague; new northern `C-0217A` contains Katherine M Hague; marker `TLC-HS-0217` spans both.
+- `C-0220` retains Jacob Hague; new northern `C-0220A` contains Margaret Caroline Hague; marker `TLC-HS-0220` spans both.
+- `C-0224` retains Edward G Happoldt; new northern `C-0224A` contains Margaret B Happoldt; marker `TLC-HS-0224` spans both.
+- `C-0228` retains Emile J Schug; new northern `C-0228A` contains Hazel M Schug; marker `TLC-HS-0228` spans both.
+
+These letter suffixes are operational identifiers created during reviewed data repair, not labels transcribed from NHG. Do not move an observed marker point merely to center it in one of the interpreted gravesite polygons.
 
 Do not promote historic lot map evidence by ad hoc SQL. A future promotion workflow should set a clear audit reason, preserve the source evidence row, and leave passageway evidence as passageway evidence unless Council or cemetery records establish a deeded lot relationship.
 
