@@ -7,6 +7,7 @@ const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
 const cemeteryMap = readFileSync(new URL("../src/components/CemeteryMap.tsx", import.meta.url), "utf8");
 const api = readFileSync(new URL("../src/api/cemeteryApi.ts", import.meta.url), "utf8");
 const serverIndex = readFileSync(new URL("../server/index.mjs", import.meta.url), "utf8");
+const cemeteryRoutes = readFileSync(new URL("../server/routes/cemeteryRoutes.mjs", import.meta.url), "utf8");
 const headstoneMutations = readFileSync(new URL("../server/cemeteryHeadstoneMutations.mjs", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../db/changelog/changes/224-headstone-gravesite-secondary-relationships.sql", import.meta.url), "utf8");
 const changelog = readFileSync(new URL("../db/changelog/db.changelog-root.yaml", import.meta.url), "utf8");
@@ -33,7 +34,7 @@ test("map point picking fills the add marker coordinates without selecting map f
 test("create marker API posts to the selected gravesite route", () => {
   assert.match(api, /createGravesiteHeadstone/u);
   assert.match(api, /\/cemeteries\/\$\{encodeURIComponent\(cemeteryId\)\}\/gravesites\/\$\{encodeURIComponent\(graveSpaceId\)\}\/headstones/u);
-  assert.match(serverIndex, /app\.post\("\/api\/cemeteries\/:cemeteryId\/gravesites\/:graveSpaceId\/headstones"/u);
+  assert.match(cemeteryRoutes, /app\.post\("\/api\/cemeteries\/:cemeteryId\/gravesites\/:graveSpaceId\/headstones"/u);
   assert.match(serverIndex, /validateCreateHeadstonePayload/u);
 });
 
