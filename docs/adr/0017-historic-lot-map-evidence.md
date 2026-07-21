@@ -23,6 +23,8 @@ The original `C-0166` gravesite was created from the Geo-locations spreadsheet a
 
 Current `A` and `B` gravesite suffixes are evidence-based splits from one original gravesite record. They have been used when later evidence showed two separate gravesites because a burial occurred after NHG publication, because a couple headstone spans two gravesites, or both. `C-0172A` and `C-0172B` are an example of a shared couple headstone where only one person predates NHG publication: James H. Simpson died in 1995 and is listed in NHG, while Ruth F. Simpson died in 2011, after NHG publication, and is in a separate gravesite using the shared headstone.
 
+Reviewed shared-marker repairs through `C-0232` retain the original gravesite for one burial, create a northern letter-suffixed gravesite for the other burial, and keep the observed marker point fixed with a `spans` relationship to both gravesites. These suffixes are operational repair identifiers rather than labels transcribed from NHG.
+
 Lot numbers are also not globally unique. Historic records distinguish areas such as OC and NA, so a lot number must be interpreted with cemetery-area or section context.
 
 ## Decision
@@ -63,4 +65,4 @@ When a database is available, also apply the migration in TEST and confirm stage
 
 ## Update Triggers
 
-Update this ADR if historic lot map evidence becomes a promoted production lot assignment workflow, if additional relationship types are needed, if scanned maps are georeferenced into a spatial lot layer, or if duplicate lot-number handling changes.
+Update this ADR if historic lot map evidence becomes a promoted production lot assignment workflow, if additional relationship types are needed, if scanned maps are georeferenced into a spatial lot layer, if the shared-marker split convention changes, or if duplicate lot-number handling changes.
