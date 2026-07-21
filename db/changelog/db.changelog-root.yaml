@@ -692,3 +692,6 @@ databaseChangeLog:
   - include:
       file: changes/232-split-c-0236-soergel-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/233-split-c-0237-soergel-gravesites.sql
+      relativeToChangelogFile: true
