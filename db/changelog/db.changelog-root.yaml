@@ -698,3 +698,6 @@ databaseChangeLog:
   - include:
       file: changes/234-split-c-0240-murray-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/235-split-c-0241-bleakley-gravesites.sql
+      relativeToChangelogFile: true
