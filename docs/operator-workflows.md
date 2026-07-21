@@ -766,6 +766,7 @@ Later Section C shared-marker corrections use a consistent north/south split: th
 - `C-0224` retains Edward G Happoldt; new northern `C-0224A` contains Margaret B Happoldt; marker `TLC-HS-0224` spans both.
 - `C-0228` retains Emile J Schug; new northern `C-0228A` contains Hazel M Schug; marker `TLC-HS-0228` spans both.
 - `C-0232` retains Philip Sarver; new northern `C-0232A` contains Catherine Sarver; marker `TLC-HS-0232` spans both.
+- `C-0234` retains Laverne J Hague; new northern `C-0234A` contains Clara H Hague; marker `TLC-HS-0234` spans both.
 
 These letter suffixes are operational identifiers created during reviewed data repair, not labels transcribed from NHG. Do not move an observed marker point merely to center it in one of the interpreted gravesite polygons.
 

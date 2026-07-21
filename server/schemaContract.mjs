@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "229-split-c-0232-sarver-gravesites";
+export const requiredSchemaChangeset = "230-split-c-0234-hague-gravesites";
 
 export async function assertCurrentSchema(pool) {
   let result;
