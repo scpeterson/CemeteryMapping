@@ -41,6 +41,25 @@ export function splitRecordedDate(value) {
   return { date: null, text };
 }
 
+export function burialDeathPlaceSql() {
+  return {
+    select: `death_places.id::text AS death_place_id,
+        death_places.display_name AS death_place_name,
+        death_places.locality AS death_place_locality,
+        death_places.administrative_area AS death_place_administrative_area,
+        death_places.country_name AS death_place_country_name,
+        death_places.country_code AS death_place_country_code,
+        death_places.authority_name AS death_place_authority_name,
+        death_places.authority_identifier AS death_place_authority_identifier,
+        death_places.authority_url AS death_place_authority_url,
+        death_places.verification_status AS death_place_verification_status`,
+    join: `LEFT JOIN places AS death_places
+        ON death_places.id = burials.death_place_uuid
+       AND death_places.deleted_at IS NULL
+       AND death_places.is_active`,
+  };
+}
+
 export async function burialMilitaryServiceColumnsExist(client) {
   void client;
   return true;

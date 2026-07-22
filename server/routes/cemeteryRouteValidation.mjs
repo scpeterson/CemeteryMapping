@@ -196,6 +196,8 @@ export function validateBurialPayload(body) {
   if (!["interred", "pre_need_inscription", "memorial", "unknown"].includes(recordStatusCode)) {
     throw new BadRequestError("Burial record status is invalid.");
   }
+  const deathPlaceIdText = optionalText(body?.deathPlaceId, "Death place", 36) ?? "";
+  const deathPlaceId = deathPlaceIdText ? validateUuid(deathPlaceIdText, "Death place") : "";
 
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
@@ -203,6 +205,7 @@ export function validateBurialPayload(body) {
     maidenName: optionalText(body?.maidenName, "Maiden name", 150) ?? "",
     birthDate: optionalRecordedDate(body?.birthDate, "Birth date") ?? "",
     deathDate: optionalRecordedDate(body?.deathDate, "Death date") ?? "",
+    deathPlaceId,
     burialDate: optionalDate(body?.burialDate, "Burial date") ?? "",
     intermentType,
     recordStatusCode,

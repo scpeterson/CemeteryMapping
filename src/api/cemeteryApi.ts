@@ -21,6 +21,7 @@ import type {
   CurrentUser,
   DataQualityDashboard,
   GraveSpace,
+  GeographicPlaceCandidate,
   GraveStatus,
   Headstone,
   HeadstoneRelationship,
@@ -37,7 +38,9 @@ import type {
   ReportDefinition,
   ReportQueryResponse,
   ReportResult,
+  PlaceSearchResponse,
   ReviewNorthHillsSourceFactInput,
+  VerifiedPlace,
   SaveNorthHillsOcrEvidenceInput,
   SaveBurialInput,
   SaveGraveFeatureInput,
@@ -148,6 +151,19 @@ export async function updateBurial(id: string, burial: SaveBurialInput): Promise
   return jsonResponse<Burial>(response, "Update burial API");
 }
 
+export async function searchGeographicPlaces(query: string): Promise<PlaceSearchResponse> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/places/search?q=${encodeURIComponent(query)}`);
+  return jsonResponse<PlaceSearchResponse>(response, "Place search API");
+}
+
+export async function importVerifiedPlace(candidate: GeographicPlaceCandidate): Promise<VerifiedPlace> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/places/import`,
+    jsonRequest("POST", { providerId: candidate.providerId }),
+  );
+  return jsonResponse<VerifiedPlace>(response, "Place import API");
+}
+
 export async function createGraveFeature(cemeteryId: string, feature: SaveGraveFeatureInput): Promise<GraveFeature> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-features`, jsonRequest("POST", feature));
   return jsonResponse<GraveFeature>(response, "Grave feature API");
@@ -229,6 +245,7 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
     militaryBranches: lookups.militaryBranches ?? [],
     militaryRanks: lookups.militaryRanks ?? [],
     militaryWarServices: lookups.militaryWarServices ?? [],
+    verifiedPlaces: lookups.verifiedPlaces ?? [],
     maintenanceIssueTypes: lookups.maintenanceIssueTypes ?? [],
     maintenanceActionTypes: lookups.maintenanceActionTypes ?? [],
     maintenancePriorities: lookups.maintenancePriorities ?? [],

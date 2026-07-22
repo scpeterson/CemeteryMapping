@@ -43,6 +43,20 @@ export function toBurial(burial) {
       birthDate: recordedDate(burial.birth_date_text, burial.birth_date),
       deathDate: recordedDate(burial.death_date_text, burial.death_date),
     },
+    deathPlace: burial.death_place_id
+      ? {
+          id: burial.death_place_id,
+          displayName: burial.death_place_name,
+          locality: burial.death_place_locality ?? "",
+          administrativeArea: burial.death_place_administrative_area ?? "",
+          countryName: burial.death_place_country_name ?? "",
+          countryCode: burial.death_place_country_code ?? "",
+          authorityName: burial.death_place_authority_name ?? "",
+          authorityIdentifier: burial.death_place_authority_identifier ?? "",
+          authorityUrl: burial.death_place_authority_url ?? "",
+          verificationStatus: burial.death_place_verification_status ?? "verified",
+        }
+      : undefined,
     burialDate: dateOnly(burial.burial_date),
     recordStatusCode: burial.record_status_code ?? "interred",
     recordStatusLabel: burial.record_status_label ?? "Interred",

@@ -5,6 +5,7 @@ import { recordReviewColumnsSql, tableColumnExists } from "./cemeterySchema.mjs"
 import {
   activeBurialRecordStatusExists,
   activeIntermentTypeExists,
+  burialDeathPlaceSql,
   burialIntermentTypeColumnExists,
   burialIntermentTypeSql,
   burialMilitaryBranchTypeColumnExists,
@@ -21,7 +22,26 @@ import {
   splitRecordedDate,
 } from "./burialRepository.mjs";
 
+async function verifiedDeathPlaceExists(client, id) {
+  if (!id) return true;
+  const result = await client.query(
+    `
+      SELECT EXISTS (
+        SELECT 1
+        FROM places
+        WHERE id = $1
+          AND verification_status = 'verified'
+          AND is_active
+          AND deleted_at IS NULL
+      ) AS exists
+    `,
+    [id],
+  );
+  return Boolean(result.rows[0]?.exists);
+}
+
 async function selectBurialMutationState(client, id) {
+  const deathPlaceSql = burialDeathPlaceSql();
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
   const recordStatusSql = await burialRecordStatusSql(client);
@@ -40,6 +60,7 @@ async function selectBurialMutationState(client, id) {
         burials.birth_date,
         ${recordedDateTextSql.select},
         burials.death_date,
+        ${deathPlaceSql.select},
         burials.burial_date,
         ${intermentTypeSql.select},
         ${recordStatusSql.select},
@@ -49,6 +70,7 @@ async function selectBurialMutationState(client, id) {
         ${reviewColumnsSql},
         burials.updated_at
       FROM burials
+      ${deathPlaceSql.join}
       ${intermentTypeSql.join}
       ${recordStatusSql.join}
       ${militaryServiceSql.join}
@@ -66,6 +88,7 @@ async function selectBurialMutationState(client, id) {
 }
 
 async function selectBurialById(client, id) {
+  const deathPlaceSql = burialDeathPlaceSql();
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
   const recordStatusSql = await burialRecordStatusSql(client);
@@ -73,8 +96,9 @@ async function selectBurialById(client, id) {
   const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
       FROM burials
+      ${deathPlaceSql.join}
       ${intermentTypeSql.join}
       ${recordStatusSql.join}
       ${militaryServiceSql.join}
@@ -111,6 +135,9 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     const effectiveRecordStatusCode = burial.recordStatusCode || "interred";
     if (!(await activeBurialRecordStatusExists(client, effectiveRecordStatusCode))) {
       throw new Error(`Unsupported burial record status: ${effectiveRecordStatusCode}.`);
+    }
+    if (!(await verifiedDeathPlaceExists(client, burial.deathPlaceId))) {
+      throw new Error("Death place must reference an active verified place.");
     }
     const hasIntermentTypeLookup = await burialIntermentTypeColumnExists(client);
     const hasLegacyIntermentTypeColumn = !hasIntermentTypeLookup && (await legacyBurialIntermentTypeColumnExists(client));
@@ -265,6 +292,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
               ELSE reviewed_at
             END`;
     }
+    const deathPlaceParameter = updateValues.length + 1;
+    updateValues.push(burial.deathPlaceId || null);
     const updateResult = await client.query(
       `
         UPDATE burials
@@ -278,7 +307,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
             ${intermentTypeSetSql},
             funeral_home = $10,
             veteran = $11,
-            ${militaryServiceSetSql}${recordedDateAssignments}${reviewAssignments}
+            ${militaryServiceSetSql}${recordedDateAssignments}${reviewAssignments},
+            death_place_uuid = $${deathPlaceParameter}::uuid
         WHERE id = $1
         RETURNING
           id::text,
@@ -290,6 +320,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           birth_date,
           ${recordedDateTextSql.return},
           death_date,
+          death_place_uuid::text,
           burial_date,
           ${intermentTypeReturnSql},
           ${recordStatusReturnSql},

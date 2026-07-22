@@ -30,7 +30,10 @@ import type {
   SaveOwnershipEventInput,
   GeometryConfidence,
   GeometryType,
+  GeographicPlaceCandidate,
+  VerifiedPlace,
 } from "../types";
+import { importVerifiedPlace, searchGeographicPlaces } from "../api/cemeteryApi";
 import { apiBaseUrl } from "../config/environment";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName, geometryConfidenceLabels, geometryTypeLabels, statusColors, statusLabels } from "../lib/format";
@@ -362,6 +365,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     maidenName: burial.person.maidenName ?? "",
     birthDate: burial.person.birthDate ?? "",
     deathDate: burial.person.deathDate ?? "",
+    deathPlaceId: burial.deathPlace?.id ?? "",
     burialDate: burial.burialDate ?? "",
     intermentType: burial.intermentType ?? "casket",
     recordStatusCode: burial.recordStatusCode ?? "interred",
@@ -469,11 +473,58 @@ function BurialRecord({
   const militaryRankOptions = lookups.militaryRanks.filter((option) => option.militaryBranchCode === form.militaryBranchCode);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [placeCandidates, setPlaceCandidates] = useState<GeographicPlaceCandidate[]>([]);
+  const [placeSearchMessage, setPlaceSearchMessage] = useState<string>();
+  const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
+  const [isImportingPlace, setIsImportingPlace] = useState(false);
+  const [importedPlace, setImportedPlace] = useState<VerifiedPlace>();
 
   const startEditing = () => {
     setForm(blankBurialForm(burial));
     setError(undefined);
+    setPlaceQuery("");
+    setPlaceCandidates([]);
+    setPlaceSearchMessage(undefined);
+    setImportedPlace(undefined);
     setIsEditing(true);
+  };
+
+  const searchPlaces = async () => {
+    const query = placeQuery.trim();
+    if (query.length < 2) {
+      setPlaceCandidates([]);
+      setPlaceSearchMessage("Enter at least two characters to search.");
+      return;
+    }
+    setIsSearchingPlaces(true);
+    setPlaceSearchMessage(undefined);
+    try {
+      const response = await searchGeographicPlaces(query);
+      setPlaceCandidates(response.results);
+      setPlaceSearchMessage(response.available ? (response.results.length ? undefined : "No matching places found.") : response.message);
+    } catch {
+      setPlaceCandidates([]);
+      setPlaceSearchMessage("Geographic search is temporarily unavailable. Existing verified places remain available.");
+    } finally {
+      setIsSearchingPlaces(false);
+    }
+  };
+
+  const choosePlace = async (candidate: GeographicPlaceCandidate) => {
+    setIsImportingPlace(true);
+    setPlaceSearchMessage(undefined);
+    try {
+      const place = await importVerifiedPlace(candidate);
+      setImportedPlace(place);
+      setForm((current) => ({ ...current, deathPlaceId: place.id }));
+      setPlaceCandidates([]);
+      setPlaceSearchMessage(`${place.displayName} is verified and selected.`);
+    } catch {
+      setPlaceSearchMessage("That place could not be verified right now. Existing verified places remain available.");
+    } finally {
+      setIsImportingPlace(false);
+    }
   };
 
   const setVeteran = (isVeteran: boolean) => {
@@ -534,6 +585,47 @@ function BurialRecord({
           Death date
           <input value={form.deathDate} placeholder="YYYY, YYYY-MM, or Nov. YYYY" onChange={(event) => setForm((current) => ({ ...current, deathDate: event.target.value }))} />
         </label>
+        <label className="burial-wide-field">
+          Death location
+          <select value={form.deathPlaceId} onChange={(event) => setForm((current) => ({ ...current, deathPlaceId: event.target.value }))}>
+            <option value="">Unknown / not recorded</option>
+            {lookups.verifiedPlaces.map((place) => (
+              <option key={place.id} value={place.id}>
+                {place.label}
+              </option>
+            ))}
+            {importedPlace && !lookups.verifiedPlaces.some((place) => place.id === importedPlace.id) ? (
+              <option value={importedPlace.id}>{importedPlace.displayName}</option>
+            ) : null}
+          </select>
+          <small>Only places verified against an authoritative geographic registry are available.</small>
+        </label>
+        <div className="burial-wide-field">
+          <label>
+            Find another verified death location
+            <input
+              value={placeQuery}
+              onChange={(event) => setPlaceQuery(event.target.value)}
+              placeholder="City, state, or country"
+              disabled={isSearchingPlaces || isImportingPlace}
+            />
+          </label>
+          <button type="button" className="secondary-button" onClick={() => void searchPlaces()} disabled={isSearchingPlaces || isImportingPlace || placeQuery.trim().length < 2}>
+            {isSearchingPlaces ? "Searching..." : "Search geographic registry"}
+          </button>
+          {placeSearchMessage ? <p className="detail-message" role="status">{placeSearchMessage}</p> : null}
+          {placeCandidates.length ? (
+            <ul className="burial-notes" aria-label="Geographic search results">
+              {placeCandidates.map((candidate) => (
+                <li key={`${candidate.provider}-${candidate.providerId}`}>
+                  <button type="button" className="secondary-button" onClick={() => void choosePlace(candidate)} disabled={isImportingPlace}>
+                    Use {candidate.displayName}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
         <label>
           Burial date
           <input type="date" value={form.burialDate} onChange={(event) => setForm((current) => ({ ...current, burialDate: event.target.value }))} />
@@ -672,6 +764,17 @@ function BurialRecord({
           <dt>Died</dt>
           <dd>{formatDate(burial.person.deathDate)}</dd>
         </div>
+        {burial.deathPlace ? (
+          <div>
+            <dt>Death location</dt>
+            <dd>
+              <a href={burial.deathPlace.authorityUrl} target="_blank" rel="noreferrer">
+                {burial.deathPlace.displayName}
+              </a>{" "}
+              <span title={`${burial.deathPlace.authorityName}: ${burial.deathPlace.authorityIdentifier}`}>Verified</span>
+            </dd>
+          </div>
+        ) : null}
         <div>
           <dt>Buried</dt>
           <dd>{formatDate(burial.burialDate)}</dd>

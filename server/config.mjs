@@ -70,5 +70,10 @@ export function loadApiConfig() {
       user: process.env.PGUSER ?? fileEnv.POSTGRES_USER,
       password: process.env.PGPASSWORD ?? fileEnv.POSTGRES_PASSWORD,
     },
+    placeSearch: {
+      username: process.env.GEONAMES_USERNAME ?? fileEnv.GEONAMES_USERNAME,
+      baseUrl: process.env.GEONAMES_BASE_URL ?? fileEnv.GEONAMES_BASE_URL ?? "https://secure.geonames.org",
+      timeoutMs: Number(process.env.GEONAMES_TIMEOUT_MS ?? fileEnv.GEONAMES_TIMEOUT_MS ?? 5000),
+    },
   };
 }

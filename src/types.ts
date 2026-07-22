@@ -93,10 +93,47 @@ export type Owner = {
   contactNote?: string;
 };
 
+export type VerifiedPlace = {
+  id: string;
+  displayName: string;
+  locality: string;
+  administrativeArea: string;
+  countryName: string;
+  countryCode: string;
+  authorityName: string;
+  authorityIdentifier: string;
+  authorityUrl: string;
+  verificationStatus: "verified" | "pending" | "rejected";
+};
+
+export type GeographicPlaceCandidate = {
+  provider: "geonames";
+  providerId: string;
+  displayName: string;
+  locality: string;
+  administrativeArea: string;
+  countryName: string;
+  countryCode: string;
+  featureClass: string;
+  featureCode: string;
+  latitude: number;
+  longitude: number;
+  authorityName: string;
+  authorityIdentifier: string;
+  authorityUrl: string;
+};
+
+export type PlaceSearchResponse = {
+  available: boolean;
+  results: GeographicPlaceCandidate[];
+  message?: string;
+};
+
 export type Burial = {
   id: string;
   person: Person;
   burialDate?: string;
+  deathPlace?: VerifiedPlace;
   recordStatusCode?: string;
   recordStatusLabel?: string;
   intermentType?: string;
@@ -303,6 +340,7 @@ export type HeadstoneLookups = {
     }
   >;
   militaryWarServices: LookupOption[];
+  verifiedPlaces: Array<LookupOption & Omit<VerifiedPlace, "id" | "displayName">>;
   maintenanceIssueTypes: LookupOption[];
   maintenanceActionTypes: LookupOption[];
   maintenancePriorities: LookupOption[];
@@ -428,6 +466,7 @@ export type SaveBurialInput = {
   maidenName: string;
   birthDate: string;
   deathDate: string;
+  deathPlaceId: string;
   burialDate: string;
   intermentType: string;
   recordStatusCode: string;

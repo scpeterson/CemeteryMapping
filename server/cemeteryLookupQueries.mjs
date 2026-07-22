@@ -69,6 +69,25 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
     const militaryWarServices = (await burialMilitaryWarServiceLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM military_war_service_types WHERE is_active ORDER BY sort_order, label")
       : { rows: [] };
+    const verifiedPlaces = await client.query(`
+      SELECT
+        id::text,
+        authority_identifier AS code,
+        display_name AS label,
+        locality,
+        administrative_area AS "administrativeArea",
+        country_name AS "countryName",
+        country_code AS "countryCode",
+        authority_name AS "authorityName",
+        authority_identifier AS "authorityIdentifier",
+        authority_url AS "authorityUrl",
+        verification_status AS "verificationStatus"
+      FROM places
+      WHERE verification_status = 'verified'
+        AND is_active
+        AND deleted_at IS NULL
+      ORDER BY display_name
+    `);
     const maintenanceLookupExists = await maintenanceTablesExist(client);
     const maintenanceIssueTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_issue_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
     const maintenanceActionTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_action_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
@@ -119,6 +138,7 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
       militaryBranches: militaryBranches.rows,
       militaryRanks: militaryRanks.rows,
       militaryWarServices: militaryWarServices.rows,
+      verifiedPlaces: verifiedPlaces.rows,
       maintenanceIssueTypes: maintenanceIssueTypes.rows,
       maintenanceActionTypes: maintenanceActionTypes.rows,
       maintenancePriorities: maintenancePriorities.rows,

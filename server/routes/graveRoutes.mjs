@@ -2,11 +2,48 @@ export function registerGraveRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, createGraveFeature,
     createMaintenanceRecord, createOwnershipEvent, getCemeteryData, getGraveSpace, pool,
+    config, importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     requireCemeteryAdmin, requirePowerUser, requireReader, softDeleteGraveFeature, updateBurial,
     updateGraveFeature, updateGraveSpace, updateMaintenanceRecord, validateBurialPayload,
     validateCemeteryId, validateGraveFeaturePayload, validateGraveSpaceId, validateGraveSpacePayload,
     validateMaintenanceRecordPayload, validateMutationReason, validateOwnershipEventPayload, validateUuid,
   } = context;
+      app.get("/api/places/search", requirePowerUser, async (request, response, next) => {
+        try {
+          const query = String(request.query.q ?? "").trim();
+          if (query.length < 2 || query.length > 120) {
+            response.status(400).json({ error: "Place search must be between 2 and 120 characters." });
+            return;
+          }
+          const results = await searchGeoNames(config.placeSearch, query);
+          response.json({ available: true, results });
+        } catch (error) {
+          if (error instanceof PlaceSearchUnavailableError) {
+            response.json({ available: false, results: [], message: error.message });
+            return;
+          }
+          next(error);
+        }
+      });
+
+      app.post("/api/places/import", requirePowerUser, async (request, response, next) => {
+        try {
+          const providerId = String(request.body?.providerId ?? "").trim();
+          if (!/^\d+$/u.test(providerId)) {
+            response.status(400).json({ error: "GeoNames place identifier is invalid." });
+            return;
+          }
+          const place = await importGeoNamesPlace(pool, providerId, config.placeSearch, { actorUser: request.user });
+          response.status(201).json(place);
+        } catch (error) {
+          if (error instanceof PlaceSearchUnavailableError) {
+            response.status(503).json({ error: error.message, code: "place_search_unavailable" });
+            return;
+          }
+          next(error);
+        }
+      });
+
       app.get("/api/cemetery-map", requireReader, async (_request, response, next) => {
         try {
           response.json(await getCemeteryData(pool));
