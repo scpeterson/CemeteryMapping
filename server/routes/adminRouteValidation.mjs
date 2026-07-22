@@ -175,7 +175,7 @@ export function validateNorthHillsSourceFactInput(fact, index) {
   const sourceCode = requiredText(fact?.sourceCode, `Source fact ${index + 1} source`, 10).toUpperCase();
   if (!["CR", "CRG"].includes(sourceCode)) throw new BadRequestError("Source fact source must be CR or CRG.");
   const factType = requiredText(fact?.factType, `Source fact ${index + 1} type`, 50);
-  if (!["death_date", "middle_initial", "age_at_death", "note"].includes(factType)) throw new BadRequestError("Source fact type is invalid.");
+  if (!["death_date", "death_place", "middle_initial", "age_at_death", "note"].includes(factType)) throw new BadRequestError("Source fact type is invalid.");
   const confidence = optionalText(fact?.confidence, `Source fact ${index + 1} confidence`, 50) || "review";
   if (!["high", "medium", "low", "review"].includes(confidence)) throw new BadRequestError("Source fact confidence is invalid.");
   const status = optionalText(fact?.status, `Source fact ${index + 1} status`, 50) || "staged";
@@ -375,4 +375,3 @@ export function validateDeedInvestigationCaseActionPayload(body) {
     reason: validateMutationReason(body?.reason),
   };
 }
-

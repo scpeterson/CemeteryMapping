@@ -214,7 +214,7 @@ function normalizeSourceFactInput(fact) {
   const confidence = String(fact?.confidence ?? "review").trim() || "review";
   const status = String(fact?.status ?? "staged").trim() || "staged";
   if (!["CR", "CRG"].includes(sourceCode)) throw new Error("Source fact code must be CR or CRG.");
-  if (!["death_date", "middle_initial", "age_at_death", "note"].includes(factType)) throw new Error(`Unsupported North Hills source fact type: ${factType}`);
+  if (!["death_date", "death_place", "middle_initial", "age_at_death", "note"].includes(factType)) throw new Error(`Unsupported North Hills source fact type: ${factType}`);
   if (!factValue) throw new Error("Source fact value is required.");
   if (!validConfidence.has(confidence)) throw new Error(`Unsupported North Hills source fact confidence: ${confidence}`);
   if (!validSourceFactStatuses.has(status)) throw new Error(`Unsupported North Hills source fact status: ${status}`);

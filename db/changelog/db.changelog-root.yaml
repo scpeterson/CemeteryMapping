@@ -707,3 +707,9 @@ databaseChangeLog:
   - include:
       file: changes/237-normalize-c-0160-survey-provenance.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/238-split-c-0244-wiskeman-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/239-verified-places-and-burial-death-location.sql
+      relativeToChangelogFile: true

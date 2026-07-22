@@ -151,6 +151,8 @@ API_PORT=3010 APP_ENV=stage npm run api
 
 `APP_ENV` selects `db/env/<environment>.env`. Override `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, or `PGPASSWORD` to connect to a different Postgres instance.
 
+Verified death-location search uses GeoNames. Set `GEONAMES_USERNAME` in the environment's ignored `db/env/<environment>.local.env` file to enable it. `GEONAMES_BASE_URL` and `GEONAMES_TIMEOUT_MS` are optional. If GeoNames is unconfigured or unavailable, the burial editor continues to offer locally stored verified places and all other burial fields remain editable.
+
 ### API Security
 
 Read endpoints are protected by API authorization middleware. Local development and automated tests currently default to `AUTH_MODE=disabled` so the existing map UX still works before the production identity provider is selected.

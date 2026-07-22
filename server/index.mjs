@@ -36,6 +36,8 @@ import {
   updateMaintenanceRecord,
 } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
+import { importGeoNamesPlace } from "./placeRepository.mjs";
+import { PlaceSearchUnavailableError, searchGeoNames } from "./placeSearchService.mjs";
 import {
   createDeedInvestigationCase,
   createDeedInvestigationCaseAction,
@@ -98,6 +100,7 @@ export function createApp(config, pool) {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
     createGraveFeature, createHeadstoneForGrave, createHeadstoneRelationship, createMaintenanceRecord,
     createOwnershipEvent, getCemeteryData, getGraveSpace, getHeadstone, listHeadstoneLookupOptions,
+    importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     listReportsForUser, matchReportQuery, pool, requireAdmin, requireCemeteryAdmin, requirePowerUser,
     requireReader, restoreGraveSpace, runReport, safelyRecordSystemEvent, searchCemetery,
     softDeleteGraveFeature, softDeleteGraveSpace, softDeleteHeadstoneRelationship, updateBurial,

@@ -427,6 +427,25 @@ test("lookup options include active military service lookups", async () => {
               ],
             };
           }
+          if (sql.includes("FROM places")) {
+            return {
+              rows: [
+                {
+                  id: "12121212-1212-4121-8121-121212121212",
+                  code: "GEOID 0535710",
+                  label: "Jonesboro, Arkansas, United States",
+                  locality: "Jonesboro",
+                  administrativeArea: "Arkansas",
+                  countryName: "United States",
+                  countryCode: "US",
+                  authorityName: "U.S. Census Bureau TIGERweb",
+                  authorityIdentifier: "GEOID 0535710",
+                  authorityUrl: "https://tigerweb.geo.census.gov/",
+                  verificationStatus: "verified",
+                },
+              ],
+            };
+          }
           if (sql.includes("FROM maintenance_issue_types")) {
             return {
               rows: [{ id: "abababab-abab-4aba-8bab-abababababab", code: "illegible", label: "Illegible" }],
@@ -504,6 +523,10 @@ test("lookup options include active military service lookups", async () => {
   assert.deepEqual(
     lookups.militaryWarServices.map((service) => service.code),
     ["world_war_i", "world_war_ii"],
+  );
+  assert.deepEqual(
+    lookups.verifiedPlaces.map((place) => place.code),
+    ["GEOID 0535710"],
   );
   assert.deepEqual(
     lookups.maintenanceIssueTypes.map((issue) => issue.code),
@@ -1133,6 +1156,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "",
     false,
     "",
+    null,
   ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");

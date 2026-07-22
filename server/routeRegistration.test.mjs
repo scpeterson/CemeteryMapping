@@ -31,7 +31,7 @@ function registeredRoutes(register) {
 
 const cases = [
   ["system", registerSystemRoutes, 3, ["GET /api/health", "GET /api/me"]],
-  ["grave", registerGraveRoutes, 10, ["GET /api/cemetery-map", "PATCH /api/burials/:id", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events"]],
+  ["grave", registerGraveRoutes, 12, ["GET /api/cemetery-map", "GET /api/places/search", "POST /api/places/import", "PATCH /api/burials/:id", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events"]],
   ["report", registerReportRoutes, 4, ["GET /api/search", "POST /api/reports/query"]],
   ["headstone", registerHeadstoneRoutes, 9, ["GET /api/headstone-lookups", "POST /api/headstones/:id/relationships", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore"]],
   ["media", registerMediaRoutes, 4, ["POST /api/headstones/:id/media-assets", "PATCH /api/media-assets/:id/order"]],

@@ -134,8 +134,31 @@ test("burial payload validation accepts recorded cemetery date text", () => {
 
   assert.equal(validateBurialPayload(basePayload).deathDate, "Dec 16, 1965");
   assert.equal(validateBurialPayload(basePayload).maidenName, "Smith");
+  assert.equal(validateBurialPayload({ ...basePayload, deathPlaceId: "12121212-1212-4121-8121-121212121212" }).deathPlaceId, "12121212-1212-4121-8121-121212121212");
   assert.equal(validateBurialPayload({ ...basePayload, birthDate: "Nov. 1929," }).birthDate, "Nov. 1929,");
   assert.equal(validateBurialPayload({ ...basePayload, deathDate: "December 16 1965" }).deathDate, "December 16 1965");
+});
+
+test("burial payload validation rejects an invalid death place identifier", () => {
+  assertBadRequest(
+    () =>
+      validateBurialPayload({
+        firstName: "William",
+        lastName: "Wiskeman",
+        birthDate: "1898",
+        deathDate: "1955-05-10",
+        deathPlaceId: "Jonesboro",
+        burialDate: "1955-06-06",
+        intermentType: "urn",
+        funeralHome: "",
+        veteran: false,
+        militaryBranchCode: "",
+        militaryRankCode: "",
+        militaryWarServiceCode: "",
+        notes: "",
+      }),
+    "Death place must be a UUID.",
+  );
 });
 
 test("burial payload validation rejects unsupported date text", () => {

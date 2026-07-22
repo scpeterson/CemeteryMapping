@@ -1,4 +1,5 @@
 import {
+  burialDeathPlaceSql,
   burialIntermentTypeSql,
   burialMilitaryServiceSql,
   burialRecordedDateTextSql,
@@ -7,6 +8,7 @@ import {
 import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 export async function selectBurialsForCemeteries(client, cemeteryIds) {
+  const deathPlaceSql = burialDeathPlaceSql();
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
   const recordStatusSql = await burialRecordStatusSql(client);
@@ -14,8 +16,9 @@ export async function selectBurialsForCemeteries(client, cemeteryIds) {
   const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
       FROM burials
+      ${deathPlaceSql.join}
       ${intermentTypeSql.join}
       ${recordStatusSql.join}
       ${militaryServiceSql.join}
@@ -31,6 +34,7 @@ export async function selectBurialsForCemeteries(client, cemeteryIds) {
 
 
 export async function selectBurialsForGrave(client, graveUuid) {
+  const deathPlaceSql = burialDeathPlaceSql();
   const militaryServiceSql = await burialMilitaryServiceSql(client);
   const intermentTypeSql = await burialIntermentTypeSql(client);
   const recordStatusSql = await burialRecordStatusSql(client);
@@ -38,8 +42,9 @@ export async function selectBurialsForGrave(client, graveUuid) {
   const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
       FROM burials
+      ${deathPlaceSql.join}
       ${intermentTypeSql.join}
       ${recordStatusSql.join}
       ${militaryServiceSql.join}
