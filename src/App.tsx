@@ -318,8 +318,11 @@ export default function App() {
               condition: saved.condition.code,
             }
           : candidate,
-      ),
+        ),
     }));
+    if (saved.burialNhgPropagation) {
+      refreshDetails({ preserveCurrent: true });
+    }
     return saved;
   };
 
