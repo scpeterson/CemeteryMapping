@@ -746,3 +746,6 @@ databaseChangeLog:
   - include:
       file: changes/250-add-army-air-forces-branches.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/251-copy-air-force-ranks-to-army-air-forces.sql
+      relativeToChangelogFile: true
