@@ -1,6 +1,7 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:245-split-c-0250-schmeltz-gravesites splitStatements:false
+--validCheckSum 9:a08b36940ea264a793aa38544d5324c6
 WITH source_record AS (
   SELECT
     gravesites.*,
@@ -148,7 +149,7 @@ john_burial AS (
     gravesite_uuid, first_name, last_name, full_name, sex, birth_date, death_date, age, burial_date,
     funeral_home, veteran, notes, gravesite_id, military_branch_type_id, military_war_service_type_id,
     interment_type_id, birth_date_text, death_date_text, maiden_name, military_rank_type_id,
-    burial_record_status_type_id, military_enlisted_date, military_discharged_date,
+    burial_record_status_type_id,
     data_confidence, review_status, review_notes, source_conflict, reviewed_by, reviewed_at, death_place_uuid,
     updated_at
   )
@@ -159,7 +160,7 @@ john_burial AS (
     regexp_replace(COALESCE(william_burial.notes, ''), 'William A and John A', 'William A and John A'),
     'TLC-GPS-0250-02', william_burial.military_branch_type_id, william_burial.military_war_service_type_id,
     william_burial.interment_type_id, '1876', '1918', NULL, william_burial.military_rank_type_id,
-    william_burial.burial_record_status_type_id, william_burial.military_enlisted_date, william_burial.military_discharged_date,
+    william_burial.burial_record_status_type_id,
     william_burial.data_confidence, william_burial.review_status, william_burial.review_notes,
     william_burial.source_conflict, william_burial.reviewed_by, william_burial.reviewed_at, NULL, now()
   FROM william_burial
