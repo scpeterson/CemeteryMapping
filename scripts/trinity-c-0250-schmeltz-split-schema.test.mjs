@@ -28,6 +28,12 @@ test("C-0250 splits the combined burial using the marker inscription dates", () 
   assert.match(migration, /DATE '1918-01-01'/u);
 });
 
+test("C-0250 copies only burial columns present in the current schema", () => {
+  assert.doesNotMatch(migration, /military_enlisted_date/u);
+  assert.doesNotMatch(migration, /military_discharged_date/u);
+  assert.match(migration, /--validCheckSum 9:a08b36940ea264a793aa38544d5324c6/u);
+});
+
 test("TLC-HS-0250 remains fixed and spans all three gravesites", () => {
   assert.doesNotMatch(migration, /UPDATE headstones\s+SET\s+geometry/iu);
   assert.match(migration, /headstones\.headstone_id = 'TLC-HS-0250'/u);
