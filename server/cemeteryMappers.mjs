@@ -192,6 +192,7 @@ export function toHeadstone(row) {
     reviewedBy: row.reviewed_by ?? "",
     reviewedAt: row.reviewed_at,
     nhgInclusion: normalizedProvenance.nhgInclusion ?? "not_checked",
+    nhgInclusionRecorded: Object.prototype.hasOwnProperty.call(normalizedProvenance, "nhgInclusion"),
     provenanceVerificationSource: normalizedProvenance.verificationSourceType ?? normalizedProvenance.markerGeometrySourceType ?? "manual_review",
     provenanceVerifiedAt: normalizedProvenance.verifiedAt,
     relationshipType: row.relationship_type ?? "primary",

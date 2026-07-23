@@ -1168,8 +1168,9 @@ function PhotoUploadForm({
   );
 }
 
-function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOption[]): SaveHeadstoneInput {
+function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOption[], cemeteryName = ""): SaveHeadstoneInput {
   const markerTypeId = markerTypeOptions?.some((option) => option.id === headstone.markerType.id) ? headstone.markerType.id : (markerTypeOptions?.[0]?.id ?? headstone.markerType.id);
+  const isTrinity = cemeteryName === "Trinity Lutheran Church Cemetery";
 
   return {
     markerTypeId,
@@ -1189,7 +1190,7 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     reviewStatus: headstone.reviewStatus ?? "unreviewed",
     reviewNotes: headstone.reviewNotes ?? "",
     sourceConflict: headstone.sourceConflict ?? false,
-    nhgInclusion: headstone.nhgInclusion ?? "not_checked",
+    nhgInclusion: !headstone.nhgInclusionRecorded && isTrinity ? "listed" : (headstone.nhgInclusion ?? "not_checked"),
     provenanceVerificationSource: headstone.provenanceVerificationSource ?? "manual_review",
     provenanceVerifiedAt: headstone.provenanceVerifiedAt ?? "",
     reason: "Headstone detail update",
@@ -1226,7 +1227,7 @@ function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lo
     reviewStatus: "needs_review",
     reviewNotes: "",
     sourceConflict: false,
-    nhgInclusion: "not_checked",
+    nhgInclusion: grave.cemeteryName === "Trinity Lutheran Church Cemetery" ? "listed" : "not_checked",
     provenanceVerificationSource: "manual_review",
     provenanceVerifiedAt: "",
     latitude: "",
@@ -1434,6 +1435,7 @@ function HeadstoneRecord({
   canUpdate,
   onSave,
   grave,
+  cemeteryName,
   sectionName,
   canDeletePhotos,
   canReorderPhotos,
@@ -1450,6 +1452,7 @@ function HeadstoneRecord({
   canUpdate: boolean;
   onSave: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   grave?: GraveSpace;
+  cemeteryName: string;
   sectionName: string;
   canDeletePhotos: boolean;
   canReorderPhotos: boolean;
@@ -1464,12 +1467,12 @@ function HeadstoneRecord({
   const isSectionG = sectionName.toUpperCase() === "G";
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone, markerTypeOptions));
+  const [form, setForm] = useState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
 
   const startEditing = () => {
-    setForm(blankHeadstoneForm(headstone, markerTypeOptions));
+    setForm(blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
     setError(undefined);
     setIsEditing(true);
   };
@@ -1845,6 +1848,7 @@ function MarkerDetailPanel({
               lookups={headstoneLookups}
               canUpdate={canUpdateHeadstones}
               onSave={onSaveHeadstone}
+              cemeteryName={summary.cemeteryName}
               sectionName=""
               canDeletePhotos={canDeletePhotos}
               canReorderPhotos={canReorderPhotos}
@@ -3042,6 +3046,7 @@ function GraveDetailPanel({
                     canUpdate={canUpdateHeadstones}
                     onSave={onSaveHeadstone}
                     grave={grave}
+                    cemeteryName={summary.cemeteryName}
                     sectionName={summary.section}
                     canDeletePhotos={canDeletePhotos}
                     canReorderPhotos={canReorderPhotos}

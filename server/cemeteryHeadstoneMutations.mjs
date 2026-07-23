@@ -176,6 +176,7 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           review_status,
           review_notes,
           source_conflict,
+          source_properties,
           updated_at
         )
         VALUES (
@@ -201,6 +202,14 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           $15,
           NULLIF($16, ''),
           $17::boolean,
+          jsonb_build_object(
+            'NormalizedProvenance',
+            jsonb_build_object(
+              'nhgInclusion', $18,
+              'verificationSourceType', $19,
+              'verifiedAt', NULLIF($20, '')
+            )
+          ),
           now()
         )
         RETURNING id::text
@@ -223,6 +232,9 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
         headstone.reviewStatus || "needs_review",
         headstone.reviewNotes || "",
         Boolean(headstone.sourceConflict),
+        headstone.nhgInclusion || "not_checked",
+        headstone.provenanceVerificationSource || "manual_review",
+        headstone.provenanceVerifiedAt || "",
       ],
     );
     const headstoneUuid = insertResult.rows[0].id;

@@ -217,6 +217,7 @@ export type Headstone = {
   reviewedBy?: string;
   reviewedAt?: string;
   nhgInclusion: "listed" | "not_listed" | "not_checked" | "unclear";
+  nhgInclusionRecorded: boolean;
   provenanceVerificationSource: "field_survey" | "documentary_record" | "manual_review" | "import";
   provenanceVerifiedAt?: string;
   relationshipType: string;
