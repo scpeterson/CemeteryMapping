@@ -1193,6 +1193,7 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     nhgInclusion: !headstone.nhgInclusionRecorded && isTrinity ? "listed" : (headstone.nhgInclusion ?? "not_checked"),
     provenanceVerificationSource: headstone.provenanceVerificationSource ?? "manual_review",
     provenanceVerifiedAt: headstone.provenanceVerifiedAt ?? "",
+    applyNhgInclusionToBurials: false,
     reason: "Headstone detail update",
   };
 }
@@ -1230,6 +1231,7 @@ function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lo
     nhgInclusion: grave.cemeteryName === "Trinity Lutheran Church Cemetery" ? "listed" : "not_checked",
     provenanceVerificationSource: "manual_review",
     provenanceVerifiedAt: "",
+    applyNhgInclusionToBurials: false,
     latitude: "",
     longitude: "",
     reason: "Add gravesite marker",
@@ -1470,10 +1472,12 @@ function HeadstoneRecord({
   const [form, setForm] = useState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const [provenanceMessage, setProvenanceMessage] = useState<string>();
 
   const startEditing = () => {
     setForm(blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
     setError(undefined);
+    setProvenanceMessage(undefined);
     setIsEditing(true);
   };
 
@@ -1482,7 +1486,13 @@ function HeadstoneRecord({
     setIsSaving(true);
     setError(undefined);
     try {
-      await onSave(headstone.id, form);
+      const saved = await onSave(headstone.id, form);
+      if (saved.burialNhgPropagation) {
+        const { updated, skipped } = saved.burialNhgPropagation;
+        setProvenanceMessage(
+          `${updated} associated burial${updated === 1 ? "" : "s"} updated.${skipped ? ` ${skipped} skipped because linked NHG evidence was preserved.` : ""}`,
+        );
+      }
       setIsEditing(false);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save headstone.");
@@ -1639,6 +1649,17 @@ function HeadstoneRecord({
             onChange={(event) => setForm((current) => ({ ...current, provenanceVerifiedAt: event.target.value }))}
           />
         </label>
+        <label className="headstone-checkbox-field headstone-wide-field">
+          <input
+            type="checkbox"
+            checked={form.applyNhgInclusionToBurials}
+            onChange={(event) => setForm((current) => ({ ...current, applyNhgInclusionToBurials: event.target.checked }))}
+          />
+          Apply this NHG inclusion status to associated burials
+        </label>
+        <p className="muted headstone-wide-field">
+          Burials with genuine linked NHG evidence are preserved and skipped.
+        </p>
         <label className="headstone-checkbox-field">
           <input type="checkbox" checked={form.sourceConflict} onChange={(event) => setForm((current) => ({ ...current, sourceConflict: event.target.checked }))} />
           Source conflict
@@ -1725,6 +1746,7 @@ function HeadstoneRecord({
       {headstone.vaseNotes ? <p className="note-box">Vase: {headstone.vaseNotes}</p> : null}
       {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
       <ReviewBadgeGroup dataConfidence={headstone.dataConfidence} reviewStatus={headstone.reviewStatus} sourceConflict={headstone.sourceConflict} reviewNotes={headstone.reviewNotes} />
+      {provenanceMessage ? <p className="detail-message is-success" role="status">{provenanceMessage}</p> : null}
       {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
