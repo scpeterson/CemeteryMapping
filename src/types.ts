@@ -216,6 +216,9 @@ export type Headstone = {
   sourceConflict: boolean;
   reviewedBy?: string;
   reviewedAt?: string;
+  nhgInclusion: "listed" | "not_listed" | "not_checked" | "unclear";
+  provenanceVerificationSource: "field_survey" | "documentary_record" | "manual_review" | "import";
+  provenanceVerifiedAt?: string;
   relationshipType: string;
   relationshipNotes: string;
   associatedGravesiteIds: string[];
@@ -375,6 +378,9 @@ export type SaveHeadstoneInput = {
   reviewStatus: DataReviewStatus;
   reviewNotes: string;
   sourceConflict: boolean;
+  nhgInclusion: "listed" | "not_listed" | "not_checked" | "unclear";
+  provenanceVerificationSource: "field_survey" | "documentary_record" | "manual_review" | "import";
+  provenanceVerifiedAt: string;
   reason?: string;
 };
 

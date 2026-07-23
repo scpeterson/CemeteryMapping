@@ -25,14 +25,14 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     const reviewReturnSql = await recordReviewColumnsSql(client, "headstones");
     const reviewAssignments = hasRecordReviewColumns
       ? `,
-            data_confidence = $15,
-            review_status = $16,
-            review_notes = NULLIF($17, ''),
-            source_conflict = $18::boolean,
-            reviewed_by = CASE WHEN $16 = 'reviewed' THEN NULLIF($19, '') ELSE reviewed_by END,
+            data_confidence = $16,
+            review_status = $17,
+            review_notes = NULLIF($18, ''),
+            source_conflict = $19::boolean,
+            reviewed_by = CASE WHEN $17 = 'reviewed' THEN NULLIF($20, '') ELSE reviewed_by END,
             reviewed_at = CASE
-              WHEN $16 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
-              WHEN $16 = 'reviewed' THEN COALESCE(reviewed_at, now())
+              WHEN $17 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
+              WHEN $17 = 'reviewed' THEN COALESCE(reviewed_at, now())
               ELSE reviewed_at
             END`
       : "";
@@ -51,6 +51,11 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       headstone.backDescription || null,
       headstone.photoUrl || null,
       headstone.lastInspectedAt || null,
+      JSON.stringify({
+        nhgInclusion: headstone.nhgInclusion || "not_checked",
+        verificationSourceType: headstone.provenanceVerificationSource || "manual_review",
+        verifiedAt: headstone.provenanceVerifiedAt || null,
+      }),
     ];
     if (hasRecordReviewColumns) {
       updateValues.push(
@@ -76,7 +81,12 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
             design_notes = $11,
             back_description = $12,
             photo_url = $13,
-            last_inspected_at = $14::date${reviewAssignments}
+            last_inspected_at = $14::date,
+            source_properties = COALESCE(source_properties, '{}'::jsonb)
+              || jsonb_build_object(
+                'NormalizedProvenance',
+                COALESCE(source_properties->'NormalizedProvenance', '{}'::jsonb) || $15::jsonb
+              )${reviewAssignments}
         WHERE id = $1
         RETURNING
           id::text,
@@ -100,6 +110,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           back_description,
           photo_url,
           last_inspected_at,
+          source_properties,
           ${reviewReturnSql},
           updated_at
       `,
@@ -248,4 +259,3 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
     client.release();
   }
 }
-

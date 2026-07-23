@@ -30,6 +30,16 @@ export function validateReportQueryPayload(body) {
 export function validateHeadstonePayload(body) {
   const lastInspectedAt = optionalText(body?.lastInspectedAt, "Last inspected date", 10);
   if (lastInspectedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(lastInspectedAt)) throw new BadRequestError("Last inspected date must use YYYY-MM-DD format.");
+  const nhgInclusion = optionalText(body?.nhgInclusion, "NHG inclusion", 30) || "not_checked";
+  if (!["listed", "not_listed", "not_checked", "unclear"].includes(nhgInclusion)) throw new BadRequestError("NHG inclusion is invalid.");
+  const provenanceVerificationSource = optionalText(body?.provenanceVerificationSource, "Provenance verification source", 50) || "manual_review";
+  if (!["field_survey", "documentary_record", "manual_review", "import"].includes(provenanceVerificationSource)) {
+    throw new BadRequestError("Provenance verification source is invalid.");
+  }
+  const provenanceVerifiedAt = optionalText(body?.provenanceVerifiedAt, "Provenance verified date", 10);
+  if (provenanceVerifiedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(provenanceVerifiedAt)) {
+    throw new BadRequestError("Provenance verified date must use YYYY-MM-DD format.");
+  }
 
   return {
     markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
@@ -45,6 +55,9 @@ export function validateHeadstonePayload(body) {
     reviewStatus: validateReviewStatus(body?.reviewStatus),
     reviewNotes: optionalText(body?.reviewNotes, "Review notes", 4000) ?? "",
     sourceConflict: optionalBoolean(body?.sourceConflict, "Source conflict"),
+    nhgInclusion,
+    provenanceVerificationSource,
+    provenanceVerifiedAt,
     reason: validateMutationReason(body?.reason),
   };
 }
