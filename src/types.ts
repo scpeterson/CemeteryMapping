@@ -157,6 +157,7 @@ export type Burial = {
   reviewedAt?: string;
   notes?: string;
   auditEventId?: string;
+  nhgInclusion?: "listed" | "not_listed" | "not_checked" | "unclear";
 };
 
 export type OwnershipEvent = {
@@ -230,6 +231,7 @@ export type Headstone = {
   relationships: HeadstoneRelationship[];
   mediaAssets: MediaAsset[];
   auditEventId?: string;
+  burialNhgPropagation?: { updated: number; skipped: number };
 };
 
 export type GraveFeature = {
@@ -382,6 +384,7 @@ export type SaveHeadstoneInput = {
   nhgInclusion: "listed" | "not_listed" | "not_checked" | "unclear";
   provenanceVerificationSource: "field_survey" | "documentary_record" | "manual_review" | "import";
   provenanceVerifiedAt: string;
+  applyNhgInclusionToBurials: boolean;
   reason?: string;
 };
 

@@ -117,6 +117,104 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       updateValues,
     );
     const updatedState = updateResult.rows[0];
+    let burialNhgPropagation;
+    if (headstone.applyNhgInclusionToBurials) {
+      const associatedResult = await client.query(
+        `
+          SELECT COUNT(DISTINCT burials.id)::int AS count
+          FROM burials
+          JOIN headstone_burials
+            ON headstone_burials.burial_uuid = burials.id
+           AND headstone_burials.deleted_at IS NULL
+          WHERE headstone_burials.headstone_uuid = $1
+            AND burials.deleted_at IS NULL
+        `,
+        [id],
+      );
+      const propagatedResult = await client.query(
+        `
+          UPDATE burials
+          SET
+            source_properties = COALESCE(burials.source_properties, '{}'::jsonb)
+              || jsonb_build_object(
+                'NormalizedProvenance',
+                COALESCE(burials.source_properties->'NormalizedProvenance', '{}'::jsonb)
+                  || jsonb_build_object(
+                    'nhgInclusion', $2::text,
+                    'verificationSourceType', $3::text,
+                    'verifiedAt', NULLIF($4::text, '')
+                  )
+              ),
+            notes = CASE
+              WHEN $2::text = 'not_listed' THEN concat_ws(
+                ' ',
+                NULLIF(
+                  regexp_replace(
+                    COALESCE(burials.notes, ''),
+                    'North Hills Genealogists section: [^.]+[.] North Hills Genealogists row: 0[.]',
+                    '',
+                    'g'
+                  ),
+                  ''
+                ),
+                CASE
+                  WHEN COALESCE(burials.notes, '') ILIKE '%Not listed in the North Hills Genealogists book.%' THEN NULL
+                  ELSE 'Not listed in the North Hills Genealogists book. Status propagated from the associated marker.'
+                END
+              )
+              ELSE burials.notes
+            END,
+            review_status = 'reviewed',
+            review_notes = concat_ws(
+              ' ',
+              NULLIF(burials.review_notes, ''),
+              CASE
+                WHEN COALESCE(burials.review_notes, '') ILIKE '%NHG inclusion status propagated from marker%' THEN NULL
+                ELSE 'NHG inclusion status propagated from marker.'
+              END
+            ),
+            reviewed_by = NULLIF($5::text, ''),
+            reviewed_at = now(),
+            updated_at = now()
+          FROM headstone_burials
+          WHERE headstone_burials.headstone_uuid = $1
+            AND headstone_burials.burial_uuid = burials.id
+            AND headstone_burials.deleted_at IS NULL
+            AND burials.deleted_at IS NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM north_hills_ocr_entry_headstone_links evidence
+              WHERE evidence.headstone_uuid = $1
+                AND evidence.status = 'linked'
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM source_person_record_links source_link
+              JOIN source_person_records source_record
+                ON source_record.id = source_link.source_person_record_id
+              WHERE source_link.burial_uuid = burials.id
+                AND source_link.link_type = 'matched'
+                AND (
+                  source_record.north_hills_ocr_entry_id IS NOT NULL
+                  OR source_record.north_hills_ocr_source_fact_id IS NOT NULL
+                )
+            )
+          RETURNING burials.id
+        `,
+        [
+          id,
+          headstone.nhgInclusion,
+          headstone.provenanceVerificationSource,
+          headstone.provenanceVerifiedAt || "",
+          reviewedBy,
+        ],
+      );
+      const associatedCount = Number(associatedResult.rows[0]?.count ?? 0);
+      burialNhgPropagation = {
+        updated: propagatedResult.rows.length,
+        skipped: Math.max(0, associatedCount - propagatedResult.rows.length),
+      };
+    }
     const auditEventId = await auditEventIdForMutation(client, {
       actorUser,
       action: "update",
@@ -129,7 +227,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     const updated = await selectHeadstoneById(client, id);
 
     await client.query("COMMIT");
-    return { ...toHeadstone(updated), auditEventId };
+    return { ...toHeadstone(updated), auditEventId, burialNhgPropagation };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

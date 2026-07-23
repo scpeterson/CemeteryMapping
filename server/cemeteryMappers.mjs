@@ -32,6 +32,7 @@ export function toOwner(owner) {
 export function toBurial(burial) {
   const veteranText = String(burial.veteran ?? "").trim().toLowerCase();
   const isVeteran = ["yes", "y", "true", "1"].includes(veteranText);
+  const normalizedProvenance = burial.source_properties?.NormalizedProvenance ?? {};
 
   return {
     id: burial.id,
@@ -80,6 +81,7 @@ export function toBurial(burial) {
     reviewedBy: burial.reviewed_by ?? "",
     reviewedAt: burial.reviewed_at,
     notes: compactJoin([burial.funeral_home ? `Funeral home: ${burial.funeral_home}` : undefined, burial.notes]),
+    nhgInclusion: normalizedProvenance.nhgInclusion,
   };
 }
 

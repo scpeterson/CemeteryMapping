@@ -58,6 +58,7 @@ export function validateHeadstonePayload(body) {
     nhgInclusion,
     provenanceVerificationSource,
     provenanceVerifiedAt,
+    applyNhgInclusionToBurials: optionalBoolean(body?.applyNhgInclusionToBurials, "Apply NHG inclusion to burials"),
     reason: validateMutationReason(body?.reason),
   };
 }

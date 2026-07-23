@@ -732,5 +732,8 @@ databaseChangeLog:
       file: changes/245-split-c-0250-schmeltz-gravesites.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/246-burial-source-provenance.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/247-split-c-0162-eshenbaugh-gravesites.sql
       relativeToChangelogFile: true
