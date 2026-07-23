@@ -140,13 +140,13 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
                 'NormalizedProvenance',
                 COALESCE(burials.source_properties->'NormalizedProvenance', '{}'::jsonb)
                   || jsonb_build_object(
-                    'nhgInclusion', $2,
-                    'verificationSourceType', $3,
-                    'verifiedAt', NULLIF($4, '')
+                    'nhgInclusion', $2::text,
+                    'verificationSourceType', $3::text,
+                    'verifiedAt', NULLIF($4::text, '')
                   )
               ),
             notes = CASE
-              WHEN $2 = 'not_listed' THEN concat_ws(
+              WHEN $2::text = 'not_listed' THEN concat_ws(
                 ' ',
                 NULLIF(
                   regexp_replace(
@@ -173,7 +173,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
                 ELSE 'NHG inclusion status propagated from marker.'
               END
             ),
-            reviewed_by = NULLIF($5, ''),
+            reviewed_by = NULLIF($5::text, ''),
             reviewed_at = now(),
             updated_at = now()
           FROM headstone_burials
