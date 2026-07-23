@@ -713,3 +713,9 @@ databaseChangeLog:
   - include:
       file: changes/239-verified-places-and-burial-death-location.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/240-split-c-0161-soergel-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/241-normalize-c-0161-survey-provenance.sql
+      relativeToChangelogFile: true
