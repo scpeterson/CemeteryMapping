@@ -212,6 +212,11 @@ export function validateBurialPayload(body) {
   }
   const deathPlaceIdText = optionalText(body?.deathPlaceId, "Death place", 36) ?? "";
   const deathPlaceId = deathPlaceIdText ? validateUuid(deathPlaceIdText, "Death place") : "";
+  const militaryEnlistedDate = optionalDate(body?.militaryEnlistedDate, "Enlisted date") ?? "";
+  const militaryDischargedDate = optionalDate(body?.militaryDischargedDate, "Discharged date") ?? "";
+  if (militaryEnlistedDate && militaryDischargedDate && militaryDischargedDate < militaryEnlistedDate) {
+    throw new BadRequestError("Discharged date cannot be before enlisted date.");
+  }
 
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
@@ -228,6 +233,8 @@ export function validateBurialPayload(body) {
     militaryBranchCode: optionalText(body?.militaryBranchCode, "Military branch", 50) ?? "",
     militaryRankCode: optionalText(body?.militaryRankCode, "Military rank", 50) ?? "",
     militaryWarServiceCode: optionalText(body?.militaryWarServiceCode, "War service", 50) ?? "",
+    militaryEnlistedDate,
+    militaryDischargedDate,
     notes: optionalText(body?.notes, "Burial notes", 4000) ?? "",
     dataConfidence: validateDataConfidence(body?.dataConfidence),
     reviewStatus: validateReviewStatus(body?.reviewStatus),

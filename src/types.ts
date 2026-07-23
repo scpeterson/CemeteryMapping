@@ -148,6 +148,8 @@ export type Burial = {
   militaryRankPayGrade?: string;
   militaryWarServiceCode?: string;
   militaryWars?: string;
+  militaryEnlistedDate?: string;
+  militaryDischargedDate?: string;
   recordNotes?: string;
   dataConfidence?: DataConfidence;
   reviewStatus?: DataReviewStatus;
@@ -485,6 +487,8 @@ export type SaveBurialInput = {
   militaryBranchCode: string;
   militaryRankCode: string;
   militaryWarServiceCode: string;
+  militaryEnlistedDate: string;
+  militaryDischargedDate: string;
   notes: string;
   dataConfidence: DataConfidence;
   reviewStatus: DataReviewStatus;

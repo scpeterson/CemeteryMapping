@@ -204,7 +204,7 @@ export async function burialMilitaryServiceSql(client) {
   if (!(await burialMilitaryServiceColumnsExist(client))) {
     return {
       select:
-        "NULL::text AS veteran, NULL::text AS military_branch_code, NULL::text AS military_branch, NULL::text AS military_rank_code, NULL::text AS military_rank, NULL::text AS military_rank_abbreviation, NULL::text AS military_rank_pay_grade, NULL::text AS military_war_service_code, NULL::text AS military_wars",
+        "NULL::text AS veteran, NULL::text AS military_branch_code, NULL::text AS military_branch, NULL::text AS military_rank_code, NULL::text AS military_rank, NULL::text AS military_rank_abbreviation, NULL::text AS military_rank_pay_grade, NULL::text AS military_war_service_code, NULL::text AS military_wars, NULL::date AS military_enlisted_date, NULL::date AS military_discharged_date",
       join: "",
       hasLookup: false,
     };
@@ -228,7 +228,7 @@ export async function burialMilitaryServiceSql(client) {
   const warServiceJoin = hasWarServiceLookup ? "LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id" : "";
 
   return {
-    select: `burials.veteran, ${branchCodeSelect}, ${branchLabelSelect}, ${rankCodeSelect}, ${rankLabelSelect}, ${rankAbbreviationSelect}, ${rankPayGradeSelect}, ${warServiceCodeSelect}, ${warServiceLabelSelect}`,
+    select: `burials.veteran, ${branchCodeSelect}, ${branchLabelSelect}, ${rankCodeSelect}, ${rankLabelSelect}, ${rankAbbreviationSelect}, ${rankPayGradeSelect}, ${warServiceCodeSelect}, ${warServiceLabelSelect}, burials.military_enlisted_date, burials.military_discharged_date`,
     join: [branchJoin, rankJoin, warServiceJoin].filter(Boolean).join("\n"),
     hasLookup: hasBranchLookup || hasRankLookup || hasWarServiceLookup,
   };

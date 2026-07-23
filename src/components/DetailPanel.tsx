@@ -374,6 +374,8 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     militaryBranchCode: burial.militaryBranchCode ?? "",
     militaryRankCode: burial.militaryRankCode ?? "",
     militaryWarServiceCode: burial.militaryWarServiceCode ?? "",
+    militaryEnlistedDate: burial.militaryEnlistedDate ?? "",
+    militaryDischargedDate: burial.militaryDischargedDate ?? "",
     notes: burial.recordNotes ?? "",
     dataConfidence: burial.dataConfidence ?? "unknown",
     reviewStatus: burial.reviewStatus ?? "unreviewed",
@@ -534,6 +536,8 @@ function BurialRecord({
       militaryBranchCode: isVeteran ? current.militaryBranchCode : "",
       militaryRankCode: isVeteran ? current.militaryRankCode : "",
       militaryWarServiceCode: isVeteran ? current.militaryWarServiceCode : "",
+      militaryEnlistedDate: isVeteran ? current.militaryEnlistedDate : "",
+      militaryDischargedDate: isVeteran ? current.militaryDischargedDate : "",
     }));
   };
 
@@ -699,6 +703,27 @@ function BurialRecord({
             ))}
           </select>
         </label>
+        {form.veteran ? (
+          <>
+            <label>
+              Enlisted date
+              <input
+                type="date"
+                value={form.militaryEnlistedDate}
+                onChange={(event) => setForm((current) => ({ ...current, militaryEnlistedDate: event.target.value }))}
+              />
+            </label>
+            <label>
+              Discharged date
+              <input
+                type="date"
+                value={form.militaryDischargedDate}
+                min={form.militaryEnlistedDate || undefined}
+                onChange={(event) => setForm((current) => ({ ...current, militaryDischargedDate: event.target.value }))}
+              />
+            </label>
+          </>
+        ) : null}
         <label className="burial-wide-field">
           Notes
           <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={4} />
@@ -792,6 +817,8 @@ function BurialRecord({
         <p className="burial-service">
           {burial.veteran ? <span className="burial-veteran-badge">Veteran</span> : null}
           {serviceText ? <span>{serviceText}</span> : null}
+          {burial.militaryEnlistedDate ? <span>Enlisted {formatDate(burial.militaryEnlistedDate)}</span> : null}
+          {burial.militaryDischargedDate ? <span>Discharged {formatDate(burial.militaryDischargedDate)}</span> : null}
         </p>
       ) : null}
       <ReviewBadgeGroup dataConfidence={burial.dataConfidence} reviewStatus={burial.reviewStatus} sourceConflict={burial.sourceConflict} reviewNotes={burial.reviewNotes} />

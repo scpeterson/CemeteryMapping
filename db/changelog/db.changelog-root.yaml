@@ -740,3 +740,6 @@ databaseChangeLog:
   - include:
       file: changes/248-split-c-0255-hieber-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/249-veteran-service-dates.sql
+      relativeToChangelogFile: true
