@@ -129,6 +129,8 @@ test("burial payload validation accepts recorded cemetery date text", () => {
     militaryBranchCode: "",
     militaryRankCode: "",
     militaryWarServiceCode: "",
+    militaryEnlistedDate: "",
+    militaryDischargedDate: "",
     notes: "",
   };
 
@@ -137,6 +139,30 @@ test("burial payload validation accepts recorded cemetery date text", () => {
   assert.equal(validateBurialPayload({ ...basePayload, deathPlaceId: "12121212-1212-4121-8121-121212121212" }).deathPlaceId, "12121212-1212-4121-8121-121212121212");
   assert.equal(validateBurialPayload({ ...basePayload, birthDate: "Nov. 1929," }).birthDate, "Nov. 1929,");
   assert.equal(validateBurialPayload({ ...basePayload, deathDate: "December 16 1965" }).deathDate, "December 16 1965");
+  assert.equal(validateBurialPayload({ ...basePayload, veteran: true, militaryEnlistedDate: "1942-10-02" }).militaryEnlistedDate, "1942-10-02");
+});
+
+test("burial payload validation rejects discharge before enlistment", () => {
+  assertBadRequest(
+    () =>
+      validateBurialPayload({
+        firstName: "George",
+        lastName: "Hieber",
+        birthDate: "1865",
+        deathDate: "1936",
+        burialDate: "",
+        intermentType: "casket",
+        funeralHome: "",
+        veteran: true,
+        militaryBranchCode: "army",
+        militaryRankCode: "",
+        militaryWarServiceCode: "",
+        militaryEnlistedDate: "1918-01-01",
+        militaryDischargedDate: "1917-01-01",
+        notes: "",
+      }),
+    "Discharged date cannot be before enlisted date.",
+  );
 });
 
 test("burial payload validation rejects an invalid death place identifier", () => {

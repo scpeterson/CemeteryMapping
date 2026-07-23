@@ -73,6 +73,8 @@ export function toBurial(burial) {
     militaryRankPayGrade: burial.military_rank_pay_grade ?? "",
     militaryWarServiceCode: burial.military_war_service_code ?? "",
     militaryWars: burial.military_wars ?? "",
+    militaryEnlistedDate: dateOnly(burial.military_enlisted_date),
+    militaryDischargedDate: dateOnly(burial.military_discharged_date),
     recordNotes: burial.notes ?? "",
     dataConfidence: burial.data_confidence ?? "unknown",
     reviewStatus: burial.review_status ?? "unreviewed",
