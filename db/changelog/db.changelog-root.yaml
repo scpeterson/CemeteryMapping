@@ -719,3 +719,12 @@ databaseChangeLog:
   - include:
       file: changes/241-normalize-c-0161-survey-provenance.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/242-default-trinity-markers-listed-in-nhg.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/243-repair-trinity-nhg-inclusion-default.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/244-default-standalone-trinity-markers-listed-in-nhg.sql
+      relativeToChangelogFile: true

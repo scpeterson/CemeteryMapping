@@ -36,9 +36,9 @@ export function validateHeadstonePayload(body) {
   if (!["field_survey", "documentary_record", "manual_review", "import"].includes(provenanceVerificationSource)) {
     throw new BadRequestError("Provenance verification source is invalid.");
   }
-  const provenanceVerifiedAt = optionalText(body?.provenanceVerifiedAt, "Provenance verified date", 10);
+  const provenanceVerifiedAt = optionalText(body?.provenanceVerifiedAt, "Source information verified date", 10);
   if (provenanceVerifiedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(provenanceVerifiedAt)) {
-    throw new BadRequestError("Provenance verified date must use YYYY-MM-DD format.");
+    throw new BadRequestError("Source information verified date must use YYYY-MM-DD format.");
   }
 
   return {
