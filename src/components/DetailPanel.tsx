@@ -1629,7 +1629,7 @@ function HeadstoneRecord({
           </select>
         </label>
         <label>
-          Provenance verified
+          Source information verified on
           <input
             type="date"
             value={form.provenanceVerifiedAt}
