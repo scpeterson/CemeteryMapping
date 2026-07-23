@@ -728,3 +728,6 @@ databaseChangeLog:
   - include:
       file: changes/244-default-standalone-trinity-markers-listed-in-nhg.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/245-split-c-0250-schmeltz-gravesites.sql
+      relativeToChangelogFile: true
