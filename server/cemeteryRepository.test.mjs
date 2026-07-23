@@ -912,6 +912,9 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
     backDescription: "Back lists grandchildren",
     photoUrl: "",
     lastInspectedAt: "2026-05-28",
+    nhgInclusion: "not_listed",
+    provenanceVerificationSource: "field_survey",
+    provenanceVerifiedAt: "2026-05-28",
   });
 
   const mutationStateQuery = queries.find((query) => query.sql.includes("FOR UPDATE"))?.sql ?? "";
@@ -925,6 +928,12 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
   const updateQuery = queries.find((query) => query.sql.includes("UPDATE headstones"));
   assert.deepEqual(updateQuery?.values.slice(7, 10), ["NHG: vase in ground", "Stable and legible", "In memory"]);
   assert.deepEqual(updateQuery?.values.slice(10, 12), ["Carved laurel flourish above surname", "Back lists grandchildren"]);
+  assert.deepEqual(JSON.parse(updateQuery?.values[14]), {
+    nhgInclusion: "not_listed",
+    verificationSourceType: "field_survey",
+    verifiedAt: "2026-05-28",
+  });
+  assert.match(updateQuery?.sql ?? "", /source_properties[\s\S]*NormalizedProvenance/u);
 });
 
 test("getHeadstone returns standalone marker detail without a gravesite", async () => {

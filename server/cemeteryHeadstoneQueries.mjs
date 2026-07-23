@@ -30,7 +30,8 @@ const headstoneDetailColumnsSql = `
   headstones.design_notes,
   headstones.back_description,
   headstones.photo_url,
-  headstones.last_inspected_at
+  headstones.last_inspected_at,
+  headstones.source_properties
 `;
 
 const headstoneLookupJoinsSql = `
@@ -144,7 +145,8 @@ const headstoneDetailGroupBySql = `
   headstones.design_notes,
   headstones.back_description,
   headstones.photo_url,
-  headstones.last_inspected_at
+  headstones.last_inspected_at,
+  headstones.source_properties
 `;
 
 async function headstoneDetailReviewSql(client) {

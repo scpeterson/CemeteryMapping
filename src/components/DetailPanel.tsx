@@ -1189,6 +1189,9 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     reviewStatus: headstone.reviewStatus ?? "unreviewed",
     reviewNotes: headstone.reviewNotes ?? "",
     sourceConflict: headstone.sourceConflict ?? false,
+    nhgInclusion: headstone.nhgInclusion ?? "not_checked",
+    provenanceVerificationSource: headstone.provenanceVerificationSource ?? "manual_review",
+    provenanceVerifiedAt: headstone.provenanceVerifiedAt ?? "",
     reason: "Headstone detail update",
   };
 }
@@ -1223,6 +1226,9 @@ function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lo
     reviewStatus: "needs_review",
     reviewNotes: "",
     sourceConflict: false,
+    nhgInclusion: "not_checked",
+    provenanceVerificationSource: "manual_review",
+    provenanceVerifiedAt: "",
     latitude: "",
     longitude: "",
     reason: "Add gravesite marker",
@@ -1596,6 +1602,40 @@ function HeadstoneRecord({
             ))}
           </select>
         </label>
+        <label>
+          NHG inclusion
+          <select value={form.nhgInclusion} onChange={(event) => setForm((current) => ({ ...current, nhgInclusion: event.target.value as SaveHeadstoneInput["nhgInclusion"] }))}>
+            <option value="not_checked">Not yet checked</option>
+            <option value="listed">Listed in NHG</option>
+            <option value="not_listed">Not listed in NHG</option>
+            <option value="unclear">Unclear</option>
+          </select>
+        </label>
+        <label>
+          Verification source
+          <select
+            value={form.provenanceVerificationSource}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                provenanceVerificationSource: event.target.value as SaveHeadstoneInput["provenanceVerificationSource"],
+              }))
+            }
+          >
+            <option value="field_survey">Field survey</option>
+            <option value="documentary_record">Documentary record</option>
+            <option value="manual_review">Manual review</option>
+            <option value="import">Imported source</option>
+          </select>
+        </label>
+        <label>
+          Provenance verified
+          <input
+            type="date"
+            value={form.provenanceVerifiedAt}
+            onChange={(event) => setForm((current) => ({ ...current, provenanceVerifiedAt: event.target.value }))}
+          />
+        </label>
         <label className="headstone-checkbox-field">
           <input type="checkbox" checked={form.sourceConflict} onChange={(event) => setForm((current) => ({ ...current, sourceConflict: event.target.checked }))} />
           Source conflict
@@ -1665,6 +1705,18 @@ function HeadstoneRecord({
         <div>
           <dt>Last inspected</dt>
           <dd>{formatDate(headstone.lastInspectedAt)}</dd>
+        </div>
+        <div>
+          <dt>NHG inclusion</dt>
+          <dd>
+            {headstone.nhgInclusion === "listed"
+              ? "Listed in NHG"
+              : headstone.nhgInclusion === "not_listed"
+                ? "Not listed in NHG"
+                : headstone.nhgInclusion === "unclear"
+                  ? "Unclear"
+                  : "Not yet checked"}
+          </dd>
         </div>
       </dl>
       {headstone.vaseNotes ? <p className="note-box">Vase: {headstone.vaseNotes}</p> : null}

@@ -168,6 +168,7 @@ export function toHeadstoneRelationship(row) {
 }
 
 export function toHeadstone(row) {
+  const normalizedProvenance = row.source_properties?.NormalizedProvenance ?? {};
   return {
     id: row.id,
     headstoneId: row.headstone_id,
@@ -190,6 +191,9 @@ export function toHeadstone(row) {
     sourceConflict: Boolean(row.source_conflict),
     reviewedBy: row.reviewed_by ?? "",
     reviewedAt: row.reviewed_at,
+    nhgInclusion: normalizedProvenance.nhgInclusion ?? "not_checked",
+    provenanceVerificationSource: normalizedProvenance.verificationSourceType ?? normalizedProvenance.markerGeometrySourceType ?? "manual_review",
+    provenanceVerifiedAt: normalizedProvenance.verifiedAt,
     relationshipType: row.relationship_type ?? "primary",
     relationshipNotes: row.relationship_notes ?? "",
     associatedGravesiteIds: row.associated_gravesite_ids ?? [],
