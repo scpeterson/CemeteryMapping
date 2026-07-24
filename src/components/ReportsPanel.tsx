@@ -50,6 +50,21 @@ function groupMarkerBurials(rows: Record<string, unknown>[]) {
   return [...groups.values()];
 }
 
+type ReportMarkerFeature = {
+  id?: string;
+  type?: string;
+  subtype?: string;
+  placement?: string;
+  material?: string;
+  symbolText?: string;
+  notes?: string;
+  status?: string;
+};
+
+function reportMarkerFeatures(value: unknown): ReportMarkerFeature[] {
+  return Array.isArray(value) ? value.filter((feature): feature is ReportMarkerFeature => typeof feature === "object" && feature !== null) : [];
+}
+
 function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
   if (!rows.length) return <div className="report-empty">No linked marker burials matched these filters.</div>;
   const markerGroups = groupMarkerBurials(rows);
@@ -61,6 +76,7 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
         const locations = [...new Set(burials.map((burial) =>
           [burial.section ? `Section ${String(burial.section)}` : "", burial.grave].filter(Boolean).join(" · "),
         ).filter(Boolean))];
+        const markerFeatures = reportMarkerFeatures(marker.marker_features);
 
         return (
         <article className="marker-burial-page" key={String(marker.marker_uuid ?? marker.marker_id)}>
@@ -85,6 +101,24 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
               <DetailItem label="Back" value={marker.back_description} />
               <DetailItem label="Condition notes" value={marker.condition_notes} />
             </dl>
+            {markerFeatures.length ? (
+              <div className="marker-burial-features">
+                <h3>Associated features</h3>
+                <ul>
+                  {markerFeatures.map((feature) => {
+                    const attributes = [feature.subtype, feature.placement, feature.material, feature.symbolText].filter(Boolean);
+                    return (
+                      <li key={feature.id ?? `${feature.type}:${attributes.join(":")}`}>
+                        <strong>{feature.type ?? "Feature"}</strong>
+                        {attributes.length ? <span>{attributes.join(" · ")}</span> : null}
+                        {feature.notes ? <span>{feature.notes}</span> : null}
+                        {feature.status && feature.status !== "active" ? <span>Status: {feature.status.replaceAll("_", " ")}</span> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
           </section>
           {burials.map((burial, burialIndex) => (
             <section className="marker-burial-person" key={String(burial.burial_uuid)}>

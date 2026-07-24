@@ -249,6 +249,7 @@ async function runMarkerBurialPages(client, definition, parameters, cemeteryIds)
         headstones.back_description,
         headstones.condition_notes,
         COALESCE(marker_photo.file_url, NULLIF(headstones.photo_url, '')) AS photo_url,
+        COALESCE(marker_features.features, '[]'::jsonb) AS marker_features,
         burials.id::text AS burial_uuid,
         COALESCE(NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.maiden_name, ''), NULLIF(burials.last_name, ''))) AS person,
         burials.first_name,
@@ -300,6 +301,28 @@ async function runMarkerBurialPages(client, definition, parameters, cemeteryIds)
         ORDER BY headstone_media_assets.display_order, media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC
         LIMIT 1
       ) marker_photo ON true
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', grave_features.id::text,
+            'type', grave_feature_types.label,
+            'subtype', grave_feature_subtypes.label,
+            'placement', grave_feature_placement_types.label,
+            'material', grave_feature_material_types.label,
+            'symbolText', grave_features.symbol_text,
+            'notes', grave_features.notes,
+            'status', grave_features.status
+          )
+          ORDER BY grave_feature_types.sort_order, grave_feature_subtypes.sort_order NULLS LAST, grave_features.created_at
+        ) AS features
+        FROM grave_features
+        JOIN grave_feature_types ON grave_feature_types.id = grave_features.feature_type_id
+        LEFT JOIN grave_feature_subtypes ON grave_feature_subtypes.id = grave_features.feature_subtype_id
+        LEFT JOIN grave_feature_placement_types ON grave_feature_placement_types.id = grave_features.placement_type_id
+        LEFT JOIN grave_feature_material_types ON grave_feature_material_types.id = grave_features.material_type_id
+        WHERE grave_features.headstone_uuid = headstones.id
+          AND grave_features.deleted_at IS NULL
+      ) marker_features ON true
       LEFT JOIN LATERAL (
         SELECT string_agg(
           concat_ws(' ', CASE WHEN entries.source_page_number IS NOT NULL THEN 'Page ' || entries.source_page_number || ':' END, entries.raw_text),

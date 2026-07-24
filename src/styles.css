@@ -2562,6 +2562,37 @@ h3 {
   grid-row: 1 / span 4;
 }
 
+.marker-burial-features {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.marker-burial-features ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.marker-burial-features li {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5c7;
+  border-radius: 5px;
+  background: #f7f9f5;
+  font-size: 0.78rem;
+}
+
+.marker-burial-features li span {
+  color: #4e5d53;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 760px) {
   .marker-burial-details {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2570,6 +2601,10 @@ h3 {
   .marker-burial-detail--inscription {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  .marker-burial-features ul {
+    grid-template-columns: 1fr;
   }
 }
 

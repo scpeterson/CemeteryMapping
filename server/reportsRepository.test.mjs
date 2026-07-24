@@ -177,6 +177,18 @@ test("marker burial pages filter linked burials and include photos and NHG evide
           section: "C",
           grave: "C-0228",
           photo_url: "/media/schug.jpg",
+          marker_features: [
+            {
+              id: "feature-1",
+              type: "Flag holder",
+              subtype: "U.S. Veteran star",
+              placement: "In front",
+              material: "Bronze",
+              symbolText: "US Veteran",
+              notes: "Separate holder",
+              status: "active",
+            },
+          ],
           burial_uuid: "burial-1",
           person: "Hazel M Schug",
           nhg_text: "Page 202: SCHUG marker transcription",
@@ -204,6 +216,9 @@ test("marker burial pages filter linked burials and include photos and NHG evide
 
   assert.match(query.sql, /JOIN headstone_burials/u);
   assert.match(query.sql, /headstone_media_assets/u);
+  assert.match(query.sql, /FROM grave_features/u);
+  assert.match(query.sql, /grave_features\.headstone_uuid = headstones\.id/u);
+  assert.match(query.sql, /AS marker_features/u);
   assert.match(query.sql, /north_hills_ocr_entry_headstone_links/u);
   assert.match(query.sql, /north_hills_ocr_entry_gravesite_links/u);
   assert.match(query.sql, /lower\(btrim\(coalesce\(burials\.veteran, ''\)\)\) IN \('yes', 'y', 'true', '1', 'veteran'\) AS veteran/u);
@@ -214,6 +229,7 @@ test("marker burial pages filter linked burials and include photos and NHG evide
   assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"], "%TLC-HS-0228%", "%Schug%", "C"]);
   assert.equal(result.layout, "marker-burial-pages");
   assert.equal(result.rows[0].nhg_text, "Page 202: SCHUG marker transcription");
+  assert.equal(result.rows[0].marker_features[0].type, "Flag holder");
   assert.equal(result.summary, "1 marker page generated for 2 burials.");
   assert.deepEqual(result.notes, ["Each marker is shown once with all of its linked burials grouped below it."]);
 });
