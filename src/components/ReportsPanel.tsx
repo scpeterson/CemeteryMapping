@@ -151,7 +151,7 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
                 <DetailItem label="Branch" value={burial.military_branch} showEmpty />
                 <DetailItem label="Rank" value={burial.military_rank} showEmpty />
                 <DetailItem label="War/service" value={burial.military_war_service} showEmpty />
-                <DetailItem label="Notes" value={burial.burial_notes} showEmpty />
+                <DetailItem label="Notes" value={burial.burial_notes} className="marker-burial-detail--notes" showEmpty />
               </dl>
               <div className="marker-burial-nhg">
                 <h3>North Hills Genealogists text</h3>

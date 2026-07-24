@@ -2562,6 +2562,10 @@ h3 {
   grid-row: 1 / span 4;
 }
 
+.marker-burial-detail--notes {
+  grid-column: span 2;
+}
+
 .marker-burial-features {
   display: grid;
   gap: 6px;
@@ -2601,6 +2605,10 @@ h3 {
   .marker-burial-detail--inscription {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  .marker-burial-detail--notes {
+    grid-column: auto;
   }
 
   .marker-burial-features ul {
