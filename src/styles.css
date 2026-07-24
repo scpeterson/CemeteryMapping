@@ -2495,6 +2495,11 @@ h3 {
   gap: 7px;
 }
 
+.marker-burial-person + .marker-burial-person {
+  padding-top: 12px;
+  border-top: 2px solid #cbd5c7;
+}
+
 .marker-burial-page h2 {
   padding-bottom: 4px;
   border-bottom: 1px solid #dfe5da;
@@ -2510,26 +2515,67 @@ h3 {
 .marker-burial-details {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px 14px;
+  align-items: start;
+  gap: 10px;
   margin: 0;
 }
 
 .marker-burial-detail {
   display: grid;
-  grid-template-columns: minmax(70px, auto) minmax(0, 1fr);
-  gap: 6px;
+  grid-template-rows: auto minmax(38px, auto);
+  overflow: hidden;
+  border: 1px solid #cbd5c7;
+  border-radius: 5px;
+  background: #fff;
   font-size: 0.78rem;
 }
 
 .marker-burial-detail dt {
-  color: #657268;
-  font-weight: 760;
+  padding: 5px 8px;
+  border-bottom: 1px solid #cbd5c7;
+  background: #e8efe9;
+  color: #294f3d;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
 }
 
 .marker-burial-detail dd {
+  padding: 7px 8px;
   margin: 0;
+  color: #1f2d25;
+  line-height: 1.35;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.marker-burial-detail--inscription {
+  grid-column: 3;
+  grid-row: 1 / span 4;
+}
+
+@media (max-width: 760px) {
+  .marker-burial-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .marker-burial-detail--inscription {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .marker-burial-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+.marker-burial-nhg {
+  display: grid;
+  gap: 4px;
+  padding-top: 4px;
 }
 
 .marker-burial-nhg p {
@@ -2606,9 +2652,16 @@ h3 {
     min-height: 10in;
     padding: 0;
     break-after: page;
-    break-inside: avoid;
     border: 0;
     border-radius: 0;
+  }
+
+  .marker-burial-marker-header,
+  .marker-burial-photo,
+  .marker-burial-photo-placeholder,
+  .marker-burial-page > section:first-of-type,
+  .marker-burial-person {
+    break-inside: avoid;
   }
 
   .marker-burial-page:last-child {

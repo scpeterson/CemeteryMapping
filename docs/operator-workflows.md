@@ -25,9 +25,9 @@ Use `Reports -> Marker burial pages` when you need a printable record for every 
 1. Open `Reports` from the main application toolbar.
 2. Select `Marker burial pages` under Burials.
 3. Narrow the output with any combination of marker ID, burial name, and section. Marker ID and burial name accept partial text; section matching is case-insensitive.
-4. Run the report and review the returned pages before printing. Every marker-to-burial link produces one page, so a shared marker with two linked burials produces two pages.
+4. Run the report and review the returned pages before printing. Each marker appears once, followed by every burial associated with it.
 5. Confirm the marker photo, marker metadata, gravesite, burial details, and North Hills Genealogists text are correct. NHG text can come from reviewed evidence linked to either the marker or the burial's gravesite.
-6. Select `Print`. The print layout uses letter-sized portrait pages, starts each burial on a new page, and renders the marker photo three inches high.
+6. Select `Print`. The print layout uses letter-sized portrait pages, starts each marker on a new page, renders the marker photo three inches high, and keeps each burial record together when possible.
 
 You can also ask an approved report question such as `Print burial pages for marker TLC-HS-0228`, `Show marker burial pages for Schug`, or `Print marker burial pages for section C`. Use the explicit fields when combining filters or when a name could be interpreted more than one way.
 

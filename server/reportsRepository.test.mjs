@@ -181,6 +181,15 @@ test("marker burial pages filter linked burials and include photos and NHG evide
           person: "Hazel M Schug",
           nhg_text: "Page 202: SCHUG marker transcription",
         },
+        {
+          marker_uuid: "marker-1",
+          marker_id: "TLC-HS-0228",
+          cemetery: "Trinity",
+          section: "C",
+          grave: "C-0228B",
+          burial_uuid: "burial-2",
+          person: "George Schug",
+        },
       ],
     },
   ]);
@@ -204,6 +213,8 @@ test("marker burial pages filter linked burials and include photos and NHG evide
   assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"], "%TLC-HS-0228%", "%Schug%", "C"]);
   assert.equal(result.layout, "marker-burial-pages");
   assert.equal(result.rows[0].nhg_text, "Page 202: SCHUG marker transcription");
+  assert.equal(result.summary, "1 marker page generated for 2 burials.");
+  assert.deepEqual(result.notes, ["Each marker is shown once with all of its linked burials grouped below it."]);
 });
 
 test("non-admin reports ignore client supplied cemetery filters", async () => {
