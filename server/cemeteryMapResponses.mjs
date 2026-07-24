@@ -87,19 +87,34 @@ function toLotRestrictedArea(area) {
   };
 }
 
+async function loadMapRows(queryTarget, cemeteryIds, { includeCost = false, includeOwnership = false, includeBurials = false, parallel = false } = {}) {
+  const queries = [
+    () => selectSectionsForCemeteries(queryTarget, cemeteryIds),
+    () => selectLotsForCemeteries(queryTarget, cemeteryIds),
+    () => selectLotRestrictedAreasForCemeteries(queryTarget, cemeteryIds),
+    () => selectGravesForCemeteries(queryTarget, cemeteryIds, { includeCost }),
+    () => includeOwnership ? selectOwnersForCemeteries(queryTarget, cemeteryIds) : Promise.resolve([]),
+    () => includeBurials ? selectBurialsForCemeteries(queryTarget, cemeteryIds) : Promise.resolve([]),
+    () => selectHeadstoneSummariesForCemeteries(queryTarget, cemeteryIds),
+  ];
+  if (parallel) return Promise.all(queries.map((query) => query()));
+
+  const rows = [];
+  for (const query of queries) rows.push(await query());
+  return rows;
+}
+
 
 export async function getCemeteryData(pool) {
-  const client = await pool.connect();
+  const client = typeof pool.query === "function" ? null : await pool.connect();
+  const queryTarget = client ?? pool;
   try {
-    const cemeteries = await selectActiveCemeteries(client);
+    const cemeteries = await selectActiveCemeteries(queryTarget);
     const cemeteryIds = cemeteries.map((cemetery) => cemetery.id);
     if (cemeteryIds.length === 0) return { sections: [], lots: [], graves: [] };
 
-    const sections = await selectSectionsForCemeteries(client, cemeteryIds);
-    const lots = await selectLotsForCemeteries(client, cemeteryIds);
-    const lotRestrictedAreas = await selectLotRestrictedAreasForCemeteries(client, cemeteryIds);
-    const graves = await selectGravesForCemeteries(client, cemeteryIds);
-    const headstones = await selectHeadstoneSummariesForCemeteries(client, cemeteryIds);
+    const [sections, lots, lotRestrictedAreas, graves, , , headstones] =
+      await loadMapRows(queryTarget, cemeteryIds, { parallel: client === null });
 
     return {
       boundaries: cemeteries.map(toBoundaryFeature),
@@ -115,23 +130,25 @@ export async function getCemeteryData(pool) {
       headstones: headstones.map(toHeadstoneSummary),
     };
   } finally {
-    client.release();
+    client?.release();
   }
 }
 
 export async function getDetailedCemeteryData(pool, { includeOwnership = true } = {}) {
-  const client = await pool.connect();
+  const client = typeof pool.query === "function" ? null : await pool.connect();
+  const queryTarget = client ?? pool;
   try {
-    const cemeteries = await selectActiveCemeteries(client);
+    const cemeteries = await selectActiveCemeteries(queryTarget);
     const cemeteryIds = cemeteries.map((cemetery) => cemetery.id);
     if (cemeteryIds.length === 0) return { sections: [], lots: [], graves: [], owners: [] };
 
-    const sections = await selectSectionsForCemeteries(client, cemeteryIds);
-    const lots = await selectLotsForCemeteries(client, cemeteryIds);
-    const lotRestrictedAreas = await selectLotRestrictedAreasForCemeteries(client, cemeteryIds);
-    const graves = await selectGravesForCemeteries(client, cemeteryIds, { includeCost: true });
-    const owners = includeOwnership ? await selectOwnersForCemeteries(client, cemeteryIds) : [];
-    const burials = await selectBurialsForCemeteries(client, cemeteryIds);
+    const [sections, lots, lotRestrictedAreas, graves, owners, burials] =
+      await loadMapRows(queryTarget, cemeteryIds, {
+        includeCost: true,
+        includeOwnership,
+        includeBurials: true,
+        parallel: client === null,
+      });
 
     const ownersByGrave = groupBy(owners, "gravesite_uuid");
     const burialsByGrave = groupBy(burials, "gravesite_uuid");
@@ -150,6 +167,6 @@ export async function getDetailedCemeteryData(pool, { includeOwnership = true } 
       owners: owners.map(toOwner),
     };
   } finally {
-    client.release();
+    client?.release();
   }
 }
