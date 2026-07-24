@@ -25,6 +25,12 @@ function reportText(row: Record<string, unknown>, key: string) {
   return formatReportValue(row[key]);
 }
 
+function isVeteranReportValue(value: unknown) {
+  if (value === true) return true;
+  if (typeof value !== "string") return false;
+  return ["yes", "y", "true", "1", "veteran"].includes(value.trim().toLowerCase());
+}
+
 function DetailItem({ label, value, className = "" }: { label: string; value: unknown; className?: string }) {
   if (value === null || value === undefined || value === "") return null;
   return (
@@ -85,7 +91,7 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
               <h2>Burial {burialIndex + 1} of {burials.length}</h2>
               <h3 className="marker-burial-person-name">
                 <span>{reportText(burial, "person")}</span>
-                {burial.veteran === true ? <span className="burial-veteran-badge">Veteran</span> : null}
+                {isVeteranReportValue(burial.veteran) ? <span className="burial-veteran-badge">Veteran</span> : null}
               </h3>
               <dl className="marker-burial-details">
                 <DetailItem label="Gravesite" value={burial.gravesite_id} />
