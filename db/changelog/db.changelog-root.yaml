@@ -749,3 +749,6 @@ databaseChangeLog:
   - include:
       file: changes/251-copy-air-force-ranks-to-army-air-forces.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/252-split-c-0257-sarver-gravesites.sql
+      relativeToChangelogFile: true
