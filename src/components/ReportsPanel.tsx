@@ -83,7 +83,10 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
           {burials.map((burial, burialIndex) => (
             <section className="marker-burial-person" key={String(burial.burial_uuid)}>
               <h2>Burial {burialIndex + 1} of {burials.length}</h2>
-              <h3>{reportText(burial, "person")}</h3>
+              <h3 className="marker-burial-person-name">
+                <span>{reportText(burial, "person")}</span>
+                {burial.veteran ? <span className="burial-veteran-badge">Veteran</span> : null}
+              </h3>
               <dl className="marker-burial-details">
                 <DetailItem label="Gravesite" value={burial.gravesite_id} />
                 <DetailItem label="Birth" value={burial.birth_date} />
@@ -92,7 +95,6 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
                 <DetailItem label="Interment" value={burial.interment_type} />
                 <DetailItem label="Record status" value={burial.record_status} />
                 <DetailItem label="Funeral home" value={burial.funeral_home} />
-                <DetailItem label="Veteran" value={burial.veteran === true ? "Yes" : burial.veteran ? burial.veteran : undefined} />
                 <DetailItem label="Branch" value={burial.military_branch} />
                 <DetailItem label="Rank" value={burial.military_rank} />
                 <DetailItem label="War/service" value={burial.military_war_service} />

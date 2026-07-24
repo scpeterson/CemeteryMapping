@@ -2512,6 +2512,13 @@ h3 {
   font-size: 1.15rem;
 }
 
+.marker-burial-person-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .marker-burial-details {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
