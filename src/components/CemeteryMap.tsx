@@ -71,19 +71,16 @@ function getGeoJsonSource(map: MapLibreMap, sourceName: string) {
   return map.getSource(sourceName) as GeoJSONSource | undefined;
 }
 
-function refreshStaticSources(map: MapLibreMap, data: CemeteryData, selectedLot: CemeteryLot | undefined) {
+function refreshStaticSources(map: MapLibreMap, data: CemeteryData) {
   const boundarySource = getGeoJsonSource(map, "boundary");
   const sectionsSource = getGeoJsonSource(map, "sections");
-  const lotsSource = getGeoJsonSource(map, "lots");
   const lotRestrictedAreasSource = getGeoJsonSource(map, "lot-restricted-areas");
-  const selectedLotKey = selectedLot ? lotSelectionKey(selectedLot) : undefined;
 
   boundarySource?.setData(boundariesFeatureCollection(data));
   sectionsSource?.setData(sectionsFeatureCollection(data));
-  lotsSource?.setData(lotsFeatureCollection(data, selectedLotKey));
   lotRestrictedAreasSource?.setData(lotRestrictedAreasFeatureCollection(data));
 
-  return Boolean(boundarySource || sectionsSource || lotsSource || lotRestrictedAreasSource);
+  return Boolean(boundarySource || sectionsSource || lotRestrictedAreasSource);
 }
 
 function refreshLotSource(map: MapLibreMap, data: CemeteryData, selectedLot: CemeteryLot | undefined) {
@@ -398,13 +395,16 @@ export function CemeteryMap({
     const map = mapRef.current;
     if (!map) return;
 
-    if (refreshStaticSources(map, data, selectedLot)) {
+    if (refreshStaticSources(map, data)) {
       syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
-      if (isInitialFitReady && !didFitInitialScopeRef.current && !selectedGrave && !selectedLot && !selectedHeadstone) {
-        didFitInitialScopeRef.current = true;
-        fitMapToCemeteries(map, data, initialFitCemeteryIds);
-      }
     }
+  }, [data]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isInitialFitReady || didFitInitialScopeRef.current || selectedGrave || selectedLot || selectedHeadstone) return;
+    didFitInitialScopeRef.current = true;
+    fitMapToCemeteries(map, data, initialFitCemeteryIds);
   }, [data, initialFitCemeteryIds, isInitialFitReady, selectedGrave, selectedHeadstone, selectedLot]);
 
   useEffect(() => {
