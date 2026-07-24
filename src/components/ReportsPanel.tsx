@@ -25,10 +25,10 @@ function reportText(row: Record<string, unknown>, key: string) {
   return formatReportValue(row[key]);
 }
 
-function DetailItem({ label, value }: { label: string; value: unknown }) {
+function DetailItem({ label, value, className = "" }: { label: string; value: unknown; className?: string }) {
   if (value === null || value === undefined || value === "") return null;
   return (
-    <div className="marker-burial-detail">
+    <div className={`marker-burial-detail ${className}`.trim()}>
       <dt>{label}</dt>
       <dd>{formatReportValue(value)}</dd>
     </div>
@@ -74,7 +74,7 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
               <DetailItem label="Type" value={marker.marker_type} />
               <DetailItem label="Material" value={marker.marker_material} />
               <DetailItem label="Condition" value={marker.marker_condition} />
-              <DetailItem label="Inscription" value={marker.inscription} />
+              <DetailItem label="Inscription" value={marker.inscription} className="marker-burial-detail--inscription" />
               <DetailItem label="Design" value={marker.design_notes} />
               <DetailItem label="Back" value={marker.back_description} />
               <DetailItem label="Condition notes" value={marker.condition_notes} />
