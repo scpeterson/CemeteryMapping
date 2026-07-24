@@ -1,4 +1,5 @@
-import maplibregl, { type Map } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { Map } from "maplibre-gl";
 import type { CemeteryData } from "../types";
 import { cemeteryMarkersFeatureCollection } from "../lib/geojson";
 import { fitMapToGeometry } from "./cemeteryMapBounds";

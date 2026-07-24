@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Download, Image as ImageIcon, MapPinned, Maximize2, MousePointer2, Trash2, X, ZoomIn, ZoomOut } from "lucide-react";
-import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { FeatureCollection, Point } from "geojson";
 import type { CemeteryData } from "../types";
 import { fitMapToData } from "./cemeteryMapBounds";
