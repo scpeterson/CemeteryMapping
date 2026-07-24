@@ -22,7 +22,7 @@ Core backend software:
 | --- | --- | --- |
 | Node.js | 24 in CI | JavaScript runtime |
 | Express | 5.2.1 | HTTP API server |
-| pg | 8.21.0 | PostgreSQL client |
+| pg | 8.22.0 | PostgreSQL client |
 | PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | Relational and spatial database |
 
 ## Rationale
