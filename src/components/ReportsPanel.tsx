@@ -25,12 +25,31 @@ function reportText(row: Record<string, unknown>, key: string) {
   return formatReportValue(row[key]);
 }
 
-function DetailItem({ label, value, className = "" }: { label: string; value: unknown; className?: string }) {
-  if (value === null || value === undefined || value === "") return null;
+function isVeteranReportValue(value: unknown) {
+  if (value === true) return true;
+  if (typeof value !== "string") return false;
+  return ["yes", "y", "true", "1", "veteran"].includes(value.trim().toLowerCase());
+}
+
+function DetailItem({
+  label,
+  value,
+  className = "",
+  showEmpty = false,
+  emptyValue = "—",
+}: {
+  label: string;
+  value: unknown;
+  className?: string;
+  showEmpty?: boolean;
+  emptyValue?: string;
+}) {
+  const isEmpty = value === null || value === undefined || value === "";
+  if (isEmpty && !showEmpty) return null;
   return (
     <div className={`marker-burial-detail ${className}`.trim()}>
       <dt>{label}</dt>
-      <dd>{formatReportValue(value)}</dd>
+      <dd>{isEmpty ? emptyValue : formatReportValue(value)}</dd>
     </div>
   );
 }
@@ -44,6 +63,21 @@ function groupMarkerBurials(rows: Record<string, unknown>[]) {
   return [...groups.values()];
 }
 
+type ReportMarkerFeature = {
+  id?: string;
+  type?: string;
+  subtype?: string;
+  placement?: string;
+  material?: string;
+  symbolText?: string;
+  notes?: string;
+  status?: string;
+};
+
+function reportMarkerFeatures(value: unknown): ReportMarkerFeature[] {
+  return Array.isArray(value) ? value.filter((feature): feature is ReportMarkerFeature => typeof feature === "object" && feature !== null) : [];
+}
+
 function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
   if (!rows.length) return <div className="report-empty">No linked marker burials matched these filters.</div>;
   const markerGroups = groupMarkerBurials(rows);
@@ -55,6 +89,7 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
         const locations = [...new Set(burials.map((burial) =>
           [burial.section ? `Section ${String(burial.section)}` : "", burial.grave].filter(Boolean).join(" · "),
         ).filter(Boolean))];
+        const markerFeatures = reportMarkerFeatures(marker.marker_features);
 
         return (
         <article className="marker-burial-page" key={String(marker.marker_uuid ?? marker.marker_id)}>
@@ -79,24 +114,44 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
               <DetailItem label="Back" value={marker.back_description} />
               <DetailItem label="Condition notes" value={marker.condition_notes} />
             </dl>
+            {markerFeatures.length ? (
+              <div className="marker-burial-features">
+                <h3>Associated features</h3>
+                <ul>
+                  {markerFeatures.map((feature) => {
+                    const attributes = [feature.subtype, feature.placement, feature.material, feature.symbolText].filter(Boolean);
+                    return (
+                      <li key={feature.id ?? `${feature.type}:${attributes.join(":")}`}>
+                        <strong>{feature.type ?? "Feature"}</strong>
+                        {attributes.length ? <span>{attributes.join(" · ")}</span> : null}
+                        {feature.notes ? <span>{feature.notes}</span> : null}
+                        {feature.status && feature.status !== "active" ? <span>Status: {feature.status.replaceAll("_", " ")}</span> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
           </section>
           {burials.map((burial, burialIndex) => (
             <section className="marker-burial-person" key={String(burial.burial_uuid)}>
               <h2>Burial {burialIndex + 1} of {burials.length}</h2>
-              <h3>{reportText(burial, "person")}</h3>
+              <h3 className="marker-burial-person-name">
+                <span>{reportText(burial, "person")}</span>
+                {isVeteranReportValue(burial.veteran) ? <span className="burial-veteran-badge">Veteran</span> : null}
+              </h3>
               <dl className="marker-burial-details">
-                <DetailItem label="Gravesite" value={burial.gravesite_id} />
-                <DetailItem label="Birth" value={burial.birth_date} />
-                <DetailItem label="Death" value={burial.death_date} />
-                <DetailItem label="Burial" value={burial.burial_date} />
-                <DetailItem label="Interment" value={burial.interment_type} />
-                <DetailItem label="Record status" value={burial.record_status} />
-                <DetailItem label="Funeral home" value={burial.funeral_home} />
-                <DetailItem label="Veteran" value={burial.veteran === true ? "Yes" : burial.veteran ? burial.veteran : undefined} />
-                <DetailItem label="Branch" value={burial.military_branch} />
-                <DetailItem label="Rank" value={burial.military_rank} />
-                <DetailItem label="War/service" value={burial.military_war_service} />
-                <DetailItem label="Notes" value={burial.burial_notes} />
+                <DetailItem label="Gravesite" value={burial.gravesite_id} showEmpty />
+                <DetailItem label="Birth" value={burial.birth_date} showEmpty />
+                <DetailItem label="Death" value={burial.death_date} showEmpty emptyValue="Still living" />
+                <DetailItem label="Burial" value={burial.burial_date} showEmpty />
+                <DetailItem label="Interment" value={burial.interment_type} showEmpty />
+                <DetailItem label="Record status" value={burial.record_status} showEmpty />
+                <DetailItem label="Funeral home" value={burial.funeral_home} showEmpty />
+                <DetailItem label="Branch" value={burial.military_branch} showEmpty />
+                <DetailItem label="Rank" value={burial.military_rank} showEmpty />
+                <DetailItem label="War/service" value={burial.military_war_service} showEmpty />
+                <DetailItem label="Notes" value={burial.burial_notes} className="marker-burial-detail--notes" showEmpty />
               </dl>
               <div className="marker-burial-nhg">
                 <h3>North Hills Genealogists text</h3>
