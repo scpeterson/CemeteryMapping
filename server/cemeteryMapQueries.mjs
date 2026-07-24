@@ -58,26 +58,36 @@ export async function selectLotRestrictedAreasForCemeteries(client, cemeteryIds)
 export async function selectGravesForCemeteries(client, cemeteryIds, { includeCost = false } = {}) {
   const result = await client.query(
     `
+      WITH veteran_burials AS MATERIALIZED (
+        SELECT gravesite_uuid, gravesite_id
+        FROM burials
+        WHERE deleted_at IS NULL
+          AND lower(btrim(coalesce(veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran')
+      ),
+      veteran_gravesite_uuids AS (
+        SELECT DISTINCT gravesite_uuid
+        FROM veteran_burials
+        WHERE gravesite_uuid IS NOT NULL
+      ),
+      veteran_legacy_ids AS (
+        SELECT DISTINCT gravesite_id
+        FROM veteran_burials
+        WHERE gravesite_uuid IS NULL AND gravesite_id IS NOT NULL
+      )
       SELECT
         ${includeCost ? "gravesites.id::text AS uuid," : ""}
         gravesites.cemetery_id::text, cemeteries.name AS cemetery_name, gravesites.section_id,
         gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id, gravesites.name,
         ${derivedGravesiteStatusSql()} AS status,
         gravesites.geometry_type, gravesites.geometry_source, gravesites.geometry_confidence, gravesites.geometry_notes,
-        EXISTS (
-          SELECT 1 FROM burials veteran_burials
-          WHERE (
-            veteran_burials.gravesite_uuid = gravesites.id
-            OR (veteran_burials.gravesite_uuid IS NULL AND veteran_burials.gravesite_id = gravesites.gravesite_id)
-          )
-          AND veteran_burials.deleted_at IS NULL
-          AND lower(btrim(coalesce(veteran_burials.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran')
-        ) AS has_veteran,
+        (veteran_gravesite_uuids.gravesite_uuid IS NOT NULL OR veteran_legacy_ids.gravesite_id IS NOT NULL) AS has_veteran,
         ${includeCost ? "gravesites.cost," : ""}
         ST_AsGeoJSON(gravesites.geometry)::json AS geometry
       FROM gravesites
       JOIN cemeteries ON cemeteries.id = gravesites.cemetery_id
       LEFT JOIN gravesite_status_types status_type ON status_type.id = gravesites.status_type_id
+      LEFT JOIN veteran_gravesite_uuids ON veteran_gravesite_uuids.gravesite_uuid = gravesites.id
+      LEFT JOIN veteran_legacy_ids ON veteran_legacy_ids.gravesite_id = gravesites.gravesite_id
       WHERE gravesites.cemetery_id = ANY($1::uuid[]) AND gravesites.deleted_at IS NULL
       ORDER BY cemeteries.name, gravesites.section_id, gravesites.lot_id, gravesites.grave_id, gravesites.gravesite_id
     `,

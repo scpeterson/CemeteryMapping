@@ -153,10 +153,10 @@ test("cemetery map derives gravesite status from review flags, burials, and owne
   const gravesQuery = queries.find((sql) => sql.includes("ST_AsGeoJSON(gravesites.geometry)::json"));
   assert.match(gravesQuery, /status_type\.code = 'needs_review'/u);
   assert.match(gravesQuery, /FROM burials status_burials/u);
-  assert.match(gravesQuery, /FROM burials veteran_burials/u);
-  assert.match(gravesQuery, /veteran_burials\.gravesite_uuid = gravesites\.id/u);
-  assert.match(gravesQuery, /veteran_burials\.gravesite_id = gravesites\.gravesite_id/u);
-  assert.match(gravesQuery, /lower\(btrim\(coalesce\(veteran_burials\.veteran, ''\)\)\)/u);
+  assert.match(gravesQuery, /WITH veteran_burials AS MATERIALIZED/u);
+  assert.match(gravesQuery, /veteran_gravesite_uuids\.gravesite_uuid = gravesites\.id/u);
+  assert.match(gravesQuery, /veteran_legacy_ids\.gravesite_id = gravesites\.gravesite_id/u);
+  assert.match(gravesQuery, /lower\(btrim\(coalesce\(veteran, ''\)\)\)/u);
   assert.match(gravesQuery, /AS has_veteran/u);
   assert.match(gravesQuery, /THEN 'occupied'/u);
   assert.match(gravesQuery, /status_type\.code = 'reserved'/u);
