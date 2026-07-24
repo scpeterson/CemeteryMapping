@@ -16,6 +16,11 @@ function gitSha() {
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    // MapLibre 6 loads its ESM worker relative to import.meta.url. Pre-bundling
+    // the main module into .vite/deps separates it from that worker file.
+    exclude: ["maplibre-gl"],
+  },
   define: {
     __APP_VERSION__: JSON.stringify(process.env.APP_VERSION ?? packageJson.version),
     __GIT_SHA__: JSON.stringify(process.env.GIT_SHA ?? gitSha()),
