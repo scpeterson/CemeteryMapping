@@ -20,12 +20,12 @@ Core frontend software:
 
 | Software | Version | Purpose |
 | --- | --- | --- |
-| React | 19.2.6 | Component model and client rendering |
-| React DOM | 19.2.6 | Browser DOM renderer for React |
-| Vite | 7.3.3 | Development server and production bundler |
+| React | 19.2.8 | Component model and client rendering |
+| React DOM | 19.2.8 | Browser DOM renderer for React |
+| Vite | 8.1.4 | Development server and production bundler |
 | TypeScript | 6.0.3 | Static type checking |
-| MapLibre GL JS | 5.24.0 | Interactive web map rendering |
-| Lucide React | 1.16.0 | UI icons |
+| MapLibre GL JS | 6.0.0 | Interactive web map rendering |
+| Lucide React | 1.23.0 | UI icons |
 
 ## Rationale
 
@@ -33,11 +33,15 @@ React provides a familiar component model for stateful UI such as search panels,
 
 MapLibre GL JS was selected because it renders GeoJSON and vector-style map interactions in the browser without requiring a proprietary map SDK. It is suitable for local cemetery geometry and can consume GeoJSON returned by the Express API.
 
+MapLibre GL JS 6 uses an ESM-only distribution and loads its worker module relative to `import.meta.url`. The Vite configuration excludes `maplibre-gl` from dependency optimization so the main module remains beside `maplibre-gl-worker.mjs`; pre-bundling it into `node_modules/.vite/deps` breaks that relative worker lookup.
+
 ## Consequences
 
 The UI is easy to run locally with `npm run dev` and build with `npm run build`. Frontend environment modes map to `dev`, `test`, `stage`, and `prod`.
 
 The frontend depends on the API contract in ADR 0005. When API response shapes change, TypeScript types and UI tests must be updated in the same PR.
+
+React and React DOM must be upgraded together to the same release. MapLibre major upgrades must be checked for module-format, worker-loading, browser-target, and WebGL compatibility changes.
 
 ## Rebuild Notes
 

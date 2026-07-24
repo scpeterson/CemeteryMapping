@@ -266,6 +266,23 @@ You do not need to stop the database every time, but stopping it frees local res
 
 ## Common Problems
 
+### MapLibre Worker Is Missing From `.vite/deps`
+
+An error mentioning a missing `node_modules/.vite/deps/maplibre-gl-worker.mjs` means an old Vite process or dependency cache is still using the pre-MapLibre-6 optimizer layout. The project excludes MapLibre from dependency optimization so its ESM entry point and worker remain together.
+
+Stop every running Vite process, install the current lockfile, and force one clean startup:
+
+```bash
+npm ci
+npm run dev:web -- --force
+```
+
+After the clean startup succeeds, stop it and use the normal combined command:
+
+```bash
+npm run dev
+```
+
 ### Port 5173 Is Already In Use
 
 Meaning: another Vite frontend is already running.

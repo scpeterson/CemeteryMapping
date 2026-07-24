@@ -61,23 +61,23 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 The main software choices are captured in the ADRs. Exact JavaScript dependency versions come from `package-lock.json`; container image versions come from `docker-compose.yml`; CI runtime versions come from `.github/workflows/ci.yml`.
 
-Current core versions as of 2026-05-23:
+Current core versions as of 2026-07-24:
 
 | Component | Version | Source |
 | --- | --- | --- |
 | Node.js in CI | 24 | `.github/workflows/ci.yml` |
-| React | 19.2.6 | `package-lock.json` |
-| React DOM | 19.2.6 | `package-lock.json` |
-| Vite | 7.3.3 | `package-lock.json` |
+| React | 19.2.8 | `package-lock.json` |
+| React DOM | 19.2.8 | `package-lock.json` |
+| Vite | 8.1.4 | `package-lock.json` |
 | TypeScript | 6.0.3 | `package-lock.json` |
 | Express | 5.2.1 | `package-lock.json` |
-| pg | 8.21.0 | `package-lock.json` |
-| MapLibre GL JS | 5.24.0 | `package-lock.json` |
+| pg | 8.22.0 | `package-lock.json` |
+| MapLibre GL JS | 6.0.0 | `package-lock.json` |
 | ExcelJS | 4.4.0 | `package-lock.json` |
 | PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | `docker-compose.yml` |
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
-| Playwright | 1.60.0 | `package-lock.json` |
-| ESLint | 9.39.4 | `package-lock.json` |
+| Playwright | 1.61.1 | `package-lock.json` |
+| ESLint | 10.6.0 | `package-lock.json` |
 | Ruby for documentation builds | 3.4.1 | local Ruby toolchain and `docs/Gemfile.lock` |
 | Bundler for documentation builds | 2.6.2 | `docs/Gemfile.lock` |
 | Jekyll | 4.4.1 | `docs/Gemfile.lock` |
