@@ -85,7 +85,7 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
               <h2>Burial {burialIndex + 1} of {burials.length}</h2>
               <h3 className="marker-burial-person-name">
                 <span>{reportText(burial, "person")}</span>
-                {burial.veteran ? <span className="burial-veteran-badge">Veteran</span> : null}
+                {burial.veteran === true ? <span className="burial-veteran-badge">Veteran</span> : null}
               </h3>
               <dl className="marker-burial-details">
                 <DetailItem label="Gravesite" value={burial.gravesite_id} />

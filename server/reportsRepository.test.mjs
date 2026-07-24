@@ -206,6 +206,7 @@ test("marker burial pages filter linked burials and include photos and NHG evide
   assert.match(query.sql, /headstone_media_assets/u);
   assert.match(query.sql, /north_hills_ocr_entry_headstone_links/u);
   assert.match(query.sql, /north_hills_ocr_entry_gravesite_links/u);
+  assert.match(query.sql, /lower\(btrim\(coalesce\(burials\.veteran, ''\)\)\) IN \('yes', 'y', 'true', '1', 'veteran'\) AS veteran/u);
   assert.match(query.sql, /gravesites\.cemetery_id = ANY\(\$1::uuid\[\]\)/u);
   assert.match(query.sql, /lower\(headstones\.headstone_id\) LIKE lower\(\$2\)/u);
   assert.match(query.sql, /lower\(COALESCE\(NULLIF\(burials\.full_name/u);

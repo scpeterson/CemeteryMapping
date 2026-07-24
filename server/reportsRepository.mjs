@@ -260,7 +260,7 @@ async function runMarkerBurialPages(client, definition, parameters, cemeteryIds)
         burial_interment_types.label AS interment_type,
         burial_record_status_types.label AS record_status,
         burials.funeral_home,
-        burials.veteran,
+        lower(btrim(coalesce(burials.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran') AS veteran,
         military_branch_types.label AS military_branch,
         military_rank_types.label AS military_rank,
         military_war_service_types.label AS military_war_service,
