@@ -2495,6 +2495,11 @@ h3 {
   gap: 7px;
 }
 
+.marker-burial-person + .marker-burial-person {
+  padding-top: 12px;
+  border-top: 2px solid #cbd5c7;
+}
+
 .marker-burial-page h2 {
   padding-bottom: 4px;
   border-bottom: 1px solid #dfe5da;
@@ -2530,6 +2535,12 @@ h3 {
   margin: 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.marker-burial-nhg {
+  display: grid;
+  gap: 4px;
+  padding-top: 4px;
 }
 
 .marker-burial-nhg p {
@@ -2606,9 +2617,16 @@ h3 {
     min-height: 10in;
     padding: 0;
     break-after: page;
-    break-inside: avoid;
     border: 0;
     border-radius: 0;
+  }
+
+  .marker-burial-marker-header,
+  .marker-burial-photo,
+  .marker-burial-photo-placeholder,
+  .marker-burial-page > section:first-of-type,
+  .marker-burial-person {
+    break-inside: avoid;
   }
 
   .marker-burial-page:last-child {

@@ -35,58 +35,78 @@ function DetailItem({ label, value }: { label: string; value: unknown }) {
   );
 }
 
+function groupMarkerBurials(rows: Record<string, unknown>[]) {
+  const groups = new Map<string, Record<string, unknown>[]>();
+  rows.forEach((row) => {
+    const markerKey = String(row.marker_uuid ?? row.marker_id);
+    groups.set(markerKey, [...(groups.get(markerKey) ?? []), row]);
+  });
+  return [...groups.values()];
+}
+
 function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
   if (!rows.length) return <div className="report-empty">No linked marker burials matched these filters.</div>;
+  const markerGroups = groupMarkerBurials(rows);
+
   return (
     <div className="marker-burial-pages">
-      {rows.map((row, index) => (
-        <article className="marker-burial-page" key={`${String(row.marker_uuid)}:${String(row.burial_uuid)}`}>
+      {markerGroups.map((burials, markerIndex) => {
+        const marker = burials[0];
+        const locations = [...new Set(burials.map((burial) =>
+          [burial.section ? `Section ${String(burial.section)}` : "", burial.grave].filter(Boolean).join(" · "),
+        ).filter(Boolean))];
+
+        return (
+        <article className="marker-burial-page" key={String(marker.marker_uuid ?? marker.marker_id)}>
           <header className="marker-burial-marker-header">
             <div>
-              <p className="marker-burial-kicker">Marker burial record</p>
-              <h1>{reportText(row, "marker_id")}</h1>
-              <p>{[row.cemetery, row.section ? `Section ${row.section}` : "", row.grave].filter(Boolean).join(" · ")}</p>
+              <p className="marker-burial-kicker">Marker burial records</p>
+              <h1>{reportText(marker, "marker_id")}</h1>
+              <p>{[marker.cemetery, ...locations].filter(Boolean).join(" · ")}</p>
             </div>
-            <span>Page {index + 1} of {rows.length}</span>
+            <span>Marker {markerIndex + 1} of {markerGroups.length}</span>
           </header>
-          {row.photo_url ? <img className="marker-burial-photo" src={String(row.photo_url)} alt={`Marker ${String(row.marker_id)}`} /> : <div className="marker-burial-photo-placeholder">No marker photo available</div>}
+          {marker.photo_url ? <img className="marker-burial-photo" src={String(marker.photo_url)} alt={`Marker ${String(marker.marker_id)}`} /> : <div className="marker-burial-photo-placeholder">No marker photo available</div>}
           <section>
             <h2>Marker information</h2>
             <dl className="marker-burial-details">
-              <DetailItem label="Marker ID" value={row.marker_id} />
-              <DetailItem label="Type" value={row.marker_type} />
-              <DetailItem label="Material" value={row.marker_material} />
-              <DetailItem label="Condition" value={row.marker_condition} />
-              <DetailItem label="Gravesite" value={row.gravesite_id} />
-              <DetailItem label="Inscription" value={row.inscription} />
-              <DetailItem label="Design" value={row.design_notes} />
-              <DetailItem label="Back" value={row.back_description} />
-              <DetailItem label="Condition notes" value={row.condition_notes} />
+              <DetailItem label="Marker ID" value={marker.marker_id} />
+              <DetailItem label="Type" value={marker.marker_type} />
+              <DetailItem label="Material" value={marker.marker_material} />
+              <DetailItem label="Condition" value={marker.marker_condition} />
+              <DetailItem label="Inscription" value={marker.inscription} />
+              <DetailItem label="Design" value={marker.design_notes} />
+              <DetailItem label="Back" value={marker.back_description} />
+              <DetailItem label="Condition notes" value={marker.condition_notes} />
             </dl>
           </section>
-          <section>
-            <h2>Burial information</h2>
-            <h3>{reportText(row, "person")}</h3>
-            <dl className="marker-burial-details">
-              <DetailItem label="Birth" value={row.birth_date} />
-              <DetailItem label="Death" value={row.death_date} />
-              <DetailItem label="Burial" value={row.burial_date} />
-              <DetailItem label="Interment" value={row.interment_type} />
-              <DetailItem label="Record status" value={row.record_status} />
-              <DetailItem label="Funeral home" value={row.funeral_home} />
-              <DetailItem label="Veteran" value={row.veteran === true ? "Yes" : row.veteran ? row.veteran : undefined} />
-              <DetailItem label="Branch" value={row.military_branch} />
-              <DetailItem label="Rank" value={row.military_rank} />
-              <DetailItem label="War/service" value={row.military_war_service} />
-              <DetailItem label="Notes" value={row.burial_notes} />
-            </dl>
-          </section>
-          <section className="marker-burial-nhg">
-            <h2>North Hills Genealogists text</h2>
-            <p>{row.nhg_text ? String(row.nhg_text) : "No linked NHG text."}</p>
-          </section>
+          {burials.map((burial, burialIndex) => (
+            <section className="marker-burial-person" key={String(burial.burial_uuid)}>
+              <h2>Burial {burialIndex + 1} of {burials.length}</h2>
+              <h3>{reportText(burial, "person")}</h3>
+              <dl className="marker-burial-details">
+                <DetailItem label="Gravesite" value={burial.gravesite_id} />
+                <DetailItem label="Birth" value={burial.birth_date} />
+                <DetailItem label="Death" value={burial.death_date} />
+                <DetailItem label="Burial" value={burial.burial_date} />
+                <DetailItem label="Interment" value={burial.interment_type} />
+                <DetailItem label="Record status" value={burial.record_status} />
+                <DetailItem label="Funeral home" value={burial.funeral_home} />
+                <DetailItem label="Veteran" value={burial.veteran === true ? "Yes" : burial.veteran ? burial.veteran : undefined} />
+                <DetailItem label="Branch" value={burial.military_branch} />
+                <DetailItem label="Rank" value={burial.military_rank} />
+                <DetailItem label="War/service" value={burial.military_war_service} />
+                <DetailItem label="Notes" value={burial.burial_notes} />
+              </dl>
+              <div className="marker-burial-nhg">
+                <h3>North Hills Genealogists text</h3>
+                <p>{burial.nhg_text ? String(burial.nhg_text) : "No linked NHG text."}</p>
+              </div>
+            </section>
+          ))}
         </article>
-      ))}
+        );
+      })}
     </div>
   );
 }

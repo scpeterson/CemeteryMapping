@@ -328,13 +328,15 @@ async function runMarkerBurialPages(client, definition, parameters, cemeteryIds)
     values,
   );
 
+  const markerCount = new Set(result.rows.map((row) => row.marker_uuid)).size;
+
   return reportResult({
     definition,
-    summary: `${result.rows.length} burial page${result.rows.length === 1 ? "" : "s"} generated.`,
+    summary: `${markerCount} marker page${markerCount === 1 ? "" : "s"} generated for ${result.rows.length} burial${result.rows.length === 1 ? "" : "s"}.`,
     columns: [],
     rows: result.rows,
     layout: "marker-burial-pages",
-    notes: ["Each burial linked to a marker begins on a separate printed page."],
+    notes: ["Each marker is shown once with all of its linked burials grouped below it."],
   });
 }
 
