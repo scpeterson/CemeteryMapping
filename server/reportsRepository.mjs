@@ -221,11 +221,11 @@ async function runMarkerBurialPages(client, definition, parameters, cemeteryIds)
 
   if (markerId) {
     values.push(`%${markerId}%`);
-    filters.push(`headstones.headstone_id ILIKE $${values.length}`);
+    filters.push(`lower(headstones.headstone_id) LIKE lower($${values.length})`);
   }
   if (personName) {
     values.push(`%${personName}%`);
-    filters.push(`COALESCE(NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''))) ILIKE $${values.length}`);
+    filters.push(`lower(COALESCE(NULLIF(burials.full_name, ''), btrim(COALESCE(burials.first_name, '') || ' ' || COALESCE(burials.last_name, '')))) LIKE lower($${values.length})`);
   }
   if (sectionName) {
     values.push(sectionName);
@@ -699,7 +699,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
          AND lots.id = current_ownership_right_owners.lot_uuid
         JOIN cemeteries
           ON cemeteries.id = COALESCE(gravesites.cemetery_id, lots.cemetery_id, current_ownership_right_owners.cemetery_id)
-        WHERE current_ownership_right_owners.display_name ILIKE $1
+        WHERE lower(current_ownership_right_owners.display_name) LIKE lower($1)
           AND current_ownership_right_owners.target_type IN ('lot', 'gravesite')
           ${scope}
 
@@ -721,9 +721,9 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
         JOIN cemeteries
           ON cemeteries.id = gravesites.cemetery_id
         CROSS JOIN LATERAL (
-          SELECT owners.owner AS owner_name WHERE owners.owner ILIKE $1
+          SELECT owners.owner AS owner_name WHERE lower(owners.owner) LIKE lower($1)
           UNION ALL
-          SELECT owners.co_owner AS owner_name WHERE owners.co_owner ILIKE $1
+          SELECT owners.co_owner AS owner_name WHERE lower(owners.co_owner) LIKE lower($1)
         ) matched_legacy
         WHERE owners.deleted_at IS NULL
           AND gravesites.deleted_at IS NULL
