@@ -1,4 +1,5 @@
-import maplibregl, { type Map } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { Map } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary } from "../types";
 
 export const exteriorRing = (geometry: GraveSpaceSummary["geometry"]) => (geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0]);

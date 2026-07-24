@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, Ruler, Trash2, ZoomIn, ZoomOut } from "lucide-react";
-import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, CemeteryLot, GraveSpaceSummary, GraveStatus, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotRestrictedAreasFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, lotSelectionKey, statusLabels } from "../lib/format";
