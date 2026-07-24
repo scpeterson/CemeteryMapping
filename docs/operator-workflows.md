@@ -770,6 +770,7 @@ Later Section C shared-marker corrections use a consistent north/south split: th
 - `C-0235` retains Kenneth B Soergel; new northern `C-0235A` is reserved for living pre-need marker record Clara Pearle Soergel; marker `TLC-HS-0235` spans both.
 - `C-0236` retains Howard L Soergel; new northern `C-0236A` contains Elsie G Soergel; marker `TLC-HS-0236` spans both.
 - `C-0257` retains James M Sarver; new northern `C-0257A` contains Margaret E Sarver; marker `TLC-HS-0257` spans both.
+- `C-0258` retains Walter H Schuessler; new northern `C-0258A` contains Armella M Schuessler; marker `TLC-HS-0258` spans both.
 
 These letter suffixes are operational identifiers created during reviewed data repair, not labels transcribed from NHG. Do not move an observed marker point merely to center it in one of the interpreted gravesite polygons.
 
