@@ -198,7 +198,8 @@ test("marker burial pages filter linked burials and include photos and NHG evide
   assert.match(query.sql, /north_hills_ocr_entry_headstone_links/u);
   assert.match(query.sql, /north_hills_ocr_entry_gravesite_links/u);
   assert.match(query.sql, /gravesites\.cemetery_id = ANY\(\$1::uuid\[\]\)/u);
-  assert.match(query.sql, /headstones\.headstone_id ILIKE \$2/u);
+  assert.match(query.sql, /lower\(headstones\.headstone_id\) LIKE lower\(\$2\)/u);
+  assert.match(query.sql, /lower\(COALESCE\(NULLIF\(burials\.full_name/u);
   assert.match(query.sql, /upper\(gravesites\.section_id\) = upper\(\$4\)/u);
   assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"], "%TLC-HS-0228%", "%Schug%", "C"]);
   assert.equal(result.layout, "marker-burial-pages");

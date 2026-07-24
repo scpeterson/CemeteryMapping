@@ -754,4 +754,6 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changes/253-split-c-0258-schuessler-gravesites.sql
+  - include:
+      file: changes/254-report-text-search-indexes.sql
       relativeToChangelogFile: true
