@@ -31,12 +31,25 @@ function isVeteranReportValue(value: unknown) {
   return ["yes", "y", "true", "1", "veteran"].includes(value.trim().toLowerCase());
 }
 
-function DetailItem({ label, value, className = "" }: { label: string; value: unknown; className?: string }) {
-  if (value === null || value === undefined || value === "") return null;
+function DetailItem({
+  label,
+  value,
+  className = "",
+  showEmpty = false,
+  emptyValue = "—",
+}: {
+  label: string;
+  value: unknown;
+  className?: string;
+  showEmpty?: boolean;
+  emptyValue?: string;
+}) {
+  const isEmpty = value === null || value === undefined || value === "";
+  if (isEmpty && !showEmpty) return null;
   return (
     <div className={`marker-burial-detail ${className}`.trim()}>
       <dt>{label}</dt>
-      <dd>{formatReportValue(value)}</dd>
+      <dd>{isEmpty ? emptyValue : formatReportValue(value)}</dd>
     </div>
   );
 }
@@ -128,17 +141,17 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
                 {isVeteranReportValue(burial.veteran) ? <span className="burial-veteran-badge">Veteran</span> : null}
               </h3>
               <dl className="marker-burial-details">
-                <DetailItem label="Gravesite" value={burial.gravesite_id} />
-                <DetailItem label="Birth" value={burial.birth_date} />
-                <DetailItem label="Death" value={burial.death_date} />
-                <DetailItem label="Burial" value={burial.burial_date} />
-                <DetailItem label="Interment" value={burial.interment_type} />
-                <DetailItem label="Record status" value={burial.record_status} />
-                <DetailItem label="Funeral home" value={burial.funeral_home} />
-                <DetailItem label="Branch" value={burial.military_branch} />
-                <DetailItem label="Rank" value={burial.military_rank} />
-                <DetailItem label="War/service" value={burial.military_war_service} />
-                <DetailItem label="Notes" value={burial.burial_notes} />
+                <DetailItem label="Gravesite" value={burial.gravesite_id} showEmpty />
+                <DetailItem label="Birth" value={burial.birth_date} showEmpty />
+                <DetailItem label="Death" value={burial.death_date} showEmpty emptyValue="Still living" />
+                <DetailItem label="Burial" value={burial.burial_date} showEmpty />
+                <DetailItem label="Interment" value={burial.interment_type} showEmpty />
+                <DetailItem label="Record status" value={burial.record_status} showEmpty />
+                <DetailItem label="Funeral home" value={burial.funeral_home} showEmpty />
+                <DetailItem label="Branch" value={burial.military_branch} showEmpty />
+                <DetailItem label="Rank" value={burial.military_rank} showEmpty />
+                <DetailItem label="War/service" value={burial.military_war_service} showEmpty />
+                <DetailItem label="Notes" value={burial.burial_notes} showEmpty />
               </dl>
               <div className="marker-burial-nhg">
                 <h3>North Hills Genealogists text</h3>
