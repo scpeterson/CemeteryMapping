@@ -775,3 +775,6 @@ databaseChangeLog:
   - include:
       file: changes/260-split-c-0274-hague-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/261-add-colleen-hirschey-field-photo-marker.sql
+      relativeToChangelogFile: true
