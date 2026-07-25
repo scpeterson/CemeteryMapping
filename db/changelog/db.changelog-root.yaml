@@ -757,3 +757,9 @@ databaseChangeLog:
   - include:
       file: changes/254-report-text-search-indexes.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/255-split-c-0266-scharf-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/256-link-tlc-hs-0266-glenn-scharf.sql
+      relativeToChangelogFile: true
