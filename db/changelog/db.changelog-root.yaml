@@ -763,3 +763,9 @@ databaseChangeLog:
   - include:
       file: changes/256-link-tlc-hs-0266-glenn-scharf.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/257-add-gail-braun-field-photo-marker.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/258-inset-gail-braun-gravesite-marker.sql
+      relativeToChangelogFile: true
