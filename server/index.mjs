@@ -17,6 +17,7 @@ import { listDataQualityDashboard } from "./dataQualityRepository.mjs";
 import {
   createGraveFeature,
   createHeadstoneForGrave,
+  createHeadstoneGravesiteRelationship,
   createHeadstoneRelationship,
   createMaintenanceRecord,
   createOwnershipEvent,
@@ -28,11 +29,13 @@ import {
   softDeleteGraveFeature,
   softDeleteGraveSpace,
   softDeleteHeadstoneRelationship,
+  softDeleteHeadstoneGravesiteRelationship,
   updateBurial,
   updateGraveFeature,
   updateGraveSpace,
   updateHeadstone,
   updateHeadstoneRelationship,
+  updateHeadstoneGravesiteRelationship,
   updateMaintenanceRecord,
 } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
@@ -98,13 +101,13 @@ export function createApp(config, pool) {
   const requireAdmin = requireRole(config.auth, pool, "admin");
   registerCemeteryRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
-    createGraveFeature, createHeadstoneForGrave, createHeadstoneRelationship, createMaintenanceRecord,
+    createGraveFeature, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, createMaintenanceRecord,
     createOwnershipEvent, getCemeteryData, getGraveSpace, getHeadstone, listHeadstoneLookupOptions,
     importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     listReportsForUser, matchReportQuery, pool, requireAdmin, requireCemeteryAdmin, requirePowerUser,
     requireReader, restoreGraveSpace, runReport, safelyRecordSystemEvent, searchCemetery,
-    softDeleteGraveFeature, softDeleteGraveSpace, softDeleteHeadstoneRelationship, updateBurial,
-    updateGraveFeature, updateGraveSpace, updateHeadstone, updateHeadstoneRelationship,
+    softDeleteGraveFeature, softDeleteGraveSpace, softDeleteHeadstoneRelationship, softDeleteHeadstoneGravesiteRelationship, updateBurial,
+    updateGraveFeature, updateGraveSpace, updateHeadstone, updateHeadstoneRelationship, updateHeadstoneGravesiteRelationship,
     updateMaintenanceRecord, validateHeadstoneBusinessRules, versionMetadata,
   });
 

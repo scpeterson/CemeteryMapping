@@ -197,6 +197,18 @@ export type HeadstoneRelationship = {
   direction: "outgoing" | "incoming";
 };
 
+export type HeadstoneGravesiteRelationshipType = "primary" | "spans" | "nearby" | "inferred" | "footstone" | "secondary";
+
+export type HeadstoneGravesiteRelationship = {
+  id: string;
+  gravesiteUuid: string;
+  gravesiteId: string;
+  graveId: string;
+  gravesiteName: string;
+  relationshipType: HeadstoneGravesiteRelationshipType;
+  notes: string;
+};
+
 export type Headstone = {
   id: string;
   headstoneId: string;
@@ -231,6 +243,7 @@ export type Headstone = {
   features: GraveFeature[];
   maintenanceRecords: MaintenanceRecord[];
   relationships: HeadstoneRelationship[];
+  gravesiteRelationships: HeadstoneGravesiteRelationship[];
   mediaAssets: MediaAsset[];
   auditEventId?: string;
   burialNhgPropagation?: { updated: number; skipped: number };
@@ -327,6 +340,7 @@ export type HeadstoneSummary = {
 
 export type HeadstoneLookups = {
   headstones: LookupOption[];
+  gravesites: LookupOption[];
   markerTypes: LookupOption[];
   materials: LookupOption[];
   conditions: LookupOption[];
@@ -362,6 +376,13 @@ export type SaveHeadstoneRelationshipInput = {
   confidence: "high" | "medium" | "low" | "review";
   notes: string;
   status: "active" | "needs_review" | "retired";
+  reason?: string;
+};
+
+export type SaveHeadstoneGravesiteRelationshipInput = {
+  gravesiteId: string;
+  relationshipType: HeadstoneGravesiteRelationshipType;
+  notes: string;
   reason?: string;
 };
 

@@ -120,9 +120,26 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
       `,
       [Array.isArray(allowedCemeteryIds) ? allowedCemeteryIds : null],
     );
+    const gravesites = await client.query(
+      `
+        SELECT
+          gravesites.id::text,
+          concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS code,
+          concat(
+            concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')),
+            CASE WHEN gravesites.name IS NULL OR gravesites.name = '' THEN '' ELSE concat(' — ', gravesites.name) END
+          ) AS label
+        FROM gravesites
+        WHERE gravesites.deleted_at IS NULL
+          AND ($1::uuid[] IS NULL OR gravesites.cemetery_id = ANY($1::uuid[]))
+        ORDER BY gravesites.gravesite_id
+      `,
+      [Array.isArray(allowedCemeteryIds) ? allowedCemeteryIds : null],
+    );
 
     return {
       headstones: headstones.rows,
+      gravesites: gravesites.rows,
       markerTypes: markerTypes.rows,
       materials: materials.rows,
       conditions: conditions.rows,

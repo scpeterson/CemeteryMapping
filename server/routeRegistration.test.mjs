@@ -33,7 +33,7 @@ const cases = [
   ["system", registerSystemRoutes, 3, ["GET /api/health", "GET /api/me"]],
   ["grave", registerGraveRoutes, 12, ["GET /api/cemetery-map", "GET /api/places/search", "POST /api/places/import", "PATCH /api/burials/:id", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events"]],
   ["report", registerReportRoutes, 4, ["GET /api/search", "POST /api/reports/query"]],
-  ["headstone", registerHeadstoneRoutes, 9, ["GET /api/headstone-lookups", "POST /api/headstones/:id/relationships", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore"]],
+  ["headstone", registerHeadstoneRoutes, 12, ["GET /api/headstone-lookups", "POST /api/headstones/:id/relationships", "POST /api/headstones/:id/gravesites", "DELETE /api/headstone-gravesite-relationships/:id", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore"]],
   ["media", registerMediaRoutes, 4, ["POST /api/headstones/:id/media-assets", "PATCH /api/media-assets/:id/order"]],
   ["admin user", registerAdminUserRoutes, 5, ["GET /api/admin/users", "POST /api/admin/auth0-users/resolve"]],
   ["admin governance", registerAdminGovernanceRoutes, 16, ["GET /api/admin/data-quality-dashboard", "POST /api/admin/bulk/headstones", "PUT /api/admin/cemetery-records/lots/:id"]],

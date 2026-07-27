@@ -9,6 +9,7 @@ import type {
   GraveSpaceSummary,
   GraveStatus,
   Headstone,
+  HeadstoneGravesiteRelationship,
   HeadstoneLookups,
   HeadstoneRelationship,
   HeadstoneSummary,
@@ -24,6 +25,7 @@ import type {
   SaveGraveSpaceInput,
   SaveGraveFeatureInput,
   SaveHeadstoneCreateInput,
+  SaveHeadstoneGravesiteRelationshipInput,
   SaveHeadstoneInput,
   SaveHeadstoneRelationshipInput,
   SaveMaintenanceRecordInput,
@@ -62,6 +64,9 @@ type DetailPanelProps = {
   onSaveHeadstoneRelationship: (headstoneId: string, relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
   onUpdateHeadstoneRelationship: (headstoneId: string, relationshipId: string, relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
   onDeleteHeadstoneRelationship: (headstoneId: string, relationshipId: string, reason?: string) => Promise<void>;
+  onSaveHeadstoneGravesiteRelationship: (headstoneId: string, relationship: SaveHeadstoneGravesiteRelationshipInput) => Promise<Headstone>;
+  onUpdateHeadstoneGravesiteRelationship: (headstoneId: string, relationshipId: string, relationship: SaveHeadstoneGravesiteRelationshipInput) => Promise<Headstone>;
+  onDeleteHeadstoneGravesiteRelationship: (headstoneId: string, relationshipId: string, reason?: string) => Promise<void>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onDeleteGraveFeature: (id: string, reason?: string) => Promise<void>;
@@ -1817,6 +1822,9 @@ function MarkerDetailPanel({
   onSaveHeadstoneRelationship,
   onUpdateHeadstoneRelationship,
   onDeleteHeadstoneRelationship,
+  onSaveHeadstoneGravesiteRelationship,
+  onUpdateHeadstoneGravesiteRelationship,
+  onDeleteHeadstoneGravesiteRelationship,
   onSaveGraveFeature,
   onUpdateGraveFeature,
   onDeleteGraveFeature,
@@ -1842,6 +1850,9 @@ function MarkerDetailPanel({
   onSaveHeadstoneRelationship: (headstoneId: string, relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
   onUpdateHeadstoneRelationship: (headstoneId: string, relationshipId: string, relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
   onDeleteHeadstoneRelationship: (headstoneId: string, relationshipId: string, reason?: string) => Promise<void>;
+  onSaveHeadstoneGravesiteRelationship: (headstoneId: string, relationship: SaveHeadstoneGravesiteRelationshipInput) => Promise<Headstone>;
+  onUpdateHeadstoneGravesiteRelationship: (headstoneId: string, relationshipId: string, relationship: SaveHeadstoneGravesiteRelationshipInput) => Promise<Headstone>;
+  onDeleteHeadstoneGravesiteRelationship: (headstoneId: string, relationshipId: string, reason?: string) => Promise<void>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onDeleteGraveFeature: (id: string, reason?: string) => Promise<void>;
@@ -1966,7 +1977,18 @@ function MarkerDetailPanel({
             <MapPinned size={17} aria-hidden="true" />
             <h3>Associated Gravesites</h3>
           </div>
-          <AssociatedGravesiteList graves={markerGraves} emptyMessage="No gravesites are associated with this marker." onSelectGrave={onSelectMarkerGrave} />
+          {headstone ? (
+            <MarkerGravesiteRelationshipManager
+              headstone={headstone}
+              graves={markerGraves}
+              lookups={headstoneLookups}
+              canUpdate={canUpdateHeadstones}
+              onSelectGrave={onSelectMarkerGrave}
+              onSave={(relationship) => onSaveHeadstoneGravesiteRelationship(headstone.id, relationship)}
+              onUpdate={(relationshipId, relationship) => onUpdateHeadstoneGravesiteRelationship(headstone.id, relationshipId, relationship)}
+              onDelete={(relationshipId, reason) => onDeleteHeadstoneGravesiteRelationship(headstone.id, relationshipId, reason)}
+            />
+          ) : null}
         </section>
       )}
     </aside>
@@ -1980,6 +2002,145 @@ function EmptyDetailPanel() {
       <h2>Select a grave site, lot, or marker</h2>
       <p>Click a mapped grave space, lot, marker, or choose a search result to view cemetery records.</p>
     </aside>
+  );
+}
+
+const markerGravesiteTypeOptions: Array<{ value: SaveHeadstoneGravesiteRelationshipInput["relationshipType"]; label: string }> = [
+  { value: "primary", label: "Primary" },
+  { value: "spans", label: "Spans" },
+  { value: "nearby", label: "Nearby" },
+  { value: "inferred", label: "Inferred" },
+  { value: "footstone", label: "Footstone" },
+  { value: "secondary", label: "Secondary" },
+];
+
+function MarkerGravesiteRelationshipManager({
+  headstone,
+  graves,
+  lookups,
+  canUpdate,
+  onSelectGrave,
+  onSave,
+  onUpdate,
+  onDelete,
+}: {
+  headstone: Headstone;
+  graves: GraveSpaceSummary[];
+  lookups: HeadstoneLookups;
+  canUpdate: boolean;
+  onSelectGrave: (grave: GraveSpaceSummary) => void;
+  onSave: (relationship: SaveHeadstoneGravesiteRelationshipInput) => Promise<Headstone>;
+  onUpdate: (id: string, relationship: SaveHeadstoneGravesiteRelationshipInput) => Promise<Headstone>;
+  onDelete: (id: string, reason?: string) => Promise<void>;
+}) {
+  const relationships = headstone.gravesiteRelationships ?? [];
+  const gravesById = new Map(graves.map((grave) => [grave.id, grave]));
+  const linkedIds = new Set(relationships.map((relationship) => relationship.gravesiteUuid));
+  const availableGravesites = lookups.gravesites.filter((grave) => !linkedIds.has(grave.id));
+  const [form, setForm] = useState<SaveHeadstoneGravesiteRelationshipInput>({
+    gravesiteId: "",
+    relationshipType: "secondary",
+    notes: "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!form.gravesiteId) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await onSave(form);
+      setForm({ gravesiteId: "", relationshipType: "secondary", notes: "" });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to add gravesite relationship.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const changeType = async (relationship: HeadstoneGravesiteRelationship, relationshipType: SaveHeadstoneGravesiteRelationshipInput["relationshipType"]) => {
+    setBusy(true);
+    setMessage("");
+    try {
+      await onUpdate(relationship.id, { gravesiteId: relationship.gravesiteUuid, relationshipType, notes: relationship.notes });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to update gravesite relationship.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (relationship: HeadstoneGravesiteRelationship) => {
+    const reason = window.prompt(`Why are you removing the link to ${relationship.gravesiteId}?`);
+    if (reason === null) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await onDelete(relationship.id, reason || undefined);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to remove gravesite relationship.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="stacked-form">
+      {relationships.map((relationship) => (
+        <div className="associated-gravesite-row" key={relationship.id}>
+          <div>
+            {gravesById.has(relationship.gravesiteId) ? (
+              <button type="button" className="link-button" onClick={() => onSelectGrave(gravesById.get(relationship.gravesiteId)!)}>
+                <strong>{relationship.graveId || relationship.gravesiteId}</strong>
+              </button>
+            ) : <strong>{relationship.graveId || relationship.gravesiteId}</strong>}
+            {relationship.gravesiteName && relationship.gravesiteName !== relationship.gravesiteId ? <span> — {relationship.gravesiteName}</span> : null}
+            {relationship.notes ? <p className="muted">{relationship.notes}</p> : null}
+          </div>
+          {canUpdate ? (
+            <div className="inline-actions">
+              <select
+                aria-label={`Relationship to ${relationship.gravesiteId}`}
+                disabled={busy}
+                value={relationship.relationshipType}
+                onChange={(event) => void changeType(relationship, event.target.value as SaveHeadstoneGravesiteRelationshipInput["relationshipType"])}
+              >
+                {markerGravesiteTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <button type="button" className="icon-button danger" disabled={busy} aria-label={`Remove link to ${relationship.gravesiteId}`} onClick={() => void remove(relationship)}>
+                <Trash2 size={15} aria-hidden="true" />
+              </button>
+            </div>
+          ) : <span>{markerGravesiteTypeOptions.find((option) => option.value === relationship.relationshipType)?.label ?? relationship.relationshipType}</span>}
+        </div>
+      ))}
+      {!relationships.length ? <p className="muted">No gravesites are associated with this marker.</p> : null}
+      {canUpdate && availableGravesites.length ? (
+        <form className="stacked-form" onSubmit={submit}>
+          <label>
+            Add gravesite
+            <select required value={form.gravesiteId} onChange={(event) => setForm((current) => ({ ...current, gravesiteId: event.target.value }))}>
+              <option value="">Select a gravesite</option>
+              {availableGravesites.map((grave) => <option key={grave.id} value={grave.id}>{grave.label}</option>)}
+            </select>
+          </label>
+          <label>
+            Relationship
+            <select value={form.relationshipType} onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneGravesiteRelationshipInput["relationshipType"] }))}>
+              {markerGravesiteTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+          <label>
+            Notes
+            <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
+          </label>
+          <button type="submit" className="primary-button" disabled={busy || !form.gravesiteId}>{busy ? "Saving…" : "Add gravesite link"}</button>
+        </form>
+      ) : null}
+      {message ? <p className="form-error">{message}</p> : null}
+    </div>
   );
 }
 
@@ -3253,6 +3414,9 @@ export function DetailPanel({
   onSaveHeadstoneRelationship,
   onUpdateHeadstoneRelationship,
   onDeleteHeadstoneRelationship,
+  onSaveHeadstoneGravesiteRelationship,
+  onUpdateHeadstoneGravesiteRelationship,
+  onDeleteHeadstoneGravesiteRelationship,
   onSaveGraveFeature,
   onUpdateGraveFeature,
   onDeleteGraveFeature,
@@ -3291,6 +3455,9 @@ export function DetailPanel({
         onSaveHeadstoneRelationship={onSaveHeadstoneRelationship}
         onUpdateHeadstoneRelationship={onUpdateHeadstoneRelationship}
         onDeleteHeadstoneRelationship={onDeleteHeadstoneRelationship}
+        onSaveHeadstoneGravesiteRelationship={onSaveHeadstoneGravesiteRelationship}
+        onUpdateHeadstoneGravesiteRelationship={onUpdateHeadstoneGravesiteRelationship}
+        onDeleteHeadstoneGravesiteRelationship={onDeleteHeadstoneGravesiteRelationship}
         onSaveGraveFeature={onSaveGraveFeature}
         onUpdateGraveFeature={onUpdateGraveFeature}
         onDeleteGraveFeature={onDeleteGraveFeature}

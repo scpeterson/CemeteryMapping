@@ -207,6 +207,7 @@ export function toHeadstone(row) {
     features: (row.features ?? []).map(toGraveFeature),
     maintenanceRecords: (row.maintenance_records ?? []).map(toMaintenanceRecord),
     relationships: (row.relationships ?? []).map(toHeadstoneRelationship),
+    gravesiteRelationships: row.gravesite_relationships ?? [],
     mediaAssets: row.media_assets ?? [],
   };
 }

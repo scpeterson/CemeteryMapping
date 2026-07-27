@@ -71,6 +71,15 @@ export function validateHeadstoneGravesiteRelationshipType(value) {
   return relationshipType;
 }
 
+export function validateHeadstoneGravesiteRelationshipPayload(body) {
+  return {
+    gravesiteId: validateUuid(body?.gravesiteId, "Gravesite"),
+    relationshipType: validateHeadstoneGravesiteRelationshipType(body?.relationshipType),
+    notes: optionalText(body?.notes, "Marker gravesite relationship notes", 4000) ?? "",
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
 export function validateCreateHeadstonePayload(body, graveSpaceId) {
   const latitude = optionalCoordinate(body?.latitude, "Latitude", { min: -90, max: 90 });
   const longitude = optionalCoordinate(body?.longitude, "Longitude", { min: -180, max: 180 });

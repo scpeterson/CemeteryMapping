@@ -466,6 +466,11 @@ test("lookup options include active military service lookups", async () => {
               rows: [{ id: "33333333-3333-4333-8333-333333333333", code: "TLC-HS-0001", label: "TLC-HS-0001" }],
             };
           }
+          if (sql.includes("FROM gravesites")) {
+            return {
+              rows: [{ id: "66666666-6666-4666-8666-666666666666", code: "C-0001", label: "C-0001" }],
+            };
+          }
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
           if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);

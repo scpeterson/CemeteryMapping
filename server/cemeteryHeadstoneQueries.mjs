@@ -233,6 +233,7 @@ export async function selectHeadstoneById(client, id) {
         COALESCE(headstone_relationship.relationship_type, 'primary') AS relationship_type,
         headstone_relationship.notes AS relationship_notes,
         COALESCE(associated_gravesites.gravesite_ids, ARRAY[]::text[]) AS associated_gravesite_ids,
+        COALESCE(associated_gravesites.relationships, '[]'::jsonb) AS gravesite_relationships,
         array_remove(array_agg(DISTINCT headstone_burials.burial_uuid::text), NULL) AS burial_ids,
         COALESCE(headstone_evidence.evidence, '[]'::jsonb) AS north_hills_evidence,
         COALESCE(headstone_media.media_assets, '[]'::jsonb) AS media_assets
@@ -257,16 +258,45 @@ export async function selectHeadstoneById(client, id) {
         LIMIT 1
       ) headstone_relationship ON true
       LEFT JOIN LATERAL (
-        SELECT array_remove(array_agg(DISTINCT associated_gravesite_rows.gravesite_id), NULL) AS gravesite_ids
+        SELECT
+          array_remove(array_agg(DISTINCT associated_gravesite_rows.gravesite_id), NULL) AS gravesite_ids,
+          COALESCE(
+            jsonb_agg(
+              DISTINCT jsonb_build_object(
+                'id', associated_gravesite_rows.relationship_id,
+                'gravesiteUuid', associated_gravesite_rows.gravesite_uuid,
+                'gravesiteId', associated_gravesite_rows.gravesite_id,
+                'graveId', associated_gravesite_rows.grave_id,
+                'gravesiteName', associated_gravesite_rows.gravesite_name,
+                'relationshipType', associated_gravesite_rows.relationship_type,
+                'notes', associated_gravesite_rows.notes
+              )
+            ) FILTER (WHERE associated_gravesite_rows.relationship_id IS NOT NULL),
+            '[]'::jsonb
+          ) AS relationships
         FROM (
-          SELECT primary_gravesites.gravesite_id
+          SELECT
+            NULL::text AS relationship_id,
+            primary_gravesites.id::text AS gravesite_uuid,
+            primary_gravesites.gravesite_id,
+            concat_ws('-', NULLIF(primary_gravesites.section_id, ''), NULLIF(primary_gravesites.grave_id, '')) AS grave_id,
+            primary_gravesites.name AS gravesite_name,
+            NULL::text AS relationship_type,
+            ''::text AS notes
           FROM gravesites primary_gravesites
           WHERE primary_gravesites.id = headstones.gravesite_uuid
             AND primary_gravesites.deleted_at IS NULL
 
-          UNION
+          UNION ALL
 
-          SELECT linked_gravesites.gravesite_id
+          SELECT
+            headstone_gravesites.id::text AS relationship_id,
+            linked_gravesites.id::text AS gravesite_uuid,
+            linked_gravesites.gravesite_id,
+            concat_ws('-', NULLIF(linked_gravesites.section_id, ''), NULLIF(linked_gravesites.grave_id, '')) AS grave_id,
+            linked_gravesites.name AS gravesite_name,
+            headstone_gravesites.relationship_type,
+            COALESCE(headstone_gravesites.notes, '') AS notes
           FROM headstone_gravesites
           JOIN gravesites linked_gravesites
             ON linked_gravesites.id = headstone_gravesites.gravesite_uuid
@@ -284,6 +314,7 @@ export async function selectHeadstoneById(client, id) {
         headstone_relationship.relationship_type,
         headstone_relationship.notes,
         associated_gravesites.gravesite_ids,
+        associated_gravesites.relationships,
         headstone_evidence.evidence,
         headstone_media.media_assets
       LIMIT 1
