@@ -101,7 +101,8 @@ export async function selectHeadstoneSummariesForCemeteries(client, cemeteryIds)
     `
       SELECT headstones.id::text, headstones.headstone_id, cemeteries.id::text AS cemetery_id,
         cemeteries.name AS cemetery_name, gravesites.gravesite_id, marker_types.code AS marker_type_code,
-        marker_types.label AS marker_type_label, headstone_condition_types.code AS condition_code,
+        marker_types.label AS marker_type_label, marker_scope_types.code AS marker_scope_code,
+        marker_scope_types.label AS marker_scope_label, headstone_condition_types.code AS condition_code,
         ST_AsGeoJSON(headstones.geometry)::json AS geometry
       FROM headstones
       LEFT JOIN gravesites ON gravesites.id = headstones.gravesite_uuid AND gravesites.deleted_at IS NULL
@@ -115,6 +116,7 @@ export async function selectHeadstoneSummariesForCemeteries(client, cemeteryIds)
         LIMIT 1
       ) cemeteries ON TRUE
       JOIN marker_types ON marker_types.id = headstones.marker_type_id
+      JOIN marker_scope_types ON marker_scope_types.id = headstones.marker_scope_type_id
       JOIN headstone_condition_types ON headstone_condition_types.id = headstones.condition_type_id
       WHERE headstones.deleted_at IS NULL AND headstones.geometry IS NOT NULL
       ORDER BY cemeteries.name, COALESCE(gravesites.gravesite_id, headstones.headstone_id), headstones.headstone_id

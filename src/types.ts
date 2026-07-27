@@ -335,6 +335,8 @@ export type HeadstoneSummary = {
   label: string;
   markerTypeCode: string;
   markerType: string;
+  markerScopeCode: string;
+  markerScope: string;
   condition: string;
   geometry: GeoJSON.Point;
 };

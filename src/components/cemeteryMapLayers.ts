@@ -7,7 +7,7 @@ export type MapViewMode = "geographic" | "diagram";
 
 export const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels", "veteran-grave-symbols"];
 export const selectableLotLayers = ["lots-fill", "lots-line", "lots-label"];
-export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo", "headstones-veteran-star"];
+export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo", "headstones-monolith-symbol", "headstones-veteran-star"];
 
 const mapLayerOrder = [
   "pasda-imagery-2017",
@@ -25,6 +25,7 @@ const mapLayerOrder = [
   "lot-restricted-areas-line",
   "headstones-halo",
   "headstones-circle",
+  "headstones-monolith-symbol",
   "headstones-veteran-star",
   "sections-label",
   "grave-labels",
@@ -432,6 +433,8 @@ export function addHeadstoneLayers(
         7,
         ["boolean", ["get", "searchMatch"], false],
         6,
+        ["==", ["get", "markerScopeCode"], "monolith"],
+        7,
         ["==", ["get", "markerTypeCode"], "other"],
         6,
         4,
@@ -452,6 +455,8 @@ export function addHeadstoneLayers(
         5,
         ["boolean", ["get", "searchMatch"], false],
         4.5,
+        ["==", ["get", "markerScopeCode"], "monolith"],
+        5.4,
         ["==", ["get", "markerTypeCode"], "other"],
         4.6,
         3.2,
@@ -462,12 +467,31 @@ export function addHeadstoneLayers(
         "#ff1493",
         ["boolean", ["get", "searchMatch"], false],
         "#f8d465",
+        ["==", ["get", "markerScopeCode"], "monolith"],
+        "#6d4cc2",
         ["==", ["get", "markerTypeCode"], "other"],
         "#d97706",
         "#203a33",
       ],
-      "circle-stroke-color": ["case", ["==", ["get", "markerTypeCode"], "other"], "#5f2d08", "#10211c"],
-      "circle-stroke-width": ["case", ["==", ["get", "markerTypeCode"], "other"], 1.2, 0.7],
+      "circle-stroke-color": ["case", ["==", ["get", "markerScopeCode"], "monolith"], "#33216b", ["==", ["get", "markerTypeCode"], "other"], "#5f2d08", "#10211c"],
+      "circle-stroke-width": ["case", ["==", ["get", "markerScopeCode"], "monolith"], 1.5, ["==", ["get", "markerTypeCode"], "other"], 1.2, 0.7],
+    },
+  });
+
+  map.addLayer({
+    id: "headstones-monolith-symbol",
+    type: "symbol",
+    source: "headstones",
+    filter: ["==", ["get", "markerScopeCode"], "monolith"],
+    layout: {
+      "text-field": "◆",
+      "text-size": 8,
+      "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: {
+      "text-color": "#ffffff",
     },
   });
 

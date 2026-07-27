@@ -321,6 +321,8 @@ export default function App() {
               ...candidate,
               markerTypeCode: saved.markerType.code,
               markerType: saved.markerType.label,
+              markerScopeCode: saved.markerScope.code,
+              markerScope: saved.markerScope.label,
               condition: saved.condition.code,
             }
           : candidate,

@@ -164,6 +164,51 @@ button {
   text-transform: uppercase;
 }
 
+.marker-title-with-badge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.marker-title-with-badge h2 {
+  margin-bottom: 0;
+}
+
+.monolith-badge {
+  padding: 4px 8px;
+  border: 1px solid #b9a9e9;
+  border-radius: 999px;
+  background: #eee9ff;
+  color: #422b85;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.monolith-notice {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 18px;
+  padding: 12px;
+  border: 1px solid #c9bdec;
+  border-radius: 9px;
+  background: #f5f1ff;
+  color: #342267;
+}
+
+.monolith-notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.monolith-notice p {
+  margin: 3px 0 0;
+  color: #554579;
+  line-height: 1.4;
+}
+
 h1,
 h2,
 h3,

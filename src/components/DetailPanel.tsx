@@ -1896,15 +1896,29 @@ function MarkerDetailPanel({
   error?: string;
   onRetry?: () => void;
 }) {
+  const isMonolith = headstone?.markerScope.code === "monolith";
   return (
     <aside className="detail-panel">
       <div className="grave-title-row">
         <div>
           <p className="eyebrow">Marker</p>
-          <h2>{summary.headstoneId}</h2>
+          <div className="marker-title-with-badge">
+            <h2>{summary.headstoneId}</h2>
+            {isMonolith ? <span className="monolith-badge">Monolith</span> : null}
+          </div>
           <p className="grave-cemetery">{summary.cemeteryName}</p>
         </div>
       </div>
+
+      {isMonolith ? (
+        <div className="monolith-notice">
+          <Landmark size={18} aria-hidden="true" />
+          <div>
+            <strong>Shared monolith marker</strong>
+            <p>This marker does not represent a gravesite at its location. It is linked to the regular markers and gravesites listed below.</p>
+          </div>
+        </div>
+      ) : null}
 
       {isLoading && !headstone ? (
         <div className="detail-message" role="status">
@@ -1927,7 +1941,7 @@ function MarkerDetailPanel({
         <section className="detail-section">
           <div className="section-title">
             <Landmark size={17} aria-hidden="true" />
-            <h3>Marker</h3>
+            <h3>{isMonolith ? "Monolith Marker" : "Marker"}</h3>
           </div>
           <div className="headstone-list">
             <HeadstoneRecord
@@ -1965,7 +1979,7 @@ function MarkerDetailPanel({
         <section className="detail-section">
           <div className="section-title">
             <Link2 size={17} aria-hidden="true" />
-            <h3>Related Markers</h3>
+            <h3>{isMonolith ? "Regular Markers Linked to This Monolith" : "Related Markers"}</h3>
           </div>
           <MarkerRelationshipList
             headstone={headstone}
@@ -2002,7 +2016,7 @@ function MarkerDetailPanel({
         <section className="detail-section">
           <div className="section-title">
             <MapPinned size={17} aria-hidden="true" />
-            <h3>Associated Gravesites</h3>
+            <h3>{isMonolith ? "Gravesites Spanned by This Monolith" : "Associated Gravesites"}</h3>
           </div>
           {headstone ? (
             <MarkerGravesiteRelationshipManager
