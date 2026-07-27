@@ -784,3 +784,6 @@ databaseChangeLog:
   - include:
       file: changes/264-remove-knobloch-monolith-pseudo-burial.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/265-retire-knobloch-monolith-placeholder-gravesite.sql
+      relativeToChangelogFile: true
