@@ -860,6 +860,26 @@ h3 {
   box-shadow: 0 0 0 2px #fbfcf7;
 }
 
+.legend-monolith-marker {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #33216b;
+  border-radius: 50%;
+  background: #6d4cc2;
+  box-shadow: 0 0 0 2px #fbfcf7;
+  color: #fff;
+  font-size: 8px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.legend-monolith-marker::before {
+  content: "◆";
+}
+
 .legend-veteran-grave {
   display: inline-grid;
   place-items: center;

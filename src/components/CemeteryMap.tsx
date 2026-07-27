@@ -620,6 +620,10 @@ export function CemeteryMap({
             Headstone marker
           </span>
           <span>
+            <i className="legend-symbol legend-monolith-marker" />
+            Monolith marker
+          </span>
+          <span>
             <i className="legend-symbol legend-veteran-grave" />
             Veteran grave
           </span>
