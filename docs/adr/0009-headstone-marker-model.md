@@ -54,6 +54,8 @@ Add physical marker tables:
 
 `headstone_gravesites` links one physical marker to one or more gravesites. `headstones.gravesite_uuid` remains as a compatibility anchor for the primary gravesite, while `headstone_gravesites` is the relationship table to use when a marker spans, is near, or is inferred to relate to additional gravesites. The relationship type also distinguishes footstones and other secondary markers from the primary marker relationship.
 
+A marker point records the physical location of the marker, not proof that a gravesite exists beneath that point. This distinction is especially important for monoliths: a shared monolith can occupy a location between gravesites and link to the real gravesites it spans without creating a placeholder gravesite at the monolith coordinate.
+
 Current marker-to-gravesite relationship values are:
 
 - `primary`
@@ -83,7 +85,11 @@ This model supports:
 
 ## Consequences
 
-The importer must create both the generated gravesite polygon and the headstone point, plus a primary `headstone_gravesites` link. UI and API work can later expose headstone condition without changing the burial model.
+The importer must create both the generated gravesite polygon and the headstone point, plus a primary `headstone_gravesites` link. Marker condition and relationship editing remain independent of the burial model.
+
+Marker details and condition are now first-class UI/API records. Authorized editors can also add, update, and soft-delete `headstone_gravesites` relationships from the marker detail panel. Relationship mutations preserve the legacy `headstones.gravesite_uuid` compatibility anchor by selecting another active linked gravesite when its current relationship is removed.
+
+The UI uses marker scope to explain role without overriding physical form. Monoliths receive a dedicated badge and map/legend symbol, explanatory text that their point is not a gravesite, and relationship headings that distinguish linked regular markers from spanned gravesites.
 
 The current schema stores current condition directly on `headstones`. A separate condition event/history table can be added later if inspection history becomes necessary.
 

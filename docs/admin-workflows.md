@@ -92,11 +92,16 @@ When a gravesite has more than one physical marker, editors can add the addition
 
 The marker detail panel also has a Related Markers section. This is where editors record physical marker-to-marker relationships such as a small marker referring to a family obelisk, two markers sharing a common base, or a foot marker belonging with a primary marker. Related-marker records store relationship type, source, source text, confidence, status, and notes. Power users, cemetery admins, and admins can add or edit related markers when they have edit access to the marker's cemetery; deletes are soft deletes with an audit reason.
 
+The marker detail panel separately manages marker-to-gravesite relationships. Editors with access to the marker's cemetery can add a gravesite, change the relationship type, or remove a link. Removing a link is a soft delete and updates the legacy `headstones.gravesite_uuid` compatibility anchor to another active relationship when necessary. Use these controls for the gravesites a marker physically marks, spans, is near, or is inferred to represent; do not substitute a marker-to-marker relationship for a marker-to-gravesite relationship.
+
+Monolith scope has a distinct presentation. A monolith remains classified by its physical form, such as `Upright headstone`, while its scope is `Monolith`. Its detail panel displays a Monolith badge, explains that the marker point does not itself imply a gravesite, and labels its relationship sections `Regular Markers Linked to This Monolith` and `Gravesites Spanned by This Monolith`. The map and Layers panel use a purple diamond symbol for monolith markers. A mapped monolith location must not be represented by a placeholder gravesite unless a real burial space is independently supported at that location.
+
 Do not use Related Markers for general gap notes or unavailable grave/lot observations. Gap notes are source observations. Plot markers should be modeled as actual marker records once their locations are known, and then linked only if there is a real marker-to-marker relationship.
 
 Editable fields:
 
 - `marker_type_id`
+- `marker_scope_type_id`
 - `material_type_id`
 - `condition_type_id`
 - `condition_notes`
@@ -111,6 +116,9 @@ Implemented API:
 - `GET /api/headstone-lookups`
 - `PATCH /api/headstones/:id`
 - `POST /api/cemeteries/:cemeteryId/gravesites/:graveSpaceId/headstones`
+- `POST /api/headstones/:id/gravesites`
+- `PATCH /api/headstone-gravesite-relationships/:id`
+- `DELETE /api/headstone-gravesite-relationships/:id`
 
 Authorization:
 
