@@ -1206,6 +1206,7 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
 
   return {
     markerTypeId,
+    markerScopeId: headstone.markerScope.id,
     materialId: headstone.material.id,
     conditionId: headstone.condition.id,
     vaseTypeId: headstone.vaseType?.id ?? "",
@@ -1233,6 +1234,7 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
 function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lookups: HeadstoneLookups): SaveHeadstoneCreateInput {
   const footstoneType = lookups.markerTypes.find((option) => option.code === "footstone");
   const defaultMarkerType = footstoneType ?? lookups.markerTypes.find((option) => option.code === "flat_marker") ?? lookups.markerTypes[0];
+  const defaultMarkerScope = lookups.markerScopes.find((option) => option.code === "unknown") ?? lookups.markerScopes[0];
   const defaultMaterial = lookups.materials.find((option) => option.code === "unknown") ?? lookups.materials[0];
   const defaultCondition = lookups.conditions.find((option) => option.code === "unknown") ?? lookups.conditions[0];
   const primaryMarkerId = headstones[0]?.headstoneId;
@@ -1244,6 +1246,7 @@ function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lo
     relationshipType: footstoneType ? "footstone" : "secondary",
     relationshipNotes: footstoneType ? "Footstone linked to this gravesite." : "Secondary marker linked to this gravesite.",
     markerTypeId: defaultMarkerType?.id ?? "",
+    markerScopeId: defaultMarkerScope?.id ?? "",
     materialId: defaultMaterial?.id ?? "",
     conditionId: defaultCondition?.id ?? "",
     vaseTypeId: "",
@@ -1380,6 +1383,16 @@ function CreateHeadstoneForm({
         </select>
       </label>
       <label>
+        Marker scope
+        <select value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>
+          {lookups.markerScopes.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
         Relationship
         <select
           value={form.relationshipType}
@@ -1454,7 +1467,7 @@ function CreateHeadstoneForm({
         <button type="button" className="secondary-button" onClick={cancel} disabled={isSaving}>
           Cancel
         </button>
-        <button type="submit" disabled={isSaving || !form.headstoneId.trim() || !form.markerTypeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
+        <button type="submit" disabled={isSaving || !form.headstoneId.trim() || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
           <MapPinned size={15} aria-hidden="true" />
           {isSaving ? "Saving..." : "Save marker"}
         </button>
@@ -1550,6 +1563,16 @@ function HeadstoneRecord({
           </select>
         </label>
         {isSectionG ? <p className="muted headstone-wide-field">Section G allows only flat markers.</p> : null}
+        <label>
+          Marker scope
+          <select value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>
+            {lookups.markerScopes.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           Material
           <select value={form.materialId} onChange={(event) => setForm((current) => ({ ...current, materialId: event.target.value }))}>
@@ -1705,7 +1728,7 @@ function HeadstoneRecord({
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
             Cancel
           </button>
-          <button type="submit" disabled={isSaving || !form.markerTypeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
+          <button type="submit" disabled={isSaving || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
             {isSaving ? "Saving..." : "Save marker"}
           </button>
         </div>
@@ -1731,6 +1754,10 @@ function HeadstoneRecord({
         <div>
           <dt>Type</dt>
           <dd>{headstone.markerType.label}</dd>
+        </div>
+        <div>
+          <dt>Scope</dt>
+          <dd>{headstone.markerScope.label}</dd>
         </div>
         <div>
           <dt>Material</dt>

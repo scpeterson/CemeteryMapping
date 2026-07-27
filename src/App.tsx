@@ -69,6 +69,7 @@ const emptyHeadstoneLookups: HeadstoneLookups = {
   headstones: [],
   gravesites: [],
   markerTypes: [],
+  markerScopes: [],
   materials: [],
   conditions: [],
   vaseTypes: [],

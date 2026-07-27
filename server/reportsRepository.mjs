@@ -242,6 +242,7 @@ async function runMarkerBurialPages(client, definition, parameters, cemeteryIds)
         gravesites.gravesite_id,
         concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS grave,
         COALESCE(NULLIF(marker_types.label, ''), marker_types.code) AS marker_type,
+        COALESCE(NULLIF(marker_scope_types.label, ''), marker_scope_types.code) AS marker_scope,
         COALESCE(NULLIF(marker_material_types.label, ''), marker_material_types.code) AS marker_material,
         COALESCE(NULLIF(headstone_condition_types.label, ''), headstone_condition_types.code) AS marker_condition,
         headstones.inscription,
@@ -281,6 +282,7 @@ async function runMarkerBurialPages(client, definition, parameters, cemeteryIds)
         ON cemeteries.id = gravesites.cemetery_id
        AND cemeteries.deleted_at IS NULL
       LEFT JOIN marker_types ON marker_types.id = headstones.marker_type_id
+      LEFT JOIN marker_scope_types ON marker_scope_types.id = headstones.marker_scope_type_id
       LEFT JOIN marker_material_types ON marker_material_types.id = headstones.material_type_id
       LEFT JOIN headstone_condition_types ON headstone_condition_types.id = headstones.condition_type_id
       LEFT JOIN burial_interment_types ON burial_interment_types.id = burials.interment_type_id

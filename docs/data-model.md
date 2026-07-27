@@ -116,6 +116,7 @@ erDiagram
   HEADSTONES ||--o{ HEADSTONE_RELATIONSHIPS : source_marker
   HEADSTONES ||--o{ HEADSTONE_RELATIONSHIPS : related_marker
   MARKER_TYPES ||--o{ HEADSTONES : classifies
+  MARKER_SCOPE_TYPES ||--o{ HEADSTONES : scopes
   MARKER_MATERIAL_TYPES ||--o{ HEADSTONES : classifies
   HEADSTONE_CONDITION_TYPES ||--o{ HEADSTONES : classifies
 ```
@@ -150,6 +151,7 @@ erDiagram
 | `headstone_burials` | Many-to-many link between markers and the burials or named people shown on them. |
 | `headstone_relationships` | Marker-to-marker relationships, such as family obelisk references, common-base relationships, foot markers, and other physical marker references. Plot markers should become actual marker records before they are related here; gap notes remain observations rather than marker relationships. |
 | `marker_types` | Marker form/type dropdown values, such as upright, flat, pillow, military marker, cradle grave, and other local marker types. |
+| `marker_scope_types` | Marker role/scope values (`single`, `couple`, `monolith`, or `unknown`). Scope is independent of physical marker type, so an upright marker can also be a monolith. |
 | `marker_material_types` | Controlled marker materials. |
 | `headstone_condition_types` | Controlled marker condition values. |
 | `headstone_vase_types`, `headstone_vase_material_types`, `headstone_vase_placement_types` | Marker vase classification fields used when a vase is part of the marker record. |
@@ -270,7 +272,7 @@ Common lookup groups include:
 
 - Burial classification: `burial_interment_types`, `burial_record_status_types`
 - Military service: `military_branch_types`, `military_rank_types`, `military_war_service_types`
-- Marker classification: `marker_types`, `marker_material_types`, `headstone_condition_types`
+- Marker classification: `marker_types`, `marker_scope_types`, `marker_material_types`, `headstone_condition_types`
 - Vase and feature classification: `headstone_vase_*`, `grave_feature_*`
 - Maintenance classification: `maintenance_issue_types`, `maintenance_action_types`, `maintenance_priority_types`
 - Ownership classification: `lot_ownership_event_types`

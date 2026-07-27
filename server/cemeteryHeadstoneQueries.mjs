@@ -9,6 +9,9 @@ const headstoneDetailColumnsSql = `
   marker_types.id::text AS marker_type_id,
   marker_types.code AS marker_type_code,
   marker_types.label AS marker_type_label,
+  marker_scope_types.id::text AS marker_scope_id,
+  marker_scope_types.code AS marker_scope_code,
+  marker_scope_types.label AS marker_scope_label,
   marker_material_types.id::text AS material_id,
   marker_material_types.code AS material_code,
   marker_material_types.label AS material_label,
@@ -37,6 +40,8 @@ const headstoneDetailColumnsSql = `
 const headstoneLookupJoinsSql = `
   JOIN marker_types
     ON marker_types.id = headstones.marker_type_id
+  JOIN marker_scope_types
+    ON marker_scope_types.id = headstones.marker_scope_type_id
   JOIN marker_material_types
     ON marker_material_types.id = headstones.material_type_id
   JOIN headstone_condition_types
@@ -124,6 +129,9 @@ const headstoneDetailGroupBySql = `
   marker_types.id,
   marker_types.code,
   marker_types.label,
+  marker_scope_types.id,
+  marker_scope_types.code,
+  marker_scope_types.label,
   marker_material_types.id,
   marker_material_types.code,
   marker_material_types.label,

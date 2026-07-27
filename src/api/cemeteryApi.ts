@@ -233,6 +233,7 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
   const lookups = await jsonResponse<Partial<HeadstoneLookups>>(response, "Headstone lookup API");
   return {
     markerTypes: lookups.markerTypes ?? [],
+    markerScopes: lookups.markerScopes ?? [],
     materials: lookups.materials ?? [],
     conditions: lookups.conditions ?? [],
     vaseTypes: lookups.vaseTypes ?? [],
