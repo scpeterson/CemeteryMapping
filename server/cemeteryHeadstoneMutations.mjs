@@ -25,14 +25,14 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     const reviewReturnSql = await recordReviewColumnsSql(client, "headstones");
     const reviewAssignments = hasRecordReviewColumns
       ? `,
-            data_confidence = $16,
-            review_status = $17,
-            review_notes = NULLIF($18, ''),
-            source_conflict = $19::boolean,
-            reviewed_by = CASE WHEN $17 = 'reviewed' THEN NULLIF($20, '') ELSE reviewed_by END,
+            data_confidence = $17,
+            review_status = $18,
+            review_notes = NULLIF($19, ''),
+            source_conflict = $20::boolean,
+            reviewed_by = CASE WHEN $18 = 'reviewed' THEN NULLIF($21, '') ELSE reviewed_by END,
             reviewed_at = CASE
-              WHEN $17 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
-              WHEN $17 = 'reviewed' THEN COALESCE(reviewed_at, now())
+              WHEN $18 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
+              WHEN $18 = 'reviewed' THEN COALESCE(reviewed_at, now())
               ELSE reviewed_at
             END`
       : "";
@@ -56,6 +56,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
         verificationSourceType: headstone.provenanceVerificationSource || "manual_review",
         verifiedAt: headstone.provenanceVerifiedAt || null,
       }),
+      headstone.markerScopeId,
     ];
     if (hasRecordReviewColumns) {
       updateValues.push(
@@ -70,6 +71,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       `
         UPDATE headstones
         SET marker_type_id = $2::uuid,
+            marker_scope_type_id = $16::uuid,
             material_type_id = $3::uuid,
             condition_type_id = $4::uuid,
             vase_type_id = NULLIF($5, '')::uuid,
@@ -93,6 +95,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           headstone_id,
           marker_type_id::text,
           (SELECT code FROM marker_types WHERE marker_types.id = headstones.marker_type_id) AS marker_type_code,
+          marker_scope_type_id::text,
+          (SELECT code FROM marker_scope_types WHERE marker_scope_types.id = headstones.marker_scope_type_id) AS marker_scope_code,
           material_type_id::text,
           (SELECT code FROM marker_material_types WHERE marker_material_types.id = headstones.material_type_id) AS material_type_code,
           condition_type_id::text,
@@ -275,6 +279,7 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           review_notes,
           source_conflict,
           source_properties,
+          marker_scope_type_id,
           updated_at
         )
         VALUES (
@@ -308,6 +313,7 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
               'verifiedAt', NULLIF($20, '')
             )
           ),
+          $21::uuid,
           now()
         )
         RETURNING id::text
@@ -333,6 +339,7 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
         headstone.nhgInclusion || "not_checked",
         headstone.provenanceVerificationSource || "manual_review",
         headstone.provenanceVerifiedAt || "",
+        headstone.markerScopeId,
       ],
     );
     const headstoneUuid = insertResult.rows[0].id;

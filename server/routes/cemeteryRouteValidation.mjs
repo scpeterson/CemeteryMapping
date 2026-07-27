@@ -43,6 +43,7 @@ export function validateHeadstonePayload(body) {
 
   return {
     markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
+    markerScopeId: validateUuid(body?.markerScopeId, "Marker scope"),
     materialId: validateUuid(body?.materialId, "Marker material"),
     conditionId: validateUuid(body?.conditionId, "Condition"),
     conditionNotes: optionalText(body?.conditionNotes, "Condition notes", 4000),
@@ -69,6 +70,15 @@ export function validateHeadstoneGravesiteRelationshipType(value) {
     throw new BadRequestError("Marker gravesite relationship is invalid.");
   }
   return relationshipType;
+}
+
+export function validateHeadstoneGravesiteRelationshipPayload(body) {
+  return {
+    gravesiteId: validateUuid(body?.gravesiteId, "Gravesite"),
+    relationshipType: validateHeadstoneGravesiteRelationshipType(body?.relationshipType),
+    notes: optionalText(body?.notes, "Marker gravesite relationship notes", 4000) ?? "",
+    reason: validateMutationReason(body?.reason),
+  };
 }
 
 export function validateCreateHeadstonePayload(body, graveSpaceId) {

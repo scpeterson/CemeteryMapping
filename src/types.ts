@@ -197,10 +197,23 @@ export type HeadstoneRelationship = {
   direction: "outgoing" | "incoming";
 };
 
+export type HeadstoneGravesiteRelationshipType = "primary" | "spans" | "nearby" | "inferred" | "footstone" | "secondary";
+
+export type HeadstoneGravesiteRelationship = {
+  id: string;
+  gravesiteUuid: string;
+  gravesiteId: string;
+  graveId: string;
+  gravesiteName: string;
+  relationshipType: HeadstoneGravesiteRelationshipType;
+  notes: string;
+};
+
 export type Headstone = {
   id: string;
   headstoneId: string;
   markerType: LookupOption;
+  markerScope: LookupOption;
   material: LookupOption;
   condition: LookupOption;
   vaseType?: LookupOption;
@@ -231,6 +244,7 @@ export type Headstone = {
   features: GraveFeature[];
   maintenanceRecords: MaintenanceRecord[];
   relationships: HeadstoneRelationship[];
+  gravesiteRelationships: HeadstoneGravesiteRelationship[];
   mediaAssets: MediaAsset[];
   auditEventId?: string;
   burialNhgPropagation?: { updated: number; skipped: number };
@@ -321,13 +335,17 @@ export type HeadstoneSummary = {
   label: string;
   markerTypeCode: string;
   markerType: string;
+  markerScopeCode: string;
+  markerScope: string;
   condition: string;
   geometry: GeoJSON.Point;
 };
 
 export type HeadstoneLookups = {
   headstones: LookupOption[];
+  gravesites: LookupOption[];
   markerTypes: LookupOption[];
+  markerScopes: LookupOption[];
   materials: LookupOption[];
   conditions: LookupOption[];
   vaseTypes: LookupOption[];
@@ -365,8 +383,16 @@ export type SaveHeadstoneRelationshipInput = {
   reason?: string;
 };
 
+export type SaveHeadstoneGravesiteRelationshipInput = {
+  gravesiteId: string;
+  relationshipType: HeadstoneGravesiteRelationshipType;
+  notes: string;
+  reason?: string;
+};
+
 export type SaveHeadstoneInput = {
   markerTypeId: string;
+  markerScopeId: string;
   materialId: string;
   conditionId: string;
   vaseTypeId: string;

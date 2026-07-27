@@ -782,6 +782,9 @@ databaseChangeLog:
       file: changes/262-add-barbara-rogosz-field-photo-marker.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/263-headstone-marker-scopes.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/264-remove-knobloch-monolith-pseudo-burial.sql
       relativeToChangelogFile: true
   - include:

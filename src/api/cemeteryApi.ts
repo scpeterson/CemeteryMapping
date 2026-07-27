@@ -24,6 +24,7 @@ import type {
   GeographicPlaceCandidate,
   GraveStatus,
   Headstone,
+  HeadstoneGravesiteRelationship,
   HeadstoneRelationship,
   HeadstoneLookups,
   LookupAdminRecords,
@@ -48,6 +49,7 @@ import type {
   SaveGraveSpaceInput,
   SaveHeadstoneInput,
   SaveHeadstoneCreateInput,
+  SaveHeadstoneGravesiteRelationshipInput,
   SaveHeadstoneRelationshipInput,
   SaveSourcePersonRecordInput,
   SaveDeedInvestigationCaseInput,
@@ -231,6 +233,7 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
   const lookups = await jsonResponse<Partial<HeadstoneLookups>>(response, "Headstone lookup API");
   return {
     markerTypes: lookups.markerTypes ?? [],
+    markerScopes: lookups.markerScopes ?? [],
     materials: lookups.materials ?? [],
     conditions: lookups.conditions ?? [],
     vaseTypes: lookups.vaseTypes ?? [],
@@ -250,6 +253,7 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
     maintenanceActionTypes: lookups.maintenanceActionTypes ?? [],
     maintenancePriorities: lookups.maintenancePriorities ?? [],
     headstones: lookups.headstones ?? [],
+    gravesites: lookups.gravesites ?? [],
   };
 }
 
@@ -287,6 +291,21 @@ export async function updateHeadstoneRelationship(id: string, relationship: Save
 export async function deleteHeadstoneRelationship(id: string, reason?: string): Promise<{ id: string; deletedAt: string; alreadyDeleted: boolean }> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstone-relationships/${encodeURIComponent(id)}`, jsonRequest("DELETE", { reason }));
   return jsonResponse<{ id: string; deletedAt: string; alreadyDeleted: boolean }>(response, "Delete marker relationship API");
+}
+
+export async function createHeadstoneGravesiteRelationship(headstoneId: string, relationship: SaveHeadstoneGravesiteRelationshipInput): Promise<HeadstoneGravesiteRelationship> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(headstoneId)}/gravesites`, jsonRequest("POST", relationship));
+  return jsonResponse<HeadstoneGravesiteRelationship>(response, "Marker gravesite relationship API");
+}
+
+export async function updateHeadstoneGravesiteRelationship(id: string, relationship: SaveHeadstoneGravesiteRelationshipInput): Promise<HeadstoneGravesiteRelationship> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstone-gravesite-relationships/${encodeURIComponent(id)}`, jsonRequest("PATCH", relationship));
+  return jsonResponse<HeadstoneGravesiteRelationship>(response, "Update marker gravesite relationship API");
+}
+
+export async function deleteHeadstoneGravesiteRelationship(id: string, reason?: string): Promise<{ id: string; deletedAt: string; alreadyDeleted: boolean }> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstone-gravesite-relationships/${encodeURIComponent(id)}`, jsonRequest("DELETE", { reason }));
+  return jsonResponse<{ id: string; deletedAt: string; alreadyDeleted: boolean }>(response, "Delete marker gravesite relationship API");
 }
 
 export type UploadGravePhotoInput = {

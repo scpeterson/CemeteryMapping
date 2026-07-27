@@ -36,6 +36,8 @@ function queryRows(sql) {
         gravesite_id: "A-01-01",
         marker_type_code: "upright_headstone",
         marker_type_label: "Upright headstone",
+        marker_scope_code: "single",
+        marker_scope_label: "Single",
         condition_code: "good",
         geometry: '{"type":"Point","coordinates":[-80,40]}',
       },
@@ -47,6 +49,8 @@ function queryRows(sql) {
         gravesite_id: null,
         marker_type_code: "other",
         marker_type_label: "Other marker",
+        marker_scope_code: "monolith",
+        marker_scope_label: "Monolith",
         condition_code: "unknown",
         geometry: '{"type":"Point","coordinates":[-80.1,40.1]}',
       },
@@ -184,6 +188,8 @@ test("cemetery map data includes lightweight headstone point summaries", async (
       label: "HS-1",
       markerTypeCode: "upright_headstone",
       markerType: "Upright headstone",
+      markerScopeCode: "single",
+      markerScope: "Single",
       condition: "good",
       geometry: { type: "Point", coordinates: [-80, 40] },
     },
@@ -197,6 +203,8 @@ test("cemetery map data includes lightweight headstone point summaries", async (
       label: "TLC-HS-0173",
       markerTypeCode: "other",
       markerType: "Other marker",
+      markerScopeCode: "monolith",
+      markerScope: "Monolith",
       condition: "unknown",
       geometry: { type: "Point", coordinates: [-80.1, 40.1] },
     },
@@ -331,6 +339,9 @@ test("lookup options include active military service lookups", async () => {
       return {
         async query(sql) {
           if (sql.includes("FROM marker_types")) return { rows: [] };
+          if (sql.includes("FROM marker_scope_types")) {
+            return { rows: [{ id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", code: "monolith", label: "Monolith" }] };
+          }
           if (sql.includes("FROM marker_material_types")) return { rows: [] };
           if (sql.includes("FROM headstone_condition_types")) return { rows: [] };
           if (sql.includes("FROM headstone_vase_types")) {
@@ -466,6 +477,11 @@ test("lookup options include active military service lookups", async () => {
               rows: [{ id: "33333333-3333-4333-8333-333333333333", code: "TLC-HS-0001", label: "TLC-HS-0001" }],
             };
           }
+          if (sql.includes("FROM gravesites")) {
+            return {
+              rows: [{ id: "66666666-6666-4666-8666-666666666666", code: "C-0001", label: "C-0001" }],
+            };
+          }
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };
           if (isOptionalDetailQuery(sql)) return { rows: [] };
           throw new Error(`Unexpected query: ${sql}`);
@@ -477,6 +493,10 @@ test("lookup options include active military service lookups", async () => {
 
   const lookups = await listHeadstoneLookupOptions(pool);
 
+  assert.deepEqual(
+    lookups.markerScopes.map((scope) => scope.code),
+    ["monolith"],
+  );
   assert.deepEqual(
     lookups.vaseTypes.map((type) => type.code),
     ["in_ground", "missing_or_removed"],
@@ -900,6 +920,7 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
 
   const updated = await updateHeadstone(pool, "33333333-3333-4333-8333-333333333333", {
     markerTypeId: "44444444-4444-4444-8444-444444444444",
+    markerScopeId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     materialId: "55555555-5555-4555-8555-555555555555",
     conditionId: "66666666-6666-4666-8666-666666666666",
     vaseTypeId: "88888888-8888-4888-8888-888888888888",

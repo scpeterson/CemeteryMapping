@@ -12,6 +12,7 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
   const client = await pool.connect();
   try {
     const markerTypes = await client.query("SELECT id::text, code, label FROM marker_types WHERE is_active ORDER BY sort_order, label");
+    const markerScopes = await client.query("SELECT id::text, code, label FROM marker_scope_types WHERE is_active ORDER BY sort_order, label");
     const materials = await client.query("SELECT id::text, code, label FROM marker_material_types WHERE is_active ORDER BY sort_order, label");
     const conditions = await client.query("SELECT id::text, code, label FROM headstone_condition_types WHERE is_active ORDER BY sort_order, label");
     const vaseTypes = await client.query("SELECT id::text, code, label FROM headstone_vase_types WHERE is_active ORDER BY sort_order, label");
@@ -120,10 +121,28 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
       `,
       [Array.isArray(allowedCemeteryIds) ? allowedCemeteryIds : null],
     );
+    const gravesites = await client.query(
+      `
+        SELECT
+          gravesites.id::text,
+          concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS code,
+          concat(
+            concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')),
+            CASE WHEN gravesites.name IS NULL OR gravesites.name = '' THEN '' ELSE concat(' — ', gravesites.name) END
+          ) AS label
+        FROM gravesites
+        WHERE gravesites.deleted_at IS NULL
+          AND ($1::uuid[] IS NULL OR gravesites.cemetery_id = ANY($1::uuid[]))
+        ORDER BY gravesites.gravesite_id
+      `,
+      [Array.isArray(allowedCemeteryIds) ? allowedCemeteryIds : null],
+    );
 
     return {
       headstones: headstones.rows,
+      gravesites: gravesites.rows,
       markerTypes: markerTypes.rows,
+      markerScopes: markerScopes.rows,
       materials: materials.rows,
       conditions: conditions.rows,
       vaseTypes: vaseTypes.rows,

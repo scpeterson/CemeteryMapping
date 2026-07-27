@@ -24,6 +24,8 @@ function toHeadstoneSummary(row) {
     label: row.headstone_id,
     markerTypeCode: row.marker_type_code ?? "unknown",
     markerType: row.marker_type_label ?? "Unknown",
+    markerScopeCode: row.marker_scope_code ?? "unknown",
+    markerScope: row.marker_scope_label ?? "Unknown",
     condition: row.condition_code ?? "unknown",
     geometry: parseGeometry(row.geometry),
   };

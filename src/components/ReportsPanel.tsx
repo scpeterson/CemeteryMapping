@@ -107,6 +107,7 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
             <dl className="marker-burial-details">
               <DetailItem label="Marker ID" value={marker.marker_id} />
               <DetailItem label="Type" value={marker.marker_type} />
+              <DetailItem label="Scope" value={marker.marker_scope} />
               <DetailItem label="Material" value={marker.marker_material} />
               <DetailItem label="Condition" value={marker.marker_condition} />
               <DetailItem label="Inscription" value={marker.inscription} className="marker-burial-detail--inscription" />

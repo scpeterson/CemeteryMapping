@@ -177,6 +177,7 @@ export function toHeadstone(row) {
     id: row.id,
     headstoneId: row.headstone_id,
     markerType: toLookupValue(row, "marker_type"),
+    markerScope: toLookupValue(row, "marker_scope"),
     material: toLookupValue(row, "material"),
     condition: toLookupValue(row, "condition"),
     vaseType: row.vase_type_id ? toLookupValue(row, "vase_type") : undefined,
@@ -207,6 +208,7 @@ export function toHeadstone(row) {
     features: (row.features ?? []).map(toGraveFeature),
     maintenanceRecords: (row.maintenance_records ?? []).map(toMaintenanceRecord),
     relationships: (row.relationships ?? []).map(toHeadstoneRelationship),
+    gravesiteRelationships: row.gravesite_relationships ?? [],
     mediaAssets: row.media_assets ?? [],
   };
 }

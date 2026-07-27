@@ -5,8 +5,10 @@ import {
   createGraveFeature,
   createGravesiteHeadstone,
   createHeadstoneRelationship,
+  createHeadstoneGravesiteRelationship,
   createMaintenanceRecord,
   deleteHeadstoneRelationship,
+  deleteHeadstoneGravesiteRelationship,
   deleteGraveFeature,
   deleteMediaAsset,
   fetchCemeteryData,
@@ -19,6 +21,7 @@ import {
   updateGraveSpace,
   updateHeadstone,
   updateHeadstoneRelationship,
+  updateHeadstoneGravesiteRelationship,
   updateMaintenanceRecord,
   moveMediaAsset,
   uploadGravePhoto,
@@ -47,6 +50,7 @@ import type {
   SaveGraveSpaceInput,
   SaveGraveFeatureInput,
   SaveHeadstoneInput,
+  SaveHeadstoneGravesiteRelationshipInput,
   SaveHeadstoneCreateInput,
   SaveHeadstoneRelationshipInput,
   SaveMaintenanceRecordInput,
@@ -63,7 +67,9 @@ const ReportsPanel = lazy(() => import("./components/ReportsPanel").then((module
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 const emptyHeadstoneLookups: HeadstoneLookups = {
   headstones: [],
+  gravesites: [],
   markerTypes: [],
+  markerScopes: [],
   materials: [],
   conditions: [],
   vaseTypes: [],
@@ -315,6 +321,8 @@ export default function App() {
               ...candidate,
               markerTypeCode: saved.markerType.code,
               markerType: saved.markerType.label,
+              markerScopeCode: saved.markerScope.code,
+              markerScope: saved.markerScope.label,
               condition: saved.condition.code,
             }
           : candidate,
@@ -384,6 +392,21 @@ export default function App() {
 
   const deleteSavedHeadstoneRelationship = async (headstoneId: string, relationshipId: string, reason?: string) => {
     await deleteHeadstoneRelationship(relationshipId, reason);
+    await refreshHeadstoneDetails(headstoneId);
+  };
+
+  const saveHeadstoneGravesiteRelationship = async (headstoneId: string, relationship: SaveHeadstoneGravesiteRelationshipInput) => {
+    await createHeadstoneGravesiteRelationship(headstoneId, relationship);
+    return refreshHeadstoneDetails(headstoneId);
+  };
+
+  const updateSavedHeadstoneGravesiteRelationship = async (headstoneId: string, relationshipId: string, relationship: SaveHeadstoneGravesiteRelationshipInput) => {
+    await updateHeadstoneGravesiteRelationship(relationshipId, relationship);
+    return refreshHeadstoneDetails(headstoneId);
+  };
+
+  const deleteSavedHeadstoneGravesiteRelationship = async (headstoneId: string, relationshipId: string, reason?: string) => {
+    await deleteHeadstoneGravesiteRelationship(relationshipId, reason);
     await refreshHeadstoneDetails(headstoneId);
   };
 
@@ -666,6 +689,9 @@ export default function App() {
         onSaveHeadstoneRelationship={saveHeadstoneRelationship}
         onUpdateHeadstoneRelationship={updateSavedHeadstoneRelationship}
         onDeleteHeadstoneRelationship={deleteSavedHeadstoneRelationship}
+        onSaveHeadstoneGravesiteRelationship={saveHeadstoneGravesiteRelationship}
+        onUpdateHeadstoneGravesiteRelationship={updateSavedHeadstoneGravesiteRelationship}
+        onDeleteHeadstoneGravesiteRelationship={deleteSavedHeadstoneGravesiteRelationship}
         onSaveGraveFeature={saveGraveFeature}
         onUpdateGraveFeature={updateSavedGraveFeature}
         onDeleteGraveFeature={deleteSavedGraveFeature}

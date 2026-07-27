@@ -35,6 +35,7 @@ const allowedAuditTables = new Set([
   "lot_ownership_event_types",
   "lots",
   "marker_material_types",
+  "marker_scope_types",
   "marker_types",
   "maintenance_action_types",
   "maintenance_issue_types",

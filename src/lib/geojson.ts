@@ -47,6 +47,8 @@ export function headstonesFeatureCollection(
         label: headstone.label,
         markerTypeCode: headstone.markerTypeCode,
         markerType: headstone.markerType,
+        markerScopeCode: headstone.markerScopeCode,
+        markerScope: headstone.markerScope,
         condition: headstone.condition,
         selected: selectedHeadstoneId ? headstone.id === selectedHeadstoneId : headstone.graveKey === selectedKey,
         searchMatch: searchKeys.has(headstone.graveKey),

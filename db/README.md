@@ -228,6 +228,7 @@ The schema creates:
 - `owners`
 - `headstone_condition_types`
 - `marker_types`
+- `marker_scope_types`
 - `marker_material_types`
 - `headstones`
 - `headstone_gravesites`

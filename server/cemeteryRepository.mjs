@@ -16,6 +16,11 @@ export {
   softDeleteHeadstoneRelationship,
   updateHeadstoneRelationship,
 } from "./cemeteryHeadstoneRelationshipMutations.mjs";
+export {
+  createHeadstoneGravesiteRelationship,
+  softDeleteHeadstoneGravesiteRelationship,
+  updateHeadstoneGravesiteRelationship,
+} from "./cemeteryHeadstoneGravesiteMutations.mjs";
 
 
 export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwnership = true } = {}) {

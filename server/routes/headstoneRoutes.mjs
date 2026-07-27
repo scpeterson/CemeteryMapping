@@ -1,10 +1,10 @@
 export function registerHeadstoneRoutes(app, context) {
   const {
-    assignedEditableCemeteryIds, createHeadstoneForGrave, createHeadstoneRelationship, getHeadstone,
+    assignedEditableCemeteryIds, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, getHeadstone,
     listHeadstoneLookupOptions, pool, requireAdmin, requirePowerUser, requireReader, restoreGraveSpace,
-    softDeleteGraveSpace, softDeleteHeadstoneRelationship, updateHeadstone, updateHeadstoneRelationship,
+    softDeleteGraveSpace, softDeleteHeadstoneRelationship, softDeleteHeadstoneGravesiteRelationship, updateHeadstone, updateHeadstoneRelationship, updateHeadstoneGravesiteRelationship,
     validateCemeteryId, validateCreateHeadstonePayload, validateGraveSpaceId,
-    validateHeadstoneBusinessRules, validateHeadstonePayload, validateHeadstoneRelationshipPayload,
+    validateHeadstoneBusinessRules, validateHeadstoneGravesiteRelationshipPayload, validateHeadstonePayload, validateHeadstoneRelationshipPayload,
     validateMutationReason, validateUuid,
   } = context;
       app.get("/api/headstone-lookups", requireReader, async (request, response, next) => {
@@ -159,6 +159,57 @@ export function registerHeadstoneRoutes(app, context) {
             response.status(403).json({ error: "Forbidden" });
             return;
           }
+          response.json(deleted);
+        } catch (error) {
+          next(error);
+        }
+      });
+
+      app.post("/api/headstones/:id/gravesites", requirePowerUser, async (request, response, next) => {
+        try {
+          const id = validateUuid(request.params.id, "Headstone id");
+          const relationship = validateHeadstoneGravesiteRelationshipPayload(request.body);
+          const created = await createHeadstoneGravesiteRelationship(pool, id, relationship, {
+            actorUser: request.user,
+            reason: relationship.reason,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          });
+          if (!created) return response.status(404).json({ error: "Marker or gravesite not found" });
+          if (created.forbidden) return response.status(403).json({ error: "Forbidden" });
+          if (created.invalid === "different_cemetery") return response.status(400).json({ error: "Marker and gravesite must belong to the same cemetery." });
+          response.status(201).json(created);
+        } catch (error) {
+          next(error);
+        }
+      });
+
+      app.patch("/api/headstone-gravesite-relationships/:id", requirePowerUser, async (request, response, next) => {
+        try {
+          const id = validateUuid(request.params.id, "Marker gravesite relationship");
+          const relationship = validateHeadstoneGravesiteRelationshipPayload(request.body);
+          const updated = await updateHeadstoneGravesiteRelationship(pool, id, relationship, {
+            actorUser: request.user,
+            reason: relationship.reason,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          });
+          if (!updated) return response.status(404).json({ error: "Marker gravesite relationship not found" });
+          if (updated.forbidden) return response.status(403).json({ error: "Forbidden" });
+          response.json(updated);
+        } catch (error) {
+          next(error);
+        }
+      });
+
+      app.delete("/api/headstone-gravesite-relationships/:id", requirePowerUser, async (request, response, next) => {
+        try {
+          const id = validateUuid(request.params.id, "Marker gravesite relationship");
+          const deleted = await softDeleteHeadstoneGravesiteRelationship(pool, id, {
+            actorUser: request.user,
+            reason: validateMutationReason(request.body?.reason),
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          });
+          if (!deleted) return response.status(404).json({ error: "Marker gravesite relationship not found" });
+          if (deleted.forbidden) return response.status(403).json({ error: "Forbidden" });
           response.json(deleted);
         } catch (error) {
           next(error);
