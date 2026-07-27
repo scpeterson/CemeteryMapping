@@ -64,6 +64,7 @@ const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold",
 const emptyHeadstoneLookups: HeadstoneLookups = {
   headstones: [],
   markerTypes: [],
+  markerScopes: [],
   materials: [],
   conditions: [],
   vaseTypes: [],

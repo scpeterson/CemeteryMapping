@@ -5,6 +5,7 @@ import { validateHeadstonePayload } from "./routes/cemeteryRouteValidation.mjs";
 
 const validPayload = {
   markerTypeId: "11111111-1111-4111-8111-111111111111",
+  markerScopeId: "44444444-4444-4444-8444-444444444444",
   materialId: "22222222-2222-4222-8222-222222222222",
   conditionId: "33333333-3333-4333-8333-333333333333",
 };
@@ -18,6 +19,7 @@ test("headstone validation accepts structured NHG inclusion provenance", () => {
   });
 
   assert.equal(result.nhgInclusion, "not_listed");
+  assert.equal(result.markerScopeId, validPayload.markerScopeId);
   assert.equal(result.provenanceVerificationSource, "field_survey");
   assert.equal(result.provenanceVerifiedAt, "2026-07-23");
 });
@@ -33,6 +35,9 @@ test("headstone mapping reads normalized provenance and supports legacy survey k
   const mapped = toHeadstone({
     id: "marker-1",
     headstone_id: "TLC-HS-0161",
+    marker_scope_id: "44444444-4444-4444-8444-444444444444",
+    marker_scope_code: "monolith",
+    marker_scope_label: "Monolith",
     source_properties: {
       NormalizedProvenance: {
         nhgInclusion: "not_listed",
@@ -43,6 +48,7 @@ test("headstone mapping reads normalized provenance and supports legacy survey k
   });
 
   assert.equal(mapped.nhgInclusion, "not_listed");
+  assert.equal(mapped.markerScope.code, "monolith");
   assert.equal(mapped.provenanceVerificationSource, "field_survey");
   assert.equal(mapped.provenanceVerifiedAt, "2026-07-23");
 });

@@ -178,6 +178,7 @@ const emptyCemeteryRecords: CemeteryAdminRecords = {
 
 const emptyHeadstoneLookups: HeadstoneLookups = {
   markerTypes: [],
+  markerScopes: [],
   materials: [],
   conditions: [],
   vaseTypes: [],

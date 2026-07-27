@@ -9,6 +9,15 @@ const lookupDefinitions = {
     usageColumn: "marker_type_id",
     usageLabel: "headstones",
   },
+  marker_scope_types: {
+    table: "marker_scope_types",
+    label: "Marker scopes",
+    hasSourceFields: false,
+    usageTable: "headstones",
+    usageColumn: "marker_scope_type_id",
+    usageLabel: "headstones",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
   marker_material_types: {
     table: "marker_material_types",
     label: "Marker materials",

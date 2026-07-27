@@ -201,6 +201,7 @@ export type Headstone = {
   id: string;
   headstoneId: string;
   markerType: LookupOption;
+  markerScope: LookupOption;
   material: LookupOption;
   condition: LookupOption;
   vaseType?: LookupOption;
@@ -328,6 +329,7 @@ export type HeadstoneSummary = {
 export type HeadstoneLookups = {
   headstones: LookupOption[];
   markerTypes: LookupOption[];
+  markerScopes: LookupOption[];
   materials: LookupOption[];
   conditions: LookupOption[];
   vaseTypes: LookupOption[];
@@ -367,6 +369,7 @@ export type SaveHeadstoneRelationshipInput = {
 
 export type SaveHeadstoneInput = {
   markerTypeId: string;
+  markerScopeId: string;
   materialId: string;
   conditionId: string;
   vaseTypeId: string;

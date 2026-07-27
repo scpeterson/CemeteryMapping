@@ -12,6 +12,7 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
   const client = await pool.connect();
   try {
     const markerTypes = await client.query("SELECT id::text, code, label FROM marker_types WHERE is_active ORDER BY sort_order, label");
+    const markerScopes = await client.query("SELECT id::text, code, label FROM marker_scope_types WHERE is_active ORDER BY sort_order, label");
     const materials = await client.query("SELECT id::text, code, label FROM marker_material_types WHERE is_active ORDER BY sort_order, label");
     const conditions = await client.query("SELECT id::text, code, label FROM headstone_condition_types WHERE is_active ORDER BY sort_order, label");
     const vaseTypes = await client.query("SELECT id::text, code, label FROM headstone_vase_types WHERE is_active ORDER BY sort_order, label");
@@ -124,6 +125,7 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
     return {
       headstones: headstones.rows,
       markerTypes: markerTypes.rows,
+      markerScopes: markerScopes.rows,
       materials: materials.rows,
       conditions: conditions.rows,
       vaseTypes: vaseTypes.rows,

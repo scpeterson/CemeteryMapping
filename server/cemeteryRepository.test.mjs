@@ -331,6 +331,9 @@ test("lookup options include active military service lookups", async () => {
       return {
         async query(sql) {
           if (sql.includes("FROM marker_types")) return { rows: [] };
+          if (sql.includes("FROM marker_scope_types")) {
+            return { rows: [{ id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", code: "monolith", label: "Monolith" }] };
+          }
           if (sql.includes("FROM marker_material_types")) return { rows: [] };
           if (sql.includes("FROM headstone_condition_types")) return { rows: [] };
           if (sql.includes("FROM headstone_vase_types")) {
@@ -477,6 +480,10 @@ test("lookup options include active military service lookups", async () => {
 
   const lookups = await listHeadstoneLookupOptions(pool);
 
+  assert.deepEqual(
+    lookups.markerScopes.map((scope) => scope.code),
+    ["monolith"],
+  );
   assert.deepEqual(
     lookups.vaseTypes.map((type) => type.code),
     ["in_ground", "missing_or_removed"],
@@ -900,6 +907,7 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
 
   const updated = await updateHeadstone(pool, "33333333-3333-4333-8333-333333333333", {
     markerTypeId: "44444444-4444-4444-8444-444444444444",
+    markerScopeId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     materialId: "55555555-5555-4555-8555-555555555555",
     conditionId: "66666666-6666-4666-8666-666666666666",
     vaseTypeId: "88888888-8888-4888-8888-888888888888",

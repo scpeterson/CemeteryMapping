@@ -43,6 +43,7 @@ export function validateHeadstonePayload(body) {
 
   return {
     markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
+    markerScopeId: validateUuid(body?.markerScopeId, "Marker scope"),
     materialId: validateUuid(body?.materialId, "Marker material"),
     conditionId: validateUuid(body?.conditionId, "Condition"),
     conditionNotes: optionalText(body?.conditionNotes, "Condition notes", 4000),
