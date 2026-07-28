@@ -98,6 +98,21 @@ import type {
   CurrentUser,
 } from "../types";
 
+function candidateGravesiteLabel(match: NorthHillsOcrReviewEntry["candidateMatches"][number]) {
+  if (match.sectionId && match.graveId) return `${match.sectionId}-${match.graveId}`;
+
+  const generatedRecordId = /^TLC-GPS-(\d+)(?:-(\d+))?$/u.exec(match.gravesiteId);
+  if (match.sectionId && generatedRecordId) {
+    const suffixNumber = Number.parseInt(generatedRecordId[2] ?? "", 10);
+    const suffix = Number.isInteger(suffixNumber) && suffixNumber >= 1 && suffixNumber <= 26
+      ? String.fromCharCode(64 + suffixNumber)
+      : "";
+    return `${match.sectionId}-${generatedRecordId[1]}${suffix}`;
+  }
+
+  return match.gravesiteId || "Unknown";
+}
+
 type AdminPanelProps = {
   currentUser: CurrentUser;
   onClose: () => void;
@@ -4433,7 +4448,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                         <article key={`${entry.id}:${match.burialId}`} className="reading-match-review">
                           <p>
                             <strong>{match.fullName || "Unnamed burial"}:</strong>{" "}
-                            Gravesite {[match.sectionId, match.graveId].filter(Boolean).join("-") || "Unknown"} · Record ID {match.gravesiteId} · score {match.score}
+                            Gravesite {candidateGravesiteLabel(match)} · Record ID {match.gravesiteId} · score {match.score}
                           </p>
                           {match.gravesiteEvidence.length ? (
                             <small>

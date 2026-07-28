@@ -71,7 +71,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
                   { id: "headstone-1", headstoneId: "TLC-HS-0009", evidence: [{ id: "headstone-link-1", status: "linked" }] },
                 ],
               },
-              { burialId: "burial-2", gravesiteId: "TLC-GPS-0448", graveId: "0448", sectionId: "D", fullName: '"" Frederick Miller', score: 5 },
+              { burialId: "burial-2", gravesiteId: "TLC-GPS-0448", sectionId: "D", fullName: '"" Frederick Miller', score: 5 },
             ],
             source_facts: [{ id: "fact-1", sourceCode: "CR", factType: "death_date", factValue: "December 16, 1965", status: "staged" }],
           },

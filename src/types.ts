@@ -203,7 +203,7 @@ export type HeadstoneGravesiteRelationship = {
   id: string;
   gravesiteUuid: string;
   gravesiteId: string;
-  graveId: string;
+  graveId?: string;
   gravesiteName: string;
   relationshipType: HeadstoneGravesiteRelationshipType;
   notes: string;
