@@ -790,3 +790,6 @@ databaseChangeLog:
   - include:
       file: changes/265-retire-knobloch-monolith-placeholder-gravesite.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/266-split-c-0288-soergel-gravesites.sql
+      relativeToChangelogFile: true
