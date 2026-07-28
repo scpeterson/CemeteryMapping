@@ -4074,7 +4074,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                     <div title="Parsed section, row, and position from the North Hills coordinate.">
                       <dt>Location</dt>
                       <dd>
-                        {entry.parsedSectionName ? `Section ${entry.parsedSectionName}` : "Unknown"}
+                        NHG location: {entry.parsedSectionName ? `Section ${entry.parsedSectionName}` : "Unknown"}
                         {entry.parsedRowNumber ? `, row ${entry.parsedRowNumber}` : ""}
                         {entry.parsedPositionNumber ? `, #${entry.parsedPositionNumber}` : ""}
                       </dd>
@@ -4432,7 +4432,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
                         return (
                         <article key={`${entry.id}:${match.burialId}`} className="reading-match-review">
                           <p>
-                            <strong>{match.fullName || "Unnamed burial"}:</strong> {match.gravesiteId} · Section {match.sectionId} · score {match.score}
+                            <strong>{match.fullName || "Unnamed burial"}:</strong>{" "}
+                            Gravesite {[match.sectionId, match.graveId].filter(Boolean).join("-") || "Unknown"} · Record ID {match.gravesiteId} · score {match.score}
                           </p>
                           {match.gravesiteEvidence.length ? (
                             <small>

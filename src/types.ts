@@ -980,6 +980,7 @@ export type NorthHillsOcrCandidateMatch = {
   burialId: string;
   gravesiteUuid: string;
   gravesiteId: string;
+  graveId: string;
   sectionId: string;
   fullName: string;
   birthDate?: string;

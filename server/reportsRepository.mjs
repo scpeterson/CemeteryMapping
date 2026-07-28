@@ -856,7 +856,7 @@ async function runAvailableInventory(client, definition, cemeteryIds) {
       { key: "gravesite_count", label: "Gravesites" },
       { key: "total_cost", label: "Cost" },
       { key: "cemetery", label: "Cemetery" },
-      { key: "gravesite_id", label: "Gravesite ID" },
+      { key: "gravesite_id", label: "Record ID" },
     ],
     rows: result.rows,
     notes: ["A whole lot is listed when every active gravesite in that lot appears available."],

@@ -1076,6 +1076,13 @@ h3 {
   white-space: nowrap;
 }
 
+.grave-record-id {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
 .burial-record dl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
