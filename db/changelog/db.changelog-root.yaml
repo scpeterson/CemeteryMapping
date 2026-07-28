@@ -793,3 +793,6 @@ databaseChangeLog:
   - include:
       file: changes/266-split-c-0288-soergel-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/267-split-c-0289-kummer-gravesites.sql
+      relativeToChangelogFile: true
