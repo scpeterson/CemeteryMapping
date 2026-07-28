@@ -61,6 +61,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
               {
                 burialId: "burial-1",
                 gravesiteId: "TLC-GPS-0009",
+                graveId: "0009",
                 sectionId: "A",
                 fullName: "George L Burgess",
                 score: 9,
@@ -85,6 +86,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
   assert.equal(review.batches[0].matchedCount, 2);
   assert.deepEqual(review.summary[0], { parseConfidence: "high", status: "staged", count: 2 });
   assert.equal(review.entries[0].candidateMatches[0].gravesiteId, "TLC-GPS-0009");
+  assert.equal(review.entries[0].candidateMatches[0].graveId, "0009");
   assert.equal(review.entries[0].candidateMatches[0].headstoneCandidates.length, 1);
   assert.equal(review.entries[0].candidateMatches[1].fullName, "Frederick Miller");
   assert.equal(review.entries[0].sourceFacts[0].factValue, "December 16, 1965");

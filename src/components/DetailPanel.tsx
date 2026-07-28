@@ -920,6 +920,10 @@ function GraveSpaceRecord({ grave, canUpdate, onSave }: { grave: GraveSpace; can
       </div>
       <dl>
         <div>
+          <dt>Record ID</dt>
+          <dd>{grave.id}</dd>
+        </div>
+        <div>
           <dt>Section</dt>
           <dd>{grave.section || "Unknown"}</dd>
         </div>
@@ -2134,9 +2138,9 @@ function MarkerGravesiteRelationshipManager({
           <div>
             {gravesById.has(relationship.gravesiteId) ? (
               <button type="button" className="link-button" onClick={() => onSelectGrave(gravesById.get(relationship.gravesiteId)!)}>
-                <strong>{relationship.graveId || relationship.gravesiteId}</strong>
+                <strong>{formatGraveLabel(gravesById.get(relationship.gravesiteId)!)}</strong>
               </button>
-            ) : <strong>{relationship.graveId || relationship.gravesiteId}</strong>}
+            ) : <strong>Record ID {relationship.gravesiteId}</strong>}
             {relationship.gravesiteName && relationship.gravesiteName !== relationship.gravesiteId ? <span> — {relationship.gravesiteName}</span> : null}
             {relationship.notes ? <p className="muted">{relationship.notes}</p> : null}
           </div>
@@ -3210,6 +3214,7 @@ function GraveDetailPanel({
         <div>
           <p className="eyebrow">Grave site</p>
           <h2>{title}</h2>
+          <p className="grave-record-id">Record ID: {summary.id}</p>
           <p className="grave-cemetery">{summary.cemeteryName}</p>
         </div>
       </div>
@@ -3267,9 +3272,10 @@ function GraveDetailPanel({
           ) : null}
 
           <section className="detail-section">
-            <div className="section-title">
+            <div className="section-title burial-section-title">
               <UserRound size={17} aria-hidden="true" />
               <h3>Burials</h3>
+              <span className="burial-gravesite-id">Gravesite {title} · Record ID {summary.id}</span>
             </div>
             {grave.burials.length ? (
               <div className="burial-list">

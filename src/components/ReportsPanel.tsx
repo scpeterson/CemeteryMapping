@@ -142,7 +142,8 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
                 {isVeteranReportValue(burial.veteran) ? <span className="burial-veteran-badge">Veteran</span> : null}
               </h3>
               <dl className="marker-burial-details">
-                <DetailItem label="Gravesite" value={burial.gravesite_id} showEmpty />
+                <DetailItem label="Gravesite" value={burial.grave} showEmpty />
+                <DetailItem label="Record ID" value={burial.gravesite_id} showEmpty />
                 <DetailItem label="Birth" value={burial.birth_date} showEmpty />
                 <DetailItem label="Death" value={burial.death_date} showEmpty emptyValue="Still living" />
                 <DetailItem label="Burial" value={burial.burial_date} showEmpty />

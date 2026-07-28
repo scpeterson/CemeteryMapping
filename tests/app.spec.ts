@@ -99,6 +99,8 @@ test("burial notes show the corrected North Hills source name without import-onl
   await selectResultGrave(page, "A-TEST");
 
   await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
+  await expect(page.locator(".burial-gravesite-id")).toHaveText("Gravesite A-TEST · Record ID A-TEST");
+  await expect(page.locator(".grave-record-id")).toHaveText("Record ID: A-TEST");
   await expect(page.locator(".burial-notes li")).toHaveText([
     "Funeral home: Hill & Sons",
     "North Hills Genealogists section: B",
