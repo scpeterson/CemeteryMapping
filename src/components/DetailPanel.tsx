@@ -3267,9 +3267,10 @@ function GraveDetailPanel({
           ) : null}
 
           <section className="detail-section">
-            <div className="section-title">
+            <div className="section-title burial-section-title">
               <UserRound size={17} aria-hidden="true" />
               <h3>Burials</h3>
+              <span className="burial-gravesite-id">Gravesite {summary.id}</span>
             </div>
             {grave.burials.length ? (
               <div className="burial-list">
