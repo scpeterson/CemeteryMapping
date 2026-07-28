@@ -796,3 +796,9 @@ databaseChangeLog:
   - include:
       file: changes/267-split-c-0289-kummer-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/268-split-c-0290-kummer-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/269-model-c-0290-kummer-common-base-markers.sql
+      relativeToChangelogFile: true
