@@ -75,7 +75,7 @@
     "pg": "^8.22.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "vite": "^8.1.4"
+    "vite": "^8.1.5"
   },
   "devDependencies": {
     "@emnapi/core": "^1.11.2",
