@@ -155,7 +155,7 @@ Verified death-location search uses GeoNames. Set `GEONAMES_USERNAME` in the env
 
 ### API Security
 
-Read endpoints are protected by API authorization middleware. Local development and automated tests currently default to `AUTH_MODE=disabled` so the existing map UX still works before the production identity provider is selected.
+Read endpoints are protected by API authorization middleware. Auth0 is the selected production identity provider. Local development and automated tests default to `AUTH_MODE=disabled` so contributors can run the application without Auth0 tenant credentials.
 
 For production Auth0 JWT validation, use:
 
@@ -167,7 +167,7 @@ AUTH0_AUDIENCE=<api-identifier>
 
 In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, `cemetery-admin`, and `admin` checks.
 
-Auth0 API permissions must be configured in Auth0 manually. The API should include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user`, `cemetery-admin`, and `admin`, then have affected users sign out and back in so their access tokens are refreshed.
+The Auth0 API must include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user`, `cemetery-admin`, and `admin`, then have affected users sign out and back in so their access tokens are refreshed. These permissions and role assignments can be applied with the configuration script below after the Auth0 tenant, API, applications, and Management API client have been created.
 
 To configure those Auth0 API permissions and role assignments through the Auth0 Management API, run the environment-aware setup script with the target tenant values:
 

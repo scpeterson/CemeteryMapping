@@ -61,14 +61,14 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 The main software choices are captured in the ADRs. Exact JavaScript dependency versions come from `package-lock.json`; container image versions come from `docker-compose.yml`; CI runtime versions come from `.github/workflows/ci.yml`.
 
-Current core versions as of 2026-07-24:
+Current core versions as of 2026-08-01:
 
 | Component | Version | Source |
 | --- | --- | --- |
 | Node.js in CI | 24 | `.github/workflows/ci.yml` |
 | React | 19.2.8 | `package-lock.json` |
 | React DOM | 19.2.8 | `package-lock.json` |
-| Vite | 8.1.4 | `package-lock.json` |
+| Vite | 8.1.5 | `package-lock.json` |
 | TypeScript | 6.0.3 | `package-lock.json` |
 | Express | 5.2.1 | `package-lock.json` |
 | pg | 8.22.0 | `package-lock.json` |

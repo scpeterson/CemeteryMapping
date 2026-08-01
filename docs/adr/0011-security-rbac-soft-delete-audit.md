@@ -24,7 +24,7 @@ Adopt a phased security model built around these parts:
 - Soft deletes for application data.
 - Append-only audit logging for data changes.
 
-The application will not implement its own password storage. Authentication should be delegated to a managed identity provider such as Microsoft Entra ID, Auth0, Google Workspace, AWS Cognito, Clerk, or another provider selected before production deployment.
+The application will not implement its own password storage. Authentication is delegated to Auth0 as decided in [ADR 0012](0012-use-auth0-for-identity-provider.md).
 
 Authorization must be enforced in the Express API, not only in the React UI. The UI can hide unavailable actions, but the API remains the enforcement boundary.
 
@@ -177,8 +177,8 @@ This ADR governs access to records from the existing application data sources:
 - Gravesite, headstone, and burial data generated from the headstone GPS spreadsheet documented in ADR 0008.
 - Demo data from local seed scripts.
 
-Identity-provider user data source: TBD.
+Auth0 is the identity-provider user data source. The application database remains the source of truth for application roles and active/inactive access, as documented in [ADR 0012](0012-use-auth0-for-identity-provider.md).
 
 ## Update Triggers
 
-Update this ADR or add a superseding ADR when the identity provider is selected, roles change, public access rules change, request validation policy changes, hard-delete exceptions are introduced, audit retention rules are defined, trigger-enforced auditing is replaced by application-managed auditing, or the admin editing workflow is implemented.
+Update this ADR or add a superseding ADR when the identity provider changes, roles change, public access rules change, request validation policy changes, hard-delete exceptions are introduced, audit retention rules are defined, trigger-enforced auditing is replaced by application-managed auditing, or the admin editing workflow changes materially.

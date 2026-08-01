@@ -22,7 +22,7 @@ Core frontend software:
 | --- | --- | --- |
 | React | 19.2.8 | Component model and client rendering |
 | React DOM | 19.2.8 | Browser DOM renderer for React |
-| Vite | 8.1.4 | Development server and production bundler |
+| Vite | 8.1.5 | Development server and production bundler |
 | TypeScript | 6.0.3 | Static type checking |
 | MapLibre GL JS | 6.0.0 | Interactive web map rendering |
 | Lucide React | 1.23.0 | UI icons |

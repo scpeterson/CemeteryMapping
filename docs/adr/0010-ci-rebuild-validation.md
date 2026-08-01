@@ -21,8 +21,8 @@ CI software:
 | Software | Version | Purpose |
 | --- | --- | --- |
 | GitHub Actions runner | `ubuntu-latest` | CI host |
-| `actions/checkout` | v6 | Checkout repository |
-| `actions/setup-node` | v6 | Install Node.js and configure npm cache |
+| `actions/checkout` | v7 | Checkout repository |
+| `actions/setup-node` | v7 | Install Node.js and configure npm cache |
 | Node.js | 24 | Runtime for build, scripts, and tests |
 | Playwright | 1.61.1 | Browser test runner |
 | PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | Test database |
@@ -37,11 +37,13 @@ CI steps:
 5. `npm run db:migrate`
 6. `npm run db:seed:demo`
 7. `npm run db:status`
-8. `npx playwright install --with-deps chromium`
+8. `npx playwright install chromium`
 9. `npm run lint`
-10. `npm run build:test`
-11. `npm run test:e2e`
-12. `npm run db:down`
+10. `npm run test:server`
+11. `npm run test:db-rules`
+12. `npm run build:test`
+13. `npm run test:e2e`
+14. `npm run db:down`
 
 ## Rationale
 
@@ -64,6 +66,8 @@ APP_ENV=test npm run db:migrate
 APP_ENV=test npm run db:seed:demo
 APP_ENV=test npm run db:status
 npm run lint
+npm run test:server
+APP_ENV=test npm run test:db-rules
 npm run build:test
 APP_ENV=test npm run test:e2e
 APP_ENV=test npm run db:down
