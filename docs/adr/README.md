@@ -47,6 +47,10 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0020: Shift Section C 0172 Passageway Gravesites North](0020-shift-section-c-0172-passageway-gravesites.md)
 - [ADR 0021: Create Reviewed Section C Lot 29](0021-create-section-c-lot-29.md)
 - [ADR 0022: Create Reviewed Section C Lot 10](0022-create-section-c-lot-10.md)
+- [ADR 0023: Create Section C Lots 101 Through 105](0023-create-section-c-lots-101-through-105.md)
+- [ADR 0024: Create Section C Lots 106 Through 110](0024-create-section-c-lots-106-through-110.md)
+- [ADR 0025: Create Section C Lots 111 Through 115](0025-create-section-c-lots-111-through-115.md)
+- [ADR 0026: Create Section C Lots 116 Through 120](0026-create-section-c-lots-116-through-120.md)
 
 ## Creating a New ADR
 
