@@ -51,6 +51,9 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0024: Create Section C Lots 106 Through 110](0024-create-section-c-lots-106-through-110.md)
 - [ADR 0025: Create Section C Lots 111 Through 115](0025-create-section-c-lots-111-through-115.md)
 - [ADR 0026: Create Section C Lots 116 Through 120](0026-create-section-c-lots-116-through-120.md)
+- [ADR 0027: Create Section C Non-Standard Lot Row](0027-create-section-c-nonstandard-lot-row.md)
+- [ADR 0028: Create Second Section C Non-Standard Lot Row](0028-create-second-section-c-nonstandard-lot-row.md)
+- [ADR 0029: Create Third and Fourth Section C Non-Standard Lot Rows](0029-create-third-and-fourth-section-c-nonstandard-lot-rows.md)
 
 ## Creating a New ADR
 

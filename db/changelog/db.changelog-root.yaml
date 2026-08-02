@@ -826,3 +826,12 @@ databaseChangeLog:
   - include:
       file: changes/277-create-trinity-c-lots-116-through-120.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/278-create-trinity-c-nonstandard-lots-42a-through-73a.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/279-create-trinity-c-nonstandard-lots-41a-through-74a.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/280-create-trinity-c-nonstandard-lots-39a-through-76a.sql
+      relativeToChangelogFile: true
