@@ -412,7 +412,7 @@ Use the `id` value as `<batch-uuid>`:
 APP_ENV=test npm run db:promote:spatial -- --batch-id <batch-uuid>
 ```
 
-Promotion currently handles `Cemeteries`, `Sections`, `Blocks`, and `Lots`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. Lots may be section-scoped when no block identifier is present, and a partial unique index keeps those section-scoped lot identifiers idempotent. Grave polygon import will need the actual gravesite source layer when it becomes available.
+Promotion currently handles `Cemeteries`, `Sections`, `Blocks`, and `Lots`. It refuses to run when the selected batch has staging `error` rows, but allows `warning` rows. Trinity Lutheran Church Cemetery does not use blocks: its lots are section-scoped, with `block_id` and `block_uuid` left null. The generalized hierarchy still supports blocks for other cemeteries. A partial unique index keeps section-scoped lot identifiers idempotent. Grave polygon import will need the actual gravesite source layer when it becomes available.
 
 For cemetery and section boundary corrections where local text fields must be preserved, use the geometry-only boundary promotion command instead of full spatial promotion. This updates only `cemeteries.geometry`, `sections.geometry`, and their `updated_at` values for the requested facility and section names:
 

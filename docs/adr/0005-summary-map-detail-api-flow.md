@@ -22,7 +22,7 @@ Use a summary-first API flow:
 
 The frontend fits the map to the full active cemetery dataset on load, allows zooming out far enough to see geographically separated non-production demo and imported cemeteries, supports mouse-wheel zooming, exposes map zoom and fit controls, renders broad-zoom cemetery markers, shows fractional and segmented bar scale, provides a legend for rendered layers and gravesite statuses, and requests detail only when a grave is selected.
 
-Gravesite labels are formatted from the populated hierarchy fields only. Because Trinity Lutheran Church Cemetery does not use lots, UI labels omit the lot segment when `lot_id` is blank instead of rendering an empty placeholder.
+Gravesite labels are formatted from the populated hierarchy fields only. Trinity Lutheran Church Cemetery does not use blocks; its lots are scoped directly to sections. It uses lots in some sections and passageway or individually managed gravesites in others, so UI labels include the lot segment when `lot_id` is populated and omit block or lot segments when their identifiers are blank instead of rendering empty placeholders.
 
 ## Rationale
 
