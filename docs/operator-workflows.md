@@ -731,7 +731,7 @@ Georeference the image:
      --run
    ```
 
-Use exported points as review evidence for a later lot georeferencing/import step. Do not treat the historic scan as survey-grade geometry. It should help build a best-guess lot layer that is consistent with known lot dimensions, gravesite orientation, headstone-derived gravesite polygons, and reviewed deed-holder/lot-number text.
+Use exported points as review evidence for a reviewed lot georeferencing/import step. Do not treat the historic scan as survey-grade geometry. It should help build a best-guess lot layer that is consistent with known lot dimensions, gravesite orientation, headstone-derived gravesite polygons, and reviewed deed-holder/lot-number text. Production geometry derived from this evidence must be implemented through an auditable migration and documented decision record, as with Section C migrations `278` through `280` and ADRs 0027 through 0029.
 
 ### Historic Lot Map Evidence Review
 
@@ -742,7 +742,7 @@ Review:
 1. Confirm the source scan name and path match the evidence row.
 2. Confirm orientation before comparing the two scans. North and south appear to be reversed between `TIFF2042-01.png` and `TIFF2043-01.png`.
 3. Confirm the gravesite label resolves to the intended gravesite on the current map.
-4. Confirm the section or cemetery-area context before trusting a lot number. Historic lot numbers are not globally unique; for example, `70 OC` and `70 NA` can both exist.
+4. Confirm the section or cemetery-area context before trusting a lot number. Historic lot numbers are not globally unique; for example, `70 OC` and `70 NA` can both exist. If a reviewed map repeats a number within the same section, retain the existing production identifier and append `A` to the new lot's name and `lot_id`.
 5. Use `relationship_type = 'lot'` only when the scan appears to place the gravesite in that lot.
 6. Use `relationship_type = 'passageway_between_lots'` when the scan places the gravesite in a passageway rather than in either neighboring lot.
 7. Keep `status = 'staged'` until a reviewer has checked the observation against the current map, deed registry, headstone evidence, and any field notes.
@@ -774,7 +774,7 @@ Later Section C shared-marker corrections use a consistent north/south split: th
 
 These letter suffixes are operational identifiers created during reviewed data repair, not labels transcribed from NHG. Do not move an observed marker point merely to center it in one of the interpreted gravesite polygons.
 
-Do not promote historic lot map evidence by ad hoc SQL. A future promotion workflow should set a clear audit reason, preserve the source evidence row, and leave passageway evidence as passageway evidence unless Council or cemetery records establish a deeded lot relationship.
+Do not promote historic lot map evidence by ad hoc SQL. Reviewed promotion must use a versioned migration and ADR, preserve the source evidence, record its anchors and confidence, and leave passageway evidence as passageway evidence unless Council or cemetery records establish a deeded lot relationship. Section C migrations `278` through `280` are the current pattern for map-derived lot geometry; they create estimated operational lots without assigning gravesites or moving markers.
 
 ### Headstone Spreadsheet Import Checklist
 
