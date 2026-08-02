@@ -808,3 +808,6 @@ databaseChangeLog:
   - include:
       file: changes/271-split-c-0299-luskey-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/272-split-c-0301-knobeloch-gravesites.sql
+      relativeToChangelogFile: true
