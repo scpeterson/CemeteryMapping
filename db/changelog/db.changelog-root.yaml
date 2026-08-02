@@ -814,3 +814,15 @@ databaseChangeLog:
   - include:
       file: changes/273-split-c-0306-schmidt-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/274-create-trinity-c-lots-101-through-105.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/275-create-trinity-c-lots-106-through-110.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/276-create-trinity-c-lots-111-through-115.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/277-create-trinity-c-lots-116-through-120.sql
+      relativeToChangelogFile: true

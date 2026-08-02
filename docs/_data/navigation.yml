@@ -64,5 +64,13 @@
   url: /adr/0021-create-section-c-lot-29.html
 - title: "ADR 0022: Section C Lot 10"
   url: /adr/0022-create-section-c-lot-10.html
+- title: "ADR 0023: Section C Lots 101-105"
+  url: /adr/0023-create-section-c-lots-101-through-105.html
+- title: "ADR 0024: Section C Lots 106-110"
+  url: /adr/0024-create-section-c-lots-106-through-110.html
+- title: "ADR 0025: Section C Lots 111-115"
+  url: /adr/0025-create-section-c-lots-111-through-115.html
+- title: "ADR 0026: Section C Lots 116-120"
+  url: /adr/0026-create-section-c-lots-116-through-120.html
 - title: "ADR Template"
   url: /adr/0000-template.html
