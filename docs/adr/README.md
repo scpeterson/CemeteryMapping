@@ -54,6 +54,17 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0027: Create Section C Non-Standard Lot Row](0027-create-section-c-nonstandard-lot-row.md)
 - [ADR 0028: Create Second Section C Non-Standard Lot Row](0028-create-second-section-c-nonstandard-lot-row.md)
 - [ADR 0029: Create Third and Fourth Section C Non-Standard Lot Rows](0029-create-third-and-fourth-section-c-nonstandard-lot-rows.md)
+- [ADR 0030: Create Section B Lot 8](0030-create-section-b-lot-8.md)
+- [ADR 0031: Create Section B Lot 11](0031-create-section-b-lot-11.md)
+- [ADR 0032: Shift Section B Lots 8 and 11 West](0032-shift-section-b-lots-8-and-11-west.md)
+- [ADR 0033: Create Section B Lots 7 and 12](0033-create-section-b-lots-7-and-12.md)
+- [ADR 0034: Create Section B Lots 6 and 13](0034-create-section-b-lots-6-and-13.md)
+- [ADR 0035: Shift Six Section B Lots North](0035-shift-section-b-six-lots-north.md)
+- [ADR 0036: Shift Six Section B Lots North Six Inches](0036-shift-section-b-six-lots-north-six-inches.md)
+- [ADR 0037: Create Section B Lots 5 and 14](0037-create-section-b-lots-5-and-14.md)
+- [ADR 0038: Shift Section B Lots 5 and 14](0038-shift-section-b-lots-5-and-14.md)
+- [ADR 0039: Create Section B Lots 4, 15, and 21](0039-create-section-b-lots-4-15-and-21.md)
+- [ADR 0040: Shift Five Section B Lots North](0040-shift-section-b-five-lots-north.md)
 
 ## Creating a New ADR
 

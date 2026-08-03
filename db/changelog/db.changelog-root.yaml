@@ -835,3 +835,39 @@ databaseChangeLog:
   - include:
       file: changes/280-create-trinity-c-nonstandard-lots-39a-through-76a.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/281-create-trinity-b-lot-8.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/282-create-trinity-b-lot-11.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/283-shift-trinity-b-lots-8-and-11-west.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/284-preserve-trinity-b-lots-8-and-11-shared-edge.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/285-create-trinity-b-lots-7-and-12.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/286-create-trinity-b-lots-6-and-13.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/287-shift-trinity-b-lots-6-through-13-north.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/288-shift-trinity-b-lots-6-through-13-north-six-inches.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/289-create-trinity-b-lots-5-and-14.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/290-shift-trinity-b-lots-5-and-14-west-and-south.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/291-create-trinity-b-lots-4-15-and-21.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/292-shift-trinity-b-lots-4-5-14-15-and-21-north.sql
+      relativeToChangelogFile: true

@@ -78,5 +78,27 @@
   url: /adr/0028-create-second-section-c-nonstandard-lot-row.html
 - title: "ADR 0029: Third and Fourth Section C Non-Standard Lot Rows"
   url: /adr/0029-create-third-and-fourth-section-c-nonstandard-lot-rows.html
+- title: "ADR 0030: Section B Lot 8"
+  url: /adr/0030-create-section-b-lot-8.html
+- title: "ADR 0031: Section B Lot 11"
+  url: /adr/0031-create-section-b-lot-11.html
+- title: "ADR 0032: Shift Section B Lots 8 and 11 West"
+  url: /adr/0032-shift-section-b-lots-8-and-11-west.html
+- title: "ADR 0033: Section B Lots 7 and 12"
+  url: /adr/0033-create-section-b-lots-7-and-12.html
+- title: "ADR 0034: Section B Lots 6 and 13"
+  url: /adr/0034-create-section-b-lots-6-and-13.html
+- title: "ADR 0035: Shift Six Section B Lots North"
+  url: /adr/0035-shift-section-b-six-lots-north.html
+- title: "ADR 0036: Shift Six Section B Lots North Six Inches"
+  url: /adr/0036-shift-section-b-six-lots-north-six-inches.html
+- title: "ADR 0037: Section B Lots 5 and 14"
+  url: /adr/0037-create-section-b-lots-5-and-14.html
+- title: "ADR 0038: Shift Section B Lots 5 and 14"
+  url: /adr/0038-shift-section-b-lots-5-and-14.html
+- title: "ADR 0039: Section B Lots 4, 15, and 21"
+  url: /adr/0039-create-section-b-lots-4-15-and-21.html
+- title: "ADR 0040: Shift Five Section B Lots North"
+  url: /adr/0040-shift-section-b-five-lots-north.html
 - title: "ADR Template"
   url: /adr/0000-template.html
