@@ -122,7 +122,7 @@ APP_ENV=stage npm run db:seed:demo
 ```
 
 The demo seed command refuses to run when `APP_ENV=prod`.
-The demo fixture now seeds section-scoped lots and links demo gravesites through `lot_uuid` so the map and API exercise the cemetery/section/lot/gravesite hierarchy. Blocks remain empty because they are still optional.
+The demo fixture exercises both supported hierarchies: St. Mark uses Trinity-like section-scoped lots with no blocks, while Memorial Grove contains a block-scoped lot. It also includes common, smaller, and non-standard lot dimensions; a letter-suffixed repeated lot number; a non-burial lot; a reviewed passageway gravesite with no lot; and an observed couple marker spanning two separate gravesites and burials.
 
 Stop the local database:
 
