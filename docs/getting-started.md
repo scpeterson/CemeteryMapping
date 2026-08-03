@@ -209,6 +209,7 @@ npm run db:seed:demo
 Expected result:
 
 - Demo cemeteries, sections, lots, gravesites, burials, headstones, users, and lookup values are inserted or refreshed.
+- The data includes both section-scoped and block-scoped lot hierarchies, variable lot sizes, a restricted lot, a passageway gravesite, and a shared couple marker.
 - The command exits without an error.
 
 Demo data is allowed in DEV, TEST, and STAGE only. It is blocked in PROD.

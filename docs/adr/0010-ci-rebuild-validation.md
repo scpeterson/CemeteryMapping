@@ -49,6 +49,8 @@ CI steps:
 
 CI verifies the exact rebuild path from a clean checkout. Running rollback tests catches migration mistakes before merge. Running e2e tests against a migrated and seeded PostGIS database verifies the frontend/API/database integration.
 
+The synthetic demo seed is also a behavioral compatibility fixture. It must cover both section-scoped and block-scoped lots, variable lot dimensions, restricted lots, gravesites without lots, repeated lot numbers resolved with suffixes, and markers related to more than one gravesite and burial. Seed-time assertions should fail immediately if these representative relationships are lost.
+
 ## Consequences
 
 PRs that change schema, scripts, frontend behavior, or API behavior must keep CI green. Long-running or external real-data imports are not run in CI; they must be documented in ADR rebuild notes and tested locally when relevant.
@@ -75,4 +77,4 @@ APP_ENV=test npm run db:down
 
 ## Update Triggers
 
-Update this ADR when CI runner versions, Node.js version, workflow steps, test database image, migration validation, or e2e testing strategy changes.
+Update this ADR when CI runner versions, Node.js version, workflow steps, test database image, migration validation, e2e testing strategy, or the representative demo-fixture contract changes.

@@ -159,7 +159,8 @@ NHG pages 233-236 include church records where NHG found no matching tombstones.
 | Application command | `APP_ENV=<dev|test|stage> npm run db:seed:demo` |
 | Data owner | Project maintainers |
 | Production use | Not allowed; seed command refuses `APP_ENV=prod` |
-| Known limitations | Demo sections, lots, and gravesites are seeded for local UI testing. Demo blocks are intentionally omitted because block records remain optional. |
+| Representative coverage | St. Mark models a Trinity-like cemetery with section-scoped lots and no blocks. Memorial Grove exercises the optional block hierarchy. The fixture includes 10-by-20-foot, 10-by-12-foot, and non-standard 16.36-by-16-foot lots; an `A`-suffixed repeated lot number; a non-burial lot; a passageway gravesite without a lot; and a fixed couple marker spanning two gravesites and burials. |
+| Known limitations | All records and geometries are synthetic and schematic. The fixture represents application behaviors and data relationships, not a real cemetery or survey-grade layout. It does not attempt to reproduce every Trinity evidence, ownership, media, or maintenance workflow. |
 | Related ADR | [ADR 0010](adr/0010-ci-rebuild-validation.md) |
 
 ## Update Requirements
