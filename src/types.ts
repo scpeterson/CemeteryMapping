@@ -585,6 +585,13 @@ export type SearchMatch = {
   reasons: string[];
 };
 
+export type LotSearchMatch = {
+  lot: CemeteryLot;
+  reasons: string[];
+};
+
+export type CemeterySearchMatch = SearchMatch | LotSearchMatch;
+
 export type ReportParameterDefinition = {
   name: string;
   label: string;
