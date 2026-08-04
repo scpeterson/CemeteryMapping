@@ -1,6 +1,6 @@
 import { CalendarSearch, Filter, Search, X } from "lucide-react";
-import type { GraveStatus, SearchMatch } from "../types";
-import { formatGraveLocation, graveSelectionKey, statusColors, statusLabels } from "../lib/format";
+import type { CemeterySearchMatch, GraveStatus } from "../types";
+import { formatGraveLocation, graveSelectionKey, lotSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type SearchPanelProps = {
   cemeteryScopeLabel: string;
@@ -8,10 +8,11 @@ type SearchPanelProps = {
   onQueryChange: (query: string) => void;
   selectedStatuses: Set<GraveStatus>;
   onToggleStatus: (status: GraveStatus) => void;
-  matches: SearchMatch[];
+  matches: CemeterySearchMatch[];
   canViewOwnership: boolean;
   selectedGraveKey?: string;
-  onSelectMatch: (match: SearchMatch) => void;
+  selectedLotKey?: string;
+  onSelectMatch: (match: CemeterySearchMatch) => void;
 };
 
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
@@ -25,6 +26,7 @@ export function SearchPanel({
   matches,
   canViewOwnership,
   selectedGraveKey,
+  selectedLotKey,
   onSelectMatch,
 }: SearchPanelProps) {
   return (
@@ -42,7 +44,7 @@ export function SearchPanel({
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder={canViewOwnership ? "Search names, owners, dates, grave IDs" : "Search names, dates, grave IDs"}
+          placeholder={canViewOwnership ? "Search names, owners, dates, graves, lots" : "Search names, dates, graves, lots"}
           aria-label="Search cemetery records"
         />
         {query ? (
@@ -76,6 +78,23 @@ export function SearchPanel({
 
       <div className="results-list">
         {matches.map((match) => {
+          if ("lot" in match) {
+            const key = lotSelectionKey(match.lot);
+            return (
+              <button
+                key={`lot:${key}`}
+                type="button"
+                className={`result-card ${selectedLotKey === key ? "is-selected" : ""}`}
+                onClick={() => onSelectMatch(match)}
+              >
+                <span className="result-title">Lot {match.lot.name || match.lot.id}</span>
+                <span className="result-cemetery">Section {match.lot.section}{match.lot.block ? `, Block ${match.lot.block}` : ""}</span>
+                <span className="result-meta">Lot</span>
+                {match.reasons.length ? <span className="result-reason">{match.reasons.slice(0, 2).join(" | ")}</span> : null}
+              </button>
+            );
+          }
+
           const key = graveSelectionKey(match.grave);
           const statusLabel = statusLabels[match.grave.status];
           const reasons = match.reasons.filter((reason) => reason !== statusLabel && reason !== `Status: ${statusLabel}`).slice(0, 2);

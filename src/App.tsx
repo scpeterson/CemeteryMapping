@@ -32,11 +32,12 @@ import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { cemeteryData } from "./data/cemeteryData";
-import { graveSelectionKey } from "./lib/format";
-import { searchGraves } from "./lib/search";
+import { graveSelectionKey, lotSelectionKey } from "./lib/format";
+import { searchGraves, searchLots } from "./lib/search";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import type {
   Burial,
+  CemeterySearchMatch,
   CemeteryData,
   CemeteryLot,
   CurrentUser,
@@ -217,7 +218,8 @@ export default function App() {
   }, [query, selectedStatuses]);
 
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
-  const matches = remoteMatches ?? localMatches;
+  const lotMatches = useMemo(() => searchLots(data, query), [data, query]);
+  const matches = useMemo<CemeterySearchMatch[]>(() => [...lotMatches, ...(remoteMatches ?? localMatches)], [localMatches, lotMatches, remoteMatches]);
   const visibleGraves = useMemo(() => {
     if (selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
     return data.graves.filter((grave) => selectedStatuses.has(grave.status));
@@ -227,7 +229,7 @@ export default function App() {
     currentUser && currentUser.role !== "admin" && currentUser.assignedCemeteryIds.length ? currentUser.assignedCemeteryIds : undefined;
   const searchResultIds = useMemo(() => {
     if (!query.trim()) return new Set<string>();
-    return new Set(matches.map((match) => graveSelectionKey(match.grave)));
+    return new Set(matches.filter((match): match is SearchMatch => "grave" in match).map((match) => graveSelectionKey(match.grave)));
   }, [matches, query]);
   const selectedLotGraves = useMemo(() => {
     if (!selectedLot) return [];
@@ -278,8 +280,13 @@ export default function App() {
     });
   };
 
-  const selectMatch = (match: SearchMatch) => {
+  const selectMatch = (match: CemeterySearchMatch) => {
     setSelectedHeadstone(undefined);
+    if ("lot" in match) {
+      setSelectedGrave(undefined);
+      setSelectedLot(match.lot);
+      return;
+    }
     setSelectedLot(undefined);
     setSelectedGrave(match.grave);
   };
@@ -585,6 +592,7 @@ export default function App() {
         matches={matches}
         canViewOwnership={currentUser?.permissions.canViewOwnership ?? false}
         selectedGraveKey={selectedGrave ? graveSelectionKey(selectedGrave) : undefined}
+        selectedLotKey={selectedLot ? lotSelectionKey(selectedLot) : undefined}
         onSelectMatch={selectMatch}
       />
       <section className="map-region">
