@@ -5,7 +5,7 @@ import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, CemeteryLot, GraveSpaceSummary, GraveStatus, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotRestrictedAreasFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { graveSelectionKey, lotSelectionKey, statusLabels } from "../lib/format";
-import { exteriorRing, fitMapToCemeteries, fitMapToData } from "./cemeteryMapBounds";
+import { extendGeometryBounds, exteriorRing, fitMapToCemeteries, fitMapToData } from "./cemeteryMapBounds";
 import {
   addBoundaryLayers,
   addGraveLayers,
@@ -432,6 +432,14 @@ export function CemeteryMap({
     const bounds = ring.reduce((mapBounds, coordinate) => mapBounds.extend(coordinate as [number, number]), new maplibregl.LngLatBounds(ring[0] as [number, number], ring[0] as [number, number]));
     mapRef.current.fitBounds(bounds, { padding: 140, maxZoom: 20.5, duration: 450 });
   }, [selectedGrave]);
+
+  useEffect(() => {
+    if (!selectedLot || !mapRef.current) return;
+
+    const bounds = extendGeometryBounds(undefined, selectedLot.geometry);
+    if (!bounds) return;
+    mapRef.current.fitBounds(bounds, { padding: 140, maxZoom: 20.5, duration: 450 });
+  }, [selectedLot]);
 
   const zoomIn = useCallback(() => {
     mapRef.current?.zoomIn({ duration: 250 });
