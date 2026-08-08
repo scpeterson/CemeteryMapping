@@ -1,4 +1,5 @@
 import { setAuditContext } from "./auditContext.mjs";
+import { splitRecordedDate } from "./burialRepository.mjs";
 import { ownershipRightNotes, selectOwnershipTargets } from "./cemeteryOwnershipQueries.mjs";
 
 export async function createOwnershipEvent(
@@ -54,21 +55,31 @@ export async function createOwnershipEvent(
         )
       ).rows[0]?.id;
 
+    const recordedEffectiveDate = splitRecordedDate(effectiveDate);
     const eventResult = await client.query(
       `
         INSERT INTO ownership_events (
           cemetery_id,
           event_type,
           effective_date,
+          effective_date_text,
           recorded_by,
           document_reference,
           notes,
           source_table
         )
-        VALUES ($1, $2, NULLIF($3, '')::date, $4, NULLIF($5, ''), NULLIF($6, ''), 'manual_ownership_workflow')
+        VALUES ($1, $2, $3::date, $4, $5, NULLIF($6, ''), NULLIF($7, ''), 'manual_ownership_workflow')
         RETURNING id::text
       `,
-      [cemeteryId, eventType, effectiveDate ?? "", actorUser?.email ?? "Cemetery database", documentReference ?? "", notes ?? ""],
+      [
+        cemeteryId,
+        eventType,
+        recordedEffectiveDate.date,
+        recordedEffectiveDate.text,
+        actorUser?.email ?? "Cemetery database",
+        documentReference ?? "",
+        notes ?? "",
+      ],
     );
     const eventId = eventResult.rows[0].id;
 

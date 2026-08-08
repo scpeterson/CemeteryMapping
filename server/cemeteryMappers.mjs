@@ -100,7 +100,7 @@ export function toOwnershipEvent(owner) {
     id: owner.ownership_event_id ?? `owner-${owner.id}`,
     ownerIds: [owner.id],
     eventType,
-    effectiveDate: dateOnly(owner.effective_date ?? owner.sale_date ?? owner.recorded_at ?? owner.created_at) ?? "1900-01-01",
+    effectiveDate: owner.effective_date_text ?? dateOnly(owner.effective_date ?? owner.sale_date ?? owner.recorded_at ?? owner.created_at) ?? "1900-01-01",
     recordedBy: owner.recorded_by ?? "Cemetery database",
     documentReference: owner.document_reference ?? undefined,
     notes: owner.notes,

@@ -7,7 +7,7 @@ export function ownershipRightNotes(right) {
 const legacyOwnerSelect = `
   owners.id::text AS id, owners.gravesite_uuid::text, owners.owner, owners.co_owner,
   NULL::text AS display_name, owners.full_address, owners.phone, owners.email, owners.sale_date,
-  NULL::date AS effective_date, owners.created_at AS recorded_at, 'purchase'::text AS event_type,
+  NULL::date AS effective_date, NULL::text AS effective_date_text, owners.created_at AS recorded_at, 'purchase'::text AS event_type,
   'Cemetery database'::text AS recorded_by, NULL::text AS document_reference, owners.notes,
   owners.created_at, NULL::text AS ownership_event_id
 `;
@@ -27,7 +27,7 @@ export async function selectOwnersForCemeteries(client, cemeteryIds) {
         COALESCE(rights.gravesite_uuid::text, target_gravesites.id::text) AS gravesite_uuid,
         NULL::text AS owner, NULL::text AS co_owner, rights.display_name,
         NULL::text AS full_address, NULL::text AS phone, NULL::text AS email, NULL::date AS sale_date,
-        rights.effective_date, rights.recorded_at, rights.event_type, ownership_events.recorded_by,
+        rights.effective_date, ownership_events.effective_date_text, rights.recorded_at, rights.event_type, ownership_events.recorded_by,
         ownership_events.document_reference,
         concat_ws(' ', rights.right_type, rights.target_type, ownership_events.notes) AS notes,
         rights.recorded_at AS created_at,
@@ -63,7 +63,7 @@ export async function selectOwnersForGrave(client, graveUuid) {
         selected_grave.id::text AS gravesite_uuid,
         NULL::text AS owner, NULL::text AS co_owner, current_ownership_right_owners.display_name,
         NULL::text AS full_address, NULL::text AS phone, NULL::text AS email, NULL::date AS sale_date,
-        current_ownership_right_owners.effective_date, current_ownership_right_owners.recorded_at,
+        current_ownership_right_owners.effective_date, ownership_events.effective_date_text, current_ownership_right_owners.recorded_at,
         current_ownership_right_owners.event_type, ownership_events.recorded_by,
         ownership_events.document_reference,
         concat_ws(' ', current_ownership_right_owners.right_type, current_ownership_right_owners.target_type, ownership_events.notes) AS notes,
