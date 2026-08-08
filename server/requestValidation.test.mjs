@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { searchCemetery } from "./cemeterySearch.mjs";
-import { validateBurialPayload } from "./routes/cemeteryRouteValidation.mjs";
+import { validateBurialPayload, validateOwnershipEventPayload } from "./routes/cemeteryRouteValidation.mjs";
 import {
   BadRequestError,
   validateCemeteryId,
@@ -140,6 +140,17 @@ test("burial payload validation accepts recorded cemetery date text", () => {
   assert.equal(validateBurialPayload({ ...basePayload, birthDate: "Nov. 1929," }).birthDate, "Nov. 1929,");
   assert.equal(validateBurialPayload({ ...basePayload, deathDate: "December 16 1965" }).deathDate, "December 16 1965");
   assert.equal(validateBurialPayload({ ...basePayload, veteran: true, militaryEnlistedDate: "1942-10-02" }).militaryEnlistedDate, "1942-10-02");
+});
+
+test("ownership payload validation accepts a year-only effective date", () => {
+  const payload = validateOwnershipEventPayload({
+    ownerDisplayName: "Josephine K Bladel",
+    eventType: "deed",
+    targetScope: "selected_lot",
+    effectiveDate: "1951",
+  });
+
+  assert.equal(payload.effectiveDate, "1951");
 });
 
 test("burial payload validation rejects discharge before enlistment", () => {

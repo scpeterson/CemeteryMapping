@@ -45,6 +45,7 @@ type DetailPanelProps = {
   summary?: GraveSpaceSummary;
   lot?: CemeteryLot;
   lotGraves?: GraveSpaceSummary[];
+  cemeteryGraves?: GraveSpaceSummary[];
   lotRestrictedAreas?: LotRestrictedArea[];
   grave?: GraveSpace;
   standaloneHeadstoneSummary?: HeadstoneSummary;
@@ -240,17 +241,19 @@ function blankOwnershipForm(grave: GraveSpace): SaveOwnershipEventInput {
   };
 }
 
-function OwnershipEventForm({ grave, onSave }: { grave: GraveSpace; onSave: (event: SaveOwnershipEventInput) => Promise<void> }) {
+function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpace; cemeteryGraves: GraveSpaceSummary[]; onSave: (event: SaveOwnershipEventInput) => Promise<void> }) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<SaveOwnershipEventInput>(() => blankOwnershipForm(grave));
-  const [listedGravesites, setListedGravesites] = useState("");
+  const [selectedGravesiteIds, setSelectedGravesiteIds] = useState<string[]>([]);
+  const [gravesiteFilter, setGravesiteFilter] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
 
   const startEditing = () => {
     setForm(blankOwnershipForm(grave));
-    setListedGravesites("");
+    setSelectedGravesiteIds([]);
+    setGravesiteFilter("");
     setMessage(undefined);
     setError(undefined);
     setIsEditing(true);
@@ -262,13 +265,7 @@ function OwnershipEventForm({ grave, onSave }: { grave: GraveSpace; onSave: (eve
     setMessage(undefined);
     setError(undefined);
     try {
-      const targetGravesiteIds =
-        form.targetScope === "listed_gravesites"
-          ? listedGravesites
-              .split(/[\s,]+/u)
-              .map((value) => value.trim())
-              .filter(Boolean)
-          : [];
+      const targetGravesiteIds = form.targetScope === "listed_gravesites" ? selectedGravesiteIds : [];
       await onSave({ ...form, targetGravesiteIds });
       setMessage("Ownership event recorded.");
       setIsEditing(false);
@@ -290,6 +287,14 @@ function OwnershipEventForm({ grave, onSave }: { grave: GraveSpace; onSave: (eve
       </div>
     );
   }
+
+  const normalizedFilter = gravesiteFilter.trim().toLowerCase();
+  const gravesiteOptions = [...cemeteryGraves]
+    .sort((a, b) => formatGraveLabel(a).localeCompare(formatGraveLabel(b), undefined, { numeric: true }))
+    .filter((candidate) => !normalizedFilter || `${candidate.id} ${formatGraveLabel(candidate)}`.toLowerCase().includes(normalizedFilter));
+  const toggleGravesite = (id: string) => {
+    setSelectedGravesiteIds((current) => (current.includes(id) ? current.filter((candidate) => candidate !== id) : [...current, id]));
+  };
 
   return (
     <form className="ownership-form" onSubmit={(event) => void save(event)}>
@@ -323,20 +328,28 @@ function OwnershipEventForm({ grave, onSave }: { grave: GraveSpace; onSave: (eve
         </select>
       </label>
       {form.targetScope === "listed_gravesites" ? (
-        <label className="ownership-wide-field">
-          Gravesite IDs
-          <textarea
-            value={listedGravesites}
-            onChange={(event) => setListedGravesites(event.target.value)}
-            rows={3}
-            placeholder={`Example: ${formatGraveLabel(grave)}, G-050`}
-            required
-          />
-        </label>
+        <fieldset className="ownership-wide-field ownership-gravesite-picker">
+          <legend>Gravesites</legend>
+          <input value={gravesiteFilter} onChange={(event) => setGravesiteFilter(event.target.value)} placeholder="Filter by section, lot, space, or ID" aria-label="Filter gravesites" />
+          <div className="ownership-gravesite-options">
+            {gravesiteOptions.map((candidate) => (
+              <label key={candidate.id}>
+                <input type="checkbox" checked={selectedGravesiteIds.includes(candidate.id)} onChange={() => toggleGravesite(candidate.id)} />
+                <span>{formatGraveLabel(candidate)}</span>
+              </label>
+            ))}
+            {gravesiteOptions.length === 0 ? <p>No matching gravesites.</p> : null}
+          </div>
+          <small>{selectedGravesiteIds.length} selected</small>
+        </fieldset>
       ) : null}
       <label>
         Effective date
-        <input type="date" value={form.effectiveDate} onChange={(event) => setForm((current) => ({ ...current, effectiveDate: event.target.value }))} />
+        <input
+          value={form.effectiveDate}
+          placeholder="YYYY, YYYY-MM, or exact date"
+          onChange={(event) => setForm((current) => ({ ...current, effectiveDate: event.target.value }))}
+        />
       </label>
       <label className="ownership-wide-field">
         Document reference
@@ -355,7 +368,7 @@ function OwnershipEventForm({ grave, onSave }: { grave: GraveSpace; onSave: (eve
         <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
           Cancel
         </button>
-        <button type="submit" disabled={isSaving || !form.ownerDisplayName.trim() || (form.targetScope === "listed_gravesites" && !listedGravesites.trim())}>
+        <button type="submit" disabled={isSaving || !form.ownerDisplayName.trim() || (form.targetScope === "listed_gravesites" && selectedGravesiteIds.length === 0)}>
           {isSaving ? "Recording..." : "Record ownership"}
         </button>
       </div>
@@ -3139,6 +3152,7 @@ function GraveDetailPanel({
   ownersById,
   summary,
   grave,
+  cemeteryGraves,
   headstones,
   northHillsEvidence,
   mediaAssets,
@@ -3174,6 +3188,7 @@ function GraveDetailPanel({
   ownersById: Map<string, Owner>;
   summary: GraveSpaceSummary;
   grave?: GraveSpace;
+  cemeteryGraves: GraveSpaceSummary[];
   headstones: Headstone[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
   mediaAssets: MediaAsset[];
@@ -3267,7 +3282,9 @@ function GraveDetailPanel({
                   <p className="muted">No current ownership is recorded.</p>
                 )}
               </div>
-              {canUpdateGravesites ? <OwnershipEventForm grave={grave} onSave={onSaveOwnershipEvent} /> : null}
+              {canUpdateGravesites ? (
+                <OwnershipEventForm grave={grave} cemeteryGraves={cemeteryGraves} onSave={onSaveOwnershipEvent} />
+              ) : null}
             </section>
           ) : null}
 
@@ -3442,6 +3459,7 @@ export function DetailPanel({
   summary,
   lot,
   lotGraves = [],
+  cemeteryGraves = [],
   lotRestrictedAreas = [],
   grave,
   standaloneHeadstoneSummary,
@@ -3537,6 +3555,7 @@ export function DetailPanel({
       ownersById={ownersById}
       summary={summary}
       grave={grave}
+      cemeteryGraves={cemeteryGraves}
       headstones={headstones}
       northHillsEvidence={northHillsEvidence}
       mediaAssets={mediaAssets}

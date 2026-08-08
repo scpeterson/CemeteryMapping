@@ -240,6 +240,10 @@ export default function App() {
         grave.lot === selectedLot.id,
     );
   }, [data.graves, selectedLot]);
+  const selectedCemeteryGraves = useMemo(
+    () => (selectedGrave ? data.graves.filter((grave) => grave.cemeteryId === selectedGrave.cemeteryId) : []),
+    [data.graves, selectedGrave],
+  );
   const selectedLotRestrictedAreas = useMemo(() => {
     if (!selectedLot) return [];
     return (data.lotRestrictedAreas ?? []).filter((area) => area.cemeteryId === selectedLot.cemeteryId && area.lotId === selectedLot.id);
@@ -678,6 +682,7 @@ export default function App() {
         summary={selectedGrave}
         lot={selectedLot}
         lotGraves={selectedLotGraves}
+        cemeteryGraves={selectedCemeteryGraves}
         lotRestrictedAreas={selectedLotRestrictedAreas}
         grave={selectedGraveDetails}
         standaloneHeadstoneSummary={selectedHeadstone}

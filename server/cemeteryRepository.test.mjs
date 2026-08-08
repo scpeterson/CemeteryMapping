@@ -848,6 +848,7 @@ test("createOwnershipEvent records a scoped whole-lot ownership event", async ()
     "11111111-1111-4111-8111-111111111111",
     "deed",
     "2026-05-31",
+    "2026-05-31",
     "power@example.test",
     "Deed book 1 page 2",
     "Entered from scanned deed.",
