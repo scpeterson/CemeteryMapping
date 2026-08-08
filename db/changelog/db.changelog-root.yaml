@@ -874,3 +874,6 @@ databaseChangeLog:
   - include:
       file: changes/293-ownership-effective-date-text.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/294-split-c-0307-wagner-gravesites.sql
+      relativeToChangelogFile: true
