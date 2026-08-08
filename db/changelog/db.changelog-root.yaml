@@ -877,3 +877,9 @@ databaseChangeLog:
   - include:
       file: changes/294-split-c-0307-wagner-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/295-split-c-0311-king-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/296-correct-c-0311-william-king-name.sql
+      relativeToChangelogFile: true
