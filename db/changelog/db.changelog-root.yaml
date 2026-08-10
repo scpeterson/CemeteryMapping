@@ -904,3 +904,6 @@ databaseChangeLog:
   - include:
       file: changes/303-multiple-vase-grave-features.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/304-split-c-0328-knobeloch-gravesites.sql
+      relativeToChangelogFile: true
