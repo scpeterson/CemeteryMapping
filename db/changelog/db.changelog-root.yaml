@@ -919,3 +919,9 @@ databaseChangeLog:
   - include:
       file: changes/308-military-decorations-and-navy-mm2.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/309-split-c-0156-gropp-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/310-add-eckendahl-field-photo-marker.sql
+      relativeToChangelogFile: true
