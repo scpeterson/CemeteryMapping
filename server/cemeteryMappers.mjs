@@ -62,8 +62,10 @@ export function toBurial(burial) {
     burialDate: dateOnly(burial.burial_date),
     recordStatusCode: burial.record_status_code ?? "interred",
     recordStatusLabel: burial.record_status_label ?? "Interred",
-    intermentType: burial.interment_type ?? "casket",
-    intermentTypeLabel: burial.interment_type_label ?? (burial.interment_type === "urn" ? "Funeral urn" : "Casket"),
+    intermentType: burial.interment_type ?? "unknown",
+    intermentTypeLabel:
+      burial.interment_type_label ??
+      (burial.interment_type === "urn" ? "Funeral urn" : burial.interment_type === "casket" ? "Casket" : "Unknown or not applicable"),
     funeralHome: burial.funeral_home ?? "",
     veteran: isVeteran,
     militaryBranchCode: burial.military_branch_code ?? "",

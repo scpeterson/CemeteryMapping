@@ -386,7 +386,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     deathDate: burial.person.deathDate ?? "",
     deathPlaceId: burial.deathPlace?.id ?? "",
     burialDate: burial.burialDate ?? "",
-    intermentType: burial.intermentType ?? "casket",
+    intermentType: burial.intermentType ?? "unknown",
     recordStatusCode: burial.recordStatusCode ?? "interred",
     funeralHome: burial.funeralHome ?? "",
     veteran: burial.veteran ?? false,
@@ -420,6 +420,7 @@ function intermentTypeOptions(lookups: HeadstoneLookups) {
     : [
         { id: "legacy-casket", code: "casket", label: "Casket" },
         { id: "legacy-urn", code: "urn", label: "Funeral urn" },
+        { id: "legacy-unknown", code: "unknown", label: "Unknown or not applicable" },
       ];
 }
 

@@ -214,7 +214,7 @@ export function validateGraveSpacePayload(body) {
 }
 
 export function validateBurialPayload(body) {
-  const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "casket";
+  const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "unknown";
   if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");
   const recordStatusCode = optionalText(body?.recordStatusCode, "Burial record status", 50) || "interred";
   if (!["interred", "pre_need_inscription", "memorial", "unknown"].includes(recordStatusCode)) {

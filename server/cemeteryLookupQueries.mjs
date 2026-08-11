@@ -42,6 +42,7 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
           rows: [
             { id: "legacy-casket", code: "casket", label: "Casket" },
             { id: "legacy-urn", code: "urn", label: "Funeral urn" },
+            { id: "legacy-unknown", code: "unknown", label: "Unknown or not applicable" },
           ],
         };
     const burialRecordStatuses = (await burialRecordStatusColumnExists(client))
