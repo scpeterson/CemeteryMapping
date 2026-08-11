@@ -155,8 +155,8 @@ erDiagram
 | `marker_material_types` | Controlled marker materials. |
 | `headstone_condition_types` | Controlled marker condition values. |
 | `headstone_vase_types`, `headstone_vase_material_types`, `headstone_vase_placement_types` | Marker vase classification fields used when a vase is part of the marker record. |
-| `grave_features` | Physical features such as vases, flag holders, veteran star holders, flower holders, and similar items. A feature can link to a gravesite, a marker, or both. |
-| `grave_feature_types`, `grave_feature_subtypes`, `grave_feature_material_types`, `grave_feature_placement_types` | Feature dropdown values and classification hierarchy. |
+| `grave_features` | Physical features such as vases, memorial plaques, flag holders, veteran star holders, flower holders, and similar items. A feature can link to a gravesite, a marker, or both. Record each physical vase as a separate row so multiple vases can retain independent attributes. |
+| `grave_feature_types`, `grave_feature_subtypes`, `grave_feature_material_types`, `grave_feature_placement_types` | Feature dropdown values and classification hierarchy. Memorial plaques include a government-issued veteran plaque subtype. |
 | `media_assets` | Uploaded media metadata, including upload information and captured-at dates read from EXIF or entered manually. |
 | `gravesite_media_assets`, `headstone_media_assets` | Ordered photo/link tables for gravesites and markers. These allow multiple photos without duplicating the media record itself. |
 | `maintenance_records` | Dated issue/action history for gravesites and markers, such as cleaned, repaired, listing, broken, illegible, grass needed, or leveling needed. |
