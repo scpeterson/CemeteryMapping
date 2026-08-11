@@ -381,6 +381,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     firstName: burial.person.firstName,
     lastName: burial.person.lastName === "Unknown" ? "" : burial.person.lastName,
     maidenName: burial.person.maidenName ?? "",
+    nameSuffix: burial.person.nameSuffix ?? "",
     birthDate: burial.person.birthDate ?? "",
     deathDate: burial.person.deathDate ?? "",
     deathPlaceId: burial.deathPlace?.id ?? "",
@@ -598,6 +599,14 @@ function BurialRecord({
         <label>
           Maiden name
           <input value={form.maidenName} onChange={(event) => setForm((current) => ({ ...current, maidenName: event.target.value }))} />
+        </label>
+        <label>
+          Title / credentials
+          <input
+            value={form.nameSuffix}
+            placeholder="M.D., Ph.D., Jr."
+            onChange={(event) => setForm((current) => ({ ...current, nameSuffix: event.target.value }))}
+          />
         </label>
         <label>
           Birth date

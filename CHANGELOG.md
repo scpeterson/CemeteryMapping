@@ -6,6 +6,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added a burial name suffix/title field for professional credentials and post-nominal titles such as `M.D.`.
 - Version metadata is exposed through the UI environment badge, `/api/version`, and `/api/health`.
 - Release preparation scripts can bump `package.json` without creating a git tag.
 - Historic lot map observations can be staged as auditable gravesite evidence before any lot assignment promotion.

@@ -232,6 +232,7 @@ export function validateBurialPayload(body) {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
     lastName: optionalText(body?.lastName, "Last name", 100) ?? "",
     maidenName: optionalText(body?.maidenName, "Maiden name", 150) ?? "",
+    nameSuffix: optionalText(body?.nameSuffix, "Title or credentials", 100) ?? "",
     birthDate: optionalRecordedDate(body?.birthDate, "Birth date") ?? "",
     deathDate: optionalRecordedDate(body?.deathDate, "Death date") ?? "",
     deathPlaceId,

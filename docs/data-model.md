@@ -93,7 +93,7 @@ erDiagram
 
 | Table | Purpose |
 | --- | --- |
-| `burials` | Person/burial facts associated with a gravesite, including names, date display values, interment type, record status, veteran status, branch, rank, and war service. |
+| `burials` | Person/burial facts associated with a gravesite, including names, an optional suffix/title for credentials such as `M.D.`, date display values, interment type, record status, veteran status, branch, rank, and war service. |
 | `burial_interment_types` | Dropdown values for interment method, such as casket or cremation. |
 | `burial_record_status_types` | Distinguishes normal burials from records such as living/pre-need marker entries. |
 | `military_branch_types` | Controlled branch/service values, including non-branch veteran organizations used by source records. |

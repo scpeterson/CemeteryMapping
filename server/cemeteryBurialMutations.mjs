@@ -56,6 +56,7 @@ async function selectBurialMutationState(client, id) {
         burials.first_name,
         burials.last_name,
         burials.maiden_name,
+        burials.name_suffix,
         burials.full_name,
         burials.birth_date,
         ${recordedDateTextSql.select},
@@ -96,7 +97,7 @@ async function selectBurialById(client, id) {
   const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.name_suffix, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
       FROM burials
       ${deathPlaceSql.join}
       ${intermentTypeSql.join}
@@ -127,7 +128,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
       return undefined;
     }
 
-    const fullName = [burial.firstName, burial.lastName].filter(Boolean).join(" ") || null;
+    const fullName = [burial.firstName, burial.lastName, burial.nameSuffix].filter(Boolean).join(" ") || null;
     const effectiveIntermentType = burial.intermentType || "casket";
     if (!(await activeIntermentTypeExists(client, effectiveIntermentType))) {
       throw new Error(`Unsupported interment type: ${effectiveIntermentType}.`);
@@ -308,6 +309,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
               ELSE reviewed_at
             END`;
     }
+    const nameSuffixParameter = updateValues.length + 1;
+    updateValues.push(burial.nameSuffix || null);
     const deathPlaceParameter = updateValues.length + 1;
     updateValues.push(burial.deathPlaceId || null);
     const updateResult = await client.query(
@@ -316,6 +319,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
         SET first_name = $2,
             last_name = $3,
             maiden_name = $4,
+            name_suffix = $${nameSuffixParameter},
             full_name = $5,
             birth_date = $6::date,
             death_date = $7::date,
@@ -332,6 +336,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           first_name,
           last_name,
           maiden_name,
+          name_suffix,
           full_name,
           birth_date,
           ${recordedDateTextSql.return},

@@ -62,9 +62,9 @@ export function formatAdminTimestamp(value?: string) {
   return value ? new Date(value).toLocaleString() : "Not recorded";
 }
 
-export function fullName(person: { firstName: string; middleName?: string; maidenName?: string; lastName: string }) {
+export function fullName(person: { firstName: string; middleName?: string; maidenName?: string; lastName: string; nameSuffix?: string }) {
   const maidenName = person.maidenName ? `(${person.maidenName})` : undefined;
-  return [person.firstName, person.middleName, maidenName, person.lastName].filter(Boolean).join(" ");
+  return [person.firstName, person.middleName, maidenName, person.lastName, person.nameSuffix].filter(Boolean).join(" ");
 }
 
 export function formatGraveLabel(grave: Pick<GraveSpaceSummary, "section" | "lot" | "space">) {

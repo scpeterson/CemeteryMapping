@@ -910,3 +910,6 @@ databaseChangeLog:
   - include:
       file: changes/305-split-c-0329-knobeloch-torres-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/306-burial-name-suffix.sql
+      relativeToChangelogFile: true
