@@ -83,6 +83,7 @@ export type Person = {
   middleName?: string;
   lastName: string;
   maidenName?: string;
+  nameSuffix?: string;
   birthDate?: string;
   deathDate?: string;
 };
@@ -502,6 +503,7 @@ export type SaveBurialInput = {
   firstName: string;
   lastName: string;
   maidenName: string;
+  nameSuffix: string;
   birthDate: string;
   deathDate: string;
   deathPlaceId: string;
