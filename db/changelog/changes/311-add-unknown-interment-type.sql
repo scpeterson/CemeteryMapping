@@ -32,3 +32,4 @@ WHERE deleted_at IS NULL
 
 --rollback UPDATE burials SET interment_type_id = (SELECT id FROM burial_interment_types WHERE code = 'casket'), updated_at = now() WHERE deleted_at IS NULL AND lower(trim(COALESCE(full_name, ''))) = 'terry m eckendahl' AND burial_record_status_type_id = (SELECT id FROM burial_record_status_types WHERE code = 'pre_need_inscription');
 --rollback DELETE FROM burial_interment_types WHERE code = 'unknown';
+--rollback DELETE FROM audit_events WHERE target_table = 'burial_interment_types' AND action = 'delete' AND previous_values ->> 'code' = 'unknown';

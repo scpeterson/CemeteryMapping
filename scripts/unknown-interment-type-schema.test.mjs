@@ -10,4 +10,5 @@ test("unknown interment type supports pre-need and unverified records", async ()
   assert.match(sql, /Unknown or not applicable/u);
   assert.match(sql, /terry m eckendahl/u);
   assert.match(sql, /pre_need_inscription/u);
+  assert.match(sql, /previous_values ->> 'code' = 'unknown'/u);
 });
