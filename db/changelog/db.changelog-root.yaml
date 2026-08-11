@@ -931,3 +931,6 @@ databaseChangeLog:
   - include:
       file: changes/312-migration-prerequisite-assertions.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/313-reviewed-spatial-validation-exceptions.sql
+      relativeToChangelogFile: true

@@ -1,10 +1,17 @@
 WITH normalized_issues AS (
   SELECT
     CASE
-      WHEN scope = 'production'
-        AND table_name = 'gravesites'
-        AND issue_code = 'overlapping_gravesite'
-        AND gravesite_id LIKE 'TLC-GPS-%'
+      WHEN EXISTS (
+        SELECT 1
+        FROM reviewed_spatial_validation_exceptions exception
+        WHERE exception.scope = spatial_validation_issues.scope
+          AND exception.table_name = spatial_validation_issues.table_name
+          AND exception.issue_code = spatial_validation_issues.issue_code
+          AND exception.record_identifier = spatial_validation_issues.gravesite_id
+          AND exception.issue_detail = spatial_validation_issues.issue_detail
+          AND exception.is_active
+          AND (exception.expires_at IS NULL OR exception.expires_at > now())
+      )
         THEN 'warning'
       ELSE severity
     END AS severity,
