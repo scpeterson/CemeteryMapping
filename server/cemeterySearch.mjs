@@ -96,6 +96,16 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
           AND lower(coalesce(${militaryWarServiceValue}, '')) LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Military decoration', military_decoration_types.label
+        FROM burials
+        JOIN burial_military_decorations ON burial_military_decorations.burial_uuid = burials.id
+        JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id
+        WHERE $1 <> ''
+          AND burials.gravesite_uuid = base_graves.grave_uuid
+          AND burials.deleted_at IS NULL
+          AND lower(military_decoration_types.label) LIKE '%' || $1 || '%'
       `;
   const result = await pool.query(
     `

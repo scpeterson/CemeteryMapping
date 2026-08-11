@@ -94,6 +94,7 @@ erDiagram
 | Table | Purpose |
 | --- | --- |
 | `burials` | Person/burial facts associated with a gravesite, including names, an optional suffix/title for credentials such as `M.D.`, date display values, interment type, record status, veteran status, branch, rank, and war service. |
+| `military_decoration_types`, `burial_military_decorations` | Controlled military decorations and their many-to-many burial relationships. Initial values include Purple Heart and Bronze Star Medal. Decorations supplement veteran status rather than replacing it. |
 | `burial_interment_types` | Dropdown values for interment method, such as casket or cremation. |
 | `burial_record_status_types` | Distinguishes normal burials from records such as living/pre-need marker entries. |
 | `military_branch_types` | Controlled branch/service values, including non-branch veteran organizations used by source records. |
@@ -271,7 +272,7 @@ Lookup tables are intentionally numerous. They keep dropdown values consistent, 
 Common lookup groups include:
 
 - Burial classification: `burial_interment_types`, `burial_record_status_types`
-- Military service: `military_branch_types`, `military_rank_types`, `military_war_service_types`
+- Military service: `military_branch_types`, `military_rank_types`, `military_war_service_types`, `military_decoration_types`
 - Marker classification: `marker_types`, `marker_scope_types`, `marker_material_types`, `headstone_condition_types`
 - Vase and feature classification: `headstone_vase_*`, `grave_feature_*`
 - Maintenance classification: `maintenance_issue_types`, `maintenance_action_types`, `maintenance_priority_types`

@@ -266,6 +266,12 @@ async function runMarkerBurialPages(client, definition, parameters, cemeteryIds)
         military_branch_types.label AS military_branch,
         military_rank_types.label AS military_rank,
         military_war_service_types.label AS military_war_service,
+        COALESCE((
+          SELECT jsonb_agg(jsonb_build_object('code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label)
+          FROM burial_military_decorations
+          JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id
+          WHERE burial_military_decorations.burial_uuid = burials.id
+        ), '[]'::jsonb) AS military_decorations,
         burials.notes AS burial_notes,
         nhg_evidence.nhg_text
       FROM headstones

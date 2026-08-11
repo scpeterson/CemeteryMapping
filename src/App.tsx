@@ -85,6 +85,7 @@ const emptyHeadstoneLookups: HeadstoneLookups = {
   militaryBranches: [],
   militaryRanks: [],
   militaryWarServices: [],
+  militaryDecorations: [],
   verifiedPlaces: [],
   maintenanceIssueTypes: [],
   maintenanceActionTypes: [],

@@ -130,6 +130,7 @@ test("burial payload validation accepts recorded cemetery date text", () => {
     militaryBranchCode: "",
     militaryRankCode: "",
     militaryWarServiceCode: "",
+    militaryDecorationCodes: ["purple_heart"],
     militaryEnlistedDate: "",
     militaryDischargedDate: "",
     notes: "",
@@ -138,6 +139,7 @@ test("burial payload validation accepts recorded cemetery date text", () => {
   assert.equal(validateBurialPayload(basePayload).deathDate, "Dec 16, 1965");
   assert.equal(validateBurialPayload(basePayload).maidenName, "Smith");
   assert.equal(validateBurialPayload(basePayload).nameSuffix, "M.D.");
+  assert.deepEqual(validateBurialPayload(basePayload).militaryDecorationCodes, ["purple_heart"]);
   assert.equal(validateBurialPayload({ ...basePayload, deathPlaceId: "12121212-1212-4121-8121-121212121212" }).deathPlaceId, "12121212-1212-4121-8121-121212121212");
   assert.equal(validateBurialPayload({ ...basePayload, birthDate: "Nov. 1929," }).birthDate, "Nov. 1929,");
   assert.equal(validateBurialPayload({ ...basePayload, deathDate: "December 16 1965" }).deathDate, "December 16 1965");

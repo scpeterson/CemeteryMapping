@@ -74,6 +74,7 @@ export function toBurial(burial) {
     militaryRankPayGrade: burial.military_rank_pay_grade ?? "",
     militaryWarServiceCode: burial.military_war_service_code ?? "",
     militaryWars: burial.military_wars ?? "",
+    militaryDecorations: Array.isArray(burial.military_decorations) ? burial.military_decorations : [],
     militaryEnlistedDate: dateOnly(burial.military_enlisted_date),
     militaryDischargedDate: dateOnly(burial.military_discharged_date),
     recordNotes: burial.notes ?? "",

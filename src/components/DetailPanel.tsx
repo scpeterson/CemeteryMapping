@@ -393,6 +393,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     militaryBranchCode: burial.militaryBranchCode ?? "",
     militaryRankCode: burial.militaryRankCode ?? "",
     militaryWarServiceCode: burial.militaryWarServiceCode ?? "",
+    militaryDecorationCodes: (burial.militaryDecorations ?? []).map((decoration) => decoration.code),
     militaryEnlistedDate: burial.militaryEnlistedDate ?? "",
     militaryDischargedDate: burial.militaryDischargedDate ?? "",
     notes: burial.recordNotes ?? "",
@@ -555,6 +556,7 @@ function BurialRecord({
       militaryBranchCode: isVeteran ? current.militaryBranchCode : "",
       militaryRankCode: isVeteran ? current.militaryRankCode : "",
       militaryWarServiceCode: isVeteran ? current.militaryWarServiceCode : "",
+      militaryDecorationCodes: isVeteran ? current.militaryDecorationCodes : [],
       militaryEnlistedDate: isVeteran ? current.militaryEnlistedDate : "",
       militaryDischargedDate: isVeteran ? current.militaryDischargedDate : "",
     }));
@@ -730,6 +732,24 @@ function BurialRecord({
             ))}
           </select>
         </label>
+        <fieldset className="burial-wide-field burial-decoration-field" disabled={!form.veteran}>
+          <legend>Military decorations</legend>
+          {lookups.militaryDecorations.map((decoration) => (
+            <label key={decoration.id} className="burial-checkbox-field">
+              <input
+                type="checkbox"
+                checked={form.militaryDecorationCodes.includes(decoration.code)}
+                onChange={(event) => setForm((current) => ({
+                  ...current,
+                  militaryDecorationCodes: event.target.checked
+                    ? [...current.militaryDecorationCodes, decoration.code]
+                    : current.militaryDecorationCodes.filter((code) => code !== decoration.code),
+                }))}
+              />
+              {decoration.label}
+            </label>
+          ))}
+        </fieldset>
         {form.veteran ? (
           <>
             <label>
@@ -840,9 +860,14 @@ function BurialRecord({
           <dd>{burial.recordStatusLabel ?? recordStatusOptions.find((option) => option.code === burial.recordStatusCode)?.label ?? "Interred"}</dd>
         </div>
       </dl>
-      {burial.veteran || serviceText ? (
+      {burial.veteran || serviceText || burial.militaryDecorations?.length ? (
         <p className="burial-service">
           {burial.veteran ? <span className="burial-veteran-badge">Veteran</span> : null}
+          {(burial.militaryDecorations ?? []).map((decoration) => (
+            <span key={decoration.id} className={decoration.code === "purple_heart" ? "burial-decoration-badge is-purple-heart" : "burial-decoration-badge"}>
+              {decoration.label}
+            </span>
+          ))}
           {serviceText ? <span>{serviceText}</span> : null}
           {burial.militaryEnlistedDate ? <span>Enlisted {formatDate(burial.militaryEnlistedDate)}</span> : null}
           {burial.militaryDischargedDate ? <span>Discharged {formatDate(burial.militaryDischargedDate)}</span> : null}

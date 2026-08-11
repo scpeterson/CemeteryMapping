@@ -149,6 +149,7 @@ export type Burial = {
   militaryRankPayGrade?: string;
   militaryWarServiceCode?: string;
   militaryWars?: string;
+  militaryDecorations?: LookupOption[];
   militaryEnlistedDate?: string;
   militaryDischargedDate?: string;
   recordNotes?: string;
@@ -367,6 +368,7 @@ export type HeadstoneLookups = {
     }
   >;
   militaryWarServices: LookupOption[];
+  militaryDecorations: LookupOption[];
   verifiedPlaces: Array<LookupOption & Omit<VerifiedPlace, "id" | "displayName">>;
   maintenanceIssueTypes: LookupOption[];
   maintenanceActionTypes: LookupOption[];
@@ -515,6 +517,7 @@ export type SaveBurialInput = {
   militaryBranchCode: string;
   militaryRankCode: string;
   militaryWarServiceCode: string;
+  militaryDecorationCodes: string[];
   militaryEnlistedDate: string;
   militaryDischargedDate: string;
   notes: string;

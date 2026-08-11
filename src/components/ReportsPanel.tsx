@@ -31,6 +31,13 @@ function isVeteranReportValue(value: unknown) {
   return ["yes", "y", "true", "1", "veteran"].includes(value.trim().toLowerCase());
 }
 
+function reportDecorations(value: unknown): Array<{ code: string; label: string }> {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is { code: string; label: string } => (
+    typeof item === "object" && item !== null && typeof (item as { code?: unknown }).code === "string" && typeof (item as { label?: unknown }).label === "string"
+  ));
+}
+
 function DetailItem({
   label,
   value,
@@ -140,6 +147,11 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
               <h3 className="marker-burial-person-name">
                 <span>{reportText(burial, "person")}</span>
                 {isVeteranReportValue(burial.veteran) ? <span className="burial-veteran-badge">Veteran</span> : null}
+                {reportDecorations(burial.military_decorations).map((decoration) => (
+                  <span key={decoration.code} className={decoration.code === "purple_heart" ? "burial-decoration-badge is-purple-heart" : "burial-decoration-badge"}>
+                    {decoration.label}
+                  </span>
+                ))}
               </h3>
               <dl className="marker-burial-details">
                 <DetailItem label="Gravesite" value={burial.grave} showEmpty />
