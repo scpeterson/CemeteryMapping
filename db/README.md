@@ -225,6 +225,8 @@ The schema creates:
 - `gravesites`
 - `gravesite_status_types`
 - `burials`
+- `military_decoration_types`
+- `burial_military_decorations`
 - `owners`
 - `headstone_condition_types`
 - `marker_types`

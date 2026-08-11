@@ -438,6 +438,14 @@ test("lookup options include active military service lookups", async () => {
               ],
             };
           }
+          if (sql.includes("FROM military_decoration_types")) {
+            return {
+              rows: [
+                { id: "66666666-6666-4666-8666-666666666666", code: "purple_heart", label: "Purple Heart" },
+                { id: "77777777-7777-4777-8777-777777777777", code: "bronze_star_medal", label: "Bronze Star Medal" },
+              ],
+            };
+          }
           if (sql.includes("FROM places")) {
             return {
               rows: [
@@ -543,6 +551,10 @@ test("lookup options include active military service lookups", async () => {
   assert.deepEqual(
     lookups.militaryWarServices.map((service) => service.code),
     ["world_war_i", "world_war_ii"],
+  );
+  assert.deepEqual(
+    lookups.militaryDecorations.map((decoration) => decoration.code),
+    ["purple_heart", "bronze_star_medal"],
   );
   assert.deepEqual(
     lookups.verifiedPlaces.map((place) => place.code),
@@ -1107,6 +1119,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     military_rank_abbreviation: null,
     military_rank_pay_grade: null,
     military_wars: null,
+    military_decorations: [{ id: "66666666-6666-4666-8666-666666666666", code: "purple_heart", label: "Purple Heart" }],
     record_status_code: "interred",
     record_status_label: "Interred",
     notes: "Imported note",
@@ -1125,6 +1138,8 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
           if (sql.includes("FROM burial_record_status_types") && sql.includes("SELECT EXISTS")) return { rows: [{ exists: true }] };
           if (sql.includes("FOR UPDATE OF burials")) return { rows: [burialRow] };
           if (sql.includes("UPDATE burials")) return { rows: [burialRow] };
+          if (sql.includes("DELETE FROM burial_military_decorations")) return { rows: [] };
+          if (sql.includes("INSERT INTO burial_military_decorations")) return { rows: [{ military_decoration_type_id: "66666666-6666-4666-8666-666666666666" }] };
           if (sql.includes("FROM audit_events") && sql.includes("transaction_id")) return { rows: [] };
           if (sql.includes("INSERT INTO audit_events")) return { rows: [{ id: "77777777-7777-4777-8777-777777777777" }] };
           if (sql.includes("FROM burials") && sql.includes("LIMIT 1")) return { rows: [burialRow] };
@@ -1156,6 +1171,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
       militaryBranchCode: "army",
       militaryRankCode: "pfc",
       militaryWarServiceCode: "world_war_ii",
+      militaryDecorationCodes: ["purple_heart"],
       militaryEnlistedDate: "1942-10-02",
       militaryDischargedDate: "1943-02-13",
       notes: "Confirmed from marker photo.",
@@ -1204,5 +1220,6 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
   assert.equal(updated?.person.deathDate, "2017-10-22");
   assert.equal(updated?.intermentType, "urn");
   assert.equal(updated?.veteran, false);
+  assert.deepEqual(updated?.militaryDecorations.map((decoration) => decoration.code), ["purple_heart"]);
   assert.equal(updated?.recordNotes, "Imported note");
 });

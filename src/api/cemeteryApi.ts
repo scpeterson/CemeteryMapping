@@ -248,6 +248,7 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
     militaryBranches: lookups.militaryBranches ?? [],
     militaryRanks: lookups.militaryRanks ?? [],
     militaryWarServices: lookups.militaryWarServices ?? [],
+    militaryDecorations: lookups.militaryDecorations ?? [],
     verifiedPlaces: lookups.verifiedPlaces ?? [],
     maintenanceIssueTypes: lookups.maintenanceIssueTypes ?? [],
     maintenanceActionTypes: lookups.maintenanceActionTypes ?? [],

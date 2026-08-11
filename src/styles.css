@@ -1241,6 +1241,46 @@ h3 {
   color: #c98200;
 }
 
+.burial-decoration-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.burial-decoration-field legend {
+  padding: 0 4px;
+  font-weight: 700;
+}
+
+.burial-decoration-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid #8b7355;
+  border-radius: 999px;
+  background: #f6efe5;
+  color: #4e3b25;
+  font-size: 0.72rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.burial-decoration-badge.is-purple-heart {
+  border-color: #7450a8;
+  background: #f2eaff;
+  color: #492675;
+}
+
+.burial-decoration-badge.is-purple-heart::before {
+  content: "♥";
+  color: #68409b;
+}
+
 .record-review-badges {
   display: flex;
   flex-wrap: wrap;

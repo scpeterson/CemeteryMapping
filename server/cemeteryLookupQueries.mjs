@@ -70,6 +70,7 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
     const militaryWarServices = (await burialMilitaryWarServiceLookupExists(client))
       ? await client.query("SELECT id::text, code, label FROM military_war_service_types WHERE is_active ORDER BY sort_order, label")
       : { rows: [] };
+    const militaryDecorations = await client.query("SELECT id::text, code, label FROM military_decoration_types WHERE is_active ORDER BY sort_order, label");
     const verifiedPlaces = await client.query(`
       SELECT
         id::text,
@@ -157,6 +158,7 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
       militaryBranches: militaryBranches.rows,
       militaryRanks: militaryRanks.rows,
       militaryWarServices: militaryWarServices.rows,
+      militaryDecorations: militaryDecorations.rows,
       verifiedPlaces: verifiedPlaces.rows,
       maintenanceIssueTypes: maintenanceIssueTypes.rows,
       maintenanceActionTypes: maintenanceActionTypes.rows,

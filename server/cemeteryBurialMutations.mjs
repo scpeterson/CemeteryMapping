@@ -67,6 +67,7 @@ async function selectBurialMutationState(client, id) {
         ${recordStatusSql.select},
         burials.funeral_home,
         ${militaryServiceSql.select},
+        COALESCE((SELECT jsonb_agg(jsonb_build_object('id', military_decoration_types.id::text, 'code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label) FROM burial_military_decorations JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id WHERE burial_military_decorations.burial_uuid = burials.id), '[]'::jsonb) AS military_decorations,
         burials.notes,
         ${reviewColumnsSql},
         burials.updated_at
@@ -97,7 +98,7 @@ async function selectBurialById(client, id) {
   const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.name_suffix, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, burials.notes, ${reviewColumnsSql}
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.name_suffix, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, ${militaryServiceSql.select}, COALESCE((SELECT jsonb_agg(jsonb_build_object('id', military_decoration_types.id::text, 'code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label) FROM burial_military_decorations JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id WHERE burial_military_decorations.burial_uuid = burials.id), '[]'::jsonb) AS military_decorations, burials.notes, ${reviewColumnsSql}
       FROM burials
       ${deathPlaceSql.join}
       ${intermentTypeSql.join}
@@ -355,6 +356,24 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
       updateValues,
     );
     const updatedState = updateResult.rows[0];
+    const effectiveDecorationCodes = burial.veteran ? burial.militaryDecorationCodes ?? [] : [];
+    await client.query("DELETE FROM burial_military_decorations WHERE burial_uuid = $1", [id]);
+    if (effectiveDecorationCodes.length) {
+      const decorationResult = await client.query(
+        `
+          INSERT INTO burial_military_decorations (burial_uuid, military_decoration_type_id)
+          SELECT $1, military_decoration_types.id
+          FROM military_decoration_types
+          WHERE military_decoration_types.code = ANY($2::text[])
+            AND military_decoration_types.is_active
+          RETURNING military_decoration_type_id
+        `,
+        [id, effectiveDecorationCodes],
+      );
+      if (decorationResult.rows.length !== effectiveDecorationCodes.length) {
+        throw new Error("One or more military decorations are unsupported.");
+      }
+    }
     const auditEventId = await auditEventIdForMutation(client, {
       actorUser,
       action: "update",

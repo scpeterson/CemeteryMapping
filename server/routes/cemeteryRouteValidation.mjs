@@ -227,6 +227,12 @@ export function validateBurialPayload(body) {
   if (militaryEnlistedDate && militaryDischargedDate && militaryDischargedDate < militaryEnlistedDate) {
     throw new BadRequestError("Discharged date cannot be before enlisted date.");
   }
+  const militaryDecorationCodes = Array.isArray(body?.militaryDecorationCodes)
+    ? [...new Set(body.militaryDecorationCodes.map((value) => optionalText(value, "Military decoration", 80)).filter(Boolean))]
+    : [];
+  if (militaryDecorationCodes.some((code) => !/^[a-z0-9_]+$/u.test(code))) {
+    throw new BadRequestError("Military decoration is invalid.");
+  }
 
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
@@ -244,6 +250,7 @@ export function validateBurialPayload(body) {
     militaryBranchCode: optionalText(body?.militaryBranchCode, "Military branch", 50) ?? "",
     militaryRankCode: optionalText(body?.militaryRankCode, "Military rank", 50) ?? "",
     militaryWarServiceCode: optionalText(body?.militaryWarServiceCode, "War service", 50) ?? "",
+    militaryDecorationCodes,
     militaryEnlistedDate,
     militaryDischargedDate,
     notes: optionalText(body?.notes, "Burial notes", 4000) ?? "",

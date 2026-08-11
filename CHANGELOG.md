@@ -6,6 +6,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added reusable military decorations for burials, seeded with Purple Heart and Bronze Star Medal, plus a labeled Purple Heart badge and the Navy `MM2` rating.
 - Added a burial name suffix/title field for professional credentials and post-nominal titles such as `M.D.`.
 - Version metadata is exposed through the UI environment badge, `/api/version`, and `/api/health`.
 - Release preparation scripts can bump `package.json` without creating a git tag.
@@ -25,6 +26,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Database
 
+- Added `black_granite` as a controlled marker material type.
 - Added `historic_lot_map_gravesite_evidence` for reviewable Section C lot and passageway observations from historic Trinity lot map scans.
 - Added reviewed Trinity Section C lot `70` from the perimeter of gravesites `C-0168`, `C-0167A`, `C-0167B`, `C-0166A`, and `C-0166B`.
 - Added reviewed Trinity Section C lot `51` from the perimeter of gravesites `C-0171A`, `C-0171B`, `C-0170`, `C-0169`, and new available gravesite `C-51-0168A`.

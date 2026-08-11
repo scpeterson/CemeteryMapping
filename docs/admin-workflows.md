@@ -86,6 +86,8 @@ First regular record-editing workflow.
 
 Readers can see marker/headstone details in the normal grave detail panel. Power users and cemetery admins can edit marker details for assigned cemeteries from that same panel without opening the Admin UI; global admins can edit marker details anywhere. This keeps operational cemetery record work near the map and leaves Admin focused on users, lookups, audit review, and setup data.
 
+Burial military service details distinguish branch, rank or rating, war service, and decorations. Decorations such as the Purple Heart appear as additional labeled badges beside the general Veteran badge; they do not replace veteran status. Navy rating abbreviations such as `MM2` should use the corresponding rating-specific rank value when the inscription provides it.
+
 Standalone markers that are not linked to an active gravesite, such as graveyard markers or field markers, can also be opened and edited from the Markers panel. These records use the same marker edit form and authorization rules as gravesite-linked headstones.
 
 When a gravesite has more than one physical marker, editors can add the additional marker from the selected gravesite's marker section. The `Add marker` workflow creates a new marker record, links it to that gravesite, and records whether the relationship is primary, spanning, nearby, inferred, footstone, or secondary. The map point picker can populate the new marker's coordinates from a map click, which is useful for footstones and other secondary markers recorded after the initial import.
