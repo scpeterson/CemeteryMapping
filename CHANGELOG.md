@@ -28,6 +28,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 - Added an explicit unknown-or-not-applicable interment type so pre-need and unverified records no longer need a provisional casket classification.
 - Added a reusable fail-fast prerequisite assertion for data migrations so missing source records cannot silently produce successful zero-row changesets.
+- Added transactional integration coverage for the Gropp gravesite split and Eckendahl field-photo migration, including resulting statuses and marker relationships.
 - Added the field-verified pink-granite Eckendahl marker between `TLC-HS-0328` and `TLC-HS-0329`, with separate estimated spaces for Bruce W. Eckendahl and Terry M. Eckendahl; Terry's record is explicitly pre-need.
 - Split Trinity gravesite `C-0156`: Manfred Joseph Gropp remains in the unchanged original gravesite, Alice J. Gropp is assigned to new northern `C-0156A`, and fixed marker `TLC-HS-0156` spans both.
 - Added `black_granite` as a controlled marker material type.
