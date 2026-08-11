@@ -26,6 +26,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Database
 
+- Added the field-verified pink-granite Eckendahl marker between `TLC-HS-0328` and `TLC-HS-0329`, with separate estimated spaces for Bruce W. Eckendahl and Terry M. Eckendahl; Terry's record is explicitly pre-need.
+- Split Trinity gravesite `C-0156`: Manfred Joseph Gropp remains in the unchanged original gravesite, Alice J. Gropp is assigned to new northern `C-0156A`, and fixed marker `TLC-HS-0156` spans both.
 - Added `black_granite` as a controlled marker material type.
 - Added `historic_lot_map_gravesite_evidence` for reviewable Section C lot and passageway observations from historic Trinity lot map scans.
 - Added reviewed Trinity Section C lot `70` from the perimeter of gravesites `C-0168`, `C-0167A`, `C-0167B`, `C-0166A`, and `C-0166B`.
