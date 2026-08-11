@@ -925,3 +925,6 @@ databaseChangeLog:
   - include:
       file: changes/310-add-eckendahl-field-photo-marker.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/311-add-unknown-interment-type.sql
+      relativeToChangelogFile: true

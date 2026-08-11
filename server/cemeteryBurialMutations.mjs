@@ -130,7 +130,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     }
 
     const fullName = [burial.firstName, burial.lastName, burial.nameSuffix].filter(Boolean).join(" ") || null;
-    const effectiveIntermentType = burial.intermentType || "casket";
+    const effectiveIntermentType = burial.intermentType || "unknown";
     if (!(await activeIntermentTypeExists(client, effectiveIntermentType))) {
       throw new Error(`Unsupported interment type: ${effectiveIntermentType}.`);
     }
