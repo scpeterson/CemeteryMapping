@@ -928,3 +928,6 @@ databaseChangeLog:
   - include:
       file: changes/311-add-unknown-interment-type.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/312-migration-prerequisite-assertions.sql
+      relativeToChangelogFile: true

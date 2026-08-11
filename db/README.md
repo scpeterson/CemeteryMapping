@@ -214,6 +214,24 @@ db/changelog/changes/014-database-audit-triggers.sql
 db/changelog/changes/015-updated-at-triggers.sql
 ```
 
+### Fail-fast data migration prerequisites
+
+Data migrations that depend on existing cemetery records must assert those prerequisites before their mutation CTEs. This prevents a missing section, marker, gravesite, or lookup from turning the entire changeset into a successful zero-row no-op.
+
+```sql
+SELECT assert_migration_prerequisite(
+  EXISTS (
+    SELECT 1
+    FROM headstones
+    WHERE headstone_id = 'TLC-HS-0001'
+      AND deleted_at IS NULL
+  ),
+  'active marker TLC-HS-0001 must exist'
+);
+```
+
+Keep the assertion and mutation in the same Liquibase changeset so a failed prerequisite aborts the transaction before any data changes occur.
+
 The current schema follows the same logical structure as Esri's Cemetery Management solution template, but uses PostgreSQL/PostGIS naming and omits ArcGIS-managed fields such as `OBJECTID`, `GlobalID`, editor tracking fields, shape area/length fields, and relationship `parentglobalid` fields.
 
 The schema creates:
