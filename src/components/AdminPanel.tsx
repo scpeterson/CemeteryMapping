@@ -698,7 +698,7 @@ function DeedRegistryMappingEditor({
       </label>
       <label>
         Last known date
-        <input type="date" value={correctedLastKnownDate} onChange={(event) => setCorrectedLastKnownDate(event.target.value)} />
+        <input value={correctedLastKnownDate} onChange={(event) => setCorrectedLastKnownDate(event.target.value)} maxLength={50} placeholder="Example: 1944 or 1944-05-12" />
         {entry.lastKnownDate ? <small>Imported value: {entry.lastKnownDate}</small> : null}
       </label>
       <button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save mapping"}</button>

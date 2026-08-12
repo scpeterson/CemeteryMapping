@@ -438,7 +438,7 @@ export async function updateDeedRegistryMapping(pool, entryId, mapping, { actorU
         SET
           modern_section = NULLIF($2, ''),
           corrected_lot_text = NULLIF($3, ''),
-          corrected_last_known_date = NULLIF($4, '')::date,
+          corrected_last_known_date = NULLIF($4, ''),
           mapping_updated_by = NULLIF($5, ''),
           mapping_updated_at = now(),
           updated_at = now()

@@ -87,6 +87,7 @@ test("registryRows imports Investigated-style sheets from their header row and p
     assert.equal(rows[0].rowNumber, 2);
     assert.equal(rows[0].rowType, "owner_record");
     assert.equal(rows[0].lot, null);
+    assert.equal(rows[0].lastKnownDate, "1951");
     assert.equal(rows[1].rowType, "investigation_note");
     assert.equal(rows[1].lot, null);
     assert.match(rows[1].remarks, /Removed from Registry/u);

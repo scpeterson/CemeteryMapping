@@ -16,3 +16,10 @@ test("deed registry last-known-date migration adds a correction without replacin
   assert.match(sql, /ADD COLUMN corrected_last_known_date date/u);
   assert.doesNotMatch(sql, /DROP COLUMN IF EXISTS last_known_date[;\s]/u);
 });
+
+test("deed registry recorded-date migration preserves year-only values", async () => {
+  const sql = await readFile(new URL("../db/changelog/changes/316-preserve-deed-recorded-dates.sql", import.meta.url), "utf8");
+  assert.match(sql, /last_known_date TYPE varchar\(50\)/u);
+  assert.match(sql, /SET last_known_date = '1944'/u);
+  assert.match(sql, /lower\(owner_display_name\) = 'roy soergel'/u);
+});
