@@ -297,6 +297,7 @@ export async function registryRows(workbookPath, worksheetName = defaultWorkshee
       deedRegisterOnFile: cleanText(worksheetRow.getCell(11).value),
       rawLotCell: rawLotText,
       extraCells,
+      modernSection: extraCells.modernsection ?? extraCells.modern_section ?? null,
     };
     rows.push(row);
   });
@@ -361,12 +362,13 @@ async function insertEntry(client, batchId, cemeteryId, row, parsed) {
         ownership_scope,
         parse_confidence,
         parse_notes,
+        modern_section,
         source_row
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19,
-        $20, $21, $22, $23, $24, $25, $26::jsonb
+        $20, $21, $22, $23, $24, $25, $26, $27::jsonb
       )
       RETURNING id
     `,
@@ -396,6 +398,7 @@ async function insertEntry(client, batchId, cemeteryId, row, parsed) {
       parsed.ownershipScope,
       parsed.parseConfidence,
       parsed.parseNotes,
+      row.modernSection,
       JSON.stringify(row),
     ],
   );

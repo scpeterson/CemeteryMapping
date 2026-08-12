@@ -65,6 +65,14 @@ export function validateLotTextPayload(body) {
   };
 }
 
+export function validateDeedRegistryMappingPayload(body) {
+  return {
+    modernSection: optionalText(body?.modernSection, "Modern section", 100) ?? "",
+    correctedLotText: optionalText(body?.correctedLotText, "Corrected lot number", 500) ?? "",
+    reason: validateMutationReason(body?.reason) ?? "Deed registry mapping update",
+  };
+}
+
 export function validateLookupCode(value) {
   const code = requiredText(value, "Lookup code", 50);
   if (!/^[a-z0-9_]+$/u.test(code)) throw new BadRequestError("Lookup code can contain only lowercase letters, numbers, and underscores.");

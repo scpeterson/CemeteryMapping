@@ -4,15 +4,27 @@ export function registerAdminReviewRoutes(app, context) {
     deleteNorthHillsOcrEvidenceLink, linkDeedInvestigationCaseEntry, listDeedInvestigationCases,
     listDeedRegistryReview, listNorthHillsOcrReview, pool, promoteNorthHillsSourceFact, requireAdmin,
     requireCemeteryAdmin, reviewNorthHillsSourceFact, saveNorthHillsOcrEvidenceLink,
-    updateDeedInvestigationCase, updateDeedInvestigationCaseAction, updateNorthHillsOcrEntry,
+    updateDeedInvestigationCase, updateDeedInvestigationCaseAction, updateDeedRegistryMapping, updateNorthHillsOcrEntry,
     validateDeedInvestigationCaseActionPayload, validateDeedInvestigationCaseLinkPayload,
-    validateDeedInvestigationCasePayload, validateNorthHillsEntryPayload, validateNorthHillsEvidencePayload,
+    validateDeedInvestigationCasePayload, validateDeedRegistryMappingPayload, validateNorthHillsEntryPayload, validateNorthHillsEvidencePayload,
     validateNorthHillsEvidenceTargetPayload, validateNorthHillsSourceFactPromotionPayload,
     validateNorthHillsSourceFactReviewPayload, validateUuid,
   } = context;
       app.get("/api/admin/deed-registry-review", requireAdmin, async (request, response, next) => {
         try {
           response.json(await listDeedRegistryReview(pool, request.query));
+        } catch (error) {
+          next(error);
+        }
+      });
+
+      app.put("/api/admin/deed-registry-review/:entryId", requireAdmin, async (request, response, next) => {
+        try {
+          const entryId = validateUuid(request.params.entryId, "Deed registry entry");
+          const mapping = validateDeedRegistryMappingPayload(request.body);
+          const saved = await updateDeedRegistryMapping(pool, entryId, mapping, { actorUser: request.user, reason: mapping.reason });
+          if (!saved) response.status(404).json({ error: "Editable 2017 or 2022 deed registry row not found." });
+          else response.json(saved);
         } catch (error) {
           next(error);
         }

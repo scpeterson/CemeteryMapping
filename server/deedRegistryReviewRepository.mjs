@@ -1,3 +1,5 @@
+import { setAuditContext } from "./auditContext.mjs";
+
 const validConfidence = new Set(["high", "medium", "low", "review"]);
 const validScopes = new Set(["whole_lot", "multiple_lots", "specific_graves", "grave_count_only", "passage", "section_g_gravesite", "unknown"]);
 
@@ -79,6 +81,10 @@ function toEntry(row) {
     ownerDisplayName: row.owner_display_name ?? "",
     rawLotText: row.raw_lot_text ?? "",
     rawSectionText: row.raw_section_text ?? "",
+    modernSection: row.modern_section ?? "",
+    correctedLotText: row.corrected_lot_text ?? "",
+    mappingUpdatedBy: row.mapping_updated_by ?? "",
+    mappingUpdatedAt: row.mapping_updated_at,
     rawRemarks: row.raw_remarks ?? "",
     deedOnFile: row.deed_on_file ?? "",
     deedRegisterOnFile: row.deed_register_on_file ?? "",
@@ -166,6 +172,8 @@ export async function listDeedRegistryReview(pool, filters = {}) {
       WHERE lower(coalesce(entry.owner_display_name, '')) LIKE '%' || search_terms.term || '%'
         OR lower(coalesce(entry.raw_lot_text, '')) LIKE '%' || search_terms.term || '%'
         OR lower(coalesce(entry.raw_section_text, '')) LIKE '%' || search_terms.term || '%'
+        OR lower(coalesce(entry.modern_section, '')) LIKE '%' || search_terms.term || '%'
+        OR lower(coalesce(entry.corrected_lot_text, '')) LIKE '%' || search_terms.term || '%'
         OR lower(coalesce(entry.raw_remarks, '')) LIKE '%' || search_terms.term || '%'
         OR lower(coalesce(entry.deed_on_file, '')) LIKE '%' || search_terms.term || '%'
         OR lower(coalesce(entry.deed_register_on_file, '')) LIKE '%' || search_terms.term || '%'
@@ -249,6 +257,10 @@ export async function listDeedRegistryReview(pool, filters = {}) {
         entry.owner_display_name,
         entry.raw_lot_text,
         entry.raw_section_text,
+        entry.modern_section,
+        entry.corrected_lot_text,
+        entry.mapping_updated_by,
+        entry.mapping_updated_at,
         entry.raw_remarks,
         entry.deed_on_file,
         entry.deed_register_on_file,
@@ -415,4 +427,36 @@ export async function listDeedRegistryReview(pool, filters = {}) {
     removedOriginalEntries: removedResult.rows.map(toRemovedEntry),
     entries: entriesResult.rows.map(toEntry),
   };
+}
+
+export async function updateDeedRegistryMapping(pool, entryId, mapping, { actorUser, reason } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+    const result = await client.query(
+      `
+        UPDATE deed_registry_entries entry
+        SET
+          modern_section = NULLIF($2, ''),
+          corrected_lot_text = NULLIF($3, ''),
+          mapping_updated_by = NULLIF($4, ''),
+          mapping_updated_at = now(),
+          updated_at = now()
+        FROM deed_registry_import_batches batch
+        WHERE entry.id = $1
+          AND batch.id = entry.batch_id
+          AND batch.worksheet_name IN ('Original 2017', 'Updated 2022')
+        RETURNING entry.id::text
+      `,
+      [entryId, mapping.modernSection, mapping.correctedLotText, actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? ""],
+    );
+    await client.query("COMMIT");
+    return result.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

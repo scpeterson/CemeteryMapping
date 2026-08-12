@@ -26,6 +26,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Database
 
+- Added audited in-application editing of `ModernSection` and corrected lot-number mappings for imported `Original 2017` and `Updated 2022` deed registry rows while preserving original spreadsheet values.
 - Added an explicit unknown-or-not-applicable interment type so pre-need and unverified records no longer need a provisional casket classification.
 - Added a reusable fail-fast prerequisite assertion for data migrations so missing source records cannot silently produce successful zero-row changesets.
 - Added transactional integration coverage for the Gropp gravesite split and Eckendahl field-photo migration, including resulting statuses and marker relationships.

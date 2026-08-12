@@ -38,7 +38,7 @@ const cases = [
   ["admin user", registerAdminUserRoutes, 5, ["GET /api/admin/users", "POST /api/admin/auth0-users/resolve"]],
   ["admin governance", registerAdminGovernanceRoutes, 16, ["GET /api/admin/data-quality-dashboard", "POST /api/admin/bulk/headstones", "PUT /api/admin/cemetery-records/lots/:id"]],
   ["admin operations", registerAdminOperationsRoutes, 8, ["GET /api/admin/audit-events", "POST /api/admin/system-event-retention-purge"]],
-  ["admin review", registerAdminReviewRoutes, 13, ["GET /api/admin/deed-registry-review", "PUT /api/admin/north-hills-ocr-review/:entryId"]],
+  ["admin review", registerAdminReviewRoutes, 14, ["GET /api/admin/deed-registry-review", "PUT /api/admin/deed-registry-review/:entryId", "PUT /api/admin/north-hills-ocr-review/:entryId"]],
 ];
 
 for (const [name, register, count, expected] of cases) {
