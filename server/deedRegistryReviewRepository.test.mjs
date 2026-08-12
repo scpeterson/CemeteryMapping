@@ -59,6 +59,7 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
               owner_display_name: "Robert & Elizabeth Watenpool",
               raw_lot_text: "88",
               raw_section_text: "",
+              last_known_date: "2022-03-14",
               raw_remarks: "Updated to show plot 88 based on investigation.",
               deed_on_file: "No",
               deed_register_on_file: "No",
@@ -122,6 +123,7 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
   assert.equal(review.entries[0].relatedInvestigationNotes[0].sourceRowNumber, 16);
   assert.equal(review.entries[0].comparisonStatus, "changed");
   assert.equal(review.entries[0].modernSection, "");
+  assert.equal(review.entries[0].lastKnownDate, "2022-03-14");
   assert.equal(review.entries[0].originalSourceRowNumber, 201);
   assert.equal(review.comparison?.changedCount, 12);
   assert.equal(review.removedOriginalEntries[0].rawLotText, "44");
@@ -182,7 +184,7 @@ test("updateDeedRegistryMapping updates only editable source worksheets with aud
       if (sql.includes("UPDATE deed_registry_entries entry")) {
         assert.match(sql, /Original 2017/u);
         assert.match(sql, /Updated 2022/u);
-        assert.deepEqual(values, ["entry-1", "C", "51", "admin@example.com"]);
+        assert.deepEqual(values, ["entry-1", "C", "51", "2022-03-14", "admin@example.com"]);
         return { rows: [{ id: "entry-1" }] };
       }
       return { rows: [] };
@@ -194,7 +196,7 @@ test("updateDeedRegistryMapping updates only editable source worksheets with aud
   const saved = await updateDeedRegistryMapping(
     pool,
     "entry-1",
-    { modernSection: "C", correctedLotText: "51" },
+    { modernSection: "C", correctedLotText: "51", correctedLastKnownDate: "2022-03-14" },
     { actorUser: { email: "admin@example.com" }, reason: "Mapped from field review" },
   );
 

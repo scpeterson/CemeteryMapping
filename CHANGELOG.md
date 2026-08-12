@@ -6,6 +6,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added display and editing of imported deed-registry last-known dates while preserving the original spreadsheet value.
 - Added reusable military decorations for burials, seeded with Purple Heart and Bronze Star Medal, plus a labeled Purple Heart badge and the Navy `MM2` rating.
 - Added a burial name suffix/title field for professional credentials and post-nominal titles such as `M.D.`.
 - Version metadata is exposed through the UI environment badge, `/api/version`, and `/api/health`.

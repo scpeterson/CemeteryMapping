@@ -69,6 +69,7 @@ export function validateDeedRegistryMappingPayload(body) {
   return {
     modernSection: optionalText(body?.modernSection, "Modern section", 100) ?? "",
     correctedLotText: optionalText(body?.correctedLotText, "Corrected lot number", 500) ?? "",
+    correctedLastKnownDate: optionalDate(body?.correctedLastKnownDate, "Last known date") ?? "",
     reason: validateMutationReason(body?.reason) ?? "Deed registry mapping update",
   };
 }

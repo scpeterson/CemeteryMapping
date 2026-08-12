@@ -656,13 +656,15 @@ function DeedRegistryMappingEditor({
 }) {
   const [modernSection, setModernSection] = useState(entry.modernSection);
   const [correctedLotText, setCorrectedLotText] = useState(entry.correctedLotText);
+  const [correctedLastKnownDate, setCorrectedLastKnownDate] = useState(entry.correctedLastKnownDate || entry.lastKnownDate);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
 
   useEffect(() => {
     setModernSection(entry.modernSection);
     setCorrectedLotText(entry.correctedLotText);
-  }, [entry.correctedLotText, entry.modernSection]);
+    setCorrectedLastKnownDate(entry.correctedLastKnownDate || entry.lastKnownDate);
+  }, [entry.correctedLastKnownDate, entry.correctedLotText, entry.lastKnownDate, entry.modernSection]);
 
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -672,6 +674,7 @@ function DeedRegistryMappingEditor({
       await updateDeedRegistryMapping(entry.id, {
         modernSection,
         correctedLotText,
+        correctedLastKnownDate,
         reason: `Update modern mapping for deed registry row ${entry.sourceRowNumber}`,
       });
       await onSaved();
@@ -692,6 +695,11 @@ function DeedRegistryMappingEditor({
       <label>
         Corrected lot number
         <input value={correctedLotText} onChange={(event) => setCorrectedLotText(event.target.value)} maxLength={500} placeholder="Example: 51" />
+      </label>
+      <label>
+        Last known date
+        <input type="date" value={correctedLastKnownDate} onChange={(event) => setCorrectedLastKnownDate(event.target.value)} />
+        {entry.lastKnownDate ? <small>Imported value: {entry.lastKnownDate}</small> : null}
       </label>
       <button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save mapping"}</button>
       {message ? <small role="status">{message}</small> : null}
@@ -1299,6 +1307,10 @@ function DeedsAdminTab({
                     <div title="Editable corrected lot-number mapping; the original spreadsheet lot remains unchanged.">
                       <dt>Corrected lot</dt>
                       <dd>{entry.correctedLotText || "Not mapped"}</dd>
+                    </div>
+                    <div title="Last known date from the spreadsheet, or its editable correction.">
+                      <dt>Last known date</dt>
+                      <dd>{entry.correctedLastKnownDate || entry.lastKnownDate || "Not recorded"}</dd>
                     </div>
                     <div title="Parsed lot numbers staged from this row.">
                       <dt>Lots</dt>

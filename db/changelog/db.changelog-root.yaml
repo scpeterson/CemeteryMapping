@@ -937,3 +937,6 @@ databaseChangeLog:
   - include:
       file: changes/314-editable-deed-registry-mappings.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/315-editable-deed-last-known-date.sql
+      relativeToChangelogFile: true

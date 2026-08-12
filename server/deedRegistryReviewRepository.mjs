@@ -76,8 +76,10 @@ function toEntry(row) {
     ownerDisplayName: row.owner_display_name ?? "",
     rawLotText: row.raw_lot_text ?? "",
     rawSectionText: row.raw_section_text ?? "",
+    lastKnownDate: row.last_known_date ? String(row.last_known_date).slice(0, 10) : "",
     modernSection: row.modern_section ?? "",
     correctedLotText: row.corrected_lot_text ?? "",
+    correctedLastKnownDate: row.corrected_last_known_date ? String(row.corrected_last_known_date).slice(0, 10) : "",
     mappingUpdatedBy: row.mapping_updated_by ?? "",
     mappingUpdatedAt: row.mapping_updated_at,
     rawRemarks: row.raw_remarks ?? "",
@@ -251,8 +253,10 @@ export async function listDeedRegistryReview(pool, filters = {}) {
         entry.owner_display_name,
         entry.raw_lot_text,
         entry.raw_section_text,
+        entry.last_known_date,
         entry.modern_section,
         entry.corrected_lot_text,
+        entry.corrected_last_known_date,
         entry.mapping_updated_by,
         entry.mapping_updated_at,
         entry.raw_remarks,
@@ -434,7 +438,8 @@ export async function updateDeedRegistryMapping(pool, entryId, mapping, { actorU
         SET
           modern_section = NULLIF($2, ''),
           corrected_lot_text = NULLIF($3, ''),
-          mapping_updated_by = NULLIF($4, ''),
+          corrected_last_known_date = NULLIF($4, '')::date,
+          mapping_updated_by = NULLIF($5, ''),
           mapping_updated_at = now(),
           updated_at = now()
         FROM deed_registry_import_batches batch
@@ -443,7 +448,7 @@ export async function updateDeedRegistryMapping(pool, entryId, mapping, { actorU
           AND batch.worksheet_name IN ('Original 2017', 'Updated 2022')
         RETURNING entry.id::text
       `,
-      [entryId, mapping.modernSection, mapping.correctedLotText, actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? ""],
+      [entryId, mapping.modernSection, mapping.correctedLotText, mapping.correctedLastKnownDate, actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? ""],
     );
     await client.query("COMMIT");
     return result.rows[0];

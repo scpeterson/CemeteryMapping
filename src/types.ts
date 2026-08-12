@@ -853,8 +853,10 @@ export type DeedRegistryReviewEntry = {
   ownerDisplayName: string;
   rawLotText: string;
   rawSectionText: string;
+  lastKnownDate: string;
   modernSection: string;
   correctedLotText: string;
+  correctedLastKnownDate: string;
   mappingUpdatedBy: string;
   mappingUpdatedAt?: string;
   rawRemarks: string;
@@ -899,6 +901,7 @@ export type DeedRegistryReview = {
 export type SaveDeedRegistryMappingInput = {
   modernSection: string;
   correctedLotText: string;
+  correctedLastKnownDate: string;
   reason: string;
 };
 
