@@ -14,16 +14,11 @@ function normalizeLimit(value) {
   return Math.min(Math.max(limit, 25), 250);
 }
 
-function queryTerms(value) {
-  return [
-    ...new Set(
-      String(value ?? "")
-        .toLowerCase()
-        .split(/[\s,;|/]+/u)
-        .map((term) => term.trim())
-        .filter((term) => term.length >= 2),
-    ),
-  ].slice(0, 12);
+function queryPhrase(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/gu, " ");
 }
 
 function toBatch(row) {
@@ -152,7 +147,7 @@ export async function listDeedRegistryReview(pool, filters = {}) {
   const values = [selectedBatchId];
   const confidence = compact(filters.confidence);
   const ownershipScope = compact(filters.ownershipScope);
-  const terms = queryTerms(filters.q);
+  const phrase = queryPhrase(filters.q);
 
   if (confidence && validConfidence.has(confidence)) {
     values.push(confidence);
@@ -164,27 +159,26 @@ export async function listDeedRegistryReview(pool, filters = {}) {
     where.push(`entry.ownership_scope = $${values.length}`);
   }
 
-  if (terms.length) {
-    values.push(terms);
+  if (phrase.length >= 2) {
+    values.push(phrase);
     where.push(`EXISTS (
       SELECT 1
-      FROM unnest($${values.length}::text[]) search_terms(term)
-      WHERE lower(coalesce(entry.owner_display_name, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.raw_lot_text, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.raw_section_text, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.modern_section, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.corrected_lot_text, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.raw_remarks, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.deed_on_file, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.deed_register_on_file, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(array_to_string(coalesce(entry.parsed_lot_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
-        OR lower(array_to_string(coalesce(entry.parsed_plot_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
-        OR lower(array_to_string(coalesce(entry.parsed_grave_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
+      WHERE lower(coalesce(entry.owner_display_name, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.raw_lot_text, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.raw_section_text, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.modern_section, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.corrected_lot_text, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.raw_remarks, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.deed_on_file, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.deed_register_on_file, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_lot_numbers, '{}'::text[]), ' ')) LIKE '%' || $${values.length} || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_plot_numbers, '{}'::text[]), ' ')) LIKE '%' || $${values.length} || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_grave_numbers, '{}'::text[]), ' ')) LIKE '%' || $${values.length} || '%'
         OR EXISTS (
           SELECT 1
           FROM investigated_notes
           WHERE investigated_notes.owner_key = lower(coalesce(entry.owner_display_name, ''))
-            AND investigated_notes.search_text LIKE '%' || search_terms.term || '%'
+            AND investigated_notes.search_text LIKE '%' || $${values.length} || '%'
         )
     )`);
   }

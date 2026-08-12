@@ -48,7 +48,7 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
         };
       }
       if (sql.includes("related_investigation_notes")) {
-        assert.deepEqual(values, ["batch-1", "review", ["watenpool"], "original-batch", 50]);
+        assert.deepEqual(values, ["batch-1", "review", "watenpool", "original-batch", 50]);
         return {
           rows: [
             {
@@ -128,7 +128,7 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
   assert.equal(calls.length, 6);
 });
 
-test("listDeedRegistryReview searches investigation terms across names and plot hints", async () => {
+test("listDeedRegistryReview treats multi-word searches as a phrase", async () => {
   const calls = [];
   const pool = {
     async query(sql, values) {
@@ -158,7 +158,8 @@ test("listDeedRegistryReview searches investigation terms across names and plot 
         return { rows: [] };
       }
       if (sql.includes("related_investigation_notes")) {
-        assert.deepEqual(values, ["batch-1", ["david", "wiskeman", "edith", "75", "na"], null, 100]);
+        assert.deepEqual(values, ["batch-1", "roy soergel", null, 100]);
+        assert.doesNotMatch(sql, /unnest/u);
         assert.match(sql, /parsed_plot_numbers/u);
         assert.match(sql, /parsed_grave_numbers/u);
         assert.match(sql, /latest_investigated/u);
@@ -168,7 +169,7 @@ test("listDeedRegistryReview searches investigation terms across names and plot 
     },
   };
 
-  await listDeedRegistryReview(pool, { q: "David Wiskeman, Edith, 75 NA", limit: 100 });
+  await listDeedRegistryReview(pool, { q: "  Roy   Soergel  ", limit: 100 });
 
   assert.equal(calls.length, 4);
 });
