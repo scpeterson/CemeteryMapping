@@ -1,3 +1,5 @@
+import { setAuditContext } from "./auditContext.mjs";
+
 const validConfidence = new Set(["high", "medium", "low", "review"]);
 const validScopes = new Set(["whole_lot", "multiple_lots", "specific_graves", "grave_count_only", "passage", "section_g_gravesite", "unknown"]);
 
@@ -12,16 +14,11 @@ function normalizeLimit(value) {
   return Math.min(Math.max(limit, 25), 250);
 }
 
-function queryTerms(value) {
-  return [
-    ...new Set(
-      String(value ?? "")
-        .toLowerCase()
-        .split(/[\s,;|/]+/u)
-        .map((term) => term.trim())
-        .filter((term) => term.length >= 2),
-    ),
-  ].slice(0, 12);
+function queryPhrase(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/gu, " ");
 }
 
 function toBatch(row) {
@@ -79,6 +76,12 @@ function toEntry(row) {
     ownerDisplayName: row.owner_display_name ?? "",
     rawLotText: row.raw_lot_text ?? "",
     rawSectionText: row.raw_section_text ?? "",
+    lastKnownDate: row.last_known_date ? String(row.last_known_date).slice(0, 10) : "",
+    modernSection: row.modern_section ?? "",
+    correctedLotText: row.corrected_lot_text ?? "",
+    correctedLastKnownDate: row.corrected_last_known_date ? String(row.corrected_last_known_date).slice(0, 10) : "",
+    mappingUpdatedBy: row.mapping_updated_by ?? "",
+    mappingUpdatedAt: row.mapping_updated_at,
     rawRemarks: row.raw_remarks ?? "",
     deedOnFile: row.deed_on_file ?? "",
     deedRegisterOnFile: row.deed_register_on_file ?? "",
@@ -146,7 +149,7 @@ export async function listDeedRegistryReview(pool, filters = {}) {
   const values = [selectedBatchId];
   const confidence = compact(filters.confidence);
   const ownershipScope = compact(filters.ownershipScope);
-  const terms = queryTerms(filters.q);
+  const phrase = queryPhrase(filters.q);
 
   if (confidence && validConfidence.has(confidence)) {
     values.push(confidence);
@@ -158,25 +161,26 @@ export async function listDeedRegistryReview(pool, filters = {}) {
     where.push(`entry.ownership_scope = $${values.length}`);
   }
 
-  if (terms.length) {
-    values.push(terms);
+  if (phrase.length >= 2) {
+    values.push(phrase);
     where.push(`EXISTS (
       SELECT 1
-      FROM unnest($${values.length}::text[]) search_terms(term)
-      WHERE lower(coalesce(entry.owner_display_name, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.raw_lot_text, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.raw_section_text, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.raw_remarks, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.deed_on_file, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(coalesce(entry.deed_register_on_file, '')) LIKE '%' || search_terms.term || '%'
-        OR lower(array_to_string(coalesce(entry.parsed_lot_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
-        OR lower(array_to_string(coalesce(entry.parsed_plot_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
-        OR lower(array_to_string(coalesce(entry.parsed_grave_numbers, '{}'::text[]), ' ')) LIKE '%' || search_terms.term || '%'
+      WHERE lower(coalesce(entry.owner_display_name, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.raw_lot_text, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.raw_section_text, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.modern_section, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.corrected_lot_text, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.raw_remarks, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.deed_on_file, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(coalesce(entry.deed_register_on_file, '')) LIKE '%' || $${values.length} || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_lot_numbers, '{}'::text[]), ' ')) LIKE '%' || $${values.length} || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_plot_numbers, '{}'::text[]), ' ')) LIKE '%' || $${values.length} || '%'
+        OR lower(array_to_string(coalesce(entry.parsed_grave_numbers, '{}'::text[]), ' ')) LIKE '%' || $${values.length} || '%'
         OR EXISTS (
           SELECT 1
           FROM investigated_notes
           WHERE investigated_notes.owner_key = lower(coalesce(entry.owner_display_name, ''))
-            AND investigated_notes.search_text LIKE '%' || search_terms.term || '%'
+            AND investigated_notes.search_text LIKE '%' || $${values.length} || '%'
         )
     )`);
   }
@@ -249,6 +253,12 @@ export async function listDeedRegistryReview(pool, filters = {}) {
         entry.owner_display_name,
         entry.raw_lot_text,
         entry.raw_section_text,
+        entry.last_known_date,
+        entry.modern_section,
+        entry.corrected_lot_text,
+        entry.corrected_last_known_date,
+        entry.mapping_updated_by,
+        entry.mapping_updated_at,
         entry.raw_remarks,
         entry.deed_on_file,
         entry.deed_register_on_file,
@@ -415,4 +425,37 @@ export async function listDeedRegistryReview(pool, filters = {}) {
     removedOriginalEntries: removedResult.rows.map(toRemovedEntry),
     entries: entriesResult.rows.map(toEntry),
   };
+}
+
+export async function updateDeedRegistryMapping(pool, entryId, mapping, { actorUser, reason } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason });
+    const result = await client.query(
+      `
+        UPDATE deed_registry_entries entry
+        SET
+          modern_section = NULLIF($2, ''),
+          corrected_lot_text = NULLIF($3, ''),
+          corrected_last_known_date = NULLIF($4, ''),
+          mapping_updated_by = NULLIF($5, ''),
+          mapping_updated_at = now(),
+          updated_at = now()
+        FROM deed_registry_import_batches batch
+        WHERE entry.id = $1
+          AND batch.id = entry.batch_id
+          AND batch.worksheet_name IN ('Original 2017', 'Updated 2022')
+        RETURNING entry.id::text
+      `,
+      [entryId, mapping.modernSection, mapping.correctedLotText, mapping.correctedLastKnownDate, actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? ""],
+    );
+    await client.query("COMMIT");
+    return result.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

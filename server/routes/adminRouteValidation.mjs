@@ -1,6 +1,6 @@
 import { optionalText, requiredText, validateIdentifierList, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
-import { optionalDate } from "./routeValidationHelpers.mjs";
+import { optionalDate, optionalRecordedDate } from "./routeValidationHelpers.mjs";
 
 export function validateAdminUserPayload(body, roles) {
   const role = requiredText(body?.role, "Role", 50);
@@ -62,6 +62,15 @@ export function validateSectionTextPayload(body) {
 export function validateLotTextPayload(body) {
   return {
     name: optionalText(body?.name, "Lot name", 255),
+  };
+}
+
+export function validateDeedRegistryMappingPayload(body) {
+  return {
+    modernSection: optionalText(body?.modernSection, "Modern section", 100) ?? "",
+    correctedLotText: optionalText(body?.correctedLotText, "Corrected lot number", 500) ?? "",
+    correctedLastKnownDate: optionalRecordedDate(body?.correctedLastKnownDate, "Last known date") ?? "",
+    reason: validateMutationReason(body?.reason) ?? "Deed registry mapping update",
   };
 }
 

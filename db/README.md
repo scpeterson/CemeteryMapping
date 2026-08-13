@@ -520,7 +520,7 @@ APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/
 
 `Investigated` rows with owner data are staged as owner records. Note-only rows are staged as investigation notes: the original cells remain in `source_row`, while the disposition and remarks are combined into `raw_remarks` and left for review instead of being parsed as a lot assignment.
 
-Admins can review staged deed registry evidence in the Admin UI Deed Evidence tab. The view is read-only and supports batch selection, confidence filtering, evidence-type filtering, owner/lot/section/remark search, parser notes, and related notes from the latest `Investigated` import batch.
+Admins can review staged deed registry evidence in the Admin UI Deed Evidence tab. For `Original 2017` and `Updated 2022`, each owner row has editable `ModernSection` and corrected lot-number mappings. These are audited overrides: the original spreadsheet section and lot text remain unchanged and visible for comparison. Search includes both imported values and modern mappings. Future imports also recognize a workbook column named `ModernSection` or `Modern Section`.
 
 Useful direct database review query:
 

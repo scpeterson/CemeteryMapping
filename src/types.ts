@@ -853,6 +853,12 @@ export type DeedRegistryReviewEntry = {
   ownerDisplayName: string;
   rawLotText: string;
   rawSectionText: string;
+  lastKnownDate: string;
+  modernSection: string;
+  correctedLotText: string;
+  correctedLastKnownDate: string;
+  mappingUpdatedBy: string;
+  mappingUpdatedAt?: string;
   rawRemarks: string;
   deedOnFile: string;
   deedRegisterOnFile: string;
@@ -890,6 +896,13 @@ export type DeedRegistryReview = {
   comparison: DeedRegistryComparisonSummary | null;
   removedOriginalEntries: DeedRegistryRemovedOriginalEntry[];
   entries: DeedRegistryReviewEntry[];
+};
+
+export type SaveDeedRegistryMappingInput = {
+  modernSection: string;
+  correctedLotText: string;
+  correctedLastKnownDate: string;
+  reason: string;
 };
 
 export type DeedInvestigationStatus = "open" | "researching" | "awaiting_family" | "awaiting_council" | "approved" | "denied" | "closed";

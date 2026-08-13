@@ -38,7 +38,7 @@ import {
   updateHeadstoneGravesiteRelationship,
   updateMaintenanceRecord,
 } from "./cemeteryRepository.mjs";
-import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
+import { listDeedRegistryReview, updateDeedRegistryMapping } from "./deedRegistryReviewRepository.mjs";
 import { importGeoNamesPlace } from "./placeRepository.mjs";
 import { PlaceSearchUnavailableError, searchGeoNames } from "./placeSearchService.mjs";
 import {
@@ -129,7 +129,7 @@ export function createApp(config, pool) {
     requireAdmin, requireCemeteryAdmin, requirePowerUser, reviewNorthHillsSourceFact,
     runAuditRetentionPurgeJob, runSystemEventRetentionPurgeJob, saveNorthHillsOcrEvidenceLink,
     softDeleteSourcePersonRecord, updateAuditRetentionPolicy, updateCemeteryText,
-    updateDeedInvestigationCase, updateDeedInvestigationCaseAction, updateLookupRecord, updateLotText,
+    updateDeedInvestigationCase, updateDeedInvestigationCaseAction, updateDeedRegistryMapping, updateLookupRecord, updateLotText,
     updateNorthHillsOcrEntry, updateSectionText, updateSourcePersonRecord,
     updateSystemEventRetentionPolicy, updateUser, versionMetadata,
   });

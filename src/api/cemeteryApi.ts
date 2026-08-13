@@ -54,6 +54,7 @@ import type {
   SaveSourcePersonRecordInput,
   SaveDeedInvestigationCaseInput,
   SaveDeedInvestigationActionInput,
+  SaveDeedRegistryMappingInput,
   SaveOwnershipEventInput,
   SearchMatch,
   SectionTextRecord,
@@ -511,6 +512,14 @@ export async function fetchDeedRegistryReview(filters: DeedRegistryReviewFilters
   const query = params.toString();
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/deed-registry-review${query ? `?${query}` : ""}`);
   return jsonResponse<DeedRegistryReview>(response, "Deed registry review API");
+}
+
+export async function updateDeedRegistryMapping(entryId: string, mapping: SaveDeedRegistryMappingInput): Promise<{ id: string }> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/admin/deed-registry-review/${encodeURIComponent(entryId)}`,
+    jsonRequest("PUT", mapping),
+  );
+  return jsonResponse<{ id: string }>(response, "Deed registry mapping API");
 }
 
 export type DeedInvestigationCaseFilters = {

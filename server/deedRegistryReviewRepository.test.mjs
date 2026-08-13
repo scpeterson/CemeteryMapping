@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { listDeedRegistryReview } from "./deedRegistryReviewRepository.mjs";
+import { listDeedRegistryReview, updateDeedRegistryMapping } from "./deedRegistryReviewRepository.mjs";
 
 test("listDeedRegistryReview returns batches, summaries, evidence rows, and related investigation notes", async () => {
   const calls = [];
@@ -48,7 +48,7 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
         };
       }
       if (sql.includes("related_investigation_notes")) {
-        assert.deepEqual(values, ["batch-1", "review", ["watenpool"], "original-batch", 50]);
+        assert.deepEqual(values, ["batch-1", "review", "watenpool", "original-batch", 50]);
         return {
           rows: [
             {
@@ -59,6 +59,7 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
               owner_display_name: "Robert & Elizabeth Watenpool",
               raw_lot_text: "88",
               raw_section_text: "",
+              last_known_date: "2022-03-14",
               raw_remarks: "Updated to show plot 88 based on investigation.",
               deed_on_file: "No",
               deed_register_on_file: "No",
@@ -121,13 +122,15 @@ test("listDeedRegistryReview returns batches, summaries, evidence rows, and rela
   assert.equal(review.entries[0].allocationCount, 1);
   assert.equal(review.entries[0].relatedInvestigationNotes[0].sourceRowNumber, 16);
   assert.equal(review.entries[0].comparisonStatus, "changed");
+  assert.equal(review.entries[0].modernSection, "");
+  assert.equal(review.entries[0].lastKnownDate, "2022-03-14");
   assert.equal(review.entries[0].originalSourceRowNumber, 201);
   assert.equal(review.comparison?.changedCount, 12);
   assert.equal(review.removedOriginalEntries[0].rawLotText, "44");
   assert.equal(calls.length, 6);
 });
 
-test("listDeedRegistryReview searches investigation terms across names and plot hints", async () => {
+test("listDeedRegistryReview treats multi-word searches as a phrase", async () => {
   const calls = [];
   const pool = {
     async query(sql, values) {
@@ -157,7 +160,8 @@ test("listDeedRegistryReview searches investigation terms across names and plot 
         return { rows: [] };
       }
       if (sql.includes("related_investigation_notes")) {
-        assert.deepEqual(values, ["batch-1", ["david", "wiskeman", "edith", "75", "na"], null, 100]);
+        assert.deepEqual(values, ["batch-1", "roy soergel", null, 100]);
+        assert.doesNotMatch(sql, /unnest/u);
         assert.match(sql, /parsed_plot_numbers/u);
         assert.match(sql, /parsed_grave_numbers/u);
         assert.match(sql, /latest_investigated/u);
@@ -167,7 +171,37 @@ test("listDeedRegistryReview searches investigation terms across names and plot 
     },
   };
 
-  await listDeedRegistryReview(pool, { q: "David Wiskeman, Edith, 75 NA", limit: 100 });
+  await listDeedRegistryReview(pool, { q: "  Roy   Soergel  ", limit: 100 });
 
   assert.equal(calls.length, 4);
+});
+
+test("updateDeedRegistryMapping updates only editable source worksheets with audit context", async () => {
+  const calls = [];
+  const client = {
+    async query(sql, values) {
+      calls.push({ sql, values });
+      if (sql.includes("UPDATE deed_registry_entries entry")) {
+        assert.match(sql, /Original 2017/u);
+        assert.match(sql, /Updated 2022/u);
+        assert.deepEqual(values, ["entry-1", "C", "51", "2022-03-14", "admin@example.com"]);
+        return { rows: [{ id: "entry-1" }] };
+      }
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const pool = { async connect() { return client; } };
+
+  const saved = await updateDeedRegistryMapping(
+    pool,
+    "entry-1",
+    { modernSection: "C", correctedLotText: "51", correctedLastKnownDate: "2022-03-14" },
+    { actorUser: { email: "admin@example.com" }, reason: "Mapped from field review" },
+  );
+
+  assert.equal(saved.id, "entry-1");
+  assert.equal(calls[0].sql, "BEGIN");
+  assert.ok(calls.some(({ sql, values }) => sql.includes("set_config") && values?.[0] === "app.audit.reason"));
+  assert.equal(calls.at(-1).sql, "COMMIT");
 });

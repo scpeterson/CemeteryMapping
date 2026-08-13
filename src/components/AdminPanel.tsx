@@ -32,6 +32,7 @@ import {
   updateCemeteryText,
   updateDeedInvestigationAction,
   updateDeedInvestigationCase,
+  updateDeedRegistryMapping,
   updateLookupRecord,
   updateLotText,
   updateSectionText,
@@ -646,6 +647,66 @@ type DeedsAdminTabProps = {
   removedOriginalDeedEntries: DeedRegistryReview["removedOriginalEntries"];
 };
 
+function DeedRegistryMappingEditor({
+  entry,
+  onSaved,
+}: {
+  entry: DeedRegistryReviewEntry;
+  onSaved: () => Promise<void>;
+}) {
+  const [modernSection, setModernSection] = useState(entry.modernSection);
+  const [correctedLotText, setCorrectedLotText] = useState(entry.correctedLotText);
+  const [correctedLastKnownDate, setCorrectedLastKnownDate] = useState(entry.correctedLastKnownDate || entry.lastKnownDate);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string>();
+
+  useEffect(() => {
+    setModernSection(entry.modernSection);
+    setCorrectedLotText(entry.correctedLotText);
+    setCorrectedLastKnownDate(entry.correctedLastKnownDate || entry.lastKnownDate);
+  }, [entry.correctedLastKnownDate, entry.correctedLotText, entry.lastKnownDate, entry.modernSection]);
+
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setMessage(undefined);
+    try {
+      await updateDeedRegistryMapping(entry.id, {
+        modernSection,
+        correctedLotText,
+        correctedLastKnownDate,
+        reason: `Update modern mapping for deed registry row ${entry.sourceRowNumber}`,
+      });
+      await onSaved();
+      setMessage("Mapping saved.");
+    } catch (saveError) {
+      setMessage(saveError instanceof Error ? saveError.message : "Unable to save mapping.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <form className="deed-mapping-editor" onSubmit={save} aria-label={`Modern mapping for row ${entry.sourceRowNumber}`}>
+      <label>
+        ModernSection
+        <input value={modernSection} onChange={(event) => setModernSection(event.target.value)} maxLength={100} placeholder="Example: C" />
+      </label>
+      <label>
+        Corrected lot number
+        <input value={correctedLotText} onChange={(event) => setCorrectedLotText(event.target.value)} maxLength={500} placeholder="Example: 51" />
+      </label>
+      <label>
+        Last known date
+        <input value={correctedLastKnownDate} onChange={(event) => setCorrectedLastKnownDate(event.target.value)} maxLength={50} placeholder="Example: 1944 or 1944-05-12" />
+        {entry.lastKnownDate ? <small>Imported value: {entry.lastKnownDate}</small> : null}
+      </label>
+      <button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save mapping"}</button>
+      {message ? <small role="status">{message}</small> : null}
+    </form>
+  );
+}
+
 function DeedsAdminTab({
   deedCaseFilters,
   setDeedCaseFilters,
@@ -1239,6 +1300,18 @@ function DeedsAdminTab({
                       <dt>Raw section</dt>
                       <dd>{entry.rawSectionText || "None"}</dd>
                     </div>
+                    <div title="Editable modern section mapping; the original spreadsheet section remains unchanged.">
+                      <dt>ModernSection</dt>
+                      <dd>{entry.modernSection || "Not mapped"}</dd>
+                    </div>
+                    <div title="Editable corrected lot-number mapping; the original spreadsheet lot remains unchanged.">
+                      <dt>Corrected lot</dt>
+                      <dd>{entry.correctedLotText || "Not mapped"}</dd>
+                    </div>
+                    <div title="Last known date from the spreadsheet, or its editable correction.">
+                      <dt>Last known date</dt>
+                      <dd>{entry.correctedLastKnownDate || entry.lastKnownDate || "Not recorded"}</dd>
+                    </div>
                     <div title="Parsed lot numbers staged from this row.">
                       <dt>Lots</dt>
                       <dd>{formatList(entry.parsedLotNumbers)}</dd>
@@ -1256,6 +1329,12 @@ function DeedsAdminTab({
                       <dd>{entry.deedRegisterOnFile || "Unknown"}</dd>
                     </div>
                   </dl>
+                  {entry.rowType === "owner_record" && ["Original 2017", "Updated 2022"].includes(selectedDeedBatch?.worksheetName ?? "") ? (
+                    <DeedRegistryMappingEditor entry={entry} onSaved={() => loadDeedRegistryReview(deedReviewFilters)} />
+                  ) : null}
+                  {entry.mappingUpdatedAt ? (
+                    <small className="deed-mapping-audit">Mapping updated {formatAdminTimestamp(entry.mappingUpdatedAt)}{entry.mappingUpdatedBy ? ` by ${entry.mappingUpdatedBy}` : ""}.</small>
+                  ) : null}
                   {entry.rawRemarks ? <p className="deed-entry-remarks">{entry.rawRemarks}</p> : null}
                   {entry.comparisonStatus === "changed" ? (
                     <section className="deed-comparison-detail" aria-label="Original 2017 values">

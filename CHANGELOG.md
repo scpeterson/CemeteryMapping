@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added display and editing of imported deed-registry last-known dates while preserving the original spreadsheet value.
+- Preserve year-only deed-registry dates instead of inventing January 1, including Roy Soergel's recorded `1944` value.
 - Added reusable military decorations for burials, seeded with Purple Heart and Bronze Star Medal, plus a labeled Purple Heart badge and the Navy `MM2` rating.
 - Added a burial name suffix/title field for professional credentials and post-nominal titles such as `M.D.`.
 - Version metadata is exposed through the UI environment badge, `/api/version`, and `/api/health`.
@@ -26,6 +28,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Database
 
+- Added audited in-application editing of `ModernSection` and corrected lot-number mappings for imported `Original 2017` and `Updated 2022` deed registry rows while preserving original spreadsheet values.
 - Added an explicit unknown-or-not-applicable interment type so pre-need and unverified records no longer need a provisional casket classification.
 - Added a reusable fail-fast prerequisite assertion for data migrations so missing source records cannot silently produce successful zero-row changesets.
 - Added transactional integration coverage for the Gropp gravesite split and Eckendahl field-photo migration, including resulting statuses and marker relationships.

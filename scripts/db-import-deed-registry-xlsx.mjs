@@ -52,9 +52,11 @@ function cleanText(value) {
   return present(value) ? String(value).replace(/\s+/gu, " ").trim() : null;
 }
 
-function normalizeDate(value) {
+function normalizeRecordedDate(value) {
   if (!present(value)) return null;
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  const text = cleanText(value);
+  if (/^\d{4}$/u.test(text ?? "")) return text;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
 }
@@ -292,11 +294,12 @@ export async function registryRows(workbookPath, worksheetName = defaultWorkshee
       lot: rowType === "owner_record" ? rawLotText : null,
       section: cleanText(worksheetRow.getCell(7).value),
       remarks: rowType === "owner_record" ? rawRemarks : [rawLotText, rawRemarks].filter(Boolean).join(" ").trim() || null,
-      lastKnownDate: normalizeDate(worksheetRow.getCell(9).value),
+      lastKnownDate: normalizeRecordedDate(worksheetRow.getCell(9).value),
       deedOnFile: cleanText(worksheetRow.getCell(10).value),
       deedRegisterOnFile: cleanText(worksheetRow.getCell(11).value),
       rawLotCell: rawLotText,
       extraCells,
+      modernSection: extraCells.modernsection ?? extraCells.modern_section ?? null,
     };
     rows.push(row);
   });
@@ -361,12 +364,13 @@ async function insertEntry(client, batchId, cemeteryId, row, parsed) {
         ownership_scope,
         parse_confidence,
         parse_notes,
+        modern_section,
         source_row
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19,
-        $20, $21, $22, $23, $24, $25, $26::jsonb
+        $20, $21, $22, $23, $24, $25, $26, $27::jsonb
       )
       RETURNING id
     `,
@@ -396,6 +400,7 @@ async function insertEntry(client, batchId, cemeteryId, row, parsed) {
       parsed.ownershipScope,
       parsed.parseConfidence,
       parsed.parseNotes,
+      row.modernSection,
       JSON.stringify(row),
     ],
   );

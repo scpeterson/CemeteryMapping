@@ -4094,6 +4094,31 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.deed-mapping-editor {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.55fr) minmax(160px, 1fr) auto;
+  gap: 9px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid #cbd8cf;
+  border-radius: 8px;
+  background: #f6faf7;
+}
+
+.deed-mapping-editor label,
+.deed-mapping-editor small {
+  display: grid;
+  gap: 4px;
+}
+
+.deed-mapping-editor small {
+  grid-column: 1 / -1;
+}
+
+.deed-mapping-audit {
+  color: #56645d;
+}
+
 .deed-comparison-summary,
 .deed-comparison-detail,
 .deed-removed-list {
