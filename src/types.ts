@@ -172,6 +172,8 @@ export type OwnershipEvent = {
   recordedBy: string;
   documentReference?: string;
   notes?: string;
+  fromOwnerNames: string[];
+  toOwnerNames: string[];
 };
 
 export type LookupOption = {
@@ -531,8 +533,20 @@ export type SaveBurialInput = {
 export type OwnershipEventType = "deed" | "sale" | "gift" | "church_council_action" | "correction" | "release";
 export type OwnershipTargetScope = "selected_gravesite" | "selected_lot" | "listed_gravesites";
 
+export type OwnershipPartyInput = {
+  firstName: string;
+  lastName: string;
+  fullAddress: string;
+  municipality: string;
+  state: string;
+  zip: string;
+  shareNumerator: string;
+  shareDenominator: string;
+};
+
 export type SaveOwnershipEventInput = {
-  ownerDisplayName: string;
+  owners: OwnershipPartyInput[];
+  previousOwners: OwnershipPartyInput[];
   eventType: OwnershipEventType;
   targetScope: OwnershipTargetScope;
   targetGravesiteIds: string[];

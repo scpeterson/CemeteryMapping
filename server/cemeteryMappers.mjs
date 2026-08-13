@@ -108,6 +108,8 @@ export function toOwnershipEvent(owner) {
     recordedBy: owner.recorded_by ?? "Cemetery database",
     documentReference: owner.document_reference ?? undefined,
     notes: owner.notes,
+    fromOwnerNames: owner.from_owner_names ?? [],
+    toOwnerNames: owner.to_owner_names ?? [ownerDisplayName(owner)],
   };
 }
 

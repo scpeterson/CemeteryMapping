@@ -148,13 +148,29 @@ test("burial payload validation accepts recorded cemetery date text", () => {
 
 test("ownership payload validation accepts a year-only effective date", () => {
   const payload = validateOwnershipEventPayload({
-    ownerDisplayName: "Josephine K Bladel",
+    owners: [{ firstName: "Josephine K", lastName: "Bladel", fullAddress: "", municipality: "", state: "", zip: "", shareNumerator: "", shareDenominator: "" }],
+    previousOwners: [],
     eventType: "deed",
     targetScope: "selected_lot",
     effectiveDate: "1951",
   });
 
   assert.equal(payload.effectiveDate, "1951");
+  assert.equal(payload.owners[0].lastName, "Bladel");
+});
+
+test("ownership payload validation accepts multiple addressed transfer parties", () => {
+  const party = (firstName, lastName, fullAddress) => ({ firstName, lastName, fullAddress, municipality: "North Hills", state: "PA", zip: "19038", shareNumerator: "1", shareDenominator: "2" });
+  const payload = validateOwnershipEventPayload({
+    owners: [party("Ann", "Smith", "1 Main St"), party("Bob", "Jones", "2 Main St")],
+    previousOwners: [party("Carol", "Brown", "3 Main St")],
+    eventType: "sale",
+    targetScope: "selected_gravesite",
+    effectiveDate: "1951",
+  });
+  assert.equal(payload.owners.length, 2);
+  assert.equal(payload.previousOwners[0].fullAddress, "3 Main St");
+  assert.equal(payload.owners[0].shareNumerator, 1);
 });
 
 test("burial payload validation rejects discharge before enlistment", () => {

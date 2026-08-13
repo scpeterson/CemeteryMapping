@@ -181,7 +181,9 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
 2. Confirm you are in the correct cemetery and gravesite.
 3. Open the `Current Owner` section.
 4. Use `Record deed or transfer`.
-5. Enter the owner or deed-holder name. This can be one person, a couple, a family, the church, or another organization.
+5. Enter each owner or deed holder using separate first-name, last-name, and address fields.
+   - Add each owner separately so first name, last name, address, and optional ownership share remain distinct.
+   - For a sale or gift, enter both the previous owner or owners (`From`) and the new owner or owners (`To`).
 6. Choose the event type:
    - `Deed (new or historical)` for a newly issued deed or an older deed being entered now. Use the deed's original date as the effective date.
    - `Sale / transfer` when ownership changes by sale.
@@ -197,6 +199,8 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
 9. Add a document reference such as a deed book, page, scanned file name, council minutes reference, or source note.
 10. Add notes when the deed language, transfer terms, or evidence confidence needs explanation.
 11. Save and confirm the `Current Owner` and `Ownership Timeline` sections refresh.
+
+Whole-lot and individual-gravesite rights can coexist. When a lot owner transfers selected gravesites, record those specific targets as `Listed gravesites`; their direct ownership supersedes the whole-lot owner when those gravesites are viewed, while the whole-lot owner remains current for the other gravesites. The timeline renders transfers as `From → To` and keeps a separate address and optional fractional share for every party.
 
 `power-user` and `cemetery-admin` users can record ownership events only for assigned cemeteries. `admin` users can record ownership events for any cemetery. Readers cannot see this form.
 

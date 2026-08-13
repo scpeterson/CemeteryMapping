@@ -1068,6 +1068,76 @@ h3 {
   border: 0;
 }
 
+.ownership-party-list {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ownership-party-list > legend {
+  margin-bottom: 2px;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.ownership-party-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d7e0d3;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.ownership-party-card > header {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ownership-share-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 5px;
+}
+
+.ownership-share-fields > span {
+  padding-bottom: 9px;
+}
+
+.ownership-add-party {
+  justify-self: start;
+}
+
+.ownership-transfer-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: #f0f5ef;
+}
+
+.ownership-transfer-flow > span:not(:nth-child(2)) {
+  display: grid;
+  gap: 2px;
+}
+
+.ownership-transfer-flow small {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .ownership-gravesite-picker legend {
   margin-bottom: 5px;
   color: var(--text-muted);

@@ -6,6 +6,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added structured multi-owner deed entry with separate names, addresses, optional shares, grantor/grantee roles, mixed lot and gravesite rights, and visual `From → To` transfer history.
 - Added display and editing of imported deed-registry last-known dates while preserving the original spreadsheet value.
 - Preserve year-only deed-registry dates instead of inventing January 1, including Roy Soergel's recorded `1944` value.
 - Added reusable military decorations for burials, seeded with Purple Heart and Bronze Star Medal, plus a labeled Purple Heart badge and the Navy `MM2` rating.

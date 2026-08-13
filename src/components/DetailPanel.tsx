@@ -19,6 +19,7 @@ import type {
   MediaAsset,
   NorthHillsLinkedEvidence,
   Owner,
+  OwnershipPartyInput,
   OwnershipEventType,
   OwnershipTargetScope,
   SaveBurialInput,
@@ -230,7 +231,8 @@ function headstoneRelationshipDetails(relationshipType: string) {
 
 function blankOwnershipForm(grave: GraveSpace): SaveOwnershipEventInput {
   return {
-    ownerDisplayName: "",
+    owners: [blankOwnershipParty()],
+    previousOwners: [blankOwnershipParty()],
     eventType: "deed",
     targetScope: grave.lot ? "selected_lot" : "selected_gravesite",
     targetGravesiteIds: [],
@@ -239,6 +241,47 @@ function blankOwnershipForm(grave: GraveSpace): SaveOwnershipEventInput {
     notes: "",
     reason: "Ownership event update",
   };
+}
+
+function blankOwnershipParty(): OwnershipPartyInput {
+  return { firstName: "", lastName: "", fullAddress: "", municipality: "", state: "", zip: "", shareNumerator: "", shareDenominator: "" };
+}
+
+function OwnershipPartyFields({
+  title,
+  parties,
+  onChange,
+}: {
+  title: string;
+  parties: OwnershipPartyInput[];
+  onChange: (parties: OwnershipPartyInput[]) => void;
+}) {
+  const update = (index: number, patch: Partial<OwnershipPartyInput>) => onChange(parties.map((party, partyIndex) => partyIndex === index ? { ...party, ...patch } : party));
+  return (
+    <fieldset className="ownership-wide-field ownership-party-list">
+      <legend>{title}</legend>
+      {parties.map((party, index) => (
+        <section className="ownership-party-card" key={index}>
+          <header>
+            <strong>{title.replace(/s$/u, "")} {index + 1}</strong>
+            {parties.length > 1 ? <button type="button" className="text-button" onClick={() => onChange(parties.filter((_, partyIndex) => partyIndex !== index))}>Remove</button> : null}
+          </header>
+          <label>First name<input value={party.firstName} onChange={(event) => update(index, { firstName: event.target.value })} /></label>
+          <label>Last name<input value={party.lastName} onChange={(event) => update(index, { lastName: event.target.value })} /></label>
+          <label className="ownership-wide-field">Street address<input value={party.fullAddress} onChange={(event) => update(index, { fullAddress: event.target.value })} /></label>
+          <label>City<input value={party.municipality} onChange={(event) => update(index, { municipality: event.target.value })} /></label>
+          <label>State<input value={party.state} maxLength={2} onChange={(event) => update(index, { state: event.target.value.toUpperCase() })} /></label>
+          <label>ZIP<input value={party.zip} maxLength={10} onChange={(event) => update(index, { zip: event.target.value })} /></label>
+          <div className="ownership-share-fields">
+            <label>Share<input inputMode="numeric" value={party.shareNumerator} placeholder="1" onChange={(event) => update(index, { shareNumerator: event.target.value })} /></label>
+            <span>/</span>
+            <label>Total<input inputMode="numeric" value={party.shareDenominator} placeholder="2" onChange={(event) => update(index, { shareDenominator: event.target.value })} /></label>
+          </div>
+        </section>
+      ))}
+      <button type="button" className="secondary-button ownership-add-party" onClick={() => onChange([...parties, blankOwnershipParty()])}>Add another person</button>
+    </fieldset>
+  );
 }
 
 function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpace; cemeteryGraves: GraveSpaceSummary[]; onSave: (event: SaveOwnershipEventInput) => Promise<void> }) {
@@ -298,15 +341,10 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
 
   return (
     <form className="ownership-form" onSubmit={(event) => void save(event)}>
-      <label className="ownership-wide-field">
-        Owner or deed holder
-        <input
-          value={form.ownerDisplayName}
-          onChange={(event) => setForm((current) => ({ ...current, ownerDisplayName: event.target.value }))}
-          placeholder="Name, couple, family, church, or organization"
-          required
-        />
-      </label>
+      {["sale", "gift"].includes(form.eventType) ? (
+        <OwnershipPartyFields title="Previous owners (from)" parties={form.previousOwners} onChange={(previousOwners) => setForm((current) => ({ ...current, previousOwners }))} />
+      ) : null}
+      <OwnershipPartyFields title={["sale", "gift"].includes(form.eventType) ? "New owners (to)" : "Owners"} parties={form.owners} onChange={(owners) => setForm((current) => ({ ...current, owners }))} />
       <label>
         Event
         <select value={form.eventType} onChange={(event) => setForm((current) => ({ ...current, eventType: event.target.value as OwnershipEventType }))}>
@@ -371,7 +409,7 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
         <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
           Cancel
         </button>
-        <button type="submit" disabled={isSaving || !form.ownerDisplayName.trim() || (form.targetScope === "listed_gravesites" && selectedGravesiteIds.length === 0)}>
+        <button type="submit" disabled={isSaving || form.owners.some((party) => !party.firstName.trim() && !party.lastName.trim()) || (["sale", "gift"].includes(form.eventType) && form.previousOwners.some((party) => !party.firstName.trim() && !party.lastName.trim())) || (form.targetScope === "listed_gravesites" && selectedGravesiteIds.length === 0)}>
           {isSaving ? "Recording..." : "Record ownership"}
         </button>
       </div>
@@ -3454,7 +3492,13 @@ function GraveDetailPanel({
                     <li key={event.id}>
                       <time>{formatDate(event.effectiveDate)}</time>
                       <strong>{event.eventType}</strong>
-                      <span>{event.ownerIds.map((id) => ownerName(ownersById, id)).join(", ")}</span>
+                      {event.fromOwnerNames.length ? (
+                        <div className="ownership-transfer-flow">
+                          <span><small>From</small>{event.fromOwnerNames.join(", ")}</span>
+                          <span aria-hidden="true">→</span>
+                          <span><small>To</small>{event.toOwnerNames.join(", ")}</span>
+                        </div>
+                      ) : <span>{event.ownerIds.map((id) => ownerName(ownersById, id)).join(", ")}</span>}
                       <small>{event.recordedBy}</small>
                       {event.documentReference ? (
                         <span className="document-ref">

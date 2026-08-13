@@ -718,6 +718,8 @@ test("repository maps generalized gravesite ownership rights into owner detail",
     recordedBy: "Section G Plot Plan With Notations.pdf",
     documentReference: "Section G Plot Plan With Notations.pdf page 2",
     notes: "burial_right gravesite Imported from page 2 deed holder list.",
+    fromOwnerNames: [],
+    toOwnerNames: ["Baur, L & R"],
   });
 });
 
@@ -839,7 +841,8 @@ test("createOwnershipEvent records a scoped whole-lot ownership event", async ()
     "11111111-1111-4111-8111-111111111111",
     "B-0166-01",
     {
-      ownerDisplayName: "Charles R. and Ruth M. Soergel",
+      owners: [{ firstName: "Charles R. and Ruth M.", lastName: "Soergel", fullAddress: "123 Main St", municipality: "North Hills", state: "PA", zip: "19038", shareNumerator: null, shareDenominator: null }],
+      previousOwners: [],
       eventType: "deed",
       targetScope: "selected_lot",
       effectiveDate: "2026-05-31",

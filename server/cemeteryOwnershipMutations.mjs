@@ -6,7 +6,7 @@ export async function createOwnershipEvent(
   pool,
   cemeteryId,
   selectedGravesiteId,
-  { ownerDisplayName, eventType, targetScope, targetGravesiteIds = [], effectiveDate, documentReference, notes },
+  { owners, previousOwners = [], eventType, targetScope, targetGravesiteIds = [], effectiveDate, documentReference, notes },
   { actorUser, reason, allowedCemeteryIds } = {},
 ) {
   const client = await pool.connect();
@@ -24,36 +24,6 @@ export async function createOwnershipEvent(
       await client.query("ROLLBACK");
       return undefined;
     }
-
-    const partyResult = await client.query(
-      `
-        INSERT INTO ownership_parties (display_name)
-        SELECT $1
-        WHERE NOT EXISTS (
-          SELECT 1
-          FROM ownership_parties
-          WHERE display_name = $1
-            AND deleted_at IS NULL
-        )
-        RETURNING id::text
-      `,
-      [ownerDisplayName],
-    );
-    const partyId =
-      partyResult.rows[0]?.id ??
-      (
-        await client.query(
-          `
-            SELECT id::text
-            FROM ownership_parties
-            WHERE display_name = $1
-              AND deleted_at IS NULL
-            ORDER BY created_at, id
-            LIMIT 1
-          `,
-          [ownerDisplayName],
-        )
-      ).rows[0]?.id;
 
     const recordedEffectiveDate = splitRecordedDate(effectiveDate);
     const eventResult = await client.query(
@@ -83,13 +53,30 @@ export async function createOwnershipEvent(
     );
     const eventId = eventResult.rows[0].id;
 
-    await client.query(
-      `
-        INSERT INTO ownership_event_parties (ownership_event_uuid, ownership_party_uuid, ownership_role)
-        VALUES ($1, $2, 'owner')
-      `,
-      [eventId, partyId],
-    );
+    const insertParty = async (party, role) => {
+      const displayName = [party.firstName, party.lastName].filter(Boolean).join(" ");
+      const partyResult = await client.query(
+        `
+          INSERT INTO ownership_parties (display_name, first_name, last_name, full_address, municipality, state, zip)
+          VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''))
+          RETURNING id::text
+        `,
+        [displayName, party.firstName, party.lastName, party.fullAddress, party.municipality, party.state, party.zip],
+      );
+      await client.query(
+        `
+          INSERT INTO ownership_event_parties (
+            ownership_event_uuid, ownership_party_uuid, ownership_role, share_numerator, share_denominator
+          )
+          VALUES ($1, $2, $3, $4, $5)
+        `,
+        [eventId, partyResult.rows[0].id, role, party.shareNumerator, party.shareDenominator],
+      );
+    };
+
+    const recipientRole = ["sale", "gift"].includes(eventType) ? "grantee" : "owner";
+    for (const party of previousOwners) await insertParty(party, "grantor");
+    for (const party of owners) await insertParty(party, recipientRole);
 
     for (const right of targets.rights) {
       await client.query(
