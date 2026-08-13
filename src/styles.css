@@ -1041,8 +1041,16 @@ h3 {
 
 .ownership-wide-field,
 .ownership-form .detail-message,
+.ownership-event-guidance,
 .ownership-form-actions {
   grid-column: 1 / -1;
+}
+
+.ownership-event-guidance {
+  margin: -3px 0 1px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
 }
 
 .ownership-form-actions {

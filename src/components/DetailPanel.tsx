@@ -316,7 +316,6 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
             </option>
           ))}
         </select>
-        {form.eventType === "deed" ? <small>Use this for an old deed being entered now; record the deed's original date below.</small> : null}
       </label>
       <label>
         Applies to
@@ -328,6 +327,9 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
           ))}
         </select>
       </label>
+      {form.eventType === "deed" ? (
+        <p className="ownership-event-guidance">Entering an old deed? Use its original date as the effective date below.</p>
+      ) : null}
       {form.targetScope === "listed_gravesites" ? (
         <fieldset className="ownership-wide-field ownership-gravesite-picker">
           <legend>Gravesites</legend>
