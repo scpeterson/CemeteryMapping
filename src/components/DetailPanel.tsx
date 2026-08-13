@@ -157,6 +157,20 @@ const ownershipTargetOptions: { value: OwnershipTargetScope; label: string }[] =
   { value: "listed_gravesites", label: "Listed gravesites" },
 ];
 
+const stateOptions = [
+  ["AL", "Alabama"], ["AK", "Alaska"], ["AZ", "Arizona"], ["AR", "Arkansas"], ["CA", "California"],
+  ["CO", "Colorado"], ["CT", "Connecticut"], ["DE", "Delaware"], ["DC", "District of Columbia"], ["FL", "Florida"],
+  ["GA", "Georgia"], ["HI", "Hawaii"], ["ID", "Idaho"], ["IL", "Illinois"], ["IN", "Indiana"], ["IA", "Iowa"],
+  ["KS", "Kansas"], ["KY", "Kentucky"], ["LA", "Louisiana"], ["ME", "Maine"], ["MD", "Maryland"],
+  ["MA", "Massachusetts"], ["MI", "Michigan"], ["MN", "Minnesota"], ["MS", "Mississippi"], ["MO", "Missouri"],
+  ["MT", "Montana"], ["NE", "Nebraska"], ["NV", "Nevada"], ["NH", "New Hampshire"], ["NJ", "New Jersey"],
+  ["NM", "New Mexico"], ["NY", "New York"], ["NC", "North Carolina"], ["ND", "North Dakota"], ["OH", "Ohio"],
+  ["OK", "Oklahoma"], ["OR", "Oregon"], ["PA", "Pennsylvania"], ["RI", "Rhode Island"], ["SC", "South Carolina"],
+  ["SD", "South Dakota"], ["TN", "Tennessee"], ["TX", "Texas"], ["UT", "Utah"], ["VT", "Vermont"],
+  ["VA", "Virginia"], ["WA", "Washington"], ["WV", "West Virginia"], ["WI", "Wisconsin"], ["WY", "Wyoming"],
+  ["AS", "American Samoa"], ["GU", "Guam"], ["MP", "Northern Mariana Islands"], ["PR", "Puerto Rico"], ["VI", "U.S. Virgin Islands"],
+] as const;
+
 const headstoneRelationshipCopy: Record<string, { label: string; description: string }> = {
   primary: {
     label: "Primary marker for this gravesite",
@@ -270,7 +284,13 @@ function OwnershipPartyFields({
           <label>Last name<input value={party.lastName} onChange={(event) => update(index, { lastName: event.target.value })} /></label>
           <label className="ownership-wide-field">Street address<input value={party.fullAddress} onChange={(event) => update(index, { fullAddress: event.target.value })} /></label>
           <label>City<input value={party.municipality} onChange={(event) => update(index, { municipality: event.target.value })} /></label>
-          <label>State<input value={party.state} maxLength={2} onChange={(event) => update(index, { state: event.target.value.toUpperCase() })} /></label>
+          <label>
+            State
+            <select value={party.state} onChange={(event) => update(index, { state: event.target.value })}>
+              <option value="">Select a state</option>
+              {stateOptions.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}
+            </select>
+          </label>
           <label>ZIP<input value={party.zip} maxLength={10} onChange={(event) => update(index, { zip: event.target.value })} /></label>
           <div className="ownership-share-fields">
             <label>Share<input inputMode="numeric" value={party.shareNumerator} placeholder="1" onChange={(event) => update(index, { shareNumerator: event.target.value })} /></label>
@@ -3584,7 +3604,10 @@ export function DetailPanel({
   error,
   onRetry,
 }: DetailPanelProps) {
-  const ownersById = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
+  const ownersById = useMemo(
+    () => new Map([...(grave?.owners ?? []), ...owners].map((owner) => [owner.id, owner])),
+    [grave?.owners, owners],
+  );
   const headstones = useMemo(() => grave?.headstones ?? [], [grave?.headstones]);
   const northHillsEvidence = grave?.northHillsEvidence ?? [];
   const headstoneMediaIds = useMemo(() => new Set(headstones.flatMap((headstone) => (headstone.mediaAssets ?? []).map((asset) => asset.id))), [headstones]);
