@@ -19,6 +19,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Changed
 
+- Clarified that the deed ownership event supports both newly issued deeds and historical deeds entered later.
 - Upgraded React and React DOM together to 19.2.8.
 - Upgraded the Auth0 React SDK to 2.22.0 and `@auth0/auth0-spa-js` to 2.23.0.
 - Upgraded MapLibre GL JS to 6.0.0 and migrated map code to its ESM namespace imports.

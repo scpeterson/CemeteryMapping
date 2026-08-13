@@ -142,7 +142,7 @@ const graveStatusOptions: { value: GraveStatus; label: string }[] = [
 ];
 
 const ownershipEventOptions: { value: OwnershipEventType; label: string }[] = [
-  { value: "deed", label: "New deed" },
+  { value: "deed", label: "Deed (new or historical)" },
   { value: "sale", label: "Sale / transfer" },
   { value: "gift", label: "Gift" },
   { value: "church_council_action", label: "Church council action" },
@@ -316,6 +316,7 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
             </option>
           ))}
         </select>
+        {form.eventType === "deed" ? <small>Use this for an old deed being entered now; record the deed's original date below.</small> : null}
       </label>
       <label>
         Applies to

@@ -183,7 +183,7 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
 4. Use `Record deed or transfer`.
 5. Enter the owner or deed-holder name. This can be one person, a couple, a family, the church, or another organization.
 6. Choose the event type:
-   - `New deed` for a newly issued deed or first recorded owner.
+   - `Deed (new or historical)` for a newly issued deed or an older deed being entered now. Use the deed's original date as the effective date.
    - `Sale / transfer` when ownership changes by sale.
    - `Gift` when ownership changes without sale.
    - `Church council action` when council assigns ownership or clears unclear ownership.
@@ -200,7 +200,7 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
 
 `power-user` and `cemetery-admin` users can record ownership events only for assigned cemeteries. `admin` users can record ownership events for any cemetery. Readers cannot see this form.
 
-For an unsold lot or gravesite, record a `New deed` when rights are first issued. For a transfer of one or more gravesites from a larger lot, choose `Listed gravesites` and enter the specific gravesite IDs. For a transfer of an entire lot, choose `This whole lot`; the lot-level right will appear when viewing each gravesite in that lot.
+For an unsold lot or gravesite, record a `Deed (new or historical)` when rights are first issued or when documenting an old deed that was not previously in the system. The recorded-at timestamp shows when the entry was added to the application, while the effective date preserves when the deed originally took effect. For a transfer of one or more gravesites from a larger lot, choose `Listed gravesites` and enter the specific gravesite IDs. For a transfer of an entire lot, choose `This whole lot`; the lot-level right will appear when viewing each gravesite in that lot.
 
 ### Audit Log Review
 
