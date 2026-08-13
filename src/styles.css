@@ -458,6 +458,18 @@ h3 {
   font-size: 0.86rem;
   font-weight: 680;
   box-shadow: var(--shadow);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.data-status p {
+  margin: 0;
+}
+
+.data-status p + p {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(199, 82, 79, 0.22);
 }
 
 .data-status.is-error {

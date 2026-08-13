@@ -652,14 +652,11 @@ export default function App() {
             <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
           ) : null}
         </Suspense>
-        {isLoading || loadError ? (
-          <div className={`data-status ${loadError ? "is-error" : ""}`} role="status">
-            {loadError ? `API unavailable: ${loadError}` : "Loading cemetery records..."}
-          </div>
-        ) : null}
-        {userError ? (
-          <div className="data-status is-error" role="status">
-            Permissions unavailable: {userError}
+        {isLoading || loadError || userError ? (
+          <div className={`data-status ${loadError || userError ? "is-error" : ""}`} role={loadError || userError ? "alert" : "status"}>
+            {isLoading && !loadError ? <p>Loading cemetery records...</p> : null}
+            {loadError ? <p><strong>Cemetery data API:</strong> {loadError}</p> : null}
+            {userError ? <p><strong>Current user API:</strong> {userError}</p> : null}
           </div>
         ) : null}
         <CemeteryMap
