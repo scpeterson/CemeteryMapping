@@ -1015,6 +1015,19 @@ h3 {
   color: var(--text-muted);
 }
 
+.owner-deed-register-status,
+.ownership-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-deed-register-status input,
+.ownership-checkbox-field input {
+  width: auto;
+  margin: 0;
+}
+
 .ownership-action {
   display: grid;
   gap: 8px;

@@ -25,7 +25,9 @@ export function toOwner(owner) {
   return {
     id: owner.id,
     displayName: ownerDisplayName(owner),
-    contactNote: compactJoin([owner.phone, owner.email, owner.full_address, owner.document_reference, owner.notes]),
+    contactNote: compactJoin([owner.phone, owner.email, owner.full_address]),
+    effectiveDate: recordedDate(owner.effective_date_text, owner.effective_date ?? owner.sale_date),
+    deedRegisterOnFile: Boolean(owner.deed_register_on_file),
   };
 }
 

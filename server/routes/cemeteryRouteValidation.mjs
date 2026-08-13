@@ -311,6 +311,7 @@ export function validateOwnershipEventPayload(body) {
     targetScope,
     targetGravesiteIds,
     effectiveDate: optionalRecordedDate(body?.effectiveDate, "Effective date"),
+    deedRegisterOnFile: optionalBoolean(body?.deedRegisterOnFile, "Deed register on file"),
     documentReference: optionalText(body?.documentReference, "Document reference", 250),
     notes: optionalText(body?.notes, "Ownership notes", 4000),
     reason: validateMutationReason(body?.reason),

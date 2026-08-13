@@ -6,7 +6,7 @@ export async function createOwnershipEvent(
   pool,
   cemeteryId,
   selectedGravesiteId,
-  { owners, previousOwners = [], eventType, targetScope, targetGravesiteIds = [], effectiveDate, documentReference, notes },
+  { owners, previousOwners = [], eventType, targetScope, targetGravesiteIds = [], effectiveDate, deedRegisterOnFile = false, documentReference, notes },
   { actorUser, reason, allowedCemeteryIds } = {},
 ) {
   const client = await pool.connect();
@@ -33,12 +33,13 @@ export async function createOwnershipEvent(
           event_type,
           effective_date,
           effective_date_text,
+          deed_register_on_file,
           recorded_by,
           document_reference,
           notes,
           source_table
         )
-        VALUES ($1, $2, $3::date, $4, $5, NULLIF($6, ''), NULLIF($7, ''), 'manual_ownership_workflow')
+        VALUES ($1, $2, $3::date, $4, $5, $6, NULLIF($7, ''), NULLIF($8, ''), 'manual_ownership_workflow')
         RETURNING id::text
       `,
       [
@@ -46,6 +47,7 @@ export async function createOwnershipEvent(
         eventType,
         recordedEffectiveDate.date,
         recordedEffectiveDate.text,
+        deedRegisterOnFile,
         actorUser?.email ?? "Cemetery database",
         documentReference ?? "",
         notes ?? "",

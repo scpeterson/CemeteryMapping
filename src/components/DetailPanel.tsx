@@ -251,6 +251,7 @@ function blankOwnershipForm(grave: GraveSpace): SaveOwnershipEventInput {
     targetScope: grave.lot ? "selected_lot" : "selected_gravesite",
     targetGravesiteIds: [],
     effectiveDate: new Date().toISOString().slice(0, 10),
+    deedRegisterOnFile: false,
     documentReference: "",
     notes: "",
     reason: "Ownership event update",
@@ -411,6 +412,10 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
           placeholder="YYYY, YYYY-MM, or exact date"
           onChange={(event) => setForm((current) => ({ ...current, effectiveDate: event.target.value }))}
         />
+      </label>
+      <label className="ownership-checkbox-field">
+        <input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />
+        Deed register on file
       </label>
       <label className="ownership-wide-field">
         Document reference
@@ -3371,6 +3376,11 @@ function GraveDetailPanel({
                       <div key={id} className="owner-row">
                         <strong>{owner?.displayName ?? "Unknown owner"}</strong>
                         {owner?.contactNote ? <span>{owner.contactNote}</span> : null}
+                        <span>Date: {owner?.effectiveDate || "Not recorded"}</span>
+                        <label className="owner-deed-register-status">
+                          <input type="checkbox" checked={owner?.deedRegisterOnFile ?? false} readOnly />
+                          Deed register on file
+                        </label>
                       </div>
                     );
                   })

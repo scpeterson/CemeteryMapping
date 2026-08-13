@@ -680,6 +680,8 @@ test("repository maps generalized gravesite ownership rights into owner detail",
                   email: null,
                   sale_date: null,
                   effective_date: null,
+                  effective_date_text: "2026-06-03",
+                  deed_register_on_file: true,
                   recorded_at: "2026-06-03T12:00:00.000Z",
                   event_type: "deed",
                   recorded_by: "Section G Plot Plan With Notations.pdf",
@@ -708,7 +710,9 @@ test("repository maps generalized gravesite ownership rights into owner detail",
 
   assert.equal(grave.owners[0].id, ownerId);
   assert.equal(grave.owners[0].displayName, "Baur, L & R");
-  assert.match(grave.owners[0].contactNote, /Section G Plot Plan With Notations\.pdf page 2/u);
+  assert.equal(grave.owners[0].contactNote, undefined);
+  assert.equal(grave.owners[0].effectiveDate, "2026-06-03");
+  assert.equal(grave.owners[0].deedRegisterOnFile, true);
   assert.deepEqual(grave.currentOwnerIds, [ownerId]);
   assert.deepEqual(grave.ownershipHistory[0], {
     id: "ownership-event-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -846,6 +850,7 @@ test("createOwnershipEvent records a scoped whole-lot ownership event", async ()
       eventType: "deed",
       targetScope: "selected_lot",
       effectiveDate: "2026-05-31",
+      deedRegisterOnFile: true,
       documentReference: "Deed book 1 page 2",
       notes: "Entered from scanned deed.",
     },
@@ -864,6 +869,7 @@ test("createOwnershipEvent records a scoped whole-lot ownership event", async ()
     "deed",
     "2026-05-31",
     "2026-05-31",
+    true,
     "power@example.test",
     "Deed book 1 page 2",
     "Entered from scanned deed.",

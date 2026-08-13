@@ -92,6 +92,8 @@ export type Owner = {
   id: string;
   displayName: string;
   contactNote?: string;
+  effectiveDate?: string;
+  deedRegisterOnFile: boolean;
 };
 
 export type VerifiedPlace = {
@@ -169,6 +171,7 @@ export type OwnershipEvent = {
   ownerIds: string[];
   eventType: "purchase" | "transfer" | "inheritance" | "correction" | "release";
   effectiveDate: string;
+  deedRegisterOnFile: boolean;
   recordedBy: string;
   documentReference?: string;
   notes?: string;
@@ -551,6 +554,7 @@ export type SaveOwnershipEventInput = {
   targetScope: OwnershipTargetScope;
   targetGravesiteIds: string[];
   effectiveDate: string;
+  deedRegisterOnFile: boolean;
   documentReference: string;
   notes: string;
   reason?: string;
