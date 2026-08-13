@@ -1050,7 +1050,8 @@ h3 {
   border-top: 1px solid #e0e8dc;
 }
 
-.ownership-form label {
+.ownership-form label,
+.owner-edit-form label {
   display: grid;
   gap: 5px;
   color: var(--text-muted);
@@ -1060,7 +1061,10 @@ h3 {
 
 .ownership-form input,
 .ownership-form select,
-.ownership-form textarea {
+.ownership-form textarea,
+.owner-edit-form input,
+.owner-edit-form select {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   padding: 9px 10px;
@@ -1069,6 +1073,24 @@ h3 {
   background: #fff;
   color: var(--text-main);
   font: inherit;
+}
+
+.owner-edit-form {
+  min-width: 0;
+}
+
+.owner-edit-form .ownership-checkbox-field {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.owner-edit-form .ownership-checkbox-field input {
+  flex: 0 0 auto;
+  width: auto;
 }
 
 .ownership-wide-field,

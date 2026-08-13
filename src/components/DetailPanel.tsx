@@ -471,7 +471,7 @@ function OwnerRecord({ owner, canUpdate, onSave }: { owner: Owner; canUpdate: bo
     </div>
   );
   return (
-    <form className="owner-row ownership-party-card" onSubmit={(event) => void save(event)}>
+    <form className="owner-edit-form ownership-party-card" onSubmit={(event) => void save(event)}>
       <label>First name<input value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))} /></label>
       <label>Last name<input value={form.lastName} onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))} /></label>
       <label className="ownership-wide-field">Street address<input value={form.fullAddress} onChange={(event) => setForm((current) => ({ ...current, fullAddress: event.target.value }))} /></label>
@@ -479,7 +479,7 @@ function OwnerRecord({ owner, canUpdate, onSave }: { owner: Owner; canUpdate: bo
       <label>State<select value={form.state} onChange={(event) => setForm((current) => ({ ...current, state: event.target.value }))}><option value="">Select a state</option>{stateOptions.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}</select></label>
       <label>ZIP<input value={form.zip} onChange={(event) => setForm((current) => ({ ...current, zip: event.target.value }))} /></label>
       <label>Effective date<input value={form.effectiveDate} placeholder="YYYY, YYYY-MM, or exact date" onChange={(event) => setForm((current) => ({ ...current, effectiveDate: event.target.value }))} /></label>
-      <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />Deed register on file</label>
+      <label className="ownership-checkbox-field ownership-wide-field"><input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />Deed register on file</label>
       {error ? <p className="detail-message is-error ownership-wide-field">{error}</p> : null}
       <div className="ownership-form-actions ownership-wide-field"><button type="button" className="secondary-button" onClick={() => setIsEditing(false)}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save owner"}</button></div>
     </form>
