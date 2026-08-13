@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
+  updateOwner,
   createGraveFeature,
   createGravesiteHeadstone,
   createHeadstoneRelationship,
@@ -56,6 +57,7 @@ import type {
   SaveHeadstoneRelationshipInput,
   SaveMaintenanceRecordInput,
   SaveOwnershipEventInput,
+  UpdateOwnerInput,
   SearchMatch,
 } from "./types";
 
@@ -586,6 +588,11 @@ export default function App() {
     refreshDetails();
   };
 
+  const saveOwner = async (partyId: string, eventId: string, owner: UpdateOwnerInput) => {
+    await updateOwner(partyId, eventId, owner);
+    refreshDetails();
+  };
+
   return (
     <main className="app-shell">
       <SearchPanel
@@ -709,6 +716,7 @@ export default function App() {
         onSaveMaintenanceRecord={saveMaintenanceRecord}
         onUpdateMaintenanceRecord={updateSavedMaintenanceRecord}
         onSaveOwnershipEvent={saveOwnershipEvent}
+        onUpdateOwner={saveOwner}
         onSelectLotGrave={selectGrave}
         onSelectMarkerGrave={selectGrave}
         onUploadPhoto={saveGravePhoto}

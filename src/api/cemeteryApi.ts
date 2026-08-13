@@ -56,6 +56,7 @@ import type {
   SaveDeedInvestigationActionInput,
   SaveDeedRegistryMappingInput,
   SaveOwnershipEventInput,
+  UpdateOwnerInput,
   SearchMatch,
   SectionTextRecord,
   SourcePersonRecord,
@@ -198,6 +199,15 @@ export async function createOwnershipEvent(cemeteryId: string, graveSpaceId: str
     jsonRequest("POST", event),
   );
   return jsonResponse<{ id: string }>(response, "Ownership event API");
+}
+
+export async function updateOwner(partyId: string, eventId: string, owner: UpdateOwnerInput): Promise<{ id: string }> {
+  const cleanId = (id: string) => id.replace(/^ownership-(?:party|event)-/u, "");
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/ownership-parties/${encodeURIComponent(cleanId(partyId))}/events/${encodeURIComponent(cleanId(eventId))}`,
+    jsonRequest("PATCH", owner),
+  );
+  return jsonResponse<{ id: string }>(response, "Update owner API");
 }
 
 export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal): Promise<SearchMatch[]> {

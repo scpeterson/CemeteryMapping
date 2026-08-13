@@ -112,3 +112,42 @@ export async function createOwnershipEvent(
     client.release();
   }
 }
+
+export async function updateOwnershipParty(pool, partyId, eventId, update, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason: reason ?? "Owner information update" });
+    const scope = await client.query(
+      `SELECT 1 FROM ownership_event_parties ep
+       JOIN ownership_events oe ON oe.id = ep.ownership_event_uuid
+       WHERE ep.ownership_party_uuid = $1 AND ep.ownership_event_uuid = $2
+         AND oe.deleted_at IS NULL
+         AND ($3::uuid[] IS NULL OR oe.cemetery_id = ANY($3::uuid[]))`,
+      [partyId, eventId, allowedCemeteryIds ?? null],
+    );
+    if (!scope.rowCount) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    const recordedEffectiveDate = splitRecordedDate(update.effectiveDate);
+    await client.query(
+      `UPDATE ownership_parties SET display_name=$2, first_name=NULLIF($3, ''), last_name=NULLIF($4, ''),
+         full_address=NULLIF($5, ''), municipality=NULLIF($6, ''), state=NULLIF($7, ''), zip=NULLIF($8, ''), updated_at=now()
+       WHERE id=$1`,
+      [partyId, [update.firstName, update.lastName].filter(Boolean).join(" "), update.firstName, update.lastName, update.fullAddress, update.municipality, update.state, update.zip],
+    );
+    await client.query(
+      `UPDATE ownership_events SET effective_date=$2::date, effective_date_text=$3, deed_register_on_file=$4, updated_at=now()
+       WHERE id=$1`,
+      [eventId, recordedEffectiveDate.date, recordedEffectiveDate.text, update.deedRegisterOnFile],
+    );
+    await client.query("COMMIT");
+    return { id: partyId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}

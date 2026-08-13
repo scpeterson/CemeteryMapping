@@ -1009,6 +1009,13 @@ h3 {
   gap: 4px;
 }
 
+.owner-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .owner-row span,
 .muted,
 .burial-notes {

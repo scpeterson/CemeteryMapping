@@ -31,6 +31,7 @@ import type {
   SaveHeadstoneRelationshipInput,
   SaveMaintenanceRecordInput,
   SaveOwnershipEventInput,
+  UpdateOwnerInput,
   GeometryConfidence,
   GeometryType,
   GeographicPlaceCandidate,
@@ -75,6 +76,7 @@ type DetailPanelProps = {
   onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
+  onUpdateOwner: (partyId: string, eventId: string, owner: UpdateOwnerInput) => Promise<void>;
   onSelectLotGrave: (grave: GraveSpaceSummary) => void;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
@@ -438,6 +440,48 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
           {isSaving ? "Recording..." : "Record ownership"}
         </button>
       </div>
+    </form>
+  );
+}
+
+function OwnerRecord({ owner, canUpdate, onSave }: { owner: Owner; canUpdate: boolean; onSave: (partyId: string, eventId: string, update: UpdateOwnerInput) => Promise<void> }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string>();
+  const [form, setForm] = useState<UpdateOwnerInput>({
+    firstName: owner.firstName, lastName: owner.lastName, fullAddress: owner.fullAddress,
+    municipality: owner.municipality, state: owner.state, zip: owner.zip,
+    effectiveDate: owner.effectiveDate ?? "", deedRegisterOnFile: owner.deedRegisterOnFile,
+    reason: "Owner information update",
+  });
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!owner.ownershipEventId) return;
+    setIsSaving(true); setError(undefined);
+    try { await onSave(owner.id, owner.ownershipEventId, form); setIsEditing(false); }
+    catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Unable to update owner."); }
+    finally { setIsSaving(false); }
+  };
+  if (!isEditing) return (
+    <div className="owner-row">
+      <div className="owner-row-header"><strong>{owner.displayName}</strong>{canUpdate && owner.ownershipEventId ? <button type="button" className="icon-text-button" onClick={() => setIsEditing(true)}><Pencil size={14} aria-hidden="true" />Edit</button> : null}</div>
+      {owner.contactNote ? <span>{owner.contactNote}</span> : null}
+      <span>Date: {owner.effectiveDate || "Not recorded"}</span>
+      <label className="owner-deed-register-status"><input type="checkbox" checked={owner.deedRegisterOnFile} readOnly />Deed register on file</label>
+    </div>
+  );
+  return (
+    <form className="owner-row ownership-party-card" onSubmit={(event) => void save(event)}>
+      <label>First name<input value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))} /></label>
+      <label>Last name<input value={form.lastName} onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))} /></label>
+      <label className="ownership-wide-field">Street address<input value={form.fullAddress} onChange={(event) => setForm((current) => ({ ...current, fullAddress: event.target.value }))} /></label>
+      <label>City<input value={form.municipality} onChange={(event) => setForm((current) => ({ ...current, municipality: event.target.value }))} /></label>
+      <label>State<select value={form.state} onChange={(event) => setForm((current) => ({ ...current, state: event.target.value }))}><option value="">Select a state</option>{stateOptions.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}</select></label>
+      <label>ZIP<input value={form.zip} onChange={(event) => setForm((current) => ({ ...current, zip: event.target.value }))} /></label>
+      <label>Effective date<input value={form.effectiveDate} placeholder="YYYY, YYYY-MM, or exact date" onChange={(event) => setForm((current) => ({ ...current, effectiveDate: event.target.value }))} /></label>
+      <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />Deed register on file</label>
+      {error ? <p className="detail-message is-error ownership-wide-field">{error}</p> : null}
+      <div className="ownership-form-actions ownership-wide-field"><button type="button" className="secondary-button" onClick={() => setIsEditing(false)}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save owner"}</button></div>
     </form>
   );
 }
@@ -3274,6 +3318,7 @@ function GraveDetailPanel({
   onSaveMaintenanceRecord,
   onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
+  onUpdateOwner,
   onUploadPhoto,
   onDeletePhoto,
   onMovePhoto,
@@ -3310,6 +3355,7 @@ function GraveDetailPanel({
   onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
+  onUpdateOwner: (partyId: string, eventId: string, owner: UpdateOwnerInput) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
@@ -3372,17 +3418,7 @@ function GraveDetailPanel({
                 {grave.currentOwnerIds.length ? (
                   grave.currentOwnerIds.map((id) => {
                     const owner = ownersById.get(id);
-                    return (
-                      <div key={id} className="owner-row">
-                        <strong>{owner?.displayName ?? "Unknown owner"}</strong>
-                        {owner?.contactNote ? <span>{owner.contactNote}</span> : null}
-                        <span>Date: {owner?.effectiveDate || "Not recorded"}</span>
-                        <label className="owner-deed-register-status">
-                          <input type="checkbox" checked={owner?.deedRegisterOnFile ?? false} readOnly />
-                          Deed register on file
-                        </label>
-                      </div>
-                    );
+                    return owner ? <OwnerRecord key={id} owner={owner} canUpdate={canUpdateGravesites} onSave={onUpdateOwner} /> : null;
                   })
                 ) : (
                   <p className="muted">No current ownership is recorded.</p>
@@ -3600,6 +3636,7 @@ export function DetailPanel({
   onSaveMaintenanceRecord,
   onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
+  onUpdateOwner,
   onSelectLotGrave,
   onSelectMarkerGrave,
   onUploadPhoto,
@@ -3691,6 +3728,7 @@ export function DetailPanel({
       onSaveMaintenanceRecord={onSaveMaintenanceRecord}
       onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
       onSaveOwnershipEvent={onSaveOwnershipEvent}
+      onUpdateOwner={onUpdateOwner}
       onUploadPhoto={onUploadPhoto}
       onDeletePhoto={onDeletePhoto}
       onMovePhoto={onMovePhoto}

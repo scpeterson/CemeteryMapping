@@ -317,3 +317,20 @@ export function validateOwnershipEventPayload(body) {
     reason: validateMutationReason(body?.reason),
   };
 }
+
+export function validateOwnerUpdatePayload(body) {
+  const firstName = optionalText(body?.firstName, "Owner first name", 120) ?? "";
+  const lastName = optionalText(body?.lastName, "Owner last name", 120) ?? "";
+  if (!firstName && !lastName) throw new BadRequestError("Owner must have a first or last name.");
+  return {
+    firstName,
+    lastName,
+    fullAddress: optionalText(body?.fullAddress, "Owner address", 250) ?? "",
+    municipality: optionalText(body?.municipality, "Owner city", 150) ?? "",
+    state: optionalText(body?.state, "Owner state", 2) ?? "",
+    zip: optionalText(body?.zip, "Owner ZIP", 10) ?? "",
+    effectiveDate: optionalRecordedDate(body?.effectiveDate, "Effective date"),
+    deedRegisterOnFile: optionalBoolean(body?.deedRegisterOnFile, "Deed register on file"),
+    reason: validateMutationReason(body?.reason),
+  };
+}

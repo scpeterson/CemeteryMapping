@@ -16,7 +16,7 @@ test("current ownership resolves owners returned with the selected gravesite", (
 });
 
 test("current ownership shows the date and deed register status without internal right notes", () => {
-  assert.match(detailPanel, /Date: \{owner\?\.effectiveDate/u);
-  assert.match(detailPanel, /checked=\{owner\?\.deedRegisterOnFile/u);
+  assert.match(detailPanel, /Date: \{owner\.effectiveDate/u);
+  assert.match(detailPanel, /checked=\{owner\.deedRegisterOnFile/u);
   assert.match(detailPanel, /checked=\{form\.deedRegisterOnFile\}/u);
 });

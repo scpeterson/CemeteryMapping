@@ -90,10 +90,29 @@ export type Person = {
 
 export type Owner = {
   id: string;
+  ownershipEventId?: string;
   displayName: string;
+  firstName: string;
+  lastName: string;
+  fullAddress: string;
+  municipality: string;
+  state: string;
+  zip: string;
   contactNote?: string;
   effectiveDate?: string;
   deedRegisterOnFile: boolean;
+};
+
+export type UpdateOwnerInput = {
+  firstName: string;
+  lastName: string;
+  fullAddress: string;
+  municipality: string;
+  state: string;
+  zip: string;
+  effectiveDate: string;
+  deedRegisterOnFile: boolean;
+  reason?: string;
 };
 
 export type VerifiedPlace = {
