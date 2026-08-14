@@ -952,3 +952,6 @@ databaseChangeLog:
   - include:
       file: changes/319-ownership-deed-on-file-status.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/320-editable-deed-remarks.sql
+      relativeToChangelogFile: true

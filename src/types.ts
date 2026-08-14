@@ -583,6 +583,23 @@ export type SaveOwnershipEventInput = {
   reason?: string;
 };
 
+export type DeedRegistrySuggestion = {
+  id: string;
+  ownerDisplayName: string;
+  address: string;
+  city: string;
+  state: string;
+  effectiveDate: string;
+  deedOnFile: boolean;
+  deedRegisterOnFile: boolean;
+  modernSection: string;
+  lotText: string;
+  documentReference: string;
+  notes: string;
+  originalRowNumber?: number;
+  updatedRowNumber?: number;
+};
+
 export type CemeterySection = {
   id: string;
   name: string;
@@ -901,6 +918,7 @@ export type DeedRegistryReviewEntry = {
   mappingUpdatedBy: string;
   mappingUpdatedAt?: string;
   rawRemarks: string;
+  correctedRemarks: string;
   deedOnFile: string;
   deedRegisterOnFile: string;
   parsedSectionName: string;
@@ -943,6 +961,7 @@ export type SaveDeedRegistryMappingInput = {
   modernSection: string;
   correctedLotText: string;
   correctedLastKnownDate: string;
+  correctedRemarks: string;
   reason: string;
 };
 

@@ -33,12 +33,13 @@ import type {
   SaveMaintenanceRecordInput,
   SaveOwnershipEventInput,
   UpdateOwnerInput,
+  DeedRegistrySuggestion,
   GeometryConfidence,
   GeometryType,
   GeographicPlaceCandidate,
   VerifiedPlace,
 } from "../types";
-import { importVerifiedPlace, searchGeographicPlaces } from "../api/cemeteryApi";
+import { fetchDeedRegistrySuggestions, importVerifiedPlace, searchGeographicPlaces } from "../api/cemeteryApi";
 import { apiBaseUrl } from "../config/environment";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName, geometryConfidenceLabels, geometryTypeLabels, statusColors, statusLabels } from "../lib/format";
@@ -354,6 +355,9 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
+  const [registrySuggestions, setRegistrySuggestions] = useState<DeedRegistrySuggestion[]>([]);
+  const [isSearchingRegistry, setIsSearchingRegistry] = useState(false);
+  const [hasSearchedRegistry, setHasSearchedRegistry] = useState(false);
 
   const startEditing = () => {
     setForm(blankOwnershipForm(grave));
@@ -361,7 +365,42 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
     setGravesiteFilter("");
     setMessage(undefined);
     setError(undefined);
+    setRegistrySuggestions([]);
+    setHasSearchedRegistry(false);
     setIsEditing(true);
+  };
+
+  const searchRegistry = async () => {
+    const ownerNames = form.owners.map((owner) => [owner.firstName, owner.lastName].filter(Boolean).join(" ")).filter(Boolean).join(" ");
+    setIsSearchingRegistry(true);
+    setError(undefined);
+    try {
+      setRegistrySuggestions(await fetchDeedRegistrySuggestions(grave.cemeteryId, ownerNames));
+      setHasSearchedRegistry(true);
+    } catch (searchError) {
+      setError(searchError instanceof Error ? searchError.message : "Unable to search the imported deed registry.");
+    } finally {
+      setIsSearchingRegistry(false);
+    }
+  };
+
+  const applyRegistrySuggestion = (suggestion: DeedRegistrySuggestion) => {
+    setForm((current) => ({
+      ...current,
+      effectiveDate: suggestion.effectiveDate || current.effectiveDate,
+      deedOnFile: suggestion.deedOnFile,
+      deedRegisterOnFile: suggestion.deedRegisterOnFile,
+      documentReference: suggestion.documentReference,
+      notes: suggestion.notes,
+      owners: current.owners.length === 1 ? current.owners.map((owner) => ({
+        ...owner,
+        fullAddress: owner.fullAddress || suggestion.address,
+        municipality: owner.municipality || suggestion.city,
+        state: owner.state || suggestion.state,
+      })) : current.owners,
+    }));
+    setRegistrySuggestions([]);
+    setHasSearchedRegistry(false);
   };
 
   const save = async (event: FormEvent) => {
@@ -407,6 +446,32 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
         <OwnershipPartyFields title="Previous owners (from)" parties={form.previousOwners} onChange={(previousOwners) => setForm((current) => ({ ...current, previousOwners }))} />
       ) : null}
       <OwnershipPartyFields title={["sale", "gift"].includes(form.eventType) ? "New owners (to)" : "Owners"} parties={form.owners} onChange={(owners) => setForm((current) => ({ ...current, owners }))} />
+      {form.eventType === "deed" ? (
+        <section className="ownership-registry-assist ownership-wide-field">
+          <div>
+            <strong>Imported registry</strong>
+            <span>Reuse the source, tab lines, remarks, date, deed-file status, and available address from the 2017 and Updated 2022 tabs.</span>
+          </div>
+          <button type="button" className="secondary-button" onClick={() => void searchRegistry()} disabled={isSearchingRegistry || form.owners.every((owner) => !owner.firstName.trim() && !owner.lastName.trim())}>
+            {isSearchingRegistry ? "Searching..." : "Find imported record"}
+          </button>
+          {!hasSearchedRegistry && !isSearchingRegistry ? null : (
+            <div className="ownership-registry-results">
+              {registrySuggestions.map((suggestion) => (
+                <article key={suggestion.id}>
+                  <div>
+                    <strong>{suggestion.ownerDisplayName}</strong>
+                    <span>{suggestion.notes.replace(/\n/gu, " · ")}</span>
+                    <span>Date: {suggestion.effectiveDate || "not recorded"} · Historical location: {[suggestion.modernSection && `Section ${suggestion.modernSection}`, suggestion.lotText && `Lot ${suggestion.lotText}`].filter(Boolean).join(", ") || "not recorded"}</span>
+                  </div>
+                  <button type="button" onClick={() => applyRegistrySuggestion(suggestion)}>Use this record</button>
+                </article>
+              ))}
+              {!isSearchingRegistry && registrySuggestions.length === 0 ? <p>No imported owner matched those names.</p> : null}
+            </div>
+          )}
+        </section>
+      ) : null}
       <label>
         Event
         <select value={form.eventType} onChange={(event) => setForm((current) => ({ ...current, eventType: event.target.value as OwnershipEventType }))}>

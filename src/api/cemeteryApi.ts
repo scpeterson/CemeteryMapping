@@ -18,6 +18,7 @@ import type {
   DeedInvestigationCase,
   DeedRegistryReview,
   DeedRegistryReviewFilters,
+  DeedRegistrySuggestion,
   CurrentUser,
   DataQualityDashboard,
   GraveSpace,
@@ -199,6 +200,14 @@ export async function createOwnershipEvent(cemeteryId: string, graveSpaceId: str
     jsonRequest("POST", event),
   );
   return jsonResponse<{ id: string }>(response, "Ownership event API");
+}
+
+export async function fetchDeedRegistrySuggestions(cemeteryId: string, ownerNames: string): Promise<DeedRegistrySuggestion[]> {
+  const params = new URLSearchParams({ q: ownerNames });
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/deed-registry-suggestions?${params.toString()}`,
+  );
+  return jsonResponse<DeedRegistrySuggestion[]>(response, "Deed registry suggestion API");
 }
 
 export async function updateGraveLot(cemeteryId: string, graveSpaceId: string, lotId: string): Promise<{ id: string; lotId: string }> {

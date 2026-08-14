@@ -184,7 +184,7 @@ test("updateDeedRegistryMapping updates only editable source worksheets with aud
       if (sql.includes("UPDATE deed_registry_entries entry")) {
         assert.match(sql, /Original 2017/u);
         assert.match(sql, /Updated 2022/u);
-        assert.deepEqual(values, ["entry-1", "C", "51", "2022-03-14", "admin@example.com"]);
+        assert.deepEqual(values, ["entry-1", "C", "51", "2022-03-14", "Two graves north side", "admin@example.com"]);
         return { rows: [{ id: "entry-1" }] };
       }
       return { rows: [] };
@@ -196,7 +196,7 @@ test("updateDeedRegistryMapping updates only editable source worksheets with aud
   const saved = await updateDeedRegistryMapping(
     pool,
     "entry-1",
-    { modernSection: "C", correctedLotText: "51", correctedLastKnownDate: "2022-03-14" },
+    { modernSection: "C", correctedLotText: "51", correctedLastKnownDate: "2022-03-14", correctedRemarks: "Two graves north side" },
     { actorUser: { email: "admin@example.com" }, reason: "Mapped from field review" },
   );
 

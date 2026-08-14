@@ -1,7 +1,7 @@
 export function registerGraveRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, createGraveFeature,
-    createMaintenanceRecord, createOwnershipEvent, getCemeteryData, getGraveSpace, pool,
+    createMaintenanceRecord, createOwnershipEvent, findDeedRegistrySuggestions, getCemeteryData, getGraveSpace, pool,
     config, importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     requireCemeteryAdmin, requirePowerUser, requireReader, softDeleteGraveFeature, updateBurial,
     updateGraveFeature, updateGraveSpace, updateGraveLotAssignment, updateMaintenanceRecord, updateOwnershipParty, validateBurialPayload,
@@ -70,6 +70,16 @@ export function registerGraveRoutes(app, context) {
         } catch (error) {
           next(error);
         }
+      });
+
+      app.get("/api/cemeteries/:cemeteryId/deed-registry-suggestions", requireCemeteryAdmin, async (request, response, next) => {
+        try {
+          const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+          if (!canEditCemetery(request.user, cemeteryId)) return response.status(403).json({ error: "Forbidden" });
+          const query = String(request.query.q ?? "").trim();
+          if (query.length < 2 || query.length > 300) return response.status(400).json({ error: "Owner search must be between 2 and 300 characters." });
+          response.json(await findDeedRegistrySuggestions(pool, cemeteryId, query));
+        } catch (error) { next(error); }
       });
     
       app.patch("/api/cemeteries/:cemeteryId/grave-spaces/:id", requirePowerUser, async (request, response, next) => {

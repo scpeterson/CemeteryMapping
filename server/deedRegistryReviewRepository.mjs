@@ -63,6 +63,7 @@ function toRemovedEntry(row) {
     rawLotText: row.raw_lot_text ?? "",
     rawSectionText: row.raw_section_text ?? "",
     rawRemarks: row.raw_remarks ?? "",
+    correctedRemarks: row.corrected_remarks ?? "",
     parsedLotNumbers: row.parsed_lot_numbers ?? [],
   };
 }
@@ -260,6 +261,7 @@ export async function listDeedRegistryReview(pool, filters = {}) {
         entry.mapping_updated_by,
         entry.mapping_updated_at,
         entry.raw_remarks,
+        entry.corrected_remarks,
         entry.deed_on_file,
         entry.deed_register_on_file,
         entry.parsed_section_name,
@@ -439,7 +441,8 @@ export async function updateDeedRegistryMapping(pool, entryId, mapping, { actorU
           modern_section = NULLIF($2, ''),
           corrected_lot_text = NULLIF($3, ''),
           corrected_last_known_date = NULLIF($4, ''),
-          mapping_updated_by = NULLIF($5, ''),
+          corrected_remarks = NULLIF($5, ''),
+          mapping_updated_by = NULLIF($6, ''),
           mapping_updated_at = now(),
           updated_at = now()
         FROM deed_registry_import_batches batch
@@ -448,7 +451,7 @@ export async function updateDeedRegistryMapping(pool, entryId, mapping, { actorU
           AND batch.worksheet_name IN ('Original 2017', 'Updated 2022')
         RETURNING entry.id::text
       `,
-      [entryId, mapping.modernSection, mapping.correctedLotText, mapping.correctedLastKnownDate, actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? ""],
+      [entryId, mapping.modernSection, mapping.correctedLotText, mapping.correctedLastKnownDate, mapping.correctedRemarks, actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? ""],
     );
     await client.query("COMMIT");
     return result.rows[0];
