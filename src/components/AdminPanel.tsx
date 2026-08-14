@@ -657,6 +657,7 @@ function DeedRegistryMappingEditor({
   const [modernSection, setModernSection] = useState(entry.modernSection);
   const [correctedLotText, setCorrectedLotText] = useState(entry.correctedLotText);
   const [correctedLastKnownDate, setCorrectedLastKnownDate] = useState(entry.correctedLastKnownDate || entry.lastKnownDate);
+  const [correctedRemarks, setCorrectedRemarks] = useState(entry.correctedRemarks || entry.rawRemarks);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
 
@@ -664,7 +665,8 @@ function DeedRegistryMappingEditor({
     setModernSection(entry.modernSection);
     setCorrectedLotText(entry.correctedLotText);
     setCorrectedLastKnownDate(entry.correctedLastKnownDate || entry.lastKnownDate);
-  }, [entry.correctedLastKnownDate, entry.correctedLotText, entry.lastKnownDate, entry.modernSection]);
+    setCorrectedRemarks(entry.correctedRemarks || entry.rawRemarks);
+  }, [entry.correctedLastKnownDate, entry.correctedLotText, entry.correctedRemarks, entry.lastKnownDate, entry.modernSection, entry.rawRemarks]);
 
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -675,6 +677,7 @@ function DeedRegistryMappingEditor({
         modernSection,
         correctedLotText,
         correctedLastKnownDate,
+        correctedRemarks,
         reason: `Update modern mapping for deed registry row ${entry.sourceRowNumber}`,
       });
       await onSaved();
@@ -700,6 +703,11 @@ function DeedRegistryMappingEditor({
         Last known date
         <input value={correctedLastKnownDate} onChange={(event) => setCorrectedLastKnownDate(event.target.value)} maxLength={50} placeholder="Example: 1944 or 1944-05-12" />
         {entry.lastKnownDate ? <small>Imported value: {entry.lastKnownDate}</small> : null}
+      </label>
+      <label className="deed-mapping-remarks">
+        Remarks
+        <textarea value={correctedRemarks} onChange={(event) => setCorrectedRemarks(event.target.value)} maxLength={4000} rows={3} />
+        {entry.rawRemarks ? <small>Imported value: {entry.rawRemarks}</small> : null}
       </label>
       <button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save mapping"}</button>
       {message ? <small role="status">{message}</small> : null}
@@ -1327,6 +1335,10 @@ function DeedsAdminTab({
                     <div title="Whether a deed register entry was found in the source worksheet.">
                       <dt>Register</dt>
                       <dd>{entry.deedRegisterOnFile || "Unknown"}</dd>
+                    </div>
+                    <div title="Remarks from the spreadsheet, or their editable correction.">
+                      <dt>Remarks</dt>
+                      <dd>{entry.correctedRemarks || entry.rawRemarks || "None"}</dd>
                     </div>
                   </dl>
                   {entry.rowType === "owner_record" && ["Original 2017", "Updated 2022"].includes(selectedDeedBatch?.worksheetName ?? "") ? (

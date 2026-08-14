@@ -65,7 +65,7 @@ export async function findDeedRegistrySuggestions(pool, cemeteryId, query) {
         COALESCE(updated.corrected_last_known_date, updated.last_known_date) AS updated_known_date,
         updated.deed_on_file AS updated_deed_on_file,
         updated.deed_register_on_file AS updated_deed_register_on_file,
-        updated.raw_remarks AS updated_remarks,
+        COALESCE(updated.corrected_remarks, updated.raw_remarks) AS updated_remarks,
         updated.modern_section AS updated_modern_section,
         COALESCE(updated.corrected_lot_text, updated.raw_lot_text) AS updated_lot_text,
         original.id::text AS original_id,
@@ -75,7 +75,7 @@ export async function findDeedRegistrySuggestions(pool, cemeteryId, query) {
         original.city AS original_city,
         original.state AS original_state,
         COALESCE(original.corrected_last_known_date, original.last_known_date) AS original_known_date,
-        original.raw_remarks AS original_remarks,
+        COALESCE(original.corrected_remarks, original.raw_remarks) AS original_remarks,
         original.modern_section AS original_modern_section,
         COALESCE(original.corrected_lot_text, original.raw_lot_text) AS original_lot_text
       FROM updated

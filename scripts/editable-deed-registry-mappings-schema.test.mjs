@@ -23,3 +23,9 @@ test("deed registry recorded-date migration preserves year-only values", async (
   assert.match(sql, /SET last_known_date = '1944'/u);
   assert.match(sql, /lower\(owner_display_name\) = 'roy soergel'/u);
 });
+
+test("deed registry remarks migration adds an editable correction without replacing imported remarks", async () => {
+  const sql = await readFile(new URL("../db/changelog/changes/320-editable-deed-remarks.sql", import.meta.url), "utf8");
+  assert.match(sql, /ADD COLUMN corrected_remarks text/u);
+  assert.doesNotMatch(sql, /DROP COLUMN IF EXISTS raw_remarks[;\s]/u);
+});

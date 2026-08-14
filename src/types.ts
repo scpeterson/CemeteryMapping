@@ -918,6 +918,7 @@ export type DeedRegistryReviewEntry = {
   mappingUpdatedBy: string;
   mappingUpdatedAt?: string;
   rawRemarks: string;
+  correctedRemarks: string;
   deedOnFile: string;
   deedRegisterOnFile: string;
   parsedSectionName: string;
@@ -960,6 +961,7 @@ export type SaveDeedRegistryMappingInput = {
   modernSection: string;
   correctedLotText: string;
   correctedLastKnownDate: string;
+  correctedRemarks: string;
   reason: string;
 };
 
