@@ -448,7 +448,7 @@ h3 {
   position: absolute;
   top: 18px;
   left: 18px;
-  z-index: 1;
+  z-index: 3;
   max-width: min(340px, calc(100% - 112px));
   padding: 9px 12px;
   border: 1px solid rgba(53, 67, 57, 0.18);
@@ -513,6 +513,19 @@ h3 {
 
 .map-selection-toggle {
   top: 66px;
+}
+
+.map-region.has-data-status .map-view-toggle {
+  top: 124px;
+}
+
+.map-region.has-data-status .map-selection-toggle {
+  top: 172px;
+}
+
+.map-region.has-data-status .map-controls,
+.map-region.has-data-status .map-measurement {
+  top: 222px;
 }
 
 .map-view-toggle button,

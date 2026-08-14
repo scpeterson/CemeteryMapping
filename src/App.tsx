@@ -626,7 +626,7 @@ export default function App() {
         selectedLotKey={selectedLot ? lotSelectionKey(selectedLot) : undefined}
         onSelectMatch={selectMatch}
       />
-      <section className="map-region">
+      <section className={`map-region ${isLoading || loadError || userError ? "has-data-status" : ""}`}>
         <div
           className={`environment-badge environment-${appEnvironment.toLowerCase()}`}
           title={`Version: ${appVersionMetadata.version} (${appVersionMetadata.gitSha})\nBuild: ${appVersionMetadata.buildTime}\nAPI: ${apiBaseUrl}`}
