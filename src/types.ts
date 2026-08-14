@@ -583,6 +583,23 @@ export type SaveOwnershipEventInput = {
   reason?: string;
 };
 
+export type DeedRegistrySuggestion = {
+  id: string;
+  ownerDisplayName: string;
+  address: string;
+  city: string;
+  state: string;
+  effectiveDate: string;
+  deedOnFile: boolean;
+  deedRegisterOnFile: boolean;
+  modernSection: string;
+  lotText: string;
+  documentReference: string;
+  notes: string;
+  originalRowNumber?: number;
+  updatedRowNumber?: number;
+};
+
 export type CemeterySection = {
   id: string;
   name: string;
