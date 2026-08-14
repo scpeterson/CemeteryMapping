@@ -10,3 +10,8 @@ test("structured ownership parties support names, addresses, and recipient-only 
   assert.match(sql, /ownership_role IN \('owner', 'grantee'\)/u);
   assert.match(sql, /DROP VIEW IF EXISTS current_ownership_right_owners/u);
 });
+
+test("gravesite details expose the modern linked lot for whole-lot deeds", async () => {
+  const queries = await readFile(new URL("../server/cemeteryGraveQueries.mjs", import.meta.url), "utf8");
+  assert.match(queries, /COALESCE\(lots\.lot_id, gravesites\.lot_id\) AS lot_id/u);
+});

@@ -65,7 +65,7 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
         gravesites.cemetery_id::text,
         cemeteries.name AS cemetery_name,
         gravesites.section_id,
-        gravesites.lot_id,
+        COALESCE(lots.lot_id, gravesites.lot_id) AS lot_id,
         gravesites.grave_id,
         gravesites.gravesite_id,
         ${statusCodeSelect()} AS status,
