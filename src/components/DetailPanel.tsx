@@ -1069,6 +1069,7 @@ function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManageLot, o
   const [error, setError] = useState<string>();
   const [lotValue, setLotValue] = useState(grave.lot);
   const [isSavingLot, setIsSavingLot] = useState(false);
+  const [isConfirmingUnlink, setIsConfirmingUnlink] = useState(false);
 
   const startEditing = () => {
     setForm(blankGraveSpaceForm(grave));
@@ -1087,6 +1088,20 @@ function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManageLot, o
       setError(saveError instanceof Error ? saveError.message : "Unable to save gravesite.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const saveLot = async (nextLotId: string) => {
+    setIsSavingLot(true);
+    setError(undefined);
+    try {
+      await onUpdateLot(nextLotId);
+      setLotValue(nextLotId);
+      setIsConfirmingUnlink(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to update lot assignment.");
+    } finally {
+      setIsSavingLot(false);
     }
   };
 
@@ -1176,10 +1191,16 @@ function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManageLot, o
             </select>
           </label>
           {inferredLot && !grave.lot ? <button type="button" className="secondary-button" onClick={() => setLotValue(inferredLot.lot.id)}>Use suggested lot</button> : null}
-          <button type="button" disabled={isSavingLot || lotValue === grave.lot} onClick={() => {
-            setIsSavingLot(true);
-            void onUpdateLot(lotValue).catch((saveError: unknown) => setError(saveError instanceof Error ? saveError.message : "Unable to update lot assignment.")).finally(() => setIsSavingLot(false));
-          }}>{isSavingLot ? "Saving..." : "Save lot assignment"}</button>
+          <button type="button" disabled={isSavingLot || lotValue === grave.lot} onClick={() => void saveLot(lotValue)}>{isSavingLot ? "Saving..." : "Save lot assignment"}</button>
+          {grave.lot && !isConfirmingUnlink ? (
+            <button type="button" className="text-button grave-lot-unlink" disabled={isSavingLot} onClick={() => setIsConfirmingUnlink(true)}>Unlink from lot {grave.lot}</button>
+          ) : null}
+          {isConfirmingUnlink ? (
+            <div className="grave-lot-unlink-confirmation">
+              <p>This removes the explicit lot assignment. A spatially inferred suggestion may still appear for review.</p>
+              <div><button type="button" className="secondary-button" onClick={() => setIsConfirmingUnlink(false)} disabled={isSavingLot}>Cancel</button><button type="button" className="danger-button" onClick={() => void saveLot("")} disabled={isSavingLot}>{isSavingLot ? "Unlinking..." : "Confirm unlink"}</button></div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {error && !isEditing ? <p className="detail-message is-error">{error}</p> : null}
