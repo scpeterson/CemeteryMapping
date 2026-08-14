@@ -91,6 +91,8 @@ export type Person = {
 export type Owner = {
   id: string;
   ownershipEventId?: string;
+  ownershipEventRightId?: string;
+  ownershipTargetType?: "gravesite" | "lot";
   displayName: string;
   firstName: string;
   lastName: string;

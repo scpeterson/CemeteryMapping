@@ -227,6 +227,14 @@ export async function updateOwner(partyId: string, eventId: string, owner: Updat
   return jsonResponse<{ id: string }>(response, "Update owner API");
 }
 
+export async function removeGravesiteOwnershipRight(rightId: string): Promise<{ id: string }> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/ownership-event-rights/${encodeURIComponent(rightId)}`,
+    jsonRequest("DELETE", { reason: "Remove incorrect gravesite ownership connection" }),
+  );
+  return jsonResponse<{ id: string }>(response, "Remove gravesite ownership connection API");
+}
+
 export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal): Promise<SearchMatch[]> {
   const params = new URLSearchParams();
   if (query.trim()) params.set("q", query);

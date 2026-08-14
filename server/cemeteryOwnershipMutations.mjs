@@ -153,3 +153,32 @@ export async function updateOwnershipParty(pool, partyId, eventId, update, { act
     client.release();
   }
 }
+
+export async function removeGravesiteOwnershipRight(pool, rightId, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason: reason ?? "Remove incorrect gravesite ownership connection" });
+    const result = await client.query(
+      `UPDATE ownership_event_rights right_record
+       SET deleted_at = now(), deleted_by = $2, delete_reason = $3, updated_at = now()
+       WHERE right_record.id = $1
+         AND right_record.target_type = 'gravesite'
+         AND right_record.deleted_at IS NULL
+         AND ($4::uuid[] IS NULL OR right_record.cemetery_id = ANY($4::uuid[]))
+       RETURNING right_record.id::text`,
+      [rightId, actorUser?.email ?? "Cemetery database", reason ?? "Incorrect gravesite ownership connection", allowedCemeteryIds ?? null],
+    );
+    if (!result.rowCount) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    await client.query("COMMIT");
+    return result.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}

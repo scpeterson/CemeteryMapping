@@ -31,7 +31,7 @@ function registeredRoutes(register) {
 
 const cases = [
   ["system", registerSystemRoutes, 3, ["GET /api/health", "GET /api/me"]],
-  ["grave", registerGraveRoutes, 15, ["GET /api/cemetery-map", "GET /api/places/search", "POST /api/places/import", "GET /api/cemeteries/:cemeteryId/deed-registry-suggestions", "PATCH /api/burials/:id", "PATCH /api/cemeteries/:cemeteryId/grave-spaces/:id/lot", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events", "PATCH /api/ownership-parties/:partyId/events/:eventId"]],
+  ["grave", registerGraveRoutes, 16, ["GET /api/cemetery-map", "GET /api/places/search", "POST /api/places/import", "GET /api/cemeteries/:cemeteryId/deed-registry-suggestions", "PATCH /api/burials/:id", "PATCH /api/cemeteries/:cemeteryId/grave-spaces/:id/lot", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events", "PATCH /api/ownership-parties/:partyId/events/:eventId", "DELETE /api/ownership-event-rights/:rightId"]],
   ["report", registerReportRoutes, 4, ["GET /api/search", "POST /api/reports/query"]],
   ["headstone", registerHeadstoneRoutes, 12, ["GET /api/headstone-lookups", "POST /api/headstones/:id/relationships", "POST /api/headstones/:id/gravesites", "DELETE /api/headstone-gravesite-relationships/:id", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore"]],
   ["media", registerMediaRoutes, 4, ["POST /api/headstones/:id/media-assets", "PATCH /api/media-assets/:id/order"]],

@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
+  removeGravesiteOwnershipRight,
   updateOwner,
   updateGraveLot,
   createGraveFeature,
@@ -597,6 +598,11 @@ export default function App() {
     refreshDetails();
   };
 
+  const removeOwnershipConnection = async (rightId: string) => {
+    await removeGravesiteOwnershipRight(rightId);
+    refreshDetails();
+  };
+
   const saveGraveLot = async (lotId: string) => {
     if (!selectedGrave) throw new Error("Select a gravesite before assigning a lot.");
     await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId);
@@ -620,7 +626,7 @@ export default function App() {
         selectedLotKey={selectedLot ? lotSelectionKey(selectedLot) : undefined}
         onSelectMatch={selectMatch}
       />
-      <section className="map-region">
+      <section className={`map-region ${isLoading || loadError || userError ? "has-data-status" : ""}`}>
         <div
           className={`environment-badge environment-${appEnvironment.toLowerCase()}`}
           title={`Version: ${appVersionMetadata.version} (${appVersionMetadata.gitSha})\nBuild: ${appVersionMetadata.buildTime}\nAPI: ${apiBaseUrl}`}
@@ -733,6 +739,7 @@ export default function App() {
         onUpdateMaintenanceRecord={updateSavedMaintenanceRecord}
         onSaveOwnershipEvent={saveOwnershipEvent}
         onUpdateOwner={saveOwner}
+        onRemoveOwnershipConnection={removeOwnershipConnection}
         onUpdateGraveLot={saveGraveLot}
         onSelectLotGrave={selectGrave}
         onSelectMarkerGrave={selectGrave}

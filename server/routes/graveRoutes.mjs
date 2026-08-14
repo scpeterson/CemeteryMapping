@@ -1,7 +1,7 @@
 export function registerGraveRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, createGraveFeature,
-    createMaintenanceRecord, createOwnershipEvent, findDeedRegistrySuggestions, getCemeteryData, getGraveSpace, pool,
+    createMaintenanceRecord, createOwnershipEvent, findDeedRegistrySuggestions, getCemeteryData, getGraveSpace, pool, removeGravesiteOwnershipRight,
     config, importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     requireCemeteryAdmin, requirePowerUser, requireReader, softDeleteGraveFeature, updateBurial,
     updateGraveFeature, updateGraveSpace, updateGraveLotAssignment, updateMaintenanceRecord, updateOwnershipParty, validateBurialPayload,
@@ -285,6 +285,20 @@ export function registerGraveRoutes(app, context) {
         } catch (error) {
           next(error);
         }
+      });
+
+      app.delete("/api/ownership-event-rights/:rightId", requireCemeteryAdmin, async (request, response, next) => {
+        try {
+          const rightId = validateUuid(request.params.rightId, "Ownership connection id");
+          const reason = validateMutationReason(request.body?.reason) ?? "Remove incorrect gravesite ownership connection";
+          const removed = await removeGravesiteOwnershipRight(pool, rightId, {
+            actorUser: request.user,
+            reason,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          });
+          if (!removed) return response.status(404).json({ error: "Direct gravesite ownership connection not found" });
+          response.json(removed);
+        } catch (error) { next(error); }
       });
     
 }
