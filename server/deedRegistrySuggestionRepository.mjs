@@ -10,6 +10,14 @@ function suggestion(row) {
   const references = [];
   if (row.original_row_number) references.push(`Original 2017 tab - line ${row.original_row_number}`);
   if (row.updated_row_number) references.push(`Updated 2022 tab - line ${row.updated_row_number}`);
+  const originalRemarks = clean(row.original_remarks);
+  const updatedRemarks = clean(row.updated_remarks);
+  if (originalRemarks && updatedRemarks && originalRemarks !== updatedRemarks) {
+    references.push(`Original 2017 remarks: ${originalRemarks}`);
+    references.push(`Updated 2022 remarks: ${updatedRemarks}`);
+  } else if (updatedRemarks || originalRemarks) {
+    references.push(`Remarks: ${updatedRemarks || originalRemarks}`);
+  }
   return {
     id: row.updated_id ?? row.original_id,
     ownerDisplayName: clean(row.updated_owner_name || row.original_owner_name),
@@ -57,6 +65,7 @@ export async function findDeedRegistrySuggestions(pool, cemeteryId, query) {
         COALESCE(updated.corrected_last_known_date, updated.last_known_date) AS updated_known_date,
         updated.deed_on_file AS updated_deed_on_file,
         updated.deed_register_on_file AS updated_deed_register_on_file,
+        updated.raw_remarks AS updated_remarks,
         updated.modern_section AS updated_modern_section,
         COALESCE(updated.corrected_lot_text, updated.raw_lot_text) AS updated_lot_text,
         original.id::text AS original_id,
@@ -66,6 +75,7 @@ export async function findDeedRegistrySuggestions(pool, cemeteryId, query) {
         original.city AS original_city,
         original.state AS original_state,
         COALESCE(original.corrected_last_known_date, original.last_known_date) AS original_known_date,
+        original.raw_remarks AS original_remarks,
         original.modern_section AS original_modern_section,
         COALESCE(original.corrected_lot_text, original.raw_lot_text) AS original_lot_text
       FROM updated

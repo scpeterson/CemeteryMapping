@@ -450,7 +450,7 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
         <section className="ownership-registry-assist ownership-wide-field">
           <div>
             <strong>Imported registry</strong>
-            <span>Reuse the source, tab lines, date, deed-file status, and available address from the 2017 and Updated 2022 tabs.</span>
+            <span>Reuse the source, tab lines, remarks, date, deed-file status, and available address from the 2017 and Updated 2022 tabs.</span>
           </div>
           <button type="button" className="secondary-button" onClick={() => void searchRegistry()} disabled={isSearchingRegistry || form.owners.every((owner) => !owner.firstName.trim() && !owner.lastName.trim())}>
             {isSearchingRegistry ? "Searching..." : "Find imported record"}
