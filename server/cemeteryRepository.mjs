@@ -3,7 +3,7 @@ import { loadDetailedGrave } from "./cemeteryGraveQueries.mjs";
 import { selectHeadstoneById } from "./cemeteryHeadstoneQueries.mjs";
 import { toHeadstone } from "./cemeteryMappers.mjs";
 
-export { createOwnershipEvent, updateOwnershipParty } from "./cemeteryOwnershipMutations.mjs";
+export { createOwnershipEvent, removeGravesiteOwnershipRight, updateOwnershipParty } from "./cemeteryOwnershipMutations.mjs";
 export { createGraveFeature, softDeleteGraveFeature, updateGraveFeature } from "./cemeteryFeatureMutations.mjs";
 export { createMaintenanceRecord, updateMaintenanceRecord } from "./cemeteryMaintenanceMutations.mjs";
 export { updateBurial } from "./cemeteryBurialMutations.mjs";

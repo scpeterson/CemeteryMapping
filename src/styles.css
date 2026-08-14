@@ -1107,6 +1107,28 @@ h3 {
   margin: 0;
 }
 
+.owner-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.owner-remove-confirmation {
+  display: grid;
+  gap: 8px;
+  margin-top: 5px;
+  padding: 9px;
+  border: 1px solid #dfb8b3;
+  border-radius: 7px;
+  background: #fff7f5;
+}
+
+.owner-remove-confirmation > div {
+  display: flex;
+  justify-content: end;
+  gap: 7px;
+}
+
 .ownership-action {
   display: grid;
   gap: 8px;

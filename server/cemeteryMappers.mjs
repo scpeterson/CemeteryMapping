@@ -25,6 +25,8 @@ export function toOwner(owner) {
   return {
     id: owner.id,
     ownershipEventId: owner.ownership_event_id,
+    ownershipEventRightId: owner.ownership_event_right_id,
+    ownershipTargetType: owner.ownership_target_type,
     displayName: ownerDisplayName(owner),
     firstName: owner.first_name ?? "",
     lastName: owner.last_name ?? "",

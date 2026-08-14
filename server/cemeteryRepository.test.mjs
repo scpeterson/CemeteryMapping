@@ -7,6 +7,7 @@ import {
   getGraveSpace,
   getHeadstone,
   listHeadstoneLookupOptions,
+  removeGravesiteOwnershipRight,
   updateBurial,
   updateGraveSpace,
   updateHeadstone,
@@ -885,6 +886,53 @@ test("createOwnershipEvent records a scoped whole-lot ownership event", async ()
     null,
     "burial_right | lot | Manual ownership workflow target: selected lot.",
   ]);
+});
+
+test("removeGravesiteOwnershipRight soft-deletes one direct connection within cemetery scope", async () => {
+  const queries = [];
+  const client = {
+    async query(sql, values = []) {
+      queries.push({ sql, values });
+      if (sql.includes("UPDATE ownership_event_rights")) return { rowCount: 1, rows: [{ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }] };
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const result = await removeGravesiteOwnershipRight(
+    { async connect() { return client; } },
+    "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    {
+      actorUser: { email: "admin@example.test" },
+      reason: "Assigned to wrong gravesite",
+      allowedCemeteryIds: ["11111111-1111-4111-8111-111111111111"],
+    },
+  );
+  const update = queries.find(({ sql }) => sql.includes("UPDATE ownership_event_rights"));
+  assert.deepEqual(result, { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+  assert.match(update.sql, /target_type = 'gravesite'/u);
+  assert.match(update.sql, /deleted_at = now\(\)/u);
+  assert.deepEqual(update.values, [
+    "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "admin@example.test",
+    "Assigned to wrong gravesite",
+    ["11111111-1111-4111-8111-111111111111"],
+  ]);
+  assert.equal(queries.at(-1).sql, "COMMIT");
+});
+
+test("removeGravesiteOwnershipRight leaves unmatched or lot-level rights unchanged", async () => {
+  const queries = [];
+  const client = {
+    async query(sql) {
+      queries.push(sql);
+      if (sql.includes("UPDATE ownership_event_rights")) return { rowCount: 0, rows: [] };
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const result = await removeGravesiteOwnershipRight({ async connect() { return client; } }, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  assert.equal(result, undefined);
+  assert.equal(queries.at(-1), "ROLLBACK");
 });
 
 test("updateHeadstone mutation state query qualifies joined id columns", async () => {

@@ -82,6 +82,7 @@ type DetailPanelProps = {
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUpdateOwner: (partyId: string, eventId: string, owner: UpdateOwnerInput) => Promise<void>;
+  onRemoveOwnershipConnection: (rightId: string) => Promise<void>;
   onUpdateGraveLot: (lotId: string) => Promise<void>;
   onSelectLotGrave: (grave: GraveSpaceSummary) => void;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
@@ -554,8 +555,9 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
   );
 }
 
-function OwnerRecord({ owner, canUpdate, onSave }: { owner: Owner; canUpdate: boolean; onSave: (partyId: string, eventId: string, update: UpdateOwnerInput) => Promise<void> }) {
+function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: { owner: Owner; canUpdate: boolean; canRemove: boolean; onSave: (partyId: string, eventId: string, update: UpdateOwnerInput) => Promise<void>; onRemove: (rightId: string) => Promise<void> }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isConfirmingRemoval, setIsConfirmingRemoval] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
   const [form, setForm] = useState<UpdateOwnerInput>({
@@ -572,13 +574,33 @@ function OwnerRecord({ owner, canUpdate, onSave }: { owner: Owner; canUpdate: bo
     catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Unable to update owner."); }
     finally { setIsSaving(false); }
   };
+  const remove = async () => {
+    if (!owner.ownershipEventRightId) return;
+    setIsSaving(true); setError(undefined);
+    try { await onRemove(owner.ownershipEventRightId); }
+    catch (removeError) { setError(removeError instanceof Error ? removeError.message : "Unable to remove ownership connection."); setIsConfirmingRemoval(false); }
+    finally { setIsSaving(false); }
+  };
   if (!isEditing) return (
     <div className="owner-row">
-      <div className="owner-row-header"><strong>{owner.displayName}</strong>{canUpdate && owner.ownershipEventId ? <button type="button" className="icon-text-button" onClick={() => setIsEditing(true)}><Pencil size={14} aria-hidden="true" />Edit</button> : null}</div>
+      <div className="owner-row-header">
+        <strong>{owner.displayName}</strong>
+        <div className="owner-row-actions">
+          {canUpdate && owner.ownershipEventId ? <button type="button" className="icon-text-button" onClick={() => setIsEditing(true)}><Pencil size={14} aria-hidden="true" />Edit</button> : null}
+          {canRemove && owner.ownershipEventRightId && owner.ownershipTargetType === "gravesite" ? <button type="button" className="icon-text-button is-danger" onClick={() => setIsConfirmingRemoval(true)}><Trash2 size={14} aria-hidden="true" />Remove</button> : null}
+        </div>
+      </div>
       {owner.contactNote ? <span>{owner.contactNote}</span> : null}
       <span>Date: {owner.effectiveDate || "Not recorded"}</span>
       <label className="owner-deed-register-status"><input type="checkbox" checked={owner.deedOnFile} readOnly />Deed on file</label>
       <label className="owner-deed-register-status"><input type="checkbox" checked={owner.deedRegisterOnFile} readOnly />Deed register on file</label>
+      {isConfirmingRemoval ? (
+        <div className="owner-remove-confirmation">
+          <span>Remove this deed’s connection to this gravesite? Other gravesites on the deed will not change.</span>
+          <div><button type="button" className="secondary-button" onClick={() => setIsConfirmingRemoval(false)} disabled={isSaving}>Cancel</button><button type="button" className="danger-button" onClick={() => void remove()} disabled={isSaving}>{isSaving ? "Removing..." : "Remove connection"}</button></div>
+        </div>
+      ) : null}
+      {error ? <p className="detail-message is-error">{error}</p> : null}
     </div>
   );
   return (
@@ -3487,6 +3509,7 @@ function GraveDetailPanel({
   onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
   onUpdateOwner,
+  onRemoveOwnershipConnection,
   onUpdateGraveLot,
   onUploadPhoto,
   onDeletePhoto,
@@ -3528,6 +3551,7 @@ function GraveDetailPanel({
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUpdateOwner: (partyId: string, eventId: string, owner: UpdateOwnerInput) => Promise<void>;
+  onRemoveOwnershipConnection: (rightId: string) => Promise<void>;
   onUpdateGraveLot: (lotId: string) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
@@ -3591,9 +3615,12 @@ function GraveDetailPanel({
               </div>
               <div className="owner-list">
                 {grave.currentOwnerIds.length ? (
-                  grave.currentOwnerIds.map((id) => {
+                  grave.currentOwnerIds.map((id, index) => {
                     const owner = ownersById.get(id);
-                    return owner ? <OwnerRecord key={id} owner={owner} canUpdate={canUpdateGravesites} onSave={onUpdateOwner} /> : null;
+                    const isFirstOwnerForRight = owner?.ownershipEventRightId
+                      ? grave.currentOwnerIds.findIndex((candidateId) => ownersById.get(candidateId)?.ownershipEventRightId === owner.ownershipEventRightId) === index
+                      : false;
+                    return owner ? <OwnerRecord key={id} owner={owner} canUpdate={canUpdateGravesites} canRemove={canManageLotAssignment && isFirstOwnerForRight} onSave={onUpdateOwner} onRemove={onRemoveOwnershipConnection} /> : null;
                   })
                 ) : (
                   <p className="muted">No current ownership is recorded.</p>
@@ -3815,6 +3842,7 @@ export function DetailPanel({
   onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
   onUpdateOwner,
+  onRemoveOwnershipConnection,
   onUpdateGraveLot,
   onSelectLotGrave,
   onSelectMarkerGrave,
@@ -3911,6 +3939,7 @@ export function DetailPanel({
       onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
       onSaveOwnershipEvent={onSaveOwnershipEvent}
       onUpdateOwner={onUpdateOwner}
+      onRemoveOwnershipConnection={onRemoveOwnershipConnection}
       onUpdateGraveLot={onUpdateGraveLot}
       onUploadPhoto={onUploadPhoto}
       onDeletePhoto={onDeletePhoto}
