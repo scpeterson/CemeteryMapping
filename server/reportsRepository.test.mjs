@@ -112,6 +112,18 @@ test("owner holdings report scopes power users to assigned cemeteries", async ()
   assert.match(query.sql, /cemeteries\.id = ANY\(\$2::uuid\[\]\)/u);
   assert.deepEqual(query.values, ["%Stone%", ["11111111-1111-4111-8111-111111111111"]]);
   assert.equal(result.summary, '1 lot and 1 gravesite matched "Stone".');
+  assert.equal(result.subtitle, "Trinity");
+  assert.equal(result.columns.some((column) => column.key === "cemetery"), false);
+});
+
+test("owner holdings report retains the cemetery column for multiple cemeteries", async () => {
+  const pool = poolForRows([{ includes: "WITH matched_holdings", rows: [
+    { cemetery: "Trinity", owner_name: "Sarah Stone", target_type: "gravesite", record_label: "C-0180", source: "Ownership events" },
+    { cemetery: "North Hills", owner_name: "Sarah Stone", target_type: "gravesite", record_label: "A-0010", source: "Ownership events" },
+  ] }]);
+  const result = await runReport(pool, "owner-holdings", { ownerName: "Stone", cemeteryId: "__all" }, adminUser);
+  assert.equal(result.subtitle, undefined);
+  assert.equal(result.columns.some((column) => column.key === "cemetery"), true);
 });
 
 test("reader reports are scoped to assigned cemeteries", async () => {

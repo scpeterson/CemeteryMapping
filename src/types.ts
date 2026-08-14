@@ -677,6 +677,7 @@ export type ReportDefinition = {
 export type ReportResult = {
   report: ReportDefinition;
   summary: string;
+  subtitle?: string;
   columns: { key: string; label: string }[];
   rows: Record<string, unknown>[];
   notes: string[];

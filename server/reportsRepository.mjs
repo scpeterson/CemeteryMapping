@@ -199,10 +199,11 @@ function scopedWhere(columnName, values, cemeteryIds) {
   return ` AND ${columnName} = ANY($${values.length}::uuid[])`;
 }
 
-function reportResult({ definition, summary, columns, rows, notes = [], layout }) {
+function reportResult({ definition, summary, subtitle, columns, rows, notes = [], layout }) {
   return {
     report: toDefinition(definition),
     summary,
+    ...(subtitle ? { subtitle } : {}),
     columns,
     rows,
     notes,
@@ -770,10 +771,13 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
   );
   const lotCount = new Set(result.rows.filter((row) => row.target_type === "lot").map((row) => `${row.cemetery}:${row.record_label}`)).size;
   const gravesiteCount = new Set(result.rows.filter((row) => row.target_type === "gravesite").map((row) => `${row.cemetery}:${row.record_label}`)).size;
+  const cemeteryNames = [...new Set(result.rows.map((row) => row.cemetery).filter(Boolean))];
+  const isSingleCemetery = cemeteryNames.length === 1;
 
   return reportResult({
     definition,
     summary: `${lotCount} lot${lotCount === 1 ? "" : "s"} and ${gravesiteCount} gravesite${gravesiteCount === 1 ? "" : "s"} matched "${ownerName}".`,
+    subtitle: isSingleCemetery ? cemeteryNames[0] : undefined,
     columns: [
       { key: "owner_name", label: "Owner" },
       { key: "target_type", label: "Type" },
@@ -781,7 +785,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
       { key: "effective_date", label: "Date" },
       { key: "event_type", label: "Event" },
       { key: "document_reference", label: "Document" },
-      { key: "cemetery", label: "Cemetery" },
+      ...(isSingleCemetery ? [] : [{ key: "cemetery", label: "Cemetery" }]),
       { key: "source", label: "Source" },
     ],
     rows: result.rows,

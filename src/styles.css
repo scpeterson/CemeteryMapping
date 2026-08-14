@@ -2657,6 +2657,17 @@ h3 {
   gap: 12px;
 }
 
+.report-result-heading {
+  display: grid;
+  gap: 2px;
+}
+
+.report-result-heading span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
 .reports-header h2,
 .report-runner-header h3 {
   margin: 0;
@@ -2861,7 +2872,7 @@ h3 {
   font-size: 0.78rem;
 }
 
-.report-result-meta > div {
+.report-result-actions {
   display: flex;
   align-items: center;
   gap: 10px;
