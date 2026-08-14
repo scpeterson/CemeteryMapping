@@ -6,7 +6,7 @@ export async function createOwnershipEvent(
   pool,
   cemeteryId,
   selectedGravesiteId,
-  { owners, previousOwners = [], eventType, targetScope, targetGravesiteIds = [], effectiveDate, deedRegisterOnFile = false, documentReference, notes },
+  { owners, previousOwners = [], eventType, targetScope, targetGravesiteIds = [], effectiveDate, deedOnFile = false, deedRegisterOnFile = false, documentReference, notes },
   { actorUser, reason, allowedCemeteryIds } = {},
 ) {
   const client = await pool.connect();
@@ -33,13 +33,14 @@ export async function createOwnershipEvent(
           event_type,
           effective_date,
           effective_date_text,
+          deed_on_file,
           deed_register_on_file,
           recorded_by,
           document_reference,
           notes,
           source_table
         )
-        VALUES ($1, $2, $3::date, $4, $5, $6, NULLIF($7, ''), NULLIF($8, ''), 'manual_ownership_workflow')
+        VALUES ($1, $2, $3::date, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), 'manual_ownership_workflow')
         RETURNING id::text
       `,
       [
@@ -47,6 +48,7 @@ export async function createOwnershipEvent(
         eventType,
         recordedEffectiveDate.date,
         recordedEffectiveDate.text,
+        deedOnFile,
         deedRegisterOnFile,
         actorUser?.email ?? "Cemetery database",
         documentReference ?? "",
@@ -138,9 +140,9 @@ export async function updateOwnershipParty(pool, partyId, eventId, update, { act
       [partyId, [update.firstName, update.lastName].filter(Boolean).join(" "), update.firstName, update.lastName, update.fullAddress, update.municipality, update.state, update.zip],
     );
     await client.query(
-      `UPDATE ownership_events SET effective_date=$2::date, effective_date_text=$3, deed_register_on_file=$4, updated_at=now()
+      `UPDATE ownership_events SET effective_date=$2::date, effective_date_text=$3, deed_on_file=$4, deed_register_on_file=$5, updated_at=now()
        WHERE id=$1`,
-      [eventId, recordedEffectiveDate.date, recordedEffectiveDate.text, update.deedRegisterOnFile],
+      [eventId, recordedEffectiveDate.date, recordedEffectiveDate.text, update.deedOnFile, update.deedRegisterOnFile],
     );
     await client.query("COMMIT");
     return { id: partyId };

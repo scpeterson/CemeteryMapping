@@ -15,8 +15,10 @@ test("current ownership resolves owners returned with the selected gravesite", (
   assert.match(detailPanel, /\.\.\.\(grave\?\.owners \?\? \[\]\), \.\.\.owners/u);
 });
 
-test("current ownership shows the date and deed register status without internal right notes", () => {
+test("current ownership shows the date and both deed-file statuses without internal right notes", () => {
   assert.match(detailPanel, /Date: \{owner\.effectiveDate/u);
+  assert.match(detailPanel, /checked=\{owner\.deedOnFile/u);
   assert.match(detailPanel, /checked=\{owner\.deedRegisterOnFile/u);
+  assert.match(detailPanel, /checked=\{form\.deedOnFile\}/u);
   assert.match(detailPanel, /checked=\{form\.deedRegisterOnFile\}/u);
 });

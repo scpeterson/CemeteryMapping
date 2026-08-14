@@ -1093,6 +1093,12 @@ h3 {
   width: auto;
 }
 
+.ownership-file-status-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
 .ownership-wide-field,
 .ownership-form .detail-message,
 .ownership-event-guidance,

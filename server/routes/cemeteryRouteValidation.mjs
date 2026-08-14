@@ -311,6 +311,7 @@ export function validateOwnershipEventPayload(body) {
     targetScope,
     targetGravesiteIds,
     effectiveDate: optionalRecordedDate(body?.effectiveDate, "Effective date"),
+    deedOnFile: optionalBoolean(body?.deedOnFile, "Deed on file"),
     deedRegisterOnFile: optionalBoolean(body?.deedRegisterOnFile, "Deed register on file"),
     documentReference: optionalText(body?.documentReference, "Document reference", 250),
     notes: optionalText(body?.notes, "Ownership notes", 4000),
@@ -330,6 +331,7 @@ export function validateOwnerUpdatePayload(body) {
     state: optionalText(body?.state, "Owner state", 2) ?? "",
     zip: optionalText(body?.zip, "Owner ZIP", 10) ?? "",
     effectiveDate: optionalRecordedDate(body?.effectiveDate, "Effective date"),
+    deedOnFile: optionalBoolean(body?.deedOnFile, "Deed on file"),
     deedRegisterOnFile: optionalBoolean(body?.deedRegisterOnFile, "Deed register on file"),
     reason: validateMutationReason(body?.reason),
   };

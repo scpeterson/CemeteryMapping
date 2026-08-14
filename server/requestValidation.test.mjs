@@ -153,10 +153,12 @@ test("ownership payload validation accepts a year-only effective date", () => {
     eventType: "deed",
     targetScope: "selected_lot",
     effectiveDate: "1951",
+    deedOnFile: true,
     deedRegisterOnFile: true,
   });
 
   assert.equal(payload.effectiveDate, "1951");
+  assert.equal(payload.deedOnFile, true);
   assert.equal(payload.deedRegisterOnFile, true);
   assert.equal(payload.owners[0].lastName, "Bladel");
 });
