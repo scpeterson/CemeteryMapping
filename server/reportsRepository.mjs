@@ -721,7 +721,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
           current_ownership_right_owners.effective_date,
           current_ownership_right_owners.event_type,
           ownership_events.document_reference,
-          'Ownership events' AS source
+          ownership_events.notes AS remarks
         FROM current_ownership_right_owners
         JOIN ownership_events
           ON ownership_events.id = current_ownership_right_owners.ownership_event_uuid
@@ -748,7 +748,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
           owners.sale_date AS effective_date,
           'purchase' AS event_type,
           NULL::text AS document_reference,
-          'Legacy owner records' AS source
+          owners.notes AS remarks
         FROM owners
         JOIN gravesites
           ON gravesites.id = owners.gravesite_uuid
@@ -763,7 +763,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
           AND gravesites.deleted_at IS NULL
           ${scope}
       )
-      SELECT cemetery, owner_name, target_type, record_label, effective_date, event_type, document_reference, source
+      SELECT cemetery, owner_name, target_type, record_label, effective_date, event_type, document_reference, remarks
       FROM matched_holdings
       ORDER BY target_type, record_label, owner_name
     `,
@@ -786,7 +786,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
       { key: "event_type", label: "Event" },
       { key: "document_reference", label: "Document" },
       ...(isSingleCemetery ? [] : [{ key: "cemetery", label: "Cemetery" }]),
-      { key: "source", label: "Source" },
+      { key: "remarks", label: "Remarks" },
     ],
     rows: result.rows,
   });

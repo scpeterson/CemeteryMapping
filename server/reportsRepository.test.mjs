@@ -90,7 +90,7 @@ test("owner holdings report scopes power users to assigned cemeteries", async ()
           effective_date: "2025-01-01",
           event_type: "deed",
           document_reference: "Book 1",
-          source: "Ownership events",
+          remarks: "Original 2017 remarks: Family plot.",
         },
         {
           cemetery: "Trinity",
@@ -100,7 +100,7 @@ test("owner holdings report scopes power users to assigned cemeteries", async ()
           effective_date: "2025-01-01",
           event_type: "deed",
           document_reference: "Book 1",
-          source: "Ownership events",
+          remarks: "Updated 2022 remarks: Includes three gravesites.",
         },
       ],
     },
@@ -114,12 +114,14 @@ test("owner holdings report scopes power users to assigned cemeteries", async ()
   assert.equal(result.summary, '1 lot and 1 gravesite matched "Stone".');
   assert.equal(result.subtitle, "Trinity");
   assert.equal(result.columns.some((column) => column.key === "cemetery"), false);
+  assert.equal(result.columns.some((column) => column.key === "source"), false);
+  assert.equal(result.columns.some((column) => column.key === "remarks"), true);
 });
 
 test("owner holdings report retains the cemetery column for multiple cemeteries", async () => {
   const pool = poolForRows([{ includes: "WITH matched_holdings", rows: [
-    { cemetery: "Trinity", owner_name: "Sarah Stone", target_type: "gravesite", record_label: "C-0180", source: "Ownership events" },
-    { cemetery: "North Hills", owner_name: "Sarah Stone", target_type: "gravesite", record_label: "A-0010", source: "Ownership events" },
+    { cemetery: "Trinity", owner_name: "Sarah Stone", target_type: "gravesite", record_label: "C-0180", remarks: "Family plot" },
+    { cemetery: "North Hills", owner_name: "Sarah Stone", target_type: "gravesite", record_label: "A-0010", remarks: "Transferred" },
   ] }]);
   const result = await runReport(pool, "owner-holdings", { ownerName: "Stone", cemeteryId: "__all" }, adminUser);
   assert.equal(result.subtitle, undefined);
