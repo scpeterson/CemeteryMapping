@@ -44,6 +44,12 @@ Use `Reports -> Owner holdings` to list the lots and gravesites currently associ
 
 The Date column is the effective date of the deed or ownership event, not the timestamp when the information was entered into the application. Legacy owner rows use their recorded sale date. Remarks come from the ownership event notes for current records and the legacy owner notes for compatibility records.
 
+### Unowned Gravesites Report
+
+Use `Reports -> Unowned gravesites` to find active gravesites for which the application has neither a direct owner nor a current owner inherited through the assigned lot. Filter by section or gravesite status when reviewing a smaller group. The result includes the assigned lot, status, burials, markers, geometry confidence, and gravesite remarks; gravesites without an explicit lot relationship are labeled `No lot assigned`.
+
+An occupied or marked gravesite can still appear in this report because burial and marker evidence does not itself establish ownership. Likewise, `No owner found` means no current ownership record exists in the application; it does not prove that the gravesite was never deeded. Review imported deed evidence, paper records, lot assignment, and nearby ownership before treating a result as available inventory.
+
 ### Admin User Management
 
 Use `Admin -> Users` when adding, editing, deactivating, or reactivating application users.

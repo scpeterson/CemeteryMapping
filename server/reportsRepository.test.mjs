@@ -37,7 +37,7 @@ test("listReportsForUser filters reports by role", () => {
   );
   assert.deepEqual(
     listReportsForUser(powerUser).map((report) => report.id),
-    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "marker-burial-pages", "owner-holdings", "available-inventory", "maintenance-needs"],
+    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "marker-burial-pages", "owner-holdings", "unowned-gravesites", "available-inventory", "maintenance-needs"],
   );
   assert.ok(listReportsForUser(adminUser).some((report) => report.id === "deed-claim-trace-guide"));
 });
@@ -68,6 +68,10 @@ test("matchReportQuery maps free text only to approved reports", () => {
   const ownerMatch = matchReportQuery("How many lots are owned by Sarah Stone?");
   assert.equal(ownerMatch.report.id, "owner-holdings");
   assert.equal(ownerMatch.parameters.ownerName, "Sarah Stone");
+
+  const unownedMatch = matchReportQuery("Which gravesites do not have an owner in section C?");
+  assert.equal(unownedMatch.report.id, "unowned-gravesites");
+  assert.equal(unownedMatch.parameters.sectionName, "C");
 
   const unknown = matchReportQuery("Show me every raw table in the database");
   assert.equal(unknown.matched, false);
@@ -126,6 +130,35 @@ test("owner holdings report retains the cemetery column for multiple cemeteries"
   const result = await runReport(pool, "owner-holdings", { ownerName: "Stone", cemeteryId: "__all" }, adminUser);
   assert.equal(result.subtitle, undefined);
   assert.equal(result.columns.some((column) => column.key === "cemetery"), true);
+});
+
+test("unowned gravesites report excludes direct, legacy, and inherited whole-lot ownership", async () => {
+  const pool = poolForRows([{ includes: "WITH unowned AS", rows: [{
+    cemetery: "Trinity",
+    section: "C",
+    gravesite: "C-0177",
+    record_id: "TLC-GPS-0177",
+    assigned_lot: "C-71",
+    status: "occupied",
+    geometry_confidence: "estimated",
+    burials: "Example Person",
+    markers: "TLC-HS-0177",
+    remarks: "Ownership needs research",
+  }] }]);
+
+  const result = await runReport(pool, "unowned-gravesites", { sectionName: "C", status: "occupied" }, powerUser);
+  const query = pool.queries[0];
+
+  assert.match(query.sql, /FROM owners legacy_owner/u);
+  assert.match(query.sql, /current_owner\.target_type = 'gravesite'/u);
+  assert.match(query.sql, /current_owner\.target_type = 'lot'/u);
+  assert.match(query.sql, /current_owner\.lot_uuid = gravesites\.lot_uuid/u);
+  assert.deepEqual(query.values, [["11111111-1111-4111-8111-111111111111"], "C", "occupied"]);
+  assert.equal(result.summary, "1 gravesite has no current direct or whole-lot owner recorded.");
+  assert.equal(result.subtitle, "Trinity");
+  assert.equal(result.columns.some((column) => column.key === "cemetery"), false);
+  assert.equal(result.rows[0].assigned_lot, "C-71");
+  assert.match(result.notes[0], /does not prove/u);
 });
 
 test("reader reports are scoped to assigned cemeteries", async () => {

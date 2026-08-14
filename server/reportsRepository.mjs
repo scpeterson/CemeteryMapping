@@ -75,6 +75,18 @@ const reportDefinitions = [
     examples: ["How many lots are owned by Smith?", "How many gravesites are owned by Maria Garcia?"],
   },
   {
+    id: "unowned-gravesites",
+    title: "Unowned gravesites",
+    description: "Lists gravesites without a direct owner or ownership inherited through a whole-lot deed.",
+    category: "Ownership",
+    requiredRole: "power-user",
+    parameters: [
+      { name: "sectionName", label: "Section", type: "text", required: false },
+      { name: "status", label: "Gravesite status", type: "text", required: false },
+    ],
+    examples: ["Which gravesites do not have an owner?", "Show unowned gravesites in section C."],
+  },
+  {
     id: "available-inventory",
     title: "Available lots and gravesites",
     description: "Lists gravesites and whole lots that appear available for purchase.",
@@ -792,6 +804,118 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
   });
 }
 
+async function runUnownedGravesites(client, definition, parameters, cemeteryIds) {
+  const sectionName = optionalTextParameter(parameters, "sectionName", 80);
+  const status = optionalTextParameter(parameters, "status", 50);
+  const values = [];
+  const scope = scopedWhere("gravesites.cemetery_id", values, cemeteryIds);
+  let sectionFilter = "";
+  let statusFilter = "";
+  if (sectionName) {
+    values.push(sectionName);
+    sectionFilter = `AND lower(gravesites.section_id) = lower($${values.length})`;
+  }
+  const derivedStatus = derivedGravesiteStatusSql();
+  if (status) {
+    values.push(status);
+    statusFilter = `WHERE lower(unowned.status) = lower($${values.length})`;
+  }
+
+  const result = await client.query(
+    `
+      WITH unowned AS (
+        SELECT
+          cemeteries.name AS cemetery,
+          gravesites.section_id AS section,
+          concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS gravesite,
+          gravesites.gravesite_id AS record_id,
+          CASE
+            WHEN gravesites.lot_uuid IS NULL THEN 'No lot assigned'
+            ELSE concat_ws('-', NULLIF(lots.section_id, ''), NULLIF(lots.lot_id, ''))
+          END AS assigned_lot,
+          ${derivedStatus} AS status,
+          gravesites.geometry_confidence,
+          (
+            SELECT string_agg(burial_names.name, ', ' ORDER BY burial_names.name)
+            FROM (
+              SELECT DISTINCT COALESCE(
+                NULLIF(burials.full_name, ''),
+                NULLIF(btrim(concat_ws(' ', burials.first_name, burials.maiden_name, burials.last_name, burials.name_suffix)), '')
+              ) AS name
+              FROM burials
+              WHERE burials.gravesite_uuid = gravesites.id
+                AND burials.deleted_at IS NULL
+            ) burial_names
+            WHERE burial_names.name IS NOT NULL
+          ) AS burials,
+          (
+            SELECT string_agg(marker_ids.marker_id, ', ' ORDER BY marker_ids.marker_id)
+            FROM (
+              SELECT DISTINCT headstones.headstone_id AS marker_id
+              FROM headstones
+              LEFT JOIN headstone_gravesites
+                ON headstone_gravesites.headstone_uuid = headstones.id
+               AND headstone_gravesites.deleted_at IS NULL
+              WHERE headstones.deleted_at IS NULL
+                AND (headstones.gravesite_uuid = gravesites.id OR headstone_gravesites.gravesite_uuid = gravesites.id)
+            ) marker_ids
+            WHERE marker_ids.marker_id IS NOT NULL
+          ) AS markers,
+          gravesites.geometry_notes AS remarks
+        FROM gravesites
+        JOIN cemeteries
+          ON cemeteries.id = gravesites.cemetery_id
+        LEFT JOIN lots
+          ON lots.id = gravesites.lot_uuid
+         AND lots.deleted_at IS NULL
+        LEFT JOIN gravesite_status_types status_type
+          ON status_type.id = gravesites.status_type_id
+        WHERE gravesites.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1
+            FROM owners legacy_owner
+            WHERE legacy_owner.gravesite_uuid = gravesites.id
+              AND legacy_owner.deleted_at IS NULL
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM current_ownership_right_owners current_owner
+            WHERE (current_owner.target_type = 'gravesite' AND current_owner.gravesite_uuid = gravesites.id)
+               OR (current_owner.target_type = 'lot' AND current_owner.lot_uuid = gravesites.lot_uuid)
+          )
+          ${scope}
+          ${sectionFilter}
+      )
+      SELECT cemetery, section, gravesite, record_id, assigned_lot, status, geometry_confidence, burials, markers, remarks
+      FROM unowned
+      ${statusFilter}
+      ORDER BY cemetery, section, gravesite
+    `,
+    values,
+  );
+  const cemeteryNames = [...new Set(result.rows.map((row) => row.cemetery).filter(Boolean))];
+  const isSingleCemetery = cemeteryNames.length === 1;
+
+  return reportResult({
+    definition,
+    summary: `${result.rows.length} gravesite${result.rows.length === 1 ? " has" : "s have"} no current direct or whole-lot owner recorded.`,
+    subtitle: isSingleCemetery ? cemeteryNames[0] : undefined,
+    columns: [
+      { key: "gravesite", label: "Gravesite" },
+      { key: "record_id", label: "Record ID" },
+      { key: "assigned_lot", label: "Assigned lot" },
+      { key: "status", label: "Status" },
+      { key: "burials", label: "Burials" },
+      { key: "markers", label: "Markers" },
+      { key: "geometry_confidence", label: "Geometry confidence" },
+      { key: "remarks", label: "Remarks" },
+      ...(isSingleCemetery ? [] : [{ key: "cemetery", label: "Cemetery" }]),
+    ],
+    rows: result.rows,
+    notes: ["No owner found means no current ownership record exists in the application; it does not prove the gravesite was never deeded."],
+  });
+}
+
 async function runAvailableInventory(client, definition, cemeteryIds) {
   const values = [];
   const scope = scopedWhere("gravesites.cemetery_id", values, cemeteryIds);
@@ -1160,6 +1284,9 @@ export function matchReportQuery(query) {
     }
   } else if (/\bavailable\b/u.test(lower) && /\b(lots?|gravesites?|purchase)\b/u.test(lower)) {
     reportId = "available-inventory";
+  } else if (/\b(unowned|without (?:an? )?owner|no (?:current )?owner|do not have an owner|don't have an owner)\b/u.test(lower) && /\bgravesites?\b/u.test(lower)) {
+    reportId = "unowned-gravesites";
+    parameters.sectionName = extractSectionName(text);
   } else if (
     (/\b(deed|paperwork|trace|claim|parents?)\b/u.test(lower) && /\b(lot|gravesite|owned|ownership|rights?)\b/u.test(lower)) ||
     (/\b(deed|claim|trace)\b/u.test(lower) && /\bpaperwork|documents?\b/u.test(lower))
@@ -1215,6 +1342,7 @@ export async function runReport(pool, reportId, parameters = {}, user) {
     if (reportId === "marker-type-inventory") return await runMarkerTypeInventory(client, definition, parameters, cemeteryIds);
     if (reportId === "marker-burial-pages") return await runMarkerBurialPages(client, definition, parameters, cemeteryIds);
     if (reportId === "owner-holdings") return await runOwnerHoldings(client, definition, parameters, cemeteryIds);
+    if (reportId === "unowned-gravesites") return await runUnownedGravesites(client, definition, parameters, cemeteryIds);
     if (reportId === "available-inventory") return await runAvailableInventory(client, definition, cemeteryIds);
     if (reportId === "maintenance-needs") return await runMaintenanceNeeds(client, definition, parameters, cemeteryIds);
     if (reportId === "deed-claim-trace-guide") return runDeedClaimTraceGuide(definition, parameters);
