@@ -10,6 +10,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Added removal of an incorrect direct owner-to-gravesite connection while preserving the remaining ownership event and audit history.
 - Added cemetery-admin controls to assign, change, or unlink a gravesite's explicit lot relationship without moving its geometry.
 - Added deed-registry assisted fill for ownership entry, including source references, remarks, dates, deed-file flags, owner names, and available addresses.
+- Added an Unowned Gravesites report that excludes both directly owned gravesites and gravesites covered by current whole-lot ownership.
 - Added display and editing of imported deed-registry last-known dates while preserving the original spreadsheet value.
 - Added editing of imported deed-registry remarks while preserving the original spreadsheet value.
 - Preserve year-only deed-registry dates instead of inventing January 1, including Roy Soergel's recorded `1944` value.
