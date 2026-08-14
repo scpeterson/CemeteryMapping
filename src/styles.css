@@ -1056,6 +1056,38 @@ h3 {
   font: inherit;
 }
 
+.grave-lot-unlink,
+.grave-lot-unlink-confirmation {
+  grid-column: 1 / -1;
+}
+
+.grave-lot-unlink {
+  justify-self: start;
+  color: #8a3c32;
+}
+
+.grave-lot-unlink-confirmation {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e0b8ae;
+  border-radius: 7px;
+  background: #fff5f2;
+}
+
+.grave-lot-unlink-confirmation p {
+  margin: 0;
+  color: #6f3932;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.grave-lot-unlink-confirmation > div {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+
 .owner-row span,
 .muted,
 .burial-notes {

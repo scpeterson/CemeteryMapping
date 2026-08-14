@@ -21,6 +21,8 @@ test("unassigned gravesites offer reviewed spatial inference and admin assignmen
   const routes = await readFile(new URL("../server/routes/graveRoutes.mjs", import.meta.url), "utf8");
   assert.match(detail, /inferredLotForGrave/u);
   assert.match(detail, /Review against the paper map before assigning/u);
+  assert.match(detail, /Unlink from lot/u);
+  assert.match(detail, /Confirm unlink/u);
   assert.match(routes, /requireCemeteryAdmin/u);
   assert.match(routes, /grave-spaces\/:id\/lot/u);
 });
