@@ -262,7 +262,7 @@ export function registerGraveRoutes(app, context) {
           }
           response.status(201).json(created);
         } catch (error) {
-          if (error.message?.startsWith("Selected gravesite is not linked to a lot.") || error.message?.startsWith("Unknown gravesite ID:")) {
+          if (error.message?.startsWith("Selected gravesite is not linked to a lot.") || error.message?.startsWith("Unknown gravesite ID:") || error.message?.startsWith("Whole-lot ownership conflicts")) {
             response.status(400).json({ error: error.message });
             return;
           }

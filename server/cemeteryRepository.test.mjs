@@ -597,6 +597,7 @@ test("grave detail reads use the current military service schema", async () => {
               ],
             };
           }
+          if (sql.includes("FROM current_ownership_right_owners current_owner")) return { rows: [] };
           if (sql.includes("FROM burials")) {
             assert.match(sql, /military_branch_types\.label AS military_branch/u);
             assert.match(sql, /military_war_service_types\.code AS military_war_service_code/u);
@@ -639,6 +640,67 @@ test("grave detail reads use the current military service schema", async () => {
   assert.equal(grave.burials[0].veteran, true);
   assert.equal(grave.burials[0].militaryBranch, "");
   assert.equal(grave.burials[0].militaryWars, "");
+});
+
+test("createOwnershipEvent rejects a whole-lot owner that conflicts with a direct gravesite owner", async () => {
+  const queries = [];
+  const client = {
+    async query(sql, values = []) {
+      queries.push({ sql, values });
+      if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) return { rows: [{
+        id: "22222222-2222-4222-8222-222222222222", cemetery_id: "11111111-1111-4111-8111-111111111111",
+        gravesite_id: "TLC-GPS-0176", lot_uuid: "99999999-9999-4999-8999-999999999999",
+      }] };
+      if (sql.includes("FROM current_ownership_right_owners current_owner")) return { rows: [{ display_name: "Henry T. McWilliams" }] };
+      return { rows: [] };
+    },
+    release() {},
+  };
+  await assert.rejects(
+    createOwnershipEvent(
+      { async connect() { return client; } },
+      "11111111-1111-4111-8111-111111111111",
+      "TLC-GPS-0176",
+      {
+        owners: [{ firstName: "Herman L.", lastName: "Wolf" }], previousOwners: [], eventType: "deed",
+        targetScope: "selected_lot", targetGravesiteIds: [], effectiveDate: "1965-11-14",
+        deedOnFile: false, deedRegisterOnFile: true, documentReference: "Registry", notes: "",
+      },
+    ),
+    /Whole-lot ownership conflicts with direct gravesite ownership by Henry T\. McWilliams/u,
+  );
+  assert.equal(queries.at(-1).sql, "ROLLBACK");
+  assert.equal(queries.some(({ sql }) => sql.includes("INSERT INTO ownership_events")), false);
+});
+
+test("createOwnershipEvent permits whole-lot ownership for the same direct owner", async () => {
+  const queries = [];
+  const client = {
+    async query(sql) {
+      queries.push(sql);
+      if (sql.includes("FROM gravesites") && sql.includes("LIMIT 1")) return { rows: [{
+        id: "22222222-2222-4222-8222-222222222222", cemetery_id: "11111111-1111-4111-8111-111111111111",
+        gravesite_id: "TLC-GPS-0174", lot_uuid: "99999999-9999-4999-8999-999999999999",
+      }] };
+      if (sql.includes("FROM current_ownership_right_owners current_owner")) return { rows: [{ display_name: "Henry T. McWilliams" }] };
+      if (sql.includes("INSERT INTO ownership_events")) return { rows: [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }] };
+      if (sql.includes("INSERT INTO ownership_parties")) return { rows: [{ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }] };
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const result = await createOwnershipEvent(
+    { async connect() { return client; } },
+    "11111111-1111-4111-8111-111111111111",
+    "TLC-GPS-0174",
+    {
+      owners: [{ firstName: "Henry T", lastName: "McWilliams" }], previousOwners: [], eventType: "deed",
+      targetScope: "selected_lot", targetGravesiteIds: [], effectiveDate: "1966-01-24",
+      deedOnFile: false, deedRegisterOnFile: true, documentReference: "Registry", notes: "",
+    },
+  );
+  assert.deepEqual(result, { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" });
+  assert.ok(queries.some((sql) => sql.includes("INSERT INTO ownership_events")));
 });
 
 test("repository maps generalized gravesite ownership rights into owner detail", async () => {
@@ -830,6 +892,7 @@ test("createOwnershipEvent records a scoped whole-lot ownership event", async ()
           }
           if (sql.includes("INSERT INTO ownership_parties")) return { rows: [{ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }] };
           if (sql.includes("INSERT INTO ownership_events")) return { rows: [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }] };
+          if (sql.includes("FROM current_ownership_right_owners current_owner")) return { rows: [] };
           if (sql.includes("INSERT INTO ownership_event_parties")) return { rows: [] };
           if (sql.includes("INSERT INTO ownership_event_rights")) return { rows: [] };
           if (isGraveFeatureTableCheck(sql)) return { rows: [{ exists: false }] };

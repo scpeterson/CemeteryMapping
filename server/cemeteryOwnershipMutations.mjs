@@ -25,6 +25,28 @@ export async function createOwnershipEvent(
       return undefined;
     }
 
+    if (targetScope === "selected_lot") {
+      const directOwners = await client.query(
+        `SELECT DISTINCT party.display_name
+         FROM current_ownership_right_owners current_owner
+         JOIN gravesites gravesite
+           ON current_owner.target_type = 'gravesite'
+          AND current_owner.gravesite_uuid = gravesite.id
+         JOIN ownership_parties party ON party.id = current_owner.ownership_party_uuid
+         WHERE gravesite.lot_uuid = $1
+         ORDER BY party.display_name`,
+        [targets.selectedGrave.lot_uuid],
+      );
+      const normalizeOwnerName = (value) => String(value ?? "").toLowerCase().replace(/[^a-z0-9]+/gu, "");
+      const existingNames = new Set(directOwners.rows.map((row) => normalizeOwnerName(row.display_name)).filter(Boolean));
+      const submittedNames = new Set(owners.map((owner) => normalizeOwnerName([owner.firstName, owner.lastName].filter(Boolean).join(" "))).filter(Boolean));
+      const sameOwners = existingNames.size === submittedNames.size && [...existingNames].every((name) => submittedNames.has(name));
+      if (existingNames.size && !sameOwners) {
+        const labels = directOwners.rows.map((row) => row.display_name).join(", ");
+        throw new Error(`Whole-lot ownership conflicts with direct gravesite ownership by ${labels}. Select specific gravesites instead.`);
+      }
+    }
+
     const recordedEffectiveDate = splitRecordedDate(effectiveDate);
     const eventResult = await client.query(
       `
