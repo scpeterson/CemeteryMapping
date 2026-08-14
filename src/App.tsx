@@ -3,6 +3,7 @@ import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
   createOwnershipEvent,
   updateOwner,
+  updateGraveLot,
   createGraveFeature,
   createGravesiteHeadstone,
   createHeadstoneRelationship,
@@ -270,6 +271,9 @@ export default function App() {
     (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false) ||
     (hasScopedEditAccess && selectedHeadstone ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedHeadstone.cemeteryId) : false);
   const canUpdateSelectedGravesites = canUpdateSelectedHeadstones;
+  const canManageSelectedGraveLot =
+    currentUser?.role === "admin" ||
+    (currentUser?.role === "cemetery-admin" && selectedGrave ? (currentUser.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
   const canUpdateSelectedBurials = canUpdateSelectedHeadstones;
   const cemeteryScopeLabel = useMemo(() => {
     const cemeteryNames = [...new Set((data.boundaries ?? (data.boundary ? [data.boundary] : [])).map((boundary) => boundary.properties.name))];
@@ -593,6 +597,15 @@ export default function App() {
     refreshDetails();
   };
 
+  const saveGraveLot = async (lotId: string) => {
+    if (!selectedGrave) throw new Error("Select a gravesite before assigning a lot.");
+    await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId);
+    const nextData = await fetchCemeteryData();
+    setData(nextData);
+    setSelectedGrave((current) => current ? nextData.graves.find((grave) => graveSelectionKey(grave) === graveSelectionKey(current)) : undefined);
+    refreshDetails();
+  };
+
   return (
     <main className="app-shell">
       <SearchPanel
@@ -688,6 +701,8 @@ export default function App() {
         lot={selectedLot}
         lotGraves={selectedLotGraves}
         cemeteryGraves={selectedCemeteryGraves}
+        cemeteryLots={data.lots.filter((lot) => !selectedGrave || lot.cemeteryId === selectedGrave.cemeteryId)}
+        cemeteryHeadstones={data.headstones.filter((headstone) => !selectedGrave || headstone.cemeteryId === selectedGrave.cemeteryId)}
         lotRestrictedAreas={selectedLotRestrictedAreas}
         grave={selectedGraveDetails}
         standaloneHeadstoneSummary={selectedHeadstone}
@@ -695,6 +710,7 @@ export default function App() {
         markerGraves={selectedHeadstoneGraves}
         canViewOwnership={canViewSelectedOwnership}
         canUpdateGravesites={canUpdateSelectedGravesites}
+        canManageLotAssignment={canManageSelectedGraveLot}
         canUpdateBurials={canUpdateSelectedBurials}
         canUpdateHeadstones={canUpdateSelectedHeadstones}
         headstoneLookups={headstoneLookups}
@@ -717,6 +733,7 @@ export default function App() {
         onUpdateMaintenanceRecord={updateSavedMaintenanceRecord}
         onSaveOwnershipEvent={saveOwnershipEvent}
         onUpdateOwner={saveOwner}
+        onUpdateGraveLot={saveGraveLot}
         onSelectLotGrave={selectGrave}
         onSelectMarkerGrave={selectGrave}
         onUploadPhoto={saveGravePhoto}

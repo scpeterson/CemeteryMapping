@@ -100,6 +100,7 @@ export type Owner = {
   zip: string;
   contactNote?: string;
   effectiveDate?: string;
+  deedOnFile: boolean;
   deedRegisterOnFile: boolean;
 };
 
@@ -111,6 +112,7 @@ export type UpdateOwnerInput = {
   state: string;
   zip: string;
   effectiveDate: string;
+  deedOnFile: boolean;
   deedRegisterOnFile: boolean;
   reason?: string;
 };
@@ -190,6 +192,7 @@ export type OwnershipEvent = {
   ownerIds: string[];
   eventType: "purchase" | "transfer" | "inheritance" | "correction" | "release";
   effectiveDate: string;
+  deedOnFile: boolean;
   deedRegisterOnFile: boolean;
   recordedBy: string;
   documentReference?: string;
@@ -573,6 +576,7 @@ export type SaveOwnershipEventInput = {
   targetScope: OwnershipTargetScope;
   targetGravesiteIds: string[];
   effectiveDate: string;
+  deedOnFile: boolean;
   deedRegisterOnFile: boolean;
   documentReference: string;
   notes: string;

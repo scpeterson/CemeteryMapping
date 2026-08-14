@@ -213,6 +213,13 @@ export function validateGraveSpacePayload(body) {
   };
 }
 
+export function validateGraveLotAssignmentPayload(body) {
+  return {
+    lotId: optionalText(body?.lotId, "Lot", 100) ?? "",
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
 export function validateBurialPayload(body) {
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "unknown";
   if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");
@@ -311,6 +318,7 @@ export function validateOwnershipEventPayload(body) {
     targetScope,
     targetGravesiteIds,
     effectiveDate: optionalRecordedDate(body?.effectiveDate, "Effective date"),
+    deedOnFile: optionalBoolean(body?.deedOnFile, "Deed on file"),
     deedRegisterOnFile: optionalBoolean(body?.deedRegisterOnFile, "Deed register on file"),
     documentReference: optionalText(body?.documentReference, "Document reference", 250),
     notes: optionalText(body?.notes, "Ownership notes", 4000),
@@ -330,6 +338,7 @@ export function validateOwnerUpdatePayload(body) {
     state: optionalText(body?.state, "Owner state", 2) ?? "",
     zip: optionalText(body?.zip, "Owner ZIP", 10) ?? "",
     effectiveDate: optionalRecordedDate(body?.effectiveDate, "Effective date"),
+    deedOnFile: optionalBoolean(body?.deedOnFile, "Deed on file"),
     deedRegisterOnFile: optionalBoolean(body?.deedRegisterOnFile, "Deed register on file"),
     reason: validateMutationReason(body?.reason),
   };

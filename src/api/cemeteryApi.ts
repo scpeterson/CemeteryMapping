@@ -201,6 +201,14 @@ export async function createOwnershipEvent(cemeteryId: string, graveSpaceId: str
   return jsonResponse<{ id: string }>(response, "Ownership event API");
 }
 
+export async function updateGraveLot(cemeteryId: string, graveSpaceId: string, lotId: string): Promise<{ id: string; lotId: string }> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(graveSpaceId)}/lot`,
+    jsonRequest("PATCH", { lotId, reason: "Manual lot assignment from gravesite detail" }),
+  );
+  return jsonResponse<{ id: string; lotId: string }>(response, "Update gravesite lot API");
+}
+
 export async function updateOwner(partyId: string, eventId: string, owner: UpdateOwnerInput): Promise<{ id: string }> {
   const cleanId = (id: string) => id.replace(/^ownership-(?:party|event)-/u, "");
   const response = await authorizedFetch(

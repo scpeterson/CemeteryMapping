@@ -34,6 +34,7 @@ export function toOwner(owner) {
     zip: owner.zip ?? "",
     contactNote: compactJoin([owner.phone, owner.email, compactJoin([owner.full_address, owner.municipality, owner.state, owner.zip], " ")]),
     effectiveDate: recordedDate(owner.effective_date_text, owner.effective_date ?? owner.sale_date),
+    deedOnFile: Boolean(owner.deed_on_file),
     deedRegisterOnFile: Boolean(owner.deed_register_on_file),
   };
 }

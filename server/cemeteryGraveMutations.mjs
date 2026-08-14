@@ -96,6 +96,42 @@ export async function updateGraveSpaceMutation(
   }
 }
 
+export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lotId, { actorUser, reason, allowedCemeteryIds } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setAuditContext(client, { actorUser, reason: reason ?? "Gravesite lot assignment update" });
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    const lotResult = lotId
+      ? await client.query(`SELECT id, lot_id, section_id FROM lots WHERE cemetery_id=$1 AND lot_id=$2 AND deleted_at IS NULL`, [cemeteryId, lotId])
+      : { rows: [{ id: null, lot_id: null, section_id: null }] };
+    if (!lotResult.rows[0]) {
+      await client.query("ROLLBACK");
+      return { invalid: "lot_not_found" };
+    }
+    const lot = lotResult.rows[0];
+    const result = await client.query(
+      `UPDATE gravesites SET lot_uuid=$3::uuid, lot_id=$4, section_id=COALESCE($5, section_id), updated_at=now()
+       WHERE cemetery_id=$1 AND gravesite_id=$2 AND deleted_at IS NULL RETURNING gravesite_id`,
+      [cemeteryId, gravesiteId, lot.id, lot.lot_id, lot.section_id],
+    );
+    if (!result.rowCount) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    await client.query("COMMIT");
+    return { id: gravesiteId, lotId: lot.lot_id ?? "" };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { actorUser, reason } = {}) {
   const client = await pool.connect();
   try {

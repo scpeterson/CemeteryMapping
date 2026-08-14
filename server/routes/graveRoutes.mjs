@@ -4,8 +4,8 @@ export function registerGraveRoutes(app, context) {
     createMaintenanceRecord, createOwnershipEvent, getCemeteryData, getGraveSpace, pool,
     config, importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     requireCemeteryAdmin, requirePowerUser, requireReader, softDeleteGraveFeature, updateBurial,
-    updateGraveFeature, updateGraveSpace, updateMaintenanceRecord, updateOwnershipParty, validateBurialPayload,
-    validateCemeteryId, validateGraveFeaturePayload, validateGraveSpaceId, validateGraveSpacePayload,
+    updateGraveFeature, updateGraveSpace, updateGraveLotAssignment, updateMaintenanceRecord, updateOwnershipParty, validateBurialPayload,
+    validateCemeteryId, validateGraveFeaturePayload, validateGraveLotAssignmentPayload, validateGraveSpaceId, validateGraveSpacePayload,
     validateMaintenanceRecordPayload, validateMutationReason, validateOwnerUpdatePayload, validateOwnershipEventPayload, validateUuid,
   } = context;
       app.get("/api/places/search", requirePowerUser, async (request, response, next) => {
@@ -90,6 +90,21 @@ export function registerGraveRoutes(app, context) {
         } catch (error) {
           next(error);
         }
+      });
+
+      app.patch("/api/cemeteries/:cemeteryId/grave-spaces/:id/lot", requireCemeteryAdmin, async (request, response, next) => {
+        try {
+          const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+          const id = validateGraveSpaceId(request.params.id);
+          const update = validateGraveLotAssignmentPayload(request.body);
+          const result = await updateGraveLotAssignment(pool, cemeteryId, id, update.lotId, {
+            actorUser: request.user, reason: update.reason,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          });
+          if (result?.invalid === "lot_not_found") return response.status(404).json({ error: "Lot not found." });
+          if (!result) return response.status(404).json({ error: "Gravesite not found." });
+          response.json(result);
+        } catch (error) { next(error); }
       });
     
       app.patch("/api/burials/:id", requirePowerUser, async (request, response, next) => {

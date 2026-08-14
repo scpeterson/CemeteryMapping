@@ -7,7 +7,7 @@ export { createOwnershipEvent, updateOwnershipParty } from "./cemeteryOwnershipM
 export { createGraveFeature, softDeleteGraveFeature, updateGraveFeature } from "./cemeteryFeatureMutations.mjs";
 export { createMaintenanceRecord, updateMaintenanceRecord } from "./cemeteryMaintenanceMutations.mjs";
 export { updateBurial } from "./cemeteryBurialMutations.mjs";
-export { restoreGraveSpace, softDeleteGraveSpace } from "./cemeteryGraveMutations.mjs";
+export { restoreGraveSpace, softDeleteGraveSpace, updateGraveLotAssignment } from "./cemeteryGraveMutations.mjs";
 export { listHeadstoneLookupOptions } from "./cemeteryLookupQueries.mjs";
 export { getCemeteryData, getDetailedCemeteryData } from "./cemeteryMapResponses.mjs";
 export { createHeadstoneForGrave, updateHeadstone } from "./cemeteryHeadstoneMutations.mjs";
