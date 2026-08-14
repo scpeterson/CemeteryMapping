@@ -7,7 +7,11 @@ This project uses semantic application versions and GitHub releases. Each releas
 ### Added
 
 - Added structured multi-owner deed entry with separate names, addresses, optional shares, grantor/grantee roles, mixed lot and gravesite rights, and visual `From → To` transfer history.
+- Added removal of an incorrect direct owner-to-gravesite connection while preserving the remaining ownership event and audit history.
+- Added cemetery-admin controls to assign, change, or unlink a gravesite's explicit lot relationship without moving its geometry.
+- Added deed-registry assisted fill for ownership entry, including source references, remarks, dates, deed-file flags, owner names, and available addresses.
 - Added display and editing of imported deed-registry last-known dates while preserving the original spreadsheet value.
+- Added editing of imported deed-registry remarks while preserving the original spreadsheet value.
 - Preserve year-only deed-registry dates instead of inventing January 1, including Roy Soergel's recorded `1944` value.
 - Added reusable military decorations for burials, seeded with Purple Heart and Bronze Star Medal, plus a labeled Purple Heart badge and the Navy `MM2` rating.
 - Added a burial name suffix/title field for professional credentials and post-nominal titles such as `M.D.`.
@@ -21,6 +25,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 ### Changed
 
 - Clarified that the deed ownership event supports both newly issued deeds and historical deeds entered later.
+- Prevented a conflicting whole-lot ownership event when a gravesite in the lot already has a different direct owner.
+- Refined the Owner Holdings report to show a single cemetery beneath the title, omit its repeated Cemetery column, and show ownership Remarks instead of the internal Source label.
 - Upgraded React and React DOM together to 19.2.8.
 - Upgraded the Auth0 React SDK to 2.22.0 and `@auth0/auth0-spa-js` to 2.23.0.
 - Upgraded MapLibre GL JS to 6.0.0 and migrated map code to its ESM namespace imports.
