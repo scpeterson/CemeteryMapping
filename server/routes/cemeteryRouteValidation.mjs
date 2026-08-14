@@ -213,6 +213,13 @@ export function validateGraveSpacePayload(body) {
   };
 }
 
+export function validateGraveLotAssignmentPayload(body) {
+  return {
+    lotId: optionalText(body?.lotId, "Lot", 100) ?? "",
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
 export function validateBurialPayload(body) {
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "unknown";
   if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");

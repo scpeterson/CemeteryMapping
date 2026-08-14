@@ -1016,6 +1016,46 @@ h3 {
   gap: 8px;
 }
 
+.inferred-lot-note {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border-left: 3px solid #b8892f;
+  background: #fff8e8;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.grave-lot-assignment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e8dc;
+}
+
+.grave-lot-assignment label {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.grave-lot-assignment select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
 .owner-row span,
 .muted,
 .burial-notes {

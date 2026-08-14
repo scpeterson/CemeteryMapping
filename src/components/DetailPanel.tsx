@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { Camera, ChevronLeft, ChevronRight, FileText, Flag, History, Images, Info, Landmark, Link2, MapPinned, Pencil, Trash2, UserRound } from "lucide-react";
 import type {
+  AreaGeometry,
   Burial,
   CemeteryLot,
   GraveSpace,
@@ -48,6 +49,8 @@ type DetailPanelProps = {
   lot?: CemeteryLot;
   lotGraves?: GraveSpaceSummary[];
   cemeteryGraves?: GraveSpaceSummary[];
+  cemeteryLots?: CemeteryLot[];
+  cemeteryHeadstones?: HeadstoneSummary[];
   lotRestrictedAreas?: LotRestrictedArea[];
   grave?: GraveSpace;
   standaloneHeadstoneSummary?: HeadstoneSummary;
@@ -55,6 +58,7 @@ type DetailPanelProps = {
   markerGraves?: GraveSpaceSummary[];
   canViewOwnership: boolean;
   canUpdateGravesites: boolean;
+  canManageLotAssignment: boolean;
   canUpdateBurials: boolean;
   canUpdateHeadstones: boolean;
   headstoneLookups: HeadstoneLookups;
@@ -77,6 +81,7 @@ type DetailPanelProps = {
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUpdateOwner: (partyId: string, eventId: string, owner: UpdateOwnerInput) => Promise<void>;
+  onUpdateGraveLot: (lotId: string) => Promise<void>;
   onSelectLotGrave: (grave: GraveSpaceSummary) => void;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
@@ -158,6 +163,39 @@ const ownershipTargetOptions: { value: OwnershipTargetScope; label: string }[] =
   { value: "selected_lot", label: "This whole lot" },
   { value: "listed_gravesites", label: "Listed gravesites" },
 ];
+
+function pointInRing([x, y]: GeoJSON.Position, ring: GeoJSON.Position[]) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInArea(point: GeoJSON.Position, geometry: AreaGeometry) {
+  const polygons = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+  return polygons.some((polygon) => pointInRing(point, polygon[0]) && !polygon.slice(1).some((hole) => pointInRing(point, hole)));
+}
+
+function areaCenter(geometry: AreaGeometry): GeoJSON.Position | undefined {
+  const ring = geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0];
+  if (!ring?.length) return undefined;
+  const points = ring.slice(0, -1);
+  return [points.reduce((sum, point) => sum + point[0], 0) / points.length, points.reduce((sum, point) => sum + point[1], 0) / points.length];
+}
+
+function inferredLotForGrave(grave: GraveSpace, lots: CemeteryLot[], headstones: HeadstoneSummary[]) {
+  if (grave.lot) return undefined;
+  const markerPoints = headstones.filter((marker) => marker.gravesiteId === grave.id).map((marker) => marker.geometry.coordinates);
+  const markerMatches = lots.filter((lot) => markerPoints.some((point) => pointInArea(point, lot.geometry)));
+  if (markerMatches.length === 1) return { lot: markerMatches[0], source: "marker location", confidence: "high" as const };
+  const center = areaCenter(grave.geometry);
+  const graveMatches = center ? lots.filter((lot) => pointInArea(center, lot.geometry)) : [];
+  if (graveMatches.length === 1) return { lot: graveMatches[0], source: "gravesite center", confidence: "review" as const };
+  return undefined;
+}
 
 const stateOptions = [
   ["AL", "Alabama"], ["AK", "Alaska"], ["AZ", "Arizona"], ["AR", "Arkansas"], ["CA", "California"],
@@ -1016,11 +1054,21 @@ function blankGraveSpaceForm(grave: GraveSpace): SaveGraveSpaceInput {
   };
 }
 
-function GraveSpaceRecord({ grave, canUpdate, onSave }: { grave: GraveSpace; canUpdate: boolean; onSave: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace> }) {
+function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManageLot, onSave, onUpdateLot }: {
+  grave: GraveSpace;
+  lots: CemeteryLot[];
+  inferredLot?: { lot: CemeteryLot; source: string; confidence: "high" | "review" };
+  canUpdate: boolean;
+  canManageLot: boolean;
+  onSave: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
+  onUpdateLot: (lotId: string) => Promise<void>;
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<SaveGraveSpaceInput>(() => blankGraveSpaceForm(grave));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const [lotValue, setLotValue] = useState(grave.lot);
+  const [isSavingLot, setIsSavingLot] = useState(false);
 
   const startEditing = () => {
     setForm(blankGraveSpaceForm(grave));
@@ -1115,6 +1163,26 @@ function GraveSpaceRecord({ grave, canUpdate, onSave }: { grave: GraveSpace; can
           </div>
         ) : null}
       </dl>
+      {!grave.lot && inferredLot ? (
+        <p className="inferred-lot-note"><strong>Suggested lot {inferredLot.lot.id}</strong> — inferred from {inferredLot.source}. Review against the paper map before assigning.</p>
+      ) : null}
+      {canManageLot ? (
+        <div className="grave-lot-assignment">
+          <label>
+            Assigned lot
+            <select value={lotValue} onChange={(event) => setLotValue(event.target.value)}>
+              <option value="">No assigned lot</option>
+              {lots.slice().sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })).map((lot) => <option key={lot.id} value={lot.id}>{lot.section ? `${lot.section}-${lot.id}` : lot.id}</option>)}
+            </select>
+          </label>
+          {inferredLot && !grave.lot ? <button type="button" className="secondary-button" onClick={() => setLotValue(inferredLot.lot.id)}>Use suggested lot</button> : null}
+          <button type="button" disabled={isSavingLot || lotValue === grave.lot} onClick={() => {
+            setIsSavingLot(true);
+            void onUpdateLot(lotValue).catch((saveError: unknown) => setError(saveError instanceof Error ? saveError.message : "Unable to update lot assignment.")).finally(() => setIsSavingLot(false));
+          }}>{isSavingLot ? "Saving..." : "Save lot assignment"}</button>
+        </div>
+      ) : null}
+      {error && !isEditing ? <p className="detail-message is-error">{error}</p> : null}
     </article>
   );
 }
@@ -3309,11 +3377,14 @@ function GraveDetailPanel({
   summary,
   grave,
   cemeteryGraves,
+  cemeteryLots,
+  cemeteryHeadstones,
   headstones,
   northHillsEvidence,
   mediaAssets,
   canViewOwnership,
   canUpdateGravesites,
+  canManageLotAssignment,
   canUpdateBurials,
   canUpdateHeadstones,
   headstoneLookups,
@@ -3330,6 +3401,7 @@ function GraveDetailPanel({
   onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
   onUpdateOwner,
+  onUpdateGraveLot,
   onUploadPhoto,
   onDeletePhoto,
   onMovePhoto,
@@ -3346,11 +3418,14 @@ function GraveDetailPanel({
   summary: GraveSpaceSummary;
   grave?: GraveSpace;
   cemeteryGraves: GraveSpaceSummary[];
+  cemeteryLots: CemeteryLot[];
+  cemeteryHeadstones: HeadstoneSummary[];
   headstones: Headstone[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
   mediaAssets: MediaAsset[];
   canViewOwnership: boolean;
   canUpdateGravesites: boolean;
+  canManageLotAssignment: boolean;
   canUpdateBurials: boolean;
   canUpdateHeadstones: boolean;
   headstoneLookups: HeadstoneLookups;
@@ -3367,6 +3442,7 @@ function GraveDetailPanel({
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUpdateOwner: (partyId: string, eventId: string, owner: UpdateOwnerInput) => Promise<void>;
+  onUpdateGraveLot: (lotId: string) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
@@ -3380,6 +3456,8 @@ function GraveDetailPanel({
   onRetry?: () => void;
 }) {
   const title = formatGraveLabel(summary);
+
+  const inferredLot = grave ? inferredLotForGrave(grave, cemeteryLots, cemeteryHeadstones) : undefined;
 
   return (
     <aside className="detail-panel">
@@ -3416,7 +3494,7 @@ function GraveDetailPanel({
               <MapPinned size={17} aria-hidden="true" />
               <h3>Gravesite</h3>
             </div>
-            <GraveSpaceRecord grave={grave} canUpdate={canUpdateGravesites} onSave={onSaveGraveSpace} />
+            <GraveSpaceRecord grave={grave} lots={cemeteryLots} inferredLot={inferredLot} canUpdate={canUpdateGravesites} canManageLot={canManageLotAssignment} onSave={onSaveGraveSpace} onUpdateLot={onUpdateGraveLot} />
           </section>
 
           {canViewOwnership ? (
@@ -3619,6 +3697,8 @@ export function DetailPanel({
   lot,
   lotGraves = [],
   cemeteryGraves = [],
+  cemeteryLots = [],
+  cemeteryHeadstones = [],
   lotRestrictedAreas = [],
   grave,
   standaloneHeadstoneSummary,
@@ -3626,6 +3706,7 @@ export function DetailPanel({
   markerGraves = [],
   canViewOwnership,
   canUpdateGravesites,
+  canManageLotAssignment,
   canUpdateBurials,
   canUpdateHeadstones,
   headstoneLookups,
@@ -3648,6 +3729,7 @@ export function DetailPanel({
   onUpdateMaintenanceRecord,
   onSaveOwnershipEvent,
   onUpdateOwner,
+  onUpdateGraveLot,
   onSelectLotGrave,
   onSelectMarkerGrave,
   onUploadPhoto,
@@ -3719,11 +3801,14 @@ export function DetailPanel({
       summary={summary}
       grave={grave}
       cemeteryGraves={cemeteryGraves}
+      cemeteryLots={cemeteryLots}
+      cemeteryHeadstones={cemeteryHeadstones}
       headstones={headstones}
       northHillsEvidence={northHillsEvidence}
       mediaAssets={mediaAssets}
       canViewOwnership={canViewOwnership}
       canUpdateGravesites={canUpdateGravesites}
+      canManageLotAssignment={canManageLotAssignment}
       canUpdateBurials={canUpdateBurials}
       canUpdateHeadstones={canUpdateHeadstones}
       headstoneLookups={headstoneLookups}
@@ -3740,6 +3825,7 @@ export function DetailPanel({
       onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
       onSaveOwnershipEvent={onSaveOwnershipEvent}
       onUpdateOwner={onUpdateOwner}
+      onUpdateGraveLot={onUpdateGraveLot}
       onUploadPhoto={onUploadPhoto}
       onDeletePhoto={onDeletePhoto}
       onMovePhoto={onMovePhoto}

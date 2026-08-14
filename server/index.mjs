@@ -33,6 +33,7 @@ import {
   updateBurial,
   updateGraveFeature,
   updateGraveSpace,
+  updateGraveLotAssignment,
   updateHeadstone,
   updateHeadstoneRelationship,
   updateHeadstoneGravesiteRelationship,
@@ -108,7 +109,7 @@ export function createApp(config, pool) {
     listReportsForUser, matchReportQuery, pool, requireAdmin, requireCemeteryAdmin, requirePowerUser,
     requireReader, restoreGraveSpace, runReport, safelyRecordSystemEvent, searchCemetery,
     softDeleteGraveFeature, softDeleteGraveSpace, softDeleteHeadstoneRelationship, softDeleteHeadstoneGravesiteRelationship, updateBurial,
-    updateGraveFeature, updateGraveSpace, updateHeadstone, updateHeadstoneRelationship, updateHeadstoneGravesiteRelationship,
+    updateGraveFeature, updateGraveSpace, updateGraveLotAssignment, updateHeadstone, updateHeadstoneRelationship, updateHeadstoneGravesiteRelationship,
     updateMaintenanceRecord, updateOwnershipParty, validateHeadstoneBusinessRules, versionMetadata,
   });
 
