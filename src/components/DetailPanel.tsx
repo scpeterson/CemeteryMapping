@@ -416,14 +416,16 @@ function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpa
           onChange={(event) => setForm((current) => ({ ...current, effectiveDate: event.target.value }))}
         />
       </label>
-      <label className="ownership-checkbox-field">
-        <input type="checkbox" checked={form.deedOnFile} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />
-        Deed on file
-      </label>
-      <label className="ownership-checkbox-field">
-        <input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />
-        Deed register on file
-      </label>
+      <div className="ownership-file-status-fields">
+        <label className="ownership-checkbox-field">
+          <input type="checkbox" checked={form.deedOnFile} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />
+          Deed on file
+        </label>
+        <label className="ownership-checkbox-field">
+          <input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />
+          Deed register on file
+        </label>
+      </div>
       <label className="ownership-wide-field">
         Document reference
         <input

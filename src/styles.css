@@ -1094,9 +1094,30 @@ h3 {
 }
 
 .ownership-file-status-fields {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ownership-form .ownership-file-status-fields .ownership-checkbox-field,
+.owner-edit-form .ownership-file-status-fields .ownership-checkbox-field {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
+  min-height: auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.ownership-form .ownership-file-status-fields .ownership-checkbox-field input,
+.owner-edit-form .ownership-file-status-fields .ownership-checkbox-field input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
 }
 
 .ownership-wide-field,
