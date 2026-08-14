@@ -33,6 +33,17 @@ You can also ask an approved report question such as `Print burial pages for mar
 
 No photo or NHG placeholder means no qualifying linked record is currently available; it does not prove that the physical marker lacks a photograph or that NHG contains no relevant entry. Review marker media and NHG evidence links before treating missing report content as a data conclusion.
 
+### Owner Holdings Report
+
+Use `Reports -> Owner holdings` to list the lots and gravesites currently associated with an owner name. The report is available to power users, cemetery admins, and admins and remains scoped to cemeteries the signed-in user may access.
+
+1. Open `Reports` and select `Owner holdings` under Ownership.
+2. Enter all or part of the owner name and run the report.
+3. Review the owner, target type, lot or gravesite record, effective date, event, document reference, and remarks.
+4. For a result from one cemetery, confirm the cemetery shown beneath the report title. The cemetery is not repeated in every row. An admin report spanning multiple cemeteries retains a Cemetery column.
+
+The Date column is the effective date of the deed or ownership event, not the timestamp when the information was entered into the application. Legacy owner rows use their recorded sale date. Remarks come from the ownership event notes for current records and the legacy owner notes for compatibility records.
+
 ### Admin User Management
 
 Use `Admin -> Users` when adding, editing, deactivating, or reactivating application users.
@@ -108,7 +119,7 @@ Use `Admin -> Bulk` only when the same correction should apply to an explicit se
 1. Open `Admin -> Bulk`.
 2. Review or replace the change reason before running an action.
 3. For marker cleanup, paste marker public IDs or UUIDs, choose one or more marker fields to change, and run `Update markers`.
-4. For gravesite lot assignment, paste gravesite public IDs or UUIDs, choose the target lot, and run `Assign lot`.
+4. For bulk gravesite lot assignment, paste gravesite public IDs or UUIDs, choose the target lot, and run `Assign lot`.
 5. For NHG cleanup, select readings in `Admin -> Readings`, then return to `Admin -> Bulk` to apply a shared note or mark the selected readings reviewed.
 6. Review the result message. Any unmatched identifiers should be checked before assuming the cleanup is complete.
 
@@ -200,7 +211,20 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
 10. Add notes when the deed language, transfer terms, or evidence confidence needs explanation.
 11. Save and confirm the `Current Owner` and `Ownership Timeline` sections refresh.
 
-Whole-lot and individual-gravesite rights can coexist. When a lot owner transfers selected gravesites, record those specific targets as `Listed gravesites`; their direct ownership supersedes the whole-lot owner when those gravesites are viewed, while the whole-lot owner remains current for the other gravesites. The timeline renders transfers as `From → To` and keeps a separate address and optional fractional share for every party.
+Whole-lot and individual-gravesite rights can coexist when they describe the same owner or when selected gravesites have subsequently been transferred through specific ownership events. When a lot owner transfers selected gravesites, record those targets as `Listed gravesites`; their direct ownership supersedes the whole-lot owner when those gravesites are viewed, while the whole-lot owner remains current for the other gravesites. The application blocks a new `This whole lot` event when a gravesite in that lot already has a different direct owner. Select the affected gravesites instead, or first verify and correct the existing ownership record. The timeline renders transfers as `From → To` and keeps a separate address and optional fractional share for every party.
+
+To correct an owner linked to the wrong gravesite, open that gravesite and use `Remove` on the direct owner card, then confirm `Remove connection`. This soft-deletes only that gravesite ownership right and preserves the ownership event for its other targets and for audit history. A lot-level owner inherited by the gravesite cannot be removed from an individual gravesite with this control; correct the originating lot event instead.
+
+### Manual Gravesite Lot Assignment
+
+Cemetery admins and admins can correct a gravesite's explicit lot assignment from the regular gravesite detail panel when reviewed paper-map or other evidence is more reliable than the approximate map geometry.
+
+1. Select the gravesite and locate `Assigned lot`.
+2. Choose the reviewed lot and select `Save lot assignment`.
+3. To remove an incorrect relationship without choosing another lot, select `Unlink from lot`, review the warning, and confirm.
+4. Recheck the gravesite, marker, neighboring lots, and any source evidence after saving.
+
+Lot containment may be spatially inferred for review, but gravesite polygons and passageway edges are not survey-grade. Manual assignment or unlinking changes the explicit database relationship; it does not move the gravesite or marker geometry. An inferred suggestion may therefore still appear after unlinking.
 
 `power-user` and `cemetery-admin` users can record ownership events only for assigned cemeteries. `admin` users can record ownership events for any cemetery. Readers cannot see this form.
 

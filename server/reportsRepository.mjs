@@ -199,10 +199,11 @@ function scopedWhere(columnName, values, cemeteryIds) {
   return ` AND ${columnName} = ANY($${values.length}::uuid[])`;
 }
 
-function reportResult({ definition, summary, columns, rows, notes = [], layout }) {
+function reportResult({ definition, summary, subtitle, columns, rows, notes = [], layout }) {
   return {
     report: toDefinition(definition),
     summary,
+    ...(subtitle ? { subtitle } : {}),
     columns,
     rows,
     notes,
@@ -720,7 +721,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
           current_ownership_right_owners.effective_date,
           current_ownership_right_owners.event_type,
           ownership_events.document_reference,
-          'Ownership events' AS source
+          ownership_events.notes AS remarks
         FROM current_ownership_right_owners
         JOIN ownership_events
           ON ownership_events.id = current_ownership_right_owners.ownership_event_uuid
@@ -747,7 +748,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
           owners.sale_date AS effective_date,
           'purchase' AS event_type,
           NULL::text AS document_reference,
-          'Legacy owner records' AS source
+          owners.notes AS remarks
         FROM owners
         JOIN gravesites
           ON gravesites.id = owners.gravesite_uuid
@@ -762,7 +763,7 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
           AND gravesites.deleted_at IS NULL
           ${scope}
       )
-      SELECT cemetery, owner_name, target_type, record_label, effective_date, event_type, document_reference, source
+      SELECT cemetery, owner_name, target_type, record_label, effective_date, event_type, document_reference, remarks
       FROM matched_holdings
       ORDER BY target_type, record_label, owner_name
     `,
@@ -770,10 +771,13 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
   );
   const lotCount = new Set(result.rows.filter((row) => row.target_type === "lot").map((row) => `${row.cemetery}:${row.record_label}`)).size;
   const gravesiteCount = new Set(result.rows.filter((row) => row.target_type === "gravesite").map((row) => `${row.cemetery}:${row.record_label}`)).size;
+  const cemeteryNames = [...new Set(result.rows.map((row) => row.cemetery).filter(Boolean))];
+  const isSingleCemetery = cemeteryNames.length === 1;
 
   return reportResult({
     definition,
     summary: `${lotCount} lot${lotCount === 1 ? "" : "s"} and ${gravesiteCount} gravesite${gravesiteCount === 1 ? "" : "s"} matched "${ownerName}".`,
+    subtitle: isSingleCemetery ? cemeteryNames[0] : undefined,
     columns: [
       { key: "owner_name", label: "Owner" },
       { key: "target_type", label: "Type" },
@@ -781,8 +785,8 @@ async function runOwnerHoldings(client, definition, parameters, cemeteryIds) {
       { key: "effective_date", label: "Date" },
       { key: "event_type", label: "Event" },
       { key: "document_reference", label: "Document" },
-      { key: "cemetery", label: "Cemetery" },
-      { key: "source", label: "Source" },
+      ...(isSingleCemetery ? [] : [{ key: "cemetery", label: "Cemetery" }]),
+      { key: "remarks", label: "Remarks" },
     ],
     rows: result.rows,
   });

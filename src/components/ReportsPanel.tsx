@@ -434,8 +434,11 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
           {result ? (
             <div className="report-result">
               <div className="report-result-meta">
-                <strong>{result.report.title}</strong>
-                <div>
+                <div className="report-result-heading">
+                  <strong>{result.report.title}</strong>
+                  {result.subtitle ? <span>{result.subtitle}</span> : null}
+                </div>
+                <div className="report-result-actions">
                   <span>{new Date(result.generatedAt).toLocaleString()}</span>
                   {result.layout === "marker-burial-pages" ? (
                     <button type="button" className="report-print-button" onClick={() => window.print()}>
