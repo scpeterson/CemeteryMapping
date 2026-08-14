@@ -24,8 +24,17 @@ function ownerDisplayName(owner) {
 export function toOwner(owner) {
   return {
     id: owner.id,
+    ownershipEventId: owner.ownership_event_id,
     displayName: ownerDisplayName(owner),
-    contactNote: compactJoin([owner.phone, owner.email, owner.full_address, owner.document_reference, owner.notes]),
+    firstName: owner.first_name ?? "",
+    lastName: owner.last_name ?? "",
+    fullAddress: owner.full_address ?? "",
+    municipality: owner.municipality ?? "",
+    state: owner.state ?? "",
+    zip: owner.zip ?? "",
+    contactNote: compactJoin([owner.phone, owner.email, compactJoin([owner.full_address, owner.municipality, owner.state, owner.zip], " ")]),
+    effectiveDate: recordedDate(owner.effective_date_text, owner.effective_date ?? owner.sale_date),
+    deedRegisterOnFile: Boolean(owner.deed_register_on_file),
   };
 }
 
@@ -108,6 +117,8 @@ export function toOwnershipEvent(owner) {
     recordedBy: owner.recorded_by ?? "Cemetery database",
     documentReference: owner.document_reference ?? undefined,
     notes: owner.notes,
+    fromOwnerNames: owner.from_owner_names ?? [],
+    toOwnerNames: owner.to_owner_names ?? [ownerDisplayName(owner)],
   };
 }
 

@@ -6,6 +6,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added structured multi-owner deed entry with separate names, addresses, optional shares, grantor/grantee roles, mixed lot and gravesite rights, and visual `From → To` transfer history.
 - Added display and editing of imported deed-registry last-known dates while preserving the original spreadsheet value.
 - Preserve year-only deed-registry dates instead of inventing January 1, including Roy Soergel's recorded `1944` value.
 - Added reusable military decorations for burials, seeded with Purple Heart and Bronze Star Medal, plus a labeled Purple Heart badge and the Navy `MM2` rating.
@@ -19,6 +20,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Changed
 
+- Clarified that the deed ownership event supports both newly issued deeds and historical deeds entered later.
 - Upgraded React and React DOM together to 19.2.8.
 - Upgraded the Auth0 React SDK to 2.22.0 and `@auth0/auth0-spa-js` to 2.23.0.
 - Upgraded MapLibre GL JS to 6.0.0 and migrated map code to its ESM namespace imports.

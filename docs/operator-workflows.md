@@ -181,9 +181,11 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
 2. Confirm you are in the correct cemetery and gravesite.
 3. Open the `Current Owner` section.
 4. Use `Record deed or transfer`.
-5. Enter the owner or deed-holder name. This can be one person, a couple, a family, the church, or another organization.
+5. Enter each owner or deed holder using separate first-name, last-name, and address fields.
+   - Add each owner separately so first name, last name, address, and optional ownership share remain distinct.
+   - For a sale or gift, enter both the previous owner or owners (`From`) and the new owner or owners (`To`).
 6. Choose the event type:
-   - `New deed` for a newly issued deed or first recorded owner.
+   - `Deed (new or historical)` for a newly issued deed or an older deed being entered now. Use the deed's original date as the effective date.
    - `Sale / transfer` when ownership changes by sale.
    - `Gift` when ownership changes without sale.
    - `Church council action` when council assigns ownership or clears unclear ownership.
@@ -198,9 +200,11 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
 10. Add notes when the deed language, transfer terms, or evidence confidence needs explanation.
 11. Save and confirm the `Current Owner` and `Ownership Timeline` sections refresh.
 
+Whole-lot and individual-gravesite rights can coexist. When a lot owner transfers selected gravesites, record those specific targets as `Listed gravesites`; their direct ownership supersedes the whole-lot owner when those gravesites are viewed, while the whole-lot owner remains current for the other gravesites. The timeline renders transfers as `From → To` and keeps a separate address and optional fractional share for every party.
+
 `power-user` and `cemetery-admin` users can record ownership events only for assigned cemeteries. `admin` users can record ownership events for any cemetery. Readers cannot see this form.
 
-For an unsold lot or gravesite, record a `New deed` when rights are first issued. For a transfer of one or more gravesites from a larger lot, choose `Listed gravesites` and enter the specific gravesite IDs. For a transfer of an entire lot, choose `This whole lot`; the lot-level right will appear when viewing each gravesite in that lot.
+For an unsold lot or gravesite, record a `Deed (new or historical)` when rights are first issued or when documenting an old deed that was not previously in the system. The recorded-at timestamp shows when the entry was added to the application, while the effective date preserves when the deed originally took effect. For a transfer of one or more gravesites from a larger lot, choose `Listed gravesites` and enter the specific gravesite IDs. For a transfer of an entire lot, choose `This whole lot`; the lot-level right will appear when viewing each gravesite in that lot.
 
 ### Audit Log Review
 

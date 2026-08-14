@@ -37,6 +37,7 @@ import {
   updateHeadstoneRelationship,
   updateHeadstoneGravesiteRelationship,
   updateMaintenanceRecord,
+  updateOwnershipParty,
 } from "./cemeteryRepository.mjs";
 import { listDeedRegistryReview, updateDeedRegistryMapping } from "./deedRegistryReviewRepository.mjs";
 import { importGeoNamesPlace } from "./placeRepository.mjs";
@@ -108,7 +109,7 @@ export function createApp(config, pool) {
     requireReader, restoreGraveSpace, runReport, safelyRecordSystemEvent, searchCemetery,
     softDeleteGraveFeature, softDeleteGraveSpace, softDeleteHeadstoneRelationship, softDeleteHeadstoneGravesiteRelationship, updateBurial,
     updateGraveFeature, updateGraveSpace, updateHeadstone, updateHeadstoneRelationship, updateHeadstoneGravesiteRelationship,
-    updateMaintenanceRecord, validateHeadstoneBusinessRules, versionMetadata,
+    updateMaintenanceRecord, updateOwnershipParty, validateHeadstoneBusinessRules, versionMetadata,
   });
 
   registerMediaRoutes(app, {

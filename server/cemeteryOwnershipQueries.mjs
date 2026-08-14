@@ -6,10 +6,14 @@ export function ownershipRightNotes(right) {
 
 const legacyOwnerSelect = `
   owners.id::text AS id, owners.gravesite_uuid::text, owners.owner, owners.co_owner,
-  NULL::text AS display_name, owners.full_address, owners.phone, owners.email, owners.sale_date,
+  NULL::text AS display_name, NULL::text AS first_name, NULL::text AS last_name,
+  owners.full_address, NULL::text AS municipality, NULL::text AS state, NULL::text AS zip,
+  owners.phone, owners.email, owners.sale_date,
   NULL::date AS effective_date, NULL::text AS effective_date_text, owners.created_at AS recorded_at, 'purchase'::text AS event_type,
+  NULL::boolean AS deed_register_on_file,
   'Cemetery database'::text AS recorded_by, NULL::text AS document_reference, owners.notes,
-  owners.created_at, NULL::text AS ownership_event_id
+  owners.created_at, NULL::text AS ownership_event_id,
+  NULL::text[] AS from_owner_names, NULL::text[] AS to_owner_names
 `;
 
 export async function selectOwnersForCemeteries(client, cemeteryIds) {
@@ -25,19 +29,29 @@ export async function selectOwnersForCemeteries(client, cemeteryIds) {
       SELECT
         concat('ownership-party-', rights.ownership_party_uuid::text) AS id,
         COALESCE(rights.gravesite_uuid::text, target_gravesites.id::text) AS gravesite_uuid,
-        NULL::text AS owner, NULL::text AS co_owner, rights.display_name,
-        NULL::text AS full_address, NULL::text AS phone, NULL::text AS email, NULL::date AS sale_date,
-        rights.effective_date, ownership_events.effective_date_text, rights.recorded_at, rights.event_type, ownership_events.recorded_by,
+        NULL::text AS owner, NULL::text AS co_owner, rights.display_name, rights.first_name, rights.last_name,
+        rights.full_address, rights.municipality, rights.state, rights.zip, NULL::text AS phone, NULL::text AS email, NULL::date AS sale_date,
+        rights.effective_date, ownership_events.effective_date_text, rights.recorded_at, rights.event_type, ownership_events.deed_register_on_file, ownership_events.recorded_by,
         ownership_events.document_reference,
         concat_ws(' ', rights.right_type, rights.target_type, ownership_events.notes) AS notes,
         rights.recorded_at AS created_at,
-        concat('ownership-event-', rights.ownership_event_uuid::text) AS ownership_event_id
+        concat('ownership-event-', rights.ownership_event_uuid::text) AS ownership_event_id,
+        (SELECT array_agg(p.display_name ORDER BY ep.created_at, p.display_name) FROM ownership_event_parties ep JOIN ownership_parties p ON p.id = ep.ownership_party_uuid WHERE ep.ownership_event_uuid = rights.ownership_event_uuid AND ep.ownership_role = 'grantor') AS from_owner_names,
+        (SELECT array_agg(p.display_name ORDER BY ep.created_at, p.display_name) FROM ownership_event_parties ep JOIN ownership_parties p ON p.id = ep.ownership_party_uuid WHERE ep.ownership_event_uuid = rights.ownership_event_uuid AND ep.ownership_role IN ('owner', 'grantee')) AS to_owner_names
       FROM current_ownership_right_owners rights
       JOIN ownership_events ON ownership_events.id = rights.ownership_event_uuid
       LEFT JOIN gravesites target_gravesites
         ON rights.target_type = 'lot' AND target_gravesites.lot_uuid = rights.lot_uuid
        AND target_gravesites.deleted_at IS NULL
       WHERE rights.target_type IN ('gravesite', 'lot')
+        AND (
+          rights.target_type <> 'lot'
+          OR NOT EXISTS (
+            SELECT 1 FROM current_ownership_events direct_right
+            WHERE direct_right.target_type = 'gravesite'
+              AND direct_right.gravesite_uuid = target_gravesites.id
+          )
+        )
         AND COALESCE(rights.gravesite_uuid, target_gravesites.id) IN (
           SELECT id FROM gravesites WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL
         )
@@ -61,14 +75,16 @@ export async function selectOwnersForGrave(client, graveUuid) {
       SELECT
         concat('ownership-party-', current_ownership_right_owners.ownership_party_uuid::text) AS id,
         selected_grave.id::text AS gravesite_uuid,
-        NULL::text AS owner, NULL::text AS co_owner, current_ownership_right_owners.display_name,
-        NULL::text AS full_address, NULL::text AS phone, NULL::text AS email, NULL::date AS sale_date,
+        NULL::text AS owner, NULL::text AS co_owner, current_ownership_right_owners.display_name, current_ownership_right_owners.first_name, current_ownership_right_owners.last_name,
+        current_ownership_right_owners.full_address, current_ownership_right_owners.municipality, current_ownership_right_owners.state, current_ownership_right_owners.zip, NULL::text AS phone, NULL::text AS email, NULL::date AS sale_date,
         current_ownership_right_owners.effective_date, ownership_events.effective_date_text, current_ownership_right_owners.recorded_at,
-        current_ownership_right_owners.event_type, ownership_events.recorded_by,
+        current_ownership_right_owners.event_type, ownership_events.deed_register_on_file, ownership_events.recorded_by,
         ownership_events.document_reference,
         concat_ws(' ', current_ownership_right_owners.right_type, current_ownership_right_owners.target_type, ownership_events.notes) AS notes,
         current_ownership_right_owners.recorded_at AS created_at,
-        concat('ownership-event-', current_ownership_right_owners.ownership_event_uuid::text) AS ownership_event_id
+        concat('ownership-event-', current_ownership_right_owners.ownership_event_uuid::text) AS ownership_event_id,
+        (SELECT array_agg(p.display_name ORDER BY ep.created_at, p.display_name) FROM ownership_event_parties ep JOIN ownership_parties p ON p.id = ep.ownership_party_uuid WHERE ep.ownership_event_uuid = current_ownership_right_owners.ownership_event_uuid AND ep.ownership_role = 'grantor') AS from_owner_names,
+        (SELECT array_agg(p.display_name ORDER BY ep.created_at, p.display_name) FROM ownership_event_parties ep JOIN ownership_parties p ON p.id = ep.ownership_party_uuid WHERE ep.ownership_event_uuid = current_ownership_right_owners.ownership_event_uuid AND ep.ownership_role IN ('owner', 'grantee')) AS to_owner_names
       FROM current_ownership_right_owners
       JOIN selected_grave ON (
         current_ownership_right_owners.target_type = 'gravesite'
@@ -79,6 +95,14 @@ export async function selectOwnersForGrave(client, graveUuid) {
       )
       JOIN ownership_events ON ownership_events.id = current_ownership_right_owners.ownership_event_uuid
       WHERE current_ownership_right_owners.target_type IN ('gravesite', 'lot')
+        AND (
+          current_ownership_right_owners.target_type <> 'lot'
+          OR NOT EXISTS (
+            SELECT 1 FROM current_ownership_events direct_right
+            WHERE direct_right.target_type = 'gravesite'
+              AND direct_right.gravesite_uuid = selected_grave.id
+          )
+        )
       ORDER BY sale_date DESC NULLS LAST, effective_date DESC NULLS LAST, created_at DESC, id
     `,
     [graveUuid],

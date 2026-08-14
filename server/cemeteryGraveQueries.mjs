@@ -172,6 +172,13 @@ async function selectMediaAssetsForGrave(client, graveUuid) {
   return result.rows;
 }
 export function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstones, northHillsEvidence, mediaAssets, graveFeatures, maintenanceRecords, includeOwnership) {
+  const ownershipHistoryById = new Map();
+  for (const owner of graveOwners) {
+    const event = toOwnershipEvent(owner);
+    const existing = ownershipHistoryById.get(event.id);
+    if (existing) existing.ownerIds.push(owner.id);
+    else ownershipHistoryById.set(event.id, event);
+  }
   const detailedGrave = {
     ...toGraveSummary(grave),
     name: grave.name ?? "",
@@ -184,7 +191,7 @@ export function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstone
     maintenanceRecords: maintenanceRecords.map(toMaintenanceRecord),
     northHillsEvidence: northHillsEvidence.map(toNorthHillsEvidence),
     mediaAssets: mediaAssets.map(toMediaAsset),
-    ownershipHistory: graveOwners.map(toOwnershipEvent),
+    ownershipHistory: [...ownershipHistoryById.values()],
     notes: grave.cost ? `Recorded cost: $${grave.cost}` : undefined,
     lotGeometryType: grave.lot_geometry_type ?? undefined,
     lotGeometrySource: grave.lot_geometry_source ?? undefined,

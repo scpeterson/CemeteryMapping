@@ -4,9 +4,9 @@ export function registerGraveRoutes(app, context) {
     createMaintenanceRecord, createOwnershipEvent, getCemeteryData, getGraveSpace, pool,
     config, importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     requireCemeteryAdmin, requirePowerUser, requireReader, softDeleteGraveFeature, updateBurial,
-    updateGraveFeature, updateGraveSpace, updateMaintenanceRecord, validateBurialPayload,
+    updateGraveFeature, updateGraveSpace, updateMaintenanceRecord, updateOwnershipParty, validateBurialPayload,
     validateCemeteryId, validateGraveFeaturePayload, validateGraveSpaceId, validateGraveSpacePayload,
-    validateMaintenanceRecordPayload, validateMutationReason, validateOwnershipEventPayload, validateUuid,
+    validateMaintenanceRecordPayload, validateMutationReason, validateOwnerUpdatePayload, validateOwnershipEventPayload, validateUuid,
   } = context;
       app.get("/api/places/search", requirePowerUser, async (request, response, next) => {
         try {
@@ -241,6 +241,23 @@ export function registerGraveRoutes(app, context) {
             response.status(400).json({ error: error.message });
             return;
           }
+          next(error);
+        }
+      });
+
+      app.patch("/api/ownership-parties/:partyId/events/:eventId", requirePowerUser, async (request, response, next) => {
+        try {
+          const partyId = validateUuid(request.params.partyId, "Owner id");
+          const eventId = validateUuid(request.params.eventId, "Ownership event id");
+          const update = validateOwnerUpdatePayload(request.body);
+          const updated = await updateOwnershipParty(pool, partyId, eventId, update, {
+            actorUser: request.user,
+            reason: update.reason,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          });
+          if (!updated) return response.status(404).json({ error: "Owner not found" });
+          response.json(updated);
+        } catch (error) {
           next(error);
         }
       });

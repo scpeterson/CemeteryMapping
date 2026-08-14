@@ -90,8 +90,29 @@ export type Person = {
 
 export type Owner = {
   id: string;
+  ownershipEventId?: string;
   displayName: string;
+  firstName: string;
+  lastName: string;
+  fullAddress: string;
+  municipality: string;
+  state: string;
+  zip: string;
   contactNote?: string;
+  effectiveDate?: string;
+  deedRegisterOnFile: boolean;
+};
+
+export type UpdateOwnerInput = {
+  firstName: string;
+  lastName: string;
+  fullAddress: string;
+  municipality: string;
+  state: string;
+  zip: string;
+  effectiveDate: string;
+  deedRegisterOnFile: boolean;
+  reason?: string;
 };
 
 export type VerifiedPlace = {
@@ -169,9 +190,12 @@ export type OwnershipEvent = {
   ownerIds: string[];
   eventType: "purchase" | "transfer" | "inheritance" | "correction" | "release";
   effectiveDate: string;
+  deedRegisterOnFile: boolean;
   recordedBy: string;
   documentReference?: string;
   notes?: string;
+  fromOwnerNames: string[];
+  toOwnerNames: string[];
 };
 
 export type LookupOption = {
@@ -531,12 +555,25 @@ export type SaveBurialInput = {
 export type OwnershipEventType = "deed" | "sale" | "gift" | "church_council_action" | "correction" | "release";
 export type OwnershipTargetScope = "selected_gravesite" | "selected_lot" | "listed_gravesites";
 
+export type OwnershipPartyInput = {
+  firstName: string;
+  lastName: string;
+  fullAddress: string;
+  municipality: string;
+  state: string;
+  zip: string;
+  shareNumerator: string;
+  shareDenominator: string;
+};
+
 export type SaveOwnershipEventInput = {
-  ownerDisplayName: string;
+  owners: OwnershipPartyInput[];
+  previousOwners: OwnershipPartyInput[];
   eventType: OwnershipEventType;
   targetScope: OwnershipTargetScope;
   targetGravesiteIds: string[];
   effectiveDate: string;
+  deedRegisterOnFile: boolean;
   documentReference: string;
   notes: string;
   reason?: string;

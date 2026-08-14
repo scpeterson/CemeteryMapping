@@ -277,14 +277,60 @@ export function validateOwnershipEventPayload(body) {
     ? [...new Set(body.targetGravesiteIds.map((value) => optionalText(value, "Target gravesite ID", 80)).filter(Boolean))]
     : [];
 
+  const validateParties = (value, label) => {
+    if (!Array.isArray(value) || value.length === 0) throw new BadRequestError(`${label} must include at least one person.`);
+    if (value.length > 20) throw new BadRequestError(`${label} can include at most 20 people.`);
+    return value.map((party, index) => {
+      const firstName = optionalText(party?.firstName, `${label} ${index + 1} first name`, 120) ?? "";
+      const lastName = optionalText(party?.lastName, `${label} ${index + 1} last name`, 120) ?? "";
+      if (!firstName && !lastName) throw new BadRequestError(`${label} ${index + 1} must have a first or last name.`);
+      const shareNumerator = party?.shareNumerator === "" || party?.shareNumerator == null ? null : Number.parseInt(String(party.shareNumerator), 10);
+      const shareDenominator = party?.shareDenominator === "" || party?.shareDenominator == null ? null : Number.parseInt(String(party.shareDenominator), 10);
+      if ((shareNumerator === null) !== (shareDenominator === null) || (shareNumerator !== null && (!Number.isInteger(shareNumerator) || !Number.isInteger(shareDenominator) || shareNumerator <= 0 || shareDenominator <= 0 || shareNumerator > shareDenominator))) {
+        throw new BadRequestError(`${label} ${index + 1} share must be a valid fraction.`);
+      }
+      return {
+        firstName,
+        lastName,
+        fullAddress: optionalText(party?.fullAddress, `${label} ${index + 1} address`, 250) ?? "",
+        municipality: optionalText(party?.municipality, `${label} ${index + 1} city`, 150) ?? "",
+        state: optionalText(party?.state, `${label} ${index + 1} state`, 2) ?? "",
+        zip: optionalText(party?.zip, `${label} ${index + 1} ZIP`, 10) ?? "",
+        shareNumerator,
+        shareDenominator,
+      };
+    });
+  };
+  const owners = validateParties(body?.owners, "New owner");
+  const previousOwners = ["sale", "gift"].includes(eventType) ? validateParties(body?.previousOwners, "Previous owner") : [];
+
   return {
-    ownerDisplayName: requiredText(body?.ownerDisplayName, "Owner name", 250),
+    owners,
+    previousOwners,
     eventType,
     targetScope,
     targetGravesiteIds,
     effectiveDate: optionalRecordedDate(body?.effectiveDate, "Effective date"),
+    deedRegisterOnFile: optionalBoolean(body?.deedRegisterOnFile, "Deed register on file"),
     documentReference: optionalText(body?.documentReference, "Document reference", 250),
     notes: optionalText(body?.notes, "Ownership notes", 4000),
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
+export function validateOwnerUpdatePayload(body) {
+  const firstName = optionalText(body?.firstName, "Owner first name", 120) ?? "";
+  const lastName = optionalText(body?.lastName, "Owner last name", 120) ?? "";
+  if (!firstName && !lastName) throw new BadRequestError("Owner must have a first or last name.");
+  return {
+    firstName,
+    lastName,
+    fullAddress: optionalText(body?.fullAddress, "Owner address", 250) ?? "",
+    municipality: optionalText(body?.municipality, "Owner city", 150) ?? "",
+    state: optionalText(body?.state, "Owner state", 2) ?? "",
+    zip: optionalText(body?.zip, "Owner ZIP", 10) ?? "",
+    effectiveDate: optionalRecordedDate(body?.effectiveDate, "Effective date"),
+    deedRegisterOnFile: optionalBoolean(body?.deedRegisterOnFile, "Deed register on file"),
     reason: validateMutationReason(body?.reason),
   };
 }
