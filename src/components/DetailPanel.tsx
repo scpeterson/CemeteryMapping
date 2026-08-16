@@ -3566,8 +3566,16 @@ function GraveDetailPanel({
   onRetry?: () => void;
 }) {
   const title = formatGraveLabel(summary);
+  const [activeTab, setActiveTab] = useState<"overview" | "people" | "monuments" | "records" | "location">("overview");
 
   const inferredLot = grave ? inferredLotForGrave(grave, cemeteryLots, cemeteryHeadstones) : undefined;
+  const detailTabs: { id: "overview" | "people" | "monuments" | "records" | "location"; label: string; description: string; count?: number }[] = grave ? [
+    { id: "overview", label: "Overview", description: "Overview" },
+    { id: "people", label: "People", description: "People and ownership", count: grave.burials.length + (canViewOwnership ? grave.currentOwnerIds.length : 0) },
+    { id: "monuments", label: "Monuments", description: "Monuments and photos", count: headstones.length + (grave.features?.length ?? 0) + mediaAssets.length },
+    { id: "records", label: "Maint.", description: "Maintenance records and evidence", count: (grave.maintenanceRecords?.length ?? 0) + northHillsEvidence.length },
+    { id: "location", label: "Location", description: "Location and geometry" },
+  ] : [];
 
   return (
     <aside className="detail-panel">
@@ -3599,6 +3607,46 @@ function GraveDetailPanel({
 
       {!grave || error ? null : (
         <>
+          <div className="detail-tabs" role="tablist" aria-label="Gravesite details">
+            {detailTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                id={`grave-detail-tab-${tab.id}`}
+                aria-controls={`grave-detail-panel-${tab.id}`}
+                aria-selected={activeTab === tab.id}
+                aria-label={tab.description}
+                title={tab.description}
+                tabIndex={activeTab === tab.id ? 0 : -1}
+                className={activeTab === tab.id ? "is-active" : undefined}
+                onClick={() => setActiveTab(tab.id)}
+                onKeyDown={(event) => {
+                  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                  event.preventDefault();
+                  const currentIndex = detailTabs.findIndex((candidate) => candidate.id === activeTab);
+                  const nextIndex = event.key === "Home"
+                    ? 0
+                    : event.key === "End"
+                      ? detailTabs.length - 1
+                      : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + detailTabs.length) % detailTabs.length;
+                  setActiveTab(detailTabs[nextIndex].id);
+                  document.getElementById(`grave-detail-tab-${detailTabs[nextIndex].id}`)?.focus();
+                }}
+              >
+                <span>{tab.label}</span>
+                {tab.count ? <span className="detail-tab-count" aria-label={`${tab.count} items`}>{tab.count}</span> : null}
+              </button>
+            ))}
+          </div>
+
+          <div
+            role="tabpanel"
+            id={`grave-detail-panel-${activeTab}`}
+            aria-labelledby={`grave-detail-tab-${activeTab}`}
+            className="detail-tab-panel"
+          >
+          {activeTab === "overview" ? <>
           <section className="detail-section">
             <div className="section-title">
               <MapPinned size={17} aria-hidden="true" />
@@ -3607,6 +3655,18 @@ function GraveDetailPanel({
             <GraveSpaceRecord grave={grave} lots={cemeteryLots} inferredLot={inferredLot} canUpdate={canUpdateGravesites} canManageLot={canManageLotAssignment} onSave={onSaveGraveSpace} onUpdateLot={onUpdateGraveLot} />
           </section>
 
+          {grave.notes ? (
+            <section className="detail-section">
+              <div className="section-title">
+                <FileText size={17} aria-hidden="true" />
+                <h3>Notes</h3>
+              </div>
+              <p className="note-box">{grave.notes}</p>
+            </section>
+          ) : null}
+          </> : null}
+
+          {activeTab === "people" ? <>
           {canViewOwnership ? (
             <section className="detail-section">
               <div className="section-title">
@@ -3649,6 +3709,42 @@ function GraveDetailPanel({
             )}
           </section>
 
+          {canViewOwnership ? (
+            <section className="detail-section">
+              <div className="section-title">
+                <History size={17} aria-hidden="true" />
+                <h3>Ownership Timeline</h3>
+              </div>
+              <ol className="timeline">
+                {[...grave.ownershipHistory]
+                  .sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate))
+                  .map((event) => (
+                    <li key={event.id}>
+                      <time>{formatDate(event.effectiveDate)}</time>
+                      <strong>{event.eventType}</strong>
+                      {event.fromOwnerNames.length ? (
+                        <div className="ownership-transfer-flow">
+                          <span><small>From</small>{event.fromOwnerNames.join(", ")}</span>
+                          <span aria-hidden="true">→</span>
+                          <span><small>To</small>{event.toOwnerNames.join(", ")}</span>
+                        </div>
+                      ) : <span>{event.ownerIds.map((id) => ownerName(ownersById, id)).join(", ")}</span>}
+                      <small><span className="timeline-field-label">Recorded by</span>{event.recordedBy}</small>
+                      {event.documentReference ? (
+                        <span className="document-ref">
+                          <FileText size={13} aria-hidden="true" />
+                          {event.documentReference}
+                        </span>
+                      ) : null}
+                      {event.notes ? <p>{event.notes}</p> : null}
+                    </li>
+                  ))}
+              </ol>
+            </section>
+          ) : null}
+          </> : null}
+
+          {activeTab === "monuments" ? <>
           <section className="detail-section">
             <div className="section-title">
               <Landmark size={17} aria-hidden="true" />
@@ -3715,15 +3811,6 @@ function GraveDetailPanel({
 
           <section className="detail-section">
             <div className="section-title">
-              <History size={17} aria-hidden="true" />
-              <h3>Maintenance</h3>
-            </div>
-            <MaintenanceRecordList records={grave.maintenanceRecords ?? []} canUpdate={canUpdateGravesites} grave={grave} lookups={headstoneLookups} onUpdate={onUpdateMaintenanceRecord} />
-            {canUpdateGravesites ? <MaintenanceRecordForm grave={grave} lookups={headstoneLookups} onSave={onSaveMaintenanceRecord} /> : null}
-          </section>
-
-          <section className="detail-section">
-            <div className="section-title">
               <Images size={17} aria-hidden="true" />
               <h3>Gravesite Photos</h3>
             </div>
@@ -3736,61 +3823,30 @@ function GraveDetailPanel({
             />
             {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} gravesiteOnly onUpload={onUploadPhoto} /> : null}
           </section>
+          </> : null}
+
+          {activeTab === "records" ? <>
+          <section className="detail-section">
+            <div className="section-title">
+              <History size={17} aria-hidden="true" />
+              <h3>Maintenance</h3>
+            </div>
+            <MaintenanceRecordList records={grave.maintenanceRecords ?? []} canUpdate={canUpdateGravesites} grave={grave} lookups={headstoneLookups} onUpdate={onUpdateMaintenanceRecord} />
+            {canUpdateGravesites ? <MaintenanceRecordForm grave={grave} lookups={headstoneLookups} onSave={onSaveMaintenanceRecord} /> : null}
+          </section>
 
           {northHillsEvidence.length ? (
             <section className="detail-section">
               <div className="section-title">
                 <FileText size={17} aria-hidden="true" />
-                <h3>North Hills Evidence</h3>
+                <h3>North Hills Genealogical (NHG) Evidence</h3>
               </div>
               <NorthHillsEvidenceList evidence={northHillsEvidence} />
             </section>
           ) : null}
+          </> : null}
 
-          {canViewOwnership ? (
-            <section className="detail-section">
-              <div className="section-title">
-                <History size={17} aria-hidden="true" />
-                <h3>Ownership Timeline</h3>
-              </div>
-              <ol className="timeline">
-                {[...grave.ownershipHistory]
-                  .sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate))
-                  .map((event) => (
-                    <li key={event.id}>
-                      <time>{formatDate(event.effectiveDate)}</time>
-                      <strong>{event.eventType}</strong>
-                      {event.fromOwnerNames.length ? (
-                        <div className="ownership-transfer-flow">
-                          <span><small>From</small>{event.fromOwnerNames.join(", ")}</span>
-                          <span aria-hidden="true">→</span>
-                          <span><small>To</small>{event.toOwnerNames.join(", ")}</span>
-                        </div>
-                      ) : <span>{event.ownerIds.map((id) => ownerName(ownersById, id)).join(", ")}</span>}
-                      <small>{event.recordedBy}</small>
-                      {event.documentReference ? (
-                        <span className="document-ref">
-                          <FileText size={13} aria-hidden="true" />
-                          {event.documentReference}
-                        </span>
-                      ) : null}
-                      {event.notes ? <p>{event.notes}</p> : null}
-                    </li>
-                  ))}
-              </ol>
-            </section>
-          ) : null}
-
-          {grave.notes ? (
-            <section className="detail-section">
-              <div className="section-title">
-                <FileText size={17} aria-hidden="true" />
-                <h3>Notes</h3>
-              </div>
-              <p className="note-box">{grave.notes}</p>
-            </section>
-          ) : null}
-
+          {activeTab === "location" ? (
           <section className="detail-section">
             <div className="section-title">
               <MapPinned size={17} aria-hidden="true" />
@@ -3798,6 +3854,8 @@ function GraveDetailPanel({
             </div>
             <GraveGeometryMetadata grave={grave} />
           </section>
+          ) : null}
+          </div>
         </>
       )}
     </aside>

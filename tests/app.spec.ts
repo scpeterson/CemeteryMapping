@@ -98,6 +98,8 @@ test("burial notes show the corrected North Hills source name without import-onl
   await page.goto("/");
   await selectResultGrave(page, "A-TEST");
 
+  await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "People and ownership" }).click();
   await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
   await expect(page.locator(".burial-gravesite-id")).toHaveText("Gravesite A-TEST · Record ID A-TEST");
   await expect(page.locator(".grave-record-id")).toHaveText("Record ID: A-TEST");
@@ -195,7 +197,13 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   await page.goto("/");
   await selectResultGrave(page, "A-TEST");
 
+  await page.getByRole("tab", { name: "People and ownership" }).click();
   await expect(page.locator(".detail-panel")).toContainText("Mabel Stone");
+  await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
+  await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");
+  await expect(page.locator(".detail-panel")).not.toContainText("Hidden Owner");
+
+  await page.getByRole("tab", { name: "Monuments and photos" }).click();
   await expect(page.locator(".detail-panel")).toContainText("Markers");
   await expect(page.locator(".detail-panel")).toContainText("Upright headstone");
   await expect(page.locator(".detail-panel")).toContainText("Granite");
@@ -208,9 +216,6 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
     "One physical marker or headstone is shared by this gravesite and at least one neighboring gravesite, such as a two-person headstone centered between burial spaces. Notes: Shared by adjacent gravesites",
   );
   await expect(page.getByLabel("Edit marker HS-1")).toHaveCount(0);
-  await expect(page.locator(".detail-panel")).not.toContainText("Current Owner");
-  await expect(page.locator(".detail-panel")).not.toContainText("Ownership Timeline");
-  await expect(page.locator(".detail-panel")).not.toContainText("Hidden Owner");
   await expect(page.getByRole("button", { name: /Open administration/u })).toHaveCount(0);
 });
 
@@ -340,6 +345,7 @@ test("power users can edit headstone marker details from grave detail", async ({
 
   await page.goto("/");
   await selectResultGrave(page, "A-TEST");
+  await page.getByRole("tab", { name: "Monuments and photos" }).click();
   await page.getByLabel("Edit marker HS-1").click();
   await page.getByRole("combobox", { name: "Material", exact: true }).selectOption("55555555-5555-4555-8555-555555555557");
   await page.getByRole("combobox", { name: "Condition" }).selectOption("66666666-6666-4666-8666-666666666667");
@@ -465,6 +471,7 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
 
   await page.goto("/");
   await selectResultGrave(page, "G-47");
+  await page.getByRole("tab", { name: "Monuments and photos" }).click();
   await page.getByLabel("Edit marker HS-G-47").click();
 
   const markerType = page.getByRole("combobox", { name: "Marker type" });
