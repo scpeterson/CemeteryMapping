@@ -1,0 +1,1332 @@
+.detail-message {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #d6ded1;
+  border-radius: 8px;
+  background: #fff;
+  color: #4d5a50;
+  font-weight: 680;
+}
+
+.detail-message p {
+  margin-bottom: 0;
+}
+
+.detail-message.is-error {
+  border-color: rgba(199, 82, 79, 0.45);
+  color: #8c302d;
+}
+
+.detail-message.is-success {
+  border-color: rgba(47, 93, 80, 0.35);
+  color: #2f5d50;
+}
+
+.detail-message button {
+  justify-self: start;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid rgba(199, 82, 79, 0.45);
+  border-radius: 7px;
+  background: #fff;
+  color: #8c302d;
+  font-weight: 720;
+}
+
+.detail-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e7dc;
+}
+
+.owner-list,
+.burial-list,
+.headstone-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.owner-row,
+.burial-record,
+.grave-record,
+.headstone-record,
+.note-box {
+  padding: 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.owner-row {
+  display: grid;
+  gap: 4px;
+}
+
+.owner-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inferred-lot-note {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border-left: 3px solid #b8892f;
+  background: #fff8e8;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.grave-lot-assignment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e8dc;
+}
+
+.grave-lot-assignment label {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.grave-lot-assignment select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.grave-lot-unlink,
+.grave-lot-unlink-confirmation {
+  grid-column: 1 / -1;
+}
+
+.grave-lot-unlink {
+  justify-self: start;
+  color: #8a3c32;
+}
+
+.grave-lot-unlink-confirmation {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e0b8ae;
+  border-radius: 7px;
+  background: #fff5f2;
+}
+
+.grave-lot-unlink-confirmation p {
+  margin: 0;
+  color: #6f3932;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.grave-lot-unlink-confirmation > div {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+
+.owner-row span,
+.muted,
+.burial-notes {
+  color: var(--text-muted);
+}
+
+.owner-deed-register-status,
+.ownership-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-deed-register-status input,
+.ownership-checkbox-field input {
+  width: auto;
+  margin: 0;
+}
+
+.owner-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.owner-remove-confirmation {
+  display: grid;
+  gap: 8px;
+  margin-top: 5px;
+  padding: 9px;
+  border: 1px solid #dfb8b3;
+  border-radius: 7px;
+  background: #fff7f5;
+}
+
+.owner-remove-confirmation > div {
+  display: flex;
+  justify-content: end;
+  gap: 7px;
+}
+
+.ownership-action {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ownership-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e8dc;
+}
+
+.ownership-form label,
+.owner-edit-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.ownership-form input,
+.ownership-form select,
+.ownership-form textarea,
+.owner-edit-form input,
+.owner-edit-form select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.owner-edit-form {
+  min-width: 0;
+}
+
+.owner-edit-form .ownership-checkbox-field {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.owner-edit-form .ownership-checkbox-field input {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.ownership-file-status-fields {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ownership-form .ownership-file-status-fields .ownership-checkbox-field,
+.owner-edit-form .ownership-file-status-fields .ownership-checkbox-field {
+  display: flex;
+  min-height: auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.ownership-form .ownership-file-status-fields .ownership-checkbox-field input,
+.owner-edit-form .ownership-file-status-fields .ownership-checkbox-field input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+}
+
+.ownership-wide-field,
+.ownership-form .detail-message,
+.ownership-event-guidance,
+.ownership-form-actions {
+  grid-column: 1 / -1;
+}
+
+.ownership-event-guidance {
+  margin: -3px 0 1px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.ownership-form-actions {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+
+.ownership-gravesite-picker {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ownership-party-list {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ownership-party-list > legend {
+  margin-bottom: 2px;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.ownership-party-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d7e0d3;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.ownership-party-card > header {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ownership-share-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 5px;
+}
+
+.ownership-share-fields > span {
+  padding-bottom: 9px;
+}
+
+.ownership-add-party {
+  justify-self: start;
+}
+
+.ownership-registry-assist {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d7e0d3;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.ownership-registry-assist > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.ownership-registry-assist span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.ownership-registry-assist > button {
+  justify-self: start;
+}
+
+.ownership-registry-results {
+  display: grid;
+  gap: 7px;
+}
+
+.ownership-registry-results article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid #dfe6dc;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.ownership-registry-results article > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ownership-registry-results article > button {
+  flex: 0 0 auto;
+}
+
+.ownership-transfer-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: #f0f5ef;
+}
+
+.ownership-transfer-flow > span:not(:nth-child(2)) {
+  display: grid;
+  gap: 2px;
+}
+
+.ownership-transfer-flow small {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ownership-gravesite-picker legend {
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.ownership-gravesite-options {
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.ownership-gravesite-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #edf1eb;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.ownership-gravesite-options label:last-of-type {
+  border-bottom: 0;
+}
+
+.ownership-gravesite-options input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.ownership-gravesite-options p,
+.ownership-gravesite-picker small {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.ownership-gravesite-options p {
+  padding: 10px;
+}
+
+.burial-record > strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.burial-record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.burial-section-title {
+  flex-wrap: wrap;
+}
+
+.burial-gravesite-id {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.grave-record-id {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.burial-record dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.burial-record dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.burial-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.burial-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.burial-form .burial-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  min-height: 38px;
+  color: var(--text-main);
+  font-size: 0.82rem;
+}
+
+.burial-form input,
+.burial-form select,
+.burial-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.burial-form .burial-checkbox-field input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.burial-wide-field,
+.burial-form .detail-message,
+.burial-form-actions {
+  grid-column: 1 / -1;
+}
+
+.burial-form-actions {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+
+.burial-record dd {
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+}
+
+.burial-service {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  color: var(--text-main);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.burial-veteran-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid #d79b12;
+  border-radius: 999px;
+  background: #fff7d6;
+  color: #5f3d00;
+  font-size: 0.72rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.burial-veteran-badge::before {
+  content: "★";
+  color: #c98200;
+}
+
+.burial-decoration-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.burial-decoration-field legend {
+  padding: 0 4px;
+  font-weight: 700;
+}
+
+.burial-decoration-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid #8b7355;
+  border-radius: 999px;
+  background: #f6efe5;
+  color: #4e3b25;
+  font-size: 0.72rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.burial-decoration-badge.is-purple-heart {
+  border-color: #7450a8;
+  background: #f2eaff;
+  color: #492675;
+}
+
+.burial-decoration-badge.is-purple-heart::before {
+  content: "♥";
+  color: #68409b;
+}
+
+.record-review-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.record-review-badges p {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid #c9a44a;
+  border-radius: 6px;
+  background: #fff9e8;
+  color: #59461c;
+  font-size: 0.82rem;
+}
+
+.record-review-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid #cbd6c7;
+  border-radius: 999px;
+  background: #f6f8f4;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.record-review-badge.confidence-low,
+.record-review-badge.review-conflict {
+  border-color: rgba(199, 82, 79, 0.45);
+  background: #fff0ef;
+  color: #8c302d;
+}
+
+.record-review-badge.confidence-medium,
+.record-review-badge.review-needs_review {
+  border-color: rgba(201, 164, 74, 0.55);
+  background: #fff9e8;
+  color: #69501a;
+}
+
+.record-review-badge.confidence-high,
+.record-review-badge.review-reviewed {
+  border-color: rgba(47, 93, 80, 0.35);
+  background: #eef7f1;
+  color: #2f5d50;
+}
+
+.grave-record,
+.headstone-record {
+  display: grid;
+  gap: 10px;
+}
+
+.grave-record-header,
+.headstone-record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.grave-record dl,
+.headstone-record dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.grave-record dt,
+.grave-form label,
+.headstone-record dt,
+.headstone-form label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.grave-record dd,
+.headstone-record dd {
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+}
+
+.lot-use-note {
+  margin: 0;
+  color: #5d6a62;
+  font-size: 0.88rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.grave-record dl + .lot-use-note {
+  margin-top: 2px;
+}
+
+.lot-restriction-list {
+  display: grid;
+  gap: 10px;
+}
+
+.lot-restriction-row {
+  display: grid;
+  gap: 4px;
+  padding-left: 10px;
+  border-left: 4px solid #64748b;
+}
+
+.lot-restriction-row strong {
+  color: #26342d;
+  font-size: 0.92rem;
+  font-weight: 820;
+}
+
+.lot-restriction-row span {
+  color: #5d6a62;
+  font-size: 0.84rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.geometry-metadata-group {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e8dc;
+}
+
+.geometry-metadata-group h4 {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.78rem;
+  font-weight: 820;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.geometry-metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.geometry-metadata dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.geometry-metadata dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  color: #26342d;
+  font-size: 0.86rem;
+}
+
+.associated-gravesite-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.associated-gravesite-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #fff;
+  color: #26342d;
+  font: inherit;
+  text-align: left;
+}
+
+.associated-gravesite-row:hover {
+  border-color: rgba(47, 93, 80, 0.32);
+  background: #f5f8f2;
+}
+
+.associated-gravesite-row:focus-visible {
+  outline: 3px solid rgba(47, 104, 79, 0.24);
+  outline-offset: 2px;
+}
+
+.associated-gravesite-status {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--status-color) 70%, #ffffff);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--status-color) 16%, #ffffff);
+  color: color-mix(in srgb, var(--status-color) 72%, #26342d);
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.grave-form,
+.headstone-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grave-form label,
+.headstone-form label {
+  display: grid;
+  gap: 5px;
+  text-transform: none;
+}
+
+.headstone-form .headstone-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  min-height: 38px;
+}
+
+.headstone-form .headstone-checkbox-field input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.grave-form select,
+.grave-form input,
+.grave-form textarea,
+.headstone-form select,
+.headstone-form input,
+.headstone-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.grave-wide-field,
+.headstone-wide-field,
+.grave-record-header,
+.headstone-record-header,
+.grave-form .detail-message,
+.headstone-form .detail-message,
+.grave-form-actions,
+.headstone-form-actions {
+  grid-column: 1 / -1;
+}
+
+.grave-form-actions,
+.headstone-form-actions {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+
+.icon-text-button,
+.ownership-form-actions button,
+.burial-form-actions button,
+.grave-form-actions button,
+.headstone-form-actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 760;
+}
+
+.icon-text-button {
+  background: #fff;
+  color: #2f5d50;
+}
+
+.ownership-form-actions .secondary-button,
+.headstone-form-actions .secondary-button {
+  border-color: #c8d1c3;
+  background: #fff;
+  color: #405048;
+}
+
+.marker-relationship {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: start;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid #d8ddd3;
+  border-radius: 7px;
+  background: #f7faf5;
+  color: #405048;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  cursor: help;
+}
+
+.marker-relationship svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #2f5d50;
+}
+
+.marker-relationship-code {
+  color: var(--text-muted);
+}
+
+.grave-feature-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.grave-feature-row {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #d9e0d5;
+  border-left: 4px solid #2f5d50;
+  border-radius: 8px;
+  background: #fbfcfa;
+  color: #405048;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.grave-feature-row strong {
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.record-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.record-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.compact-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+.danger-button {
+  border-color: rgba(159, 47, 47, 0.42);
+  color: #9f2f2f;
+}
+
+.danger-button:hover:not(:disabled) {
+  border-color: rgba(159, 47, 47, 0.64);
+  background: #fff4f2;
+}
+
+.grave-feature-row span,
+.grave-feature-row p {
+  margin: 0;
+}
+
+.maintenance-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.maintenance-row {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #d9e0d5;
+  border-left: 4px solid #6f7b86;
+  border-radius: 8px;
+  background: #fbfcfa;
+  color: #405048;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.maintenance-row-open {
+  border-left-color: #c64f4f;
+}
+
+.maintenance-row-scheduled {
+  border-left-color: #d9a441;
+}
+
+.maintenance-row-completed {
+  border-left-color: #5fa879;
+}
+
+.maintenance-row strong {
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.maintenance-row span,
+.maintenance-row p {
+  margin: 0;
+}
+
+.maintenance-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.maintenance-row-meta span {
+  padding: 2px 7px;
+  border: 1px solid #d9e0d5;
+  border-radius: 999px;
+  background: #eef3ec;
+  color: #2f5d50;
+  font-weight: 700;
+}
+
+.media-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.media-gallery-item {
+  display: grid;
+  gap: 6px;
+  color: #405048;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.media-gallery-card {
+  position: relative;
+  min-width: 0;
+}
+
+.media-gallery-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #eef3eb;
+}
+
+.media-delete-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(105, 36, 36, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #9f2f2f;
+  cursor: pointer;
+}
+
+.media-delete-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.media-order-controls {
+  position: absolute;
+  right: 6px;
+  bottom: 34px;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.media-order-controls button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(47, 93, 80, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #2f5d50;
+  cursor: pointer;
+}
+
+.media-order-controls button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.photo-upload-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px dashed #cbd6c7;
+  border-radius: 8px;
+  background: #f8faf6;
+}
+
+.photo-upload-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.photo-upload-linked-marker {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.photo-upload-linked-marker strong {
+  min-height: 38px;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.photo-upload-form input,
+.photo-upload-form select,
+.photo-upload-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.photo-upload-form button {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 760;
+}
+
+.photo-upload-form .detail-message {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
+.burial-notes {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding-left: 18px;
+  line-height: 1.35;
+}
+
+.timeline {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline li {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+}
+
+.timeline li::before {
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #51715e;
+  border-radius: 50%;
+  background: #fbfcf7;
+  content: "";
+}
+
+.timeline time {
+  color: #607066;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.timeline strong {
+  text-transform: capitalize;
+}
+
+.timeline small,
+.timeline p {
+  color: var(--text-muted);
+}
+
+.document-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #40594b;
+  font-size: 0.84rem;
+}
+
+.note-box {
+  margin-bottom: 0;
+  color: #4c5a51;
+}
+
+.inscription-box {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.north-hills-evidence-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.north-hills-evidence {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: 8px;
+  background: #f8faf6;
+}
+
+.north-hills-evidence strong {
+  color: #26342d;
+  font-size: 0.9rem;
+}
+
+.north-hills-evidence small {
+  color: #59675d;
+  font-size: 0.78rem;
+}
+
+.north-hills-evidence p {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
