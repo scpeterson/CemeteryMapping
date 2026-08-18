@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const appSource = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+const recordMutationsSource = readFileSync(new URL("../src/hooks/useRecordMutations.ts", import.meta.url), "utf8");
 
 test("marker NHG propagation refreshes selected details so associated burials update immediately", () => {
-  const saveHeadstone = appSource.match(
+  const saveHeadstone = recordMutationsSource.match(
     /const saveHeadstone = async[\s\S]+?\n {2}\};\n\n {2}const createHeadstoneForGrave/u,
   )?.[0];
 
