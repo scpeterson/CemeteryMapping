@@ -1,0 +1,188 @@
+@media (max-width: 1100px) {
+  .app-shell {
+    grid-template-columns: 310px 1fr;
+    grid-template-rows: minmax(480px, 1fr) auto;
+    min-height: 100%;
+  }
+
+  .map-region {
+    min-height: 520px;
+  }
+
+  .detail-panel {
+    grid-column: 1 / -1;
+    border-width: 1px 0 0;
+  }
+
+  .map-legend {
+    width: min(320px, calc(100% - 36px));
+  }
+
+  .admin-panel {
+    left: 24px;
+    width: auto;
+  }
+
+  .reports-panel {
+    left: 24px;
+    width: auto;
+  }
+
+  .reports-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .control-point-workspace {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .control-point-card {
+    min-height: 440px;
+  }
+
+  .control-point-list-card {
+    min-height: 360px;
+  }
+
+  .data-quality-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .search-panel,
+  .detail-panel {
+    border-width: 0 0 1px;
+  }
+
+  .map-region {
+    min-height: 460px;
+  }
+
+  .map-scale {
+    bottom: 104px;
+    max-width: calc(100% - 36px);
+  }
+
+  .map-legend {
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    width: auto;
+  }
+
+  .map-tool-buttons {
+    right: 86px;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .control-point-panel {
+    inset: 12px;
+    padding: 12px;
+  }
+
+  .reports-panel {
+    inset: 12px;
+    padding: 12px;
+  }
+
+  .reports-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .report-scope {
+    grid-template-columns: 1fr;
+  }
+
+  .report-list {
+    max-height: 210px;
+    padding-right: 0;
+  }
+
+  .control-point-defaults {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form,
+  .admin-workspace,
+  .admin-nav,
+  .data-quality-grid,
+  .data-quality-overview,
+  .audit-filter-form,
+  .audit-retention-grid,
+  .system-event-filter-form,
+  .ownership-form,
+  .grave-form,
+  .burial-form,
+  .headstone-form,
+  .maintenance-form,
+  .headstone-record dl,
+  .media-gallery,
+  .photo-upload-form,
+  .lookup-toolbar,
+  .lookup-row,
+  .record-picker-grid,
+  .admin-user-row,
+  .role-row,
+  .record-editor-row,
+  .record-editor-row:has(textarea),
+  .audit-event-row,
+  .system-event-row,
+  .audit-detail-grid,
+  .audit-value-grid,
+  .system-detail-grid,
+  .system-value-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-retention-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .report-runner-header,
+  .report-result-meta {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .admin-nav button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 4px;
+    padding: 7px 5px;
+    font-size: 0.72rem;
+    text-align: center;
+  }
+
+  .record-editor-row-cemetery button {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .record-audit-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .status-active,
+  .status-inactive {
+    justify-self: start;
+  }
+
+  .burial-record dl {
+    grid-template-columns: 1fr;
+  }
+}
