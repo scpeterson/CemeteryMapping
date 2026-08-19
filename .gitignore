@@ -17,3 +17,6 @@ test-results
 db/env/*.local.env
 db/backups/
 uploads/
+# Local intake for original field-camera files awaiting review/import. These
+# can contain large HEIC/MOV Live Photo pairs and must not enter Git history.
+field-media-inbox/
