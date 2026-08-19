@@ -100,5 +100,7 @@
   url: /adr/0039-create-section-b-lots-4-15-and-21.html
 - title: "ADR 0040: Shift Five Section B Lots North"
   url: /adr/0040-shift-section-b-five-lots-north.html
+- title: "ADR 0041: Modularize Large Domain Repositories"
+  url: /adr/0041-modularize-domain-repositories.html
 - title: "ADR Template"
   url: /adr/0000-template.html

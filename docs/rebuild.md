@@ -90,8 +90,11 @@ http://127.0.0.1:3001
 ```bash
 npm run lint
 npm run build
+npm run check:bundle
 APP_ENV=test npm run test:e2e
 ```
+
+`npm run build` already runs the bundle-size check for production output. The explicit `npm run check:bundle` command confirms the generated `dist/assets` files still satisfy the documented gzip budgets and is useful when diagnosing a size failure.
 
 ## Validate the Documentation Site
 
