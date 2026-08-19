@@ -26,6 +26,7 @@ import {
   uploadHeadstonePhoto,
 } from "../api/cemeteryApi";
 import { graveSelectionKey } from "../lib/format";
+import { appendHeadstoneSummary, assignLotInMapData, assignLotToSelectedGrave, replaceBurialInGrave, replaceHeadstoneInGrave, replaceHeadstoneSummary } from "./recordMutationState";
 import type {
   Burial,
   CemeteryData,
@@ -91,30 +92,9 @@ export function useRecordMutations({
 }: UseRecordMutationsInput) {
   const saveHeadstone = async (id: string, headstone: SaveHeadstoneInput): Promise<Headstone> => {
     const saved = await updateHeadstone(id, headstone);
-    setSelectedGraveDetails((current) =>
-      current
-        ? {
-            ...current,
-            headstones: current.headstones.map((candidate) => (candidate.id === saved.id ? saved : candidate)),
-          }
-        : current,
-    );
+    setSelectedGraveDetails((current) => replaceHeadstoneInGrave(current, saved));
     setSelectedHeadstoneDetails((current) => (current?.id === saved.id ? saved : current));
-    setData((current) => ({
-      ...current,
-      headstones: (current.headstones ?? []).map((candidate) =>
-        candidate.id === saved.id
-          ? {
-              ...candidate,
-              markerTypeCode: saved.markerType.code,
-              markerType: saved.markerType.label,
-              markerScopeCode: saved.markerScope.code,
-              markerScope: saved.markerScope.label,
-              condition: saved.condition.code,
-            }
-          : candidate,
-        ),
-    }));
+    setData((current) => replaceHeadstoneSummary(current, saved));
     if (saved.burialNhgPropagation) {
       refreshDetails({ preserveCurrent: true });
     }
@@ -133,12 +113,7 @@ export function useRecordMutations({
         : current,
     );
     if (summary) {
-      setData((current) => ({
-        ...current,
-        headstones: (current.headstones ?? []).some((candidate) => candidate.id === summary.id)
-          ? (current.headstones ?? []).map((candidate) => (candidate.id === summary.id ? summary : candidate))
-          : [...(current.headstones ?? []), summary],
-      }));
+      setData((current) => appendHeadstoneSummary(current, summary));
     }
     refreshDetails({ preserveCurrent: true });
     return saved;
@@ -203,14 +178,7 @@ export function useRecordMutations({
 
   const saveBurial = async (id: string, burial: SaveBurialInput): Promise<Burial> => {
     const saved = await updateBurial(id, burial);
-    setSelectedGraveDetails((current) =>
-      current
-        ? {
-            ...current,
-            burials: current.burials.map((candidate) => (candidate.id === saved.id ? saved : candidate)),
-          }
-        : current,
-    );
+    setSelectedGraveDetails((current) => replaceBurialInGrave(current, saved));
     return saved;
   };
 
@@ -366,12 +334,8 @@ export function useRecordMutations({
   const saveGraveLot = async (lotId: string) => {
     if (!selectedGrave) throw new Error("Select a gravesite before assigning a lot.");
     const saved = await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId);
-    const selectedKey = graveSelectionKey(selectedGrave);
-    setData((current) => ({
-      ...current,
-      graves: current.graves.map((grave) => (graveSelectionKey(grave) === selectedKey ? { ...grave, lot: saved.lotId } : grave)),
-    }));
-    setSelectedGrave((current) => (current && graveSelectionKey(current) === selectedKey ? { ...current, lot: saved.lotId } : current));
+    setData((current) => assignLotInMapData(current, selectedGrave, saved.lotId));
+    setSelectedGrave((current) => assignLotToSelectedGrave(current, selectedGrave, saved.lotId));
     refreshDetails();
   };
 
