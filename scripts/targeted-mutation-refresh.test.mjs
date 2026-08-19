@@ -18,7 +18,7 @@ test("creating a positioned marker updates the map summary from the mutation res
   assert.ok(createHeadstone, "expected to find createHeadstoneForGrave");
   assert.match(createHeadstone, /headstoneSummaryFromCreate\(saved, grave, headstone\)/u);
   assert.match(createHeadstone, /setData\(\(current\) =>/u);
-  assert.match(createHeadstone, /\.\.\.\(current\.headstones \?\? \[\]\), summary/u);
+  assert.match(createHeadstone, /appendHeadstoneSummary\(current, summary\)/u);
   assert.match(createHeadstone, /refreshDetails\(\{ preserveCurrent: true \}\)/u);
 });
 
@@ -29,7 +29,7 @@ test("lot assignment updates the selected grave and map summary from the mutatio
 
   assert.ok(saveGraveLot, "expected to find saveGraveLot");
   assert.match(saveGraveLot, /const saved = await updateGraveLot/u);
-  assert.match(saveGraveLot, /lot: saved\.lotId/u);
-  assert.match(saveGraveLot, /setSelectedGrave/u);
+  assert.match(saveGraveLot, /assignLotInMapData\(current, selectedGrave, saved\.lotId\)/u);
+  assert.match(saveGraveLot, /assignLotToSelectedGrave\(current, selectedGrave, saved\.lotId\)/u);
   assert.match(saveGraveLot, /refreshDetails\(\)/u);
 });
