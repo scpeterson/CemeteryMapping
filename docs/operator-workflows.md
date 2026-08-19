@@ -289,6 +289,23 @@ Readers can view linked photos. Power users, cemetery admins, and admins can upl
 
 In local DEV and TEST environments, uploaded image files are written under `/Users/scottpeterson/Dev/CemeteryMapping/uploads/media` unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the gravesite/headstone links, but not the image bytes.
 
+### Field media intake and retention
+
+Keep camera originals that have not yet been reviewed under the repository-local `field-media-inbox/` directory. Git ignores this directory because field photographs and Apple Live Photo companions are large operational evidence, not source code. Do not leave loose HEIC, JPEG, or MOV files at the repository root and do not use `uploads/media` as an intake folder; that directory contains application-managed copies whose filenames correspond to database records.
+
+For an Apple Live Photo pair, upload the HEIC still through the selected gravesite or marker's Photos section. The current upload API accepts JPEG, PNG, WebP, HEIC, and HEIF still images; it does not accept MOV video companions. Retain the paired MOV file in the intake directory until it has been copied to the cemetery's durable evidence archive, then remove the local intake copy only after verifying that archive. Importing the HEIC does not preserve the MOV automatically.
+
+Use this intake checklist:
+
+1. Copy the original files into `field-media-inbox/`, preserving their camera filenames so HEIC/MOV pairs remain recognizable.
+2. Identify the cemetery record shown in each still image before uploading it.
+3. Upload the still image through the application and confirm it appears on the intended gravesite or marker.
+4. Record any useful capture date or field notes during upload.
+5. Copy unsupported companions and any originals requiring long-term retention to durable evidence storage.
+6. Delete local intake copies only after both the application link and durable archive have been verified.
+
+The intake directory is deliberately excluded from Git and database backups. Include both `MEDIA_UPLOAD_DIR` and the separate durable evidence archive in operational backup planning.
+
 ### Future Field Collection Workflow Concept
 
 This concept captures a future mobile-first field workflow for collecting and correcting cemetery data while standing in front of a headstone or gravesite. It is not fully implemented yet. Treat it as a product/design note for future planning.
