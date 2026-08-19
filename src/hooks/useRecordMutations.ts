@@ -13,7 +13,6 @@ import {
   deleteHeadstoneGravesiteRelationship,
   deleteGraveFeature,
   deleteMediaAsset,
-  fetchCemeteryData,
   fetchHeadstone,
   updateBurial,
   updateGraveFeature,
@@ -55,6 +54,31 @@ type UseRecordMutationsInput = {
   setSelectedHeadstoneDetails: Dispatch<SetStateAction<Headstone | undefined>>;
   refreshDetails: (options?: { preserveCurrent?: boolean }) => void;
 };
+
+function headstoneSummaryFromCreate(saved: Headstone, grave: GraveSpace, input: SaveHeadstoneCreateInput): HeadstoneSummary | undefined {
+  const latitude = Number(input.latitude);
+  const longitude = Number(input.longitude);
+  if (!input.latitude.trim() || !input.longitude.trim() || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return undefined;
+
+  return {
+    id: saved.id,
+    headstoneId: saved.headstoneId,
+    cemeteryId: grave.cemeteryId,
+    cemeteryName: grave.cemeteryName,
+    gravesiteId: grave.id,
+    graveKey: graveSelectionKey(grave),
+    label: saved.headstoneId,
+    markerTypeCode: saved.markerType.code,
+    markerType: saved.markerType.label,
+    markerScopeCode: saved.markerScope.code,
+    markerScope: saved.markerScope.label,
+    condition: saved.condition.code,
+    geometry: {
+      type: "Point",
+      coordinates: [longitude, latitude],
+    },
+  };
+}
 
 export function useRecordMutations({
   selectedGrave,
@@ -99,6 +123,7 @@ export function useRecordMutations({
 
   const createHeadstoneForGrave = async (grave: GraveSpace, headstone: SaveHeadstoneCreateInput): Promise<Headstone> => {
     const saved = await createGravesiteHeadstone(grave.cemeteryId, grave.id, headstone);
+    const summary = headstoneSummaryFromCreate(saved, grave, headstone);
     setSelectedGraveDetails((current) =>
       current?.id === grave.id
         ? {
@@ -107,10 +132,15 @@ export function useRecordMutations({
           }
         : current,
     );
+    if (summary) {
+      setData((current) => ({
+        ...current,
+        headstones: (current.headstones ?? []).some((candidate) => candidate.id === summary.id)
+          ? (current.headstones ?? []).map((candidate) => (candidate.id === summary.id ? summary : candidate))
+          : [...(current.headstones ?? []), summary],
+      }));
+    }
     refreshDetails({ preserveCurrent: true });
-    fetchCemeteryData()
-      .then((nextData) => setData(nextData))
-      .catch(() => undefined);
     return saved;
   };
 
@@ -335,10 +365,13 @@ export function useRecordMutations({
 
   const saveGraveLot = async (lotId: string) => {
     if (!selectedGrave) throw new Error("Select a gravesite before assigning a lot.");
-    await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId);
-    const nextData = await fetchCemeteryData();
-    setData(nextData);
-    setSelectedGrave((current) => current ? nextData.graves.find((grave) => graveSelectionKey(grave) === graveSelectionKey(current)) : undefined);
+    const saved = await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId);
+    const selectedKey = graveSelectionKey(selectedGrave);
+    setData((current) => ({
+      ...current,
+      graves: current.graves.map((grave) => (graveSelectionKey(grave) === selectedKey ? { ...grave, lot: saved.lotId } : grave)),
+    }));
+    setSelectedGrave((current) => (current && graveSelectionKey(current) === selectedKey ? { ...current, lot: saved.lotId } : current));
     refreshDetails();
   };
 
