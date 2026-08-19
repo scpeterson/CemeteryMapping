@@ -4,6 +4,10 @@ import {
   appendHeadstoneSummary,
   assignLotInMapData,
   assignLotToSelectedGrave,
+  moveMediaAssetInRecord,
+  removeFeatureFromGrave,
+  removeFeatureFromHeadstone,
+  removeMediaAsset,
   replaceBurialInGrave,
   replaceHeadstoneInGrave,
   replaceHeadstoneSummary,
@@ -73,4 +77,30 @@ test("lot assignment updates the matching map and selected summaries without tou
 test("state helpers preserve absent detail state", () => {
   assert.equal(replaceHeadstoneInGrave(undefined, savedMarker("marker-1")), undefined);
   assert.equal(replaceBurialInGrave(undefined, { id: "burial-1" }), undefined);
+});
+
+test("feature deletion removes the feature from grave and nested marker caches", () => {
+  const removed = { id: "feature-1" };
+  const retained = { id: "feature-2" };
+  const grave = { features: [removed, retained], headstones: [{ id: "marker-1", features: [removed, retained] }], burials: [] };
+  const headstone = grave.headstones[0];
+
+  const nextGrave = removeFeatureFromGrave(grave, removed.id);
+  const nextHeadstone = removeFeatureFromHeadstone(headstone, removed.id);
+  assert.deepEqual(nextGrave.features, [retained]);
+  assert.deepEqual(nextGrave.headstones[0].features, [retained]);
+  assert.deepEqual(nextHeadstone.features, [retained]);
+});
+
+test("photo deletion and movement update only local media collections", () => {
+  const first = { id: "photo-1" };
+  const second = { id: "photo-2" };
+  const third = { id: "photo-3" };
+  const record = { id: "grave-1", mediaAssets: [first, second, third], headstones: [] };
+
+  const moved = moveMediaAssetInRecord(record, second.id, "earlier");
+  assert.deepEqual(moved.mediaAssets, [second, first, third]);
+  assert.equal(moved.headstones, record.headstones);
+  assert.equal(moveMediaAssetInRecord(record, first.id, "earlier"), record, "an unavailable adjacent position is a no-op");
+  assert.deepEqual(removeMediaAsset(record, second.id).mediaAssets, [first, third]);
 });

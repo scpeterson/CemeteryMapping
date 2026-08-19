@@ -19,7 +19,7 @@ test("creating a positioned marker updates the map summary from the mutation res
   assert.match(createHeadstone, /headstoneSummaryFromCreate\(saved, grave, headstone\)/u);
   assert.match(createHeadstone, /setData\(\(current\) =>/u);
   assert.match(createHeadstone, /appendHeadstoneSummary\(current, summary\)/u);
-  assert.match(createHeadstone, /refreshDetails\(\{ preserveCurrent: true \}\)/u);
+  assert.doesNotMatch(createHeadstone, /refreshDetails/u);
 });
 
 test("lot assignment updates the selected grave and map summary from the mutation response", () => {
@@ -31,5 +31,19 @@ test("lot assignment updates the selected grave and map summary from the mutatio
   assert.match(saveGraveLot, /const saved = await updateGraveLot/u);
   assert.match(saveGraveLot, /assignLotInMapData\(current, selectedGrave, saved\.lotId\)/u);
   assert.match(saveGraveLot, /assignLotToSelectedGrave\(current, selectedGrave, saved\.lotId\)/u);
-  assert.match(saveGraveLot, /refreshDetails\(\)/u);
+  assert.match(saveGraveLot, /setSelectedGraveDetails/u);
+  assert.doesNotMatch(saveGraveLot, /refreshDetails/u);
+});
+
+test("locally resolvable deletes and photo moves do not refetch selected details", () => {
+  for (const [start, end, helper] of [
+    ["deleteSavedGraveFeature", "updateSavedMaintenanceRecord", "removeFeatureFromGrave"],
+    ["deletePhoto", "movePhoto", "removeMediaAsset"],
+    ["movePhoto", "saveOwnershipEvent", "moveMediaAssetInRecord"],
+  ]) {
+    const mutation = mutationSource.match(new RegExp(`const ${start} = async[\\s\\S]+?\\n {2}\\};\\n\\n {2}const ${end}`, "u"))?.[0];
+    assert.ok(mutation, `expected to find ${start}`);
+    assert.match(mutation, new RegExp(helper, "u"));
+    assert.doesNotMatch(mutation, /refreshDetails/u);
+  }
 });
