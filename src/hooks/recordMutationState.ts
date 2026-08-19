@@ -1,4 +1,4 @@
-import type { Burial, CemeteryData, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneSummary } from "../types";
+import type { Burial, CemeteryData, GraveSpace, GraveSpaceSummary, Headstone, HeadstoneSummary, MediaAsset } from "../types";
 
 const graveKey = (grave: Pick<GraveSpaceSummary, "cemeteryId" | "id">) => `${grave.cemeteryId}:${grave.id}`;
 
@@ -46,4 +46,34 @@ export function assignLotInMapData(data: CemeteryData, selected: GraveSpaceSumma
 
 export function assignLotToSelectedGrave(current: GraveSpaceSummary | undefined, selected: GraveSpaceSummary, lotId: string) {
   return current && graveKey(current) === graveKey(selected) ? { ...current, lot: lotId } : current;
+}
+
+export function removeFeatureFromGrave(grave: GraveSpace | undefined, featureId: string) {
+  if (!grave) return grave;
+  return {
+    ...grave,
+    features: (grave.features ?? []).filter((feature) => feature.id !== featureId),
+    headstones: grave.headstones.map((headstone) => ({
+      ...headstone,
+      features: (headstone.features ?? []).filter((feature) => feature.id !== featureId),
+    })),
+  };
+}
+
+export function removeFeatureFromHeadstone(headstone: Headstone | undefined, featureId: string) {
+  return headstone ? { ...headstone, features: (headstone.features ?? []).filter((feature) => feature.id !== featureId) } : headstone;
+}
+
+export function removeMediaAsset<T extends { mediaAssets: MediaAsset[] } | undefined>(record: T, assetId: string): T {
+  return record ? { ...record, mediaAssets: record.mediaAssets.filter((asset) => asset.id !== assetId) } as T : record;
+}
+
+export function moveMediaAssetInRecord<T extends { mediaAssets: MediaAsset[] } | undefined>(record: T, assetId: string, direction: "earlier" | "later"): T {
+  if (!record) return record;
+  const mediaAssets = [...record.mediaAssets];
+  const currentIndex = mediaAssets.findIndex((asset) => asset.id === assetId);
+  const swapIndex = currentIndex + (direction === "earlier" ? -1 : 1);
+  if (currentIndex < 0 || swapIndex < 0 || swapIndex >= mediaAssets.length) return record;
+  [mediaAssets[currentIndex], mediaAssets[swapIndex]] = [mediaAssets[swapIndex], mediaAssets[currentIndex]];
+  return { ...record, mediaAssets } as T;
 }

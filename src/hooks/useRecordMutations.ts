@@ -26,7 +26,7 @@ import {
   uploadHeadstonePhoto,
 } from "../api/cemeteryApi";
 import { graveSelectionKey } from "../lib/format";
-import { appendHeadstoneSummary, assignLotInMapData, assignLotToSelectedGrave, replaceBurialInGrave, replaceHeadstoneInGrave, replaceHeadstoneSummary } from "./recordMutationState";
+import { appendHeadstoneSummary, assignLotInMapData, assignLotToSelectedGrave, moveMediaAssetInRecord, removeFeatureFromGrave, removeFeatureFromHeadstone, removeMediaAsset, replaceBurialInGrave, replaceHeadstoneInGrave, replaceHeadstoneSummary } from "./recordMutationState";
 import type {
   Burial,
   CemeteryData,
@@ -115,7 +115,6 @@ export function useRecordMutations({
     if (summary) {
       setData((current) => appendHeadstoneSummary(current, summary));
     }
-    refreshDetails({ preserveCurrent: true });
     return saved;
   };
 
@@ -247,7 +246,8 @@ export function useRecordMutations({
 
   const deleteSavedGraveFeature = async (id: string, reason?: string) => {
     await deleteGraveFeature(id, reason);
-    refreshDetails({ preserveCurrent: true });
+    setSelectedGraveDetails((current) => removeFeatureFromGrave(current, id));
+    setSelectedHeadstoneDetails((current) => removeFeatureFromHeadstone(current, id));
   };
 
   const updateSavedMaintenanceRecord = async (id: string, record: SaveMaintenanceRecordInput) => {
@@ -301,7 +301,8 @@ export function useRecordMutations({
 
   const deletePhoto = async (assetId: string, reason?: string) => {
     await deleteMediaAsset(assetId, reason);
-    refreshDetails({ preserveCurrent: true });
+    setSelectedGraveDetails((current) => removeMediaAsset(current, assetId));
+    setSelectedHeadstoneDetails((current) => removeMediaAsset(current, assetId));
   };
 
   const movePhoto = async (asset: { id: string; mediaLinkId?: string; mediaLinkType?: "headstone" | "gravesite" }, direction: "earlier" | "later") => {
@@ -312,7 +313,8 @@ export function useRecordMutations({
       linkType: asset.mediaLinkType,
       direction,
     });
-    refreshDetails({ preserveCurrent: true });
+    setSelectedGraveDetails((current) => moveMediaAssetInRecord(current, asset.id, direction));
+    setSelectedHeadstoneDetails((current) => moveMediaAssetInRecord(current, asset.id, direction));
   };
 
   const saveOwnershipEvent = async (event: SaveOwnershipEventInput) => {
@@ -336,7 +338,7 @@ export function useRecordMutations({
     const saved = await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId);
     setData((current) => assignLotInMapData(current, selectedGrave, saved.lotId));
     setSelectedGrave((current) => assignLotToSelectedGrave(current, selectedGrave, saved.lotId));
-    refreshDetails();
+    setSelectedGraveDetails((current) => current?.id === selectedGrave.id ? { ...current, lot: saved.lotId } : current);
   };
 
   return {
