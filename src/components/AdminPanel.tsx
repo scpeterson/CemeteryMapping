@@ -42,6 +42,7 @@ import { DataQualityAdminTab, type DataQualityReviewTarget } from "./DataQuality
 import { DeedsAdminTab } from "./admin/DeedsAdminTab";
 import { UsersAdminTab, type UserFormState } from "./admin/UsersAdminTab";
 import { RecordsAdminTab } from "./admin/RecordsAdminTab";
+import { BulkAdminTab } from "./admin/BulkAdminTab";
 import {
   blankDeedActionForm,
   blankDeedCaseForm,
@@ -1930,131 +1931,23 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
       ) : activeTab === "quality" ? (
         <DataQualityAdminTab onError={setError} onOpenReviewTarget={openDataQualityReviewTarget} />
       ) : activeTab === "bulk" && canUseBulkTools ? (
-        <>
-          <section className="admin-section">
-            <div className="section-title">
-              <ListChecks size={17} aria-hidden="true" />
-              <h3>Bulk Edit Tools</h3>
-            </div>
-            <label>
-              Change reason
-              <input
-                value={bulkReason}
-                onChange={(event) => setBulkReason(event.target.value)}
-                title="Required audit reason used for all bulk edits from this tab."
-              />
-            </label>
-          </section>
-
-          <section className="admin-section bulk-tool-grid">
-            <form className="admin-form bulk-tool-card" onSubmit={(event) => void saveBulkHeadstoneUpdate(event)}>
-              <h4>Markers</h4>
-              <label className="wide-field">
-                Marker IDs
-                <textarea
-                  value={bulkMarkerIdentifiers}
-                  onChange={(event) => setBulkMarkerIdentifiers(event.target.value)}
-                  rows={5}
-                  placeholder={"TLC-HS-0179\nTLC-HS-0180"}
-                  title="Enter marker public IDs or UUIDs separated by lines, commas, semicolons, or spaces."
-                />
-              </label>
-              <label>
-                Marker type
-                <select value={bulkMarkerTypeId} onChange={(event) => setBulkMarkerTypeId(event.target.value)}>
-                  <option value="">No change</option>
-                  {headstoneLookups.markerTypes.map((option) => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Material
-                <select value={bulkMarkerMaterialId} onChange={(event) => setBulkMarkerMaterialId(event.target.value)}>
-                  <option value="">No change</option>
-                  {headstoneLookups.materials.map((option) => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Condition
-                <select value={bulkMarkerConditionId} onChange={(event) => setBulkMarkerConditionId(event.target.value)}>
-                  <option value="">No change</option>
-                  {headstoneLookups.conditions.map((option) => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-              <div className="admin-form-actions">
-                <button type="submit" disabled={savingBulkKey === "headstones" || !bulkReason.trim()}>
-                  {savingBulkKey === "headstones" ? "Saving..." : "Update markers"}
-                </button>
-              </div>
-            </form>
-
-            <form className="admin-form bulk-tool-card" onSubmit={(event) => void saveBulkGravesiteLotAssignment(event)}>
-              <h4>Gravesites</h4>
-              <label className="wide-field">
-                Gravesite IDs
-                <textarea
-                  value={bulkGravesiteIdentifiers}
-                  onChange={(event) => setBulkGravesiteIdentifiers(event.target.value)}
-                  rows={5}
-                  placeholder={"C-0198A\nC-0198B"}
-                  title="Enter gravesite public IDs or UUIDs separated by lines, commas, semicolons, or spaces."
-                />
-              </label>
-              <label className="wide-field">
-                Assign to lot
-                <select value={bulkLotId} onChange={(event) => setBulkLotId(event.target.value)}>
-                  <option value="">Select lot</option>
-                  {cemeteryRecords.lots.map((lot) => (
-                    <option key={lot.id} value={lot.id}>
-                      {lot.sectionId ? `${lot.sectionId}-` : ""}{lot.lotId}{lot.name ? `: ${lot.name}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="admin-form-actions">
-                <button type="submit" disabled={savingBulkKey === "gravesites" || !bulkReason.trim()}>
-                  {savingBulkKey === "gravesites" ? "Saving..." : "Assign lot"}
-                </button>
-              </div>
-            </form>
-
-            <section className="admin-form bulk-tool-card">
-              <h4>NHG Readings</h4>
-              <p className="bulk-tool-help">Select NHG readings on the Readings tab, then apply one of these actions.</p>
-              <dl className="bulk-tool-summary">
-                <div>
-                  <dt>Selected</dt>
-                  <dd>{selectedNorthHillsEntries.length}</dd>
-                </div>
-              </dl>
-              <label className="wide-field">
-                Shared note
-                <textarea
-                  value={bulkNorthHillsNote}
-                  onChange={(event) => setBulkNorthHillsNote(event.target.value)}
-                  rows={4}
-                  placeholder="Apply this source note to selected readings"
-                />
-              </label>
-              <div className="admin-form-actions">
-                <button type="button" onClick={() => void markSelectedNorthHillsReviewed()} disabled={savingBulkKey === "northHillsReviewed" || !selectedNorthHillsEntries.length || !bulkReason.trim()}>
-                  {savingBulkKey === "northHillsReviewed" ? "Saving..." : "Mark reviewed"}
-                </button>
-                <button type="button" className="secondary-button" onClick={() => void addNoteToSelectedNorthHillsEntries()} disabled={savingBulkKey === "northHillsNote" || !selectedNorthHillsEntries.length || !bulkNorthHillsNote.trim() || !bulkReason.trim()}>
-                  {savingBulkKey === "northHillsNote" ? "Saving..." : "Apply note"}
-                </button>
-                <button type="button" className="secondary-button" onClick={openNorthHillsReviewTab}>
-                  Go to Readings
-                </button>
-              </div>
-            </section>
-          </section>
-        </>
+        <BulkAdminTab
+          reason={bulkReason} setReason={setBulkReason}
+          markerIdentifiers={bulkMarkerIdentifiers} setMarkerIdentifiers={setBulkMarkerIdentifiers}
+          markerTypeId={bulkMarkerTypeId} setMarkerTypeId={setBulkMarkerTypeId}
+          markerMaterialId={bulkMarkerMaterialId} setMarkerMaterialId={setBulkMarkerMaterialId}
+          markerConditionId={bulkMarkerConditionId} setMarkerConditionId={setBulkMarkerConditionId}
+          gravesiteIdentifiers={bulkGravesiteIdentifiers} setGravesiteIdentifiers={setBulkGravesiteIdentifiers}
+          lotId={bulkLotId} setLotId={setBulkLotId}
+          northHillsNote={bulkNorthHillsNote} setNorthHillsNote={setBulkNorthHillsNote}
+          selectedNorthHillsCount={selectedNorthHillsEntries.length} savingKey={savingBulkKey}
+          lookups={headstoneLookups} cemeteryRecords={cemeteryRecords}
+          onSaveMarkers={(event) => void saveBulkHeadstoneUpdate(event)}
+          onAssignLot={(event) => void saveBulkGravesiteLotAssignment(event)}
+          onMarkReadingsReviewed={() => void markSelectedNorthHillsReviewed()}
+          onAddReadingNote={() => void addNoteToSelectedNorthHillsEntries()}
+          onOpenReadings={openNorthHillsReviewTab}
+        />
       ) : activeTab === "lookups" ? (
         <>
           <section className="admin-section">
