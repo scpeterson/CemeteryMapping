@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowDown, ArrowUp, BookOpenText, FileSearch, FileText, History, Landmark, ListChecks, ShieldAlert, UserCog, X } from "lucide-react";
 import {
   bulkAddNorthHillsEntryNote,
@@ -37,12 +37,8 @@ import {
   updateSourcePersonRecord,
 } from "../api/cemeteryApi";
 import { defaultAuditFilters } from "./AdminEventDefaults";
-import { AuditAdminTab, SystemEventsAdminTab } from "./AdminEventTabs";
-import { DataQualityAdminTab, type DataQualityReviewTarget } from "./DataQualityAdminTab";
-import { DeedsAdminTab } from "./admin/DeedsAdminTab";
-import { UsersAdminTab, type UserFormState } from "./admin/UsersAdminTab";
-import { RecordsAdminTab } from "./admin/RecordsAdminTab";
-import { BulkAdminTab } from "./admin/BulkAdminTab";
+import type { DataQualityReviewTarget } from "./DataQualityAdminTab";
+import type { UserFormState } from "./admin/UsersAdminTab";
 import {
   blankDeedActionForm,
   blankDeedCaseForm,
@@ -89,6 +85,14 @@ import type {
   SourcePersonRecordType,
   CurrentUser,
 } from "../types";
+
+const AuditAdminTab = lazy(() => import("./AdminEventTabs").then((module) => ({ default: module.AuditAdminTab })));
+const SystemEventsAdminTab = lazy(() => import("./AdminEventTabs").then((module) => ({ default: module.SystemEventsAdminTab })));
+const DataQualityAdminTab = lazy(() => import("./DataQualityAdminTab").then((module) => ({ default: module.DataQualityAdminTab })));
+const DeedsAdminTab = lazy(() => import("./admin/DeedsAdminTab").then((module) => ({ default: module.DeedsAdminTab })));
+const UsersAdminTab = lazy(() => import("./admin/UsersAdminTab").then((module) => ({ default: module.UsersAdminTab })));
+const RecordsAdminTab = lazy(() => import("./admin/RecordsAdminTab").then((module) => ({ default: module.RecordsAdminTab })));
+const BulkAdminTab = lazy(() => import("./admin/BulkAdminTab").then((module) => ({ default: module.BulkAdminTab })));
 
 function candidateGravesiteLabel(match: NorthHillsOcrReviewEntry["candidateMatches"][number]) {
   if (match.sectionId && match.graveId) return `${match.sectionId}-${match.graveId}`;
@@ -1888,7 +1892,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
         </nav>
 
         <div className="admin-content">
-
+      <Suspense fallback={<p className="admin-message">Loading admin workflow…</p>}>
       {activeTab === "users" && canManageUsers ? (
         <UsersAdminTab
           form={form}
@@ -3290,6 +3294,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
       ) : (
         <AuditAdminTab seedFilters={auditSeedFilters} onError={setError} onMessage={setMessage} />
       )}
+      </Suspense>
         </div>
       </div>
     </aside>
