@@ -164,6 +164,7 @@ test("cemetery map derives gravesite status from review flags, burials, and owne
   assert.match(gravesQuery, /lower\(btrim\(coalesce\(veteran, ''\)\)\)/u);
   assert.match(gravesQuery, /AS has_veteran/u);
   assert.match(gravesQuery, /THEN 'occupied'/u);
+  assert.match(gravesQuery, /status_type\.code = 'sold'/u);
   assert.match(gravesQuery, /status_type\.code = 'reserved'/u);
   assert.match(gravesQuery, /FROM owners status_legacy_owners/u);
   assert.match(gravesQuery, /FROM current_ownership_right_owners status_rights/u);

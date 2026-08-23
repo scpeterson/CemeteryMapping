@@ -11,6 +11,7 @@ export function derivedGravesiteStatusSql({ gravesiteAlias = "gravesites", statu
           AND status_burials.deleted_at IS NULL
           AND COALESCE(status_burial_record_status.code, 'interred') = 'interred'
       ) THEN 'occupied'
+      WHEN ${statusTypeAlias}.code = 'sold' THEN ${statusTypeAlias}.code
       WHEN ${statusTypeAlias}.code = 'reserved' THEN ${statusTypeAlias}.code
       WHEN EXISTS (
         SELECT 1

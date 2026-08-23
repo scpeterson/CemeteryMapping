@@ -961,3 +961,6 @@ databaseChangeLog:
   - include:
       file: changes/322-review-c-0338-cross-row-overlaps.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/323-split-c-0155-miller-gravesites.sql
+      relativeToChangelogFile: true
