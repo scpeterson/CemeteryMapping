@@ -72,7 +72,7 @@
     "express": "^5.2.1",
     "express-oauth2-jwt-bearer": "^1.9.2",
     "lucide-react": "^1.23.0",
-    "maplibre-gl": "^6.1.0",
+    "maplibre-gl": "^6.4.0",
     "pg": "^8.22.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
