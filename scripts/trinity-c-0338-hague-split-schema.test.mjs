@@ -32,12 +32,13 @@ test("C-0338 Hague split assigns each burial and spans both gravesites without m
 
 test("C-0338 Hague split asserts its source records and is included in the root changelog", () => {
   assert.match(migration, /assert_migration_prerequisite/u);
+  assert.match(migration, /gravesite_id IN \('TLC-GPS-0337', 'TLC-GPS-0339'\)/u);
   assert.match(migration, /exactly one active Arthur Julius Hague burial and one active Isabelle M Hague burial/u);
   assert.match(rootChangelog, /changes\/321-split-c-0338-hague-gravesites\.sql/u);
 });
 
 test("C-0338 records only its exact reviewed cross-row overlap exceptions", () => {
-  assert.match(overlapReview, /count\(\*\)[\s\S]*\) = 3/u);
+  assert.match(overlapReview, /count\(\*\)[\s\S]*\) IN \(0, 3\)/u);
   assert.match(overlapReview, /gravesite_id = 'TLC-GPS-0338-01'/u);
   assert.match(overlapReview, /issue_detail = 'Overlaps gravesite TLC-GPS-0338-01\.'/u);
   assert.match(overlapReview, /Southward offsets create larger same-row conflicts\./u);

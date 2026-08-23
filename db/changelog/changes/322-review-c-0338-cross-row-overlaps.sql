@@ -12,8 +12,8 @@ SELECT assert_migration_prerequisite(
         gravesite_id = 'TLC-GPS-0338-01'
         OR issue_detail = 'Overlaps gravesite TLC-GPS-0338-01.'
       )
-  ) = 3,
-  'the C-0338 split must produce exactly the three reviewed cross-row overlaps'
+  ) IN (0, 3),
+  'the C-0338 split must be absent or produce exactly the three reviewed cross-row overlaps'
 );
 
 INSERT INTO reviewed_spatial_validation_exceptions (

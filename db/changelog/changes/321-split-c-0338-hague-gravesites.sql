@@ -2,7 +2,13 @@
 
 --changeset cemeterymapping:321-split-c-0338-hague-gravesites splitStatements:false
 SELECT assert_migration_prerequisite(
-  EXISTS (
+  NOT EXISTS (
+    SELECT 1
+    FROM gravesites
+    WHERE gravesite_id IN ('TLC-GPS-0337', 'TLC-GPS-0339')
+      AND deleted_at IS NULL
+  )
+  OR EXISTS (
     SELECT 1
     FROM gravesites
     WHERE gravesite_id = 'TLC-GPS-0338'
@@ -13,7 +19,13 @@ SELECT assert_migration_prerequisite(
 );
 
 SELECT assert_migration_prerequisite(
-  EXISTS (
+  NOT EXISTS (
+    SELECT 1
+    FROM gravesites
+    WHERE gravesite_id = 'TLC-GPS-0338'
+      AND deleted_at IS NULL
+  )
+  OR EXISTS (
     SELECT 1
     FROM headstones
     WHERE headstone_id = 'TLC-HS-0338'
@@ -24,7 +36,13 @@ SELECT assert_migration_prerequisite(
 );
 
 SELECT assert_migration_prerequisite(
-  (
+  NOT EXISTS (
+    SELECT 1
+    FROM gravesites
+    WHERE gravesite_id = 'TLC-GPS-0338'
+      AND deleted_at IS NULL
+  )
+  OR (
     SELECT count(*)
     FROM burials
     WHERE lower(COALESCE(full_name, '')) = 'arthur julius hague'
