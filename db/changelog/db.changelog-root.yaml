@@ -982,3 +982,9 @@ databaseChangeLog:
   - include:
       file: changes/329-review-c-0342-cross-row-overlap.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/330-split-c-0345-brant-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/331-review-c-0345-neighbor-overlap.sql
+      relativeToChangelogFile: true
