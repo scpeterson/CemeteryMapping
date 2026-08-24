@@ -970,3 +970,9 @@ databaseChangeLog:
   - include:
       file: changes/325-review-c-0340-cross-row-overlaps.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/326-split-c-0341-ehrhardt-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/327-review-c-0341-cross-row-overlaps.sql
+      relativeToChangelogFile: true
