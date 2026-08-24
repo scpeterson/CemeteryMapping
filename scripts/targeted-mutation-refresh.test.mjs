@@ -39,7 +39,7 @@ test("locally resolvable deletes and photo moves do not refetch selected details
   for (const [start, end, helper] of [
     ["deleteSavedGraveFeature", "updateSavedMaintenanceRecord", "removeFeatureFromGrave"],
     ["deletePhoto", "movePhoto", "removeMediaAsset"],
-    ["movePhoto", "saveOwnershipEvent", "moveMediaAssetInRecord"],
+    ["movePhoto", "saveOwnershipEvent", "moveMediaAssetInGrave"],
   ]) {
     const mutation = mutationSource.match(new RegExp(`const ${start} = async[\\s\\S]+?\\n {2}\\};\\n\\n {2}const ${end}`, "u"))?.[0];
     assert.ok(mutation, `expected to find ${start}`);

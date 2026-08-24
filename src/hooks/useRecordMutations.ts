@@ -26,7 +26,7 @@ import {
   uploadHeadstonePhoto,
 } from "../api/cemeteryApi";
 import { graveSelectionKey } from "../lib/format";
-import { appendHeadstoneSummary, assignLotInMapData, assignLotToSelectedGrave, moveMediaAssetInRecord, removeFeatureFromGrave, removeFeatureFromHeadstone, removeMediaAsset, replaceBurialInGrave, replaceHeadstoneInGrave, replaceHeadstoneSummary } from "./recordMutationState";
+import { appendHeadstoneSummary, assignLotInMapData, assignLotToSelectedGrave, moveMediaAssetInGrave, moveMediaAssetInRecord, removeFeatureFromGrave, removeFeatureFromHeadstone, removeMediaAsset, replaceBurialInGrave, replaceHeadstoneInGrave, replaceHeadstoneSummary } from "./recordMutationState";
 import type {
   Burial,
   CemeteryData,
@@ -307,13 +307,14 @@ export function useRecordMutations({
 
   const movePhoto = async (asset: { id: string; mediaLinkId?: string; mediaLinkType?: "headstone" | "gravesite" }, direction: "earlier" | "later") => {
     if (!asset.mediaLinkId || !asset.mediaLinkType) throw new Error("Photo link information is missing.");
-    await moveMediaAsset({
+    const result = await moveMediaAsset({
       id: asset.id,
       linkId: asset.mediaLinkId,
       linkType: asset.mediaLinkType,
       direction,
     });
-    setSelectedGraveDetails((current) => moveMediaAssetInRecord(current, asset.id, direction));
+    if (!result.moved) return;
+    setSelectedGraveDetails((current) => moveMediaAssetInGrave(current, asset.id, direction));
     setSelectedHeadstoneDetails((current) => moveMediaAssetInRecord(current, asset.id, direction));
   };
 

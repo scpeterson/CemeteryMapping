@@ -191,11 +191,18 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
           relationship_type,
           status,
           notes,
+          display_order,
           linked_by_app_user_id,
           linked_by_external_subject,
           linked_by_email
         )
-        VALUES ($1, $2, 'documents', 'linked', $3, $4, $5, $6)
+        VALUES (
+          $1, $2, 'documents', 'linked', $3,
+          (SELECT COALESCE(MAX(display_order), -1) + 1
+           FROM gravesite_media_assets
+           WHERE gravesite_uuid = $2 AND deleted_at IS NULL AND status = 'linked'),
+          $4, $5, $6
+        )
       `,
       [assetId, grave.id, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
     );
@@ -209,11 +216,18 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
             relationship_type,
             status,
             notes,
+            display_order,
             linked_by_app_user_id,
             linked_by_external_subject,
             linked_by_email
           )
-          VALUES ($1, $2, 'documents', 'linked', $3, $4, $5, $6)
+          VALUES (
+            $1, $2, 'documents', 'linked', $3,
+            (SELECT COALESCE(MAX(display_order), -1) + 1
+             FROM headstone_media_assets
+             WHERE headstone_uuid = $2 AND deleted_at IS NULL AND status = 'linked'),
+            $4, $5, $6
+          )
         `,
         [assetId, headstoneId, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
       );
@@ -332,11 +346,18 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
           relationship_type,
           status,
           notes,
+          display_order,
           linked_by_app_user_id,
           linked_by_external_subject,
           linked_by_email
         )
-        VALUES ($1, $2, 'documents', 'linked', $3, $4, $5, $6)
+        VALUES (
+          $1, $2, 'documents', 'linked', $3,
+          (SELECT COALESCE(MAX(display_order), -1) + 1
+           FROM headstone_media_assets
+           WHERE headstone_uuid = $2 AND deleted_at IS NULL AND status = 'linked'),
+          $4, $5, $6
+        )
       `,
       [assetId, headstone.id, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
     );
@@ -511,6 +532,7 @@ export async function moveMediaAssetLink(pool, mediaAssetId, { linkId, linkType,
           AND media_assets.deleted_at IS NULL
           AND media_assets.status = 'linked'
         ORDER BY link.display_order, media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
+        FOR UPDATE OF link
       `,
       [selectedLink.target_id],
     );
