@@ -988,3 +988,6 @@ databaseChangeLog:
   - include:
       file: changes/331-review-c-0345-neighbor-overlap.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/332-split-c-86-0350-brandt-gravesites.sql
+      relativeToChangelogFile: true
