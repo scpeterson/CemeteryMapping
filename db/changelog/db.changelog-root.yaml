@@ -976,3 +976,9 @@ databaseChangeLog:
   - include:
       file: changes/327-review-c-0341-cross-row-overlaps.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/328-split-c-0342-brant-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/329-review-c-0342-cross-row-overlap.sql
+      relativeToChangelogFile: true
