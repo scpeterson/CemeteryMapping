@@ -74,6 +74,18 @@ export function moveMediaAssetInRecord<T extends { mediaAssets: MediaAsset[] } |
   const currentIndex = mediaAssets.findIndex((asset) => asset.id === assetId);
   const swapIndex = currentIndex + (direction === "earlier" ? -1 : 1);
   if (currentIndex < 0 || swapIndex < 0 || swapIndex >= mediaAssets.length) return record;
-  [mediaAssets[currentIndex], mediaAssets[swapIndex]] = [mediaAssets[swapIndex], mediaAssets[currentIndex]];
+  const currentAsset = mediaAssets[currentIndex];
+  const swapAsset = mediaAssets[swapIndex];
+  mediaAssets[currentIndex] = { ...swapAsset, displayOrder: currentIndex };
+  mediaAssets[swapIndex] = { ...currentAsset, displayOrder: swapIndex };
   return { ...record, mediaAssets } as T;
+}
+
+export function moveMediaAssetInGrave(grave: GraveSpace | undefined, assetId: string, direction: "earlier" | "later") {
+  if (!grave) return grave;
+  const movedGrave = moveMediaAssetInRecord(grave, assetId, direction);
+  const headstones = movedGrave.headstones.map((headstone) => moveMediaAssetInRecord(headstone, assetId, direction));
+  return headstones.every((headstone, index) => headstone === movedGrave.headstones[index])
+    ? movedGrave
+    : { ...movedGrave, headstones };
 }

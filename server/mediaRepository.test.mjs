@@ -117,6 +117,8 @@ test("createGraveSpacePhoto stores a local file and links it to a gravesite and 
     assert.equal(queries.at(-2).sql, "COMMIT");
     assert.match(queries.find((query) => query.sql.includes("INSERT INTO gravesite_media_assets"))?.sql ?? "", /gravesite_media_assets/u);
     assert.match(queries.find((query) => query.sql.includes("INSERT INTO headstone_media_assets"))?.sql ?? "", /headstone_media_assets/u);
+    assert.match(queries.find((query) => query.sql.includes("INSERT INTO gravesite_media_assets"))?.sql ?? "", /COALESCE\(MAX\(display_order\), -1\) \+ 1/u);
+    assert.match(queries.find((query) => query.sql.includes("INSERT INTO headstone_media_assets"))?.sql ?? "", /COALESCE\(MAX\(display_order\), -1\) \+ 1/u);
   } finally {
     await rm(uploadRoot, { recursive: true, force: true });
   }
@@ -199,6 +201,7 @@ test("createHeadstonePhoto stores a local file and links it to a headstone", asy
     assert.match(headstoneLookup?.sql ?? "", /COALESCE\(direct_gravesite\.cemetery_id, linked_gravesite\.cemetery_id, containing_cemetery\.id\)/u);
     assert.doesNotMatch(headstoneLookup?.sql ?? "", /headstones\.cemetery_id/u);
     assert.match(queries.find((query) => query.sql.includes("INSERT INTO headstone_media_assets"))?.sql ?? "", /headstone_media_assets/u);
+    assert.match(queries.find((query) => query.sql.includes("INSERT INTO headstone_media_assets"))?.sql ?? "", /COALESCE\(MAX\(display_order\), -1\) \+ 1/u);
     assert.equal(queries.some((query) => query.sql.includes("INSERT INTO gravesite_media_assets")), false);
   } finally {
     await rm(uploadRoot, { recursive: true, force: true });
@@ -391,6 +394,51 @@ test("moveMediaAssetLink swaps a photo with its adjacent link", async () => {
   assert.equal(result.updates.length, 2);
   assert.equal(queries[0].sql, "BEGIN");
   assert.match(queries.find((query) => query.sql.includes("ORDER BY link.display_order"))?.sql ?? "", /headstone_media_assets/u);
+  assert.match(queries.find((query) => query.sql.includes("ORDER BY link.display_order"))?.sql ?? "", /FOR UPDATE OF link/u);
   assert.equal(queries.filter((query) => query.sql.includes("UPDATE headstone_media_assets SET display_order")).length, 2);
+  assert.equal(queries.at(-2).sql, "COMMIT");
+});
+
+test("moveMediaAssetLink treats a stale boundary move as a successful no-op", async () => {
+  const queries = [];
+  const pool = {
+    async connect() {
+      return {
+        async query(sql, values = []) {
+          queries.push({ sql, values });
+          if (sql.includes("SELECT cemetery_id::text")) {
+            return { rows: [{ cemetery_id: "11111111-1111-4111-8111-111111111111" }] };
+          }
+          if (sql.includes("AS target_id")) {
+            return { rows: [{ target_id: "99999999-9999-4999-8999-999999999999" }] };
+          }
+          if (sql.includes("ORDER BY link.display_order")) {
+            return {
+              rows: [{
+                id: "66666666-6666-4666-8666-666666666666",
+                media_asset_id: "55555555-5555-4555-8555-555555555555",
+                display_order: 0,
+              }],
+            };
+          }
+          return { rows: [] };
+        },
+        release() {
+          queries.push({ sql: "RELEASE", values: [] });
+        },
+      };
+    },
+  };
+
+  const result = await moveMediaAssetLink(pool, "55555555-5555-4555-8555-555555555555", {
+    linkId: "66666666-6666-4666-8666-666666666666",
+    linkType: "headstone",
+    direction: "earlier",
+    actorUser: { role: "admin" },
+    reason: "Reordered photo display",
+  });
+
+  assert.deepEqual(result, { moved: false, updates: [] });
+  assert.equal(queries.some((query) => query.sql.includes("UPDATE headstone_media_assets SET display_order")), false);
   assert.equal(queries.at(-2).sql, "COMMIT");
 });

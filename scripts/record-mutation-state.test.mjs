@@ -5,6 +5,7 @@ import {
   assignLotInMapData,
   assignLotToSelectedGrave,
   moveMediaAssetInRecord,
+  moveMediaAssetInGrave,
   removeFeatureFromGrave,
   removeFeatureFromHeadstone,
   removeMediaAsset,
@@ -93,14 +94,39 @@ test("feature deletion removes the feature from grave and nested marker caches",
 });
 
 test("photo deletion and movement update only local media collections", () => {
-  const first = { id: "photo-1" };
-  const second = { id: "photo-2" };
-  const third = { id: "photo-3" };
+  const first = { id: "photo-1", displayOrder: 0 };
+  const second = { id: "photo-2", displayOrder: 1 };
+  const third = { id: "photo-3", displayOrder: 2 };
   const record = { id: "grave-1", mediaAssets: [first, second, third], headstones: [] };
 
   const moved = moveMediaAssetInRecord(record, second.id, "earlier");
-  assert.deepEqual(moved.mediaAssets, [second, first, third]);
+  assert.deepEqual(moved.mediaAssets, [
+    { ...second, displayOrder: 0 },
+    { ...first, displayOrder: 1 },
+    third,
+  ]);
+  assert.deepEqual(record.mediaAssets, [first, second, third], "the original record is not mutated");
   assert.equal(moved.headstones, record.headstones);
   assert.equal(moveMediaAssetInRecord(record, first.id, "earlier"), record, "an unavailable adjacent position is a no-op");
   assert.deepEqual(removeMediaAsset(record, second.id).mediaAssets, [first, third]);
+});
+
+test("headstone photo movement updates the nested marker shown in grave details", () => {
+  const first = { id: "photo-1", displayOrder: 0 };
+  const second = { id: "photo-2", displayOrder: 1 };
+  const gravePhoto = { id: "grave-photo", displayOrder: 0 };
+  const grave = {
+    id: "grave-1",
+    mediaAssets: [gravePhoto],
+    headstones: [{ id: "marker-1", mediaAssets: [first, second] }],
+  };
+
+  const moved = moveMediaAssetInGrave(grave, second.id, "earlier");
+
+  assert.deepEqual(moved.mediaAssets, [gravePhoto]);
+  assert.deepEqual(moved.headstones[0].mediaAssets, [
+    { ...second, displayOrder: 0 },
+    { ...first, displayOrder: 1 },
+  ]);
+  assert.deepEqual(grave.headstones[0].mediaAssets, [first, second], "the original nested marker is not mutated");
 });

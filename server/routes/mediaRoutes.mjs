@@ -133,10 +133,6 @@ export function registerMediaRoutes(app, context) {
           response.status(403).json({ error: "Forbidden" });
           return;
         }
-        if (!result.moved) {
-          response.status(404).json({ error: "Adjacent photo not found" });
-          return;
-        }
         response.json(result);
       } catch (error) {
         next(error);
