@@ -994,3 +994,6 @@ databaseChangeLog:
   - include:
       file: changes/333-split-c-0360-berkshire-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/334-split-c-0427-vandevort-gravesites.sql
+      relativeToChangelogFile: true
