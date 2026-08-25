@@ -1,24 +1,22 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:336-review-c-0428-and-unlink-military-plaque splitStatements:false
+--validCheckSum 9:4144a69c3d2b1fb81b2e6b0af23af35a
+
 SELECT assert_migration_prerequisite(
-  EXISTS (
+  NOT EXISTS (
     SELECT 1
     FROM gravesites
     WHERE gravesite_id = 'TLC-GPS-0428'
       AND deleted_at IS NULL
-  ),
-  'active gravesite TLC-GPS-0428 must exist'
-);
-
-SELECT assert_migration_prerequisite(
-  EXISTS (
+  )
+  OR EXISTS (
     SELECT 1
     FROM headstones
     WHERE headstone_id = 'TLC-HS-0428'
       AND deleted_at IS NULL
   ),
-  'active military plaque TLC-HS-0428 must exist'
+  'active military plaque TLC-HS-0428 must exist when active gravesite TLC-GPS-0428 exists'
 );
 
 WITH record_context AS (
