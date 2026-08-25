@@ -39,6 +39,8 @@ test("plaque and C-0428 gravesite remain active and migration is registered", ()
 });
 
 test("C-0428 needs review and is no longer associated with TLC-HS-0428", () => {
+  assert.match(reviewMigration, /--validCheckSum 9:4144a69c3d2b1fb81b2e6b0af23af35a/u);
+  assert.match(reviewMigration, /NOT EXISTS \([\s\S]*gravesite_id = 'TLC-GPS-0428'[\s\S]*\)\s*OR EXISTS \([\s\S]*headstone_id = 'TLC-HS-0428'/u);
   assert.match(reviewMigration, /headstones[\s\S]*gravesite_uuid = NULL/u);
   assert.match(reviewMigration, /UPDATE headstone_gravesites[\s\S]*deleted_at = now\(\)/u);
   assert.match(reviewMigration, /needs_review_status\.code = 'needs_review'/u);
