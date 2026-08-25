@@ -1003,3 +1003,6 @@ databaseChangeLog:
   - include:
       file: changes/336-review-c-0428-and-unlink-military-plaque.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/337-split-c-0429-beck-gravesites.sql
+      relativeToChangelogFile: true
