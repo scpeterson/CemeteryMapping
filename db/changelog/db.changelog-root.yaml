@@ -997,3 +997,9 @@ databaseChangeLog:
   - include:
       file: changes/334-split-c-0427-vandevort-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/335-consolidate-vandevort-military-plaque-burial.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/336-review-c-0428-and-unlink-military-plaque.sql
+      relativeToChangelogFile: true
