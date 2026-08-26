@@ -20,6 +20,7 @@ const changelog = fs.readFileSync(
 );
 
 test("C-0359 migration creates two graves north of Eleanor without moving the marker", () => {
+  assert.match(migration, /--validCheckSum 9:612fb0ed5c506c3e4a27c0c06e9a50b2/u);
   assert.match(migration, /headstones\.headstone_id = 'TLC-HS-0359'/u);
   assert.match(migration, /'0359A', 'TLC-GPS-0359-01'/u);
   assert.match(migration, /'0359B', 'TLC-GPS-0359-02'/u);
@@ -50,6 +51,8 @@ test("C-0359 migration is included in the root changelog", () => {
 });
 
 test("C-0359 provenance correction records mixed NHG inclusion and fixes Bette's surname", () => {
+  assert.match(provenanceCorrection, /--validCheckSum 9:b222cae2dcc3cdffe10a31efe0b5391b/u);
+  assert.match(provenanceCorrection, /NOT EXISTS \([\s\S]*gravesite_id = 'TLC-GPS-0359'/u);
   assert.match(provenanceCorrection, /THEN 'not_listed'/u);
   assert.match(provenanceCorrection, /ELSE 'listed'/u);
   assert.match(provenanceCorrection, /'nhgInclusion'/u);

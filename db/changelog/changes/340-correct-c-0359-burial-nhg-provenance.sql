@@ -1,8 +1,15 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:340-correct-c-0359-burial-nhg-provenance splitStatements:false
+--validCheckSum 9:b222cae2dcc3cdffe10a31efe0b5391b
 SELECT assert_migration_prerequisite(
-  (
+  NOT EXISTS (
+    SELECT 1
+    FROM gravesites
+    WHERE gravesite_id = 'TLC-GPS-0359'
+      AND deleted_at IS NULL
+  )
+  OR (
     SELECT count(*)
     FROM burials
     WHERE lower(COALESCE(full_name, '')) IN (
