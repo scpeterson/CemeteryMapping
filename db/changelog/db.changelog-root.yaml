@@ -1006,3 +1006,12 @@ databaseChangeLog:
   - include:
       file: changes/337-split-c-0429-beck-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/338-split-c-0359-brant-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/339-link-c-0359-bette-brandt-headstone.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/340-correct-c-0359-burial-nhg-provenance.sql
+      relativeToChangelogFile: true
