@@ -1,6 +1,7 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:338-split-c-0359-brant-gravesites splitStatements:false
+--validCheckSum 9:612fb0ed5c506c3e4a27c0c06e9a50b2
 SELECT assert_migration_prerequisite(
   NOT EXISTS (
     SELECT 1 FROM gravesites
