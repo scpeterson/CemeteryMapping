@@ -33,9 +33,16 @@ export function loadApiConfig() {
 
   const postgresPort = Number(process.env.PGPORT ?? fileEnv.POSTGRES_PORT ?? 5432);
   const apiPort = Number(process.env.API_PORT ?? 3001);
-  const authMode = (process.env.AUTH_MODE ?? "disabled").toLowerCase();
+  const configuredAuthMode = process.env.AUTH_MODE?.trim();
+  if ((appEnv === "stage" || appEnv === "prod") && !configuredAuthMode) {
+    throw new Error(`AUTH_MODE=auth0 is required when APP_ENV=${appEnv}; authentication cannot default to disabled.`);
+  }
+  const authMode = (configuredAuthMode || "disabled").toLowerCase();
   if (!authModes.has(authMode)) {
     throw new Error(`AUTH_MODE must be one of ${[...authModes].join(", ")}. Received "${authMode}".`);
+  }
+  if ((appEnv === "stage" || appEnv === "prod") && authMode !== "auth0") {
+    throw new Error(`AUTH_MODE must be auth0 when APP_ENV=${appEnv}.`);
   }
   const auth0Domain = process.env.AUTH0_DOMAIN;
   const auth0Audience = process.env.AUTH0_AUDIENCE;

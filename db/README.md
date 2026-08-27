@@ -314,8 +314,8 @@ Database triggers also maintain `updated_at` on current tables that expose that 
 
 Current API authorization modes:
 
-- `AUTH_MODE=disabled`: development/test default. Requests are treated as a local admin.
-- `AUTH_MODE=trusted-header`: controlled integration mode. A trusted proxy must provide `x-cemetery-user-subject`, `x-cemetery-user-email`, and `x-cemetery-user-role`.
+- `AUTH_MODE=disabled`: development/test default only. Requests are treated as a local admin; stage and production reject this mode.
+- `AUTH_MODE=trusted-header`: controlled development/test integration mode. A trusted proxy must remove client-supplied identity headers and provide `x-cemetery-user-subject`, `x-cemetery-user-email`, and `x-cemetery-user-role`; stage and production reject this mode.
 - `AUTH_MODE=auth0`: production mode. The API validates Auth0 JWT bearer tokens and loads the local `app_users` record by `external_subject`.
 
 Trusted-header mode is not a production identity-provider replacement.
