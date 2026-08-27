@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-cemetery_mapping_dev}
       POSTGRES_USER: ${POSTGRES_USER:-cemetery_app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cemetery_app_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in an ignored local env file or deployment secret manager}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:

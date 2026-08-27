@@ -43,10 +43,22 @@ function readEnvFile(envFile, required = true) {
 }
 
 export function loadDbEnvironment(environment = currentEnvironment()) {
-  return {
+  const processOverrides = Object.fromEntries(
+    ["POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_PORT"]
+      .filter((key) => process.env[key] !== undefined)
+      .map((key) => [key, process.env[key]]),
+  );
+  const values = {
     ...readEnvFile(envFilePath(environment)),
     ...readEnvFile(localEnvFilePath(environment), false),
+    ...processOverrides,
   };
+  if (!String(values.POSTGRES_PASSWORD ?? "").trim()) {
+    throw new Error(
+      `POSTGRES_PASSWORD is required for ${environment}. Set it in ${localEnvFilePath(environment)} or inject it through the environment.`,
+    );
+  }
+  return values;
 }
 
 export function dockerComposeArgs(environment = currentEnvironment()) {
