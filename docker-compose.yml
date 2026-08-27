@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-cemetery_app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in an ignored local env file or deployment secret manager}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - cemetery-postgres-data-${APP_ENV:-dev}:/var/lib/postgresql/data
       - ./db/seed:/seed:ro

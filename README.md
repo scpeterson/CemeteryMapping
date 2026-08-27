@@ -57,7 +57,7 @@ APP_ENV=prod npm run db:status
 
 Promotion between environments is documented in [Operator Workflows](docs/operator-workflows.md#environment-promotion-workflow). In short: implement in DEV, validate through PR/CI in TEST, rehearse production-like deployment in STAGE, then promote to PROD only after backups, smoke tests, and a rollback or forward-fix plan are ready.
 
-If another local PostgreSQL service already uses port `5432`, create `db/env/dev.local.env` and set `POSTGRES_PORT` to an open port such as `5436`. Local env override files are ignored by git and are loaded by both Docker Compose and the API. Stage and production database passwords are never stored in tracked environment files; copy the corresponding `.local.env.example` file to `.local.env` or inject `POSTGRES_PASSWORD`/`PGPASSWORD` through the deployment secret manager.
+If another local PostgreSQL service already uses port `5432`, create `db/env/dev.local.env` and set `POSTGRES_PORT` to an open port such as `5436`. Local env override files are ignored by git and are loaded by both Docker Compose and the API. Stage and production database passwords are never stored in tracked environment files; copy the corresponding `.local.env.example` file to `.local.env` or inject `POSTGRES_PASSWORD`/`PGPASSWORD` through the deployment secret manager. Docker publishes PostgreSQL on `127.0.0.1` only, so the database port is not exposed on external host interfaces.
 
 ## What is included
 
