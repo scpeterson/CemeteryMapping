@@ -49,6 +49,10 @@ export function loadApiConfig() {
   if (authMode === "auth0" && (!auth0Domain || !auth0Audience)) {
     throw new Error("AUTH0_DOMAIN and AUTH0_AUDIENCE are required when AUTH_MODE=auth0.");
   }
+  const databasePassword = process.env.PGPASSWORD ?? fileEnv.POSTGRES_PASSWORD;
+  if (!String(databasePassword ?? "").trim()) {
+    throw new Error(`A database password is required for APP_ENV=${appEnv}. Set PGPASSWORD or use the ignored ${appEnv}.local.env file.`);
+  }
 
   return {
     appEnv,
@@ -75,7 +79,7 @@ export function loadApiConfig() {
       port: postgresPort,
       database: process.env.PGDATABASE ?? fileEnv.POSTGRES_DB,
       user: process.env.PGUSER ?? fileEnv.POSTGRES_USER,
-      password: process.env.PGPASSWORD ?? fileEnv.POSTGRES_PASSWORD,
+      password: databasePassword,
     },
     placeSearch: {
       username: process.env.GEONAMES_USERNAME ?? fileEnv.GEONAMES_USERNAME,

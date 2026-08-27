@@ -13,6 +13,7 @@ function withTemporaryProject(files, fn) {
   const previousAuthMode = process.env.AUTH_MODE;
   const previousAuth0Domain = process.env.AUTH0_DOMAIN;
   const previousAuth0Audience = process.env.AUTH0_AUDIENCE;
+  const previousPostgresPassword = process.env.POSTGRES_PASSWORD;
   const previousAuth0ManagementClientId = process.env.AUTH0_MANAGEMENT_CLIENT_ID;
   const previousAuth0ManagementClientSecret = process.env.AUTH0_MANAGEMENT_CLIENT_SECRET;
   const previousAuth0ManagementConnection = process.env.AUTH0_MANAGEMENT_CONNECTION;
@@ -28,9 +29,10 @@ function withTemporaryProject(files, fn) {
 
     process.chdir(projectDir);
     delete process.env.PGPORT;
-    delete process.env.AUTH_MODE;
-    delete process.env.AUTH0_DOMAIN;
-    delete process.env.AUTH0_AUDIENCE;
+  delete process.env.AUTH_MODE;
+  delete process.env.AUTH0_DOMAIN;
+  delete process.env.AUTH0_AUDIENCE;
+  delete process.env.POSTGRES_PASSWORD;
     process.env.AUTH0_MANAGEMENT_CLIENT_ID = "management-client";
     process.env.AUTH0_MANAGEMENT_CLIENT_SECRET = "management-secret";
     process.env.AUTH0_MANAGEMENT_CONNECTION = "Username-Password-Authentication";
@@ -44,12 +46,14 @@ function withTemporaryProject(files, fn) {
     else process.env.APP_ENV = previousAppEnv;
     if (previousPgPort === undefined) delete process.env.PGPORT;
     else process.env.PGPORT = previousPgPort;
-    if (previousAuthMode === undefined) delete process.env.AUTH_MODE;
-    else process.env.AUTH_MODE = previousAuthMode;
-    if (previousAuth0Domain === undefined) delete process.env.AUTH0_DOMAIN;
-    else process.env.AUTH0_DOMAIN = previousAuth0Domain;
-    if (previousAuth0Audience === undefined) delete process.env.AUTH0_AUDIENCE;
-    else process.env.AUTH0_AUDIENCE = previousAuth0Audience;
+  if (previousAuthMode === undefined) delete process.env.AUTH_MODE;
+  else process.env.AUTH_MODE = previousAuthMode;
+  if (previousAuth0Domain === undefined) delete process.env.AUTH0_DOMAIN;
+  else process.env.AUTH0_DOMAIN = previousAuth0Domain;
+  if (previousAuth0Audience === undefined) delete process.env.AUTH0_AUDIENCE;
+  else process.env.AUTH0_AUDIENCE = previousAuth0Audience;
+  if (previousPostgresPassword === undefined) delete process.env.POSTGRES_PASSWORD;
+  else process.env.POSTGRES_PASSWORD = previousPostgresPassword;
     if (previousAuth0ManagementClientId === undefined) delete process.env.AUTH0_MANAGEMENT_CLIENT_ID;
     else process.env.AUTH0_MANAGEMENT_CLIENT_ID = previousAuth0ManagementClientId;
     if (previousAuth0ManagementClientSecret === undefined) delete process.env.AUTH0_MANAGEMENT_CLIENT_SECRET;
@@ -137,6 +141,19 @@ test("production accepts complete Auth0 configuration", () => {
       process.env.AUTH0_AUDIENCE = "https://cemetery.example/api";
       const config = loadApiConfig();
       assert.equal(config.auth.mode, "auth0");
+    },
+  );
+});
+
+test("database tooling requires an external password when a tracked environment has none", () => {
+  withTemporaryProject(
+    {
+      "db/env/stage.env": "APP_ENV=stage\nPOSTGRES_DB=cemetery_mapping_stage\nPOSTGRES_USER=cemetery_app\nPOSTGRES_PORT=5434\n",
+    },
+    () => {
+      assert.throws(() => loadDbEnvironment("stage"), /POSTGRES_PASSWORD is required for stage/u);
+      process.env.POSTGRES_PASSWORD = "injected-stage-password";
+      assert.equal(loadDbEnvironment("stage").POSTGRES_PASSWORD, "injected-stage-password");
     },
   );
 });

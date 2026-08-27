@@ -16,6 +16,7 @@ db/env/prod.env
 ```
 
 Each environment can also have a local, gitignored override file named `db/env/<environment>.local.env`.
+Tracked stage and production files contain identifiers and ports only. Their database passwords must come from an ignored local override or the deployment secret manager. Example files are provided as `stage.local.env.example` and `prod.local.env.example`. Rotate any credentials that were previously committed; removing them from the current tree does not remove them from Git history.
 Use this for machine-specific settings such as a different DEV host port when another local PostgreSQL service already uses `5432`.
 
 Local Docker ports:
