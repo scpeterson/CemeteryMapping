@@ -157,7 +157,7 @@ Verified death-location search uses GeoNames. Set `GEONAMES_USERNAME` in the env
 
 ### API Security
 
-Read endpoints are protected by API authorization middleware. Auth0 is the selected production identity provider. Local development and automated tests default to `AUTH_MODE=disabled` so contributors can run the application without Auth0 tenant credentials.
+Read endpoints are protected by API authorization middleware. Auth0 is the selected production identity provider. Local development and automated tests default to `AUTH_MODE=disabled` so contributors can run the application without Auth0 tenant credentials. Stage and production fail closed: they require an explicit `AUTH_MODE=auth0` plus the Auth0 domain and audience, and refuse to start with disabled or trusted-header authentication.
 
 For production Auth0 JWT validation, use:
 
