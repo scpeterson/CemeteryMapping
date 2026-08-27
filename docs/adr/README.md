@@ -66,6 +66,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0039: Create Section B Lots 4, 15, and 21](0039-create-section-b-lots-4-15-and-21.md)
 - [ADR 0040: Shift Five Section B Lots North](0040-shift-section-b-five-lots-north.md)
 - [ADR 0041: Modularize Large Domain Repositories Behind Stable Facades](0041-modularize-domain-repositories.md)
+- [ADR 0042: Split Reviewed Section C Shared-Marker Gravesites](0042-split-reviewed-section-c-shared-marker-gravesites.md)
 
 ## Creating a New ADR
 

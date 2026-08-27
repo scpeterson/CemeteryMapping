@@ -822,6 +822,11 @@ Later Section C shared-marker corrections use a consistent north/south split: th
 - `C-0236` retains Howard L Soergel; new northern `C-0236A` contains Elsie G Soergel; marker `TLC-HS-0236` spans both.
 - `C-0257` retains James M Sarver; new northern `C-0257A` contains Margaret E Sarver; marker `TLC-HS-0257` spans both.
 - `C-0258` retains Walter H Schuessler; new northern `C-0258A` contains Armella M Schuessler; marker `TLC-HS-0258` spans both.
+- `C-0367` retains Edmund Kohler; new northern `C-0367A` contains Marie Kohler; marker `TLC-HS-0367` spans both.
+- `C-0374` retains James A Proie; new northern `C-0374A` contains Evelyn C Proie; marker `TLC-HS-0374` spans both.
+- `C-0379` retains Albert D Hieber; new northern `C-0379A` contains Ida C Hieber; marker `TLC-HS-0379` spans both.
+- `C-0380` retains Adam Sandrock; new northern `C-0380A` contains Clara B Sandrock; marker `TLC-HS-0380` spans both.
+- `C-0381` retains H Carl Brandt; new northern `C-0381A` contains Alice R Brandt; marker `TLC-HS-0381` spans both.
 
 These letter suffixes are operational identifiers created during reviewed data repair, not labels transcribed from NHG. Do not move an observed marker point merely to center it in one of the interpreted gravesite polygons.
 
