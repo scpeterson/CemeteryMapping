@@ -1015,3 +1015,6 @@ databaseChangeLog:
   - include:
       file: changes/340-correct-c-0359-burial-nhg-provenance.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/341-split-c-0367-kohler-gravesites.sql
+      relativeToChangelogFile: true
