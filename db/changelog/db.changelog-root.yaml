@@ -1027,3 +1027,6 @@ databaseChangeLog:
   - include:
       file: changes/344-split-c-0380-sandrock-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/345-split-c-0381-brandt-gravesites.sql
+      relativeToChangelogFile: true
