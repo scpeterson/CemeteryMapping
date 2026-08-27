@@ -65,7 +65,7 @@ Microsoft Entra ID remains a strong alternative if the cemetery application late
 
 ## Consequences
 
-Production use of `AUTH_MODE=trusted-header` is replaced by `AUTH_MODE=auth0`, which validates JWT bearer tokens against Auth0 before checking local application authorization.
+Stage and production fail closed unless `AUTH_MODE` is explicitly set to `auth0`. Those environments reject `disabled`, `trusted-header`, missing Auth0 configuration, and unsupported authentication modes. Auth0 mode validates JWT bearer tokens before checking local application authorization.
 
 Required configuration placeholders:
 
@@ -81,7 +81,7 @@ Required configuration placeholders:
 
 The repository must not commit Auth0 secrets. Local, stage, and production deployments should inject them through environment-specific secret management.
 
-Development and CI can continue using `AUTH_MODE=disabled` until Auth0 test tenant credentials are available.
+Development and CI can continue using `AUTH_MODE=disabled` until Auth0 test tenant credentials are available. Trusted-header mode is restricted to controlled non-production integration scenarios and is not a production identity-provider replacement.
 
 The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT validation. After validation, the API loads `app_users` using the token `sub` claim and enforces the local `role_name`. Token permissions are useful context from Auth0, but the database remains the final application authorization source.
 
@@ -116,6 +116,8 @@ Auth0 tenant setup checklist:
 15. Optionally create a machine-to-machine Management API client with `read:users` and `create:users`, then set `AUTH0_MANAGEMENT_CLIENT_ID`, `AUTH0_MANAGEMENT_CLIENT_SECRET`, `AUTH0_MANAGEMENT_CONNECTION`, and `AUTH0_PASSWORD_RESET_CLIENT_ID` for Admin UI user provisioning and invitation emails.
 
 Steps 6 through 9 can be applied with `npm run auth0:configure`. Run the same script once per Auth0 environment with that environment's tenant domain, API audience, and Management API credentials.
+
+Before deployment, confirm that starting the API with `APP_ENV=stage` or `APP_ENV=prod` fails when `AUTH_MODE` is absent, disabled, or set to trusted-header. Confirm it starts only with complete Auth0 domain and audience configuration.
 
 Detailed setup is documented in [Auth0 Test Tenant Setup](../auth0-test-tenant.md).
 

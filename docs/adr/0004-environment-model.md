@@ -16,6 +16,10 @@ The project needs repeatable local and CI workflows while preserving a path towa
 
 Use `APP_ENV=dev|test|stage|prod` as the environment selector. Provide npm convenience scripts for database, API, and frontend commands. Store local prototype database settings in `db/env/<environment>.env`. Allow gitignored `db/env/<environment>.local.env` files to override those defaults for machine-specific settings.
 
+Tracked stage and production environment files contain database identifiers and ports, but not passwords. Supply `POSTGRES_PASSWORD` or `PGPASSWORD` through the deployment secret manager or a gitignored local override based on the provided example files. Docker Compose must fail when a required deployment password is absent rather than substitute a known default.
+
+Local Docker Compose PostgreSQL ports bind to `127.0.0.1`. A remote deployment must keep PostgreSQL on a private application network instead of widening the published host binding.
+
 Promotion between environments follows the same vocabulary:
 
 1. `DEV` is for implementation and exploratory local data work.
@@ -50,9 +54,11 @@ The promotion ladder keeps three concerns separate:
 
 Most scripts default to `DEV`. Maintainers must explicitly set `APP_ENV=test`, `APP_ENV=stage`, or `APP_ENV=prod` when targeting those databases.
 
-Local override files are intentionally untracked. They let a maintainer move the DEV Docker host port away from `5432` when a local PostgreSQL service is already listening there, while keeping the shared DEV default unchanged.
+Local override files are intentionally untracked. They let a maintainer move the DEV Docker host port away from `5432` when a local PostgreSQL service is already listening there, while keeping the shared DEV default unchanged. They also provide one supported way to supply local stage or production prototype credentials without committing them.
 
-The checked-in `prod.env` is only for local/prototype infrastructure. Real production credentials must come from deployment secrets and must not be committed.
+The checked-in `prod.env` is only for local/prototype infrastructure and contains no password. Real production credentials must come from deployment secrets and must not be committed. Previously committed values must be treated as compromised and rotated because removing them from the current tree does not erase Git history.
+
+The loopback-only Compose binding protects local database ports from other network hosts. It does not replace cloud firewall rules, private networking, TLS, least-privilege database roles, or tested backups in stage and production.
 
 Merging to `main` does not automatically promote data. A release can include code only, schema only, data only, or a coordinated combination. Production-affecting releases need a backup and rollback or forward-fix plan before `APP_ENV=prod` commands are run.
 
@@ -117,6 +123,13 @@ PGUSER
 PGPASSWORD
 ```
 
+For local stage or production prototype use, copy the appropriate example without committing the result:
+
+```bash
+cp db/env/stage.local.env.example db/env/stage.local.env
+cp db/env/prod.local.env.example db/env/prod.local.env
+```
+
 ## Update Triggers
 
-Update this ADR when environments are added or removed, ports change, credential handling changes, promotion gates change, release rollback policy changes, or deployment secrets replace local prototype environment files.
+Update this ADR when environments are added or removed, ports or network exposure change, credential handling changes, promotion gates change, release rollback policy changes, or the deployment secret-management approach changes.
