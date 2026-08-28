@@ -104,5 +104,7 @@
   url: /adr/0041-modularize-domain-repositories.html
 - title: "ADR 0042: Section C Shared-Marker Splits"
   url: /adr/0042-split-reviewed-section-c-shared-marker-gravesites.html
+- title: "ADR 0043: Retire C-0424 Placeholder"
+  url: /adr/0043-retire-c-0424-military-foot-marker-placeholder.html
 - title: "ADR Template"
   url: /adr/0000-template.html
