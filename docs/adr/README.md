@@ -67,6 +67,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0040: Shift Five Section B Lots North](0040-shift-section-b-five-lots-north.md)
 - [ADR 0041: Modularize Large Domain Repositories Behind Stable Facades](0041-modularize-domain-repositories.md)
 - [ADR 0042: Split Reviewed Section C Shared-Marker Gravesites](0042-split-reviewed-section-c-shared-marker-gravesites.md)
+- [ADR 0043: Retire C-0424 as a Military Foot-Marker Placeholder](0043-retire-c-0424-military-foot-marker-placeholder.md)
 
 ## Creating a New ADR
 

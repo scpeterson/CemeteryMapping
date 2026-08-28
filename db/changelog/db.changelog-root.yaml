@@ -1030,3 +1030,6 @@ databaseChangeLog:
   - include:
       file: changes/345-split-c-0381-brandt-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/347-remove-c-0424-placeholder-gravesite.sql
+      relativeToChangelogFile: true
