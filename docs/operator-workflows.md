@@ -827,6 +827,7 @@ Later Section C shared-marker corrections use a consistent north/south split: th
 - `C-0379` retains Albert D Hieber; new northern `C-0379A` contains Ida C Hieber; marker `TLC-HS-0379` spans both.
 - `C-0380` retains Adam Sandrock; new northern `C-0380A` contains Clara B Sandrock; marker `TLC-HS-0380` spans both.
 - `C-0381` retains H Carl Brandt; new northern `C-0381A` contains Alice R Brandt; marker `TLC-HS-0381` spans both.
+- `C-0382` retains William DeWitt DeCourcy; new northern `C-0382A` contains Louise Hamilton DeCourcy; marker `TLC-HS-0382` spans both. The pair is offset one foot south of the marker-centered position to avoid C-0383.
 
 These letter suffixes are operational identifiers created during reviewed data repair, not labels transcribed from NHG. Do not move an observed marker point merely to center it in one of the interpreted gravesite polygons.
 

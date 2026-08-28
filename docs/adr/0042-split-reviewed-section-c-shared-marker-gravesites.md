@@ -21,7 +21,7 @@ The GPS point is observed marker evidence. The surrounding gravesite polygons ar
 
 ## Decision
 
-Apply the reviewed north/south split pattern in Liquibase migrations 341 through 345:
+Apply the reviewed north/south split pattern in Liquibase migrations 341 through 346:
 
 | Migration | Original southern gravesite | New northern gravesite | Fixed shared marker |
 | --- | --- | --- | --- |
@@ -30,6 +30,7 @@ Apply the reviewed north/south split pattern in Liquibase migrations 341 through
 | 343 | `C-0379`, Albert D Hieber | `C-0379A`, Ida C Hieber | `TLC-HS-0379` |
 | 344 | `C-0380`, Adam Sandrock | `C-0380A`, Clara B Sandrock | `TLC-HS-0380` |
 | 345 | `C-0381`, H Carl Brandt | `C-0381A`, Alice R Brandt | `TLC-HS-0381` |
+| 346 | `C-0382`, William DeWitt DeCourcy | `C-0382A`, Louise Hamilton DeCourcy | `TLC-HS-0382` |
 
 Each correction:
 
@@ -42,7 +43,7 @@ Each correction:
 - asserts that the expected marker, gravesite, and uniquely identified burials exist before mutation; and
 - records the interpretation in geometry source and notes fields.
 
-Where necessary, the original gravesite polygon moves south so the fixed marker acts as the shared north/south boundary. A migration must check the proposed polygons against active neighboring gravesites before acceptance. No new reviewed overlap exception is required for migrations 341 through 345 except where an individual migration explicitly documents an existing mapped-spacing limitation.
+Where necessary, the original gravesite polygon moves south so the fixed marker acts as the shared north/south boundary. When neighboring spacing prevents a marker-centered pair, the complete pair may be offset by a documented minimum distance while the observed marker point remains unchanged. Migration 346 offsets the pair one foot south to avoid C-0383. A migration must check the proposed polygons against active neighboring gravesites before acceptance. No new reviewed overlap exception is required for migrations 341 through 346 except where an individual migration explicitly documents an existing mapped-spacing limitation.
 
 ## Rationale
 
