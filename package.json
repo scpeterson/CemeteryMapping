@@ -67,7 +67,7 @@
   "dependencies": {
     "@auth0/auth0-react": "^2.22.1",
     "@vitejs/plugin-react": "^6.0.2",
-    "concurrently": "^10.0.3",
+    "concurrently": "^10.0.5",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-oauth2-jwt-bearer": "^1.9.2",
