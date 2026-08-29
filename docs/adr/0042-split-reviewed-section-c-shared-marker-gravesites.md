@@ -21,7 +21,7 @@ The GPS point is observed marker evidence. The surrounding gravesite polygons ar
 
 ## Decision
 
-Apply the reviewed north/south split pattern in Liquibase migrations 341 through 345 and 348:
+Apply the reviewed north/south split pattern in Liquibase migrations 341 through 345, 348, and 349:
 
 | Migration | Original southern gravesite | New northern gravesite | Fixed shared marker |
 | --- | --- | --- | --- |
@@ -31,6 +31,7 @@ Apply the reviewed north/south split pattern in Liquibase migrations 341 through
 | 344 | `C-0380`, Adam Sandrock | `C-0380A`, Clara B Sandrock | `TLC-HS-0380` |
 | 345 | `C-0381`, H Carl Brandt | `C-0381A`, Alice R Brandt | `TLC-HS-0381` |
 | 348 | `C-0421`, Scott Simpson | `C-0421A`, Lynn Simpson (sold/pre-need) | `TLC-HS-0421` |
+| 349 | `C-0389`, George Wolfarth | `C-0389A`, Catherine O Wolfarth | `TLC-HS-0389` |
 
 Each correction:
 
@@ -43,7 +44,7 @@ Each correction:
 - asserts that the expected marker, gravesite, and uniquely identified burials exist before mutation; and
 - records the interpretation in geometry source and notes fields.
 
-Where necessary, the original gravesite polygon moves south so the fixed marker acts as the shared north/south boundary. A migration must check the proposed polygons against active neighboring gravesites before acceptance. No new reviewed overlap exception is required for migrations 341 through 345. Migration 348 records an existing mapped-spacing limitation around C-0421 through C-0423; its reviewed north/south assignment controls over the overlapping estimated polygons.
+Where necessary, the original gravesite polygon moves south so the fixed marker acts as the shared north/south boundary. A migration must check the proposed polygons against active neighboring gravesites before acceptance. No new reviewed overlap exception is required for migrations 341 through 345. Migrations 348 and 349 record existing mapped-spacing limitations; their reviewed north/south assignments control over the overlapping estimated polygons.
 
 ## Rationale
 
