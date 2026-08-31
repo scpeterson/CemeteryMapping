@@ -1048,3 +1048,6 @@ databaseChangeLog:
   - include:
       file: changes/352-place-c-0392a-north-of-c-0392.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/353-split-c-0395-wochley-gravesites.sql
+      relativeToChangelogFile: true
