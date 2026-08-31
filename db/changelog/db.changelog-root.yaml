@@ -1039,3 +1039,12 @@ databaseChangeLog:
   - include:
       file: changes/349-split-c-0389-wolfarth-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/350-split-c-0392-kaelin-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/351-place-c-0392-kaelin-graves-north-of-c-0359.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/352-place-c-0392a-north-of-c-0392.sql
+      relativeToChangelogFile: true
