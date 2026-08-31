@@ -1054,3 +1054,6 @@ databaseChangeLog:
   - include:
       file: changes/354-add-army-technician-fifth-grade.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/355-split-c-0398-luster-gravesites.sql
+      relativeToChangelogFile: true
