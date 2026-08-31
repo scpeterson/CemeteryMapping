@@ -1051,3 +1051,6 @@ databaseChangeLog:
   - include:
       file: changes/353-split-c-0395-wochley-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/354-add-army-technician-fifth-grade.sql
+      relativeToChangelogFile: true
