@@ -1,8 +1,13 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:351-place-c-0392-kaelin-graves-north-of-c-0359 splitStatements:false
+--validCheckSum 9:a9a16a815e3b796b3412e05d3a5f9923
 SELECT assert_migration_prerequisite(
-  (
+  NOT EXISTS (
+    SELECT 1 FROM gravesites
+    WHERE gravesite_id = 'TLC-GPS-0392' AND deleted_at IS NULL
+  )
+  OR (
     SELECT count(*) FROM gravesites
     WHERE gravesite_id IN ('TLC-GPS-0359', 'TLC-GPS-0392', 'TLC-GPS-0392-01')
       AND geometry IS NOT NULL

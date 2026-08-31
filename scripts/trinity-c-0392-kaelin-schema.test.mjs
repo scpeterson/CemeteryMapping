@@ -61,6 +61,7 @@ test("final Kaelin placement puts both graves north of C-0359 without moving TLC
 });
 
 test("reference correction places C-0392A immediately north of C-0392 without moving the marker", () => {
+  assert.match(referenceCorrection, /NOT EXISTS \([\s\S]*gravesite_id = 'TLC-GPS-0392'/u);
   assert.match(referenceCorrection, /headstone_id = 'TLC-HS-0392'/u);
   assert.match(referenceCorrection, /4 \* 0\.3048, 0/u);
   assert.match(referenceCorrection, /4 \* 0\.3048, pi\(\)/u);

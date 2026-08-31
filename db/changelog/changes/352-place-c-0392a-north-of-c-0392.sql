@@ -1,8 +1,13 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:352-place-c-0392a-north-of-c-0392 splitStatements:false
+--validCheckSum 9:16a7f3391df07597cd8022ae10af6692
 SELECT assert_migration_prerequisite(
-  (
+  NOT EXISTS (
+    SELECT 1 FROM gravesites
+    WHERE gravesite_id = 'TLC-GPS-0392' AND deleted_at IS NULL
+  )
+  OR (
     SELECT count(*) FROM gravesites
     WHERE gravesite_id IN ('TLC-GPS-0392', 'TLC-GPS-0392-01')
       AND geometry IS NOT NULL
