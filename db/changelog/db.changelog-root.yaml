@@ -1060,3 +1060,6 @@ databaseChangeLog:
   - include:
       file: changes/356-split-c-0419-magee-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/357-split-c-0401-kivlan-gravesites.sql
+      relativeToChangelogFile: true
