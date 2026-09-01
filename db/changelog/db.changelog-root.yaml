@@ -1063,3 +1063,6 @@ databaseChangeLog:
   - include:
       file: changes/357-split-c-0401-kivlan-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/358-split-c-0402-pagano-gravesites.sql
+      relativeToChangelogFile: true
