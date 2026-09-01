@@ -827,6 +827,19 @@ Later Section C shared-marker corrections use a consistent north/south split: th
 - `C-0379` retains Albert D Hieber; new northern `C-0379A` contains Ida C Hieber; marker `TLC-HS-0379` spans both.
 - `C-0380` retains Adam Sandrock; new northern `C-0380A` contains Clara B Sandrock; marker `TLC-HS-0380` spans both.
 - `C-0381` retains H Carl Brandt; new northern `C-0381A` contains Alice R Brandt; marker `TLC-HS-0381` spans both.
+- `C-0389` retains George Wolfarth; new northern `C-0389A` contains Catherine O Wolfarth; marker `TLC-HS-0389` spans both.
+- `C-0392` retains Elmer B Kaelin; new northern `C-0392A` contains Elizabeth A Kaelin; marker `TLC-HS-0392` spans both.
+- `C-0395` retains Arthur Dennis Wochley; new northern `C-0395A` contains Luceil Wochley; marker `TLC-HS-0395` spans both.
+- `C-0398` retains George William Luster; new northern `C-0398A` contains Mary L Luster; marker `TLC-HS-0398` spans both.
+- `C-0401` retains Harold B Kivlan; new northern `C-0401A` contains Grace C Kivlan; marker `TLC-HS-0401` spans both.
+- `C-0402` retains Constance Pagano; new northern `C-0402A` contains Pat Pagano; marker `TLC-HS-0402` spans both.
+- `C-0403` retains George J Bohn; new northern `C-0403A` contains Emma E Bohn; marker `TLC-HS-0403` spans both.
+- `C-0409` retains James T Fisher; new northern `C-0409A` contains Arlie D Fisher; marker `TLC-HS-0409` spans both.
+- `C-0410` retains Ralph S Eaglen; new northern `C-0410A` contains Elva Eaglen; marker `TLC-HS-0410` spans both.
+- `C-0413` retains Theresa P Wolfarth; new northern `C-0413A` contains the Raymond A Wolfarth burial linked to `TLC-HS-0413`; the distinct Raymond A Wolfarth burial in `C-0396` remains unchanged.
+- `C-0416` retains Howard L Sarver; new northern `C-0416A` contains Ellen Clara Sarver; marker `TLC-HS-0416` spans both.
+- `C-0419` retains Ralph C Magee; new northern `C-0419A` contains Jeannette B Magee; marker `TLC-HS-0419` spans both.
+- `C-0420` retains Paul John Brasses; new northern `C-0420A` contains Alice M Brasses; marker `TLC-HS-0420` spans both.
 
 These letter suffixes are operational identifiers created during reviewed data repair, not labels transcribed from NHG. Do not move an observed marker point merely to center it in one of the interpreted gravesite polygons.
 

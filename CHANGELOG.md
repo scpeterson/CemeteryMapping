@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added a full-history photo gallery modal so older gravesite and marker photos remain accessible after the inline preview reaches four images.
+- Added the World War II U.S. Army rank `Technician Fifth Grade` (`T/5`) to the controlled military-rank data.
 - Added structured multi-owner deed entry with separate names, addresses, optional shares, grantor/grantee roles, mixed lot and gravesite rights, and visual `From → To` transfer history.
 - Added removal of an incorrect direct owner-to-gravesite connection while preserving the remaining ownership event and audit history.
 - Added cemetery-admin controls to assign, change, or unlink a gravesite's explicit lot relationship without moving its geometry.
@@ -25,6 +27,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Changed
 
+- Limited inline photo galleries to four images and ordered them newest first by date taken, falling back to upload date.
 - Clarified that the deed ownership event supports both newly issued deeds and historical deeds entered later.
 - Prevented a conflicting whole-lot ownership event when a gravesite in the lot already has a different direct owner.
 - Refined the Owner Holdings report to show a single cemetery beneath the title, omit its repeated Cemetery column, and show ownership Remarks instead of the internal Source label.
@@ -37,6 +40,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Database
 
+- Split reviewed Trinity shared-marker gravesites `C-0392`, `C-0395`, `C-0398`, `C-0401`, `C-0402`, `C-0403`, `C-0409`, `C-0410`, `C-0413`, `C-0416`, `C-0419`, and `C-0420`; each original identifier remains with the southern burial, each new `A` gravesite contains the northern burial, and every observed marker remains fixed while spanning both gravesites.
+- Corrected the `C-0392A` Kaelin placement so Elizabeth A Kaelin is immediately north of Elmer B Kaelin in `C-0392`.
 - Added audited in-application editing of `ModernSection` and corrected lot-number mappings for imported `Original 2017` and `Updated 2022` deed registry rows while preserving original spreadsheet values.
 - Added an explicit unknown-or-not-applicable interment type so pre-need and unverified records no longer need a provisional casket classification.
 - Added a reusable fail-fast prerequisite assertion for data migrations so missing source records cannot silently produce successful zero-row changesets.

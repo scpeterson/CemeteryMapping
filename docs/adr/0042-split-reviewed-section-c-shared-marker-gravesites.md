@@ -21,7 +21,7 @@ The GPS point is observed marker evidence. The surrounding gravesite polygons ar
 
 ## Decision
 
-Apply the reviewed north/south split pattern in Liquibase migrations 341 through 345, 348, and 349:
+Apply the reviewed north/south split pattern in Liquibase migrations 341 through 345, 348 through 350, 353, and 355 through 364:
 
 | Migration | Original southern gravesite | New northern gravesite | Fixed shared marker |
 | --- | --- | --- | --- |
@@ -32,6 +32,18 @@ Apply the reviewed north/south split pattern in Liquibase migrations 341 through
 | 345 | `C-0381`, H Carl Brandt | `C-0381A`, Alice R Brandt | `TLC-HS-0381` |
 | 348 | `C-0421`, Scott Simpson | `C-0421A`, Lynn Simpson (sold/pre-need) | `TLC-HS-0421` |
 | 349 | `C-0389`, George Wolfarth | `C-0389A`, Catherine O Wolfarth | `TLC-HS-0389` |
+| 350, 352 | `C-0392`, Elmer B Kaelin | `C-0392A`, Elizabeth A Kaelin | `TLC-HS-0392` |
+| 353 | `C-0395`, Arthur Dennis Wochley | `C-0395A`, Luceil Wochley | `TLC-HS-0395` |
+| 355 | `C-0398`, George William Luster | `C-0398A`, Mary L Luster | `TLC-HS-0398` |
+| 356 | `C-0419`, Ralph C Magee | `C-0419A`, Jeannette B Magee | `TLC-HS-0419` |
+| 357 | `C-0401`, Harold B Kivlan | `C-0401A`, Grace C Kivlan | `TLC-HS-0401` |
+| 358 | `C-0402`, Constance Pagano | `C-0402A`, Pat Pagano | `TLC-HS-0402` |
+| 359 | `C-0403`, George J Bohn | `C-0403A`, Emma E Bohn | `TLC-HS-0403` |
+| 360 | `C-0409`, James T Fisher | `C-0409A`, Arlie D Fisher | `TLC-HS-0409` |
+| 361 | `C-0410`, Ralph S Eaglen | `C-0410A`, Elva Eaglen | `TLC-HS-0410` |
+| 362 | `C-0413`, Theresa P Wolfarth | `C-0413A`, Raymond A Wolfarth linked to this marker | `TLC-HS-0413` |
+| 363 | `C-0416`, Howard L Sarver | `C-0416A`, Ellen Clara Sarver | `TLC-HS-0416` |
+| 364 | `C-0420`, Paul John Brasses | `C-0420A`, Alice M Brasses | `TLC-HS-0420` |
 
 Each correction:
 
@@ -44,7 +56,7 @@ Each correction:
 - asserts that the expected marker, gravesite, and uniquely identified burials exist before mutation; and
 - records the interpretation in geometry source and notes fields.
 
-Where necessary, the original gravesite polygon moves south so the fixed marker acts as the shared north/south boundary. A migration must check the proposed polygons against active neighboring gravesites before acceptance. No new reviewed overlap exception is required for migrations 341 through 345. Migrations 348 and 349 record existing mapped-spacing limitations; their reviewed north/south assignments control over the overlapping estimated polygons.
+Where necessary, the original gravesite polygon moves south so the fixed marker acts as the shared north/south boundary. A migration must check the proposed polygons against active neighboring gravesites before acceptance. No new reviewed overlap exception is required for migrations 341 through 345. Later migrations record existing mapped-spacing limitations where applicable; their reviewed north/south assignments control over overlapping estimated polygons.
 
 ## Rationale
 

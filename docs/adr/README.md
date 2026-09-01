@@ -68,6 +68,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0041: Modularize Large Domain Repositories Behind Stable Facades](0041-modularize-domain-repositories.md)
 - [ADR 0042: Split Reviewed Section C Shared-Marker Gravesites](0042-split-reviewed-section-c-shared-marker-gravesites.md)
 - [ADR 0043: Retire C-0424 as a Military Foot-Marker Placeholder](0043-retire-c-0424-military-foot-marker-placeholder.md)
+- [ADR 0044: Bound Inline Photo Galleries and Preserve Full History](0044-bound-inline-photo-galleries.md)
 
 ## Creating a New ADR
 
@@ -82,7 +83,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 The main software choices are captured in the ADRs. Exact JavaScript dependency versions come from `package-lock.json`; container image versions come from `docker-compose.yml`; CI runtime versions come from `.github/workflows/ci.yml`.
 
-Current core versions as of 2026-08-11:
+Current core versions as of 2026-09-01:
 
 | Component | Version | Source |
 | --- | --- | --- |
@@ -90,11 +91,11 @@ Current core versions as of 2026-08-11:
 | React | 19.2.8 | `package-lock.json` |
 | React DOM | 19.2.8 | `package-lock.json` |
 | Auth0 React SDK | 2.22.1 | `package-lock.json` |
-| Vite | 8.1.5 | `package-lock.json` |
+| Vite | 8.2.1 | `package-lock.json` |
 | TypeScript | 6.0.3 | `package-lock.json` |
 | Express | 5.2.1 | `package-lock.json` |
 | pg | 8.22.0 | `package-lock.json` |
-| MapLibre GL JS | 6.1.0 | `package-lock.json` |
+| MapLibre GL JS | 6.6.0 | `package-lock.json` |
 | ExcelJS | 4.4.0 | `package-lock.json` |
 | PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | `docker-compose.yml` |
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
