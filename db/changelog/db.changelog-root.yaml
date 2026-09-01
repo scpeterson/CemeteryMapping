@@ -1066,3 +1066,6 @@ databaseChangeLog:
   - include:
       file: changes/358-split-c-0402-pagano-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/359-split-c-0403-bohn-gravesites.sql
+      relativeToChangelogFile: true
