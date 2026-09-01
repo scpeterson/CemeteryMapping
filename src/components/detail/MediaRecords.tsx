@@ -1,5 +1,5 @@
-import { type ChangeEvent, type FormEvent, useState } from "react";
-import { Camera, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import { Camera, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
 import { apiBaseUrl } from "../../config/environment";
 import { formatDate } from "../../lib/format";
 import type { Headstone, MediaAsset } from "../../types";
@@ -12,14 +12,17 @@ function mediaUrl(asset: MediaAsset) {
 
 function sortedMediaAssets(assets: MediaAsset[]) {
   return [...assets].sort((left, right) => {
-    const leftOrder = left.displayOrder ?? Number.MAX_SAFE_INTEGER;
-    const rightOrder = right.displayOrder ?? Number.MAX_SAFE_INTEGER;
-    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
     const leftDate = Date.parse(left.capturedAt ?? left.uploadedAt ?? "");
     const rightDate = Date.parse(right.capturedAt ?? right.uploadedAt ?? "");
-    return (Number.isNaN(rightDate) ? 0 : rightDate) - (Number.isNaN(leftDate) ? 0 : leftDate);
+    const dateDifference = (Number.isNaN(rightDate) ? 0 : rightDate) - (Number.isNaN(leftDate) ? 0 : leftDate);
+    if (dateDifference !== 0) return dateDifference;
+    const leftOrder = left.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = right.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    return leftOrder - rightOrder;
   });
 }
+
+const galleryPreviewLimit = 4;
 
 export function MediaGallery({
   assets,
@@ -35,9 +38,21 @@ export function MediaGallery({
   onMove?: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
 }) {
   const sortedAssets = sortedMediaAssets(assets);
+  const previewAssets = sortedAssets.slice(0, galleryPreviewLimit);
+  const [isShowingAll, setIsShowingAll] = useState(false);
   const [deletingId, setDeletingId] = useState<string>();
   const [movingId, setMovingId] = useState<string>();
   const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    if (!isShowingAll) return undefined;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsShowingAll(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isShowingAll]);
+
   if (!sortedAssets.length) return <p className="muted">{emptyMessage}</p>;
 
   const deleteAsset = async (asset: MediaAsset) => {
@@ -68,16 +83,17 @@ export function MediaGallery({
     }
   };
 
-  return (
-    <>
-      <div className="media-gallery">
-        {sortedAssets.map((asset, index) => (
+  const gallery = (visibleAssets: MediaAsset[], expanded: boolean) => (
+    <div className={`media-gallery${expanded ? " media-gallery-expanded" : ""}`}>
+      {visibleAssets.map((asset) => {
+        const index = sortedAssets.findIndex((candidate) => candidate.id === asset.id);
+        return (
           <div key={asset.id} className="media-gallery-card">
             <a className="media-gallery-item" href={mediaUrl(asset)} target="_blank" rel="noreferrer">
               <img src={mediaUrl(asset)} alt={asset.notes || asset.originalFilename || "Cemetery record photo"} loading="lazy" />
               <span>{asset.capturedAt ? `Date taken: ${formatDate(asset.capturedAt)}` : `Uploaded: ${formatDate(asset.uploadedAt)}`}</span>
             </a>
-            {onMove && sortedAssets.length > 1 ? (
+            {expanded && onMove && sortedAssets.length > 1 ? (
               <div className="media-order-controls" aria-label="Photo display order">
                 <button
                   type="button"
@@ -112,8 +128,41 @@ export function MediaGallery({
               </button>
             ) : null}
           </div>
-        ))}
-      </div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <>
+      {gallery(previewAssets, false)}
+      {sortedAssets.length > galleryPreviewLimit ? (
+        <button type="button" className="media-gallery-view-all" onClick={() => setIsShowingAll(true)}>
+          View all photos ({sortedAssets.length})
+        </button>
+      ) : null}
+      {isShowingAll ? (
+        <div className="media-gallery-modal-backdrop" role="presentation" onMouseDown={() => setIsShowingAll(false)}>
+          <section
+            className="media-gallery-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="media-gallery-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header>
+              <div>
+                <h3 id="media-gallery-modal-title">All photos</h3>
+                <p>{sortedAssets.length} photos, newest first</p>
+              </div>
+              <button type="button" className="media-gallery-modal-close" onClick={() => setIsShowingAll(false)} aria-label="Close all photos">
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
+            {gallery(sortedAssets, true)}
+          </section>
+        </div>
+      ) : null}
       {error ? <p className="detail-message is-error">{error}</p> : null}
     </>
   );
