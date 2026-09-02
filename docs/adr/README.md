@@ -69,6 +69,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0042: Split Reviewed Section C Shared-Marker Gravesites](0042-split-reviewed-section-c-shared-marker-gravesites.md)
 - [ADR 0043: Retire C-0424 as a Military Foot-Marker Placeholder](0043-retire-c-0424-military-foot-marker-placeholder.md)
 - [ADR 0044: Bound Inline Photo Galleries and Preserve Full History](0044-bound-inline-photo-galleries.md)
+- [ADR 0045: Retire the A-0017 Burgess Monolith Placeholder](0045-retire-a-0017-burgess-monolith-placeholder.md)
 
 ## Creating a New ADR
 
