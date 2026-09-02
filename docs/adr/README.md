@@ -71,6 +71,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0044: Bound Inline Photo Galleries and Preserve Full History](0044-bound-inline-photo-galleries.md)
 - [ADR 0045: Retire the A-0017 Burgess Monolith Placeholder](0045-retire-a-0017-burgess-monolith-placeholder.md)
 - [ADR 0046: Split A-0012 Seeke Gravesites](0046-split-a-0012-seeke-gravesites.md)
+- [ADR 0047: Split A-0015 Stertz Gravesites](0047-split-a-0015-stertz-gravesites.md)
 
 ## Creating a New ADR
 
