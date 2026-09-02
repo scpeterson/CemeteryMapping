@@ -1090,3 +1090,6 @@ databaseChangeLog:
   - include:
       file: changes/366-add-burial-source-url.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/367-split-a-0012-seeke-gravesites.sql
+      relativeToChangelogFile: true
