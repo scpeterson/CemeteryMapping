@@ -1093,3 +1093,6 @@ databaseChangeLog:
   - include:
       file: changes/367-split-a-0012-seeke-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/368-split-a-0015-stertz-gravesites.sql
+      relativeToChangelogFile: true
