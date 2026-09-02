@@ -6,6 +6,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added an optional burial information-source URL, including safe web-link validation and a direct source link in burial details.
 - Added a full-history photo gallery modal so older gravesite and marker photos remain accessible after the inline preview reaches four images.
 - Added the World War II U.S. Army rank `Technician Fifth Grade` (`T/5`) to the controlled military-rank data.
 - Added structured multi-owner deed entry with separate names, addresses, optional shares, grantor/grantee roles, mixed lot and gravesite rights, and visual `From → To` transfer history.

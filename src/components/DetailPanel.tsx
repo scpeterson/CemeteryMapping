@@ -232,6 +232,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     intermentType: burial.intermentType ?? "unknown",
     recordStatusCode: burial.recordStatusCode ?? "interred",
     funeralHome: burial.funeralHome ?? "",
+    sourceUrl: burial.sourceUrl ?? "",
     veteran: burial.veteran ?? false,
     militaryBranchCode: burial.militaryBranchCode ?? "",
     militaryRankCode: burial.militaryRankCode ?? "",
@@ -531,6 +532,16 @@ function BurialRecord({
           Funeral home
           <input value={form.funeralHome} onChange={(event) => setForm((current) => ({ ...current, funeralHome: event.target.value }))} />
         </label>
+        <label className="burial-wide-field">
+          Information source URL
+          <input
+            type="url"
+            value={form.sourceUrl}
+            placeholder="https://www.findagrave.com/memorial/..."
+            onChange={(event) => setForm((current) => ({ ...current, sourceUrl: event.target.value }))}
+          />
+          <small>Optional web page supporting information recorded for this person.</small>
+        </label>
         <label className="burial-checkbox-field">
           <input type="checkbox" checked={form.veteran} onChange={(event) => setVeteran(event.target.checked)} />
           Veteran
@@ -704,6 +715,11 @@ function BurialRecord({
           <dd>{burial.recordStatusLabel ?? recordStatusOptions.find((option) => option.code === burial.recordStatusCode)?.label ?? "Interred"}</dd>
         </div>
       </dl>
+      {burial.sourceUrl ? (
+        <p className="burial-source-link">
+          <a href={burial.sourceUrl} target="_blank" rel="noreferrer">View information source</a>
+        </p>
+      ) : null}
       {burial.veteran || serviceText || burial.militaryDecorations?.length ? (
         <p className="burial-service">
           {burial.veteran ? <span className="burial-veteran-badge">Veteran</span> : null}

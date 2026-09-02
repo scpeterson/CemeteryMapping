@@ -167,6 +167,7 @@ export type Burial = {
   intermentType?: string;
   intermentTypeLabel?: string;
   funeralHome?: string;
+  sourceUrl?: string;
   veteran: boolean;
   militaryBranchCode?: string;
   militaryBranch?: string;
@@ -544,6 +545,7 @@ export type SaveBurialInput = {
   intermentType: string;
   recordStatusCode: string;
   funeralHome: string;
+  sourceUrl: string;
   veteran: boolean;
   militaryBranchCode: string;
   militaryRankCode: string;

@@ -143,7 +143,7 @@ Expected audit action:
 
 Second admin edit workflow.
 
-Admins need to correct names and dates imported from the spreadsheet or later source documents.
+Admins need to correct names and dates imported from the spreadsheet or later source documents. When a public web page supports the burial information, enter its absolute `http` or `https` address in the optional Information source URL field instead of embedding the link in notes. For example, a Find a Grave memorial can support the conclusion that a person is deceased even when the death date remains unknown. The burial detail card exposes the saved page as an external link.
 
 Initial fields:
 
@@ -153,6 +153,7 @@ Initial fields:
 - `birth_date`
 - `death_date`
 - `burial_date`
+- `source_url`
 - `notes`
 
 Expected API:

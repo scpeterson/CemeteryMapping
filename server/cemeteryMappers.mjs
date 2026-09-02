@@ -79,6 +79,7 @@ export function toBurial(burial) {
       burial.interment_type_label ??
       (burial.interment_type === "urn" ? "Funeral urn" : burial.interment_type === "casket" ? "Casket" : "Unknown or not applicable"),
     funeralHome: burial.funeral_home ?? "",
+    sourceUrl: burial.source_url ?? "",
     veteran: isVeteran,
     militaryBranchCode: burial.military_branch_code ?? "",
     militaryBranch: burial.military_branch ?? "",
