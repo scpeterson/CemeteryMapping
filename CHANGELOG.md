@@ -40,6 +40,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Database
 
+- Retired imported placeholder gravesite `A-0017` and its generated `Burgess Monolith` pseudo-burial; family monument `TLC-HS-0017` remains active as a standalone monolith and retains both marker photos.
 - Split reviewed Trinity shared-marker gravesites `C-0392`, `C-0395`, `C-0398`, `C-0401`, `C-0402`, `C-0403`, `C-0409`, `C-0410`, `C-0413`, `C-0416`, `C-0419`, and `C-0420`; each original identifier remains with the southern burial, each new `A` gravesite contains the northern burial, and every observed marker remains fixed while spanning both gravesites.
 - Corrected the `C-0392A` Kaelin placement so Elizabeth A Kaelin is immediately north of Elmer B Kaelin in `C-0392`.
 - Added audited in-application editing of `ModernSection` and corrected lot-number mappings for imported `Original 2017` and `Updated 2022` deed registry rows while preserving original spreadsheet values.

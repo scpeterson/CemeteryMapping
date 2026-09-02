@@ -100,6 +100,8 @@ The marker detail panel separately manages marker-to-gravesite relationships. Ed
 
 Monolith scope has a distinct presentation. A monolith remains classified by its physical form, such as `Upright headstone`, while its scope is `Monolith`. Its detail panel displays a Monolith badge, explains that the marker point does not itself imply a gravesite, and labels its relationship sections `Regular Markers Linked to This Monolith` and `Gravesites Spanned by This Monolith`. The map and Layers panel use a purple diamond symbol for monolith markers. A mapped monolith location must not be represented by a placeholder gravesite unless a real burial space is independently supported at that location.
 
+The Burgess family monument `TLC-HS-0017` is an explicit example. Imported gravesite `A-0017` and the generated `Burgess Monolith` pseudo-burial were retired by migration `365` because the monument location is not a burial space. The monument remains active without a gravesite anchor, and its photos remain linked directly to the marker.
+
 Do not use Related Markers for general gap notes or unavailable grave/lot observations. Gap notes are source observations. Plot markers should be modeled as actual marker records once their locations are known, and then linked only if there is a real marker-to-marker relationship.
 
 Editable fields:
