@@ -106,5 +106,7 @@
   url: /adr/0042-split-reviewed-section-c-shared-marker-gravesites.html
 - title: "ADR 0043: Retire C-0424 Placeholder"
   url: /adr/0043-retire-c-0424-military-foot-marker-placeholder.html
+- title: "ADR 0046: Split A-0012 Seeke Gravesites"
+  url: /adr/0046-split-a-0012-seeke-gravesites.html
 - title: "ADR Template"
   url: /adr/0000-template.html
