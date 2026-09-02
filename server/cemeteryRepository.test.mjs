@@ -1237,6 +1237,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     interment_type: "urn",
     interment_type_label: "Funeral urn",
     funeral_home: null,
+    source_url: "https://www.findagrave.com/memorial/123/ruth-soergel",
     veteran: "No",
     military_branch: null,
     military_rank_code: null,
@@ -1292,6 +1293,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
       intermentType: "urn",
       recordStatusCode: "interred",
       funeralHome: "Brandt Funeral Home",
+      sourceUrl: "https://www.findagrave.com/memorial/123/ruth-soergel",
       veteran: true,
       militaryBranchCode: "army",
       militaryRankCode: "pfc",
@@ -1336,6 +1338,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "",
     "M.D.",
     null,
+    "https://www.findagrave.com/memorial/123/ruth-soergel",
   ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");
@@ -1347,4 +1350,5 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
   assert.equal(updated?.veteran, false);
   assert.deepEqual(updated?.militaryDecorations.map((decoration) => decoration.code), ["purple_heart"]);
   assert.equal(updated?.recordNotes, "Imported note");
+  assert.equal(updated?.sourceUrl, "https://www.findagrave.com/memorial/123/ruth-soergel");
 });

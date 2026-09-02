@@ -240,6 +240,18 @@ export function validateBurialPayload(body) {
   if (militaryDecorationCodes.some((code) => !/^[a-z0-9_]+$/u.test(code))) {
     throw new BadRequestError("Military decoration is invalid.");
   }
+  const sourceUrl = optionalText(body?.sourceUrl, "Information source URL", 2000) ?? "";
+  if (sourceUrl) {
+    let parsedSourceUrl;
+    try {
+      parsedSourceUrl = new URL(sourceUrl);
+    } catch {
+      throw new BadRequestError("Information source URL must be a valid absolute URL.");
+    }
+    if (!["http:", "https:"].includes(parsedSourceUrl.protocol)) {
+      throw new BadRequestError("Information source URL must use http or https.");
+    }
+  }
 
   return {
     firstName: optionalText(body?.firstName, "First name", 100) ?? "",
@@ -253,6 +265,7 @@ export function validateBurialPayload(body) {
     intermentType,
     recordStatusCode,
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
+    sourceUrl,
     veteran: optionalBoolean(body?.veteran, "Veteran"),
     militaryBranchCode: optionalText(body?.militaryBranchCode, "Military branch", 50) ?? "",
     militaryRankCode: optionalText(body?.militaryRankCode, "Military rank", 50) ?? "",
