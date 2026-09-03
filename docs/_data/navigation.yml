@@ -116,3 +116,5 @@
   url: /adr/0049-split-a-0026-brandt-gravesites.html
 - title: "ADR Template"
   url: /adr/0000-template.html
+- title: "ADR 0050: Split A-0020 Pfeiffer Gravesites"
+  url: /adr/0050-split-a-0020-pfeiffer-gravesites.html
