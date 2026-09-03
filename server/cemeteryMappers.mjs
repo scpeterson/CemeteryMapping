@@ -1,5 +1,3 @@
-import { normalizeProvenanceVerificationSource } from "./headstoneProvenance.mjs";
-
 export function parseGeometry(value) {
   if (!value) return undefined;
   return typeof value === "string" ? JSON.parse(value) : value;
@@ -219,7 +217,7 @@ export function toHeadstone(row) {
     reviewedAt: row.reviewed_at,
     nhgInclusion: normalizedProvenance.nhgInclusion ?? "not_checked",
     nhgInclusionRecorded: Object.prototype.hasOwnProperty.call(normalizedProvenance, "nhgInclusion"),
-    provenanceVerificationSource: normalizeProvenanceVerificationSource(normalizedProvenance.verificationSourceType ?? normalizedProvenance.markerGeometrySourceType ?? "manual_review"),
+    provenanceVerificationSource: normalizedProvenance.verificationSourceType ?? normalizedProvenance.markerGeometrySourceType ?? "manual_review",
     provenanceVerifiedAt: normalizedProvenance.verifiedAt,
     relationshipType: row.relationship_type ?? "primary",
     relationshipNotes: row.relationship_notes ?? "",

@@ -268,7 +268,7 @@ export type Headstone = {
   reviewedAt?: string;
   nhgInclusion: "listed" | "not_listed" | "not_checked" | "unclear";
   nhgInclusionRecorded: boolean;
-  provenanceVerificationSource: "field_survey" | "documentary_record" | "manual_review" | "import";
+  provenanceVerificationSource: "field_photo" | "field_survey" | "documentary_record" | "manual_review" | "import";
   provenanceVerifiedAt?: string;
   relationshipType: string;
   relationshipNotes: string;
@@ -445,7 +445,7 @@ export type SaveHeadstoneInput = {
   reviewNotes: string;
   sourceConflict: boolean;
   nhgInclusion: "listed" | "not_listed" | "not_checked" | "unclear";
-  provenanceVerificationSource: "field_survey" | "documentary_record" | "manual_review" | "import";
+  provenanceVerificationSource: "field_photo" | "field_survey" | "documentary_record" | "manual_review" | "import";
   provenanceVerifiedAt: string;
   applyNhgInclusionToBurials: boolean;
   reason?: string;

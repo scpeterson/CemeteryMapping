@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { toHeadstone } from "./cemeteryMappers.mjs";
 import { validateHeadstonePayload } from "./routes/cemeteryRouteValidation.mjs";
 
@@ -10,6 +11,17 @@ const validPayload = {
   conditionId: "33333333-3333-4333-8333-333333333333",
 };
 
+test("field photo review is selectable and its restoration migration is registered", async () => {
+  const ui = await readFile(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+  assert.match(ui, /<option value="field_photo">Field photo review<\/option>/u);
+  const root = await readFile(new URL("../db/changelog/db.changelog-root.yaml", import.meta.url), "utf8");
+  assert.match(root, /375-restore-field-photo-review-source\.sql/u);
+  const migration = await readFile(new URL("../db/changelog/changes/375-restore-field-photo-review-source.sql", import.meta.url), "utf8");
+  assert.match(migration, /TLC-HS-0576/u);
+  assert.match(migration, /TLC-HS-0328A/u);
+  assert.ok(migration.includes("verificationSourceType}' = 'manual_review'"));
+});
+
 test("legacy field-photo provenance round-trips through marker editing", () => {
   for (const key of ["verificationSourceType", "markerGeometrySourceType"]) {
     const source = { Photos: [{ filename: "IMG_6211.HEIC" }], NormalizedProvenance: {
@@ -17,19 +29,19 @@ test("legacy field-photo provenance round-trips through marker editing", () => {
     } };
     const before = structuredClone(source);
     const mapped = toHeadstone({ source_properties: source });
-    assert.equal(mapped.provenanceVerificationSource, "manual_review");
+    assert.equal(mapped.provenanceVerificationSource, "field_photo");
     const result = validateHeadstonePayload({ ...validPayload,
       provenanceVerificationSource: mapped.provenanceVerificationSource,
       nhgInclusion: mapped.nhgInclusion, provenanceVerifiedAt: mapped.provenanceVerifiedAt });
-    assert.equal(result.provenanceVerificationSource, "manual_review");
+    assert.equal(result.provenanceVerificationSource, "field_photo");
     assert.equal(result.nhgInclusion, "not_listed");
     assert.deepEqual(source, before);
   }
 });
 
-test("stale edit forms normalize field_photo but unsupported values remain rejected", () => {
+test("field_photo is accepted without conversion and unsupported values remain rejected", () => {
   assert.equal(validateHeadstonePayload({ ...validPayload, provenanceVerificationSource: "field_photo" })
-    .provenanceVerificationSource, "manual_review");
+    .provenanceVerificationSource, "field_photo");
   for (const value of ["field_survey", "documentary_record", "manual_review", "import"]) {
     assert.equal(validateHeadstonePayload({ ...validPayload, provenanceVerificationSource: value })
       .provenanceVerificationSource, value);

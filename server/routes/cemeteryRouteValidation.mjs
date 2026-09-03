@@ -1,6 +1,5 @@
 import { optionalCoordinate, optionalText, requiredText, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
-import { normalizeProvenanceVerificationSource } from "../headstoneProvenance.mjs";
 import { optionalBoolean, optionalDate, optionalRecordedDate, validateDataConfidence, validateReviewStatus } from "./routeValidationHelpers.mjs";
 
 export function validateReportId(value) {
@@ -33,8 +32,8 @@ export function validateHeadstonePayload(body) {
   if (lastInspectedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(lastInspectedAt)) throw new BadRequestError("Last inspected date must use YYYY-MM-DD format.");
   const nhgInclusion = optionalText(body?.nhgInclusion, "NHG inclusion", 30) || "not_checked";
   if (!["listed", "not_listed", "not_checked", "unclear"].includes(nhgInclusion)) throw new BadRequestError("NHG inclusion is invalid.");
-  const provenanceVerificationSource = normalizeProvenanceVerificationSource(optionalText(body?.provenanceVerificationSource, "Provenance verification source", 50) || "manual_review");
-  if (!["field_survey", "documentary_record", "manual_review", "import"].includes(provenanceVerificationSource)) {
+  const provenanceVerificationSource = optionalText(body?.provenanceVerificationSource, "Provenance verification source", 50) || "manual_review";
+  if (!["field_photo", "field_survey", "documentary_record", "manual_review", "import"].includes(provenanceVerificationSource)) {
     throw new BadRequestError("Provenance verification source is invalid.");
   }
   const provenanceVerifiedAt = optionalText(body?.provenanceVerifiedAt, "Source information verified date", 10);

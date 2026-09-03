@@ -9,6 +9,8 @@ This page records the first administrative editing workflows for Cemetery Mappin
 
 ## Guiding Rules
 
+Marker editing includes **Field photo review** (`field_photo`) in the Verification source dropdown. Use it for information verified from photographs; it does not assert a surveyed location or confirmed interment. **Field survey** and **Manual review** remain separate choices. Photo filenames, GPS metadata, and other evidence are retained independently of this selection.
+
 - Admin workflows require authenticated `admin` access.
 - Reader workflows remain read-only and must not expose deed/owner information.
 - Power-user workflows can view and edit deed/owner information and update existing cemetery records, but cannot add structural records, delete records, or manage users.
