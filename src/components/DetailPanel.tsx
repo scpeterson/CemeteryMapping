@@ -1444,6 +1444,7 @@ function HeadstoneRecord({
             }
           >
             <option value="field_survey">Field survey</option>
+            <option value="field_photo">Field photo review</option>
             <option value="documentary_record">Documentary record</option>
             <option value="manual_review">Manual review</option>
             <option value="import">Imported source</option>
