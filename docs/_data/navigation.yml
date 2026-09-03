@@ -112,5 +112,7 @@
   url: /adr/0047-split-a-0015-stertz-gravesites.html
 - title: "ADR 0048: Split A-0027 Miller Gravesites"
   url: /adr/0048-split-a-0027-miller-gravesites.html
+- title: "ADR 0049: Split A-0026 Brandt Gravesites"
+  url: /adr/0049-split-a-0026-brandt-gravesites.html
 - title: "ADR Template"
   url: /adr/0000-template.html
