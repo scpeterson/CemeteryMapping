@@ -9,6 +9,8 @@ This page records the first administrative editing workflows for Cemetery Mappin
 
 ## Guiding Rules
 
+For a flower receptacle formed directly into a marker or its base, select vase type **Built-in / integral vase**, the observed material (for example, Granite), and placement **Attached to marker**. Use type **Attached to marker** for a separately manufactured vase fastened to the stone. Existing classifications are not automatically reinterpreted.
+
 Marker editing includes **Field photo review** (`field_photo`) in the Verification source dropdown. Use it for information verified from photographs; it does not assert a surveyed location or confirmed interment. **Field survey** and **Manual review** remain separate choices. Photo filenames, GPS metadata, and other evidence are retained independently of this selection.
 
 - Admin workflows require authenticated `admin` access.
