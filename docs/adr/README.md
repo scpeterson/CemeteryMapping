@@ -74,6 +74,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0047: Split A-0015 Stertz Gravesites](0047-split-a-0015-stertz-gravesites.md)
 - [ADR 0048: Split A-0027 Miller Gravesites](0048-split-a-0027-miller-gravesites.md)
 - [ADR 0049: Split A-0026 Brandt Gravesites](0049-split-a-0026-brandt-gravesites.md)
+- [ADR 0050: Split A-0020 Pfeiffer Gravesites](0050-split-a-0020-pfeiffer-gravesites.md)
 
 ## Creating a New ADR
 
