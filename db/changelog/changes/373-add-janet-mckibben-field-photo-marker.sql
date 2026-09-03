@@ -1,6 +1,7 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:373-add-janet-mckibben-field-photo-marker splitStatements:false
+--validCheckSum 9:f2230dfce4d268cdfa1ca22e28642b9b
 DO $$
 DECLARE
   cemetery_uuid uuid;
@@ -13,6 +14,13 @@ DECLARE
   grave_polygon geometry(MultiPolygon, 4326);
   provenance jsonb;
 BEGIN
+  -- Clean installations do not contain the imported Trinity graves. As with
+  -- other field corrections, skip absent source data but reject partial data.
+  IF NOT EXISTS (SELECT 1 FROM gravesites
+    WHERE gravesite_id IN ('TLC-GPS-0021', 'TLC-GPS-0022') AND deleted_at IS NULL) THEN
+    RETURN;
+  END IF;
+
   -- Fail rather than overwrite an unrelated record if this sequence number is allocated elsewhere.
   PERFORM assert_migration_prerequisite(
     NOT EXISTS (SELECT 1 FROM gravesites WHERE grave_id = '0576' OR gravesite_id = 'TLC-GPS-0576')

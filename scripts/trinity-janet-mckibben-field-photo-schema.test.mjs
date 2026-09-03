@@ -25,3 +25,10 @@ test("Janet migration is registered", async () => {
   const root = await readFile(new URL("../db/changelog/db.changelog-root.yaml", import.meta.url), "utf8");
   assert.ok(root.includes(`changes/${filename}`));
 });
+
+test("Janet migration skips absent imported source data without weakening partial-data checks", () => {
+  assert.match(sql, /IF NOT EXISTS[\s\S]*TLC-GPS-0021[\s\S]*TLC-GPS-0022[\s\S]*THEN\s+RETURN;/u);
+  assert.match(sql, /INTO STRICT cemetery_uuid/u);
+  assert.match(sql, /INTO STRICT marker_point/u);
+  assert.match(sql, /--validCheckSum 9:f2230dfce4d268cdfa1ca22e28642b9b/u);
+});
