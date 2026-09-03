@@ -1117,3 +1117,6 @@ databaseChangeLog:
   - include:
       file: changes/375-restore-field-photo-review-source.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/376-add-built-in-vase-type.sql
+      relativeToChangelogFile: true
