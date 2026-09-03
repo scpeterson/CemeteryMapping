@@ -1099,3 +1099,6 @@ databaseChangeLog:
   - include:
       file: changes/369-split-a-0027-miller-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/370-split-a-0026-brandt-gravesites.sql
+      relativeToChangelogFile: true
