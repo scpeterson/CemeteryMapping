@@ -1111,3 +1111,6 @@ databaseChangeLog:
   - include:
       file: changes/373-add-janet-mckibben-field-photo-marker.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/374-normalize-field-photo-provenance.sql
+      relativeToChangelogFile: true

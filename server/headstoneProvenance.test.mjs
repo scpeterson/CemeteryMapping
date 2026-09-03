@@ -10,6 +10,34 @@ const validPayload = {
   conditionId: "33333333-3333-4333-8333-333333333333",
 };
 
+test("legacy field-photo provenance round-trips through marker editing", () => {
+  for (const key of ["verificationSourceType", "markerGeometrySourceType"]) {
+    const source = { Photos: [{ filename: "IMG_6211.HEIC" }], NormalizedProvenance: {
+      [key]: "field_photo", nhgInclusion: "not_listed", verifiedAt: "2026-09-03",
+    } };
+    const before = structuredClone(source);
+    const mapped = toHeadstone({ source_properties: source });
+    assert.equal(mapped.provenanceVerificationSource, "manual_review");
+    const result = validateHeadstonePayload({ ...validPayload,
+      provenanceVerificationSource: mapped.provenanceVerificationSource,
+      nhgInclusion: mapped.nhgInclusion, provenanceVerifiedAt: mapped.provenanceVerifiedAt });
+    assert.equal(result.provenanceVerificationSource, "manual_review");
+    assert.equal(result.nhgInclusion, "not_listed");
+    assert.deepEqual(source, before);
+  }
+});
+
+test("stale edit forms normalize field_photo but unsupported values remain rejected", () => {
+  assert.equal(validateHeadstonePayload({ ...validPayload, provenanceVerificationSource: "field_photo" })
+    .provenanceVerificationSource, "manual_review");
+  for (const value of ["field_survey", "documentary_record", "manual_review", "import"]) {
+    assert.equal(validateHeadstonePayload({ ...validPayload, provenanceVerificationSource: value })
+      .provenanceVerificationSource, value);
+  }
+  assert.throws(() => validateHeadstonePayload({ ...validPayload, provenanceVerificationSource: "invalid" }),
+    /Provenance verification source is invalid/u);
+});
+
 test("headstone validation accepts structured NHG inclusion provenance", () => {
   const result = validateHeadstonePayload({
     ...validPayload,
