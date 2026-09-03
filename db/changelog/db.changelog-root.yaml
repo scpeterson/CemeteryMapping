@@ -1108,3 +1108,6 @@ databaseChangeLog:
   - include:
       file: changes/372-add-air-force-airman-second-class.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/373-add-janet-mckibben-field-photo-marker.sql
+      relativeToChangelogFile: true
