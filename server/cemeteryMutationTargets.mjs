@@ -11,6 +11,7 @@ export async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
         gravesites.status_type_id::text,
         ${derivedGravesiteStatusSql()} AS status,
         gravesites.cost,
+        gravesites.xmin::text AS version,
         gravesites.updated_at
       FROM gravesites
       LEFT JOIN gravesite_status_types status_type

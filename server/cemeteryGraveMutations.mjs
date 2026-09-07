@@ -1,3 +1,4 @@
+import { ConflictError } from "./requestValidation.mjs";
 import { setAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { selectGraveUpdateState } from "./cemeteryMutationTargets.mjs";
@@ -45,6 +46,10 @@ export async function updateGraveSpaceMutation(
       await client.query("ROLLBACK");
       return undefined;
     }
+
+    // The row lock serializes writers; the version check also rejects forms
+    // loaded before an earlier writer committed.
+    if (!graveSpace.expectedVersion || graveSpace.expectedVersion !== existing.version) throw new ConflictError();
 
     const updateResult = await client.query(
       `

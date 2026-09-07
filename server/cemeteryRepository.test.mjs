@@ -1153,6 +1153,7 @@ test("getHeadstone returns standalone marker detail without a gravesite", async 
 test("updateGraveSpace updates editable gravesite fields with cemetery scope", async () => {
   const queries = [];
   const graveRow = {
+    version: "1",
     uuid: "22222222-2222-4222-8222-222222222222",
     cemetery_id: "11111111-1111-4111-8111-111111111111",
     cemetery_name: "Trinity Lutheran Church Cemetery",
@@ -1201,6 +1202,7 @@ test("updateGraveSpace updates editable gravesite fields with cemetery scope", a
     "11111111-1111-4111-8111-111111111111",
     "TLC-GPS-0166-01",
     {
+      expectedVersion: "1",
       name: "Ruth M. Soergel",
       status: "occupied",
       cost: 1200,

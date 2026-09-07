@@ -247,3 +247,5 @@ Each workflow should include:
 - API behavior tests for validation errors and audit event creation.
 - E2E coverage for the visible admin UI once the UI exists.
 - Documentation updates in the relevant ADR.
+
+Gravesite detail edits carry the version loaded when editing began. If another edit changes the record first, saving returns a conflict and preserves the draft. Choose `Reload latest values (discard edits)` to load the current form, then reapply the intended changes. The API requires `expectedVersion` from the detail response; it is an opaque PostgreSQL row version, not a date.

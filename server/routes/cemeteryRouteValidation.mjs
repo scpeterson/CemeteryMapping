@@ -197,6 +197,8 @@ export function validateMaintenanceRecordPayload(body, { requireTarget = true } 
 }
 
 export function validateGraveSpacePayload(body) {
+  const expectedVersion = requiredText(body?.expectedVersion, "Record version", 20);
+  if (!/^\d+$/u.test(expectedVersion)) throw new BadRequestError("Record version is invalid. Reload the gravesite.");
   const status = optionalText(body?.status, "Gravesite status", 30) || "unknown";
   if (!["available", "reserved", "occupied", "sold", "needs_review", "unknown"].includes(status)) {
     throw new BadRequestError("Gravesite status is invalid.");
@@ -206,6 +208,7 @@ export function validateGraveSpacePayload(body) {
   if (costText && (!Number.isFinite(cost) || cost < 0)) throw new BadRequestError("Cost must be a non-negative number.");
 
   return {
+    expectedVersion,
     name: optionalText(body?.name, "Name", 255) ?? "",
     status,
     cost,

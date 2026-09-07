@@ -64,3 +64,10 @@ export function validateMutationReason(value) {
 
   return reason || undefined;
 }
+
+export class ConflictError extends Error {
+  constructor(message = "This record changed since you opened it. Reload the latest values before saving.") {
+    super(message);
+    this.name = "ConflictError";
+  }
+}
