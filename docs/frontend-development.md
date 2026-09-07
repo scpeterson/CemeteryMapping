@@ -12,6 +12,7 @@ Keep the application shell responsible for selection, workspace navigation, and 
 - `src/components/detail/` contains record views, editors, evidence lists, and galleries; `DetailPanel.tsx` coordinates the appropriate detail view.
 - `src/components/admin/use*Administration.ts` owns administration workflow state and operations.
 - `src/components/admin/deeds/` separates case filters, lists, editing, actions, and evidence review.
+- `src/components/admin/events/` contains independently lazy-loaded audit and system-event tabs; `shared.ts` holds their callback contract and JSON/retention formatting.
 - `src/components/admin/north-hills/` separates reading filters, lists, editing, source facts, and candidate matches.
 - `DeedsAdminTab.tsx` and `NorthHillsAdminTab.tsx` compose those sections with narrow typed props. Shared types and presentation helpers belong in their domain's `shared.ts`.
 
