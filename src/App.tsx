@@ -83,6 +83,9 @@ export default function App() {
   const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
   const [selectedLot, setSelectedLot] = useState<CemeteryLot | undefined>();
   const [selectedHeadstone, setSelectedHeadstone] = useState<HeadstoneSummary | undefined>();
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string>();
+  const [searchAttempt, setSearchAttempt] = useState(0);
   const [remoteMatches, setRemoteMatches] = useState<SearchMatch[]>();
   const [currentUser, setCurrentUser] = useState<CurrentUser>();
   const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
@@ -165,6 +168,9 @@ export default function App() {
 
   useEffect(() => {
     const cleanedQuery = query.trim();
+    setSearchError(undefined);
+    setRemoteMatches(undefined);
+    setIsSearching(Boolean(cleanedQuery));
     if (!cleanedQuery) {
       setRemoteMatches(undefined);
       return;
@@ -179,8 +185,10 @@ export default function App() {
         })
         .catch((error: unknown) => {
           if (!isCurrent || (error instanceof DOMException && error.name === "AbortError")) return;
-          setRemoteMatches([]);
-        });
+          setRemoteMatches(undefined);
+          setSearchError("Search is unavailable. Showing matches from loaded map data.");
+        })
+        .finally(() => { if (isCurrent) setIsSearching(false); });
     }, 250);
 
     return () => {
@@ -188,7 +196,7 @@ export default function App() {
       window.clearTimeout(searchTimeout);
       controller.abort();
     };
-  }, [query, selectedStatuses]);
+  }, [query, selectedStatuses, searchAttempt]);
 
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
   const lotMatches = useMemo(() => searchLots(data, query), [data, query]);
@@ -352,6 +360,9 @@ export default function App() {
         {(["search", "map", "details"] as const).map((view) => <button key={view} type="button" aria-pressed={mobileView === view} onClick={() => setMobileView(view)}>{view === "search" ? "Search" : view === "map" ? "Map" : "Details"}</button>)}
       </nav>
       <SearchPanel
+        isSearching={isSearching}
+        error={searchError}
+        onRetry={() => setSearchAttempt((attempt) => attempt + 1)}
         cemeteryScopeLabel={cemeteryScopeLabel}
         query={query}
         onQueryChange={setQuery}
