@@ -210,3 +210,9 @@
   .app-shell > .map-region { min-height: calc(100dvh - 61px); }
   .app-shell > .search-panel, .app-shell > .detail-panel { min-height: calc(100dvh - 61px); }
 }
+
+@media (max-width: 760px) {
+  .authenticated-workspace { height: auto; min-height: 100%; }
+  .auth-session { padding: 8px; }
+  .auth-session button { min-height: 44px; }
+}

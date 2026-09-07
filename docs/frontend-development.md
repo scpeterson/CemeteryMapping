@@ -67,6 +67,12 @@ Gravesite updates additionally send the detail response's `version` as `expected
 
 Preserve cascade order when moving rules. Check print output when changing report or modal styles. At 760 pixels or less, Search/Map/Details are separate visible views while their components remain mounted. The map uses a resize observer when its container changes size. Keep map action groups in the wrapping toolbar, zoom controls in their separate column, and measurement feedback in toolbar flow.
 
+## Signed-In Workspace
+
+`AuthenticatedShell` places the account identity and Sign out in a normal-flow header above the application. Keep this header outside the map toolbar and reserve its space through the authenticated workspace grid; avoid viewport-fixed account controls that can cover map actions. The grid must allow narrow children to shrink, including the phone Details view. Signing out checks tracked drafts before invoking Auth0 logout.
+
+`tests/auth-layout.spec.ts` runs the production shell with a controlled Auth0 context, so layout tests exercise the signed-in controls even when normal TEST authentication is disabled. Cover long identities, fallback labels, phone navigation, logout/canceled logout, and report print visibility. The account header is excluded from print output while the authenticated workspace remains printable.
+
 ## Protected Photos
 
 Use `src/hooks/useMediaUrl.ts` for protected media, as the gallery and marker reports do. It fetches same-API-origin `/media/` images through `authorizedFetch`, creates an object URL, aborts stale loads, and revokes the object URL on cleanup. External image URLs bypass the authenticated fetch. Do not use a plain `<img src="/media/...">` for protected assets or persist a temporary `blob:` URL as a share link.
