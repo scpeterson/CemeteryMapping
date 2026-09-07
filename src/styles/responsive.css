@@ -88,12 +88,12 @@
 
   .control-point-panel {
     inset: 12px;
-    padding: 12px;
+    padding: var(--space-3);
   }
 
   .reports-panel {
     inset: 12px;
-    padding: 12px;
+    padding: var(--space-3);
   }
 
   .reports-layout {
@@ -163,7 +163,7 @@
   .admin-nav button {
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 4px;
+    gap: var(--space-1);
     padding: 7px 5px;
     font-size: 0.72rem;
     text-align: center;
@@ -194,12 +194,12 @@
     top: 0;
     z-index: 4;
     display: flex;
-    gap: 8px;
-    padding: 8px;
+    gap: var(--space-2);
+    padding: var(--space-2);
     background: var(--panel);
     border-bottom: 1px solid var(--panel-border);
   }
-  .mobile-workspace-nav button { flex: 1; min-height: 44px; border: 1px solid var(--panel-border); border-radius: 8px; background: white; color: inherit; }
+  .mobile-workspace-nav button { flex: 1; min-height: 44px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: white; color: inherit; }
   .mobile-workspace-nav button[aria-pressed="true"] { background: var(--focus); color: white; }
   .app-shell[data-mobile-view="map"] > .search-panel,
   .app-shell[data-mobile-view="map"] > .detail-panel,
