@@ -21,8 +21,9 @@ test("media galleries sort newest photos first and retain the complete history",
 });
 
 test("the complete photo history opens in an accessible modal", () => {
-  assert.match(component, /role="dialog"/u);
-  assert.match(component, /aria-modal="true"/u);
-  assert.match(component, /event\.key === "Escape"/u);
-  assert.match(styles, /\.media-gallery-modal-backdrop/u);
+  const modal = fs.readFileSync(new URL("../src/components/ui/Modal.tsx", import.meta.url), "utf8");
+  assert.match(component, /<Modal className="media-gallery-modal" label="All photos"/u);
+  assert.match(modal, /dialog.showModal\(\)/u);
+  assert.match(modal, /onCancel=/u);
+  assert.match(styles, /\.media-gallery-modal/u);
 });
