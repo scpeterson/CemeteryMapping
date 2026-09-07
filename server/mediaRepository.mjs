@@ -1,5 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { stageMediaFile } from "./media/uploadStorage.mjs";
 import { randomUUID } from "node:crypto";
 import { setAuditContext } from "./auditContext.mjs";
 import { capturedAtForUpload, cleanMediaText as cleanText, mediaUploadRoot, isAllowedImageType, mediaFileExtension as fileExtension, optionalMediaNumber as optionalNumber, publicMediaFileUrl as publicFileUrl, toMediaAsset } from "./media/mediaMapping.mjs";
@@ -89,7 +88,8 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
   if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) return undefined;
 
   const client = await pool.connect();
-  let savedFilePath;
+  let stagedFile;
+  let commitAttempted = false;
   try {
     await client.query("BEGIN");
     await setAuditContext(client, { actorUser, reason: "Photo upload" });
@@ -108,9 +108,7 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
     const assetId = randomUUID();
     const extension = fileExtension(file.contentType, file.originalFilename);
     const storageKey = `${assetId}${extension}`;
-    savedFilePath = join(uploadRoot, storageKey);
-    await mkdir(uploadRoot, { recursive: true });
-    await writeFile(savedFilePath, file.bytes);
+    stagedFile = await stageMediaFile(uploadRoot, storageKey, file.bytes);
 
     const assetResult = await client.query(
       `
@@ -233,10 +231,14 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
       );
     }
 
+    await stagedFile.publish();
+    commitAttempted = true;
     await client.query("COMMIT");
     return toMediaAsset(assetResult.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
+    // A failed COMMIT response may still mean the transaction committed.
+    if (!commitAttempted) await stagedFile?.discard();
     throw error;
   } finally {
     client.release();
@@ -250,7 +252,8 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
   if (!file.bytes?.length) throw new Error("Photo file is required.");
 
   const client = await pool.connect();
-  let savedFilePath;
+  let stagedFile;
+  let commitAttempted = false;
   try {
     await client.query("BEGIN");
     await setAuditContext(client, { actorUser, reason: "Photo upload" });
@@ -263,9 +266,7 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
     const assetId = randomUUID();
     const extension = fileExtension(file.contentType, file.originalFilename);
     const storageKey = `${assetId}${extension}`;
-    savedFilePath = join(uploadRoot, storageKey);
-    await mkdir(uploadRoot, { recursive: true });
-    await writeFile(savedFilePath, file.bytes);
+    stagedFile = await stageMediaFile(uploadRoot, storageKey, file.bytes);
 
     const assetResult = await client.query(
       `
@@ -362,10 +363,14 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
       [assetId, headstone.id, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
     );
 
+    await stagedFile.publish();
+    commitAttempted = true;
     await client.query("COMMIT");
     return toMediaAsset(assetResult.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
+    // A failed COMMIT response may still mean the transaction committed.
+    if (!commitAttempted) await stagedFile?.discard();
     throw error;
   } finally {
     client.release();

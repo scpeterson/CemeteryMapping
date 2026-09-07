@@ -26,7 +26,7 @@ import {
   uploadHeadstonePhoto,
 } from "../api/cemeteryApi";
 import { graveSelectionKey } from "../lib/format";
-import { appendHeadstoneSummary, assignLotInMapData, assignLotToSelectedGrave, moveMediaAssetInGrave, moveMediaAssetInRecord, removeFeatureFromGrave, removeFeatureFromHeadstone, removeMediaAsset, replaceBurialInGrave, replaceHeadstoneInGrave, replaceHeadstoneSummary } from "./recordMutationState";
+import { updateMatchingGrave, appendHeadstoneSummary, assignLotInMapData, assignLotToSelectedGrave, moveMediaAssetInGrave, moveMediaAssetInRecord, removeFeatureFromGrave, removeFeatureFromHeadstone, removeMediaAsset, replaceBurialInGrave, replaceHeadstoneInGrave, replaceHeadstoneSummary } from "./recordMutationState";
 import type {
   Burial,
   CemeteryData,
@@ -84,12 +84,17 @@ function headstoneSummaryFromCreate(saved: Headstone, grave: GraveSpace, input: 
 export function useRecordMutations({
   selectedGrave,
   selectedHeadstone,
-  setSelectedGrave,
+  setSelectedGrave: updateSelectedGrave,
   setData,
-  setSelectedGraveDetails,
+  setSelectedGraveDetails: updateSelectedGraveDetails,
   setSelectedHeadstoneDetails,
   refreshDetails,
 }: UseRecordMutationsInput) {
+  const setSelectedGrave: UseRecordMutationsInput["setSelectedGrave"] = (update) =>
+    updateSelectedGrave((current) => updateMatchingGrave(current, selectedGrave, update));
+  const setSelectedGraveDetails: UseRecordMutationsInput["setSelectedGraveDetails"] = (update) =>
+    updateSelectedGraveDetails((current) => updateMatchingGrave(current, selectedGrave, update));
+
   const saveHeadstone = async (id: string, headstone: SaveHeadstoneInput): Promise<Headstone> => {
     const saved = await updateHeadstone(id, headstone);
     setSelectedGraveDetails((current) => replaceHeadstoneInGrave(current, saved));
@@ -105,7 +110,7 @@ export function useRecordMutations({
     const saved = await createGravesiteHeadstone(grave.cemeteryId, grave.id, headstone);
     const summary = headstoneSummaryFromCreate(saved, grave, headstone);
     setSelectedGraveDetails((current) =>
-      current?.id === grave.id
+      current && graveSelectionKey(current) === graveSelectionKey(grave)
         ? {
             ...current,
             headstones: [...current.headstones, saved],

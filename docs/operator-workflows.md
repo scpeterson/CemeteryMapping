@@ -952,3 +952,7 @@ Verify:
 5. Confirm linked evidence appears in the regular detail panel.
 
 Do not load OCR readings directly into production burial or headstone fields. The OCR data remains staged evidence until reviewed.
+
+### Recovering interrupted media uploads
+
+Uploads stage files before publishing them and clean up known transaction failures. Files whose commit outcome is uncertain remain available for reconciliation. Stop uploads before running `node scripts/reconcile-media-storage.mjs` against the target environment. It previews unreferenced generated files older than 24 hours. Review the output, then rerun with `--apply` to remove those orphans. Referenced files, including soft-deleted evidence, are retained. Keep uploads stopped through both runs.
