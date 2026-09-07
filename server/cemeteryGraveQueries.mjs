@@ -69,6 +69,8 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
         gravesites.grave_id,
         gravesites.gravesite_id,
         ${statusCodeSelect()} AS status,
+        gravesites.name,
+        gravesites.xmin::text AS version,
         gravesites.cost,
         gravesites.geometry_type,
         gravesites.geometry_source,
@@ -182,6 +184,7 @@ export function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstone
   const detailedGrave = {
     ...toGraveSummary(grave),
     name: grave.name ?? "",
+    version: grave.version,
     cost: grave.cost === null || grave.cost === undefined ? undefined : Number(grave.cost),
     owners: graveOwners.map(toOwner),
     currentOwnerIds: graveOwners.map((owner) => owner.id),

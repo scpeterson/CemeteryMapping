@@ -1,4 +1,4 @@
-import { BadRequestError } from "./requestValidation.mjs";
+import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 import { safelyRecordSystemEvent } from "./systemEventRepository.mjs";
 
 const parserErrors = new Map([
@@ -13,6 +13,10 @@ const parserErrors = new Map([
 export function createApiErrorHandler(pool, config, versionMetadata) {
   return async (error, request, response, next) => {
     if (response.headersSent) return next(error);
+    if (error instanceof ConflictError) {
+      response.status(409).json({ error: error.message });
+      return;
+    }
     if (error instanceof BadRequestError) {
       response.status(400).json({ error: error.message });
       return;

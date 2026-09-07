@@ -27,7 +27,7 @@ async function responseErrorDetail(response: Response) {
 export async function jsonResponse<T>(response: Response, label: string): Promise<T> {
   if (!response.ok) {
     const detail = await responseErrorDetail(response);
-    throw new Error(`${label} returned ${response.status}${detail}`);
+    throw new ApiError(`${label} returned ${response.status}${detail}`, response.status);
   }
   return (await response.json()) as T;
 }
@@ -38,4 +38,13 @@ export function jsonRequest(method: string, body: unknown): RequestInit {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   };
+}
+
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
 }

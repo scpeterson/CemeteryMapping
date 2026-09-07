@@ -32,7 +32,8 @@ import type {
   GeographicPlaceCandidate,
   VerifiedPlace,
 } from "../types";
-import { importVerifiedPlace, searchGeographicPlaces } from "../api/cemeteryApi";
+import { ApiError } from "../api/apiClient";
+import { fetchGraveSpace, importVerifiedPlace, searchGeographicPlaces } from "../api/cemeteryApi";
 import { burialNoteItems } from "../lib/burialNotes";
 import { formatDate, formatGraveLabel, fullName, geometryConfidenceLabels, geometryTypeLabels } from "../lib/format";
 import { MediaGallery, PhotoUploadForm } from "./detail/MediaRecords";
@@ -748,6 +749,7 @@ function BurialRecord({
 function blankGraveSpaceForm(grave: GraveSpace): SaveGraveSpaceInput {
   return {
     name: grave.name,
+    expectedVersion: grave.version,
     status: grave.status,
     cost: grave.cost === undefined ? "" : String(grave.cost),
     reason: "Gravesite detail update",
@@ -763,6 +765,7 @@ function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManageLot, o
   onSave: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
   onUpdateLot: (lotId: string) => Promise<void>;
 }) {
+  const [hasConflict, setHasConflict] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<SaveGraveSpaceInput>(() => blankGraveSpaceForm(grave));
   const [isSaving, setIsSaving] = useState(false);
@@ -773,6 +776,7 @@ function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManageLot, o
 
   const startEditing = () => {
     setForm(blankGraveSpaceForm(grave));
+    setHasConflict(false);
     setError(undefined);
     setIsEditing(true);
   };
@@ -785,10 +789,23 @@ function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManageLot, o
       await onSave(form);
       setIsEditing(false);
     } catch (saveError) {
+      setHasConflict(saveError instanceof ApiError && saveError.status === 409);
       setError(saveError instanceof Error ? saveError.message : "Unable to save gravesite.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const reloadLatest = async () => {
+    setIsSaving(true);
+    try {
+      const latest = await fetchGraveSpace(grave.cemeteryId, grave.id);
+      setForm(blankGraveSpaceForm(latest));
+      setHasConflict(false);
+      setError(undefined);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to reload gravesite.");
+    } finally { setIsSaving(false); }
   };
 
   const saveLot = async (nextLotId: string) => {
@@ -827,11 +844,12 @@ function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManageLot, o
           <input inputMode="decimal" value={form.cost} onChange={(event) => setForm((current) => ({ ...current, cost: event.target.value }))} />
         </label>
         {error ? <p className="detail-message is-error">{error}</p> : null}
+        {hasConflict ? <button type="button" disabled={isSaving} onClick={() => void reloadLatest()}>Reload latest values (discard edits)</button> : null}
         <div className="grave-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
             Cancel
           </button>
-          <button type="submit" disabled={isSaving}>
+          <button type="submit" disabled={isSaving || hasConflict}>
             {isSaving ? "Saving..." : "Save gravesite"}
           </button>
         </div>

@@ -508,6 +508,7 @@ export type GraveSpaceSummary = {
 };
 
 export type GraveSpace = GraveSpaceSummary & {
+  version: string;
   name: string;
   cost?: number;
   lotGeometryType?: GeometryType;
@@ -527,6 +528,7 @@ export type GraveSpace = GraveSpaceSummary & {
 };
 
 export type SaveGraveSpaceInput = {
+  expectedVersion: string;
   name: string;
   status: GraveStatus;
   cost: string;

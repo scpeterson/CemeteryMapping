@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import express from "express";
 import { createApiErrorHandler } from "./apiErrorHandler.mjs";
-import { BadRequestError } from "./requestValidation.mjs";
+import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 
 test("actual parser failures preserve 400 and 413 without recording server errors", async (t) => {
   const app = express();
   app.use(express.json({ limit: "20b" }));
   app.post("/body", (_request, response) => response.sendStatus(204));
+  app.get("/conflict", () => { throw new ConflictError(); });
   app.get("/bad", () => { throw new BadRequestError("Name is required"); });
   app.get("/unknown", () => { throw Object.assign(new Error("private detail"), { status: 400 }); });
   let recorded = 0;
@@ -22,6 +23,7 @@ test("actual parser failures preserve 400 and 413 without recording server error
     assert.equal(response.status, status);
   }
   assert.equal((await fetch(`${base}/bad`)).status, 400);
+  assert.equal((await fetch(`${base}/conflict`)).status, 409);
   assert.equal(recorded, 0);
   const unknown = await fetch(`${base}/unknown`);
   assert.equal(unknown.status, 500);
