@@ -4,6 +4,9 @@ import pg from "pg";
 import { loadApiConfig } from "../server/config.mjs";
 import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "../server/headstoneCemeterySql.mjs";
 
+import { runMaintenanceNeeds } from "../server/reports/maintenanceReports.mjs";
+import { definitionById } from "../server/reports/definitions.mjs";
+
 const uuid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
 test("marker cemetery resolution respects precedence, deleted records, and caller-independent ownership", async () => {
@@ -39,4 +42,12 @@ test("marker cemetery resolution respects precedence, deleted records, and calle
     client.release();
     await pool.end();
   }
+});
+
+test("the scoped maintenance report executes against PostgreSQL", async () => {
+  const pool = new pg.Pool(loadApiConfig().database);
+  try {
+    const result = await runMaintenanceNeeds(pool, definitionById("maintenance-needs"), { daysSinceCleaned: "365" }, [uuid(999)]);
+    assert.deepEqual(result.rows, []);
+  } finally { await pool.end(); }
 });
