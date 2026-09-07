@@ -1,3 +1,4 @@
+import { Modal } from "./ui/Modal";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Download, Image as ImageIcon, MapPinned, Maximize2, MousePointer2, Trash2, X, ZoomIn, ZoomOut } from "lucide-react";
 import * as maplibregl from "maplibre-gl";
@@ -136,14 +137,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   const exportSourceName = sourceImageName === "Other source" ? customSourceImageName.trim() : sourceImageName;
   const sourceImageNameRef = useRef(exportSourceName);
 
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
 
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
 
   useEffect(() => {
     return () => {
@@ -404,7 +398,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   };
 
   return (
-    <aside className="control-point-panel" aria-label="Control point collector">
+    <Modal className="control-point-panel" label="Control point collector" onClose={onClose}>
       <div className="control-point-header">
         <div>
           <p className="eyebrow">Georeferencing</p>
@@ -606,6 +600,6 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
           </ol>
         </section>
       </div>
-    </aside>
+    </Modal>
   );
 }

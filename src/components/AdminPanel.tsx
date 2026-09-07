@@ -1,5 +1,6 @@
+import { Modal } from "./ui/Modal";
 import { Activity, BookOpenText, FileSearch, FileText, History, Landmark, ListChecks, ShieldAlert, UserCog, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type {
   AuditEventFilters
 } from "../types";
@@ -240,16 +241,9 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     loadNorthHillsOcrReview,
     northHillsReviewFilters
   });
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
 
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
   return (
-    <aside className="admin-panel" aria-label="Admin management">
+    <Modal className="admin-panel" label="Admin management" onClose={onClose}>
       <div className="admin-panel-header">
         <div>
           <p className="eyebrow">Admin</p>
@@ -537,6 +531,6 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
           </Suspense>
         </div>
       </div>
-    </aside>
+    </Modal>
   );
 }
