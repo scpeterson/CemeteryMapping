@@ -1,3 +1,4 @@
+import { StatusBadge } from "./ui/Feedback";
 import { CalendarSearch, Filter, Search, X } from "lucide-react";
 import type { CemeterySearchMatch, GraveStatus } from "../types";
 import { formatGraveLocation, graveSelectionKey, lotSelectionKey, statusColors, statusLabels } from "../lib/format";
@@ -108,9 +109,7 @@ export function SearchPanel({
             >
               <span className="result-title">{formatGraveLocation(match.grave)}</span>
               <span className="result-cemetery">{match.grave.cemeteryName}</span>
-              <span className="result-meta" style={{ color: statusColors[match.grave.status] }}>
-                {statusLabel}
-              </span>
+              <StatusBadge tone={["needs_review", "reserved"].includes(match.grave.status) ? "warning" : match.grave.status === "available" ? "success" : "neutral"}>{statusLabel}</StatusBadge>
               {reasons.length ? <span className="result-reason">{reasons.join(" | ")}</span> : null}
             </button>
           );

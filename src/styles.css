@@ -2,3 +2,5 @@
 @import "./styles/detail.css";
 @import "./styles/admin.css";
 @import "./styles/responsive.css";
+
+@import "./components/ui/ui.css";

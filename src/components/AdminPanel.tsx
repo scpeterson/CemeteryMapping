@@ -1,3 +1,4 @@
+import { Notice } from "./ui/Feedback";
 import { Modal } from "./ui/Modal";
 import { Activity, BookOpenText, FileSearch, FileText, History, Landmark, ListChecks, ShieldAlert, UserCog, X } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
@@ -243,7 +244,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
   });
 
   return (
-    <Modal className="admin-panel" label="Admin management" onClose={onClose}>
+    <Modal protectDrafts className="admin-panel" label="Admin management" onClose={onClose}>
       <div className="admin-panel-header">
         <div>
           <p className="eyebrow">Admin</p>
@@ -254,9 +255,9 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
         </button>
       </div>
 
-      {isLoading ? <div className="admin-message" role="status">Loading admin records...</div> : null}
-      {error ? <div className="admin-message is-error" role="alert">{error}</div> : null}
-      {message ? <div className="admin-message" role="status">{message}</div> : null}
+      {isLoading ? <Notice>Loading admin records...</Notice> : null}
+      {error ? <Notice tone="error">{error}</Notice> : null}
+      {message ? <Notice>{message}</Notice> : null}
 
       <div className="admin-workspace">
         <nav className="admin-nav" aria-label="Admin sections">

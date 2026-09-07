@@ -1,3 +1,4 @@
+import { useConfirmation } from "../ui/confirmationContext";
 import { useDraftState } from "../../hooks/useDraftState";
 import type * as React from "react";
 import { FormEvent, useMemo, useState } from "react";
@@ -23,6 +24,7 @@ type Context = {
 };
 
 export function useSourcePeopleAdministration({ setError, setActiveTab, setMessage, scrollAdminItemIntoView }: Context) {
+  const confirm = useConfirmation();
   const [sourcePersonReview, setSourcePersonReview] = useState<SourcePersonRecordReview>(emptySourcePersonReview);
 
   const [sourcePersonFilters, setSourcePersonFilters] = useState<SourcePersonRecordFilters>(defaultSourcePersonFilters);
@@ -147,7 +149,7 @@ export function useSourcePeopleAdministration({ setError, setActiveTab, setMessa
   };
 
   const softDeleteSourcePersonRecord = async (record: SourcePersonRecord) => {
-    if (!window.confirm(`Soft delete source-only person record for ${record.fullName}?`)) return;
+    if (!(await confirm(`Soft delete source-only person record for ${record.fullName}?`))) return;
     const reason = window.prompt("Reason for soft delete:", "Soft-delete source-only person record.");
     if (reason === null) return;
     setSavingSourcePersonKey(`delete:${record.id}`);

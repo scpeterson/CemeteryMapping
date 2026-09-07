@@ -1,3 +1,4 @@
+import { Notice, EmptyState } from "./ui/Feedback";
 import { Modal } from "./ui/Modal";
 import { useEffect, useMemo, useState } from "react";
 import { useMediaUrl } from "../hooks/useMediaUrl";
@@ -364,7 +365,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
       ) : null}
 
       {message ? <div className={`report-message ${messageTone === "error" ? "is-error" : ""}`} role={messageTone === "error" ? "alert" : "status"}>{message}</div> : null}
-      {error ? <div className="report-message is-error" role="alert">{error}</div> : null}
+      {error ? <Notice tone="error">{error}</Notice> : null}
 
       <div className="reports-layout">
         <aside className="report-list" aria-label="Available reports">
@@ -429,7 +430,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
           ) : isLoading ? (
             <div className="report-empty" role="status">Loading reports...</div>
           ) : (
-            <div className="report-empty">No reports available.</div>
+            <EmptyState title="No reports available" />
           )}
 
           {result ? (

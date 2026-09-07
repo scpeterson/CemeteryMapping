@@ -2,8 +2,9 @@ import { confirmDiscardChanges } from "../../hooks/useDraftState";
 import { useEffect, useRef, type ReactNode } from "react";
 
 /** Native modal dialogs provide focus containment and make background content inert. */
-export function Modal({ children, className = "", label, onClose }: {
+export function Modal({ children, className = "", label, onClose, protectDrafts = false }: {
   children: ReactNode;
+  protectDrafts?: boolean;
   className?: string;
   label: string;
   onClose: () => void;
@@ -27,7 +28,7 @@ export function Modal({ children, className = "", label, onClose }: {
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     }}
-    onCancel={(event) => { event.preventDefault(); event.stopPropagation(); if (confirmDiscardChanges()) onClose(); }}>
+    onCancel={(event) => { event.preventDefault(); event.stopPropagation(); if (!protectDrafts || confirmDiscardChanges()) onClose(); }}>
     {children}
   </dialog>;
 }

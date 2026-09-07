@@ -1,3 +1,4 @@
+import { useConfirmation } from "../ui/confirmationContext";
 import type * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -21,6 +22,7 @@ type Context = {
 };
 
 export function useLookupAdministration({ setError, setActiveTab, setMessage, setAuditSeedFilters }: Context) {
+  const confirm = useConfirmation();
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
 
   const [selectedLookupTable, setSelectedLookupTable] = useState("");
@@ -107,7 +109,7 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
   const saveLookupRecord = async (table: string, row: LookupRecord) => {
     const key = `${table}:${row.id}`;
     if (!row.isActive && row.usageCount > 0) {
-      const shouldContinue = window.confirm(`${row.label} is ${lookupUsageText(row).toLowerCase()} Deactivate it anyway?`);
+      const shouldContinue = await confirm(`${row.label} is ${lookupUsageText(row).toLowerCase()} Deactivate it anyway?`);
       if (!shouldContinue) return;
     }
 

@@ -517,7 +517,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await firstResult.click();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.getByText("St. Mark Church Cemetery").first()).toBeVisible();
-  await expect(page.locator(".result-card").filter({ hasText: "Reserved" }).first().locator(".result-meta")).toHaveCSS("color", "rgb(217, 164, 65)");
+  await expect(page.locator(".result-card").filter({ hasText: "Reserved" }).first().locator(".ui-status-badge")).toHaveCSS("color", "rgb(115, 82, 26)");
   await expect(firstResult.locator(".result-reason")).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "Loading grave details..." })).toBeHidden();
   await expect.poll(() => graveDetailRequests).toHaveLength(1);

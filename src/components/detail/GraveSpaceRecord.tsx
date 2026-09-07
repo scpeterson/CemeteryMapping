@@ -1,3 +1,5 @@
+import { Button } from "../ui/Button";
+import { TextField } from "../ui/TextField";
 import { useDraftState } from "../../hooks/useDraftState";
 import { Pencil } from "lucide-react";
 import { FormEvent, useState } from "react";
@@ -100,10 +102,7 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
   if (isEditing) {
     return (
       <form className="grave-record grave-form" onSubmit={(event) => void save(event)}>
-        <label className="grave-wide-field">
-          Name
-          <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
-        </label>
+        <TextField className="grave-wide-field" label="Name" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
         <label>
           Status
           <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as GraveStatus }))}>
@@ -124,9 +123,9 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
             Cancel
           </button>
-          <button type="submit" disabled={isSaving || hasConflict}>
+          <Button type="submit" busy={isSaving} disabled={hasConflict}>
             {isSaving ? "Saving..." : "Save gravesite"}
-          </button>
+          </Button>
         </div>
       </form>
     );

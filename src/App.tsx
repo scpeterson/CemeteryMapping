@@ -1,3 +1,4 @@
+import { ConfirmationProvider } from "./components/ui/ConfirmationProvider";
 import { confirmDiscardChanges, useDraftNavigationGuard } from "./hooks/useDraftState";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
@@ -346,7 +347,7 @@ export default function App() {
 
 
   return (
-    <main className="app-shell" data-mobile-view={mobileView}>
+    <ConfirmationProvider><main className="app-shell" data-mobile-view={mobileView}>
       <nav className="mobile-workspace-nav" aria-label="Workspace views">
         {(["search", "map", "details"] as const).map((view) => <button key={view} type="button" aria-pressed={mobileView === view} onClick={() => setMobileView(view)}>{view === "search" ? "Search" : view === "map" ? "Map" : "Details"}</button>)}
       </nav>
@@ -491,6 +492,6 @@ export default function App() {
         error={detailError}
         onRetry={refreshDetails}
       />
-    </main>
+    </main></ConfirmationProvider>
   );
 }
