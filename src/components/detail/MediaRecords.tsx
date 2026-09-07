@@ -1,14 +1,8 @@
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
-import { apiBaseUrl } from "../../config/environment";
+import { MediaPhoto } from "./MediaPhoto";
 import { formatDate } from "../../lib/format";
 import type { Headstone, MediaAsset } from "../../types";
-
-function mediaUrl(asset: MediaAsset) {
-  if (/^https?:\/\//u.test(asset.fileUrl)) return asset.fileUrl;
-  if (/^https?:\/\//u.test(apiBaseUrl)) return `${new URL(apiBaseUrl).origin}${asset.fileUrl}`;
-  return asset.fileUrl;
-}
 
 function sortedMediaAssets(assets: MediaAsset[]) {
   return [...assets].sort((left, right) => {
@@ -89,10 +83,9 @@ export function MediaGallery({
         const index = sortedAssets.findIndex((candidate) => candidate.id === asset.id);
         return (
           <div key={asset.id} className="media-gallery-card">
-            <a className="media-gallery-item" href={mediaUrl(asset)} target="_blank" rel="noreferrer">
-              <img src={mediaUrl(asset)} alt={asset.notes || asset.originalFilename || "Cemetery record photo"} loading="lazy" />
+            <MediaPhoto asset={asset}>
               <span>{asset.capturedAt ? `Date taken: ${formatDate(asset.capturedAt)}` : `Uploaded: ${formatDate(asset.uploadedAt)}`}</span>
-            </a>
+            </MediaPhoto>
             {expanded && onMove && sortedAssets.length > 1 ? (
               <div className="media-order-controls" aria-label="Photo display order">
                 <button
