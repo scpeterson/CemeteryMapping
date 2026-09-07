@@ -442,3 +442,31 @@ test("moveMediaAssetLink treats a stale boundary move as a successful no-op", as
   assert.equal(queries.some((query) => query.sql.includes("UPDATE headstone_media_assets SET display_order")), false);
   assert.equal(queries.at(-2).sql, "COMMIT");
 });
+
+for (const kind of ["gravesite", "headstone"]) {
+  test(`${kind} uploads honor MEDIA_UPLOAD_DIR without an explicit storage override`, async () => {
+    const uploadRoot = await mkdtemp(join(tmpdir(), "configured-media-"));
+    const previousRoot = process.env.MEDIA_UPLOAD_DIR;
+    process.env.MEDIA_UPLOAD_DIR = uploadRoot;
+    const cemeteryId = "11111111-1111-4111-8111-111111111111";
+    const pool = { async connect() { return {
+      async query(sql, values = []) {
+        if (sql.includes("INSERT INTO media_assets")) return { rows: [{ id: values[0], file_url: values[3] }] };
+        if (sql.includes("FROM gravesites") || sql.includes("FROM headstones")) return { rows: [{ id: "22222222-2222-4222-8222-222222222222", cemetery_id: cemeteryId }] };
+        return { rows: [] };
+      },
+      release() {},
+    }; } };
+    try {
+      const file = { bytes: Buffer.from("configured photo"), contentType: "image/jpeg" };
+      const asset = kind === "gravesite"
+        ? await createGraveSpacePhoto(pool, cemeteryId, "A-01", file)
+        : await createHeadstonePhoto(pool, "22222222-2222-4222-8222-222222222222", file);
+      assert.equal(await readFile(join(uploadRoot, asset.fileUrl.replace("/media/", "")), "utf8"), "configured photo");
+    } finally {
+      if (previousRoot === undefined) delete process.env.MEDIA_UPLOAD_DIR;
+      else process.env.MEDIA_UPLOAD_DIR = previousRoot;
+      await rm(uploadRoot, { recursive: true });
+    }
+  });
+}

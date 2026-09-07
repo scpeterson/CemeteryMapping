@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { setAuditContext } from "./auditContext.mjs";
-import { capturedAtForUpload, cleanMediaText as cleanText, defaultMediaUploadRoot as defaultUploadRoot, isAllowedImageType, mediaFileExtension as fileExtension, optionalMediaNumber as optionalNumber, publicMediaFileUrl as publicFileUrl, toMediaAsset } from "./media/mediaMapping.mjs";
+import { capturedAtForUpload, cleanMediaText as cleanText, mediaUploadRoot, isAllowedImageType, mediaFileExtension as fileExtension, optionalMediaNumber as optionalNumber, publicMediaFileUrl as publicFileUrl, toMediaAsset } from "./media/mediaMapping.mjs";
 export { mediaUploadRoot } from "./media/mediaMapping.mjs";
 
 
@@ -81,7 +81,7 @@ async function headstoneForId(client, headstoneId) {
   return result.rows[0];
 }
 
-export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = defaultUploadRoot } = {}) {
+export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = mediaUploadRoot() } = {}) {
   if (!isAllowedImageType(file.contentType)) {
     throw new Error("Unsupported photo type.");
   }
@@ -243,7 +243,7 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
   }
 }
 
-export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = defaultUploadRoot } = {}) {
+export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = mediaUploadRoot() } = {}) {
   if (!isAllowedImageType(file.contentType)) {
     throw new Error("Unsupported photo type.");
   }

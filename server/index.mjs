@@ -96,8 +96,9 @@ export function createApp(config, pool) {
     ...config.auth.auth0.management,
   });
 
+  const uploadRoot = mediaUploadRoot();
   app.use(express.json());
-  app.use("/media", express.static(mediaUploadRoot()));
+  app.use("/media", express.static(uploadRoot));
 
   const requireReader = requireRole(config.auth, pool, "reader");
   const requirePowerUser = requireRole(config.auth, pool, "power-user");
@@ -117,7 +118,7 @@ export function createApp(config, pool) {
 
   registerMediaRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto, createHeadstonePhoto, express,
-    moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset,
+    moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   });
 
   registerAdminRoutes(app, {
