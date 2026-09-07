@@ -18,7 +18,7 @@ test("keyboard users can select a result and operate detail tabs", async ({ page
 test("nested confirmations close independently and restore focus", async ({ page }) => {
   await fixture(page);
   await page.goto("/");
-  await page.evaluate(async () => { const harness = await import("/tests/uiHarness.tsx"); harness.mountConfirmationHarness(); });
+  await page.evaluate(async () => { const harness = await import("/tests/mountUiHarness.ts"); harness.mountConfirmationHarness(); });
   await page.getByRole("button", { name: "Open test editor" }).click();
   const outer = page.getByRole("dialog", { name: "Test editor", exact: true });
   await page.getByRole("button", { name: "Request removal" }).click();
