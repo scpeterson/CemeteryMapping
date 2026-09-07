@@ -195,3 +195,22 @@ test("mobile navigation opens selected details and preserves drafts between view
   await nav.getByRole("button", { name: "Details", exact: true }).click();
   await expect(page.locator(".grave-form").getByLabel("Name", { exact: true })).toHaveValue("Mobile draft");
 });
+
+test("search distinguishes loading, failure, retry and no results", async ({ page }) => {
+  await fixture(page);
+  let release!: () => Promise<void>;
+  await page.route("**/api/search**", (route) => { release = () => route.fulfill({ status: 503, json: {} }); });
+  await page.goto("/");
+  await page.getByLabel("Search cemetery records").fill("NoSuchPerson");
+  await expect(page.getByRole("status").filter({ hasText: "Searching records" })).toBeVisible();
+  await expect.poll(() => typeof release).toBe("function");
+  await release();
+  await expect(page.getByRole("alert")).toContainText("Showing matches from loaded map data");
+  await page.route("**/api/search**", (route) => route.fulfill({ json: [] }));
+  await page.getByRole("button", { name: "Retry search" }).click();
+  await expect(page.getByText("No matching records", { exact: true })).toBeVisible();
+  const chip = page.getByRole("button", { name: "Available", exact: true });
+  await expect(chip).toHaveAttribute("aria-pressed", "true");
+  await chip.click();
+  await expect(chip).toHaveAttribute("aria-pressed", "false");
+});

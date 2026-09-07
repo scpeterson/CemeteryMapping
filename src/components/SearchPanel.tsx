@@ -1,9 +1,13 @@
-import { StatusBadge } from "./ui/Feedback";
+import { Button } from "./ui/Button";
+import { EmptyState, Notice, StatusBadge } from "./ui/Feedback";
 import { CalendarSearch, Filter, Search, X } from "lucide-react";
 import type { CemeterySearchMatch, GraveStatus } from "../types";
 import { formatGraveLocation, graveSelectionKey, lotSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type SearchPanelProps = {
+  isSearching: boolean;
+  error?: string;
+  onRetry: () => void;
   cemeteryScopeLabel: string;
   query: string;
   onQueryChange: (query: string) => void;
@@ -19,6 +23,7 @@ type SearchPanelProps = {
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 
 export function SearchPanel({
+  isSearching, error, onRetry,
   cemeteryScopeLabel,
   query,
   onQueryChange,
@@ -47,6 +52,7 @@ export function SearchPanel({
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder={canViewOwnership ? "Search names, owners, dates, graves, lots" : "Search names, dates, graves, lots"}
           aria-label="Search cemetery records"
+          aria-controls="cemetery-search-results"
         />
         {query ? (
           <button type="button" className="icon-button" onClick={() => onQueryChange("")} aria-label="Clear search">
@@ -64,6 +70,7 @@ export function SearchPanel({
           <button
             key={status}
             type="button"
+            aria-pressed={selectedStatuses.has(status)}
             className={`status-chip ${selectedStatuses.has(status) ? "is-active" : ""}`}
             onClick={() => onToggleStatus(status)}
           >
@@ -73,18 +80,21 @@ export function SearchPanel({
         ))}
       </div>
 
-      <div className="results-heading">
-        <span>{matches.length} result{matches.length === 1 ? "" : "s"}</span>
+      <div className="results-heading" role="status" aria-live="polite" aria-atomic="true">
+        <span>{isSearching ? "Searching records…" : `${matches.length} result${matches.length === 1 ? "" : "s"}${error ? " from loaded map data" : ""}`}</span>
       </div>
 
-      <div className="results-list">
-        {matches.map((match) => {
+      <div className="results-list" id="cemetery-search-results" aria-busy={isSearching}>
+        {error ? <Notice tone="error">{error} <Button variant="secondary" onClick={onRetry}>Retry search</Button></Notice> : null}
+        {!isSearching && !error && !matches.length ? <EmptyState title="No matching records">Try a different name, grave, or lot, or enable more status filters.</EmptyState> : null}
+        {!isSearching && matches.map((match) => {
           if ("lot" in match) {
             const key = lotSelectionKey(match.lot);
             return (
               <button
                 key={`lot:${key}`}
                 type="button"
+                aria-current={selectedLotKey === key ? "true" : undefined}
                 className={`result-card ${selectedLotKey === key ? "is-selected" : ""}`}
                 onClick={() => onSelectMatch(match)}
               >
@@ -104,6 +114,7 @@ export function SearchPanel({
             <button
               key={key}
               type="button"
+              aria-current={selectedGraveKey === key ? "true" : undefined}
               className={`result-card ${selectedGraveKey === key ? "is-selected" : ""}`}
               onClick={() => onSelectMatch(match)}
             >
