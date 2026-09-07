@@ -1,3 +1,4 @@
+import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 import { derivedGravesiteStatusSql } from "./gravesiteStatusSql.mjs";
 
 export async function selectGraveUpdateState(client, cemeteryId, gravesiteId) {
@@ -32,7 +33,7 @@ export async function selectHeadstoneMutationState(client, id) {
     `
       SELECT
         headstones.id::text,
-        COALESCE(gravesite.cemetery_id, containing_cemetery.id)::text AS cemetery_id,
+        ${headstoneCemeteryIdSql}::text AS cemetery_id,
         headstones.headstone_id,
         headstones.marker_type_id::text,
         marker_types.code AS marker_type_code,
@@ -67,17 +68,7 @@ export async function selectHeadstoneMutationState(client, id) {
         ON headstone_vase_material_types.id = headstones.vase_material_type_id
       LEFT JOIN headstone_vase_placement_types
         ON headstone_vase_placement_types.id = headstones.vase_placement_type_id
-      LEFT JOIN gravesites AS gravesite
-        ON gravesite.id = headstones.gravesite_uuid
-      LEFT JOIN LATERAL (
-        SELECT cemeteries.id
-        FROM cemeteries
-        WHERE headstones.geometry IS NOT NULL
-          AND cemeteries.deleted_at IS NULL
-          AND ST_Covers(cemeteries.geometry, headstones.geometry)
-        ORDER BY cemeteries.name, cemeteries.id
-        LIMIT 1
-      ) containing_cemetery ON true
+      ${headstoneCemeteryJoinsSql}
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
       FOR UPDATE OF headstones
@@ -113,32 +104,10 @@ async function selectHeadstoneUuid(client, cemeteryId, headstoneId) {
     `
       SELECT headstones.id::text
       FROM headstones
-      LEFT JOIN gravesites AS direct_gravesite
-        ON direct_gravesite.id = headstones.gravesite_uuid
-       AND direct_gravesite.deleted_at IS NULL
-      LEFT JOIN LATERAL (
-        SELECT gravesites.cemetery_id
-        FROM headstone_gravesites
-        JOIN gravesites
-          ON gravesites.id = headstone_gravesites.gravesite_uuid
-         AND gravesites.deleted_at IS NULL
-        WHERE headstone_gravesites.headstone_uuid = headstones.id
-          AND headstone_gravesites.deleted_at IS NULL
-          AND gravesites.cemetery_id = $2
-        LIMIT 1
-      ) linked_gravesite ON true
-      LEFT JOIN LATERAL (
-        SELECT cemeteries.id
-        FROM cemeteries
-        WHERE headstones.geometry IS NOT NULL
-          AND cemeteries.deleted_at IS NULL
-          AND ST_Covers(cemeteries.geometry, headstones.geometry)
-        ORDER BY cemeteries.name, cemeteries.id
-        LIMIT 1
-      ) containing_cemetery ON true
+      ${headstoneCemeteryJoinsSql}
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
-        AND COALESCE(direct_gravesite.cemetery_id, linked_gravesite.cemetery_id, containing_cemetery.id) = $2
+        AND ${headstoneCemeteryIdSql} = $2
       LIMIT 1
     `,
     [headstoneId, cemeteryId],

@@ -1,3 +1,4 @@
+import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 import { sectionAlternateNamesSelect } from "./cemeterySchema.mjs";
 import { derivedGravesiteStatusSql } from "./gravesiteStatusSql.mjs";
 
@@ -100,26 +101,18 @@ export async function selectHeadstoneSummariesForCemeteries(client, cemeteryIds)
   const result = await client.query(
     `
       SELECT headstones.id::text, headstones.headstone_id, cemeteries.id::text AS cemetery_id,
-        cemeteries.name AS cemetery_name, gravesites.gravesite_id, marker_types.code AS marker_type_code,
+        cemeteries.name AS cemetery_name, COALESCE(direct_gravesite.gravesite_id, linked_gravesite.gravesite_id) AS gravesite_id, marker_types.code AS marker_type_code,
         marker_types.label AS marker_type_label, marker_scope_types.code AS marker_scope_code,
         marker_scope_types.label AS marker_scope_label, headstone_condition_types.code AS condition_code,
         ST_AsGeoJSON(headstones.geometry)::json AS geometry
       FROM headstones
-      LEFT JOIN gravesites ON gravesites.id = headstones.gravesite_uuid AND gravesites.deleted_at IS NULL
-      JOIN LATERAL (
-        SELECT cemeteries.id, cemeteries.name FROM cemeteries
-        WHERE cemeteries.deleted_at IS NULL AND cemeteries.id = ANY($1::uuid[])
-          AND (cemeteries.id = gravesites.cemetery_id OR (
-            gravesites.id IS NULL AND cemeteries.geometry IS NOT NULL AND ST_Covers(cemeteries.geometry, headstones.geometry)
-          ))
-        ORDER BY CASE WHEN cemeteries.id = gravesites.cemetery_id THEN 0 ELSE 1 END, cemeteries.name
-        LIMIT 1
-      ) cemeteries ON TRUE
+      ${headstoneCemeteryJoinsSql}
+      JOIN cemeteries ON cemeteries.id = ${headstoneCemeteryIdSql} AND cemeteries.id = ANY($1::uuid[])
       JOIN marker_types ON marker_types.id = headstones.marker_type_id
       JOIN marker_scope_types ON marker_scope_types.id = headstones.marker_scope_type_id
       JOIN headstone_condition_types ON headstone_condition_types.id = headstones.condition_type_id
       WHERE headstones.deleted_at IS NULL AND headstones.geometry IS NOT NULL
-      ORDER BY cemeteries.name, COALESCE(gravesites.gravesite_id, headstones.headstone_id), headstones.headstone_id
+      ORDER BY cemeteries.name, COALESCE(direct_gravesite.gravesite_id, linked_gravesite.gravesite_id, headstones.headstone_id), headstones.headstone_id
     `,
     [cemeteryIds],
   );

@@ -1,3 +1,4 @@
+import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 import {
   burialIntermentTypeLookupExists,
   burialMilitaryBranchLookupExists,
@@ -102,22 +103,11 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
           headstones.headstone_id AS code,
           headstones.headstone_id AS label
         FROM headstones
-        LEFT JOIN gravesites AS direct_gravesite
-          ON direct_gravesite.id = headstones.gravesite_uuid
-         AND direct_gravesite.deleted_at IS NULL
-        LEFT JOIN LATERAL (
-          SELECT cemeteries.id
-          FROM cemeteries
-          WHERE headstones.geometry IS NOT NULL
-            AND cemeteries.deleted_at IS NULL
-            AND ST_Covers(cemeteries.geometry, headstones.geometry)
-          ORDER BY cemeteries.name, cemeteries.id
-          LIMIT 1
-        ) containing_cemetery ON true
+        ${headstoneCemeteryJoinsSql}
         WHERE headstones.deleted_at IS NULL
           AND (
             $1::uuid[] IS NULL
-            OR COALESCE(direct_gravesite.cemetery_id, containing_cemetery.id) = ANY($1::uuid[])
+            OR ${headstoneCemeteryIdSql} = ANY($1::uuid[])
           )
         ORDER BY headstones.headstone_id
       `,
