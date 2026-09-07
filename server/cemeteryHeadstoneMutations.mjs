@@ -1,4 +1,4 @@
-import { setAuditContext } from "./auditContext.mjs";
+import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { selectHeadstoneById } from "./cemeteryHeadstoneQueries.mjs";
 import { toHeadstone } from "./cemeteryMappers.mjs";
@@ -6,18 +6,13 @@ import { selectGraveUpdateState, selectHeadstoneMutationState } from "./cemetery
 import { recordReviewColumnsSql, tableColumnExists } from "./cemeterySchema.mjs";
 
 export async function updateHeadstone(pool, id, headstone, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await selectHeadstoneMutationState(client, id);
     if (!existing) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     const reviewedBy = actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? "";
@@ -230,30 +225,19 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     });
     const updated = await selectHeadstoneById(client, id);
 
-    await client.query("COMMIT");
     return { ...toHeadstone(updated), auditEventId, burialNhgPropagation };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, headstone, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
-
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const grave = await selectGraveUpdateState(client, cemeteryId, gravesiteId);
     if (!grave) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(grave.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return { forbidden: true };
+      return rollback({ forbidden: true });
     }
 
     const insertResult = await client.query(
@@ -366,13 +350,11 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
     );
 
     const created = await selectHeadstoneById(client, headstoneUuid);
-    await client.query("COMMIT");
+
     return toHeadstone(created);
-  } catch (error) {
-    await client.query("ROLLBACK");
+
+  }).catch((error) => {
     if (error?.code === "23505") return { invalid: "duplicate_headstone_id" };
     throw error;
-  } finally {
-    client.release();
-  }
+  });
 }

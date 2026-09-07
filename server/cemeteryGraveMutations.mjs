@@ -1,5 +1,5 @@
 import { ConflictError } from "./requestValidation.mjs";
-import { setAuditContext } from "./auditContext.mjs";
+import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { selectGraveUpdateState } from "./cemeteryMutationTargets.mjs";
 
@@ -33,18 +33,13 @@ export async function updateGraveSpaceMutation(
   { actorUser, reason, allowedCemeteryIds } = {},
   loadDetailedGrave,
 ) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await selectGraveUpdateState(client, cemeteryId, gravesiteId);
     if (!existing) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     // The row lock serializes writers; the version check also rejects forms
@@ -91,31 +86,21 @@ export async function updateGraveSpaceMutation(
 
     const detailedGrave = await loadDetailedGrave(client, cemeteryId, gravesiteId);
 
-    await client.query("COMMIT");
     return { ...detailedGrave, auditEventId };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lotId, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason: reason ?? "Gravesite lot assignment update" });
+  return withAuditContext(pool, { actorUser, reason: reason ?? "Gravesite lot assignment update" }, async (client, rollback) => {
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     const lotResult = lotId
       ? await client.query(`SELECT id, lot_id, section_id FROM lots WHERE cemetery_id=$1 AND lot_id=$2 AND deleted_at IS NULL`, [cemeteryId, lotId])
       : { rows: [{ id: null, lot_id: null, section_id: null }] };
     if (!lotResult.rows[0]) {
-      await client.query("ROLLBACK");
-      return { invalid: "lot_not_found" };
+      return rollback({ invalid: "lot_not_found" });
     }
     const lot = lotResult.rows[0];
     const result = await client.query(
@@ -124,32 +109,23 @@ export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lo
       [cemeteryId, gravesiteId, lot.id, lot.lot_id, lot.section_id],
     );
     if (!result.rowCount) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
-    await client.query("COMMIT");
+
     return { id: gravesiteId, lotId: lot.lot_id ?? "" };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { actorUser, reason } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await selectGraveMutationState(client, cemeteryId, gravesiteId);
     if (!existing) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     if (existing.deleted_at) {
-      await client.query("COMMIT");
+
       return {
         graveSpaceId: existing.gravesite_id,
         cemeteryId: existing.cemetery_id,
@@ -180,7 +156,6 @@ export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { acto
       reason,
     });
 
-    await client.query("COMMIT");
     return {
       graveSpaceId: updated.gravesite_id,
       cemeteryId: existing.cemetery_id,
@@ -188,27 +163,19 @@ export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { acto
       auditEventId,
       alreadyDeleted: false,
     };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function restoreGraveSpace(pool, cemeteryId, gravesiteId, { actorUser, reason } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await selectGraveMutationState(client, cemeteryId, gravesiteId);
     if (!existing) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     if (!existing.deleted_at) {
-      await client.query("COMMIT");
+
       return {
         graveSpaceId: existing.gravesite_id,
         cemeteryId: existing.cemetery_id,
@@ -239,7 +206,6 @@ export async function restoreGraveSpace(pool, cemeteryId, gravesiteId, { actorUs
       reason,
     });
 
-    await client.query("COMMIT");
     return {
       graveSpaceId: updated.gravesite_id,
       cemeteryId: existing.cemetery_id,
@@ -247,10 +213,6 @@ export async function restoreGraveSpace(pool, cemeteryId, gravesiteId, { actorUs
       auditEventId,
       alreadyActive: false,
     };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
