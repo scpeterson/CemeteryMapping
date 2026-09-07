@@ -95,3 +95,28 @@ test("the photo gallery uses authorized fetch and displays a browser object URL"
   expect(authorization).toBe("Bearer integration-test-token");
   await expect(image.locator("..")).toHaveAttribute("href", /^blob:/);
 });
+
+test("marker reports load protected photos with authorization", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await fixture(page);
+  const report = { id: "photos", title: "Marker photos", category: "Markers", requiredRole: "reader", parameters: [], examples: [], description: "Photos" };
+  await page.route("**/api/reports", (route) => route.fulfill({ json: [report] }));
+  await page.route("**/api/reports/run", (route) => route.fulfill({ json: {
+    report, layout: "marker-burial-pages", generatedAt: "2026-09-07T12:00:00Z", columns: [], notes: [],
+    rows: [{ marker_id: "TEST-PHOTO", marker_uuid: "test", burial_uuid: "test-burial", photo_url: "/media/report.png" }],
+  } }));
+  let authorization: string | undefined;
+  await page.route("**/media/report.png", (route) => {
+    authorization = route.request().headers().authorization;
+    return route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jJ1kAAAAASUVORK5CYII=", "base64") });
+  });
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const api = await import("/src/api/apiClient.ts");
+    api.setAccessTokenProvider(async () => "report-test-token");
+  });
+  await page.getByRole("button", { name: "Open reports: run saved cemetery reports and guided queries", exact: true }).click();
+  await page.getByRole("button", { name: "Run", exact: true }).click();
+  await expect(page.getByRole("img", { name: "Marker TEST-PHOTO", exact: true })).toHaveAttribute("src", /^blob:/);
+  expect(authorization).toBe("Bearer report-test-token");
+});
