@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useMediaUrl } from "../hooks/useMediaUrl";
 import { Play, Printer, Search, X } from "lucide-react";
 import { fetchReports, queryReports, runReport } from "../api/cemeteryApi";
 import type { CemeteryData, CurrentUser, ReportDefinition, ReportResult } from "../types";
@@ -85,6 +86,12 @@ function reportMarkerFeatures(value: unknown): ReportMarkerFeature[] {
   return Array.isArray(value) ? value.filter((feature): feature is ReportMarkerFeature => typeof feature === "object" && feature !== null) : [];
 }
 
+function ReportPhoto({ fileUrl, markerId }: { fileUrl: string; markerId: string }) {
+  const { url, failed } = useMediaUrl(fileUrl);
+  return url ? <img className="marker-burial-photo" src={url} alt={`Marker ${markerId}`} />
+    : <div className="marker-burial-photo-placeholder">{failed ? "Photo unavailable" : "Loading photo…"}</div>;
+}
+
 function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
   if (!rows.length) return <div className="report-empty">No linked marker burials matched these filters.</div>;
   const markerGroups = groupMarkerBurials(rows);
@@ -108,7 +115,7 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
             </div>
             <span>Marker {markerIndex + 1} of {markerGroups.length}</span>
           </header>
-          {marker.photo_url ? <img className="marker-burial-photo" src={String(marker.photo_url)} alt={`Marker ${String(marker.marker_id)}`} /> : <div className="marker-burial-photo-placeholder">No marker photo available</div>}
+          {marker.photo_url ? <ReportPhoto fileUrl={String(marker.photo_url)} markerId={String(marker.marker_id)} /> : <div className="marker-burial-photo-placeholder">No marker photo available</div>}
           <section>
             <h2>Marker information</h2>
             <dl className="marker-burial-details">
