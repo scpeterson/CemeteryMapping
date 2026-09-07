@@ -79,7 +79,7 @@ import {
 } from "./systemEventRepository.mjs";
 import { runAuditRetentionPurgeJob, runSystemEventRetentionPurgeJob } from "./retentionJobs.mjs";
 import { appVersionMetadata } from "./version.mjs";
-import { BadRequestError } from "./requestValidation.mjs";
+import { createApiErrorHandler } from "./apiErrorHandler.mjs";
 import { registerAdminRoutes } from "./routes/adminRoutes.mjs";
 import { registerCemeteryRoutes } from "./routes/cemeteryRoutes.mjs";
 import { registerMediaDownloadRoutes } from "./routes/mediaDownloadRoutes.mjs";
@@ -139,36 +139,7 @@ export function createApp(config, pool) {
     updateSystemEventRetentionPolicy, updateUser, versionMetadata,
   });
 
-  app.use(async (error, request, response, _next) => {
-    void _next;
-    if (error instanceof BadRequestError) {
-      response.status(400).json({ error: error.message });
-      return;
-    }
-
-    console.error(error);
-    if ((request.originalUrl ?? request.url) !== "/api/health") {
-      await safelyRecordSystemEvent(pool, {
-        eventType: "error",
-        severity: "error",
-        source: "api",
-        status: "failed",
-        message: error instanceof Error ? error.message : "Unhandled API error.",
-        detail: error instanceof Error ? error.stack : String(error),
-        requestMethod: request.method,
-        requestPath: request.originalUrl ?? request.url,
-        responseStatus: 500,
-        actorEmail: request.user?.email,
-        actorRole: request.user?.role,
-        environment: config.appEnv,
-        appVersion: versionMetadata.version,
-        metadata: {
-          gitSha: versionMetadata.gitSha,
-        },
-      });
-    }
-    response.status(500).json({ error: "Internal server error" });
-  });
+  app.use(createApiErrorHandler(pool, config, versionMetadata));
 
   return app;
 }
