@@ -1,11 +1,6 @@
-import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { ShieldCheck, UserCheck, UserCog, UserPlus, UserX } from "lucide-react";
 import type { AppRole, AppRoleName, AppUser, CemeteryAdminRecords } from "../../types";
-import type { SaveUserInput } from "../../api/cemeteryApi";
-
-export type UserFormState = SaveUserInput & {
-  id?: string;
-};
+import { useUserAdministration, type UserFormState } from "./useUserAdministration";
 
 const roleLabels: Record<AppRoleName, string> = {
   reader: "Read-only",
@@ -38,39 +33,29 @@ function userFormFromUser(user: AppUser): UserFormState {
   };
 }
 
-type UsersAdminTabProps = {
-  form: UserFormState;
-  setForm: Dispatch<SetStateAction<UserFormState>>;
-  roles: AppRole[];
-  roleOptions: AppRoleName[];
-  users: AppUser[];
-  cemeteryRecords: CemeteryAdminRecords;
-  isSaving: boolean;
-  isResolvingAuth0User: boolean;
-  togglingUserIds: Set<string>;
-  saveUser: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  resolveAuth0SubjectFromForm: () => Promise<void>;
-  resetForm: () => void;
-  toggleUserActive: (user: AppUser) => Promise<void>;
-};
-
-export function UsersAdminTab({
-  form,
-  setForm,
-  roles,
-  roleOptions,
-  users,
-  cemeteryRecords,
-  isSaving,
-  isResolvingAuth0User,
-  togglingUserIds,
-  saveUser,
-  resolveAuth0SubjectFromForm,
-  resetForm,
-  toggleUserActive,
-}: UsersAdminTabProps) {
+export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAdminRecords }) {
+  const {
+    form,
+    setForm,
+    roles,
+    roleOptions,
+    users,
+    isSaving,
+    isResolvingAuth0User,
+    togglingUserIds,
+    saveUser,
+    resolveAuth0SubjectFromForm,
+    resetForm,
+    toggleUserActive,
+    isLoading,
+    message,
+    error
+  } = useUserAdministration();
   return (
-        <>
+    <>
+      {isLoading ? <p className="admin-message" role="status">Loading users…</p> : null}
+      {error ? <p className="admin-message is-error" role="alert">{error}</p> : null}
+      {message ? <p className="admin-message" role="status">{message}</p> : null}
       <section className="admin-section">
         <div className="section-title">
           <UserCog size={17} aria-hidden="true" />
@@ -240,6 +225,6 @@ export function UsersAdminTab({
           ))}
         </div>
       </section>
-        </>
+    </>
   );
 }
