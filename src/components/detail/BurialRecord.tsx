@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { Pencil } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { importVerifiedPlace, searchGeographicPlaces } from "../../api/cemeteryApi";
@@ -84,7 +85,7 @@ export function BurialRecord({
   const intermentOptions = intermentTypeOptions(lookups);
   const recordStatusOptions = burialRecordStatusOptions(lookups);
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<SaveBurialInput>(() => blankBurialForm(burial));
+  const [form, setForm] = useDraftState<SaveBurialInput>(() => blankBurialForm(burial));
   const militaryRankOptions = lookups.militaryRanks.filter((option) => option.militaryBranchCode === form.militaryBranchCode);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();

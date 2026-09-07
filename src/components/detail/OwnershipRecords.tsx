@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { type FormEvent, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { fetchDeedRegistrySuggestions } from "../../api/cemeteryApi";
@@ -110,7 +111,7 @@ function OwnershipPartyFields({
 
 export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpace; cemeteryGraves: GraveSpaceSummary[]; onSave: (event: SaveOwnershipEventInput) => Promise<void> }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<SaveOwnershipEventInput>(() => blankOwnershipForm(grave));
+  const [form, setForm] = useDraftState<SaveOwnershipEventInput>(() => blankOwnershipForm(grave));
   const [selectedGravesiteIds, setSelectedGravesiteIds] = useState<string[]>([]);
   const [gravesiteFilter, setGravesiteFilter] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -320,7 +321,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
   const [isConfirmingRemoval, setIsConfirmingRemoval] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
-  const [form, setForm] = useState<UpdateOwnerInput>({
+  const [form, setForm] = useDraftState<UpdateOwnerInput>({
     firstName: owner.firstName, lastName: owner.lastName, fullAddress: owner.fullAddress,
     municipality: owner.municipality, state: owner.state, zip: owner.zip,
     effectiveDate: owner.effectiveDate ?? "", deedOnFile: owner.deedOnFile, deedRegisterOnFile: owner.deedRegisterOnFile,
@@ -330,7 +331,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
     event.preventDefault();
     if (!owner.ownershipEventId) return;
     setIsSaving(true); setError(undefined);
-    try { await onSave(owner.id, owner.ownershipEventId, form); setIsEditing(false); }
+    try { await onSave(owner.id, owner.ownershipEventId, form); setForm(form); setIsEditing(false); }
     catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Unable to update owner."); }
     finally { setIsSaving(false); }
   };

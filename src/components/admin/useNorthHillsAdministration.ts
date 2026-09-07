@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import type * as React from "react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
@@ -46,7 +47,7 @@ export function useNorthHillsAdministration({ setError, setActiveTab, setMessage
 
   const [focusedNorthHillsEntryId, setFocusedNorthHillsEntryId] = useState("");
 
-  const [northHillsEntryForm, setNorthHillsEntryForm] = useState<NorthHillsEditForm | null>(null);
+  const [northHillsEntryForm, setNorthHillsEntryForm] = useDraftState<NorthHillsEditForm | null>(null);
 
   const [selectedNorthHillsEntryIds, setSelectedNorthHillsEntryIds] = useState<Set<string>>(() => new Set());
 

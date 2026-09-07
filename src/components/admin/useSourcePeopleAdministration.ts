@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import type * as React from "react";
 import { FormEvent, useMemo, useState } from "react";
 import {
@@ -30,7 +31,7 @@ export function useSourcePeopleAdministration({ setError, setActiveTab, setMessa
 
   const [focusedSourcePersonRecordId, setFocusedSourcePersonRecordId] = useState("");
 
-  const [sourcePersonForm, setSourcePersonForm] = useState<SaveSourcePersonRecordInput>(() => blankSourcePersonRecordForm());
+  const [sourcePersonForm, setSourcePersonForm] = useDraftState<SaveSourcePersonRecordInput>(() => blankSourcePersonRecordForm());
 
   const [isLoadingSourcePersonRecords, setIsLoadingSourcePersonRecords] = useState(false);
 

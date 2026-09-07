@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { Pencil } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { ApiError } from "../../api/apiClient";
@@ -40,7 +41,7 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
 }) {
   const [hasConflict, setHasConflict] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<SaveGraveSpaceInput>(() => blankGraveSpaceForm(grave));
+  const [form, setForm] = useDraftState<SaveGraveSpaceInput>(() => blankGraveSpaceForm(grave));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
   const [lotValue, setLotValue] = useState(grave.lot);
@@ -60,6 +61,7 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
     setError(undefined);
     try {
       await onSave(form);
+      setForm(form);
       setIsEditing(false);
     } catch (saveError) {
       setHasConflict(saveError instanceof ApiError && saveError.status === 409);

@@ -248,7 +248,7 @@ export function DeedsAdminTab({
                       key={investigation.id}
                       type="button"
                       className={`deed-case-card ${selectedDeedCaseId === investigation.id ? "is-selected" : ""}`}
-                      onClick={() => selectDeedCase(investigation)}
+                      data-discard-draft onClick={() => selectDeedCase(investigation)}
                       title={`${investigation.caseNumber}: ${investigation.subjectName}. ${investigationStatusLabels[investigation.status]}.`}
                     >
                       <strong>{investigation.caseNumber}</strong>
@@ -381,7 +381,7 @@ export function DeedsAdminTab({
                         key={action.id}
                         type="button"
                         className={`deed-action-card ${selectedDeedActionId === action.id ? "is-selected" : ""}`}
-                        onClick={() => selectDeedAction(action)}
+                        data-discard-draft onClick={() => selectDeedAction(action)}
                         title={`${action.subjectName}. ${deedActionTypeLabels[action.actionType]}. Council: ${councilStatusLabels[action.councilStatus]}.`}
                       >
                         <strong>{action.subjectName}</strong>

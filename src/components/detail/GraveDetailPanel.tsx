@@ -1,3 +1,4 @@
+import { confirmDiscardChanges } from "../../hooks/useDraftState";
 import { FileText, Flag, History, Images, Landmark, MapPinned, UserRound } from "lucide-react";
 import { useState } from "react";
 import { formatDate, formatGraveLabel } from "../../lib/format";
@@ -188,6 +189,7 @@ export function GraveDetailPanel({
                     : event.key === "End"
                       ? detailTabs.length - 1
                       : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + detailTabs.length) % detailTabs.length;
+                  if (!confirmDiscardChanges()) return;
                   setActiveTab(detailTabs[nextIndex].id);
                   document.getElementById(`grave-detail-tab-${detailTabs[nextIndex].id}`)?.focus();
                 }}

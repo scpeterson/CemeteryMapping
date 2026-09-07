@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { FormEvent, useState } from "react";
 import { Link2, Pencil, Trash2 } from "lucide-react";
 import type { Headstone, HeadstoneLookups, HeadstoneRelationship, SaveHeadstoneRelationshipInput } from "../../types";
@@ -67,7 +68,7 @@ export function MarkerRelationshipForm({
   onSave: (relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
 }) {
   const headstoneOptions = (lookups.headstones ?? []).filter((option) => option.id !== headstone.id);
-  const [form, setForm] = useState<SaveHeadstoneRelationshipInput>(() =>
+  const [form, setForm] = useDraftState<SaveHeadstoneRelationshipInput>(() =>
     initialRelationship
       ? markerRelationshipFormFromRecord(initialRelationship)
       : {
@@ -92,6 +93,7 @@ export function MarkerRelationshipForm({
     setMessage(undefined);
     try {
       await onSave(form);
+      setForm(form);
       if (initialRelationship) {
         onCancel?.();
       } else {

@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { FormEvent, useState } from "react";
 import { History, Pencil } from "lucide-react";
 import type { GraveSpace, Headstone, HeadstoneLookups, MaintenanceRecord, SaveMaintenanceRecordInput } from "../../types";
@@ -122,7 +123,7 @@ export function MaintenanceRecordForm({
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const defaultPriorityId = lookups.maintenancePriorities.find((option) => option.code === "normal")?.id ?? lookups.maintenancePriorities[0]?.id ?? "";
-  const [form, setForm] = useState<SaveMaintenanceRecordInput>(() =>
+  const [form, setForm] = useDraftState<SaveMaintenanceRecordInput>(() =>
     initialRecord
       ? maintenanceFormFromRecord(initialRecord, grave, fixedHeadstone)
       : {
@@ -152,18 +153,19 @@ export function MaintenanceRecordForm({
     setMessage(undefined);
     try {
       await onSave(form);
+      setForm(form);
       if (initialRecord) {
         onCancel?.();
       } else {
         setMessage("Maintenance recorded.");
-        setForm((current) => ({
-          ...current,
+        setForm({
+          ...form,
           issueTypeId: lookups.maintenanceIssueTypes[0]?.id ?? "",
           actionTypeId: "",
           status: "open",
           completedAt: "",
           notes: "",
-        }));
+        });
       }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save maintenance record.");
