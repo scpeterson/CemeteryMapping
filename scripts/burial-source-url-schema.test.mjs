@@ -7,7 +7,7 @@ const changelog = readFileSync(new URL("../db/changelog/db.changelog-root.yaml",
 const queries = readFileSync(new URL("../server/cemeteryBurialQueries.mjs", import.meta.url), "utf8");
 const mutations = readFileSync(new URL("../server/cemeteryBurialMutations.mjs", import.meta.url), "utf8");
 const mapper = readFileSync(new URL("../server/cemeteryMappers.mjs", import.meta.url), "utf8");
-const detailPanel = readFileSync(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+const detailPanel = readFileSync(new URL("../src/components/detail/BurialRecord.tsx", import.meta.url), "utf8");
 
 test("burials have an optional source URL throughout the application", () => {
   assert.match(migration, /ADD COLUMN source_url varchar\(2000\)/u);

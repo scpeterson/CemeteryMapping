@@ -4,7 +4,7 @@ import test from "node:test";
 
 const migration = readFileSync(new URL("../db/changelog/changes/249-veteran-service-dates.sql", import.meta.url), "utf8");
 const rootChangelog = readFileSync(new URL("../db/changelog/db.changelog-root.yaml", import.meta.url), "utf8");
-const detailPanel = readFileSync(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+const detailPanel = readFileSync(new URL("../src/components/detail/BurialRecord.tsx", import.meta.url), "utf8");
 const burialMutation = readFileSync(new URL("../server/cemeteryBurialMutations.mjs", import.meta.url), "utf8");
 
 test("burials store ordered veteran enlisted and discharged dates", () => {
