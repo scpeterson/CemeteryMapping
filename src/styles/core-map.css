@@ -547,8 +547,8 @@ h3 {
 
 .map-controls {
   position: absolute;
-  top: 116px;
-  left: 18px;
+  top: 66px;
+  right: 18px;
   z-index: 2;
   display: grid;
   gap: 6px;
@@ -1052,3 +1052,10 @@ h3 {
 }
 .ui-modal::backdrop { background: rgb(15 25 20 / 35%); }
 .ui-modal:not([open]) { display: none; }
+
+/* Measurement feedback participates in toolbar flow instead of covering actions. */
+.map-toolbar .map-measurement {
+  position: static;
+  flex-basis: 100%;
+  max-width: 100%;
+}

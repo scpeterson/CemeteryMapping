@@ -533,6 +533,31 @@ export function CemeteryMap({
         </button>
       </div>
       {tools}
+      {!isPickingMarkerPoint && (isMeasuring || measurementPoints.length) ? (
+        <div className="map-measurement" aria-live="polite">
+          <div>
+            <strong>{measurementPoints.length > 1 ? formatMeasurementDistance(measurementDistanceFeet) : "Click map points"}</strong>
+            <span>
+              {measurementPoints.length === 0
+                ? "Choose a starting point."
+                : measurementPoints.length === 1
+                  ? "Choose an ending point."
+                  : `${measurementPoints.length} points measured.`}
+            </span>
+          </div>
+          <button type="button" onClick={clearMeasurement} disabled={!measurementPoints.length} aria-label="Clear measurement" title="Clear measurement">
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
+      {isPickingMarkerPoint ? (
+        <div className="map-measurement map-placement" aria-live="polite">
+          <div>
+            <strong>Pick marker point</strong>
+            <span>Click the map where the new marker is located.</span>
+          </div>
+        </div>
+      ) : null}
       </div>
       <div className="map-controls" aria-label="Map controls">
         <div className="north-arrow" role="img" aria-label="North arrow" title="North">
@@ -562,31 +587,6 @@ export function CemeteryMap({
           <Ruler size={18} aria-hidden="true" />
         </button>
       </div>
-      {!isPickingMarkerPoint && (isMeasuring || measurementPoints.length) ? (
-        <div className="map-measurement" aria-live="polite">
-          <div>
-            <strong>{measurementPoints.length > 1 ? formatMeasurementDistance(measurementDistanceFeet) : "Click map points"}</strong>
-            <span>
-              {measurementPoints.length === 0
-                ? "Choose a starting point."
-                : measurementPoints.length === 1
-                  ? "Choose an ending point."
-                  : `${measurementPoints.length} points measured.`}
-            </span>
-          </div>
-          <button type="button" onClick={clearMeasurement} disabled={!measurementPoints.length} aria-label="Clear measurement" title="Clear measurement">
-            <Trash2 size={16} aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
-      {isPickingMarkerPoint ? (
-        <div className="map-measurement map-placement" aria-live="polite">
-          <div>
-            <strong>Pick marker point</strong>
-            <span>Click the map where the new marker is located.</span>
-          </div>
-        </div>
-      ) : null}
       {scale ? (
         <div className="map-scale" aria-label="Map scale">
           <div className="map-scale-fraction">Scale {scale.representativeFraction}</div>
