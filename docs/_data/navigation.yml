@@ -2,6 +2,8 @@
   url: /
 - title: "Getting Started"
   url: /getting-started.html
+- title: "Frontend Development"
+  url: /frontend-development.html
 - title: "Rebuild Guide"
   url: /rebuild.html
 - title: "Data Sources"
@@ -49,7 +51,7 @@
 - title: "ADR 0014: Documentation Navigation"
   url: /adr/0014-documentation-navigation-layout.html
 - title: "ADR 0015: Ownership Rights"
-  url: /adr/0015-generalized-ownership-rights.html
+  url: /adr/0015-generalized-ownership-rights/
 - title: "ADR 0016: Versioned Releases"
   url: /adr/0016-versioned-releases.html
 - title: "ADR 0017: Historic Lot Evidence"

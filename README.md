@@ -100,6 +100,8 @@ A beginner-friendly setup guide is available in `docs/getting-started.md`.
 
 A clean rebuild guide is available in `docs/rebuild.md`.
 
+Component boundaries, shared controls, draft handling, styling, and UI validation are covered in [Frontend Development](docs/frontend-development.md).
+
 Data origins and stewardship placeholders are tracked in `docs/data-sources.md`.
 
 The initial admin workflow order is tracked in `docs/admin-workflows.md`.
@@ -132,6 +134,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/version` for application version, git SHA, build time, and environment metadata
 - `GET /api/health` for API, database, and version health metadata
 - `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` for full grave details fetched when a grave is selected
+- `PATCH /api/cemeteries/:cemeteryId/grave-spaces/:id` for gravesite detail edits; requires `expectedVersion` from the detail response and returns HTTP 409 on a stale edit
+- `GET /media/:storageKey` for reader-authenticated downloads of undeleted media assets; protected images must be fetched with authentication
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
 - `GET /api/reports` for the role-filtered approved report catalog
 - `POST /api/reports/run` to run an approved report with validated parameters and cemetery scoping
@@ -142,6 +146,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET` and `POST /api/admin/deed-investigation-cases` plus case `PUT`, evidence-link, and action endpoints for admin-only deed investigation documentation
 - `DELETE /api/cemeteries/:cemeteryId/grave-spaces/:id` for admin-only soft delete of a grave space
 - `POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore` for admin-only restore of a soft-deleted grave space
+
+Expected client failures keep their HTTP status: malformed input uses 400, oversized bodies 413, unsupported encodings 415, and stale gravesite edits 409. Unexpected failures use 500. See [conflict recovery](docs/operator-workflows.md#recovering-a-conflicting-gravesite-edit) and [API restart/media storage](docs/operator-workflows.md#api-restart-and-media-storage) for operational handling.
 
 Run the API by itself when needed:
 

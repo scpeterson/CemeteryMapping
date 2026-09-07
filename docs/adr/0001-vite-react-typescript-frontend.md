@@ -39,6 +39,12 @@ Administrative, reporting, and control-point workflows are loaded with React `la
 
 Production builds enforce gzip size budgets with `scripts/check-bundle-size.mjs`. The guard checks the application entry, Admin shell, React and authentication vendor bundles, individual MapLibre vendor chunks, and total JavaScript output. `npm run build` and `npm run build:prod` run this check automatically; `npm run check:bundle` can recheck an existing `dist` build.
 
+## Component and Interaction Update — 2026-09-07
+
+Use focused detail and administration components, workflow hooks, and shared UI controls. Common dialogs use the native modal API with explicit keyboard wrapping and focus restoration. Shared design tokens and feature styles support a wrapping map toolbar and Search/Map/Details phone navigation. Track unsaved form edits with `useDraftState`, guard editor-replacing navigation, and distinguish local draft protection from server-side gravesite version conflicts.
+
+See [Frontend Development](../frontend-development.md) for component locations, draft update/reset semantics, authenticated image loading, styling boundaries, and regression checks. This updates the implementation organization while retaining React, Vite, TypeScript, and the existing lazy-loading strategy.
+
 ## Consequences
 
 The UI is easy to run locally with `npm run dev` and build with `npm run build`. Frontend environment modes map to `dev`, `test`, `stage`, and `prod`.

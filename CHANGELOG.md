@@ -6,6 +6,13 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added phone Search/Map/Details navigation, search progress/retry/fallback feedback, and accessible filter/selection states.
+- Added shared UI controls, labeled fields, feedback, and confirmations; standardized dialog keyboard focus and Escape behavior.
+- Added in-memory draft protection for tracked record and administration editors, including guarded record switching and page-exit warnings.
+- Added concurrent gravesite-edit detection with explicit reload/reconciliation and regression coverage for delayed saves.
+- Added interrupted media-upload reconciliation with preview mode and retention of referenced evidence.
+- Expanded HTTP, database, keyboard, dialog, mobile, and responsive screenshot regression coverage.
+
 - Added an optional burial information-source URL, including safe web-link validation and a direct source link in burial details.
 - Added a full-history photo gallery modal so older gravesite and marker photos remain accessible after the inline preview reaches four images.
 - Added the World War II U.S. Army rank `Technician Fifth Grade` (`T/5`) to the controlled military-rank data.
@@ -27,6 +34,13 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Added repeatable vase grave features so each physical vase can be recorded independently on a marker or gravesite.
 
 ### Changed
+
+- Coordinated map actions in a wrapping toolbar, separated zoom controls, and moved measurement feedback into toolbar flow.
+- Split large detail and administration views into focused components; centralized common design tokens and moved report/control-point styles alongside their components.
+- Protected media downloads with reader authentication and active-asset checks; galleries and reports now fetch protected photos with authentication. Uploads and downloads share the configured media directory.
+- Hardened media failure cleanup, preserved expected API error statuses, and added bounded graceful API shutdown.
+- Centralized audited transaction handling and canonical marker cemetery resolution across repository consumers.
+- Updated operational and developer documentation for navigation, drafts, conflicts, media recovery, and deployment behavior. Photo-viewer backdrop clicks no longer dismiss the dialog.
 
 - Limited inline photo galleries to four images and ordered them newest first by date taken, falling back to upload date.
 - Clarified that the deed ownership event supports both newly issued deeds and historical deeds entered later.

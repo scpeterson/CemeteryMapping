@@ -23,7 +23,7 @@ The image captured date is the best available chronology. Upload date is a relia
 
 Show at most four linked photos in an inline two-column preview. Order photos newest first by `captured_at`, falling back to `uploaded_at`, so the latest image occupies the top-left position.
 
-When more than four photos exist, show `View all photos (N)`. This opens a responsive modal containing the complete newest-first history. The modal supports its close control, backdrop dismissal, and the Escape key. Existing authorization continues to govern upload and deletion; opening the full history is available to every user who can read the record.
+When more than four photos exist, show `View all photos (N)`. This opens a responsive modal containing the complete newest-first history. The modal supports its close control and the Escape key. As of the shared-dialog update on 2026-09-07, backdrop clicks no longer dismiss it. Native modal behavior makes the background inert; explicit Tab wrapping contains keyboard focus, and closing restores focus to the opener. Existing authorization continues to govern upload and deletion; opening the full history is available to every user who can read the record.
 
 The API continues returning all linked photo metadata. The four-photo limit is a presentation rule, not deletion, archival, or a database query limit. If collections later become large enough to affect response size, add paginated full-history retrieval without changing the four-photo inline contract.
 

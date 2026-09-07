@@ -18,6 +18,28 @@ For a brand-new cemetery, start with the one-time onboarding workflows, verify t
 
 ## Ongoing Maintenance Workflows
 
+### Navigation, Search, and Editing
+
+On desktop, search, map, and record details share the workspace. At widths of 760 pixels or less, use the `Search`, `Map`, and `Details` buttons at the top. The initial phone view is Map. Selecting a record opens Details; switching views keeps mounted editors and their drafts available. Picking a new marker location switches to Map and returns to Details after the point is chosen. This navigation is available now; the dedicated Field Collection concept described later remains future work.
+
+Map view modes, feature-selection modes, and Reports/Control/Admin actions wrap together as space changes. Zoom, fit, and measurement controls occupy a separate column. Measurement instructions appear with the toolbar rather than covering its buttons.
+
+Search announces progress and the result count. If the remote search fails, the app labels results from the currently loaded map data and offers `Retry search`. Those fallback matches are not a complete substitute for remote burial/owner search. An empty successful search shows `No matching records`; try another term or enable more status filters. Status buttons expose whether each filter is enabled.
+
+Administration, Reports, Control, and full-history photos open as dialogs. Tab and Shift+Tab stay inside the active dialog; Escape closes that dialog and returns focus to its opener. A nested confirmation closes independently of its parent. Use the close button or Escape for the photo viewer; clicking its backdrop does not close it.
+
+Editors using draft protection warn before a guarded record/tab change, cancel/close action, or leaving the page. Choose Cancel in the warning to keep editing; confirming discards the tracked unsaved changes. Successful saves establish a new baseline, while failed saves retain the draft. Drafts are held in memory, not saved automatically or restored after reload. Save work before changing tasks, even when a particular control does not display a warning.
+
+### Recovering a Conflicting Gravesite Edit
+
+Gravesite detail saves detect when another edit has changed the record since it was loaded. A conflict preserves the current draft and prevents overwriting the other edit.
+
+1. Copy any draft values you want to retain.
+2. Select `Reload latest values (discard edits)` to replace the form with the current server values.
+3. Compare those values with your intended change, reapply the appropriate edits, and save again.
+
+This protection applies to the gravesite detail edit, not every mutation in the application. If you select another record while a save is in progress, its completion does not switch the visible selection back to the original grave.
+
 ### Marker Burial Pages Report
 
 Use `Reports -> Marker burial pages` when you need a printable record for every burial linked to one or more markers. The report is available to readers and higher roles and remains scoped to the cemeteries the signed-in user may access.
@@ -27,9 +49,11 @@ Use `Reports -> Marker burial pages` when you need a printable record for every 
 3. Narrow the output with any combination of marker ID, burial name, and section. Marker ID and burial name accept partial text; section matching is case-insensitive.
 4. Run the report and review the returned pages before printing. Each marker appears once, followed by every burial associated with it.
 5. Confirm the marker photo, marker metadata, associated features such as flag holders, gravesite, burial details, and North Hills Genealogists text are correct. NHG text can come from reviewed evidence linked to either the marker or the burial's gravesite.
-6. Select `Print`. The print layout uses letter-sized portrait pages, starts each marker on a new page, renders the marker photo three inches high, and keeps each burial record together when possible.
+6. Wait for the marker photos to finish loading, then select `Print`. The print layout uses letter-sized portrait pages, starts each marker on a new page, renders the marker photo three inches high, and keeps each burial record together when possible.
 
 You can also ask an approved report question such as `Print burial pages for marker TLC-HS-0228`, `Show marker burial pages for Schug`, or `Print marker burial pages for section C`. Use the explicit fields when combining filters or when a name could be interpreted more than one way.
+
+Report photos use the same authenticated download flow as the gallery. Open reports while signed in; a temporary browser `blob:` image URL is not a durable share link. `Photo unavailable` indicates a failed image load and should be investigated separately from a missing linked photo.
 
 No photo or NHG placeholder means no qualifying linked record is currently available; it does not prove that the physical marker lacks a photograph or that NHG contains no relevant entry. Review marker media and NHG evidence links before treating missing report content as a data conclusion.
 
@@ -283,11 +307,11 @@ Use the normal grave-detail panel for field photo collection. Photos are stored 
 6. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty.
 7. Upload the photo and confirm it appears in the photo gallery.
 
-The gallery shows the latest linked photo for that gravesite or marker. If a photo is linked to a marker/headstone, it appears under that marker rather than being duplicated in the gravesite overview `Photos` section.
+The inline gallery shows up to four linked photos, ordered newest first by capture date and then upload date. `View all photos (N)` opens the complete history when more are available. If a photo is linked to a marker/headstone, it appears under that marker rather than being duplicated in the gravesite overview `Photos` section.
 
-Readers can view linked photos. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
+Readers can view linked photos while authenticated. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
 
-In local DEV and TEST environments, uploaded image files are written under `/Users/scottpeterson/Dev/CemeteryMapping/uploads/media` unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the gravesite/headstone links, but not the image bytes.
+In local DEV and TEST environments, uploaded image files are written under the repository's `uploads/media` directory unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the gravesite/headstone links, but not the image bytes.
 
 ### Field media intake and retention
 
@@ -305,6 +329,24 @@ Use this intake checklist:
 6. Delete local intake copies only after both the application link and durable archive have been verified.
 
 The intake directory is deliberately excluded from Git and database backups. Include both `MEDIA_UPLOAD_DIR` and the separate durable evidence archive in operational backup planning.
+
+### Recovering Interrupted Media Uploads
+
+Uploads stage files before publishing them and clean up known transaction failures. Files whose database commit outcome is uncertain remain available for reconciliation. Stop uploads across all API instances sharing the storage directory before inspecting or deleting orphaned files.
+
+Use the same `APP_ENV`, database configuration, and `MEDIA_UPLOAD_DIR` as the target API. For example, from the repository root, preview TEST storage:
+
+```bash
+APP_ENV=test node scripts/reconcile-media-storage.mjs
+```
+
+The command lists unreferenced generated media files, including `.pending` files, older than 24 hours. Review the candidates and confirm the target database and storage directory before applying deletion:
+
+```bash
+APP_ENV=test node scripts/reconcile-media-storage.mjs --apply
+```
+
+Keep uploads stopped through both runs. The command retains files referenced by any media asset, including soft-deleted evidence. It does not replace database/media backups or reconstruct missing files.
 
 ### Future Field Collection Workflow Concept
 
@@ -492,6 +534,14 @@ Do not skip environments for schema, permission, import, or data-repair changes.
 4. Promote configuration by environment-specific secrets and variables, not by committing credentials.
 5. Treat media files as deployment data. Database rows reference media URLs, but image files also need backup and environment-specific storage.
 6. Record every production-affecting release in the project notes or release history with the PR number, migration range, data scripts run, and verification result.
+
+### API Restart and Media Storage
+
+On `SIGINT` or `SIGTERM`, the API stops accepting connections, lets active HTTP requests finish, then closes the PostgreSQL pool. The shutdown has a 10-second deadline; exceeding it forces HTTP connections closed and exits with failure. Allow the process manager more than 10 seconds before forcing termination. Repeated signals share the same shutdown operation.
+
+Keep PostgreSQL available while requests drain. A forced stop can leave an upload's commit outcome uncertain; use the media recovery workflow above if reconciliation is needed. After restart, check `/api/health`, sign in, and verify record reads and a protected gallery/report photo.
+
+Uploads and downloads resolve the same `MEDIA_UPLOAD_DIR` (default `uploads/media` under the repository). Use durable storage and the same configured directory across instances serving those files. Back up the directory separately from PostgreSQL. Route `/media/` requests through the API's reader-authenticated endpoint; do not expose the upload directory as an unauthenticated reverse-proxy static directory. Protected responses use `Cache-Control: private, no-store`; soft-deleted assets are no longer downloadable even though their files remain on disk.
 
 ### DEV To TEST
 
@@ -952,7 +1002,3 @@ Verify:
 5. Confirm linked evidence appears in the regular detail panel.
 
 Do not load OCR readings directly into production burial or headstone fields. The OCR data remains staged evidence until reviewed.
-
-### Recovering interrupted media uploads
-
-Uploads stage files before publishing them and clean up known transaction failures. Files whose commit outcome is uncertain remain available for reconciliation. Stop uploads before running `node scripts/reconcile-media-storage.mjs` against the target environment. It previews unreferenced generated files older than 24 hours. Review the output, then rerun with `--apply` to remove those orphans. Referenced files, including soft-deleted evidence, are retained. Keep uploads stopped through both runs.

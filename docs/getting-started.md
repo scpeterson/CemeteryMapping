@@ -242,12 +242,12 @@ In the browser:
 
 1. Confirm the page title says `Cemetery Mapping`.
 2. Confirm the map loads.
-3. Confirm the left panel shows cemetery records or search results.
+3. On desktop, confirm the left panel shows cemetery records or search results. On a phone, choose `Search` in the top navigation.
 4. Click a gravesite or search result.
-5. Confirm the right detail panel shows burial, marker, and cemetery record details.
-6. Open Admin if available in the local demo and confirm the admin drawer opens.
+5. Confirm the detail panel shows burial, marker, and cemetery record details. On a phone, selection opens `Details`; use `Map` to return to the map.
+6. Open Admin if available in the local demo and confirm its dialog opens. Press Escape to close it and return keyboard focus to its opener.
 
-If these work, your local system is running.
+If these work, your local system is running. See [navigation, search, and editing](operator-workflows.md#navigation-search-and-editing) for search retry, phone navigation, and unsaved-edit warnings. Drafts are not saved automatically.
 
 ## Stop The Application
 
