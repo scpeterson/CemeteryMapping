@@ -379,7 +379,7 @@ test("maintenance report can find markers not cleaned recently", async () => {
   const query = pool.queries[0];
 
   assert.match(query.sql, /maintenance_action_types\.code = 'cleaned'/u);
-  assert.match(query.sql, /marker_scope\.cemetery_id = ANY\(\$1::uuid\[\]\)/u);
+  assert.match(query.sql, /cemeteries\.id = ANY\(\$1::uuid\[\]\)/u);
   assert.deepEqual(query.values, [["11111111-1111-4111-8111-111111111111"], 365]);
   assert.match(result.summary, /not been cleaned in 365 days/u);
 });
