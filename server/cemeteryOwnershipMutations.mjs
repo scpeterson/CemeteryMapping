@@ -1,4 +1,4 @@
-import { setAuditContext } from "./auditContext.mjs";
+import { withAuditContext } from "./auditContext.mjs";
 import { splitRecordedDate } from "./burialRepository.mjs";
 import { ownershipRightNotes, selectOwnershipTargets } from "./cemeteryOwnershipQueries.mjs";
 
@@ -9,20 +9,14 @@ export async function createOwnershipEvent(
   { owners, previousOwners = [], eventType, targetScope, targetGravesiteIds = [], effectiveDate, deedOnFile = false, deedRegisterOnFile = false, documentReference, notes },
   { actorUser, reason, allowedCemeteryIds } = {},
 ) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason: reason ?? "Ownership event update" });
-
+  return withAuditContext(pool, { actorUser, reason: reason ?? "Ownership event update" }, async (client, rollback) => {
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     const targets = await selectOwnershipTargets(client, cemeteryId, selectedGravesiteId, targetScope, targetGravesiteIds);
     if (!targets) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     if (targetScope === "selected_lot") {
@@ -127,21 +121,13 @@ export async function createOwnershipEvent(
       );
     }
 
-    await client.query("COMMIT");
     return { id: eventId };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function updateOwnershipParty(pool, partyId, eventId, update, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason: reason ?? "Owner information update" });
+  return withAuditContext(pool, { actorUser, reason: reason ?? "Owner information update" }, async (client, rollback) => {
     const scope = await client.query(
       `SELECT 1 FROM ownership_event_parties ep
        JOIN ownership_events oe ON oe.id = ep.ownership_event_uuid
@@ -151,8 +137,7 @@ export async function updateOwnershipParty(pool, partyId, eventId, update, { act
       [partyId, eventId, allowedCemeteryIds ?? null],
     );
     if (!scope.rowCount) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     const recordedEffectiveDate = splitRecordedDate(update.effectiveDate);
     await client.query(
@@ -166,21 +151,14 @@ export async function updateOwnershipParty(pool, partyId, eventId, update, { act
        WHERE id=$1`,
       [eventId, recordedEffectiveDate.date, recordedEffectiveDate.text, update.deedOnFile, update.deedRegisterOnFile],
     );
-    await client.query("COMMIT");
+
     return { id: partyId };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function removeGravesiteOwnershipRight(pool, rightId, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason: reason ?? "Remove incorrect gravesite ownership connection" });
+  return withAuditContext(pool, { actorUser, reason: reason ?? "Remove incorrect gravesite ownership connection" }, async (client, rollback) => {
     const result = await client.query(
       `UPDATE ownership_event_rights right_record
        SET deleted_at = now(), deleted_by = $2, delete_reason = $3, updated_at = now()
@@ -192,15 +170,10 @@ export async function removeGravesiteOwnershipRight(pool, rightId, { actorUser, 
       [rightId, actorUser?.email ?? "Cemetery database", reason ?? "Incorrect gravesite ownership connection", allowedCemeteryIds ?? null],
     );
     if (!result.rowCount) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
-    await client.query("COMMIT");
+
     return result.rows[0];
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }

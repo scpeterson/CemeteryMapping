@@ -1,23 +1,17 @@
-import { setAuditContext } from "./auditContext.mjs";
+import { withAuditContext } from "./auditContext.mjs";
 import { graveFeatureJoinSql, graveFeatureSelectSql } from "./cemeteryFeatureQueries.mjs";
 import { toGraveFeature } from "./cemeteryMappers.mjs";
 import { resolveCemeteryMutationTargets } from "./cemeteryMutationTargets.mjs";
 
 export async function createGraveFeature(pool, cemeteryId, feature, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
-
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     const targets = await resolveCemeteryMutationTargets(client, cemeteryId, feature);
     if (!targets) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     const { gravesiteUuid, headstoneUuid } = targets;
 
@@ -79,22 +73,13 @@ export async function createGraveFeature(pool, cemeteryId, feature, { actorUser,
       [insertResult.rows[0].id],
     );
 
-    await client.query("COMMIT");
     return toGraveFeature(result.rows[0]);
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function updateGraveFeature(pool, id, feature, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
-
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await client.query(
       `
         SELECT id::text, cemetery_id::text
@@ -107,8 +92,7 @@ export async function updateGraveFeature(pool, id, feature, { actorUser, reason,
     );
     const existingFeature = existing.rows[0];
     if (!existingFeature || (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existingFeature.cemetery_id))) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     await client.query(
@@ -150,22 +134,13 @@ export async function updateGraveFeature(pool, id, feature, { actorUser, reason,
       [id],
     );
 
-    await client.query("COMMIT");
     return toGraveFeature(result.rows[0]);
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function softDeleteGraveFeature(pool, id, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
-
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await client.query(
       `
         SELECT id::text, cemetery_id::text, deleted_at
@@ -177,12 +152,11 @@ export async function softDeleteGraveFeature(pool, id, { actorUser, reason, allo
     );
     const existingFeature = existing.rows[0];
     if (!existingFeature) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     if (existingFeature.deleted_at) {
-      await client.query("COMMIT");
+
       return {
         id: existingFeature.id,
         cemeteryId: existingFeature.cemetery_id,
@@ -192,8 +166,7 @@ export async function softDeleteGraveFeature(pool, id, { actorUser, reason, allo
     }
 
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existingFeature.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return { forbidden: true };
+      return rollback({ forbidden: true });
     }
 
     const updateResult = await client.query(
@@ -210,17 +183,12 @@ export async function softDeleteGraveFeature(pool, id, { actorUser, reason, allo
     );
     const updated = updateResult.rows[0];
 
-    await client.query("COMMIT");
     return {
       id: updated.id,
       cemeteryId: updated.cemetery_id,
       deletedAt: updated.deleted_at,
       alreadyDeleted: false,
     };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
