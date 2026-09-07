@@ -6,7 +6,7 @@ const component = fs.readFileSync(
   new URL("../src/components/detail/MediaRecords.tsx", import.meta.url),
   "utf8",
 );
-const styles = fs.readFileSync(new URL("../src/styles/detail.css", import.meta.url), "utf8");
+const styles = fs.readFileSync(new URL("../src/components/detail/styles/photos.css", import.meta.url), "utf8");
 
 test("media galleries show a maximum of four preview photos", () => {
   assert.match(component, /const galleryPreviewLimit = 4;/u);
