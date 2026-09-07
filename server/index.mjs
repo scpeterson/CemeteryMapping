@@ -82,6 +82,7 @@ import { appVersionMetadata } from "./version.mjs";
 import { BadRequestError } from "./requestValidation.mjs";
 import { registerAdminRoutes } from "./routes/adminRoutes.mjs";
 import { registerCemeteryRoutes } from "./routes/cemeteryRoutes.mjs";
+import { registerMediaDownloadRoutes } from "./routes/mediaDownloadRoutes.mjs";
 import { registerMediaRoutes } from "./routes/mediaRoutes.mjs";
 import { canEditLot, canEditSection, validateHeadstoneBusinessRules } from "./routes/routeBusinessRules.mjs";
 import { assertCurrentSchema } from "./schemaContract.mjs";
@@ -98,9 +99,9 @@ export function createApp(config, pool) {
 
   const uploadRoot = mediaUploadRoot();
   app.use(express.json());
-  app.use("/media", express.static(uploadRoot));
 
   const requireReader = requireRole(config.auth, pool, "reader");
+  registerMediaDownloadRoutes(app, { pool, requireReader, uploadRoot });
   const requirePowerUser = requireRole(config.auth, pool, "power-user");
   const requireCemeteryAdmin = requireRole(config.auth, pool, "cemetery-admin");
   const requireAdmin = requireRole(config.auth, pool, "admin");
