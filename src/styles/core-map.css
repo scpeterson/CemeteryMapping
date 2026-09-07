@@ -1027,3 +1027,23 @@ h3 {
   background: #b8c0c8;
 }
 
+
+/* Keep feature, view, and application actions in one wrapping layout. */
+.map-toolbar {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 86px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.map-toolbar .map-view-toggle,
+.map-toolbar .map-selection-toggle,
+.map-toolbar .map-tool-buttons {
+  position: static;
+  flex-wrap: wrap;
+}
+.map-region.has-data-status .map-toolbar { top: 124px; }

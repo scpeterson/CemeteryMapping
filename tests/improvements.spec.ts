@@ -120,3 +120,27 @@ test("marker reports load protected photos with authorization", async ({ page })
   await expect(page.getByRole("img", { name: "Marker TEST-PHOTO", exact: true })).toHaveAttribute("src", /^blob:/);
   expect(authorization).toBe("Bearer report-test-token");
 });
+
+for (const width of [390, 1024, 1280]) {
+  test(`map actions do not overlap at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await fixture(page);
+    await page.route("**/api/reports", (route) => route.fulfill({ json: [] }));
+    await page.goto("/");
+    const buttons = page.locator(".map-toolbar button");
+    await expect(buttons).toHaveCount(8);
+    const boxes = await buttons.evaluateAll((elements) => elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    }));
+    for (let i = 0; i < boxes.length; i++) {
+      expect(boxes[i].right).toBeLessThanOrEqual(width);
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i], b = boxes[j];
+        expect(a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top).toBe(false);
+      }
+    }
+    await page.getByRole("button", { name: /^Open reports:/ }).click();
+    await expect(page.getByRole("dialog", { name: "Reports", exact: true })).toBeVisible();
+  });
+}
