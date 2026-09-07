@@ -178,3 +178,20 @@ test("navigation preserves an unsaved draft when canceled and discards only on c
   await page.locator(".result-card").filter({ hasText: "B-TEST" }).first().click();
   await expect(page.locator(".detail-panel")).toContainText("Record ID: B-TEST");
 });
+
+test("mobile navigation opens selected details and preserves drafts between views", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await fixture(page);
+  await page.goto("/");
+  const nav = page.getByRole("navigation", { name: "Workspace views" });
+  await expect(page.locator(".map-region")).toBeVisible();
+  await nav.getByRole("button", { name: "Search", exact: true }).click();
+  await select(page, "A-TEST");
+  await expect(page.locator(".search-panel")).toBeHidden();
+  await page.getByRole("button", { name: /Edit gravesite/ }).click();
+  await page.locator(".grave-form").getByLabel("Name", { exact: true }).fill("Mobile draft");
+  await nav.getByRole("button", { name: "Map", exact: true }).click();
+  await expect(page.locator(".map-region")).toBeVisible();
+  await nav.getByRole("button", { name: "Details", exact: true }).click();
+  await expect(page.locator(".grave-form").getByLabel("Name", { exact: true })).toHaveValue("Mobile draft");
+});

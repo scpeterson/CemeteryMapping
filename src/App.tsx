@@ -73,6 +73,7 @@ function includesAllStatuses(statuses: Set<GraveStatus>) {
 
 export default function App() {
   useDraftNavigationGuard();
+  const [mobileView, setMobileView] = useState<"search" | "map" | "details">("map");
   const [query, setQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<GraveStatus>>(() => new Set(allStatuses));
   const [data, setData] = useState<CemeteryData>(cemeteryData);
@@ -259,6 +260,7 @@ export default function App() {
   };
 
   const selectMatch = (match: CemeterySearchMatch) => {
+    setMobileView("details");
     setSelectedHeadstone(undefined);
     if ("lot" in match) {
       setSelectedGrave(undefined);
@@ -271,6 +273,7 @@ export default function App() {
 
   const selectGrave = (grave: GraveSpaceSummary) => {
     if (!confirmDiscardChanges()) return;
+    setMobileView("details");
     setSelectedHeadstone(undefined);
     setSelectedLot(undefined);
     setSelectedGrave(grave);
@@ -278,6 +281,7 @@ export default function App() {
 
   const selectLot = (lot: CemeteryLot) => {
     if (!confirmDiscardChanges()) return;
+    setMobileView("details");
     setSelectedHeadstone(undefined);
     setSelectedGrave(undefined);
     setSelectedLot(lot);
@@ -285,6 +289,7 @@ export default function App() {
 
   const selectHeadstone = (headstone: HeadstoneSummary) => {
     if (!confirmDiscardChanges()) return;
+    setMobileView("details");
     setSelectedHeadstone(headstone);
     setSelectedLot(undefined);
     setSelectedGrave(undefined);
@@ -323,6 +328,7 @@ export default function App() {
     refreshDetails,
   });
   const startMarkerPointPick = () => {
+    setMobileView("map");
     setPickedMarkerPoint(undefined);
     setIsPickingMarkerPoint(true);
   };
@@ -333,13 +339,17 @@ export default function App() {
   };
 
   const pickMarkerPoint = (point: { latitude: number; longitude: number }) => {
+    setMobileView("details");
     setPickedMarkerPoint({ ...point, pickedAt: Date.now() });
     setIsPickingMarkerPoint(false);
   };
 
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" data-mobile-view={mobileView}>
+      <nav className="mobile-workspace-nav" aria-label="Workspace views">
+        {(["search", "map", "details"] as const).map((view) => <button key={view} type="button" aria-pressed={mobileView === view} onClick={() => setMobileView(view)}>{view === "search" ? "Search" : view === "map" ? "Map" : "Details"}</button>)}
+      </nav>
       <SearchPanel
         cemeteryScopeLabel={cemeteryScopeLabel}
         query={query}
