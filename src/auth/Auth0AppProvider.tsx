@@ -1,5 +1,6 @@
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import { ReactNode, useEffect } from "react";
+import { confirmDiscardChanges } from "../hooks/useDraftState";
 import { setAccessTokenProvider } from "../api/cemeteryApi";
 import { auth0Audience, auth0ClientId, auth0Domain, auth0Scope, isAuth0Enabled } from "../config/environment";
 
@@ -7,7 +8,7 @@ type Auth0AppProviderProps = {
   children: ReactNode;
 };
 
-function AuthenticatedShell({ children }: Auth0AppProviderProps) {
+export function AuthenticatedShell({ children }: Auth0AppProviderProps) {
   const { error, getAccessTokenSilently, isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
 
   useEffect(() => {
@@ -53,15 +54,17 @@ function AuthenticatedShell({ children }: Auth0AppProviderProps) {
   }
 
   return (
-    <>
-      <div className="auth-session" aria-label="Signed in user">
-        <span>{user?.email ?? user?.name ?? "Signed in"}</span>
-        <button type="button" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
+    <div className="authenticated-workspace">
+      <header className="auth-session" aria-label="Signed in user">
+        <span title={user?.email ?? user?.name ?? "Signed in"}>{user?.email ?? user?.name ?? "Signed in"}</span>
+        <button type="button" onClick={() => {
+          if (confirmDiscardChanges()) void logout({ logoutParams: { returnTo: window.location.origin } });
+        }}>
           Sign out
         </button>
-      </div>
+      </header>
       {children}
-    </>
+    </div>
   );
 }
 

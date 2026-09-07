@@ -35,6 +35,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Changed
 
+- Moved signed-in account controls into a dedicated header so they cannot overlap map actions or phone navigation; sign-out now checks tracked unsaved drafts. Added authenticated-layout and report-print regression coverage.
+
 - Coordinated map actions in a wrapping toolbar, separated zoom controls, and moved measurement feedback into toolbar flow.
 - Split large detail and administration views into focused components; centralized common design tokens and moved report/control-point styles alongside their components.
 - Protected media downloads with reader authentication and active-asset checks; galleries and reports now fetch protected photos with authentication. Uploads and downloads share the configured media directory.

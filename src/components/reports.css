@@ -533,7 +533,7 @@
   }
 
   body > *:not(#root),
-  #root > *:not(.app-shell) {
+  #root > *:not(.app-shell):not(.authenticated-workspace) {
     display: none !important;
   }
 
@@ -610,4 +610,9 @@
 @media print {
   .ui-modal.reports-panel { max-width: none; max-height: none; margin: 0; }
   .ui-modal::backdrop { display: none; }
+}
+
+@media print {
+  .authenticated-workspace { display: block; height: auto; min-height: 0; }
+  .auth-session { display: none; }
 }
