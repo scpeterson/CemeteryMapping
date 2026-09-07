@@ -1,0 +1,195 @@
+.source-person-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.75fr) minmax(580px, 1.25fr);
+  gap: 14px;
+  align-items: start;
+  min-height: 0;
+}
+
+.source-person-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.source-person-row {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #d9e0d5;
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.source-person-row.confidence-review {
+  border-left-color: #c7524f;
+}
+
+.source-person-row.confidence-low {
+  border-left-color: #d9a441;
+}
+
+.source-person-row.confidence-medium {
+  border-left-color: #8e6fbb;
+}
+
+.source-person-row.confidence-high {
+  border-left-color: #2f684f;
+}
+
+.source-person-row.is-selected {
+  box-shadow: 0 0 0 2px rgba(47, 93, 80, 0.18);
+}
+
+.source-person-row.is-review-target,
+.deed-entry-row.is-review-target {
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.22);
+}
+
+.review-workbench-toolbar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 11px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+}
+
+.review-workbench-toolbar > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.review-workbench-toolbar strong {
+  color: #26342d;
+  font-size: 0.84rem;
+}
+
+.review-workbench-toolbar span {
+  color: #59675d;
+  font-size: var(--font-size-small);
+  line-height: 1.25;
+}
+
+.review-workbench-toolbar button {
+  flex: 0 0 auto;
+}
+
+.source-person-row header {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.source-person-heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.source-person-heading strong,
+.source-person-heading small,
+.source-person-meta dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.source-person-heading strong {
+  color: #26342d;
+  font-size: var(--font-size-body);
+  line-height: 1.15;
+}
+
+.source-person-heading small {
+  color: #59675d;
+  font-size: var(--font-size-small);
+  font-weight: 720;
+}
+
+.source-person-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 12px;
+  margin: 0;
+}
+
+.source-person-meta div {
+  min-width: 0;
+}
+
+.source-person-meta dt {
+  color: #59675d;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.source-person-meta dd {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.82rem;
+  line-height: 1.22;
+}
+
+.source-person-editor {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 180px);
+  overflow: auto;
+  min-width: 0;
+  padding-bottom: 0;
+}
+
+.source-person-edit-grid {
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+}
+
+.source-person-edit-grid input,
+.source-person-edit-grid select,
+.source-person-edit-grid textarea {
+  min-height: 34px;
+}
+
+.source-person-editor-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex-wrap: wrap;
+  margin: 0 -11px -11px;
+  padding: 10px 11px;
+  border-top: 1px solid #d9e0d5;
+  background: rgba(251, 253, 249, 0.96);
+  backdrop-filter: blur(6px);
+}
+
+.deed-investigation-links {
+  display: grid;
+  gap: 7px;
+  padding: 9px 10px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+}
+
+.deed-investigation-links h4,
+.deed-investigation-links p {
+  margin: 0;
+}
+
+.deed-investigation-links h4 {
+  color: #26342d;
+  font-size: 0.82rem;
+}
+
+.deed-investigation-links p {
+  color: #4f5d52;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+

@@ -1,0 +1,258 @@
+.admin-table,
+.role-list,
+.lookup-row-list,
+.record-editor-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.lookup-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.lookup-toolbar label,
+.lookup-row label,
+.lookup-row .lookup-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: var(--font-size-small);
+  font-weight: 760;
+}
+
+.lookup-toolbar .secondary-button,
+.lookup-row button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 720;
+}
+
+.lookup-toolbar .secondary-button {
+  border-color: #c8d1c3;
+  background: #fff;
+  color: #405048;
+}
+
+.lookup-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(132px, auto) minmax(220px, 1.5fr) minmax(130px, auto) minmax(88px, auto) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.lookup-row.has-source-fields {
+  grid-template-columns: minmax(170px, 0.9fr) minmax(132px, auto) minmax(260px, 1.5fr) minmax(120px, auto);
+  grid-template-areas:
+    "label sort description description"
+    "notes notes notes notes"
+    "active usage url actions";
+  align-items: start;
+}
+
+.lookup-row.has-source-fields .lookup-label {
+  grid-area: label;
+}
+
+.lookup-row.has-source-fields .lookup-sort {
+  grid-area: sort;
+}
+
+.lookup-sort-control {
+  display: grid;
+  gap: 6px;
+}
+
+.lookup-sort-control input {
+  min-width: 0;
+}
+
+.lookup-sort-buttons {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 30px);
+  gap: var(--space-1);
+  justify-content: start;
+}
+
+.lookup-sort-buttons .icon-button {
+  display: inline-grid;
+  width: 30px;
+  min-height: 34px;
+  padding: 0;
+  place-items: center;
+}
+
+.lookup-sort-buttons .icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.lookup-sort.was-reordered input {
+  border-color: #ff1493;
+  background: #fff3fa;
+  box-shadow: 0 0 0 3px rgba(255, 20, 147, 0.18);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.lookup-row.has-source-fields .lookup-description {
+  grid-area: description;
+}
+
+.lookup-row.has-source-fields .lookup-source-notes {
+  grid-area: notes;
+}
+
+.lookup-row.has-source-fields .lookup-source-url {
+  grid-area: url;
+}
+
+.lookup-row.has-source-fields .lookup-active {
+  grid-area: active;
+  align-self: center;
+}
+
+.lookup-row.has-source-fields .lookup-usage {
+  grid-area: usage;
+  align-self: center;
+}
+
+.lookup-row.has-source-fields .lookup-actions {
+  grid-area: actions;
+  align-self: center;
+}
+
+.lookup-row-new.has-source-fields > button {
+  grid-area: actions;
+  align-self: center;
+}
+
+.lookup-row.is-inactive {
+  background: #f7f8f5;
+  opacity: 0.82;
+}
+
+.lookup-row-new {
+  margin-top: var(--space-1);
+  border-style: dashed;
+  background: #fbfcf8;
+}
+
+.lookup-row h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #26342d;
+  font-size: 0.95rem;
+}
+
+.lookup-description,
+.lookup-source-notes {
+  align-self: stretch;
+}
+
+.lookup-description textarea {
+  min-height: 38px;
+}
+
+.lookup-row.has-source-fields .lookup-description textarea,
+.lookup-row.has-source-fields .lookup-source-notes textarea {
+  min-height: 84px;
+}
+
+.lookup-usage,
+.lookup-warning {
+  color: #657267;
+  font-size: var(--font-size-small);
+  font-weight: 680;
+}
+
+.lookup-warning {
+  color: #87551c;
+}
+
+.lookup-actions {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 6px;
+}
+
+.lookup-actions .icon-button {
+  display: inline-grid;
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  place-items: center;
+}
+
+.lookup-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.lookup-active {
+  justify-content: start;
+  align-self: center;
+}
+
+.record-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.record-picker {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: var(--font-size-small);
+  font-weight: 760;
+}
+
+.record-editor-empty {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px dashed #cfd9ca;
+  border-radius: var(--radius-md);
+  background: #f8faf6;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.admin-user-row,
+.role-row,
+.record-editor-row {
+  display: grid;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 11px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: #26342d;
+  text-align: left;
+}
+
+.admin-user-row {
+  grid-template-columns: minmax(0, 1fr) 126px;
+}
+
+.role-row {
+  grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
+}
+
