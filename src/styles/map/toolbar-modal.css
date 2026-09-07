@@ -1,0 +1,35 @@
+/* Keep feature, view, and application actions in one wrapping layout. */
+.map-toolbar {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 86px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.map-toolbar .map-view-toggle,
+.map-toolbar .map-selection-toggle,
+.map-toolbar .map-tool-buttons {
+  position: static;
+  flex-wrap: wrap;
+}
+.map-region.has-data-status .map-toolbar { top: 124px; }
+
+.ui-modal {
+  margin: auto;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  color: inherit;
+}
+.ui-modal::backdrop { background: rgb(15 25 20 / 35%); }
+.ui-modal:not([open]) { display: none; }
+
+/* Measurement feedback participates in toolbar flow instead of covering actions. */
+.map-toolbar .map-measurement {
+  position: static;
+  flex-basis: 100%;
+  max-width: 100%;
+}

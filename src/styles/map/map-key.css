@@ -1,0 +1,278 @@
+.cemetery-map-marker {
+  display: inline-flex;
+  align-items: center;
+  max-width: 180px;
+  min-height: 26px;
+  padding: 5px 8px;
+  border: 1px solid rgba(47, 93, 80, 0.32);
+  border-radius: 7px;
+  background: rgba(251, 252, 247, 0.96);
+  color: #26342d;
+  font-size: 0.72rem;
+  font-weight: 760;
+  line-height: 1.15;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(41, 56, 43, 0.16);
+}
+
+.cemetery-map-marker::before {
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #2f5d50;
+  content: "";
+}
+
+.cemetery-map-marker:hover {
+  border-color: #2f5d50;
+  background: #fff;
+}
+
+.cemetery-map-marker:focus-visible {
+  outline: 3px solid rgba(47, 104, 79, 0.24);
+  outline-offset: 2px;
+}
+
+.map-scale {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 1;
+  min-width: 190px;
+  padding: 10px 12px 11px;
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: var(--radius-md);
+  background: rgba(251, 252, 247, 0.94);
+  color: #26342d;
+  font-size: 0.76rem;
+  font-weight: 720;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.map-scale-fraction {
+  margin-bottom: var(--space-2);
+  white-space: nowrap;
+}
+
+.map-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+  color: #435049;
+  font-size: 0.69rem;
+  font-weight: 760;
+}
+
+.map-scale-bar {
+  display: flex;
+  height: 14px;
+  border: 1px solid #26342d;
+  border-bottom-width: 2px;
+  background: #fff;
+}
+
+.map-scale-bar span {
+  height: 100%;
+}
+
+.map-scale-bar .is-dark {
+  background: #26342d;
+}
+
+.map-scale-bar .is-light {
+  background: #fbfcf7;
+}
+
+.map-legend {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 1;
+  pointer-events: none;
+  display: grid;
+  gap: 10px;
+  width: min(340px, calc(100% - 260px));
+  padding: var(--space-3);
+  border: 1px solid rgba(53, 67, 57, 0.18);
+  border-radius: var(--radius-md);
+  background: rgba(251, 252, 247, 0.92);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.map-legend section {
+  display: grid;
+  gap: 7px;
+}
+
+.map-legend h2 {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.76rem;
+  font-weight: 820;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #435049;
+  font-size: var(--font-size-small);
+}
+
+.legend-status-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 10px;
+}
+
+.legend-status-grid span {
+  text-transform: capitalize;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(38, 52, 45, 0.24);
+}
+
+.legend-symbol {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 14px;
+}
+
+.legend-boundary {
+  border: 2px solid #3b4f3d;
+  background: rgba(223, 231, 217, 0.25);
+}
+
+.legend-parcel {
+  border: 3px solid #ff0000;
+  background: transparent;
+}
+
+.legend-section {
+  border: 1.5px dashed #77856e;
+  background: rgba(247, 244, 234, 0.78);
+}
+
+.legend-lot {
+  border: 2px solid #f97316;
+  background: transparent;
+}
+
+.legend-schematic-lot {
+  border: 2px solid #b45309;
+  background: rgba(217, 164, 65, 0.24);
+}
+
+.legend-non-burial-lot {
+  border: 2px dashed #334155;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(51, 65, 85, 0.95) 0 2px,
+      rgba(226, 232, 240, 0.65) 2px 6px,
+      rgba(226, 232, 240, 0.65) 6px 10px
+    );
+}
+
+.legend-gravesite {
+  border: 1px solid #31413c;
+  background: linear-gradient(
+    90deg,
+    #5fa879 0 16.66%,
+    #d9a441 16.66% 33.33%,
+    #2f6fbd 33.33% 50%,
+    #8e6fbb 50% 66.66%,
+    #c7524f 66.66% 83.33%,
+    #b8c0c8 83.33% 100%
+  );
+}
+
+.legend-marker {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #10211c;
+  border-radius: 50%;
+  background: #203a33;
+  box-shadow: 0 0 0 2px #fbfcf7;
+}
+
+.legend-monolith-marker {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #33216b;
+  border-radius: 50%;
+  background: #6d4cc2;
+  box-shadow: 0 0 0 2px #fbfcf7;
+  color: #fff;
+  font-size: 8px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.legend-monolith-marker::before {
+  content: "◆";
+}
+
+.legend-veteran-grave {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 14px;
+  color: #f2b705;
+  font-size: 15px;
+  line-height: 1;
+  text-shadow:
+    0 0 1px #17201d,
+    0 0 2px #17201d;
+}
+
+.legend-veteran-grave::before {
+  content: "★";
+}
+
+.legend-other-marker {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #5f2d08;
+  border-radius: 50%;
+  background: #d97706;
+  box-shadow: 0 0 0 2px #fbfcf7;
+}
+
+.legend-available {
+  background: #5fa879;
+}
+
+.legend-reserved {
+  background: #d9a441;
+}
+
+.legend-occupied {
+  background: #2f6fbd;
+}
+
+.legend-sold {
+  background: #8e6fbb;
+}
+
+.legend-needs_review {
+  background: #c7524f;
+}
+
+.legend-unknown {
+  background: #b8c0c8;
+}
+
+
