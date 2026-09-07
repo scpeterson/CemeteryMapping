@@ -1,4 +1,5 @@
-import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import { Modal } from "../ui/Modal";
+import { type ChangeEvent, type FormEvent, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
 import { MediaPhoto } from "./MediaPhoto";
 import { formatDate } from "../../lib/format";
@@ -38,14 +39,7 @@ export function MediaGallery({
   const [movingId, setMovingId] = useState<string>();
   const [error, setError] = useState<string>();
 
-  useEffect(() => {
-    if (!isShowingAll) return undefined;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsShowingAll(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [isShowingAll]);
+
 
   if (!sortedAssets.length) return <p className="muted">{emptyMessage}</p>;
 
@@ -135,14 +129,7 @@ export function MediaGallery({
         </button>
       ) : null}
       {isShowingAll ? (
-        <div className="media-gallery-modal-backdrop" role="presentation" onMouseDown={() => setIsShowingAll(false)}>
-          <section
-            className="media-gallery-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="media-gallery-modal-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
+        <Modal className="media-gallery-modal" label="All photos" onClose={() => setIsShowingAll(false)}>
             <header>
               <div>
                 <h3 id="media-gallery-modal-title">All photos</h3>
@@ -153,8 +140,7 @@ export function MediaGallery({
               </button>
             </header>
             {gallery(sortedAssets, true)}
-          </section>
-        </div>
+        </Modal>
       ) : null}
       {error ? <p className="detail-message is-error">{error}</p> : null}
     </>

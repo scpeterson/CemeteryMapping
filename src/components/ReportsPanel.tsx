@@ -1,3 +1,4 @@
+import { Modal } from "./ui/Modal";
 import { useEffect, useMemo, useState } from "react";
 import { useMediaUrl } from "../hooks/useMediaUrl";
 import { Play, Printer, Search, X } from "lucide-react";
@@ -199,14 +200,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
 
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -329,7 +323,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
   };
 
   return (
-    <div className="reports-panel" role="dialog" aria-modal="true" aria-label="Reports">
+    <Modal className="reports-panel" label="Reports" onClose={onClose}>
       <header className="reports-header">
         <div>
           <h2>Reports</h2>
@@ -492,6 +486,6 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
           ) : null}
         </section>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1047,3 +1047,12 @@ h3 {
   flex-wrap: wrap;
 }
 .map-region.has-data-status .map-toolbar { top: 124px; }
+
+.ui-modal {
+  margin: auto;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  color: inherit;
+}
+.ui-modal::backdrop { background: rgb(15 25 20 / 35%); }
+.ui-modal:not([open]) { display: none; }

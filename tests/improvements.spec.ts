@@ -144,3 +144,20 @@ for (const width of [390, 1024, 1280]) {
     await expect(page.getByRole("dialog", { name: "Reports", exact: true })).toBeVisible();
   });
 }
+
+test("dialogs contain keyboard focus and restore the opener on Escape", async ({ page }) => {
+  await fixture(page);
+  await page.route("**/api/reports", (route) => route.fulfill({ json: [] }));
+  await page.goto("/");
+  const opener = page.getByRole("button", { name: /^Open reports:/ });
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Reports", exact: true });
+  await expect(dialog).toBeVisible();
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press("Tab");
+    expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
+});
