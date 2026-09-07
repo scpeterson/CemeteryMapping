@@ -21,6 +21,14 @@ Marker editing includes **Field photo review** (`field_photo`) in the Verificati
 - Spatial geometry edits should be handled carefully and should not be the first editing workflow unless the source data workflow is also defined.
 - Spatial records should distinguish measured evidence, operational interpretation, and user-friendly presentation. GPS marker/headstone points are evidence; gravesite and lot polygons are often interpreted working geometry; historic scans and schematic layouts can support readable presentation without being survey-grade.
 
+## Panel and Draft Behavior
+
+Admin now opens in a modal dialog with contained keyboard focus and focus restoration on close. Escape closes the active dialog; a nested destructive-action confirmation does not close the Admin panel. For phone navigation and search recovery, see [Operator Workflows](operator-workflows.md#navigation-search-and-editing).
+
+Tracked edits in user, deed, source-person, North Hills reading, and record-detail forms warn before guarded navigation or dismissal. Canceling the warning preserves the draft. Confirming discards tracked unsaved changes; this can include more than one edited form. Drafts are in memory only. Save before moving to another task; not every hierarchy or lookup field uses this tracking yet.
+
+Gravesite detail edits also detect concurrent updates. A conflict preserves the draft; `Reload latest values (discard edits)` loads the current form before you reapply your change. See [conflict recovery](operator-workflows.md#recovering-a-conflicting-gravesite-edit). API clients must supply `expectedVersion` from the detail response; it is an opaque PostgreSQL row version, not a date. Other mutation APIs should not be assumed to provide the same version check.
+
 ## Workflow Priority
 
 ### 0. User and Role Management
@@ -73,7 +81,7 @@ The Admin UI also has a Bulk tab for narrow, audited cleanup actions that would 
 
 The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker scopes, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Marker type records physical form, while marker scope records the source-supported role (`single`, `couple`, `monolith`, or `unknown`); changing scope does not add or remove gravesite or burial relationships. Lookup rows use UUID primary keys; lowercase codes remain hidden stable identifiers for imports, seed data, and compatibility. Obsolete values should be marked inactive instead of deleted. The lookup editor hides inactive values by default, shows reference counts, confirms deactivation of values that are already in use, supports move up/down sort-order controls, warns about duplicate sort orders, and can jump to the Audit Log filtered to a lookup row.
 
-The regular detail panel has a Photos section for field collection. Editors can upload an image from a phone or desktop, link it to the selected gravesite, and optionally link it to a specific marker/headstone. The inline gallery shows at most four photos, ordered newest first by date taken and then upload date. When more than four photos are linked, `View all photos (N)` opens the complete newest-first history in a responsive modal; users can close it with its close button, the backdrop, or Escape. Uploaded files are represented by `media_assets` rows and related through `gravesite_media_assets` and `headstone_media_assets`; the image files themselves are stored outside Postgres. In local environments, the files live under `uploads/media` unless `MEDIA_UPLOAD_DIR` points somewhere else. Readers can view linked photos and the complete history but cannot upload them. Photo downloads require reader authentication and an undeleted media asset; the gallery fetches protected images with the current access token. Soft-deleted files remain on disk for recovery but are no longer downloadable.
+The regular detail panel has a Photos section for field collection. Editors can upload an image from a phone or desktop, link it to the selected gravesite, and optionally link it to a specific marker/headstone. The inline gallery shows at most four photos, ordered newest first by date taken and then upload date. When more than four photos are linked, `View all photos (N)` opens the complete newest-first history in a responsive modal; users can close it with its close button or Escape; backdrop clicks do not dismiss it. Uploaded files are represented by `media_assets` rows and related through `gravesite_media_assets` and `headstone_media_assets`; the image files themselves are stored outside Postgres. In local environments, the files live under `uploads/media` unless `MEDIA_UPLOAD_DIR` points somewhere else. Readers can view linked photos and the complete history but cannot upload them. Photo downloads require reader authentication and an undeleted media asset; the gallery fetches protected images with the current access token. Soft-deleted files remain on disk for recovery but are no longer downloadable.
 
 Current role behavior:
 
@@ -247,5 +255,3 @@ Each workflow should include:
 - API behavior tests for validation errors and audit event creation.
 - E2E coverage for the visible admin UI once the UI exists.
 - Documentation updates in the relevant ADR.
-
-Gravesite detail edits carry the version loaded when editing began. If another edit changes the record first, saving returns a conflict and preserves the draft. Choose `Reload latest values (discard edits)` to load the current form, then reapply the intended changes. The API requires `expectedVersion` from the detail response; it is an opaque PostgreSQL row version, not a date.
