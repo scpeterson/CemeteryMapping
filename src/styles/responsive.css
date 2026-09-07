@@ -81,8 +81,8 @@
 
   .map-tool-buttons {
     right: 86px;
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row;
+    align-items: center;
   }
 
   .control-point-panel {

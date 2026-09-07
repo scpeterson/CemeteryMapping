@@ -354,7 +354,22 @@ export default function App() {
         >
           {appEnvironment}
         </div>
-        <div className="map-tool-buttons">
+        <Suspense fallback={null}>
+          {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onClose={() => setIsReportsPanelOpen(false)} /> : null}
+          {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onClose={() => setIsAdminPanelOpen(false)} /> : null}
+          {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
+            <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
+          ) : null}
+        </Suspense>
+        {isLoading || loadError || userError ? (
+          <div className={`data-status ${loadError || userError ? "is-error" : ""}`} role={loadError || userError ? "alert" : "status"}>
+            {isLoading && !loadError ? <p>Loading cemetery records...</p> : null}
+            {loadError ? <p><strong>Cemetery data API:</strong> {loadError}</p> : null}
+            {userError ? <p><strong>Current user API:</strong> {userError}</p> : null}
+          </div>
+        ) : null}
+        <CemeteryMap
+          tools={<div className="map-tool-buttons">
           {currentUser ? (
             <button
               type="button"
@@ -391,22 +406,7 @@ export default function App() {
               </button>
             </>
           ) : null}
-        </div>
-        <Suspense fallback={null}>
-          {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onClose={() => setIsReportsPanelOpen(false)} /> : null}
-          {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onClose={() => setIsAdminPanelOpen(false)} /> : null}
-          {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
-            <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
-          ) : null}
-        </Suspense>
-        {isLoading || loadError || userError ? (
-          <div className={`data-status ${loadError || userError ? "is-error" : ""}`} role={loadError || userError ? "alert" : "status"}>
-            {isLoading && !loadError ? <p>Loading cemetery records...</p> : null}
-            {loadError ? <p><strong>Cemetery data API:</strong> {loadError}</p> : null}
-            {userError ? <p><strong>Current user API:</strong> {userError}</p> : null}
-          </div>
-        ) : null}
-        <CemeteryMap
+        </div>}
           data={data}
           selectedGrave={selectedGrave}
           selectedLot={selectedLot}
