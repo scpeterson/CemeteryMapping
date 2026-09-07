@@ -1,5 +1,8 @@
+@import "./styles/tokens.css";
 @import "./styles/core-map.css";
 @import "./styles/detail.css";
+@import "./components/control-points.css";
+@import "./components/reports.css";
 @import "./styles/admin.css";
 @import "./styles/responsive.css";
 
