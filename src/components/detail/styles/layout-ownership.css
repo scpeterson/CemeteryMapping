@@ -1,0 +1,153 @@
+.detail-message {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: var(--space-3);
+  border: 1px solid #d6ded1;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: #4d5a50;
+  font-weight: 680;
+}
+
+.detail-message p {
+  margin-bottom: 0;
+}
+
+.detail-message.is-error {
+  border-color: rgba(199, 82, 79, 0.45);
+  color: #8c302d;
+}
+
+.detail-message.is-success {
+  border-color: rgba(47, 93, 80, 0.35);
+  color: #2f5d50;
+}
+
+.detail-message button {
+  justify-self: start;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid rgba(199, 82, 79, 0.45);
+  border-radius: 7px;
+  background: #fff;
+  color: #8c302d;
+  font-weight: 720;
+}
+
+.detail-section {
+  margin-top: var(--space-6);
+  padding-top: 20px;
+  border-top: 1px solid #e0e7dc;
+}
+
+.owner-list,
+.burial-list,
+.headstone-list {
+  display: grid;
+  gap: 10px;
+  margin-top: var(--space-3);
+}
+
+.owner-row,
+.burial-record,
+.grave-record,
+.headstone-record,
+.note-box {
+  padding: var(--space-3);
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.owner-row {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.owner-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.inferred-lot-note {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border-left: 3px solid #b8892f;
+  background: #fff8e8;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.grave-lot-assignment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e8dc;
+}
+
+.grave-lot-assignment label {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.grave-lot-assignment select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.grave-lot-unlink,
+.grave-lot-unlink-confirmation {
+  grid-column: 1 / -1;
+}
+
+.grave-lot-unlink {
+  justify-self: start;
+  color: #8a3c32;
+}
+
+.grave-lot-unlink-confirmation {
+  display: grid;
+  gap: var(--space-2);
+  padding: 10px;
+  border: 1px solid #e0b8ae;
+  border-radius: 7px;
+  background: #fff5f2;
+}
+
+.grave-lot-unlink-confirmation p {
+  margin: 0;
+  color: #6f3932;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.grave-lot-unlink-confirmation > div {
+  display: flex;
+  justify-content: end;
+  gap: var(--space-2);
+}
+
+.owner-row span,
+.muted,
+.burial-notes {
+  color: var(--text-muted);
+}
+
+.owner-deed-register-status,
