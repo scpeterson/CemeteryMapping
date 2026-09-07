@@ -69,6 +69,8 @@ Gravesite updates additionally send the detail response's `version` as `expected
 
 `src/styles/detail.css` imports record sections from `src/components/detail/styles/`, alongside the detail components. These cover ownership, burial, review, marker geometry, maintenance, photos, and timeline evidence.
 
+`src/styles/core-map.css` imports the ordered foundation/account, panel, search, map control, map key, and toolbar/modal sections from `src/styles/map/`.
+
 Preserve cascade order when moving rules. Check print output when changing report or modal styles. At 760 pixels or less, Search/Map/Details are separate visible views while their components remain mounted. The map uses a resize observer when its container changes size. Keep map action groups in the wrapping toolbar, zoom controls in their separate column, and measurement feedback in toolbar flow.
 
 ## Signed-In Workspace

@@ -1,0 +1,144 @@
+.search-box {
+  display: grid;
+  grid-template-columns: 18px 1fr 30px;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 8px 0 13px;
+  border: 1px solid #c8d1c3;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: #445348;
+}
+
+.search-box:focus-within {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px rgba(47, 104, 79, 0.14);
+}
+
+.search-box input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #18211d;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #526157;
+}
+
+.icon-button:hover {
+  background: #edf2ea;
+}
+
+.filter-header,
+.results-heading,
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #4f5d52;
+  font-weight: 720;
+}
+
+.status-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5c7;
+  border-radius: 7px;
+  background: #fff;
+  color: #39453d;
+}
+
+.status-chip span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-chip.is-active {
+  border-color: #496756;
+  background: #e8efe8;
+}
+
+.results-heading {
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid #e1e7dd;
+}
+
+.results-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 9px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 3px;
+}
+
+.result-card {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid #d6ded1;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: inherit;
+  text-align: left;
+}
+
+.result-card:hover,
+.result-card.is-selected {
+  border-color: #617c67;
+  background: #f1f6ef;
+}
+
+.result-title {
+  font-weight: 760;
+}
+
+.grave-cemetery,
+.result-cemetery {
+  color: #425149;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.grave-cemetery {
+  margin: 4px 0 0;
+}
+
+.result-meta,
+.result-reason {
+  font-size: 0.83rem;
+}
+
+.result-meta {
+  font-weight: 700;
+}
+
+.result-reason {
+  color: var(--text-muted);
+}
+
