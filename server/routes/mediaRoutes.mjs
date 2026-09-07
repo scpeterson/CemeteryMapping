@@ -5,7 +5,7 @@ import { validateMediaUploadMetadata } from "./mediaRouteValidation.mjs";
 export function registerMediaRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto, createHeadstonePhoto,
-    express, moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset,
+    express, moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   } = context;
     app.post(
       "/api/headstones/:id/media-assets",
@@ -25,6 +25,7 @@ export function registerMediaRoutes(app, context) {
             },
             metadata,
             {
+              uploadRoot,
               actorUser: request.user,
               allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
             },
@@ -68,6 +69,7 @@ export function registerMediaRoutes(app, context) {
             },
             metadata,
             {
+              uploadRoot,
               actorUser: request.user,
               allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
             },
