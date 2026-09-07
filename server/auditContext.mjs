@@ -16,18 +16,30 @@ export async function setAuditContext(client, context) {
   }
 }
 
+class TransactionRollback {
+  constructor(value) { this.value = value; }
+}
+
+// Call rollback(value) for a deliberate no-op exit. All paths release exactly
+// once, and a rollback failure never hides the original mutation error.
 export async function withAuditContext(pool, context, callback) {
   const client = await pool.connect();
+  let releaseError;
   try {
     await client.query("BEGIN");
     await setAuditContext(client, context);
-    const result = await callback(client);
+    const result = await callback(client, (value) => { throw new TransactionRollback(value); });
     await client.query("COMMIT");
     return result;
   } catch (error) {
-    await client.query("ROLLBACK");
+    try { await client.query("ROLLBACK"); }
+    catch (rollbackError) { releaseError = rollbackError; }
+    if (error instanceof TransactionRollback) {
+      if (releaseError) throw releaseError;
+      return error.value;
+    }
     throw error;
   } finally {
-    client.release();
+    client.release(releaseError);
   }
 }

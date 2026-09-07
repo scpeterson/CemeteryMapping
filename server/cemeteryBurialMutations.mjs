@@ -1,4 +1,4 @@
-import { setAuditContext } from "./auditContext.mjs";
+import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { toBurial } from "./cemeteryMappers.mjs";
 import { recordReviewColumnsSql, tableColumnExists } from "./cemeterySchema.mjs";
@@ -116,18 +116,13 @@ async function selectBurialById(client, id) {
 }
 
 export async function updateBurial(pool, id, burial, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await selectBurialMutationState(client, id);
     if (!existing) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     const fullName = [burial.firstName, burial.lastName, burial.nameSuffix].filter(Boolean).join(" ") || null;
@@ -390,12 +385,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     });
     const updated = await selectBurialById(client, id);
 
-    await client.query("COMMIT");
     return { ...toBurial(updated), auditEventId };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }

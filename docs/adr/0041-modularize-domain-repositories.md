@@ -61,3 +61,5 @@ Confirm route-registration tests still expose the same method/path contracts and
 ## Update Triggers
 
 Update this ADR if repository consumers begin importing internal modules by default, facade compatibility is removed, a different domain-boundary strategy is adopted, or server persistence moves away from the current repository pattern.
+
+Cemetery mutation modules use `withAuditContext` for transaction lifetime and audit settings. Its callback may call `rollback(value)` to return a deliberate no-op result after rollback. The helper preserves mutation failures if rollback also fails and discards the unusable connection. Media uploads retain their explicit transaction boundary because file publication and uncertain commit recovery require separate coordination.
