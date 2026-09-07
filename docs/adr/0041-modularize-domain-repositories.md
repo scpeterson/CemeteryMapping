@@ -61,3 +61,5 @@ Confirm route-registration tests still expose the same method/path contracts and
 ## Update Triggers
 
 Update this ADR if repository consumers begin importing internal modules by default, facade compatibility is removed, a different domain-boundary strategy is adopted, or server persistence moves away from the current repository pattern.
+
+Marker cemetery ownership uses `headstoneCemeterySql.mjs`: an active direct gravesite takes precedence, then an active linked gravesite ordered by public ID and UUID, then an active containing cemetery ordered by name and UUID. Deleted gravesites, links, and cemeteries are excluded. Apply permission filters only after this resolution so a caller's assignments cannot change which cemetery owns a marker. Map summaries, mutation targets, uploads, lookups, quality checks, and maintenance reports share this SQL.

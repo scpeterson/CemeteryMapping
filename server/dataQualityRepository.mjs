@@ -1,3 +1,4 @@
+import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 const severityOrder = new Map([
   ["high", 1],
   ["medium", 2],
@@ -52,30 +53,8 @@ export async function listDataQualityDashboard(pool, options = {}) {
       scoped_headstones AS (
         SELECT headstones.*
         FROM headstones
-        LEFT JOIN gravesites AS direct_gravesite
-          ON direct_gravesite.id = headstones.gravesite_uuid
-         AND direct_gravesite.deleted_at IS NULL
-        LEFT JOIN LATERAL (
-          SELECT gravesites.cemetery_id
-          FROM headstone_gravesites
-          JOIN gravesites
-            ON gravesites.id = headstone_gravesites.gravesite_uuid
-           AND gravesites.deleted_at IS NULL
-          WHERE headstone_gravesites.headstone_uuid = headstones.id
-            AND headstone_gravesites.deleted_at IS NULL
-          ORDER BY gravesites.gravesite_id, gravesites.id
-          LIMIT 1
-        ) linked_gravesite ON true
-        LEFT JOIN LATERAL (
-          SELECT cemeteries.id
-          FROM cemeteries
-          WHERE headstones.geometry IS NOT NULL
-            AND cemeteries.deleted_at IS NULL
-            AND ST_Covers(cemeteries.geometry, headstones.geometry)
-          ORDER BY cemeteries.name, cemeteries.id
-          LIMIT 1
-        ) containing_cemetery ON true
-        JOIN scoped_cemeteries ON scoped_cemeteries.id = COALESCE(direct_gravesite.cemetery_id, linked_gravesite.cemetery_id, containing_cemetery.id)
+        ${headstoneCemeteryJoinsSql}
+        JOIN scoped_cemeteries ON scoped_cemeteries.id = ${headstoneCemeteryIdSql}
         WHERE headstones.deleted_at IS NULL
       ),
       scoped_burials AS (
