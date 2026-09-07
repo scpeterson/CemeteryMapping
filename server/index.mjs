@@ -87,6 +87,8 @@ import { registerMediaRoutes } from "./routes/mediaRoutes.mjs";
 import { canEditLot, canEditSection, validateHeadstoneBusinessRules } from "./routes/routeBusinessRules.mjs";
 import { assertCurrentSchema } from "./schemaContract.mjs";
 
+import { createGracefulShutdown } from "./shutdown.mjs";
+
 const { Pool } = pg;
 
 export function createApp(config, pool) {
@@ -97,10 +99,11 @@ export function createApp(config, pool) {
     ...config.auth.auth0.management,
   });
 
+  const uploadRoot = mediaUploadRoot();
   app.use(express.json());
 
   const requireReader = requireRole(config.auth, pool, "reader");
-  registerMediaDownloadRoutes(app, { pool, requireReader, uploadRoot: mediaUploadRoot() });
+  registerMediaDownloadRoutes(app, { pool, requireReader, uploadRoot });
   const requirePowerUser = requireRole(config.auth, pool, "power-user");
   const requireCemeteryAdmin = requireRole(config.auth, pool, "cemetery-admin");
   const requireAdmin = requireRole(config.auth, pool, "admin");
@@ -118,7 +121,7 @@ export function createApp(config, pool) {
 
   registerMediaRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto, createHeadstonePhoto, express,
-    moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset,
+    moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   });
 
   registerAdminRoutes(app, {
@@ -150,21 +153,19 @@ export async function startServer(config = loadApiConfig(), pool = new Pool(conf
   const server = app.listen(config.apiPort, "127.0.0.1", () => {
     console.log(`Cemetery API listening on http://127.0.0.1:${config.apiPort} (${config.appEnv.toUpperCase()})`);
   });
-  const keepAlive = setInterval(() => undefined, 2 ** 31 - 1);
-
-  const shutdown = async () => {
-    clearInterval(keepAlive);
-    server.close();
-    await pool.end();
+  const stop = createGracefulShutdown(server, pool);
+  const shutdown = () => stop().finally(() => {
+    process.off("SIGINT", onSignal);
+    process.off("SIGTERM", onSignal);
+  });
+  const onSignal = () => {
+    void shutdown().then(
+      () => process.exit(0),
+      (error) => { console.error(error); process.exit(1); },
+    );
   };
-
-  process.on("SIGINT", () => {
-    void shutdown().then(() => process.exit(0));
-  });
-
-  process.on("SIGTERM", () => {
-    void shutdown().then(() => process.exit(0));
-  });
+  process.on("SIGINT", onSignal);
+  process.on("SIGTERM", onSignal);
 
   return { app, server, shutdown };
 }
