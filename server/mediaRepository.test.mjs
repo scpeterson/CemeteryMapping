@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -442,3 +442,29 @@ test("moveMediaAssetLink treats a stale boundary move as a successful no-op", as
   assert.equal(queries.some((query) => query.sql.includes("UPDATE headstone_media_assets SET display_order")), false);
   assert.equal(queries.at(-2).sql, "COMMIT");
 });
+
+for (const kind of ["gravesite", "headstone"]) {
+  for (const failure of ["INSERT INTO media_assets", "COMMIT"]) {
+    test(`${kind} upload safely handles failure at ${failure}`, async () => {
+      const uploadRoot = await mkdtemp(join(tmpdir(), "failed-upload-"));
+      const pool = { async connect() { return {
+        async query(sql, values = []) {
+          if (sql.includes(failure)) throw new Error("injected failure");
+          if (sql.includes("INSERT INTO media_assets")) return { rows: [{ id: values[0], file_url: values[3] }] };
+          if (sql.includes("FROM gravesites") || sql.includes("FROM headstones")) return { rows: [{ id: "22222222-2222-4222-8222-222222222222", cemetery_id: "cemetery" }] };
+          return { rows: [] };
+        }, release() {},
+      }; } };
+      try {
+        const file = { bytes: Buffer.from("photo"), contentType: "image/jpeg" };
+        const upload = kind === "gravesite"
+          ? createGraveSpacePhoto(pool, "cemetery", "A-01", file, {}, { uploadRoot })
+          : createHeadstonePhoto(pool, "marker", file, {}, { uploadRoot });
+        await assert.rejects(upload, /injected failure/);
+        const files = await readdir(uploadRoot);
+        assert.equal(files.length, failure === "COMMIT" ? 1 : 0);
+        assert.ok(files.every((name) => name.endsWith(".jpg")));
+      } finally { await rm(uploadRoot, { recursive: true }); }
+    });
+  }
+}
