@@ -111,8 +111,8 @@ for (const width of [390, 1024, 1280]) {
     await fixture(page);
     await page.route("**/api/reports", (route) => route.fulfill({ json: [] }));
     await page.goto("/");
-    const buttons = page.locator(".map-toolbar button");
-    await expect(buttons).toHaveCount(8);
+    const buttons = page.locator(".map-toolbar button, .map-controls button");
+    await expect(buttons).toHaveCount(12);
     const boxes = await buttons.evaluateAll((elements) => elements.map((element) => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
@@ -124,6 +124,9 @@ for (const width of [390, 1024, 1280]) {
         expect(a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top).toBe(false);
       }
     }
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+    await page.getByRole("button", { name: "Measure distances between map points", exact: true }).click();
+    await expect(page.locator(".map-measurement")).toContainText("Click map points");
     await page.getByRole("button", { name: /^Open reports:/ }).click();
     await expect(page.getByRole("dialog", { name: "Reports", exact: true })).toBeVisible();
   });
