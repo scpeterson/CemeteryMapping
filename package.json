@@ -70,7 +70,7 @@
     "concurrently": "^10.0.5",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
-    "express-oauth2-jwt-bearer": "^1.9.2",
+    "express-oauth2-jwt-bearer": "^1.10.0",
     "lucide-react": "^1.34.0",
     "maplibre-gl": "^6.6.0",
     "pg": "^8.22.0",
