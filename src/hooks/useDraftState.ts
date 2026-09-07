@@ -41,7 +41,7 @@ export function useDraftNavigationGuard() {
     const click = (event: MouseEvent) => {
       if (!(event.target instanceof Element)) return;
       const button = event.target.closest("button");
-      if (!button) return;
+      if (!button || button.closest(".ui-confirmation, .media-gallery-modal, .reports-panel")) return;
       const navigation = button.closest(".result-card, .detail-tabs, .admin-nav, [data-discard-draft]") ||
         /^(Cancel|Close|New |Add new|Reset)/i.test(button.getAttribute("aria-label") || button.textContent?.trim() || "");
       if (navigation && !confirmDiscardChanges()) { event.preventDefault(); event.stopImmediatePropagation(); }

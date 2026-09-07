@@ -398,7 +398,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   };
 
   return (
-    <Modal className="control-point-panel" label="Control point collector" onClose={onClose}>
+    <Modal protectDrafts className="control-point-panel" label="Control point collector" onClose={onClose}>
       <div className="control-point-header">
         <div>
           <p className="eyebrow">Georeferencing</p>

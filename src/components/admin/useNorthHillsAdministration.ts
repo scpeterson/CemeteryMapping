@@ -1,3 +1,4 @@
+import { useConfirmation } from "../ui/confirmationContext";
 import { useDraftState } from "../../hooks/useDraftState";
 import type * as React from "react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -39,6 +40,7 @@ type Context = {
 };
 
 export function useNorthHillsAdministration({ setError, setActiveTab, setMessage, scrollAdminItemIntoView }: Context) {
+  const confirm = useConfirmation();
   const [northHillsOcrReview, setNorthHillsOcrReview] = useState<NorthHillsOcrReview>(emptyNorthHillsOcrReview);
 
   const [northHillsReviewFilters, setNorthHillsReviewFilters] = useState<NorthHillsOcrReviewFilters>(defaultNorthHillsReviewFilters);
@@ -233,7 +235,7 @@ export function useNorthHillsAdministration({ setError, setActiveTab, setMessage
   };
 
   const unlinkNorthHillsEvidence = async (entryId: string, targetType: "headstone" | "gravesite", targetId: string, label: string) => {
-    if (!window.confirm(`Unlink this North Hills reading from ${label}?`)) return;
+    if (!(await confirm(`Unlink this North Hills reading from ${label}?`))) return;
     const key = `${entryId}:${targetType}:${targetId}:unlink`;
     setSavingEvidenceKey(key);
     setMessage(undefined);
