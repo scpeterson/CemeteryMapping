@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import type * as React from "react";
 import { FormEvent, useMemo, useState } from "react";
 import {
@@ -43,11 +44,11 @@ export function useDeedAdministration({ setError, setMessage, setActiveTab }: Co
 
   const [selectedDeedCaseId, setSelectedDeedCaseId] = useState("");
 
-  const [deedCaseForm, setDeedCaseForm] = useState<SaveDeedInvestigationCaseInput>(() => blankDeedCaseForm());
+  const [deedCaseForm, setDeedCaseForm] = useDraftState<SaveDeedInvestigationCaseInput>(() => blankDeedCaseForm());
 
   const [selectedDeedActionId, setSelectedDeedActionId] = useState("");
 
-  const [deedActionForm, setDeedActionForm] = useState<SaveDeedInvestigationActionInput>(() => blankDeedActionForm());
+  const [deedActionForm, setDeedActionForm] = useDraftState<SaveDeedInvestigationActionInput>(() => blankDeedActionForm());
 
   const [isLoadingDeedReview, setIsLoadingDeedReview] = useState(false);
 

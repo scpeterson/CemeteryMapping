@@ -1,3 +1,4 @@
+import { confirmDiscardChanges, useDraftNavigationGuard } from "./hooks/useDraftState";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, ShieldCheck } from "lucide-react";
 import {
@@ -71,6 +72,7 @@ function includesAllStatuses(statuses: Set<GraveStatus>) {
 }
 
 export default function App() {
+  useDraftNavigationGuard();
   const [query, setQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<GraveStatus>>(() => new Set(allStatuses));
   const [data, setData] = useState<CemeteryData>(cemeteryData);
@@ -268,18 +270,21 @@ export default function App() {
   };
 
   const selectGrave = (grave: GraveSpaceSummary) => {
+    if (!confirmDiscardChanges()) return;
     setSelectedHeadstone(undefined);
     setSelectedLot(undefined);
     setSelectedGrave(grave);
   };
 
   const selectLot = (lot: CemeteryLot) => {
+    if (!confirmDiscardChanges()) return;
     setSelectedHeadstone(undefined);
     setSelectedGrave(undefined);
     setSelectedLot(lot);
   };
 
   const selectHeadstone = (headstone: HeadstoneSummary) => {
+    if (!confirmDiscardChanges()) return;
     setSelectedHeadstone(headstone);
     setSelectedLot(undefined);
     setSelectedGrave(undefined);

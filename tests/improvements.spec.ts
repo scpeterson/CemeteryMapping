@@ -34,6 +34,7 @@ test("a delayed save cannot reselect its original grave", async ({ page }) => {
   await page.locator(".grave-form").getByLabel("Name", { exact: true }).fill("Saved A");
   await page.getByRole("button", { name: "Save gravesite", exact: true }).click();
   await saveStarted;
+  page.once("dialog", (dialog) => dialog.accept());
   await select(page, "B-TEST");
   const completed = page.waitForResponse((response) => response.request().method() === "PATCH");
   await finishSave();
@@ -160,4 +161,20 @@ test("dialogs contain keyboard focus and restore the opener on Escape", async ({
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(opener).toBeFocused();
+});
+
+test("navigation preserves an unsaved draft when canceled and discards only on confirmation", async ({ page }) => {
+  await fixture(page);
+  await page.goto("/");
+  await select(page, "A-TEST");
+  await page.getByRole("button", { name: /Edit gravesite/ }).click();
+  const name = page.locator(".grave-form").getByLabel("Name", { exact: true });
+  await name.fill("Unsaved name");
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByLabel("Search cemetery records").fill("B-TEST");
+  await page.locator(".result-card").filter({ hasText: "B-TEST" }).first().click();
+  await expect(name).toHaveValue("Unsaved name");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator(".result-card").filter({ hasText: "B-TEST" }).first().click();
+  await expect(page.locator(".detail-panel")).toContainText("Record ID: B-TEST");
 });

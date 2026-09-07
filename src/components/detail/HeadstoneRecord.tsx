@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { Info, Pencil } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { formatDate } from "../../lib/format";
@@ -122,7 +123,7 @@ export function HeadstoneRecord({
   const isSectionG = sectionName.toUpperCase() === "G";
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
+  const [form, setForm] = useDraftState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
   const [provenanceMessage, setProvenanceMessage] = useState<string>();

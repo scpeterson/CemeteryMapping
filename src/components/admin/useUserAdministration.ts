@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { SaveUserInput } from "../../api/cemeteryApi";
 import { createAdminUser, fetchAdminRoles, fetchAdminUsers, resolveAuth0User, updateAdminUser } from "../../api/cemeteryApi";
@@ -28,7 +29,7 @@ function userFormFromUser(user: AppUser): UserFormState {
 export function useUserAdministration() {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [form, setForm] = useState<UserFormState>(blankUser);
+  const [form, setForm] = useDraftState<UserFormState>(blankUser);
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
   const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(() => new Set());

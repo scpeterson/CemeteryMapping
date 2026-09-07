@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { FormEvent, useState } from "react";
 import { Flag, Pencil, Trash2 } from "lucide-react";
 import type { GraveFeature, GraveSpace, Headstone, HeadstoneLookups, SaveGraveFeatureInput } from "../../types";
@@ -138,7 +139,7 @@ export function GraveFeatureForm({
   const defaultTypeId = lookups.graveFeatureTypes.find((option) => option.code === "flag_holder")?.id ?? lookups.graveFeatureTypes[0]?.id ?? "";
   const defaultSubtypeId = lookups.graveFeatureSubtypes.find((option) => option.code === "us_veteran_star")?.id ?? "";
   const defaultPlacementId = lookups.graveFeaturePlacements.find((option) => option.code === "separate")?.id ?? "";
-  const [form, setForm] = useState<SaveGraveFeatureInput>(() =>
+  const [form, setForm] = useDraftState<SaveGraveFeatureInput>(() =>
     initialFeature
       ? graveFeatureFormFromRecord(initialFeature, grave, fixedHeadstone)
       : {
@@ -169,6 +170,7 @@ export function GraveFeatureForm({
     setMessage(undefined);
     try {
       await onSave(form);
+      setForm(form);
       if (initialFeature) {
         onCancel?.();
       } else {

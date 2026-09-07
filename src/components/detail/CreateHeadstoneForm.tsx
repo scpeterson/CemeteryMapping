@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { MapPinned } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import type {
@@ -74,7 +75,7 @@ export function CreateHeadstoneForm({
   const isSectionG = sectionName.toUpperCase() === "G";
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isAdding, setIsAdding] = useState(false);
-  const [form, setForm] = useState<SaveHeadstoneCreateInput>(() => blankCreateHeadstoneForm(grave, headstones, { ...lookups, markerTypes: markerTypeOptions }));
+  const [form, setForm] = useDraftState<SaveHeadstoneCreateInput>(() => blankCreateHeadstoneForm(grave, headstones, { ...lookups, markerTypes: markerTypeOptions }));
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
@@ -93,7 +94,7 @@ export function CreateHeadstoneForm({
       latitude: pickedMarkerPoint.latitude.toFixed(8),
       longitude: pickedMarkerPoint.longitude.toFixed(8),
     }));
-  }, [isAdding, pickedMarkerPoint]);
+  }, [isAdding, pickedMarkerPoint, setForm]);
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
@@ -102,6 +103,7 @@ export function CreateHeadstoneForm({
     setError(undefined);
     try {
       const saved = await onSave(form);
+      setForm(form);
       setMessage(`Marker ${saved.headstoneId} added.`);
       setIsAdding(false);
       onCancelMarkerPointPick();

@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { useState, type CSSProperties, type FormEvent } from "react";
 import { Trash2 } from "lucide-react";
 import type { GraveSpaceSummary, Headstone, HeadstoneGravesiteRelationship, HeadstoneLookups, SaveHeadstoneGravesiteRelationshipInput } from "../../types";
@@ -23,7 +24,7 @@ export function MarkerGravesiteRelationshipManager({ headstone, graves, lookups,
   const gravesById = new Map(graves.map((grave) => [grave.id, grave]));
   const linkedIds = new Set(relationships.map((relationship) => relationship.gravesiteUuid));
   const availableGravesites = lookups.gravesites.filter((grave) => !linkedIds.has(grave.id));
-  const [form, setForm] = useState<SaveHeadstoneGravesiteRelationshipInput>({ gravesiteId: "", relationshipType: "secondary", notes: "" });
+  const [form, setForm] = useDraftState<SaveHeadstoneGravesiteRelationshipInput>({ gravesiteId: "", relationshipType: "secondary", notes: "" });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -31,7 +32,8 @@ export function MarkerGravesiteRelationshipManager({ headstone, graves, lookups,
     event.preventDefault();
     if (!form.gravesiteId) return;
     setBusy(true); setMessage("");
-    try { await onSave(form); setForm({ gravesiteId: "", relationshipType: "secondary", notes: "" }); }
+    try { await onSave(form);
+      setForm(form); setForm({ gravesiteId: "", relationshipType: "secondary", notes: "" }); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Unable to add gravesite relationship."); }
     finally { setBusy(false); }
   };
