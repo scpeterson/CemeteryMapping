@@ -67,6 +67,8 @@ Gravesite updates additionally send the detail response's `version` as `expected
 
 `src/styles/admin.css` is an ordered import entry for the feature sections in `src/styles/admin/` (workspace, deeds, records, data quality, source people, OCR readings, and events). Keep cross-feature selectors in their existing section when their position affects the cascade.
 
+`src/styles/detail.css` imports record sections from `src/components/detail/styles/`, alongside the detail components. These cover ownership, burial, review, marker geometry, maintenance, photos, and timeline evidence.
+
 Preserve cascade order when moving rules. Check print output when changing report or modal styles. At 760 pixels or less, Search/Map/Details are separate visible views while their components remain mounted. The map uses a resize observer when its container changes size. Keep map action groups in the wrapping toolbar, zoom controls in their separate column, and measurement feedback in toolbar flow.
 
 ## Signed-In Workspace

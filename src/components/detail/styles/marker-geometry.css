@@ -1,0 +1,272 @@
+.grave-record,
+.headstone-record {
+  display: grid;
+  gap: 10px;
+}
+
+.grave-record-header,
+.headstone-record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.grave-record dl,
+.headstone-record dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.grave-record dt,
+.grave-form label,
+.headstone-record dt,
+.headstone-form label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.grave-record dd,
+.headstone-record dd {
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+}
+
+.lot-use-note {
+  margin: 0;
+  color: #5d6a62;
+  font-size: 0.88rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.grave-record dl + .lot-use-note {
+  margin-top: 2px;
+}
+
+.lot-restriction-list {
+  display: grid;
+  gap: 10px;
+}
+
+.lot-restriction-row {
+  display: grid;
+  gap: var(--space-1);
+  padding-left: 10px;
+  border-left: 4px solid #64748b;
+}
+
+.lot-restriction-row strong {
+  color: #26342d;
+  font-size: 0.92rem;
+  font-weight: 820;
+}
+
+.lot-restriction-row span {
+  color: #5d6a62;
+  font-size: 0.84rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.geometry-metadata-group {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: 10px;
+  border-top: 1px solid #e0e8dc;
+}
+
+.geometry-metadata-group h4 {
+  margin: 0;
+  color: #26342d;
+  font-size: var(--font-size-small);
+  font-weight: 820;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.geometry-metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.geometry-metadata dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.geometry-metadata dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  color: #26342d;
+  font-size: 0.86rem;
+}
+
+.associated-gravesite-list {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: 10px;
+}
+
+.associated-gravesite-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: #26342d;
+  font: inherit;
+  text-align: left;
+}
+
+.associated-gravesite-row:hover {
+  border-color: rgba(47, 93, 80, 0.32);
+  background: #f5f8f2;
+}
+
+.associated-gravesite-row:focus-visible {
+  outline: 3px solid rgba(47, 104, 79, 0.24);
+  outline-offset: 2px;
+}
+
+.associated-gravesite-status {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--status-color) 70%, #ffffff);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--status-color) 16%, #ffffff);
+  color: color-mix(in srgb, var(--status-color) 72%, #26342d);
+  font-size: var(--font-size-small);
+  font-weight: 760;
+}
+
+.grave-form,
+.headstone-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grave-form label,
+.headstone-form label {
+  display: grid;
+  gap: 5px;
+  text-transform: none;
+}
+
+.headstone-form .headstone-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  align-self: end;
+  min-height: 38px;
+}
+
+.headstone-form .headstone-checkbox-field input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.grave-form select,
+.grave-form input,
+.grave-form textarea,
+.headstone-form select,
+.headstone-form input,
+.headstone-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.grave-wide-field,
+.headstone-wide-field,
+.grave-record-header,
+.headstone-record-header,
+.grave-form .detail-message,
+.headstone-form .detail-message,
+.grave-form-actions,
+.headstone-form-actions {
+  grid-column: 1 / -1;
+}
+
+.grave-form-actions,
+.headstone-form-actions {
+  display: flex;
+  justify-content: end;
+  gap: var(--space-2);
+}
+
+.icon-text-button,
+.ownership-form-actions button,
+.burial-form-actions button,
+.grave-form-actions button,
+.headstone-form-actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 760;
+}
+
+.icon-text-button {
+  background: #fff;
+  color: #2f5d50;
+}
+
+.ownership-form-actions .secondary-button,
+.headstone-form-actions .secondary-button {
+  border-color: #c8d1c3;
+  background: #fff;
+  color: #405048;
+}
+
+.marker-relationship {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: start;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid #d8ddd3;
+  border-radius: 7px;
+  background: #f7faf5;
+  color: #405048;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  cursor: help;
+}
+
+.marker-relationship svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #2f5d50;
+}
+
+.marker-relationship-code {
+  color: var(--text-muted);
+}
+

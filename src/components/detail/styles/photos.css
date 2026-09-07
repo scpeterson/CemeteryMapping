@@ -1,0 +1,217 @@
+.media-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: var(--space-3);
+}
+
+.media-gallery-item {
+  display: grid;
+  gap: 6px;
+  color: #405048;
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.media-gallery-card {
+  position: relative;
+  min-width: 0;
+}
+
+.media-gallery-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  background: #eef3eb;
+}
+
+.media-gallery-view-all {
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid #cbd6c7;
+  background: #f8faf6;
+  color: #2f5d50;
+}
+
+.media-gallery-modal-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: rgba(20, 31, 25, 0.68);
+}
+
+.media-gallery-modal {
+  width: min(920px, 100%);
+  max-height: min(86vh, 900px);
+  overflow: auto;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(13, 28, 20, 0.28);
+}
+
+.media-gallery-modal > header {
+  position: sticky;
+  z-index: 2;
+  top: -18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: -18px -18px 0;
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid #e1e7de;
+  background: #fff;
+}
+
+.media-gallery-modal h3,
+.media-gallery-modal p {
+  margin: 0;
+}
+
+.media-gallery-modal p {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.media-gallery-modal-close {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #cbd6c7;
+  border-radius: 999px;
+  background: #fff;
+  color: #2f5d50;
+}
+
+.media-gallery-expanded {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.media-delete-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(105, 36, 36, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #9f2f2f;
+  cursor: pointer;
+}
+
+.media-delete-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.media-order-controls {
+  position: absolute;
+  right: 6px;
+  bottom: 34px;
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.media-order-controls button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(47, 93, 80, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #2f5d50;
+  cursor: pointer;
+}
+
+.media-order-controls button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.photo-upload-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: 1px dashed #cbd6c7;
+  border-radius: var(--radius-md);
+  background: #f8faf6;
+}
+
+.photo-upload-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.photo-upload-linked-marker {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.photo-upload-linked-marker strong {
+  min-height: 38px;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.photo-upload-form input,
+.photo-upload-form select,
+.photo-upload-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.photo-upload-form button {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 760;
+}
+
+.photo-upload-form .detail-message {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
