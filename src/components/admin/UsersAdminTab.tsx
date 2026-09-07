@@ -174,7 +174,7 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
         <div className="admin-table" role="table" aria-label="Application users">
           {users.map((user) => (
             <article key={user.id} className="admin-user-row" title={userTitle(user)}>
-              <button type="button" className="admin-user-edit" onClick={() => setForm(userFormFromUser(user))} title={userTitle(user)}>
+              <button type="button" className="admin-user-edit" data-discard-draft onClick={() => setForm(userFormFromUser(user))} title={userTitle(user)}>
                 <span>
                   <strong>{user.displayName || user.email}</strong>
                   <small>{user.email}</small>

@@ -54,7 +54,7 @@ export function ReadingList({ northHillsOcrReview, isLoadingNorthHillsReview, ca
                       <button
                         type="button"
                         className="secondary-button"
-                        onClick={() => startNorthHillsEntryEdit(entry)}
+                        data-discard-draft onClick={() => startNorthHillsEntryEdit(entry)}
                         disabled={Boolean(savingEvidenceKey)}
                         title="Edit this staged North Hills reading, parsed fields, source facts, and observations."
                       >

@@ -148,7 +148,7 @@ export function SourcePeopleAdminTab({
           <button
             type="button"
             className="secondary-button"
-            onClick={goToNextUnresolvedSourcePersonRecord}
+            data-discard-draft onClick={goToNextUnresolvedSourcePersonRecord}
             disabled={!nextUnresolvedSourcePersonRecord || isLoadingSourcePersonRecords}
             title="Open the next visible source-only person that still needs matching or review."
           >
@@ -172,7 +172,7 @@ export function SourcePeopleAdminTab({
                     <strong>{record.fullName}</strong>
                     <small>{record.cemeteryName || "No cemetery"}</small>
                   </div>
-                  <button type="button" className="deed-entry-link-button" onClick={() => startSourcePersonRecordEdit(record)}>
+                  <button type="button" className="deed-entry-link-button" data-discard-draft onClick={() => startSourcePersonRecordEdit(record)}>
                     Edit
                   </button>
                 </header>

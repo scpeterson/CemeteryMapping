@@ -67,7 +67,7 @@ export function NorthHillsAdminTab({ applyNorthHillsReviewFilters, northHillsRev
           <button
             type="button"
             className="secondary-button"
-            onClick={goToNextUnresolvedNorthHillsEntry}
+            data-discard-draft onClick={goToNextUnresolvedNorthHillsEntry}
             disabled={!nextUnresolvedNorthHillsEntry || isLoadingNorthHillsReview}
             title="Scroll to the next visible NHG reading that still has pending work."
           >

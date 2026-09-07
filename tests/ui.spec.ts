@@ -63,3 +63,23 @@ for (const width of [390, 768, 1280]) {
     await page.screenshot({ path: testInfo.outputPath(`details-${width}.png`), fullPage: true });
   });
 }
+
+test("switching administration users cannot silently replace a draft", async ({ page }) => {
+  await fixture(page);
+  const users = ["First", "Second"].map((displayName, index) => ({ id: String(index + 1), displayName, email: `${displayName.toLowerCase()}@example.test`, externalSubject: `test|${index}`, role: "admin", assignedCemeteryIds: [], isActive: true }));
+  await page.route("**/api/admin/users", (route) => route.fulfill({ json: users }));
+  await page.route("**/api/admin/roles", (route) => route.fulfill({ json: [{ name: "admin", description: "Administrator", userCount: 2 }] }));
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Open administration:/ }).click();
+  const admin = page.getByRole("dialog", { name: "Admin management" });
+  await admin.getByRole("button", { name: "Users", exact: true }).click();
+  await admin.locator(".admin-user-edit").filter({ hasText: "First" }).click();
+  const name = admin.getByLabel("Display name", { exact: true });
+  await name.fill("Draft first user");
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await admin.locator(".admin-user-edit").filter({ hasText: "Second" }).click();
+  await expect(name).toHaveValue("Draft first user");
+  page.once("dialog", (dialog) => dialog.accept());
+  await admin.locator(".admin-user-edit").filter({ hasText: "Second" }).click();
+  await expect(name).toHaveValue("Second");
+});
