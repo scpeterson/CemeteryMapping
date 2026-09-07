@@ -17,7 +17,7 @@ test("gravesite details expose the modern linked lot for whole-lot deeds", async
 });
 
 test("unassigned gravesites offer reviewed spatial inference and admin assignment", async () => {
-  const detail = await readFile(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+  const detail = (await Promise.all(["GraveDetailPanel", "GraveSpaceRecord"].map((name) => readFile(new URL(`../src/components/detail/${name}.tsx`, import.meta.url), "utf8")))).join("\n");
   const routes = await readFile(new URL("../server/routes/graveRoutes.mjs", import.meta.url), "utf8");
   assert.match(detail, /inferredLotForGrave/u);
   assert.match(detail, /Review against the paper map before assigning/u);

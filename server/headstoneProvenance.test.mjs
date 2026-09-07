@@ -12,7 +12,7 @@ const validPayload = {
 };
 
 test("field photo review is selectable and its restoration migration is registered", async () => {
-  const ui = await readFile(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+  const ui = await readFile(new URL("../src/components/detail/HeadstoneRecord.tsx", import.meta.url), "utf8");
   assert.match(ui, /<option value="field_photo">Field photo review<\/option>/u);
   const root = await readFile(new URL("../db/changelog/db.changelog-root.yaml", import.meta.url), "utf8");
   assert.match(root, /375-restore-field-photo-review-source\.sql/u);

@@ -6,7 +6,7 @@ const queries = readFileSync(new URL("../server/cemeteryBurialQueries.mjs", impo
 const mutations = readFileSync(new URL("../server/cemeteryBurialMutations.mjs", import.meta.url), "utf8");
 const mappers = readFileSync(new URL("../server/cemeteryMappers.mjs", import.meta.url), "utf8");
 const validation = readFileSync(new URL("../server/routes/cemeteryRouteValidation.mjs", import.meta.url), "utf8");
-const detailPanel = readFileSync(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+const detailPanel = readFileSync(new URL("../src/components/detail/BurialRecord.tsx", import.meta.url), "utf8");
 
 test("burial API reads and maps normalized death places", () => {
   assert.match(queries, /burialDeathPlaceSql/u);

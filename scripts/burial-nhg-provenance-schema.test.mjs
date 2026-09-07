@@ -5,7 +5,7 @@ import test from "node:test";
 const migration = readFileSync(new URL("../db/changelog/changes/246-burial-source-provenance.sql", import.meta.url), "utf8");
 const rootChangelog = readFileSync(new URL("../db/changelog/db.changelog-root.yaml", import.meta.url), "utf8");
 const mutation = readFileSync(new URL("../server/cemeteryHeadstoneMutations.mjs", import.meta.url), "utf8");
-const detailPanel = readFileSync(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+const detailPanel = readFileSync(new URL("../src/components/detail/HeadstoneRecord.tsx", import.meta.url), "utf8");
 
 test("burials support structured NHG provenance", () => {
   assert.match(migration, /ADD COLUMN IF NOT EXISTS source_properties jsonb/u);
