@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  updateMatchingGrave,
   appendHeadstoneSummary,
   assignLotInMapData,
   assignLotToSelectedGrave,
@@ -129,4 +130,29 @@ test("headstone photo movement updates the nested marker shown in grave details"
     { ...first, displayOrder: 1 },
   ]);
   assert.deepEqual(grave.headstones[0].mediaAssets, [first, second], "the original nested marker is not mutated");
+});
+
+test("a delayed save does not replace a new selection or append its feature", async () => {
+  const original = graveSummary("A");
+  let current = original;
+  let resolveSave;
+  const response = new Promise((resolve) => { resolveSave = resolve; });
+  const completion = response.then((saved) => {
+    current = updateMatchingGrave(current, original, saved);
+    current = updateMatchingGrave(current, original, (record) => ({ ...record, features: [{ id: "new-feature" }] }));
+  });
+  const next = graveSummary("B");
+  current = next;
+  resolveSave({ ...original, name: "Saved A" });
+  await completion;
+  assert.equal(current, next);
+});
+
+test("save identity includes cemetery and never restores a cleared selection", () => {
+  const original = graveSummary("A");
+  const otherCemetery = { ...original, cemeteryId: "cemetery-2" };
+  const saved = { ...original, name: "Saved" };
+  assert.equal(updateMatchingGrave(otherCemetery, original, saved), otherCemetery);
+  assert.equal(updateMatchingGrave(undefined, original, saved), undefined);
+  assert.equal(updateMatchingGrave(original, original, saved), saved);
 });
