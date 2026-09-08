@@ -13,7 +13,7 @@ test("ownership addresses use the known state and territory list", () => {
 });
 
 test("current ownership resolves owners returned with the selected gravesite", () => {
-  assert.match(detailPanel, /\.\.\.\(grave\?\.owners \?\? \[\]\), \.\.\.owners/u);
+  assert.match(detailPanel, /\.\.\.\(grave\?\.owners \?\? \[\]\), \.\.\.\(grave \? owners : \[\]\)/u);
 });
 
 test("current ownership shows the date and both deed-file statuses without internal right notes", () => {

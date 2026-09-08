@@ -1,21 +1,10 @@
+import { sortedMediaAssets } from "../../lib/media";
 import { Modal } from "../ui/Modal";
 import { type ChangeEvent, type FormEvent, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
 import { MediaPhoto } from "./MediaPhoto";
 import { formatDate } from "../../lib/format";
 import type { Headstone, MediaAsset } from "../../types";
-
-function sortedMediaAssets(assets: MediaAsset[]) {
-  return [...assets].sort((left, right) => {
-    const leftDate = Date.parse(left.capturedAt ?? left.uploadedAt ?? "");
-    const rightDate = Date.parse(right.capturedAt ?? right.uploadedAt ?? "");
-    const dateDifference = (Number.isNaN(rightDate) ? 0 : rightDate) - (Number.isNaN(leftDate) ? 0 : leftDate);
-    if (dateDifference !== 0) return dateDifference;
-    const leftOrder = left.displayOrder ?? Number.MAX_SAFE_INTEGER;
-    const rightOrder = right.displayOrder ?? Number.MAX_SAFE_INTEGER;
-    return leftOrder - rightOrder;
-  });
-}
 
 const galleryPreviewLimit = 4;
 

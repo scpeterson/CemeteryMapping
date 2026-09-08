@@ -30,6 +30,16 @@ Administration, Reports, Control, and full-history photos open as dialogs. Tab a
 
 Editors using draft protection warn before a guarded record/tab change, cancel/close action, or leaving the page. Choose Cancel in the warning to keep editing; confirming discards the tracked unsaved changes. Successful saves establish a new baseline, while failed saves retain the draft. Drafts are held in memory, not saved automatically or restored after reload. Save work before changing tasks, even when a particular control does not display a warning.
 
+### Feature Overview
+
+Selecting a gravesite or marker opens its read-only `Overview`, including when selecting the same feature again. It shows the newest available photo, names and dates, current owners when your access permits, and related features. If no photo or person record exists, the overview says so explicitly; an absent burial record does not imply an available grave.
+
+Gravesite previews consider both gravesite and linked-marker photos and label linked-marker images. Select the photo to enlarge it, then use Close photo or Escape to return. Photo ordering follows the gallery: capture date (or upload date when capture date is absent), then display order. A legacy marker photo URL is a fallback when no photo assets exist.
+
+Use `View burial records` or `View ownership records` to open People, or select an associated marker to open its Overview. Marker overviews group people and current owners by linked gravesite. Explicit marker-to-burial links determine the displayed people when available; otherwise the summary labels them as people in linked gravesites. A failure to load linked records shows an error and Retry instead of claiming that no records exist.
+
+Editing remains in the detailed views: use `Location` for the gravesite record and lot assignment, `People` for burials/ownership, `Monuments` for gravesite markers/photos, and a marker's `Details` tab for its editing and relationship controls. Saving within these views keeps the current tab. Ownership visibility and editing permissions still apply.
+
 ### Recovering a Conflicting Gravesite Edit
 
 Gravesite detail saves detect when another edit has changed the record since it was loaded. A conflict preserves the current draft and prevents overwriting the other edit.

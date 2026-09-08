@@ -15,7 +15,8 @@ test("media galleries show a maximum of four preview photos", () => {
 });
 
 test("media galleries sort newest photos first and retain the complete history", () => {
-  assert.match(component, /const dateDifference = .*rightDate.*leftDate/u);
+  const ordering = fs.readFileSync(new URL("../src/lib/media.ts", import.meta.url), "utf8");
+  assert.match(ordering, /const dateDifference = .*rightDate.*leftDate/u);
   assert.match(component, /gallery\(sortedAssets, true\)/u);
   assert.match(component, /photos, newest first/u);
 });
