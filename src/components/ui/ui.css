@@ -19,3 +19,19 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Domain status colors keep the same meaning as map fills and filter dots. */
+.ui-status-badge--colored {
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--status-color) 16%, white);
+  color: #26342d;
+}
+.ui-status-badge--colored::before {
+  content: "";
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-color);
+}

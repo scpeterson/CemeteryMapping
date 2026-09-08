@@ -110,7 +110,7 @@ export function SearchPanel({
             >
               <span className="result-title">{formatGraveLocation(match.grave)}</span>
               <span className="result-cemetery">{match.grave.cemeteryName}</span>
-              <StatusBadge tone={["needs_review", "reserved"].includes(match.grave.status) ? "warning" : match.grave.status === "available" ? "success" : "neutral"}>{statusLabel}</StatusBadge>
+              <StatusBadge color={statusColors[match.grave.status]}>{statusLabel}</StatusBadge>
               {reasons.length ? <span className="result-reason">{reasons.join(" | ")}</span> : null}
             </button>
           );
