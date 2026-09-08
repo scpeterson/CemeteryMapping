@@ -1,5 +1,5 @@
 import { expect, test, type Route } from "@playwright/test";
-import { detail, fixture, gravePath, select } from "./fixtures/cemetery";
+import { detail, fixture, gravePath, select, showApplicationActions } from "./fixtures/cemetery";
 
 test("a delayed save cannot reselect its original grave", async ({ page }) => {
   await fixture(page);
@@ -112,7 +112,7 @@ for (const width of [390, 1024, 1280]) {
     await page.route("**/api/reports", (route) => route.fulfill({ json: [] }));
     await page.goto("/");
     const buttons = page.locator(".map-toolbar button, .map-controls button");
-    await expect(buttons).toHaveCount(12);
+    await expect(buttons).toHaveCount(9);
     const boxes = await buttons.evaluateAll((elements) => elements.map((element) => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
@@ -127,6 +127,7 @@ for (const width of [390, 1024, 1280]) {
     await page.getByRole("button", { name: "Zoom in", exact: true }).click();
     await page.getByRole("button", { name: "Measure distances between map points", exact: true }).click();
     await expect(page.locator(".map-measurement")).toContainText("Click map points");
+    await showApplicationActions(page);
     await page.getByRole("button", { name: /^Open reports:/ }).click();
     await expect(page.getByRole("dialog", { name: "Reports", exact: true })).toBeVisible();
   });

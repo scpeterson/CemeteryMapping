@@ -1,6 +1,6 @@
 import { Button } from "./ui/Button";
 import { EmptyState, Notice, StatusBadge } from "./ui/Feedback";
-import { CalendarSearch, Filter, Search, X } from "lucide-react";
+import { Filter, Search, X } from "lucide-react";
 import type { CemeterySearchMatch, GraveStatus } from "../types";
 import { formatGraveLocation, graveSelectionKey, lotSelectionKey, statusColors, statusLabels } from "../lib/format";
 
@@ -8,7 +8,6 @@ type SearchPanelProps = {
   isSearching: boolean;
   error?: string;
   onRetry: () => void;
-  cemeteryScopeLabel: string;
   query: string;
   onQueryChange: (query: string) => void;
   selectedStatuses: Set<GraveStatus>;
@@ -24,7 +23,6 @@ const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "n
 
 export function SearchPanel({
   isSearching, error, onRetry,
-  cemeteryScopeLabel,
   query,
   onQueryChange,
   selectedStatuses,
@@ -36,15 +34,7 @@ export function SearchPanel({
   onSelectMatch,
 }: SearchPanelProps) {
   return (
-    <aside className="search-panel">
-      <div className="panel-heading">
-        <div>
-          <p className="eyebrow">{cemeteryScopeLabel}</p>
-          <h1>Cemetery Map</h1>
-        </div>
-        <CalendarSearch size={24} aria-hidden="true" />
-      </div>
-
+    <aside className="search-panel" aria-label="Search and filters">
       <label className="search-box">
         <Search size={18} aria-hidden="true" />
         <input

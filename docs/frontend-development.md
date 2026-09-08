@@ -72,13 +72,13 @@ Gravesite updates additionally send the detail response's `version` as `expected
 
 `src/styles/core-map.css` imports the ordered foundation/account, panel, search, map control, map key, and toolbar/modal sections from `src/styles/map/`.
 
-Preserve cascade order when moving rules. Check print output when changing report or modal styles. At 760 pixels or less, Search/Map/Details are separate visible views while their components remain mounted. The map uses a resize observer when its container changes size. Keep map action groups in the wrapping toolbar, zoom controls in their separate column, and measurement feedback in toolbar flow.
+Preserve cascade order when moving rules. Check print output when changing report or modal styles. At 760 pixels or less, Search/Map/Details are separate visible views while their components remain mounted. The map uses a resize observer when its container changes size. Keep map view and selection controls in the wrapping toolbar, zoom controls in their separate column, and measurement feedback in toolbar flow.
 
 ## Signed-In Workspace
 
-`AuthenticatedShell` places the account identity and Sign out in a normal-flow header above the application. Keep this header outside the map toolbar and reserve its space through the authenticated workspace grid; avoid viewport-fixed account controls that can cover map actions. The grid must allow narrow children to shrink, including the phone Details view. Signing out checks tracked drafts before invoking Auth0 logout.
+`ApplicationHeader` displays the title and cemetery count, Reports/Control/Admin actions, and account controls in the normal-flow header above `App`'s workspace. Its styles live in `src/components/application-header.css`. `AuthenticatedShell` supplies identity and guarded logout through `SessionContext`; the header also works when authentication is disabled. Keep the workspace grid shrinkable and account text ellipsized. At 760 pixels or less, a Menu disclosure shows the application actions; Escape collapses it and restores focus to its toggle. Dialogs live outside the map panel so actions work from phone Search and Details views. Signing out checks tracked drafts before invoking Auth0 logout.
 
-`tests/auth-layout.spec.ts` runs the production shell with a controlled Auth0 context, so layout tests exercise the signed-in controls even when normal TEST authentication is disabled. Cover long identities, fallback labels, phone navigation, logout/canceled logout, and report print visibility. The account header is excluded from print output while the authenticated workspace remains printable.
+`tests/auth-layout.spec.ts` runs the production shell with a controlled Auth0 context, so layout tests exercise the signed-in controls even when normal TEST authentication is disabled. Cover long identities, fallback labels, phone navigation, logout/canceled logout, and report print visibility. The application header is excluded from print output while reports remain printable. `tests/application-header.spec.ts` additionally covers header sizing, the phone menu, permissions, and dialogs launched while the map is hidden.
 
 ## Protected Photos
 

@@ -1,4 +1,4 @@
-/* Keep feature, view, and application actions in one wrapping layout. */
+/* Keep map view and selection controls in one wrapping layout. */
 .map-toolbar {
   position: absolute;
   top: 18px;
@@ -11,8 +11,7 @@
   gap: var(--space-2);
 }
 .map-toolbar .map-view-toggle,
-.map-toolbar .map-selection-toggle,
-.map-toolbar .map-tool-buttons {
+.map-toolbar .map-selection-toggle {
   position: static;
   flex-wrap: wrap;
 }

@@ -493,7 +493,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
-  await expect(page.locator(".panel-heading .eyebrow")).toContainText(/Cemetery records|\d+ cemeteries/);
+  await expect(page.locator(".application-brand p")).toContainText(/Cemetery records|\d+ cemeteries/);
   await expect(page.getByLabel("North arrow")).toBeVisible();
   await expect(page.getByRole("button", { name: /Open administration/u })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
