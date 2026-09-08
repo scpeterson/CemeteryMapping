@@ -13,6 +13,7 @@ test("a delayed save cannot reselect its original grave", async ({ page }) => {
   });
   await page.goto("/");
   await select(page, "A-TEST");
+  await page.getByRole("tab", { name: "Location and geometry" }).click();
   await page.getByRole("button", { name: /Edit gravesite/ }).click();
   await page.locator(".grave-form").getByLabel("Name", { exact: true }).fill("Saved A");
   await page.getByRole("button", { name: "Save gravesite", exact: true }).click();
@@ -43,6 +44,7 @@ test("conflicting edits keep the draft until explicit reload and save the fresh 
   });
   await page.goto("/");
   await select(page, "A-TEST");
+  await page.getByRole("tab", { name: "Location and geometry" }).click();
   await page.getByRole("button", { name: /Edit gravesite/ }).click();
   const name = page.locator(".grave-form").getByLabel("Name", { exact: true });
   await name.fill("My draft");
@@ -154,6 +156,7 @@ test("navigation preserves an unsaved draft when canceled and discards only on c
   await fixture(page);
   await page.goto("/");
   await select(page, "A-TEST");
+  await page.getByRole("tab", { name: "Location and geometry" }).click();
   await page.getByRole("button", { name: /Edit gravesite/ }).click();
   const name = page.locator(".grave-form").getByLabel("Name", { exact: true });
   await name.fill("Unsaved name");
@@ -175,6 +178,7 @@ test("mobile navigation opens selected details and preserves drafts between view
   await nav.getByRole("button", { name: "Search", exact: true }).click();
   await select(page, "A-TEST");
   await expect(page.locator(".search-panel")).toBeHidden();
+  await page.getByRole("tab", { name: "Location and geometry" }).click();
   await page.getByRole("button", { name: /Edit gravesite/ }).click();
   await page.locator(".grave-form").getByLabel("Name", { exact: true }).fill("Mobile draft");
   await nav.getByRole("button", { name: "Map", exact: true }).click();

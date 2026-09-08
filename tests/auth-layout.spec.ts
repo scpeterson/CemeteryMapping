@@ -42,6 +42,7 @@ test("signing out checks unsaved edits and supports the fallback identity label"
   await page.goto("/tests/auth.html?identity=");
   await expect(page.locator(".auth-session")).toContainText("Signed in");
   await select(page, "A-TEST");
+  await page.getByRole("tab", { name: "Location and geometry" }).click();
   await page.getByRole("button", { name: /Edit gravesite/ }).click();
   const name = page.locator(".grave-form").getByLabel("Name", { exact: true });
   await name.fill("Retain my draft");

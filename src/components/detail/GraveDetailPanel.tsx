@@ -1,4 +1,5 @@
-import { confirmDiscardChanges } from "../../hooks/useDraftState";
+import { DetailTabs } from "./DetailTabs";
+import { GraveOverview } from "./FeatureOverview";
 import { FileText, Flag, History, Images, Landmark, MapPinned, UserRound } from "lucide-react";
 import { useState } from "react";
 import { formatDate, formatGraveLabel } from "../../lib/format";
@@ -40,6 +41,7 @@ import { PickedMarkerPoint } from "./detailTypes";
 const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
 
 export function GraveDetailPanel({
+  onSelectHeadstone,
   ownersById,
   summary,
   grave,
@@ -82,6 +84,7 @@ export function GraveDetailPanel({
   error,
   onRetry,
 }: {
+  onSelectHeadstone: (marker: HeadstoneSummary) => void;
   ownersById: Map<string, Owner>;
   summary: GraveSpaceSummary;
   grave?: GraveSpace;
@@ -166,39 +169,7 @@ export function GraveDetailPanel({
 
       {!grave || error ? null : (
         <>
-          <div className="detail-tabs" role="tablist" aria-label="Gravesite details">
-            {detailTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                id={`grave-detail-tab-${tab.id}`}
-                aria-controls={`grave-detail-panel-${tab.id}`}
-                aria-selected={activeTab === tab.id}
-                aria-label={tab.description}
-                title={tab.description}
-                tabIndex={activeTab === tab.id ? 0 : -1}
-                className={activeTab === tab.id ? "is-active" : undefined}
-                onClick={() => setActiveTab(tab.id)}
-                onKeyDown={(event) => {
-                  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-                  event.preventDefault();
-                  const currentIndex = detailTabs.findIndex((candidate) => candidate.id === activeTab);
-                  const nextIndex = event.key === "Home"
-                    ? 0
-                    : event.key === "End"
-                      ? detailTabs.length - 1
-                      : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + detailTabs.length) % detailTabs.length;
-                  if (!confirmDiscardChanges()) return;
-                  setActiveTab(detailTabs[nextIndex].id);
-                  document.getElementById(`grave-detail-tab-${detailTabs[nextIndex].id}`)?.focus();
-                }}
-              >
-                <span>{tab.label}</span>
-                {tab.count ? <span className="detail-tab-count" aria-label={`${tab.count} items`}>{tab.count}</span> : null}
-              </button>
-            ))}
-          </div>
+          <DetailTabs prefix="grave-detail" label="Gravesite details" tabs={detailTabs} active={activeTab} onSelect={setActiveTab} />
 
           <div
             role="tabpanel"
@@ -206,25 +177,13 @@ export function GraveDetailPanel({
             aria-labelledby={`grave-detail-tab-${activeTab}`}
             className="detail-tab-panel"
           >
-          {activeTab === "overview" ? <>
-          <section className="detail-section">
-            <div className="section-title">
-              <MapPinned size={17} aria-hidden="true" />
-              <h3>Gravesite</h3>
-            </div>
-            <GraveSpaceRecord grave={grave} lots={cemeteryLots} inferredLot={inferredLot} canUpdate={canUpdateGravesites} canManageLot={canManageLotAssignment} onSave={onSaveGraveSpace} onUpdateLot={onUpdateGraveLot} />
-          </section>
-
-          {grave.notes ? (
-            <section className="detail-section">
-              <div className="section-title">
-                <FileText size={17} aria-hidden="true" />
-                <h3>Notes</h3>
-              </div>
-              <p className="note-box">{grave.notes}</p>
-            </section>
-          ) : null}
-          </> : null}
+          {activeTab === "overview" ? <GraveOverview
+            grave={grave} headstones={headstones}
+            owners={grave.currentOwnerIds.flatMap((id) => ownersById.get(id) ? [ownersById.get(id)!] : [])}
+            canViewOwnership={canViewOwnership} markerSummaries={cemeteryHeadstones} onSelectMarker={onSelectHeadstone}
+            onShowPeople={() => { setActiveTab("people"); document.getElementById("grave-detail-tab-people")?.focus(); }}
+            onShowMonuments={() => { setActiveTab("monuments"); document.getElementById("grave-detail-tab-monuments")?.focus(); }}
+          /> : null}
 
           {activeTab === "people" ? <>
           {canViewOwnership ? (
@@ -406,7 +365,11 @@ export function GraveDetailPanel({
           ) : null}
           </> : null}
 
-          {activeTab === "location" ? (
+          {activeTab === "location" ? (<>
+          <section className="detail-section">
+            <div className="section-title"><MapPinned size={17} aria-hidden="true" /><h3>Gravesite record</h3></div>
+            <GraveSpaceRecord grave={grave} lots={cemeteryLots} inferredLot={inferredLot} canUpdate={canUpdateGravesites} canManageLot={canManageLotAssignment} onSave={onSaveGraveSpace} onUpdateLot={onUpdateGraveLot} />
+          </section>
           <section className="detail-section">
             <div className="section-title">
               <MapPinned size={17} aria-hidden="true" />
@@ -414,7 +377,7 @@ export function GraveDetailPanel({
             </div>
             <GraveGeometryMetadata grave={grave} />
           </section>
-          ) : null}
+          </>) : null}
           </div>
         </>
       )}

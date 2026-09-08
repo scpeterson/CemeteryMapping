@@ -18,6 +18,16 @@ Keep the application shell responsible for selection, workspace navigation, and 
 
 Prefer a component with one editing or review responsibility over extending a coordinator with another large form. Avoid copying workflow state into child components unless the child intentionally owns an independent draft.
 
+## Read-Only Feature Summaries
+
+`GraveOverview` and `MarkerOverview` present names, dates, owner names, related features, and `OverviewPhoto` without editing controls. `overviewImages.ts` combines and deduplicates photo assets, then uses the gallery's shared ordering in `src/lib/media.ts`. The preview uses `useMediaUrl` for protected media and a read-only modal for enlargement. A missing photo and a failed photo load have distinct messages.
+
+Marker summaries fetch associated gravesite details through the existing authorized API, with at most four requests in flight and stale results discarded on selection changes. Honor explicit burial links, group people/owners by gravesite, and keep errors distinct from empty records. The API remains responsible for data access; the UI also hides ownership sections unless the selected cemetery is permitted.
+
+`App` increments `selectionVersion` only for user selections. `DetailPanel` keys the grave/marker panel by feature identity and that version so each click defaults to Overview, including repeat clicks; saves do not reset the tab. It rejects detail objects belonging to a different selection. Shared `DetailTabs` preserves keyboard navigation and draft guards. Gravesite editing belongs in Location, while standalone marker editing belongs in Details.
+
+`tests/overview.spec.ts` covers photos, linked people/owners, permissions, empty and failure states, and selection defaults.
+
 ## Shared Controls and Feedback
 
 Use `src/components/ui/` for common behavior:

@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { DetailTabs } from "./DetailTabs";
+import { MarkerOverview } from "./MarkerOverview";
 import { Flag, History, Landmark, Link2, MapPinned } from "lucide-react";
 import type {
   GraveFeature,
@@ -20,6 +23,7 @@ import { MarkerGravesiteRelationshipManager } from "./MarkerGravesiteRecords";
 import { MarkerRelationshipForm, MarkerRelationshipList } from "./MarkerRelationshipRecords";
 
 export function MarkerDetailPanel({
+  canViewOwnership,
   summary,
   headstone,
   markerGraves,
@@ -48,6 +52,7 @@ export function MarkerDetailPanel({
   error,
   onRetry,
 }: {
+  canViewOwnership: boolean;
   summary: HeadstoneSummary;
   headstone?: Headstone;
   markerGraves: GraveSpaceSummary[];
@@ -76,6 +81,7 @@ export function MarkerDetailPanel({
   error?: string;
   onRetry?: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"overview" | "details">("overview");
   const isMonolith = headstone?.markerScope.code === "monolith";
   return (
     <aside className="detail-panel">
@@ -117,6 +123,12 @@ export function MarkerDetailPanel({
         </div>
       ) : null}
 
+      {headstone && !error ? <>
+        <DetailTabs prefix="marker-detail" label="Marker details" tabs={[{ id: "overview", label: "Overview" }, { id: "details", label: "Details" }]} active={activeTab} onSelect={setActiveTab} />
+        <div role="tabpanel" id={`marker-detail-panel-${activeTab}`} aria-labelledby={`marker-detail-tab-${activeTab}`} className="detail-tab-panel">
+          {activeTab === "overview" ? <MarkerOverview marker={headstone} graves={markerGraves} canViewOwnership={canViewOwnership}
+            onSelectGrave={onSelectMarkerGrave} onShowDetails={() => { setActiveTab("details"); document.getElementById("marker-detail-tab-details")?.focus(); }} /> : null}
+          {activeTab === "details" ? <>
       {!headstone || error ? null : (
         <section className="detail-section">
           <div className="section-title">
@@ -212,6 +224,9 @@ export function MarkerDetailPanel({
           ) : null}
         </section>
       )}
+          </> : null}
+        </div>
+      </> : null}
     </aside>
   );
 }

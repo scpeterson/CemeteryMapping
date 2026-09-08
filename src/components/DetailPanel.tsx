@@ -30,6 +30,8 @@ import { MarkerDetailPanel } from "./detail/MarkerDetailPanel";
 import { PickedMarkerPoint } from "./detail/detailTypes";
 
 type DetailPanelProps = {
+  selectionVersion: number;
+  onSelectHeadstone: (headstone: HeadstoneSummary) => void;
   owners: Owner[];
   summary?: GraveSpaceSummary;
   lot?: CemeteryLot;
@@ -95,6 +97,8 @@ function EmptyDetailPanel() {
 }
 
 export function DetailPanel({
+  selectionVersion,
+  onSelectHeadstone,
   owners,
   summary,
   lot,
@@ -103,9 +107,9 @@ export function DetailPanel({
   cemeteryLots = [],
   cemeteryHeadstones = [],
   lotRestrictedAreas = [],
-  grave,
+  grave: loadedGrave,
   standaloneHeadstoneSummary,
-  standaloneHeadstone,
+  standaloneHeadstone: loadedHeadstone,
   markerGraves = [],
   canViewOwnership,
   canUpdateGravesites,
@@ -148,9 +152,11 @@ export function DetailPanel({
   error,
   onRetry,
 }: DetailPanelProps) {
+  const grave = loadedGrave?.id === summary?.id && loadedGrave?.cemeteryId === summary?.cemeteryId ? loadedGrave : undefined;
+  const standaloneHeadstone = loadedHeadstone?.id === standaloneHeadstoneSummary?.id ? loadedHeadstone : undefined;
   const ownersById = useMemo(
-    () => new Map([...(grave?.owners ?? []), ...owners].map((owner) => [owner.id, owner])),
-    [grave?.owners, owners],
+    () => new Map([...(grave?.owners ?? []), ...(grave ? owners : [])].map((owner) => [owner.id, owner])),
+    [grave, owners],
   );
   const headstones = useMemo(() => grave?.headstones ?? [], [grave?.headstones]);
   const northHillsEvidence = grave?.northHillsEvidence ?? [];
@@ -160,6 +166,8 @@ export function DetailPanel({
   if (standaloneHeadstoneSummary) {
     return (
       <MarkerDetailPanel
+        key={`marker:${standaloneHeadstoneSummary.id}:${selectionVersion}`}
+        canViewOwnership={canViewOwnership}
         summary={standaloneHeadstoneSummary}
         headstone={standaloneHeadstone}
         markerGraves={markerGraves}
@@ -201,6 +209,8 @@ export function DetailPanel({
 
   return (
     <GraveDetailPanel
+      key={`grave:${summary.cemeteryId}:${summary.id}:${selectionVersion}`}
+      onSelectHeadstone={onSelectHeadstone}
       ownersById={ownersById}
       summary={summary}
       grave={grave}

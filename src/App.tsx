@@ -75,6 +75,7 @@ function includesAllStatuses(statuses: Set<GraveStatus>) {
 export default function App() {
   useDraftNavigationGuard();
   const [mobileView, setMobileView] = useState<"search" | "map" | "details">("map");
+  const [selectionVersion, setSelectionVersion] = useState(0);
   const [query, setQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<GraveStatus>>(() => new Set(allStatuses));
   const [data, setData] = useState<CemeteryData>(cemeteryData);
@@ -242,7 +243,7 @@ export default function App() {
   const hasScopedEditAccess = currentUser?.role === "power-user" || currentUser?.role === "cemetery-admin";
   const canViewSelectedOwnership =
     currentUser?.role === "admin" ||
-    (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
+    (hasScopedEditAccess && (selectedGrave || selectedHeadstone) ? (currentUser?.assignedCemeteryIds ?? []).includes((selectedGrave ?? selectedHeadstone)!.cemeteryId) : false);
   const canUpdateSelectedHeadstones =
     currentUser?.role === "admin" ||
     (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false) ||
@@ -270,6 +271,7 @@ export default function App() {
 
   const selectMatch = (match: CemeterySearchMatch) => {
     setMobileView("details");
+    setSelectionVersion((version) => version + 1);
     setSelectedHeadstone(undefined);
     if ("lot" in match) {
       setSelectedGrave(undefined);
@@ -283,6 +285,7 @@ export default function App() {
   const selectGrave = (grave: GraveSpaceSummary) => {
     if (!confirmDiscardChanges()) return;
     setMobileView("details");
+    setSelectionVersion((version) => version + 1);
     setSelectedHeadstone(undefined);
     setSelectedLot(undefined);
     setSelectedGrave(grave);
@@ -299,6 +302,7 @@ export default function App() {
   const selectHeadstone = (headstone: HeadstoneSummary) => {
     if (!confirmDiscardChanges()) return;
     setMobileView("details");
+    setSelectionVersion((version) => version + 1);
     setSelectedHeadstone(headstone);
     setSelectedLot(undefined);
     setSelectedGrave(undefined);
@@ -414,6 +418,8 @@ export default function App() {
             />
           </section>
           <DetailPanel
+            selectionVersion={selectionVersion}
+            onSelectHeadstone={selectHeadstone}
             owners={selectedGraveOwners}
             summary={selectedGrave}
             lot={selectedLot}
