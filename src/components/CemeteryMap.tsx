@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, Ruler, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
@@ -25,7 +25,6 @@ import { syncCemeteryMarkers } from "./cemeteryMapMarkers";
 import { mapScale, type MapScale } from "./cemeteryMapScale";
 
 type CemeteryMapProps = {
-  tools?: ReactNode;
   data: CemeteryData;
   selectedGrave?: GraveSpaceSummary;
   selectedLot?: CemeteryLot;
@@ -165,7 +164,6 @@ function registerSelectableLayerHandlers(map: MapLibreMap, layers: readonly stri
 }
 
 export function CemeteryMap({
-  tools,
   data,
   selectedGrave,
   selectedLot,
@@ -532,7 +530,6 @@ export function CemeteryMap({
           Markers
         </button>
       </div>
-      {tools}
       {!isPickingMarkerPoint && (isMeasuring || measurementPoints.length) ? (
         <div className="map-measurement" aria-live="polite">
           <div>

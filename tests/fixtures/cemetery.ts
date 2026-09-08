@@ -17,3 +17,9 @@ export async function select(page: Page, id: string) {
   await expect(page.locator(".detail-panel")).toContainText(`Record ID: ${id}`);
 }
 
+
+export async function showApplicationActions(page: Page) {
+  await expect(page.locator("#application-actions")).toBeAttached();
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  if (await menu.isVisible() && await menu.getAttribute("aria-expanded") === "false") await menu.click();
+}

@@ -80,12 +80,6 @@
     width: auto;
   }
 
-  .map-tool-buttons {
-    right: 86px;
-    flex-direction: row;
-    align-items: center;
-  }
-
   .control-point-panel {
     inset: 12px;
     padding: var(--space-3);
@@ -209,10 +203,4 @@
   .app-shell[data-mobile-view="details"] > .map-region { display: none; }
   .app-shell > .map-region { min-height: calc(100dvh - 61px); }
   .app-shell > .search-panel, .app-shell > .detail-panel { min-height: calc(100dvh - 61px); }
-}
-
-@media (max-width: 760px) {
-  .authenticated-workspace { height: auto; min-height: 100%; }
-  .auth-session { padding: 8px; }
-  .auth-session button { min-height: 44px; }
 }

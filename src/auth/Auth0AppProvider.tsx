@@ -1,5 +1,6 @@
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import { ReactNode, useEffect } from "react";
+import { SessionContext } from "./sessionContext";
 import { confirmDiscardChanges } from "../hooks/useDraftState";
 import { setAccessTokenProvider } from "../api/cemeteryApi";
 import { auth0Audience, auth0ClientId, auth0Domain, auth0Scope, isAuth0Enabled } from "../config/environment";
@@ -54,17 +55,14 @@ export function AuthenticatedShell({ children }: Auth0AppProviderProps) {
   }
 
   return (
-    <div className="authenticated-workspace">
-      <header className="auth-session" aria-label="Signed in user">
-        <span title={user?.email ?? user?.name ?? "Signed in"}>{user?.email ?? user?.name ?? "Signed in"}</span>
-        <button type="button" onClick={() => {
-          if (confirmDiscardChanges()) void logout({ logoutParams: { returnTo: window.location.origin } });
-        }}>
-          Sign out
-        </button>
-      </header>
+    <SessionContext.Provider value={{
+      identity: user?.email ?? user?.name ?? "Signed in",
+      signOut: () => {
+        if (confirmDiscardChanges()) void logout({ logoutParams: { returnTo: window.location.origin } });
+      },
+    }}>
       {children}
-    </div>
+    </SessionContext.Provider>
   );
 }
 

@@ -37,34 +37,6 @@
   color: #795316;
 }
 
-.map-tool-buttons {
-  position: absolute;
-  top: 18px;
-  right: 90px;
-  z-index: 2;
-  display: inline-flex;
-  gap: var(--space-2);
-}
-
-.map-tool-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 7px 10px;
-  border: 1px solid rgba(23, 32, 29, 0.18);
-  border-radius: 7px;
-  background: rgba(251, 252, 247, 0.94);
-  color: #26342d;
-  font-size: var(--font-size-small);
-  font-weight: 780;
-  box-shadow: var(--shadow);
-}
-
-.map-tool-button:hover {
-  background: #edf2ea;
-}
-
 .data-status {
   position: absolute;
   top: 18px;

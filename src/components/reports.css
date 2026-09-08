@@ -533,7 +533,7 @@
   }
 
   body > *:not(#root),
-  #root > *:not(.app-shell):not(.authenticated-workspace) {
+  #root > *:not(.app-shell):not(.application-workspace) {
     display: none !important;
   }
 
@@ -613,6 +613,6 @@
 }
 
 @media print {
-  .authenticated-workspace { display: block; height: auto; min-height: 0; }
-  .auth-session { display: none; }
+  .application-workspace { display: block; height: auto; min-height: 0; }
+  .application-header { display: none; }
 }

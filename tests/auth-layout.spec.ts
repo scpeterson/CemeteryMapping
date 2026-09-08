@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { fixture, select } from "./fixtures/cemetery";
+import { fixture, select, showApplicationActions } from "./fixtures/cemetery";
 
 for (const width of [390, 768, 1280, 1920]) {
   test(`signed-in controls do not overlap the workspace at ${width}px`, async ({ page }, testInfo) => {
@@ -18,6 +18,7 @@ for (const width of [390, 768, 1280, 1920]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     const signOutBox = (await signOut.boundingBox())!;
     expect(signOutBox.x + signOutBox.width).toBeLessThanOrEqual(width);
+    await showApplicationActions(page);
     await page.getByRole("button", { name: /^Open reports:/ }).click();
     await expect(page.getByRole("dialog", { name: "Reports", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");

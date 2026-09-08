@@ -4,6 +4,7 @@
 @import "./components/control-points.css";
 @import "./components/reports.css";
 @import "./styles/admin.css";
+@import "./components/application-header.css";
 @import "./styles/responsive.css";
 
 @import "./components/ui/ui.css";

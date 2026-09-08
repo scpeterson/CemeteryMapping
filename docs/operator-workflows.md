@@ -22,7 +22,7 @@ For a brand-new cemetery, start with the one-time onboarding workflows, verify t
 
 On desktop, search, map, and record details share the workspace. At widths of 760 pixels or less, use the `Search`, `Map`, and `Details` buttons at the top. The initial phone view is Map. Selecting a record opens Details; switching views keeps mounted editors and their drafts available. Picking a new marker location switches to Map and returns to Details after the point is chosen. This navigation is available now; the dedicated Field Collection concept described later remains future work.
 
-Map view modes, feature-selection modes, and Reports/Control/Admin actions wrap together as space changes. Zoom, fit, and measurement controls occupy a separate column. Measurement instructions appear with the toolbar rather than covering its buttons.
+The application header shows Cemetery Map, the cemetery count, Reports/Control/Admin actions (subject to your permissions), and signed-in account controls. On phones, open Menu to reach application actions from any workspace view; Escape closes the menu. Search and filters start directly at the top of the search panel. Map view and feature-selection modes stay above the map. Zoom, fit, and measurement controls occupy a separate column, with measurement instructions in the map toolbar.
 
 Search announces progress and the result count. If the remote search fails, the app labels results from the currently loaded map data and offers `Retry search`. Those fallback matches are not a complete substitute for remote burial/owner search. An empty successful search shows `No matching records`; try another term or enable more status filters. Status buttons expose whether each filter is enabled.
 

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { fixture, select } from "./fixtures/cemetery";
+import { fixture, select, showApplicationActions } from "./fixtures/cemetery";
 
 test("keyboard users can select a result and operate detail tabs", async ({ page }) => {
   await fixture(page);
@@ -54,6 +54,7 @@ for (const width of [390, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await fixture(page);
     await page.goto("/");
+    await showApplicationActions(page);
     await expect(page.getByRole("button", { name: /^Open reports:/ })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.screenshot({ path: testInfo.outputPath(`workspace-${width}.png`), fullPage: true });
