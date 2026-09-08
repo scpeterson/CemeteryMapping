@@ -19,4 +19,3 @@ export function overviewImages(assets: MediaAsset[], markers: Headstone[] = []):
   }
   return images;
 }
-
