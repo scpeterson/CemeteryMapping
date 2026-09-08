@@ -28,7 +28,7 @@ Use `src/components/ui/` for common behavior:
 | `TextField` | Associates its label with the input, assigns an ID when needed, and connects hint/error text through `aria-describedby` and `aria-invalid`. |
 | `Notice` | Uses a status announcement for informational/success feedback and an alert for errors. |
 | `EmptyState` | Explains an empty view and can provide a useful next step. |
-| `StatusBadge` | Combines a text label with a neutral, success, or warning appearance. Do not communicate status through color alone. |
+| `StatusBadge` | Combines a text label with a neutral, success, or warning appearance. For cemetery statuses, pass `color` from `statusColors` to preserve the six domain colors with a dot and tinted background. Do not collapse grave statuses into generic tones or communicate status through color alone. |
 | `Modal` | Uses native `showModal()`, makes background content inert, wraps Tab/Shift+Tab, handles Escape, and restores focus. It does not dismiss on backdrop clicks. |
 | `ConfirmationProvider` / `useConfirmation` | Provides an asynchronous confirmation dialog; Cancel receives initial focus. Await the returned boolean before performing the action. |
 
