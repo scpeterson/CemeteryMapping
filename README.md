@@ -63,7 +63,7 @@ If another local PostgreSQL service already uses port `5432`, create `db/env/dev
 
 - Interactive cemetery map with all active cemetery boundaries, sections, and summary grave-space geometry
 - Map controls for zooming, fitting the view to all active cemetery data, identifying cemeteries at broad zoom levels, reading fractional and bar scale, and interpreting rendered layers
-- Clickable grave sites that load ownership, burial, and status details on selection
+- Clickable gravesites and markers that default to a read-only Overview with the latest available photo (or a no-photo message), associated people, current owners when access permits, and links to related records
 - Search by deceased name, owner name, birth date, death date, burial date, cemetery name, section, lot name, lot ID, or space
 - Status filters
 - Ownership history timeline

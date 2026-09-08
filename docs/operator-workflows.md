@@ -54,7 +54,7 @@ This protection applies to the gravesite detail edit, not every mutation in the 
 
 Use `Reports -> Marker burial pages` when you need a printable record for every burial linked to one or more markers. The report is available to readers and higher roles and remains scoped to the cemeteries the signed-in user may access.
 
-1. Open `Reports` from the main application toolbar.
+1. Open `Reports` from the application header; on phones, open `Menu` first.
 2. Select `Marker burial pages` under Burials.
 3. Narrow the output with any combination of marker ID, burial name, and section. Marker ID and burial name accept partial text; section matching is case-insensitive.
 4. Run the report and review the returned pages before printing. Each marker appears once, followed by every burial associated with it.
@@ -290,7 +290,7 @@ Audit events are read-only. If an audit result looks wrong, correct the source r
 Use the normal grave-detail panel or the Markers panel, not the Admin drawer, for operational marker/headstone updates.
 
 1. Select a gravesite on the map or from search results.
-2. Review the marker/headstone section in the detail panel.
+2. Open `Monuments` and review the marker/headstone section in the detail panel.
 3. Users with `reader` access can view marker information but cannot edit it.
 4. `power-user` and `cemetery-admin` users can edit marker details for assigned cemeteries.
 5. `admin` users can edit marker details for any cemetery.
@@ -299,25 +299,24 @@ Use the normal grave-detail panel or the Markers panel, not the Admin drawer, fo
 8. Section G gravesites can contain either one casket burial or up to two funeral urn burials. The database enforces this capacity rule when burial rows are created, restored, or updated.
 9. Save the marker and confirm the detail panel reflects the update.
 
-To add a secondary marker, such as a footstone, select the gravesite first and use `Markers -> Add marker` in the detail panel. Choose the marker type and marker-to-gravesite relationship, such as `Footstone` or `Secondary marker`. Enter coordinates manually or use `Pick point on map`, then click the map where the marker is located; the form fills latitude and longitude from that click. Saving creates the marker record and links it to the selected gravesite.
+To add a secondary marker, such as a footstone, select the gravesite, open `Monuments`, and use `Markers -> Add marker` in the detail panel. Choose the marker type and marker-to-gravesite relationship, such as `Footstone` or `Secondary marker`. Enter coordinates manually or use `Pick point on map`, then click the map where the marker is located; the form fills latitude and longitude from that click. Saving creates the marker record and links it to the selected gravesite.
 
-For standalone cemetery markers that are not tied to a gravesite, open the marker from the Markers panel and use the same edit flow. The marker relationship label explains how a marker relates to a gravesite when one exists: `primary` is the normal relationship, `spans` means one marker covers multiple gravesites, `nearby` means the marker is close but not confidently placed on that gravesite, `inferred` means the link came from records or import logic and may need field confirmation, `footstone` means a smaller marker is placed at the foot of the gravesite, and `secondary` means another marker belongs to the gravesite separately from the primary headstone or monument.
+For standalone cemetery markers that are not tied to a gravesite, open the marker from the Markers panel, select `Details`, and use the same edit flow. The marker relationship label explains how a marker relates to a gravesite when one exists: `primary` is the normal relationship, `spans` means one marker covers multiple gravesites, `nearby` means the marker is close but not confidently placed on that gravesite, `inferred` means the link came from records or import logic and may need field confirmation, `footstone` means a smaller marker is placed at the foot of the gravesite, and `secondary` means another marker belongs to the gravesite separately from the primary headstone or monument.
 
 Linked North Hills evidence supports interpretation of a headstone or gravesite, but editing marker condition/material/type does not alter the linked reading evidence.
 
 ### Photo Collection
 
-Use the normal grave-detail panel for field photo collection. Photos are stored as media evidence and linked to the selected gravesite, with an optional marker/headstone link.
+Use `Monuments` in the gravesite detail panel for field photo collection, or `Details` when a marker is selected directly. `Overview` provides a read-only preview. Photos are stored as media evidence and linked to the selected gravesite or marker/headstone.
 
 1. On the iPhone, open the application and select the gravesite on the map or from search results.
-2. Open the `Photos` section in the detail panel.
+2. Open `Monuments`. For an image of the full grave space, use `Gravesite Photos`; for a specific physical marker, use the upload form under that marker. When selecting a marker directly, its upload form is in `Details`.
 3. Tap the photo file control. On iPhone this should offer the camera or photo library.
-4. Choose `Gravesite overview` when the image documents the full grave space.
-5. Choose a marker/headstone when the image documents a specific physical marker.
-6. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty.
-7. Upload the photo and confirm it appears in the photo gallery.
+4. Confirm that you are using the form for the intended gravesite or marker; the form fixes the photo link to that feature.
+5. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty.
+6. Upload the photo and confirm it appears in the photo gallery.
 
-The inline gallery shows up to four linked photos, ordered newest first by capture date and then upload date. `View all photos (N)` opens the complete history when more are available. If a photo is linked to a marker/headstone, it appears under that marker rather than being duplicated in the gravesite overview `Photos` section.
+The inline gallery shows up to four linked photos, ordered newest first by capture date, falling back to upload date when capture date is absent; display order breaks ties. `View all photos (N)` opens the complete history when more are available. Marker/headstone photos appear in that marker's gallery rather than being duplicated in `Gravesite Photos`. The read-only gravesite `Overview` considers both galleries when choosing its latest photo and labels a preview from a linked marker.
 
 Readers can view linked photos while authenticated. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
 

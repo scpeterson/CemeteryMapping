@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added read-only gravesite and marker Overviews with the latest available photo or an explicit no-photo message, associated people, permitted current-owner information, and links to related records. Overview opens by default on every feature selection, including repeat selections.
+
 - Added phone Search/Map/Details navigation, search progress/retry/fallback feedback, and accessible filter/selection states.
 - Added shared UI controls, labeled fields, feedback, and confirmations; standardized dialog keyboard focus and Escape behavior.
 - Added in-memory draft protection for tracked record and administration editors, including guarded record switching and page-exit warnings.
@@ -34,6 +36,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Added repeatable vase grave features so each physical vase can be recorded independently on a marker or gravesite.
 
 ### Changed
+
+- Consolidated the application title, cemetery count, Reports/Control/Admin actions, and account controls in the header, with a Menu for application actions on phones.
+- Restored the six distinct status colors in search badges to match the filters and map legend.
+- Moved gravesite record and lot-assignment editing to Location and standalone marker editing to Details, keeping Overview read-only.
 
 - Moved signed-in account controls into a dedicated header so they cannot overlap map actions or phone navigation; sign-out now checks tracked unsaved drafts. Added authenticated-layout and report-print regression coverage.
 
