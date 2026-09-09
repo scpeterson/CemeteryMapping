@@ -108,7 +108,8 @@ const headstoneMediaJoinSql = `
         'status', media_assets.status,
         'mediaLinkId', headstone_media_assets.id::text,
         'mediaLinkType', 'headstone',
-        'displayOrder', headstone_media_assets.display_order
+        'displayOrder', headstone_media_assets.display_order,
+        'isPrimary', headstone_media_assets.is_primary
       )
       ORDER BY headstone_media_assets.display_order, media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
     ) AS media_assets

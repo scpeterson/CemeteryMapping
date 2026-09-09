@@ -493,3 +493,40 @@ for (const kind of ["gravesite", "headstone"]) {
     });
   }
 }
+
+for (const linkType of ["headstone", "gravesite"]) {
+  for (const direction of ["primary", "automatic"]) {
+    test(`${direction} photo selection is scoped and transactional for ${linkType}`, async () => {
+      const queries = [];
+      const pool = { connect: async () => ({
+        query: async (sql, values = []) => {
+          queries.push({ sql, values });
+          if (sql.includes("SELECT cemetery_id::text")) return { rows: [{ cemetery_id: "cemetery" }] };
+          if (sql.includes("AS target_id")) return { rows: [{ target_id: "record" }] };
+          if (sql.includes("SELECT link.id FROM")) return { rows: [{ id: "chosen" }] };
+          if (sql.includes("SET is_primary = false")) return { rows: [{ id: "previous", is_primary: false }] };
+          if (sql.includes("SET is_primary = true")) return { rows: [{ id: "chosen", is_primary: true }] };
+          return { rows: [] };
+        }, release() {},
+      }) };
+      const result = await moveMediaAssetLink(pool, "photo", { linkId: "chosen", linkType, direction, allowedCemeteryIds: ["cemetery"] });
+      assert.equal(result.moved, true);
+      const clear = queries.find(({ sql }) => sql.includes("SET is_primary = false"));
+      assert.deepEqual(clear.values, ["record", direction === "primary", "chosen"]);
+      assert.ok(queries.findIndex(({ sql }) => sql.includes("pg_advisory_xact_lock")) < queries.indexOf(clear));
+      assert.equal(result.updates.some((update) => update.is_primary), direction === "primary");
+      assert.equal(queries.at(-1).sql, "COMMIT");
+    });
+  }
+}
+
+test("primary selection refuses photos outside the user's cemetery", async () => {
+  const queries = [];
+  const pool = { connect: async () => ({
+    query: async (sql) => { queries.push(sql); return { rows: sql.includes("SELECT cemetery_id::text") ? [{ cemetery_id: "other" }] : [] }; },
+    release() {},
+  }) };
+  assert.deepEqual(await moveMediaAssetLink(pool, "photo", { linkId: "link", linkType: "headstone", direction: "primary", allowedCemeteryIds: ["allowed"] }), { forbidden: true });
+  assert.equal(queries.at(-1), "ROLLBACK");
+  assert.equal(queries.some((sql) => sql.includes("UPDATE")), false);
+});

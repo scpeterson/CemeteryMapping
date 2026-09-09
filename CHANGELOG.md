@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added a saved primary-photo choice per marker or gravesite. Primary photos lead galleries and Overviews; removing the choice restores newest-first sorting. Includes migration 379.
+
 - Added read-only gravesite and marker Overviews with the latest available photo or an explicit no-photo message, associated people, permitted current-owner information, and links to related records. Overview opens by default on every feature selection, including repeat selections.
 
 - Added phone Search/Map/Details navigation, search progress/retry/fallback feedback, and accessible filter/selection states.

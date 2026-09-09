@@ -32,9 +32,9 @@ Editors using draft protection warn before a guarded record/tab change, cancel/c
 
 ### Feature Overview
 
-Selecting a gravesite or marker opens its read-only `Overview`, including when selecting the same feature again. It shows the newest available photo, names and dates, current owners when your access permits, and related features. If no photo or person record exists, the overview says so explicitly; an absent burial record does not imply an available grave.
+Selecting a gravesite or marker opens its read-only `Overview`, including when selecting the same feature again. It shows the primary photo when selected, otherwise the newest available photo, names and dates, current owners when your access permits, and related features. If no photo or person record exists, the overview says so explicitly; an absent burial record does not imply an available grave.
 
-Gravesite previews consider both gravesite and linked-marker photos and label linked-marker images. Select the photo to enlarge it, then use Close photo or Escape to return. Photo ordering follows the gallery: capture date (or upload date when capture date is absent), then display order. A legacy marker photo URL is a fallback when no photo assets exist.
+Gravesite previews consider both gravesite and linked-marker photos and label linked-marker images. Select the photo to enlarge it, then use Close photo or Escape to return. Photo ordering follows the gallery: primary photos first, then newest capture date (or upload date when capture date is absent), then display order. A legacy marker photo URL is a fallback when no photo assets exist.
 
 Use `View burial records` or `View ownership records` to open People, or select an associated marker to open its Overview. Marker overviews group people and current owners by linked gravesite. Explicit marker-to-burial links determine the displayed people when available; otherwise the summary labels them as people in linked gravesites. A failure to load linked records shows an error and Retry instead of claiming that no records exist.
 
@@ -306,6 +306,8 @@ For standalone cemetery markers that are not tied to a gravesite, open the marke
 Linked North Hills evidence supports interpretation of a headstone or gravesite, but editing marker condition/material/type does not alter the linked reading evidence.
 
 ### Photo Collection
+
+Use `Make primary` beneath a photo to keep the front of a marker first in its gallery and on Overview. Choose a different photo to replace the primary, or `Remove primary` to restore newest-first sorting. These controls use the existing photo-order editing permissions and are available in the inline gallery and full-history dialog. Each marker and gravesite has its own choice; when an Overview combines several markers, primary photos come first and the newest primary wins. All remaining photos stay newest first.
 
 Use `Monuments` in the gravesite detail panel for field photo collection, or `Details` when a marker is selected directly. `Overview` provides a read-only preview. Photos are stored as media evidence and linked to the selected gravesite or marker/headstone.
 

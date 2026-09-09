@@ -113,7 +113,7 @@ export function HeadstoneRecord({
   canDeletePhotos: boolean;
   canReorderPhotos: boolean;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
-  onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;
   canUploadPhotos: boolean;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;

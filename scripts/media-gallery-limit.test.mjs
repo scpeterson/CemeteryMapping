@@ -18,7 +18,7 @@ test("media galleries sort newest photos first and retain the complete history",
   const ordering = fs.readFileSync(new URL("../src/lib/media.ts", import.meta.url), "utf8");
   assert.match(ordering, /const dateDifference = .*rightDate.*leftDate/u);
   assert.match(component, /gallery\(sortedAssets, true\)/u);
-  assert.match(component, /photos, newest first/u);
+  assert.match(component, /primary first, then newest first/u);
 });
 
 test("the complete photo history opens in an accessible modal", () => {

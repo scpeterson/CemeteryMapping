@@ -117,7 +117,7 @@ export function GraveDetailPanel({
   onUpdateGraveLot: (lotId: string) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
-  onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;
   onStartMarkerPointPick: () => void;
   onCancelMarkerPointPick: () => void;
   canDeleteGraveFeatures: boolean;

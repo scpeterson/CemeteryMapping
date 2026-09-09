@@ -34,6 +34,7 @@ import type {
   GraveSpaceSummary,
   Headstone,
   HeadstoneSummary,
+  MediaAsset,
   SaveBurialInput,
   SaveGraveSpaceInput,
   SaveGraveFeatureInput,
@@ -306,11 +307,11 @@ export function useRecordMutations({
 
   const deletePhoto = async (assetId: string, reason?: string) => {
     await deleteMediaAsset(assetId, reason);
-    setSelectedGraveDetails((current) => removeMediaAsset(current, assetId));
+    setSelectedGraveDetails((current) => current ? { ...removeMediaAsset(current, assetId), headstones: current.headstones.map((marker) => removeMediaAsset(marker, assetId)) } : current);
     setSelectedHeadstoneDetails((current) => removeMediaAsset(current, assetId));
   };
 
-  const movePhoto = async (asset: { id: string; mediaLinkId?: string; mediaLinkType?: "headstone" | "gravesite" }, direction: "earlier" | "later") => {
+  const movePhoto = async (asset: { id: string; mediaLinkId?: string; mediaLinkType?: "headstone" | "gravesite" }, direction: "earlier" | "later" | "primary" | "automatic") => {
     if (!asset.mediaLinkId || !asset.mediaLinkType) throw new Error("Photo link information is missing.");
     const result = await moveMediaAsset({
       id: asset.id,
@@ -318,7 +319,19 @@ export function useRecordMutations({
       linkType: asset.mediaLinkType,
       direction,
     });
-    if (!result.moved) return;
+    if (!result.moved) {
+      if (direction === "primary" || direction === "automatic") throw new Error("Photo link is no longer available. Refresh the record and try again.");
+      return;
+    }
+    if (direction === "primary" || direction === "automatic") {
+      const apply = (assets: MediaAsset[]) => assets.map((photo) => {
+        const update = [...result.updates].reverse().find((item) => item.id === photo.mediaLinkId);
+        return update ? { ...photo, isPrimary: update.is_primary } : photo;
+      });
+      setSelectedGraveDetails((current) => current ? { ...current, mediaAssets: apply(current.mediaAssets), headstones: current.headstones.map((marker) => ({ ...marker, mediaAssets: apply(marker.mediaAssets) })) } : current);
+      setSelectedHeadstoneDetails((current) => current ? { ...current, mediaAssets: apply(current.mediaAssets) } : current);
+      return;
+    }
     setSelectedGraveDetails((current) => moveMediaAssetInGrave(current, asset.id, direction));
     setSelectedHeadstoneDetails((current) => moveMediaAssetInRecord(current, asset.id, direction));
   };
