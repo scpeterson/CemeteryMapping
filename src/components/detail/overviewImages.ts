@@ -1,13 +1,19 @@
 import { sortedMediaAssets } from "../../lib/media";
 import type { Headstone, MediaAsset } from "../../types";
 
-export type OverviewImage = { url: string; label: string; date?: string; linkedMarker?: string };
+export type OverviewImage = { url: string; label: string; date?: string; linkedMarker?: string; isPrimary?: boolean };
 
 export function overviewImages(assets: MediaAsset[], markers: Headstone[] = []): OverviewImage[] {
   const all = [...assets, ...markers.flatMap((marker) => marker.mediaAssets ?? [])];
-  const unique = [...new Map(all.filter((asset) => asset.assetType === "photo" && asset.fileUrl).map((asset) => [asset.id, asset])).values()];
+  const byId = new Map<string, MediaAsset>();
+  for (const asset of all.filter((photo) => photo.assetType === "photo" && photo.fileUrl)) {
+    const existing = byId.get(asset.id);
+    byId.set(asset.id, { ...asset, isPrimary: Boolean(asset.isPrimary || existing?.isPrimary) });
+  }
+  const unique = [...byId.values()];
   const images: OverviewImage[] = sortedMediaAssets(unique).map((asset) => ({
     url: asset.fileUrl, label: asset.notes || asset.originalFilename || "Cemetery record photo",
+    isPrimary: asset.isPrimary,
     date: asset.capturedAt ?? asset.uploadedAt,
     linkedMarker: markers.find((marker) => marker.mediaAssets?.some((photo) => photo.id === asset.id))?.headstoneId,
   }));

@@ -157,7 +157,8 @@ async function selectMediaAssetsForGrave(client, graveUuid) {
         media_assets.status,
         gravesite_media_assets.id::text AS media_link_id,
         'gravesite' AS media_link_type,
-        gravesite_media_assets.display_order
+        gravesite_media_assets.display_order,
+        gravesite_media_assets.is_primary
       FROM gravesite_media_assets
       JOIN media_assets
         ON media_assets.id = gravesite_media_assets.media_asset_id

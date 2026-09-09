@@ -454,7 +454,8 @@ export async function moveMediaAssetLink(pool, mediaAssetId, { linkId, linkType,
   const targetColumn = linkType === "gravesite" ? "gravesite_uuid" : linkType === "headstone" ? "headstone_uuid" : "";
   if (!tableName || !targetColumn) throw new Error("Unsupported media link type.");
   const moveOffset = direction === "later" ? 1 : direction === "earlier" ? -1 : 0;
-  if (!moveOffset) throw new Error("Unsupported media move direction.");
+  const primaryAction = direction === "primary" || direction === "automatic";
+  if (!moveOffset && !primaryAction) throw new Error("Unsupported media move direction.");
 
   const client = await pool.connect();
   try {
@@ -497,6 +498,35 @@ export async function moveMediaAssetLink(pool, mediaAssetId, { linkId, linkType,
     if (!selectedLink) {
       await client.query("COMMIT");
       return { moved: false, updates: [] };
+    }
+
+    // Serialize changes for this record, including concurrent primary selections.
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`${tableName}:${selectedLink.target_id}`]);
+    if (primaryAction) {
+      const eligible = await client.query(
+        `SELECT link.id FROM ${tableName} link
+         JOIN media_assets asset ON asset.id = link.media_asset_id
+         WHERE link.id = $1 AND link.media_asset_id = $2
+           AND link.deleted_at IS NULL AND link.status = 'linked'
+           AND asset.deleted_at IS NULL AND asset.status = 'linked' AND asset.asset_type = 'photo'
+         FOR UPDATE OF link`, [linkId, mediaAssetId]);
+      if (!eligible.rows.length) {
+        await client.query("COMMIT");
+        return { moved: false, updates: [] };
+      }
+      const cleared = await client.query(
+        `UPDATE ${tableName} SET is_primary = false
+         WHERE ${targetColumn} = $1 AND is_primary = true
+           AND ($2::boolean OR id = $3)
+         RETURNING id::text, is_primary`, [selectedLink.target_id, direction === "primary", linkId]);
+      const updates = cleared.rows;
+      if (direction === "primary") {
+        const selected = await client.query(
+          `UPDATE ${tableName} SET is_primary = true WHERE id = $1 RETURNING id::text, is_primary`, [linkId]);
+        updates.push(...selected.rows);
+      }
+      await client.query("COMMIT");
+      return { moved: true, updates };
     }
 
     const linksResult = await client.query(

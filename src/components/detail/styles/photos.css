@@ -215,3 +215,33 @@
   margin-top: 0;
 }
 
+
+.media-primary-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  color: #2f5d50;
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.media-primary-button {
+  margin-top: 6px;
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #f8faf6;
+  color: #2f5d50;
+  font: inherit;
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.media-primary-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

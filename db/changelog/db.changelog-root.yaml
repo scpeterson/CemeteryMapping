@@ -1123,3 +1123,6 @@ databaseChangeLog:
   - include:
       file: changes/377-add-naval-reserve-seaman-first-class.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/379-primary-photos.sql
+      relativeToChangelogFile: true

@@ -340,6 +340,7 @@ export type MediaAsset = {
   mediaLinkId?: string;
   mediaLinkType?: "headstone" | "gravesite";
   displayOrder?: number;
+  isPrimary?: boolean;
 };
 
 export type NorthHillsLinkedEvidence = {

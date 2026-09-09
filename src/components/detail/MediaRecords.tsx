@@ -1,7 +1,7 @@
 import { sortedMediaAssets } from "../../lib/media";
 import { Modal } from "../ui/Modal";
 import { type ChangeEvent, type FormEvent, useState } from "react";
-import { Camera, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import { Camera, Star, Trash2, X } from "lucide-react";
 import { MediaPhoto } from "./MediaPhoto";
 import { formatDate } from "../../lib/format";
 import type { Headstone, MediaAsset } from "../../types";
@@ -19,7 +19,7 @@ export function MediaGallery({
   emptyMessage?: string;
   canDelete?: boolean;
   onDelete?: (assetId: string, reason?: string) => Promise<void>;
-  onMove?: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  onMove?: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;
 }) {
   const sortedAssets = sortedMediaAssets(assets);
   const previewAssets = sortedAssets.slice(0, galleryPreviewLimit);
@@ -47,14 +47,14 @@ export function MediaGallery({
     }
   };
 
-  const moveAsset = async (asset: MediaAsset, direction: "earlier" | "later") => {
+  const moveAsset = async (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => {
     if (!onMove) return;
     setMovingId(asset.id);
     setError(undefined);
     try {
       await onMove(asset, direction);
     } catch (moveError) {
-      setError(moveError instanceof Error ? moveError.message : "Unable to reorder photo.");
+      setError(moveError instanceof Error ? moveError.message : "Unable to change primary photo.");
     } finally {
       setMovingId(undefined);
     }
@@ -63,33 +63,19 @@ export function MediaGallery({
   const gallery = (visibleAssets: MediaAsset[], expanded: boolean) => (
     <div className={`media-gallery${expanded ? " media-gallery-expanded" : ""}`}>
       {visibleAssets.map((asset) => {
-        const index = sortedAssets.findIndex((candidate) => candidate.id === asset.id);
         return (
           <div key={asset.id} className="media-gallery-card">
             <MediaPhoto asset={asset}>
               <span>{asset.capturedAt ? `Date taken: ${formatDate(asset.capturedAt)}` : `Uploaded: ${formatDate(asset.uploadedAt)}`}</span>
             </MediaPhoto>
-            {expanded && onMove && sortedAssets.length > 1 ? (
-              <div className="media-order-controls" aria-label="Photo display order">
-                <button
-                  type="button"
-                  onClick={() => void moveAsset(asset, "earlier")}
-                  disabled={index === 0 || movingId === asset.id}
-                  aria-label="Move photo earlier"
-                  title="Move photo earlier"
-                >
-                  <ChevronLeft size={14} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void moveAsset(asset, "later")}
-                  disabled={index === sortedAssets.length - 1 || movingId === asset.id}
-                  aria-label="Move photo later"
-                  title="Move photo later"
-                >
-                  <ChevronRight size={14} aria-hidden="true" />
-                </button>
-              </div>
+            {asset.isPrimary ? <span className="media-primary-label"><Star size={14} aria-hidden="true" /> Primary photo</span> : null}
+            {onMove && asset.mediaLinkId ? (
+              <button type="button" className="media-primary-button"
+                onClick={() => void moveAsset(asset, asset.isPrimary ? "automatic" : "primary")}
+                disabled={Boolean(movingId)}
+                aria-label={`${asset.isPrimary ? "Remove primary" : "Make primary"}: ${asset.originalFilename || asset.id}`}>
+                {movingId === asset.id ? "Saving…" : asset.isPrimary ? "Remove primary" : "Make primary"}
+              </button>
             ) : null}
             {canDelete && onDelete ? (
               <button
@@ -122,7 +108,7 @@ export function MediaGallery({
             <header>
               <div>
                 <h3 id="media-gallery-modal-title">All photos</h3>
-                <p>{sortedAssets.length} photos, newest first</p>
+                <p>{sortedAssets.length} photos, {sortedAssets.some((asset) => asset.isPrimary) ? "primary first, then newest first" : "newest first"}</p>
               </div>
               <button type="button" className="media-gallery-modal-close" onClick={() => setIsShowingAll(false)} aria-label="Close all photos">
                 <X size={18} aria-hidden="true" />
