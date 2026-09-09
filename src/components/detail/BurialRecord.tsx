@@ -172,7 +172,8 @@ export function BurialRecord({
     setIsSaving(true);
     setError(undefined);
     try {
-      await onSave(burial.id, form);
+      const saved = await onSave(burial.id, form);
+      setForm(blankBurialForm(saved));
       setIsEditing(false);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save burial.");

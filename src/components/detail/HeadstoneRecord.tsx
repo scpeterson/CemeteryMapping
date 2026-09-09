@@ -141,6 +141,7 @@ export function HeadstoneRecord({
     setError(undefined);
     try {
       const saved = await onSave(headstone.id, form);
+      setForm(blankHeadstoneForm(saved, markerTypeOptions, cemeteryName));
       if (saved.burialNhgPropagation) {
         const { updated, skipped } = saved.burialNhgPropagation;
         setProvenanceMessage(
