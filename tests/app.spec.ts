@@ -143,7 +143,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
           canUpdateHeadstones: false,
           canDeleteCemeteryRecords: false,
         },
-        assignedCemeteryIds: [],
+        assignedCemeteryIds: [cemeteryId],
       }),
     });
   });

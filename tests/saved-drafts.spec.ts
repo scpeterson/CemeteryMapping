@@ -2,6 +2,44 @@ import { expect, test } from "@playwright/test";
 import { select } from "./fixtures/cemetery";
 import { marker, overviewFixture, overviewGrave } from "./fixtures/overview";
 
+test("adding a grave feature resets its draft only after a successful save", async ({ page }) => {
+  await overviewFixture(page);
+  const featureType = { id: "flag", code: "flag_holder", label: "Flag holder" };
+  await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
+    graveFeatureTypes: [featureType],
+  } }));
+  let failSave = true;
+  await page.route("**/api/cemeteries/*/grave-features", async (route) => {
+    if (failSave) return route.fulfill({ status: 500, json: { error: "Test feature save failure" } });
+    const input = route.request().postDataJSON();
+    expect(input.sourceText).toBe("Field observation");
+    expect(input.notes).toBe("New flag holder");
+    return route.fulfill({ json: { ...input, id: "feature-1", featureType } });
+  });
+  await page.goto("/");
+  await select(page, "A-TEST");
+  await page.getByRole("tab", { name: "Monuments and photos" }).click();
+  const form = page.locator(".headstone-form").filter({ has: page.getByRole("combobox", { name: "Feature", exact: true }) });
+  await form.getByRole("textbox", { name: "Source text", exact: true }).fill("Field observation");
+  await form.getByRole("textbox", { name: "Notes", exact: true }).fill("New flag holder");
+  await form.getByRole("button", { name: "Add feature", exact: true }).click();
+  await expect(form.getByText(/Test feature save failure/)).toBeVisible();
+  let warnings = 0;
+  page.on("dialog", async (dialog) => { warnings++; await dialog.dismiss(); });
+  const destination = page.getByRole("tab", { name: "Overview", exact: true });
+  await destination.click();
+  expect(warnings).toBe(1);
+  await expect(form.getByRole("textbox", { name: "Notes", exact: true })).toHaveValue("New flag holder");
+  failSave = false;
+  await form.getByRole("button", { name: "Add feature", exact: true }).click();
+  await expect(form.getByText("Feature recorded.")).toBeVisible();
+  await expect(form.getByRole("textbox", { name: "Source text", exact: true })).toHaveValue("");
+  await expect(form.getByRole("textbox", { name: "Notes", exact: true })).toHaveValue("");
+  await destination.click();
+  await expect(destination).toHaveAttribute("aria-selected", "true");
+  expect(warnings).toBe(1);
+});
+
 for (const record of ["marker", "burial"] as const) {
   test(`${record} save clears its draft, while a failed save preserves it`, async ({ page }) => {
     await overviewFixture(page);
