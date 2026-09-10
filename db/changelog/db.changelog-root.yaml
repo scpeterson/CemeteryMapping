@@ -1124,6 +1124,9 @@ databaseChangeLog:
       file: changes/377-add-naval-reserve-seaman-first-class.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/378-split-a-0031-fark-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/379-primary-photos.sql
       relativeToChangelogFile: true
   - include:
