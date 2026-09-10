@@ -146,7 +146,7 @@ export function addRasterLayers(map: Map) {
     id: "pasda-imagery-2017",
     type: "raster",
     source: "pasda-imagery-2017",
-    paint: { "raster-fade-duration": 0 },
+    paint: { "raster-fade-duration": 0, "raster-saturation": -0.65, "raster-opacity": 0.8 },
   });
 
   map.once("idle", () => updatePasdaImagery(map));

@@ -142,3 +142,9 @@
   color: var(--text-muted);
 }
 
+
+.search-help { margin: -8px 0 0; color: var(--text-muted); font-size: var(--font-size-small); }
+.filter-reset { margin-left: auto; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--focus); padding: 4px; font-size: var(--font-size-small); text-decoration: underline; }
+.filter-reset:disabled { color: var(--text-muted); cursor: default; text-decoration: none; }
+.single-status-filter { display: grid; gap: 6px; font-size: var(--font-size-small); }
+.single-status-filter select { min-height: 36px; width: 100%; padding: 6px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: white; color: inherit; }

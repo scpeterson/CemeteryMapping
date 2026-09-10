@@ -135,7 +135,7 @@ export function GraveDetailPanel({
     { id: "overview", label: "Overview", description: "Overview" },
     { id: "people", label: "People", description: "People and ownership", count: grave.burials.length + (canViewOwnership ? grave.currentOwnerIds.length : 0) },
     { id: "monuments", label: "Monuments", description: "Monuments and photos", count: headstones.length + (grave.features?.length ?? 0) + mediaAssets.length },
-    { id: "records", label: "Maint.", description: "Maintenance records and evidence", count: (grave.maintenanceRecords?.length ?? 0) + northHillsEvidence.length },
+    { id: "records", label: "Maintenance", description: "Maintenance records and evidence", count: (grave.maintenanceRecords?.length ?? 0) + northHillsEvidence.length },
     { id: "location", label: "Location", description: "Location and geometry" },
   ] : [];
 

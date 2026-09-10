@@ -39,6 +39,11 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Changed
 
+- Automatically scope non-admin users to their one registered cemetery and zoom there; only system admins can choose a cemetery.
+- Added a system-admin cemetery selector that narrows search and map records, single-status filtering and filter reset, and visible search guidance.
+- Wrapped detail tabs with a full Maintenance label, made the map legend collapsible, softened aerial imagery, and fitted phone workspaces to the available screen height.
+- Fixed the first gravesite selection so it zooms to the selected record.
+
 - Consolidated the application title, cemetery count, Reports/Control/Admin actions, and account controls in the header, with a Menu for application actions on phones.
 - Restored the six distinct status colors in search badges to match the filters and map legend.
 - Moved gravesite record and lot-assignment editing to Location and standalone marker editing to Details, keeping Overview read-only.

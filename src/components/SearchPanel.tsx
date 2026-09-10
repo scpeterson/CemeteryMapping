@@ -12,6 +12,8 @@ type SearchPanelProps = {
   onQueryChange: (query: string) => void;
   selectedStatuses: Set<GraveStatus>;
   onToggleStatus: (status: GraveStatus) => void;
+  onResetStatuses?: () => void;
+  onOnlyStatus?: (status: GraveStatus) => void;
   matches: CemeterySearchMatch[];
   canViewOwnership: boolean;
   selectedGraveKey?: string;
@@ -27,6 +29,8 @@ export function SearchPanel({
   onQueryChange,
   selectedStatuses,
   onToggleStatus,
+  onResetStatuses,
+  onOnlyStatus,
   matches,
   canViewOwnership,
   selectedGraveKey,
@@ -40,7 +44,8 @@ export function SearchPanel({
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder={canViewOwnership ? "Search names, owners, dates, graves, lots" : "Search names, dates, graves, lots"}
+          placeholder="Search records"
+          aria-describedby="cemetery-search-help"
           aria-label="Search cemetery records"
           aria-controls="cemetery-search-results"
         />
@@ -51,9 +56,11 @@ export function SearchPanel({
         ) : null}
       </label>
 
+      <p id="cemetery-search-help" className="search-help">{canViewOwnership ? "Search by name, owner, date, gravesite, or lot." : "Search by name, date, gravesite, or lot."}</p>
       <div className="filter-header">
         <Filter size={16} aria-hidden="true" />
         <span>Status</span>
+        {onResetStatuses ? <button type="button" className="filter-reset" disabled={selectedStatuses.size === statuses.length} onClick={onResetStatuses}>Reset filters</button> : null}
       </div>
       <div className="status-filter" role="group" aria-label="Filter by grave status">
         {statuses.map((status) => (
@@ -69,6 +76,13 @@ export function SearchPanel({
           </button>
         ))}
       </div>
+
+      {onOnlyStatus ? <label className="single-status-filter">Show one status
+        <select value={selectedStatuses.size === 1 ? [...selectedStatuses][0] : ""} onChange={(event) => { if (event.target.value) onOnlyStatus(event.target.value as GraveStatus); }}>
+          <option value="" disabled>Choose a status</option>
+          {statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
+        </select>
+      </label> : null}
 
       <div className="results-heading" role="status" aria-live="polite" aria-atomic="true">
         <span>{isSearching ? "Searching records…" : `${matches.length} result${matches.length === 1 ? "" : "s"}${error ? " from loaded map data" : ""}`}</span>

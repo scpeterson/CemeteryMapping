@@ -1013,3 +1013,12 @@ Verify:
 5. Confirm linked evidence appears in the regular detail panel.
 
 Do not load OCR readings directly into production burial or headstone fields. The OCR data remains staged evidence until reviewed.
+
+
+### Cemetery scope and navigation
+
+Users automatically open the map at their one registered cemetery, with search and map records scoped to that cemetery. Only system admins see the cemetery selector in the application header and can change cemetery scope. System admins use it to focus the map and narrow search results to one cemetery. Choose **All cemeteries** to return to the full view. Changing cemetery clears the selected record and checks for unsaved edits. The map's fit button fits the chosen cemetery while a scope is active.
+
+Search accepts names, owners (when permitted), dates, gravesites, and lots. Use the status chips for a combination of statuses, **Show one status** for a single status, and **Reset filters** to restore all statuses. Resetting status filters preserves the search text and cemetery selection.
+
+Detail tabs wrap so that **Maintenance** and **Location** remain visible. Expand **Map legend** for the map symbols and status colors; collapse it to free map space. On phones, Search, Map, and Details share the space below the header, with record panels scrolling within that space.

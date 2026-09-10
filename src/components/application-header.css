@@ -72,7 +72,7 @@
 .auth-session button { flex: 0 0 auto; min-height: 40px; }
 
 @media (max-width: 760px) {
-  .application-workspace { height: auto; min-height: 100%; }
+  .application-workspace { height: 100dvh; min-height: 0; }
   .application-header { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); padding: 8px; }
   .application-brand h1 { font-size: 1.125rem; }
   .application-menu-toggle { display: inline-flex; grid-column: 2; grid-row: 1; }
@@ -81,4 +81,10 @@
   .application-actions[data-open="true"] { display: flex; }
   .application-actions button { flex: 1 1 auto; }
   .application-actions button, .application-menu-toggle, .auth-session button { min-height: 44px; }
+}
+
+.cemetery-scope { display: block; margin-top: 6px; }
+.cemetery-scope select { width: 100%; max-width: 300px; min-height: 36px; padding: 6px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: white; color: inherit; }
+@media (max-width: 760px) {
+  .cemetery-scope select { min-height: 44px; }
 }

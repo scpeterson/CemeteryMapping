@@ -201,6 +201,22 @@
   .app-shell[data-mobile-view="search"] > .detail-panel,
   .app-shell[data-mobile-view="details"] > .search-panel,
   .app-shell[data-mobile-view="details"] > .map-region { display: none; }
-  .app-shell > .map-region { min-height: calc(100dvh - 61px); }
-  .app-shell > .search-panel, .app-shell > .detail-panel { min-height: calc(100dvh - 61px); }
+  .application-workspace > .app-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .mobile-workspace-nav { position: static; }
+  .app-shell > .map-region,
+  .app-shell > .search-panel,
+  .app-shell > .detail-panel { min-height: 0; grid-column: 1; grid-row: 2; }
+  .status-chip, .filter-reset, .single-status-filter select { min-height: 44px; }
+  .map-legend summary { min-height: 44px; display: list-item; align-content: center; }
+  .map-legend:not([open]) { left: auto; width: auto; padding: 0 12px; }
+  .map-scale { bottom: 80px; }
+  .map-legend-content { max-height: 30dvh; }
+
 }

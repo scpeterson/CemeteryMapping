@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { detail, fixture, gravePath, select } from "./fixtures/cemetery";
+import { cemeteryId, detail, fixture, gravePath, select } from "./fixtures/cemetery";
 import { marker, overviewFixture, overviewGrave } from "./fixtures/overview";
 
 const overview = (page: import("@playwright/test").Page) => page.getByRole("tabpanel", { name: "Overview", exact: true });
@@ -67,7 +67,7 @@ test("marker Overview groups linked people and owners and defaults after reselec
 
 test("read-only users cannot see owners in either overview", async ({ page }) => {
   await overviewFixture(page);
-  await page.route("**/api/me", (route) => route.fulfill({ json: { role: "reader", assignedCemeteryIds: [], permissions: {} } }));
+  await page.route("**/api/me", (route) => route.fulfill({ json: { role: "reader", assignedCemeteryIds: [cemeteryId], permissions: {} } }));
   await page.goto("/");
   await select(page, "A-TEST");
   await expect(overview(page)).toContainText("Alice Example");

@@ -6,13 +6,16 @@ import type { CurrentUser } from "../types";
 type ApplicationHeaderProps = {
   cemeteryScopeLabel: string;
   currentUser?: CurrentUser;
+  cemeteries?: { id: string; name: string }[];
+  cemeteryScope?: string;
+  onCemeteryScopeChange?: (id: string) => void;
   onOpenReports: () => void;
   onOpenControl: () => void;
   onOpenAdmin: () => void;
 };
 
 export function ApplicationHeader({
-  cemeteryScopeLabel, currentUser, onOpenReports, onOpenControl, onOpenAdmin,
+  cemeteryScopeLabel, cemeteries, cemeteryScope, onCemeteryScopeChange, currentUser, onOpenReports, onOpenControl, onOpenAdmin,
 }: ApplicationHeaderProps) {
   const session = useAccountSession();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -29,6 +32,13 @@ export function ApplicationHeader({
       <div className="application-brand">
         <h1>Cemetery Map</h1>
         <p>{cemeteryScopeLabel}</p>
+        {currentUser?.role === "admin" && cemeteries?.length ? <label className="cemetery-scope" htmlFor="cemetery-scope">
+          <span className="sr-only">Cemetery</span>
+          <select id="cemetery-scope" aria-label="Cemetery" value={cemeteryScope} onChange={(event) => onCemeteryScopeChange?.(event.target.value)}>
+            <option value="">All cemeteries</option>
+            {cemeteries.map((cemetery) => <option key={cemetery.id} value={cemetery.id}>{cemetery.name}</option>)}
+          </select>
+        </label> : null}
       </div>
       {currentUser ? <>
         <button
