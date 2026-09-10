@@ -90,9 +90,6 @@
   right: 18px;
   bottom: 18px;
   z-index: 1;
-  pointer-events: none;
-  display: grid;
-  gap: 10px;
   width: min(340px, calc(100% - 260px));
   padding: var(--space-3);
   border: 1px solid rgba(53, 67, 57, 0.18);
@@ -276,3 +273,8 @@
 }
 
 
+
+.map-legend:not([open]) { width: auto; }
+.map-legend summary { cursor: pointer; color: #26342d; font-weight: 720; min-height: 24px; }
+.map-legend summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.map-legend-content { display: grid; gap: 12px; margin-top: 12px; max-height: 40dvh; overflow: auto; }

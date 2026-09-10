@@ -76,6 +76,7 @@ export default function App() {
   useDraftNavigationGuard();
   const [mobileView, setMobileView] = useState<"search" | "map" | "details">("map");
   const [selectionVersion, setSelectionVersion] = useState(0);
+  const [adminCemeteryScope, setAdminCemeteryScope] = useState("");
   const [query, setQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<GraveStatus>>(() => new Set(allStatuses));
   const [data, setData] = useState<CemeteryData>(cemeteryData);
@@ -199,16 +200,44 @@ export default function App() {
     };
   }, [query, selectedStatuses, searchAttempt]);
 
+  const cemeteryScope = currentUser?.role === "admin"
+    ? adminCemeteryScope
+    : currentUser?.assignedCemeteryIds.length === 1 ? currentUser.assignedCemeteryIds[0] : null;
+
+  const cemeteries = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const boundary of data.boundaries ?? (data.boundary ? [data.boundary] : [])) {
+      if (boundary.properties.id) names.set(boundary.properties.id, boundary.properties.name);
+    }
+    for (const grave of data.graves) names.set(grave.cemeteryId, grave.cemeteryName);
+    return [...names].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+  const mapData = useMemo<CemeteryData>(() => {
+    if (cemeteryScope === "") return data;
+    if (cemeteryScope === null) return { boundaries: [], sections: [], lots: [], graves: [], headstones: [], lotRestrictedAreas: [] };
+    const name = cemeteries.find((cemetery) => cemetery.id === cemeteryScope)?.name;
+    const boundaries = (data.boundaries ?? (data.boundary ? [data.boundary] : [])).filter((boundary) =>
+      boundary.properties.id ? boundary.properties.id === cemeteryScope : boundary.properties.name === name);
+    return {
+      ...data,
+      boundary: boundaries[0],
+      boundaries,
+      graves: data.graves.filter((grave) => grave.cemeteryId === cemeteryScope),
+      lots: data.lots.filter((lot) => lot.cemeteryId === cemeteryScope),
+      headstones: data.headstones.filter((marker) => marker.cemeteryId === cemeteryScope),
+      lotRestrictedAreas: data.lotRestrictedAreas?.filter((area) => area.cemeteryId === cemeteryScope),
+    };
+  }, [data, cemeteryScope, cemeteries]);
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
   const lotMatches = useMemo(() => searchLots(data, query), [data, query]);
-  const matches = useMemo<CemeterySearchMatch[]>(() => [...lotMatches, ...(remoteMatches ?? localMatches)], [localMatches, lotMatches, remoteMatches]);
+  const matches = useMemo<CemeterySearchMatch[]>(() => [...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, remoteMatches, cemeteryScope]);
   const visibleGraves = useMemo(() => {
-    if (selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
-    return data.graves.filter((grave) => selectedStatuses.has(grave.status));
-  }, [data.graves, selectedStatuses]);
-  const isInitialMapFitReady = Boolean(currentUser) && !isLoading;
+    if (cemeteryScope === "" && selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
+    return data.graves.filter((grave) => selectedStatuses.has(grave.status) && (cemeteryScope === "" || grave.cemeteryId === cemeteryScope));
+  }, [data.graves, selectedStatuses, cemeteryScope]);
+  const isInitialMapFitReady = Boolean(currentUser) && cemeteryScope !== null && !isLoading;
   const initialMapFitCemeteryIds =
-    currentUser && currentUser.role !== "admin" && currentUser.assignedCemeteryIds.length ? currentUser.assignedCemeteryIds : undefined;
+    cemeteryScope ? [cemeteryScope] : undefined;
   const searchResultIds = useMemo(() => {
     if (!query.trim()) return new Set<string>();
     return new Set(matches.filter((match): match is SearchMatch => "grave" in match).map((match) => graveSelectionKey(match.grave)));
@@ -254,11 +283,27 @@ export default function App() {
     (currentUser?.role === "cemetery-admin" && selectedGrave ? (currentUser.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
   const canUpdateSelectedBurials = canUpdateSelectedHeadstones;
   const cemeteryScopeLabel = useMemo(() => {
+    if (!currentUser) return "Loading cemetery…";
+    if (currentUser.role !== "admin") {
+      if (cemeteryScope === null) return "Contact your administrator to register one cemetery.";
+      return cemeteries.find((cemetery) => cemetery.id === cemeteryScope)?.name ?? "Your registered cemetery";
+    }
     const cemeteryNames = [...new Set((data.boundaries ?? (data.boundary ? [data.boundary] : [])).map((boundary) => boundary.properties.name))];
     if (cemeteryNames.length === 0) return "Cemetery records";
     if (cemeteryNames.length === 1) return "1 cemetery";
     return `${cemeteryNames.length} cemeteries`;
-  }, [data.boundaries, data.boundary]);
+  }, [data.boundaries, data.boundary, currentUser, cemeteryScope, cemeteries]);
+
+  const changeCemeteryScope = (id: string) => {
+    if (currentUser?.role !== "admin" || !confirmDiscardChanges()) return;
+    setAdminCemeteryScope(id);
+    setSelectedGrave(undefined);
+    setSelectedLot(undefined);
+    setSelectedHeadstone(undefined);
+    setIsPickingMarkerPoint(false);
+    setPickedMarkerPoint(undefined);
+    setMobileView("map");
+  };
 
   const toggleStatus = (status: GraveStatus) => {
     setSelectedStatuses((current) => {
@@ -363,6 +408,9 @@ export default function App() {
       <div className="application-workspace">
         <ApplicationHeader
           cemeteryScopeLabel={cemeteryScopeLabel}
+          cemeteries={cemeteries}
+          cemeteryScope={cemeteryScope ?? ""}
+          onCemeteryScopeChange={changeCemeteryScope}
           currentUser={currentUser}
           onOpenReports={() => setIsReportsPanelOpen(true)}
           onOpenControl={() => setIsControlPointCollectorOpen(true)}
@@ -380,6 +428,8 @@ export default function App() {
             onQueryChange={setQuery}
             selectedStatuses={selectedStatuses}
             onToggleStatus={toggleStatus}
+            onResetStatuses={() => setSelectedStatuses(new Set(allStatuses))}
+            onOnlyStatus={(status) => setSelectedStatuses(new Set([status]))}
             matches={matches}
             canViewOwnership={currentUser?.permissions.canViewOwnership ?? false}
             selectedGraveKey={selectedGrave ? graveSelectionKey(selectedGrave) : undefined}
@@ -402,13 +452,14 @@ export default function App() {
               </div>
             ) : null}
             <CemeteryMap
-              data={data}
+              data={mapData}
               selectedGrave={selectedGrave}
               selectedLot={selectedLot}
               selectedHeadstone={selectedHeadstone}
               visibleGraves={visibleGraves}
               searchResultIds={searchResultIds}
               initialFitCemeteryIds={initialMapFitCemeteryIds}
+              cemeteryScope={cemeteryScope ?? ""}
               isInitialFitReady={isInitialMapFitReady}
               isPickingMarkerPoint={isPickingMarkerPoint}
               onSelectGrave={selectGrave}

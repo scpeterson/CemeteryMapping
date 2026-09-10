@@ -34,13 +34,12 @@
   z-index: 5;
   top: -24px;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-1);
   margin: 18px -24px 0;
   padding: 12px 24px 0;
-  overflow-x: auto;
   border-bottom: 1px solid #d8dfd4;
   background: var(--panel);
-  scrollbar-width: thin;
 }
 
 .detail-tabs button {
