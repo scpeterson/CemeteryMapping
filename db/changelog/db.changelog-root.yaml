@@ -1126,3 +1126,9 @@ databaseChangeLog:
   - include:
       file: changes/379-primary-photos.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/380-split-a-0032-trohaugh-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/381-review-a-0032-neighbor-overlaps.sql
+      relativeToChangelogFile: true
