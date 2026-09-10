@@ -1150,3 +1150,6 @@ databaseChangeLog:
   - include:
       file: changes/386-split-a-0035-schnabel-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/387-split-a-0036-brandt-gravesites.sql
+      relativeToChangelogFile: true
