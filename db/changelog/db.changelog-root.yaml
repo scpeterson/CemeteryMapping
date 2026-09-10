@@ -1147,3 +1147,6 @@ databaseChangeLog:
   - include:
       file: changes/385-split-a-0034-ritchie-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/386-split-a-0035-schnabel-gravesites.sql
+      relativeToChangelogFile: true
