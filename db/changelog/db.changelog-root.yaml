@@ -1135,3 +1135,12 @@ databaseChangeLog:
   - include:
       file: changes/381-review-a-0032-neighbor-overlaps.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/382-split-a-0004-kaelin-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/383-review-a-0004-neighbor-overlaps.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/384-review-a-0021-kaelin-overlaps.sql
+      relativeToChangelogFile: true
