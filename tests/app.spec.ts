@@ -751,7 +751,7 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   await adminSectionsNav.getByRole("button", { name: "Records" }).click();
   await expect(page.getByRole("heading", { name: "Cemetery Records" })).toBeVisible();
 
-  await page.getByRole("combobox", { name: "Cemetery" }).selectOption({ label: "St. Mark Church Cemetery" });
+  await page.getByTitle("Search for and select the cemetery record to edit.", { exact: true }).selectOption({ label: "St. Mark Church Cemetery" });
   await expect(page.getByRole("combobox", { name: "Section" })).toBeVisible();
   await page.getByRole("combobox", { name: "Section" }).selectOption({ label: "Section A" });
   await expect(page.getByRole("combobox", { name: "Lot" })).toBeVisible();
