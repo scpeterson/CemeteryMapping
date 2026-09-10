@@ -513,7 +513,10 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByLabel("Map legend")).toContainText("Gravesite Status");
   await expect(page.getByLabel("Map legend")).toContainText("Headstone marker");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
-  const firstResult = page.locator(".result-card").first();
+  await page.getByRole("combobox", { name: "Cemetery", exact: true }).selectOption({ label: "St. Mark Church Cemetery" });
+  const firstResult = page.locator(".result-card")
+    .filter({ hasText: "St. Mark Church Cemetery" })
+    .filter({ hasText: "Section A, Lot 01, Space 01" }).first();
   await firstResult.click();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.locator(".detail-panel").getByText("St. Mark Church Cemetery", { exact: true })).toBeVisible();
