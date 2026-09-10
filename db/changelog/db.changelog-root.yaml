@@ -1144,3 +1144,6 @@ databaseChangeLog:
   - include:
       file: changes/384-review-a-0021-kaelin-overlaps.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/385-split-a-0034-ritchie-gravesites.sql
+      relativeToChangelogFile: true
