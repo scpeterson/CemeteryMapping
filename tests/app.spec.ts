@@ -516,7 +516,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await page.getByRole("combobox", { name: "Cemetery", exact: true }).selectOption({ label: "St. Mark Church Cemetery" });
   const firstResult = page.locator(".result-card")
     .filter({ hasText: "St. Mark Church Cemetery" })
-    .filter({ hasText: "A-01-01" }).first();
+    .filter({ hasText: "Section A, Lot 01, Space 01" }).first();
   await firstResult.click();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
   await expect(page.locator(".detail-panel").getByText("St. Mark Church Cemetery", { exact: true })).toBeVisible();
