@@ -175,11 +175,11 @@ export function GraveFeatureForm({
         onCancel?.();
       } else {
         setMessage("Feature recorded.");
-        setForm((current) => ({
-          ...current,
+        setForm({
+          ...form,
           sourceText: "",
           notes: "",
-        }));
+        });
       }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save feature.");
@@ -314,4 +314,3 @@ export function GraveFeatureForm({
     </form>
   );
 }
-

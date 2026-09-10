@@ -143,7 +143,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
           canUpdateHeadstones: false,
           canDeleteCemeteryRecords: false,
         },
-        assignedCemeteryIds: [],
+        assignedCemeteryIds: [cemeteryId],
       }),
     });
   });
@@ -516,7 +516,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   const firstResult = page.locator(".result-card").first();
   await firstResult.click();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
-  await expect(page.getByText("St. Mark Church Cemetery").first()).toBeVisible();
+  await expect(page.locator(".detail-panel").getByText("St. Mark Church Cemetery", { exact: true })).toBeVisible();
   await expect(page.locator(".result-card").filter({ hasText: "Reserved" }).first().locator(".ui-status-badge")).toHaveCSS("color", "rgb(38, 52, 45)");
   await expect(firstResult.locator(".result-reason")).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "Loading grave details..." })).toBeHidden();
@@ -751,7 +751,7 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   await adminSectionsNav.getByRole("button", { name: "Records" }).click();
   await expect(page.getByRole("heading", { name: "Cemetery Records" })).toBeVisible();
 
-  await page.getByRole("combobox", { name: "Cemetery" }).selectOption({ label: "St. Mark Church Cemetery" });
+  await page.getByTitle("Search for and select the cemetery record to edit.", { exact: true }).selectOption({ label: "St. Mark Church Cemetery" });
   await expect(page.getByRole("combobox", { name: "Section" })).toBeVisible();
   await page.getByRole("combobox", { name: "Section" }).selectOption({ label: "Section A" });
   await expect(page.getByRole("combobox", { name: "Lot" })).toBeVisible();
