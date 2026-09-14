@@ -6,6 +6,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0041A north of A-0041 for Nettie Schnabel while retaining Philip Schnabel Jr. in the southern gravesite and the fixed TLC-HS-0041 marker spanning both (migration 390). Small estimated boundary overlaps are documented in ADR 0053.
+
+- Added A-0038A and TLC-HS-0038A north of James H Crea for Ella R Pfeiffer, with separate burial links and a common-base marker relationship (migration 389). Original marker and gravesite geometry are preserved; new placement is estimated.
+
 - Added a saved primary-photo choice per marker or gravesite. Primary photos lead galleries and Overviews; removing the choice restores newest-first sorting. Includes migration 379.
 
 - Added read-only gravesite and marker Overviews with the latest available photo or an explicit no-photo message, associated people, permitted current-owner information, and links to related records. Overview opens by default on every feature selection, including repeat selections.

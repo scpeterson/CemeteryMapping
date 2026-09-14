@@ -1156,3 +1156,9 @@ databaseChangeLog:
   - include:
       file: changes/388-split-a-0037-pfeiffer-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/389-add-a-0038-crea-common-base-marker.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/390-split-a-0041-schnabel-gravesites.sql
+      relativeToChangelogFile: true
