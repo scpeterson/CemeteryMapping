@@ -76,6 +76,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0049: Split A-0026 Brandt Gravesites](0049-split-a-0026-brandt-gravesites.md)
 - [ADR 0050: Split A-0020 Pfeiffer Gravesites](0050-split-a-0020-pfeiffer-gravesites.md)
 - [0051: Primary Photo Override](0051-primary-photo-override.md)
+- [ADR 0052: Separate Crea Markers on a Common Base](0052-crea-common-base-markers.md)
+- [ADR 0053: Split A-0041 Schnabel Gravesites](0053-split-a-0041-schnabel-gravesites.md)
 
 ## Creating a New ADR
 
