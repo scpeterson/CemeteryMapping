@@ -16,16 +16,16 @@ The application needs an interactive browser UI for cemetery staff or maintainer
 
 Use a React single-page application built with Vite and TypeScript.
 
-Core frontend software:
+Core frontend software (versions as of 2026-09-14; see `package-lock.json` for exact installed versions):
 
 | Software | Version | Purpose |
 | --- | --- | --- |
 | React | 19.2.8 | Component model and client rendering |
 | React DOM | 19.2.8 | Browser DOM renderer for React |
-| Vite | 8.1.5 | Development server and production bundler |
+| Vite | 8.2.1 | Development server and production bundler |
 | TypeScript | 6.0.3 | Static type checking |
-| MapLibre GL JS | 6.0.0 | Interactive web map rendering |
-| Lucide React | 1.23.0 | UI icons |
+| MapLibre GL JS | 6.8.0 | Interactive web map rendering |
+| Lucide React | 1.38.0 | UI icons |
 
 ## Rationale
 

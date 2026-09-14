@@ -39,6 +39,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Changed
 
+- Updated Auth0 React to 2.24.1, MapLibre GL JS to 6.8.0, Playwright to 1.63.0, and `eslint-plugin-react-refresh` to 0.5.6.
+
 - Automatically scope non-admin users to their one registered cemetery and zoom there; only system admins can choose a cemetery.
 - Added a system-admin cemetery selector that narrows search and map records, single-status filtering and filter reset, and visible search guidance.
 - Wrapped detail tabs with a full Maintenance label, made the map legend collapsible, softened aerial imagery, and fitted phone workspaces to the available screen height.
