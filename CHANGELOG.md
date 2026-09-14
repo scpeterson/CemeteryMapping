@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added reserved A-0006A north of A-0006 for Patricia Scott, preserving her pre-need inscription status and the fixed TLC-HS-0006 marker spanning both Scott gravesites (migration 391). Herb remains in A-0006; estimated boundary overlaps are documented in ADR 0054.
+
 - Added A-0041A north of A-0041 for Nettie Schnabel while retaining Philip Schnabel Jr. in the southern gravesite and the fixed TLC-HS-0041 marker spanning both (migration 390). Small estimated boundary overlaps are documented in ADR 0053.
 
 - Added A-0038A and TLC-HS-0038A north of James H Crea for Ella R Pfeiffer, with separate burial links and a common-base marker relationship (migration 389). Original marker and gravesite geometry are preserved; new placement is estimated.
