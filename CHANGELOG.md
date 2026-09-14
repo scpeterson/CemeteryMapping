@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0044A north of A-0044 for Beulah M Scott, retaining Freeman Paul Scott in the southern gravesite and the fixed TLC-HS-0044 marker spanning both (migration 392). Estimated boundary overlaps are documented in ADR 0055.
+
 - Added reserved A-0006A north of A-0006 for Patricia Scott, preserving her pre-need inscription status and the fixed TLC-HS-0006 marker spanning both Scott gravesites (migration 391). Herb remains in A-0006; estimated boundary overlaps are documented in ADR 0054.
 
 - Added A-0041A north of A-0041 for Nettie Schnabel while retaining Philip Schnabel Jr. in the southern gravesite and the fixed TLC-HS-0041 marker spanning both (migration 390). Small estimated boundary overlaps are documented in ADR 0053.
