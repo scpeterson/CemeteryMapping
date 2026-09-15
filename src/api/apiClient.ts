@@ -27,7 +27,11 @@ async function responseErrorDetail(response: Response) {
 export async function jsonResponse<T>(response: Response, label: string): Promise<T> {
   if (!response.ok) {
     const detail = await responseErrorDetail(response);
-    throw new ApiError(`${label} returned ${response.status}${detail}`, response.status);
+    // Validation errors are written for the user; omit transport details from the form.
+    const message = response.status === 400 && detail
+      ? detail.slice(2)
+      : `${label} returned ${response.status}${detail}`;
+    throw new ApiError(message, response.status);
   }
   return (await response.json()) as T;
 }

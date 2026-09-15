@@ -4,6 +4,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+### Fixed
+
+- Reject impossible calendar dates before saving and show field-specific validation messages without API jargon. People edits remain available for correction; partial birth and death dates are still supported.
+
 ### Added
 
 - Added A-0057A north of A-0057 for Almira C Alexander, retaining Clyde R Alexander in the southern gravesite and the fixed TLC-HS-0057 marker spanning both (migration 395). Estimated boundary overlaps are documented in ADR 0058.

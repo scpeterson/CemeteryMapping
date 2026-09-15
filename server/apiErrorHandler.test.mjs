@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import express from "express";
 import { createApiErrorHandler } from "./apiErrorHandler.mjs";
+import { validateBurialPayload } from "./routes/cemeteryRouteValidation.mjs";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 
 test("actual parser failures preserve 400 and 413 without recording server errors", async (t) => {
@@ -9,6 +10,7 @@ test("actual parser failures preserve 400 and 413 without recording server error
   app.use(express.json({ limit: "20b" }));
   app.post("/body", (_request, response) => response.sendStatus(204));
   app.get("/conflict", () => { throw new ConflictError(); });
+  app.get("/invalid-burial-date", () => { validateBurialPayload({ firstName: "Alice", birthDate: "2002-11-31" }); });
   app.get("/bad", () => { throw new BadRequestError("Name is required"); });
   app.get("/unknown", () => { throw Object.assign(new Error("private detail"), { status: 400 }); });
   let recorded = 0;
@@ -24,6 +26,9 @@ test("actual parser failures preserve 400 and 413 without recording server error
   }
   assert.equal((await fetch(`${base}/bad`)).status, 400);
   assert.equal((await fetch(`${base}/conflict`)).status, 409);
+  const invalidDate = await fetch(`${base}/invalid-burial-date`);
+  assert.equal(invalidDate.status, 400);
+  assert.deepEqual(await invalidDate.json(), { error: 'Birth date "2002-11-31" is not a valid calendar date. Check the year, month, and day.' });
   assert.equal(recorded, 0);
   const unknown = await fetch(`${base}/unknown`);
   assert.equal(unknown.status, 500);
