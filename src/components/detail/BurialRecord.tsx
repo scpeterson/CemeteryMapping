@@ -408,7 +408,7 @@ export function BurialRecord({
           Review notes
           <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
         </label>
-        {error ? <p className="detail-message is-error">{error}</p> : null}
+        {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
         <div className="burial-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
             Cancel
