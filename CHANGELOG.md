@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0057A north of A-0057 for Almira C Alexander, retaining Clyde R Alexander in the southern gravesite and the fixed TLC-HS-0057 marker spanning both (migration 395). Estimated boundary overlaps are documented in ADR 0058.
+
 - Added A-0049A north of A-0049 for Eleanor H Elser, retaining William G Elser in the southern gravesite and the fixed TLC-HS-0049 marker spanning both (migration 394). Estimated boundary overlaps are documented in ADR 0057.
 
 - Added A-0048A north of A-0048 for Malinda C Scott, retaining Charles D Scott in the southern gravesite and the fixed TLC-HS-0048 marker spanning both (migration 393). Estimated southern boundary overlaps are documented in ADR 0056.
