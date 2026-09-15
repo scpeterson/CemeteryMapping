@@ -6,6 +6,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0049A north of A-0049 for Eleanor H Elser, retaining William G Elser in the southern gravesite and the fixed TLC-HS-0049 marker spanning both (migration 394). Estimated boundary overlaps are documented in ADR 0057.
+
+- Added A-0048A north of A-0048 for Malinda C Scott, retaining Charles D Scott in the southern gravesite and the fixed TLC-HS-0048 marker spanning both (migration 393). Estimated southern boundary overlaps are documented in ADR 0056.
+
 - Added A-0044A north of A-0044 for Beulah M Scott, retaining Freeman Paul Scott in the southern gravesite and the fixed TLC-HS-0044 marker spanning both (migration 392). Estimated boundary overlaps are documented in ADR 0055.
 
 - Added reserved A-0006A north of A-0006 for Patricia Scott, preserving her pre-need inscription status and the fixed TLC-HS-0006 marker spanning both Scott gravesites (migration 391). Herb remains in A-0006; estimated boundary overlaps are documented in ADR 0054.
