@@ -1174,3 +1174,6 @@ databaseChangeLog:
   - include:
       file: changes/394-split-a-0049-elser-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/395-split-a-0057-alexander-gravesites.sql
+      relativeToChangelogFile: true
