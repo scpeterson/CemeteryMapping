@@ -19,6 +19,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0067A north of A-0067 for Bertie I Steele, retaining George H Steele in the southern gravesite and the fixed TLC-HS-0067 marker spanning both (migration 398). Estimated boundary overlaps are documented in ADR 0061.
+
 - Added A-0066A north of A-0066 for Anna S Steele, retaining Wilbert B Steele in the southern gravesite and the fixed TLC-HS-0066 marker spanning both (migration 396). Small estimated boundary overlaps are documented in ADR 0059.
 
 - Added A-0057A north of A-0057 for Almira C Alexander, retaining Clyde R Alexander in the southern gravesite and the fixed TLC-HS-0057 marker spanning both (migration 395). Estimated boundary overlaps are documented in ADR 0058.
