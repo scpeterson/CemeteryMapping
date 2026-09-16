@@ -1189,3 +1189,6 @@ databaseChangeLog:
   - include:
       file: changes/399-burial-given-name-status.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/400-split-a-0069-blend-gravesites.sql
+      relativeToChangelogFile: true

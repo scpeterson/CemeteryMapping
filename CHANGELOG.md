@@ -19,6 +19,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0069A north of A-0069 for Bertha M Blend, retaining Henry L Blend in the southern gravesite and the fixed TLC-HS-0069 marker spanning both (migration 400). Small estimated boundary overlaps are documented in ADR 0062.
+
 - Added explicit given-name status and an optional descriptive display name to burial records (migration 399). The People tab distinguishes confirmed no given name from unknown information; display names appear in search and reports without changing structured names or marker inscriptions.
 
 - Added A-0067A north of A-0067 for Bertie I Steele, retaining George H Steele in the southern gravesite and the fixed TLC-HS-0067 marker spanning both (migration 398). Estimated boundary overlaps are documented in ADR 0061.
