@@ -218,6 +218,17 @@ export function validateGraveLotAssignmentPayload(body) {
 }
 
 export function validateBurialPayload(body) {
+  const firstName = optionalText(body?.firstName, "First name", 100) ?? "";
+  const givenNameStatus = optionalText(body?.givenNameStatus, "Given name status", 30);
+  if (givenNameStatus && !["recorded", "unknown", "no_given_name"].includes(givenNameStatus)) {
+    throw new BadRequestError("Choose a valid given name status.");
+  }
+  if (givenNameStatus === "recorded" && !firstName) {
+    throw new BadRequestError("Enter a first name or choose Unknown / not recorded or No given name.");
+  }
+  if (firstName && givenNameStatus && givenNameStatus !== "recorded") {
+    throw new BadRequestError("Clear the first name or choose Recorded as the given name status.");
+  }
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "unknown";
   if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");
   const recordStatusCode = optionalText(body?.recordStatusCode, "Burial record status", 50) || "interred";
@@ -251,7 +262,9 @@ export function validateBurialPayload(body) {
   }
 
   return {
-    firstName: optionalText(body?.firstName, "First name", 100) ?? "",
+    firstName,
+    givenNameStatus: givenNameStatus || undefined,
+    displayName: body?.displayName === undefined ? undefined : optionalText(body.displayName, "Display name", 255) ?? "",
     lastName: optionalText(body?.lastName, "Last name", 100) ?? "",
     maidenName: optionalText(body?.maidenName, "Maiden name", 150) ?? "",
     nameSuffix: optionalText(body?.nameSuffix, "Title or credentials", 100) ?? "",

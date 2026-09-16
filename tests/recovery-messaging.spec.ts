@@ -12,11 +12,13 @@ test("failed editing options disable saves and dropdowns until retry succeeds", 
   const form = page.locator(".burial-form");
   await expect(form.getByText(/Editing options couldn't be loaded/)).toBeVisible();
   await expect(form.getByRole("button", { name: "Save burial" })).toBeDisabled();
-  await expect(form.getByRole("combobox").first()).toBeDisabled();
+  await expect(form.getByRole("combobox", { name: /^Death location/ })).toBeDisabled();
+  await expect(form.getByRole("combobox", { name: "Given name status" })).toBeEnabled();
   await form.getByRole("textbox", { name: "First name", exact: true }).fill("Alicia");
   available = true;
   await form.getByRole("button", { name: "Retry editing options" }).click();
   await expect(form.getByRole("button", { name: "Save burial" })).toBeEnabled();
+  await expect(form.getByRole("combobox", { name: /^Death location/ })).toBeEnabled();
   await expect(form.getByRole("textbox", { name: "First name", exact: true })).toHaveValue("Alicia");
 });
 

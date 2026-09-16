@@ -19,6 +19,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added explicit given-name status and an optional descriptive display name to burial records (migration 399). The People tab distinguishes confirmed no given name from unknown information; display names appear in search and reports without changing structured names or marker inscriptions.
+
 - Added A-0067A north of A-0067 for Bertie I Steele, retaining George H Steele in the southern gravesite and the fixed TLC-HS-0067 marker spanning both (migration 398). Estimated boundary overlaps are documented in ADR 0061.
 
 - Added A-0066A north of A-0066 for Anna S Steele, retaining Wilbert B Steele in the southern gravesite and the fixed TLC-HS-0066 marker spanning both (migration 396). Small estimated boundary overlaps are documented in ADR 0059.

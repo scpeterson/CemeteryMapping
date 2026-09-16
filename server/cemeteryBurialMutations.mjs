@@ -57,7 +57,7 @@ async function selectBurialMutationState(client, id) {
         burials.first_name,
         burials.last_name,
         burials.maiden_name,
-        burials.name_suffix,
+        burials.name_suffix, burials.given_name_status, burials.display_name,
         burials.full_name,
         burials.birth_date,
         ${recordedDateTextSql.select},
@@ -100,7 +100,7 @@ async function selectBurialById(client, id) {
   const reviewColumnsSql = await recordReviewColumnsSql(client, "burials");
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.name_suffix, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, burials.source_url, ${militaryServiceSql.select}, COALESCE((SELECT jsonb_agg(jsonb_build_object('id', military_decoration_types.id::text, 'code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label) FROM burial_military_decorations JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id WHERE burial_military_decorations.burial_uuid = burials.id), '[]'::jsonb) AS military_decorations, burials.notes, ${reviewColumnsSql}
+      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.name_suffix, burials.given_name_status, burials.display_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, burials.source_url, ${militaryServiceSql.select}, COALESCE((SELECT jsonb_agg(jsonb_build_object('id', military_decoration_types.id::text, 'code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label) FROM burial_military_decorations JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id WHERE burial_military_decorations.burial_uuid = burials.id), '[]'::jsonb) AS military_decorations, burials.notes, ${reviewColumnsSql}
       FROM burials
       ${deathPlaceSql.join}
       ${intermentTypeSql.join}
@@ -313,6 +313,10 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     updateValues.push(burial.deathPlaceId || null);
     const sourceUrlParameter = updateValues.length + 1;
     updateValues.push(burial.sourceUrl || null);
+    const nameStatusParameter = updateValues.length + 1;
+    updateValues.push(burial.givenNameStatus ?? (burial.firstName?.trim() ? "recorded" : existing.given_name_status === "no_given_name" ? "no_given_name" : "unknown"));
+    const displayNameParameter = updateValues.length + 1;
+    updateValues.push(burial.displayName === undefined ? existing.display_name ?? null : burial.displayName || null);
     const updateResult = await client.query(
       `
         UPDATE burials
@@ -320,6 +324,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
             last_name = $3,
             maiden_name = $4,
             name_suffix = $${nameSuffixParameter},
+            given_name_status = $${nameStatusParameter},
+            display_name = $${displayNameParameter},
             full_name = $5,
             birth_date = $6::date,
             death_date = $7::date,
@@ -338,6 +344,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           last_name,
           maiden_name,
           name_suffix,
+          given_name_status,
+          display_name,
           full_name,
           birth_date,
           ${recordedDateTextSql.return},

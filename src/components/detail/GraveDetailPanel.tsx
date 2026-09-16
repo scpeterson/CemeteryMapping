@@ -1,7 +1,7 @@
 import { DetailTabs } from "./DetailTabs";
 import { GraveOverview } from "./FeatureOverview";
 import { FileText, Flag, History, Images, Landmark, MapPinned, UserRound } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { formatDate, formatGraveLabel } from "../../lib/format";
 import type {
   Burial,
@@ -25,7 +25,6 @@ import type {
   SaveOwnershipEventInput,
   UpdateOwnerInput
 } from "../../types";
-import { BurialRecord } from "./BurialRecord";
 import { CreateHeadstoneForm } from "./CreateHeadstoneForm";
 import { GraveGeometryMetadata } from "./DetailGeometry";
 import { inferredLotForGrave } from "./lotInference";
@@ -39,6 +38,8 @@ import { OwnerRecord, OwnershipEventForm } from "./OwnershipRecords";
 import { PickedMarkerPoint } from "./detailTypes";
 
 const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
+
+const BurialRecord = lazy(() => import("./BurialRecord").then((module) => ({ default: module.BurialRecord })));
 
 export function GraveDetailPanel({
   onSelectHeadstone,
@@ -219,9 +220,11 @@ export function GraveDetailPanel({
             </div>
             {grave.burials.length ? (
               <div className="burial-list">
-                {grave.burials.map((burial) => (
-                  <BurialRecord key={burial.id} burial={burial} canUpdate={canUpdateBurials} lookups={headstoneLookups} onSave={onSaveBurial} />
-                ))}
+                <Suspense fallback={<p role="status">Loading burial records…</p>}>
+                  {grave.burials.map((burial) => (
+                    <BurialRecord key={burial.id} burial={burial} canUpdate={canUpdateBurials} lookups={headstoneLookups} onSave={onSaveBurial} />
+                  ))}
+                </Suspense>
               </div>
             ) : (
               <p className="muted">No burials are recorded for this grave site.</p>
