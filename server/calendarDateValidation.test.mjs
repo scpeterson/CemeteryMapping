@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { optionalDate, optionalRecordedDate } from "./routes/routeValidationHelpers.mjs";
-import { validateBurialPayload } from "./routes/cemeteryRouteValidation.mjs";
+import { validateBurialPayload, validateHeadstonePayload, validateMaintenanceRecordPayload } from "./routes/cemeteryRouteValidation.mjs";
 import { BadRequestError } from "./requestValidation.mjs";
 
 for (const value of ["2002-11-31", "1900-02-29", "2001-02-29", "2000-00-01", "2000-13-01", "2000-01-00", "0000-01-01"]) {
@@ -28,3 +28,15 @@ test("burial payload identifies the invalid field", () => {
       (error) => error instanceof BadRequestError && error.message.startsWith(`${label} "2002-11-31"`));
   }
 });
+
+for (const [field, label, validate] of [
+  ["lastInspectedAt", "Last inspected date", validateHeadstonePayload],
+  ["provenanceVerifiedAt", "Source information verified date", validateHeadstonePayload],
+  ["observedAt", "Observed date", validateMaintenanceRecordPayload],
+  ["completedAt", "Completed date", validateMaintenanceRecordPayload],
+]) {
+  test(`${label} rejects impossible calendar dates before database access`, () => {
+    assert.throws(() => validate({ [field]: "2002-11-31" }),
+      (error) => error instanceof BadRequestError && error.message.startsWith(`${label} "2002-11-31"`));
+  });
+}

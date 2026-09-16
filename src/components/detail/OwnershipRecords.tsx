@@ -303,7 +303,7 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: G
         Notes
         <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={3} />
       </label>
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="ownership-form-actions">
         <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
           Cancel
@@ -361,7 +361,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
           <div><button type="button" className="secondary-button" onClick={() => setIsConfirmingRemoval(false)} disabled={isSaving}>Cancel</button><button type="button" className="danger-button" onClick={() => void remove()} disabled={isSaving}>{isSaving ? "Removing..." : "Remove connection"}</button></div>
         </div>
       ) : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
     </div>
   );
   return (
@@ -377,7 +377,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
         <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedOnFile} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />Deed on file</label>
         <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />Deed register on file</label>
       </div>
-      {error ? <p className="detail-message is-error ownership-wide-field">{error}</p> : null}
+      {error ? <p className="detail-message is-error ownership-wide-field" role="alert">{error}</p> : null}
       <div className="ownership-form-actions ownership-wide-field"><button type="button" className="secondary-button" onClick={() => setIsEditing(false)}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save owner"}</button></div>
     </form>
   );

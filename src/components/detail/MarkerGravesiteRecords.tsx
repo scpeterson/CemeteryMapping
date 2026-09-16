@@ -71,7 +71,7 @@ export function MarkerGravesiteRelationshipManager({ headstone, graves, lookups,
       <label>Notes<textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label>
       <button type="submit" className="primary-button" disabled={busy || !form.gravesiteId}>{busy ? "Saving…" : "Add gravesite link"}</button>
     </form> : null}
-    {message ? <p className="form-error">{message}</p> : null}
+    {message ? <p className="form-error" role="alert">{message}</p> : null}
   </div>;
 }
 

@@ -1,3 +1,4 @@
+import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useDraftState } from "../../hooks/useDraftState";
 import { MapPinned } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
@@ -127,13 +128,13 @@ export function CreateHeadstoneForm({
           Add marker
         </button>
         {message ? <p className="detail-message is-success">{message}</p> : null}
-        {error ? <p className="detail-message is-error">{error}</p> : null}
+        {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       </div>
     );
   }
 
   return (
-    <form className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
+    <LookupForm className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
       <div className="headstone-record-header">
         <strong>New marker</strong>
       </div>
@@ -143,7 +144,7 @@ export function CreateHeadstoneForm({
       </label>
       <label>
         Marker type
-        <select
+        <LookupSelect
           value={form.markerTypeId}
           onChange={(event) => {
             const selectedType = markerTypeOptions.find((option) => option.id === event.target.value);
@@ -159,21 +160,21 @@ export function CreateHeadstoneForm({
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Marker scope
-        <select value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>
+        <LookupSelect value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>
           {lookups.markerScopes.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Relationship
-        <select
+        <LookupSelect
           value={form.relationshipType}
           onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneCreateInput["relationshipType"] }))}
         >
@@ -183,27 +184,27 @@ export function CreateHeadstoneForm({
           <option value="spans">Spans gravesites</option>
           <option value="nearby">Nearby</option>
           <option value="inferred">Inferred</option>
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Material
-        <select value={form.materialId} onChange={(event) => setForm((current) => ({ ...current, materialId: event.target.value }))}>
+        <LookupSelect value={form.materialId} onChange={(event) => setForm((current) => ({ ...current, materialId: event.target.value }))}>
           {lookups.materials.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Condition
-        <select value={form.conditionId} onChange={(event) => setForm((current) => ({ ...current, conditionId: event.target.value }))}>
+        <LookupSelect value={form.conditionId} onChange={(event) => setForm((current) => ({ ...current, conditionId: event.target.value }))}>
           {lookups.conditions.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Latitude
@@ -241,16 +242,16 @@ export function CreateHeadstoneForm({
         <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={2} />
       </label>
       {isSectionG ? <p className="muted headstone-wide-field">Section G allows only flat markers.</p> : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="headstone-form-actions">
         <button type="button" className="secondary-button" onClick={cancel} disabled={isSaving}>
           Cancel
         </button>
-        <button type="submit" disabled={isSaving || !form.headstoneId.trim() || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
+        <LookupSaveButton type="submit" disabled={isSaving || !form.headstoneId.trim() || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
           <MapPinned size={15} aria-hidden="true" />
           {isSaving ? "Saving..." : "Save marker"}
-        </button>
+        </LookupSaveButton>
       </div>
-    </form>
+    </LookupForm>
   );
 }

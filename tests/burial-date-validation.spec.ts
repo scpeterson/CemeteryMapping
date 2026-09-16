@@ -24,6 +24,8 @@ for (const [field, label] of [["birthDate", "Birth date"], ["deathDate", "Death 
     await page.getByRole("button", { name: "Save burial", exact: true }).click();
     await expect(page.getByRole("alert")).toHaveText(message);
     await expect(date).toHaveValue("2002-11-31");
+    await expect(date).toHaveAttribute("aria-invalid", "true");
+    await expect(date).toHaveAccessibleDescription(message);
     await expect(page.getByRole("textbox", { name: "First name", exact: true })).toHaveValue("Alicia");
     await date.fill("2002-11-30");
     await page.getByRole("button", { name: "Save burial", exact: true }).click();

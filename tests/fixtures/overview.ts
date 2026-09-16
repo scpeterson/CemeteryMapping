@@ -38,5 +38,5 @@ export async function overviewFixture(page: Page) {
   } }));
   await page.route("**/api/headstones/marker-1", (route) => route.fulfill({ json: marker }));
   for (const grave of summaries) await page.route(gravePath(grave.id), (route) => route.fulfill({ json: overviewGrave(grave.id) }));
-  await page.route("**/media/*.png", (route) => route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=", "base64") }));
+  await page.route("**/media/*.png", (route) => route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=", "base64") }));
 }

@@ -89,9 +89,10 @@ function reportMarkerFeatures(value: unknown): ReportMarkerFeature[] {
 }
 
 function ReportPhoto({ fileUrl, markerId }: { fileUrl: string; markerId: string }) {
-  const { url, failed } = useMediaUrl(fileUrl);
-  return url ? <img className="marker-burial-photo" src={url} alt={`Marker ${markerId}`} />
-    : <div className="marker-burial-photo-placeholder">{failed ? "Photo unavailable" : "Loading photo…"}</div>;
+  const { url, failed, error, retry, reportImageFailure, attempt } = useMediaUrl(fileUrl);
+  return failed ? <div className="marker-burial-photo-placeholder" role="alert"><p>Photo couldn't be loaded. {error}</p><button type="button" onClick={retry}>Retry photo</button></div>
+    : url ? <img key={`${fileUrl}-${attempt}`} className="marker-burial-photo" src={url} onError={reportImageFailure} alt={`Marker ${markerId}`} />
+    : <div className="marker-burial-photo-placeholder" role="status">Loading photo…</div>;
 }
 
 function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
@@ -190,6 +191,9 @@ function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] }) {
 }
 
 export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) {
+  const [catalogError, setCatalogError] = useState(false);
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
+  const [staleResult, setStaleResult] = useState(false);
   const [reports, setReports] = useState<ReportDefinition[]>([]);
   const [selectedReportId, setSelectedReportId] = useState("");
   const [parameters, setParameters] = useState<Record<string, string>>({});
@@ -206,6 +210,8 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
   useEffect(() => {
     let isCurrent = true;
     setIsLoading(true);
+    setCatalogError(false);
+    setError("");
     fetchReports()
       .then((nextReports) => {
         if (!isCurrent) return;
@@ -214,7 +220,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
         setError("");
       })
       .catch((loadError: unknown) => {
-        if (isCurrent) setError(loadError instanceof Error ? loadError.message : "Unable to load reports.");
+        if (isCurrent) { setCatalogError(true); setError(loadError instanceof Error ? loadError.message : "Unable to load reports."); }
       })
       .finally(() => {
         if (isCurrent) setIsLoading(false);
@@ -223,7 +229,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
     return () => {
       isCurrent = false;
     };
-  }, []);
+  }, [catalogAttempt]);
 
   const selectedReport = useMemo(() => reports.find((report) => report.id === selectedReportId), [reports, selectedReportId]);
   const cemeteryOptions = useMemo(() => {
@@ -265,8 +271,10 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
     try {
       const nextResult = await runReport(report.id, scopedParameters(reportParameters));
       setResult(nextResult);
+      setStaleResult(false);
       setSelectedReportId(report.id);
     } catch (runError) {
+      setStaleResult(true);
       setError(runError instanceof Error ? runError.message : "Unable to run report.");
     } finally {
       setIsLoading(false);
@@ -296,6 +304,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
 
           const nextResult = await runReport(selectedExampleReport.id, scopedParameters(parameters));
           setResult(nextResult);
+      setStaleResult(false);
           setMessage("Ran the selected report example.");
           setMessageTone("info");
           return;
@@ -309,6 +318,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
       setParameters({ ...initialParameters(response.report), ...(response.parameters ?? {}) });
       if (response.result) {
         setResult(response.result);
+        setStaleResult(false);
         setMessage(response.message);
         setMessageTone("info");
         return;
@@ -317,6 +327,7 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
       setMessage(response.missingParameters?.length ? `${response.message} ${response.missingParameters.map((parameter) => parameter.label).join(", ")}` : response.message);
       setMessageTone("info");
     } catch (queryError) {
+      setStaleResult(true);
       setError(queryError instanceof Error ? queryError.message : "Unable to query reports.");
     } finally {
       setIsLoading(false);
@@ -429,12 +440,15 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
             </>
           ) : isLoading ? (
             <div className="report-empty" role="status">Loading reports...</div>
+          ) : catalogError ? (
+            <div role="alert"><p>Reports couldn't be loaded.</p><button type="button" onClick={() => setCatalogAttempt((value) => value + 1)}>Retry loading reports</button></div>
           ) : (
             <EmptyState title="No reports available" />
           )}
 
           {result ? (
             <div className="report-result">
+              {staleResult ? <p role="status">Previous results—latest request failed. Run the report again to refresh them.</p> : null}
               <div className="report-result-meta">
                 <div className="report-result-heading">
                   <strong>{result.report.title}</strong>

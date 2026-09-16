@@ -1,3 +1,4 @@
+import { EditingOptionsContext } from "./components/detail/editingOptionsContext";
 import { ConfirmationProvider } from "./components/ui/ConfirmationProvider";
 import { confirmDiscardChanges, useDraftNavigationGuard } from "./hooks/useDraftState";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
@@ -90,6 +91,9 @@ export default function App() {
   const [searchAttempt, setSearchAttempt] = useState(0);
   const [remoteMatches, setRemoteMatches] = useState<SearchMatch[]>();
   const [currentUser, setCurrentUser] = useState<CurrentUser>();
+  const [lookupError, setLookupError] = useState<string>();
+  const [lookupLoading, setLookupLoading] = useState(true);
+  const [lookupAttempt, setLookupAttempt] = useState(0);
   const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
   const [userError, setUserError] = useState<string>();
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -130,18 +134,21 @@ export default function App() {
   useEffect(() => {
     let isCurrent = true;
 
+    setLookupLoading(true);
+    setLookupError(undefined);
     fetchHeadstoneLookups()
       .then((lookups) => {
         if (isCurrent) setHeadstoneLookups(lookups);
       })
-      .catch(() => {
-        if (isCurrent) setHeadstoneLookups(emptyHeadstoneLookups);
-      });
+      .catch((error: unknown) => {
+        if (isCurrent) setLookupError(error instanceof Error ? error.message : "Try again.");
+      })
+      .finally(() => { if (isCurrent) setLookupLoading(false); });
 
     return () => {
       isCurrent = false;
     };
-  }, []);
+  }, [lookupAttempt]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -468,6 +475,7 @@ export default function App() {
               onPickMarkerPoint={pickMarkerPoint}
             />
           </section>
+          <EditingOptionsContext.Provider value={{ loading: lookupLoading, error: lookupError, retry: () => setLookupAttempt((value) => value + 1) }}>
           <DetailPanel
             selectionVersion={selectionVersion}
             onSelectHeadstone={selectHeadstone}
@@ -524,6 +532,7 @@ export default function App() {
             error={detailError}
             onRetry={refreshDetails}
           />
+          </EditingOptionsContext.Provider>
         </main>
         <Suspense fallback={null}>
           {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onClose={() => setIsReportsPanelOpen(false)} /> : null}

@@ -1,4 +1,4 @@
-import { type ImageSource, type Map } from "maplibre-gl";
+import { type ImageSource, type RasterTileSource, type Map } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotRestrictedAreasFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
@@ -133,6 +133,7 @@ function pasdaExportForViewport(map: Map) {
 }
 
 function updatePasdaImagery(map: Map) {
+  if (map.getLayer("pasda-imagery-2017") && map.getLayoutProperty("pasda-imagery-2017", "visibility") === "none") return;
   const source = map.getSource("pasda-imagery-2017") as ImageSource | undefined;
   source?.updateImage(pasdaExportForViewport(map));
 }
@@ -522,6 +523,9 @@ export function enforceMapLayerOrder(map: Map) {
 }
 
 export function applyMapViewMode(map: Map, mode: MapViewMode) {
+  for (const id of ["pasda-imagery-2017", "allegheny-parcels"]) {
+    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", mode === "diagram" ? "none" : "visible");
+  }
   if (map.getLayer("lots-fill")) {
     map.setPaintProperty(
       "lots-fill",
@@ -576,5 +580,12 @@ export function applyMapViewMode(map: Map, mode: MapViewMode) {
   }
   if (map.getLayer("headstones-circle")) {
     map.setPaintProperty("headstones-circle", "circle-opacity", mode === "diagram" ? 0.62 : 1);
+  }
+}
+
+export function retryExternalMapLayer(map: Map, id: string) {
+  if (id === "pasda-imagery-2017") updatePasdaImagery(map);
+  if (id === "allegheny-parcels") {
+    (map.getSource(id) as RasterTileSource | undefined)?.setTiles([alleghenyParcelsTileUrl]);
   }
 }

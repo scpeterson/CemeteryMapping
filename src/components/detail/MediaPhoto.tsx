@@ -3,12 +3,13 @@ import { useMediaUrl } from "../../hooks/useMediaUrl";
 import type { MediaAsset } from "../../types";
 
 export function MediaPhoto({ asset, children }: { asset: MediaAsset; children: ReactNode }) {
-  const { url, failed } = useMediaUrl(asset.fileUrl);
+  const { url, failed, error, retry, reportImageFailure, attempt } = useMediaUrl(asset.fileUrl);
   return (
-    <a className="media-gallery-item" href={url} target="_blank" rel="noreferrer">
-      {url ? <img src={url} alt={asset.notes || asset.originalFilename || "Cemetery record photo"} loading="lazy" />
-        : <span>{failed ? "Photo unavailable" : "Loading photo…"}</span>}
+    <div className="media-gallery-item">
+      {failed ? <div role="alert"><p>Photo couldn't be loaded. {error}</p><button type="button" onClick={retry}>Retry photo</button></div>
+        : url ? <a href={url} target="_blank" rel="noreferrer"><img key={`${asset.fileUrl}-${attempt}`} src={url} onError={reportImageFailure} alt={asset.notes || asset.originalFilename || "Cemetery record photo"} loading="lazy" /></a>
+        : <span role="status">Loading photo…</span>}
       {children}
-    </a>
+    </div>
   );
 }

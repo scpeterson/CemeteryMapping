@@ -1,3 +1,4 @@
+import { BadRequestError } from "./requestValidation.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { toBurial } from "./cemeteryMappers.mjs";
@@ -128,14 +129,14 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     const fullName = [burial.firstName, burial.lastName, burial.nameSuffix].filter(Boolean).join(" ") || null;
     const effectiveIntermentType = burial.intermentType || "unknown";
     if (!(await activeIntermentTypeExists(client, effectiveIntermentType))) {
-      throw new Error(`Unsupported interment type: ${effectiveIntermentType}.`);
+      throw new BadRequestError("Interment type is no longer available. Reload the record and select an active interment type.");
     }
     const effectiveRecordStatusCode = burial.recordStatusCode || "interred";
     if (!(await activeBurialRecordStatusExists(client, effectiveRecordStatusCode))) {
-      throw new Error(`Unsupported burial record status: ${effectiveRecordStatusCode}.`);
+      throw new BadRequestError("Burial record status is no longer available. Reload the record and select an active status.");
     }
     if (!(await verifiedDeathPlaceExists(client, burial.deathPlaceId))) {
-      throw new Error("Death place must reference an active verified place.");
+      throw new BadRequestError("Death place is no longer available. Search for and select a verified place again.");
     }
     const hasIntermentTypeLookup = await burialIntermentTypeColumnExists(client);
     const hasLegacyIntermentTypeColumn = !hasIntermentTypeLookup && (await legacyBurialIntermentTypeColumnExists(client));
@@ -371,7 +372,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
         [id, effectiveDecorationCodes],
       );
       if (decorationResult.rows.length !== effectiveDecorationCodes.length) {
-        throw new Error("One or more military decorations are unsupported.");
+        throw new BadRequestError("One or more military decorations are no longer available. Reload the record and select active decorations.");
       }
     }
     const auditEventId = await auditEventIdForMutation(client, {

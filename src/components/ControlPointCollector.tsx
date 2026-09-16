@@ -67,15 +67,18 @@ function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function loadStoredControlPoints() {
-  if (typeof window === "undefined") return [];
+function loadStoredControlPoints(): { points: ControlPoint[]; error?: string } {
   try {
     const stored = window.localStorage.getItem(storageKey);
-    if (!stored) return [];
-    const parsed = JSON.parse(stored) as ControlPoint[];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!stored) return { points: [] };
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed) || !parsed.every((point) => point &&
+      ["x", "y", "longitude", "latitude"].every((key) => typeof point[key] === "number" && Number.isFinite(point[key])) &&
+      ["id", "sourceImageName", "description", "createdAt"].every((key) => typeof point[key] === "string") &&
+      ["high", "medium", "low"].includes(point.confidence))) throw new Error("Invalid saved points");
+    return { points: parsed as ControlPoint[] };
   } catch {
-    return [];
+    return { points: [], error: "Saved control points couldn't be loaded. Stored data has not been replaced. Retry loading before editing points." };
   }
 }
 
@@ -123,7 +126,10 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   const [imageZoom, setImageZoom] = useState(1);
   const [defaultDescription, setDefaultDescription] = useState("");
   const [defaultConfidence, setDefaultConfidence] = useState<ControlPointConfidence>("medium");
-  const [points, setPoints] = useState<ControlPoint[]>(loadStoredControlPoints);
+  const [initialStorage] = useState(loadStoredControlPoints);
+  const [storageLoadError, setStorageLoadError] = useState(initialStorage.error);
+  const [storageSaveError, setStorageSaveError] = useState<string>();
+  const [points, setPoints] = useState<ControlPoint[]>(initialStorage.points);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const initialPointsRef = useRef(points);
@@ -173,10 +179,17 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(points));
+    if (!storageLoadError) {
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(points));
+        setStorageSaveError(undefined);
+      } catch {
+        setStorageSaveError("Control points couldn't be saved in this browser. Export them before closing to keep your work.");
+      }
+    }
     const source = mapRef.current?.getSource("control-points") as GeoJSONSource | undefined;
     source?.setData(controlPointFeatureCollection(points));
-  }, [points]);
+  }, [points, storageLoadError]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -409,6 +422,15 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
         </button>
       </div>
 
+      {storageLoadError || storageSaveError ? <div role="alert">
+        <p>{storageLoadError || storageSaveError}</p>
+        {storageLoadError ? <button type="button" onClick={() => {
+          const stored = loadStoredControlPoints();
+          setStorageLoadError(stored.error);
+          if (!stored.error) setPoints(stored.points);
+        }}>Retry loading control points</button> : null}
+      </div> : null}
+      <fieldset inert={Boolean(storageLoadError)} disabled={Boolean(storageLoadError)} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
       <div className="control-point-workspace">
         <section className="control-point-card control-point-image-card" aria-label="Source image control points">
           <div className="control-point-card-header">
@@ -600,6 +622,7 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
           </ol>
         </section>
       </div>
+      </fieldset>
     </Modal>
   );
 }

@@ -1,3 +1,5 @@
+import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
+import { useId } from "react";
 import { useDraftState } from "../../hooks/useDraftState";
 import { Info, Pencil } from "lucide-react";
 import { FormEvent, useState } from "react";
@@ -126,6 +128,7 @@ export function HeadstoneRecord({
   const [form, setForm] = useDraftState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const errorId = useId();
   const [provenanceMessage, setProvenanceMessage] = useState<string>();
 
   const startEditing = () => {
@@ -158,87 +161,87 @@ export function HeadstoneRecord({
 
   if (isEditing) {
     return (
-      <form className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
+      <LookupForm className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
         <div className="headstone-record-header">
           <strong>{headstone.headstoneId}</strong>
         </div>
         <label>
           Marker type
-          <select value={form.markerTypeId} onChange={(event) => setForm((current) => ({ ...current, markerTypeId: event.target.value }))}>
+          <LookupSelect value={form.markerTypeId} onChange={(event) => setForm((current) => ({ ...current, markerTypeId: event.target.value }))}>
             {markerTypeOptions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         {isSectionG ? <p className="muted headstone-wide-field">Section G allows only flat markers.</p> : null}
         <label>
           Marker scope
-          <select value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>
+          <LookupSelect value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>
             {lookups.markerScopes.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Material
-          <select value={form.materialId} onChange={(event) => setForm((current) => ({ ...current, materialId: event.target.value }))}>
+          <LookupSelect value={form.materialId} onChange={(event) => setForm((current) => ({ ...current, materialId: event.target.value }))}>
             {lookups.materials.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Condition
-          <select value={form.conditionId} onChange={(event) => setForm((current) => ({ ...current, conditionId: event.target.value }))}>
+          <LookupSelect value={form.conditionId} onChange={(event) => setForm((current) => ({ ...current, conditionId: event.target.value }))}>
             {lookups.conditions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Vase type
-          <select value={form.vaseTypeId} onChange={(event) => setForm((current) => ({ ...current, vaseTypeId: event.target.value }))}>
+          <LookupSelect value={form.vaseTypeId} onChange={(event) => setForm((current) => ({ ...current, vaseTypeId: event.target.value }))}>
             <option value="">Not recorded</option>
             {lookups.vaseTypes.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Vase material
-          <select value={form.vaseMaterialId} onChange={(event) => setForm((current) => ({ ...current, vaseMaterialId: event.target.value }))}>
+          <LookupSelect value={form.vaseMaterialId} onChange={(event) => setForm((current) => ({ ...current, vaseMaterialId: event.target.value }))}>
             <option value="">Not recorded</option>
             {lookups.vaseMaterials.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Vase placement
-          <select value={form.vasePlacementId} onChange={(event) => setForm((current) => ({ ...current, vasePlacementId: event.target.value }))}>
+          <LookupSelect value={form.vasePlacementId} onChange={(event) => setForm((current) => ({ ...current, vasePlacementId: event.target.value }))}>
             <option value="">Not recorded</option>
             {lookups.vasePlacements.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Last inspected
-          <input type="date" value={form.lastInspectedAt} onChange={(event) => setForm((current) => ({ ...current, lastInspectedAt: event.target.value }))} />
+          <input type="date" value={form.lastInspectedAt} aria-invalid={error?.startsWith("Last inspected date") || undefined} aria-describedby={error?.startsWith("Last inspected date") ? errorId : undefined} onChange={(event) => setForm((current) => ({ ...current, lastInspectedAt: event.target.value }))} />
         </label>
         <label className="headstone-wide-field">
           Vase notes
@@ -262,36 +265,36 @@ export function HeadstoneRecord({
         </label>
         <label>
           Data confidence
-          <select value={form.dataConfidence} onChange={(event) => setForm((current) => ({ ...current, dataConfidence: event.target.value as SaveHeadstoneInput["dataConfidence"] }))}>
+          <LookupSelect value={form.dataConfidence} onChange={(event) => setForm((current) => ({ ...current, dataConfidence: event.target.value as SaveHeadstoneInput["dataConfidence"] }))}>
             {dataConfidenceOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Review status
-          <select value={form.reviewStatus} onChange={(event) => setForm((current) => ({ ...current, reviewStatus: event.target.value as SaveHeadstoneInput["reviewStatus"] }))}>
+          <LookupSelect value={form.reviewStatus} onChange={(event) => setForm((current) => ({ ...current, reviewStatus: event.target.value as SaveHeadstoneInput["reviewStatus"] }))}>
             {reviewStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           NHG inclusion
-          <select value={form.nhgInclusion} onChange={(event) => setForm((current) => ({ ...current, nhgInclusion: event.target.value as SaveHeadstoneInput["nhgInclusion"] }))}>
+          <LookupSelect value={form.nhgInclusion} onChange={(event) => setForm((current) => ({ ...current, nhgInclusion: event.target.value as SaveHeadstoneInput["nhgInclusion"] }))}>
             <option value="not_checked">Not yet checked</option>
             <option value="listed">Listed in NHG</option>
             <option value="not_listed">Not listed in NHG</option>
             <option value="unclear">Unclear</option>
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Verification source
-          <select
+          <LookupSelect
             value={form.provenanceVerificationSource}
             onChange={(event) =>
               setForm((current) => ({
@@ -305,13 +308,13 @@ export function HeadstoneRecord({
             <option value="documentary_record">Documentary record</option>
             <option value="manual_review">Manual review</option>
             <option value="import">Imported source</option>
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Source information verified on
           <input
             type="date"
-            value={form.provenanceVerifiedAt}
+            value={form.provenanceVerifiedAt} aria-invalid={error?.startsWith("Source information verified date") || undefined} aria-describedby={error?.startsWith("Source information verified date") ? errorId : undefined}
             onChange={(event) => setForm((current) => ({ ...current, provenanceVerifiedAt: event.target.value }))}
           />
         </label>
@@ -334,16 +337,16 @@ export function HeadstoneRecord({
           Review notes
           <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
         </label>
-        {error ? <p className="detail-message is-error">{error}</p> : null}
+        {error ? <p id={errorId} className="detail-message is-error" role="alert">{error}</p> : null}
         <div className="headstone-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
             Cancel
           </button>
-          <button type="submit" disabled={isSaving || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
+          <LookupSaveButton type="submit" disabled={isSaving || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
             {isSaving ? "Saving..." : "Save marker"}
-          </button>
+          </LookupSaveButton>
         </div>
-      </form>
+      </LookupForm>
     );
   }
 

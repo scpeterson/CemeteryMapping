@@ -117,7 +117,7 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
           Cost
           <input inputMode="decimal" value={form.cost} onChange={(event) => setForm((current) => ({ ...current, cost: event.target.value }))} />
         </label>
-        {error ? <p className="detail-message is-error">{error}</p> : null}
+        {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
         {hasConflict ? <button type="button" disabled={isSaving} onClick={() => void reloadLatest()}>Reload latest values (discard edits)</button> : null}
         <div className="grave-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
@@ -195,7 +195,7 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
           ) : null}
         </div>
       ) : null}
-      {error && !isEditing ? <p className="detail-message is-error">{error}</p> : null}
+      {error && !isEditing ? <p className="detail-message is-error" role="alert">{error}</p> : null}
     </article>
   );
 }

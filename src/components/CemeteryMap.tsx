@@ -1,3 +1,4 @@
+import { createMapLayerHealth, externalMapLayers, type ExternalMapLayer } from "./mapLayerHealth";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, Ruler, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import * as maplibregl from "maplibre-gl";
@@ -12,6 +13,7 @@ import {
   addHeadstoneLayers,
   addLotLayers,
   addRasterLayers,
+  retryExternalMapLayer,
   addSectionLabelLayer,
   addSectionLayers,
   applyMapViewMode,
@@ -180,6 +182,8 @@ export function CemeteryMap({
   isPickingMarkerPoint = false,
   onPickMarkerPoint,
 }: CemeteryMapProps) {
+  const [failedLayers, setFailedLayers] = useState<ExternalMapLayer[]>([]);
+  const layerHealthRef = useRef<ReturnType<typeof createMapLayerHealth> | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [scale, setScale] = useState<MapScale>();
   const [mapViewMode, setMapViewMode] = useState<MapViewMode>("geographic");
@@ -258,6 +262,22 @@ export function CemeteryMap({
         ],
       },
     });
+
+    const layerHealth = createMapLayerHealth(setFailedLayers);
+    layerHealthRef.current = layerHealth;
+    const handleLayerError = (event: maplibregl.ErrorEvent) => {
+      const sourceEvent = event as maplibregl.ErrorEvent & { sourceId?: string };
+      if (sourceEvent.sourceId && Object.hasOwn(externalMapLayers, sourceEvent.sourceId)) layerHealth.error(sourceEvent);
+      else console.error(event.error);
+    };
+    const beginViewportLoad = () => {
+      // Failed tiles from the old viewport must not keep a recovered layer in error.
+      layerHealth.retry("pasda-imagery-2017");
+      layerHealth.retry("allegheny-parcels");
+    };
+    map.on("movestart", beginViewportLoad);
+    map.on("error", handleLayerError);
+    map.on("sourcedata", layerHealth.data);
 
     map.on("load", () => {
       setMapLoaded(true);
@@ -370,6 +390,10 @@ export function CemeteryMap({
       map.off("move", updateScale);
       map.off("zoom", updateScale);
       cemeteryMarkers.splice(0).forEach((marker) => marker.remove());
+      map.off("movestart", beginViewportLoad);
+      map.off("error", handleLayerError);
+      map.off("sourcedata", layerHealth.data);
+      layerHealthRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -488,6 +512,23 @@ export function CemeteryMap({
     <>
       <div ref={containerRef} className="map-canvas" aria-label="Interactive cemetery map" />
       <div className="map-toolbar" aria-label="Map tools">
+        {mapViewMode === "geographic" && failedLayers.length > 0 ? (
+          <section className="map-layer-notice" aria-label="Map layer availability">
+            <div role="status" aria-live="polite">
+              {failedLayers.map((id) => <p key={id}><strong>{externalMapLayers[id]}</strong> couldn't be loaded.</p>)}
+              <p>Cemetery records remain available.</p>
+            </div>
+            <div className="map-layer-actions">
+              {failedLayers.map((id) => <button key={id} type="button" onClick={() => {
+                const map = mapRef.current;
+                if (!map) return;
+                layerHealthRef.current?.retry(id);
+                retryExternalMapLayer(map, id);
+              }}>Retry {externalMapLayers[id]}</button>)}
+              <button type="button" onClick={() => setMapViewMode("diagram")}>Switch to Diagram view</button>
+            </div>
+          </section>
+        ) : null}
       <div className="map-view-toggle" aria-label="Map view">
         <button
           type="button"

@@ -6,7 +6,7 @@ export const detail = (id: string, version = "1", name = id) => ({ ...summaries.
 export const gravePath = (id: string) => `**/api/cemeteries/${cemeteryId}/grave-spaces/${id}`;
 export async function fixture(page: Page) {
   await page.route("**/api/me", (route) => route.fulfill({ json: { role: "admin", assignedCemeteryIds: [], permissions: { canManageUsers: true, canOpenAdminPanel: true, canViewOwnership: true, canUpdateGravesites: true } } }));
-  await page.route("**/api/headstone-lookups", (route) => route.fulfill({ status: 503, json: {} }));
+  await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {} }));
   await page.route("**/api/cemetery-map", (route) => route.fulfill({ json: { boundaries: [{ type: "Feature", properties: { name: "Test Cemetery" }, geometry }], sections: [], lots: [], graves: summaries, headstones: [] } }));
   await page.route("**/api/search**", (route) => route.fulfill({ json: summaries.map((grave) => ({ grave, reasons: [grave.id] })) }));
   for (const grave of summaries) await page.route(gravePath(grave.id), (route) => route.fulfill({ json: detail(grave.id) }));

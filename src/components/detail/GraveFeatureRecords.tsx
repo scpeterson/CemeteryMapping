@@ -1,3 +1,4 @@
+import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useDraftState } from "../../hooks/useDraftState";
 import { FormEvent, useState } from "react";
 import { Flag, Pencil, Trash2 } from "lucide-react";
@@ -112,7 +113,7 @@ export function GraveFeatureList({
           </article>
         );
       })}
-      {deleteError ? <p className="detail-message is-error">{deleteError}</p> : null}
+      {deleteError ? <p className="detail-message is-error" role="alert">{deleteError}</p> : null}
     </div>
   );
 }
@@ -191,10 +192,10 @@ export function GraveFeatureForm({
   if (!lookups.graveFeatureTypes.length) return null;
 
   return (
-    <form className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
+    <LookupForm className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
       <label>
         Feature
-        <select
+        <LookupSelect
           value={form.featureTypeId}
           onChange={(event) =>
             setForm((current) => {
@@ -215,40 +216,40 @@ export function GraveFeatureForm({
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Subtype
-        <select value={form.featureSubtypeId} onChange={(event) => setForm((current) => ({ ...current, featureSubtypeId: event.target.value }))}>
+        <LookupSelect value={form.featureSubtypeId} onChange={(event) => setForm((current) => ({ ...current, featureSubtypeId: event.target.value }))}>
           <option value="">Not recorded</option>
           {subtypeOptions.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Placement
-        <select value={form.placementTypeId} onChange={(event) => setForm((current) => ({ ...current, placementTypeId: event.target.value }))}>
+        <LookupSelect value={form.placementTypeId} onChange={(event) => setForm((current) => ({ ...current, placementTypeId: event.target.value }))}>
           <option value="">Not recorded</option>
           {lookups.graveFeaturePlacements.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Material
-        <select value={form.materialTypeId} onChange={(event) => setForm((current) => ({ ...current, materialTypeId: event.target.value }))}>
+        <LookupSelect value={form.materialTypeId} onChange={(event) => setForm((current) => ({ ...current, materialTypeId: event.target.value }))}>
           <option value="">Not recorded</option>
           {lookups.graveFeatureMaterials.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       {fixedHeadstone ? (
         <div className="photo-upload-linked-marker">
@@ -258,14 +259,14 @@ export function GraveFeatureForm({
       ) : (
         <label>
           Linked marker
-          <select value={form.headstoneId} onChange={(event) => setForm((current) => ({ ...current, headstoneId: event.target.value }))}>
+          <LookupSelect value={form.headstoneId} onChange={(event) => setForm((current) => ({ ...current, headstoneId: event.target.value }))}>
             <option value="">Gravesite only</option>
             {headstones.map((headstone) => (
               <option key={headstone.id} value={headstone.id}>
                 {headstone.headstoneId}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
       )}
       <label>
@@ -274,21 +275,21 @@ export function GraveFeatureForm({
       </label>
       <label>
         Source
-        <select value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value }))}>
+        <LookupSelect value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value }))}>
           <option value="nhg">NHG</option>
           <option value="photo">Photo</option>
           <option value="field_survey">Field survey</option>
           <option value="manual">Manual</option>
           <option value="import">Import</option>
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Status
-        <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveGraveFeatureInput["status"] }))}>
+        <LookupSelect value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveGraveFeatureInput["status"] }))}>
           <option value="active">Active</option>
           <option value="needs_review">Needs review</option>
           <option value="retired">Retired</option>
-        </select>
+        </LookupSelect>
       </label>
       <label className="headstone-wide-field">
         Source text
@@ -299,18 +300,18 @@ export function GraveFeatureForm({
         <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={2} />
       </label>
       {message ? <p className="detail-message is-success">{message}</p> : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="headstone-form-actions">
         {onCancel ? (
           <button type="button" className="secondary-button" onClick={onCancel} disabled={isSaving}>
             Cancel
           </button>
         ) : null}
-        <button type="submit" disabled={isSaving || !form.featureTypeId || (!form.graveSpaceId && !form.headstoneId)}>
+        <LookupSaveButton type="submit" disabled={isSaving || !form.featureTypeId || (!form.graveSpaceId && !form.headstoneId)}>
           <Flag size={15} aria-hidden="true" />
           {isSaving ? "Saving..." : submitLabel}
-        </button>
+        </LookupSaveButton>
       </div>
-    </form>
+    </LookupForm>
   );
 }
