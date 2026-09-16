@@ -166,7 +166,7 @@ async function selectSourcePersonRecordById(client, id) {
               ELSE 'headstone'
             END,
             'targetId', COALESCE(link.burial_uuid::text, link.gravesite_uuid::text, link.headstone_uuid::text),
-            'targetLabel', COALESCE(burials.full_name, gravesites.gravesite_id, headstones.headstone_id),
+            'targetLabel', COALESCE(NULLIF(burials.display_name, ''), burials.full_name, gravesites.gravesite_id, headstones.headstone_id),
             'notes', link.notes
           )
           ORDER BY link.created_at, link.id

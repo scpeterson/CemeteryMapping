@@ -51,6 +51,8 @@ export function toBurial(burial) {
     person: {
       id: `person-${burial.id}`,
       firstName: burial.first_name ?? "",
+      givenNameStatus: burial.given_name_status ?? (burial.first_name?.trim() ? "recorded" : "unknown"),
+      displayName: burial.display_name ?? "",
       lastName: burial.last_name ?? burial.full_name ?? "Unknown",
       maidenName: burial.maiden_name ?? "",
       nameSuffix: burial.name_suffix ?? "",

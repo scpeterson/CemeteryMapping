@@ -1186,3 +1186,6 @@ databaseChangeLog:
   - include:
       file: changes/398-split-a-0067-steele-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/399-burial-given-name-status.sql
+      relativeToChangelogFile: true

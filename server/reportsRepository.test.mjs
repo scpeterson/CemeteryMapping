@@ -271,7 +271,7 @@ test("marker burial pages filter linked burials and include photos and NHG evide
   assert.match(query.sql, /lower\(btrim\(coalesce\(burials\.veteran, ''\)\)\) IN \('yes', 'y', 'true', '1', 'veteran'\) AS veteran/u);
   assert.match(query.sql, /gravesites\.cemetery_id = ANY\(\$1::uuid\[\]\)/u);
   assert.match(query.sql, /lower\(headstones\.headstone_id\) LIKE lower\(\$2\)/u);
-  assert.match(query.sql, /lower\(COALESCE\(NULLIF\(burials\.full_name/u);
+  assert.match(query.sql, /lower\(concat_ws\(' ', burials\.display_name, burials\.full_name/u);
   assert.match(query.sql, /upper\(gravesites\.section_id\) = upper\(\$4\)/u);
   assert.deepEqual(query.values, [["22222222-2222-4222-8222-222222222222"], "%TLC-HS-0228%", "%Schug%", "C"]);
   assert.equal(result.layout, "marker-burial-pages");

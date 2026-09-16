@@ -1341,6 +1341,8 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "M.D.",
     null,
     "https://www.findagrave.com/memorial/123/ruth-soergel",
+    "recorded",
+    null,
   ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");

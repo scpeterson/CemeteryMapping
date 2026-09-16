@@ -79,7 +79,11 @@ export type SystemEventFilters = {
   limit?: number;
 };
 
+export type GivenNameStatus = "recorded" | "unknown" | "no_given_name";
+
 export type Person = {
+  givenNameStatus?: GivenNameStatus;
+  displayName?: string;
   id: string;
   firstName: string;
   middleName?: string;
@@ -537,6 +541,8 @@ export type SaveGraveSpaceInput = {
 };
 
 export type SaveBurialInput = {
+  givenNameStatus?: GivenNameStatus;
+  displayName?: string;
   firstName: string;
   lastName: string;
   maidenName: string;

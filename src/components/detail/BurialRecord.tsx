@@ -16,9 +16,13 @@ import type {
 import { ReviewBadgeGroup } from "./RecordReview";
 import { dataConfidenceOptions, reviewStatusOptions } from "./reviewOptions";
 
+import BurialNameFields from "./BurialNameFields";
+
 function blankBurialForm(burial: Burial): SaveBurialInput {
   return {
     firstName: burial.person.firstName,
+    givenNameStatus: burial.person.givenNameStatus ?? (burial.person.firstName.trim() ? "recorded" : "unknown"),
+    displayName: burial.person.displayName ?? "",
     lastName: burial.person.lastName === "Unknown" ? "" : burial.person.lastName,
     maidenName: burial.person.maidenName ?? "",
     nameSuffix: burial.person.nameSuffix ?? "",
@@ -194,26 +198,7 @@ export function BurialRecord({
   if (isEditing) {
     return (
       <LookupForm className="burial-record burial-form" onSubmit={(event) => void save(event)}>
-        <label>
-          First name
-          <input value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))} />
-        </label>
-        <label>
-          Last name
-          <input value={form.lastName} onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))} />
-        </label>
-        <label>
-          Maiden name
-          <input value={form.maidenName} onChange={(event) => setForm((current) => ({ ...current, maidenName: event.target.value }))} />
-        </label>
-        <label>
-          Title / credentials
-          <input
-            value={form.nameSuffix}
-            placeholder="M.D., Ph.D., Jr."
-            onChange={(event) => setForm((current) => ({ ...current, nameSuffix: event.target.value }))}
-          />
-        </label>
+        <BurialNameFields form={form} setForm={setForm} />
         <label>
           Birth date
           <input value={form.birthDate} aria-invalid={error?.startsWith("Birth date") || undefined} aria-describedby={error?.startsWith("Birth date") ? errorId : undefined} placeholder="YYYY, YYYY-MM, or Nov. YYYY" onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value }))} />
@@ -443,6 +428,10 @@ export function BurialRecord({
         ) : null}
       </div>
       <dl>
+        <div>
+          <dt>Given name</dt>
+          <dd>{burial.person.givenNameStatus === "no_given_name" ? "No given name" : burial.person.firstName || "Unknown / not recorded"}</dd>
+        </div>
         <div>
           <dt>Born</dt>
           <dd>{formatDate(burial.person.birthDate)}</dd>
