@@ -14,7 +14,8 @@ test("actual parser failures preserve 400 and 413 without recording server error
   app.get("/bad", () => { throw new BadRequestError("Name is required"); });
   app.get("/unknown", () => { throw Object.assign(new Error("private detail"), { status: 400 }); });
   let recorded = 0;
-  app.use(createApiErrorHandler({ query: async () => { recorded++; return { rows: [] }; } }, { appEnv: "test" }, {}));
+  let recordedMetadata;
+  app.use(createApiErrorHandler({ query: async (_sql, values) => { recorded++; recordedMetadata = JSON.parse(values[14]); return { rows: [{}] }; } }, { appEnv: "test" }, {}));
   t.mock.method(console, "error", () => {});
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
@@ -32,8 +33,12 @@ test("actual parser failures preserve 400 and 413 without recording server error
   assert.equal(recorded, 0);
   const unknown = await fetch(`${base}/unknown`);
   assert.equal(unknown.status, 500);
-  assert.deepEqual(await unknown.json(), { error: "Internal server error" });
+  const failure = await unknown.json();
+  assert.match(failure.error, /Something went wrong on the server/);
+  assert.match(failure.referenceId, /^[0-9a-f-]{36}$/u);
+  assert.ok(!JSON.stringify(failure).includes("private detail"));
   assert.ok(recorded > 0);
+  assert.equal(recordedMetadata.referenceId, failure.referenceId);
 });
 
 test("errors after response headers are delegated without writing again", async () => {
@@ -41,4 +46,12 @@ test("errors after response headers are delegated without writing again", async 
   let delegated;
   await createApiErrorHandler({}, {}, {})(error, {}, { headersSent: true }, (value) => { delegated = value; });
   assert.equal(delegated, error);
+});
+
+test("oversized photos report the upload limit without logging a server failure", async () => {
+  let status, body;
+  const response = { status(code) { status = code; return this; }, json(value) { body = value; } };
+  await createApiErrorHandler({}, {}, {})({ type: "entity.too.large" }, { originalUrl: "/api/headstones/marker/media-assets?filename=photo.jpg" }, response);
+  assert.equal(status, 413);
+  assert.equal(body.error, "This photo exceeds the 25 MB upload limit. Choose a smaller file.");
 });

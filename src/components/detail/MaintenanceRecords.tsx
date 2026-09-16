@@ -1,3 +1,5 @@
+import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
+import { useId } from "react";
 import { useDraftState } from "../../hooks/useDraftState";
 import { FormEvent, useState } from "react";
 import { History, Pencil } from "lucide-react";
@@ -145,6 +147,7 @@ export function MaintenanceRecordForm({
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
+  const errorId = useId();
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
@@ -177,66 +180,66 @@ export function MaintenanceRecordForm({
   if (!lookups.maintenancePriorities.length || (!lookups.maintenanceIssueTypes.length && !lookups.maintenanceActionTypes.length)) return null;
 
   return (
-    <form className="headstone-record headstone-form maintenance-form" onSubmit={(event) => void save(event)}>
+    <LookupForm className="headstone-record headstone-form maintenance-form" onSubmit={(event) => void save(event)}>
       <label>
         Issue
-        <select value={form.issueTypeId} onChange={(event) => setForm((current) => ({ ...current, issueTypeId: event.target.value }))}>
+        <LookupSelect value={form.issueTypeId} onChange={(event) => setForm((current) => ({ ...current, issueTypeId: event.target.value }))}>
           <option value="">No issue</option>
           {lookups.maintenanceIssueTypes.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Action
-        <select value={form.actionTypeId} onChange={(event) => setForm((current) => ({ ...current, actionTypeId: event.target.value }))}>
+        <LookupSelect value={form.actionTypeId} onChange={(event) => setForm((current) => ({ ...current, actionTypeId: event.target.value }))}>
           <option value="">No action</option>
           {lookups.maintenanceActionTypes.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Status
-        <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveMaintenanceRecordInput["status"] }))}>
+        <LookupSelect value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveMaintenanceRecordInput["status"] }))}>
           {Object.entries(maintenanceStatusLabels).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Priority
-        <select value={form.priorityTypeId} onChange={(event) => setForm((current) => ({ ...current, priorityTypeId: event.target.value }))}>
+        <LookupSelect value={form.priorityTypeId} onChange={(event) => setForm((current) => ({ ...current, priorityTypeId: event.target.value }))}>
           {lookups.maintenancePriorities.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Observed
-        <input type="date" value={form.observedAt} onChange={(event) => setForm((current) => ({ ...current, observedAt: event.target.value }))} />
+        <input type="date" value={form.observedAt} aria-invalid={error?.startsWith("Observed date") || undefined} aria-describedby={error?.startsWith("Observed date") ? errorId : undefined} onChange={(event) => setForm((current) => ({ ...current, observedAt: event.target.value }))} />
       </label>
       <label>
         Completed
-        <input type="date" value={form.completedAt} onChange={(event) => setForm((current) => ({ ...current, completedAt: event.target.value }))} />
+        <input type="date" value={form.completedAt} aria-invalid={error?.startsWith("Completed date") || undefined} aria-describedby={error?.startsWith("Completed date") ? errorId : undefined} onChange={(event) => setForm((current) => ({ ...current, completedAt: event.target.value }))} />
       </label>
       <label>
         Source
-        <select value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value as SaveMaintenanceRecordInput["sourceType"] }))}>
+        <LookupSelect value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value as SaveMaintenanceRecordInput["sourceType"] }))}>
           {Object.entries(maintenanceSourceLabels).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Performed by
@@ -247,18 +250,18 @@ export function MaintenanceRecordForm({
         <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={2} />
       </label>
       {message ? <p className="detail-message is-success">{message}</p> : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p id={errorId} className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="headstone-form-actions">
         {onCancel ? (
           <button type="button" className="secondary-button" onClick={onCancel} disabled={isSaving}>
             Cancel
           </button>
         ) : null}
-        <button type="submit" disabled={isSaving || !form.priorityTypeId || (!form.issueTypeId && !form.actionTypeId)}>
+        <LookupSaveButton type="submit" disabled={isSaving || !form.priorityTypeId || (!form.issueTypeId && !form.actionTypeId)}>
           <History size={15} aria-hidden="true" />
           {isSaving ? "Saving..." : submitLabel}
-        </button>
+        </LookupSaveButton>
       </div>
-    </form>
+    </LookupForm>
   );
 }

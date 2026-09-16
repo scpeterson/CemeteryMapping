@@ -23,7 +23,7 @@ test("adding a grave feature resets its draft only after a successful save", asy
   await form.getByRole("textbox", { name: "Source text", exact: true }).fill("Field observation");
   await form.getByRole("textbox", { name: "Notes", exact: true }).fill("New flag holder");
   await form.getByRole("button", { name: "Add feature", exact: true }).click();
-  await expect(form.getByText(/Test feature save failure/)).toBeVisible();
+  await expect(form.getByText(/Something went wrong on the server/)).toBeVisible();
   let warnings = 0;
   page.on("dialog", async (dialog) => { warnings++; await dialog.dismiss(); });
   const destination = page.getByRole("tab", { name: "Overview", exact: true });
@@ -66,7 +66,7 @@ for (const record of ["marker", "burial"] as const) {
     await field.fill("Saved regression value");
     const save = page.getByRole("button", { name: record === "marker" ? "Save marker" : "Save burial", exact: true });
     await save.click();
-    await expect(page.getByText(/returned 500: Test save failure/)).toBeVisible();
+    await expect(page.getByText(/Something went wrong on the server/)).toBeVisible();
     let warnings = 0;
     page.on("dialog", async (dialog) => { warnings++; await dialog.dismiss(); });
     const destination = page.getByRole("tab", { name: "Overview", exact: true });

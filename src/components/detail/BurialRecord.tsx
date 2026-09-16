@@ -1,3 +1,5 @@
+import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
+import { useId } from "react";
 import { useDraftState } from "../../hooks/useDraftState";
 import { Pencil } from "lucide-react";
 import { FormEvent, useState } from "react";
@@ -89,8 +91,10 @@ export function BurialRecord({
   const militaryRankOptions = lookups.militaryRanks.filter((option) => option.militaryBranchCode === form.militaryBranchCode);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const errorId = useId();
   const [placeQuery, setPlaceQuery] = useState("");
   const [placeCandidates, setPlaceCandidates] = useState<GeographicPlaceCandidate[]>([]);
+  const [placeRetry, setPlaceRetry] = useState<"search" | GeographicPlaceCandidate>();
   const [placeSearchMessage, setPlaceSearchMessage] = useState<string>();
   const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
   const [isImportingPlace, setIsImportingPlace] = useState(false);
@@ -113,21 +117,25 @@ export function BurialRecord({
       setPlaceSearchMessage("Enter at least two characters to search.");
       return;
     }
+    setPlaceRetry(undefined);
     setIsSearchingPlaces(true);
     setPlaceSearchMessage(undefined);
     try {
       const response = await searchGeographicPlaces(query);
       setPlaceCandidates(response.results);
       setPlaceSearchMessage(response.available ? (response.results.length ? undefined : "No matching places found.") : response.message);
-    } catch {
+      if (!response.available) setPlaceRetry("search");
+    } catch (error) {
+      setPlaceRetry("search");
       setPlaceCandidates([]);
-      setPlaceSearchMessage("Geographic search is temporarily unavailable. Existing verified places remain available.");
+      setPlaceSearchMessage(error instanceof Error ? error.message : "Geographic search couldn't be completed. Try again.");
     } finally {
       setIsSearchingPlaces(false);
     }
   };
 
   const choosePlace = async (candidate: GeographicPlaceCandidate) => {
+    setPlaceRetry(undefined);
     setIsImportingPlace(true);
     setPlaceSearchMessage(undefined);
     try {
@@ -136,8 +144,9 @@ export function BurialRecord({
       setForm((current) => ({ ...current, deathPlaceId: place.id }));
       setPlaceCandidates([]);
       setPlaceSearchMessage(`${place.displayName} is verified and selected.`);
-    } catch {
-      setPlaceSearchMessage("That place could not be verified right now. Existing verified places remain available.");
+    } catch (error) {
+      setPlaceRetry(candidate);
+      setPlaceSearchMessage(error instanceof Error ? error.message : "That place couldn't be verified. Try again.");
     } finally {
       setIsImportingPlace(false);
     }
@@ -184,7 +193,7 @@ export function BurialRecord({
 
   if (isEditing) {
     return (
-      <form className="burial-record burial-form" onSubmit={(event) => void save(event)}>
+      <LookupForm className="burial-record burial-form" onSubmit={(event) => void save(event)}>
         <label>
           First name
           <input value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))} />
@@ -207,15 +216,15 @@ export function BurialRecord({
         </label>
         <label>
           Birth date
-          <input value={form.birthDate} placeholder="YYYY, YYYY-MM, or Nov. YYYY" onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value }))} />
+          <input value={form.birthDate} aria-invalid={error?.startsWith("Birth date") || undefined} aria-describedby={error?.startsWith("Birth date") ? errorId : undefined} placeholder="YYYY, YYYY-MM, or Nov. YYYY" onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value }))} />
         </label>
         <label>
           Death date
-          <input value={form.deathDate} placeholder="YYYY, YYYY-MM, or Nov. YYYY" onChange={(event) => setForm((current) => ({ ...current, deathDate: event.target.value }))} />
+          <input value={form.deathDate} aria-invalid={error?.startsWith("Death date") || undefined} aria-describedby={error?.startsWith("Death date") ? errorId : undefined} placeholder="YYYY, YYYY-MM, or Nov. YYYY" onChange={(event) => setForm((current) => ({ ...current, deathDate: event.target.value }))} />
         </label>
         <label className="burial-wide-field">
           Death location
-          <select value={form.deathPlaceId} onChange={(event) => setForm((current) => ({ ...current, deathPlaceId: event.target.value }))}>
+          <LookupSelect value={form.deathPlaceId} onChange={(event) => setForm((current) => ({ ...current, deathPlaceId: event.target.value }))}>
             <option value="">Unknown / not recorded</option>
             {lookups.verifiedPlaces.map((place) => (
               <option key={place.id} value={place.id}>
@@ -225,7 +234,7 @@ export function BurialRecord({
             {importedPlace && !lookups.verifiedPlaces.some((place) => place.id === importedPlace.id) ? (
               <option value={importedPlace.id}>{importedPlace.displayName}</option>
             ) : null}
-          </select>
+          </LookupSelect>
           <small>Only places verified against an authoritative geographic registry are available.</small>
         </label>
         <div className="burial-wide-field">
@@ -241,7 +250,8 @@ export function BurialRecord({
           <button type="button" className="secondary-button" onClick={() => void searchPlaces()} disabled={isSearchingPlaces || isImportingPlace || placeQuery.trim().length < 2}>
             {isSearchingPlaces ? "Searching..." : "Search geographic registry"}
           </button>
-          {placeSearchMessage ? <p className="detail-message" role="status">{placeSearchMessage}</p> : null}
+          {placeSearchMessage ? <p className="detail-message" role={placeRetry ? "alert" : "status"}>{placeSearchMessage}</p> : null}
+          {placeRetry ? <button type="button" disabled={isSearchingPlaces || isImportingPlace} onClick={() => void (placeRetry === "search" ? searchPlaces() : choosePlace(placeRetry))}>Retry place {placeRetry === "search" ? "search" : "verification"}</button> : null}
           {placeCandidates.length ? (
             <ul className="burial-notes" aria-label="Geographic search results">
               {placeCandidates.map((candidate) => (
@@ -256,27 +266,27 @@ export function BurialRecord({
         </div>
         <label>
           Burial date
-          <input type="date" value={form.burialDate} onChange={(event) => setForm((current) => ({ ...current, burialDate: event.target.value }))} />
+          <input type="date" value={form.burialDate} aria-invalid={error?.startsWith("Burial date") || undefined} aria-describedby={error?.startsWith("Burial date") ? errorId : undefined} onChange={(event) => setForm((current) => ({ ...current, burialDate: event.target.value }))} />
         </label>
         <label>
           Interment
-          <select value={form.intermentType} onChange={(event) => setForm((current) => ({ ...current, intermentType: event.target.value }))}>
+          <LookupSelect value={form.intermentType} onChange={(event) => setForm((current) => ({ ...current, intermentType: event.target.value }))}>
             {intermentOptions.map((option) => (
               <option key={option.id} value={option.code}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Record status
-          <select value={form.recordStatusCode} onChange={(event) => setForm((current) => ({ ...current, recordStatusCode: event.target.value }))}>
+          <LookupSelect value={form.recordStatusCode} onChange={(event) => setForm((current) => ({ ...current, recordStatusCode: event.target.value }))}>
             {recordStatusOptions.map((option) => (
               <option key={option.id} value={option.code}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label className="burial-wide-field">
           Funeral home
@@ -298,18 +308,18 @@ export function BurialRecord({
         </label>
         <label>
           Military branch
-          <select value={form.militaryBranchCode} onChange={(event) => setMilitaryBranch(event.target.value)} disabled={!form.veteran}>
+          <LookupSelect value={form.militaryBranchCode} onChange={(event) => setMilitaryBranch(event.target.value)} disabled={!form.veteran}>
             <option value="">Unknown / not recorded</option>
             {lookups.militaryBranches.map((option) => (
               <option key={option.id} value={option.code}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Rank
-          <select
+          <LookupSelect
             value={form.militaryRankCode}
             onChange={(event) => setForm((current) => ({ ...current, militaryRankCode: event.target.value }))}
             disabled={!form.veteran || !form.militaryBranchCode}
@@ -320,11 +330,11 @@ export function BurialRecord({
                 {option.abbreviation ? `${option.abbreviation} - ${option.label}${option.payGrade ? ` (${option.payGrade})` : ""}` : option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           War service
-          <select
+          <LookupSelect
             value={form.militaryWarServiceCode}
             onChange={(event) => setForm((current) => ({ ...current, militaryWarServiceCode: event.target.value }))}
             disabled={!form.veteran}
@@ -335,7 +345,7 @@ export function BurialRecord({
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <fieldset className="burial-wide-field burial-decoration-field" disabled={!form.veteran}>
           <legend>Military decorations</legend>
@@ -361,7 +371,7 @@ export function BurialRecord({
               Enlisted date
               <input
                 type="date"
-                value={form.militaryEnlistedDate}
+                value={form.militaryEnlistedDate} aria-invalid={error?.startsWith("Enlisted date") || undefined} aria-describedby={error?.startsWith("Enlisted date") ? errorId : undefined}
                 onChange={(event) => setForm((current) => ({ ...current, militaryEnlistedDate: event.target.value }))}
               />
             </label>
@@ -369,7 +379,7 @@ export function BurialRecord({
               Discharged date
               <input
                 type="date"
-                value={form.militaryDischargedDate}
+                value={form.militaryDischargedDate} aria-invalid={error?.startsWith("Discharged date") || undefined} aria-describedby={error?.startsWith("Discharged date") ? errorId : undefined}
                 min={form.militaryEnlistedDate || undefined}
                 onChange={(event) => setForm((current) => ({ ...current, militaryDischargedDate: event.target.value }))}
               />
@@ -382,23 +392,23 @@ export function BurialRecord({
         </label>
         <label>
           Data confidence
-          <select value={form.dataConfidence} onChange={(event) => setForm((current) => ({ ...current, dataConfidence: event.target.value as SaveBurialInput["dataConfidence"] }))}>
+          <LookupSelect value={form.dataConfidence} onChange={(event) => setForm((current) => ({ ...current, dataConfidence: event.target.value as SaveBurialInput["dataConfidence"] }))}>
             {dataConfidenceOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label>
           Review status
-          <select value={form.reviewStatus} onChange={(event) => setForm((current) => ({ ...current, reviewStatus: event.target.value as SaveBurialInput["reviewStatus"] }))}>
+          <LookupSelect value={form.reviewStatus} onChange={(event) => setForm((current) => ({ ...current, reviewStatus: event.target.value as SaveBurialInput["reviewStatus"] }))}>
             {reviewStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </LookupSelect>
         </label>
         <label className="burial-checkbox-field">
           <input type="checkbox" checked={form.sourceConflict} onChange={(event) => setForm((current) => ({ ...current, sourceConflict: event.target.checked }))} />
@@ -408,16 +418,16 @@ export function BurialRecord({
           Review notes
           <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
         </label>
-        {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
+        {error ? <p id={errorId} className="detail-message is-error" role="alert">{error}</p> : null}
         <div className="burial-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
             Cancel
           </button>
-          <button type="submit" disabled={isSaving}>
+          <LookupSaveButton type="submit" disabled={isSaving}>
             {isSaving ? "Saving..." : "Save burial"}
-          </button>
+          </LookupSaveButton>
         </div>
-      </form>
+      </LookupForm>
     );
   }
 

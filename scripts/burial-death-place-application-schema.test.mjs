@@ -17,7 +17,7 @@ test("burial API reads and maps normalized death places", () => {
 test("burial mutation accepts only verified place identifiers", () => {
   assert.match(validation, /validateUuid\(deathPlaceIdText, "Death place"\)/u);
   assert.match(mutations, /verification_status = 'verified'/u);
-  assert.match(mutations, /Death place must reference an active verified place/u);
+  assert.match(mutations, /Death place is no longer available/u);
   assert.match(mutations, /death_place_uuid = \$/u);
 });
 

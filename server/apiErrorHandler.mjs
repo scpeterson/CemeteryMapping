@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 import { safelyRecordSystemEvent } from "./systemEventRepository.mjs";
 
@@ -23,14 +24,19 @@ export function createApiErrorHandler(pool, config, versionMetadata) {
     }
     const parserError = parserErrors.get(error.type);
     if (parserError) {
-      response.status(parserError[0]).json({ error: parserError[1] });
+      const isPhotoUpload = /\/media-assets(?:\?|$)/u.test(request.originalUrl ?? request.url ?? "");
+      const message = error.type === "entity.too.large" && isPhotoUpload
+        ? "This photo exceeds the 25 MB upload limit. Choose a smaller file."
+        : parserError[1];
+      response.status(parserError[0]).json({ error: message });
       return;
     }
     if (error instanceof URIError) {
       response.status(400).json({ error: "Invalid URL encoding" });
       return;
     }
-    console.error(error);
+    const referenceId = randomUUID();
+    console.error(`API error ${referenceId}`, error);
     if ((request.originalUrl ?? request.url) !== "/api/health") {
       await safelyRecordSystemEvent(pool, {
         eventType: "error", severity: "error", source: "api", status: "failed",
@@ -39,9 +45,9 @@ export function createApiErrorHandler(pool, config, versionMetadata) {
         requestMethod: request.method, requestPath: request.originalUrl ?? request.url,
         responseStatus: 500, actorEmail: request.user?.email, actorRole: request.user?.role,
         environment: config.appEnv, appVersion: versionMetadata.version,
-        metadata: { gitSha: versionMetadata.gitSha },
+        metadata: { gitSha: versionMetadata.gitSha, referenceId },
       });
     }
-    response.status(500).json({ error: "Internal server error" });
+    response.status(500).json({ error: "Something went wrong on the server. Please try again. If this continues, contact an administrator.", referenceId });
   };
 }

@@ -6,6 +6,13 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Distinguish failed editing-option, photo, report, and saved control-point loads from empty data, with retry actions and actionable messages. Disable lookup-dependent saves until options load, label retained report results after failures, preserve place-search error guidance, and protect unreadable control-point storage from overwrite.
+
+- Show provider-specific notices when PASDA imagery or Allegheny County parcels cannot load, with per-layer retry and Diagram view actions. Notices clear on recovery; Diagram view hides external layers.
+
+- Show actionable API messages for connection failures, expired sessions, permissions, missing records, conflicts, and oversized photo uploads. Unexpected server errors include a reference ID recorded in system-event metadata and console logs.
+- Validate marker and maintenance calendar dates and report unavailable burial selections as user-correctable errors. Announce detail-form errors accessibly and associate date errors with affected fields while preserving edits.
+
 - Reject impossible calendar dates before saving and show field-specific validation messages without API jargon. People edits remain available for correction; partial birth and death dates are still supported.
 
 ### Added

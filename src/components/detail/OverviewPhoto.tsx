@@ -5,17 +5,16 @@ import type { OverviewImage } from "./overviewImages";
 import { Modal } from "../ui/Modal";
 
 function Photo({ image, count }: { image: OverviewImage; count: number }) {
-  const { url, failed } = useMediaUrl(image.url);
-  const [imageFailed, setImageFailed] = useState(false);
+  const { url, failed, error, retry, reportImageFailure, attempt } = useMediaUrl(image.url);
   const [expanded, setExpanded] = useState(false);
   return <figure className="overview-photo">
-    {failed || imageFailed ? <p>Photo unavailable.</p> : url ? <>
+    {failed ? <div role="alert"><p>Photo couldn't be loaded. {error}</p><button type="button" onClick={retry}>Retry photo</button></div> : url ? <>
       <button type="button" className="overview-photo-open" aria-label={image.isPrimary ? "Open primary photo" : "Open latest photo"} onClick={() => setExpanded(true)}>
-        <img src={url} alt={image.label} onError={() => setImageFailed(true)} />
+        <img src={url} alt={image.label} key={`${image.url}-${attempt}`} onError={reportImageFailure} />
       </button>
       {expanded ? <Modal className="overview-photo-dialog" label={image.isPrimary ? "Primary feature photo" : "Latest feature photo"} onClose={() => setExpanded(false)}>
         <button type="button" onClick={() => setExpanded(false)}>Close photo</button>
-        <img src={url} alt={image.label} />
+        <img src={url} alt={image.label} onError={reportImageFailure} />
       </Modal> : null}
     </> : <p role="status">Loading photo…</p>}
     <figcaption>

@@ -117,7 +117,7 @@ export function MediaGallery({
             {gallery(sortedAssets, true)}
         </Modal>
       ) : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
     </>
   );
 }
@@ -207,7 +207,7 @@ export function PhotoUploadForm({
         <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} />
       </label>
       {message ? <p className="detail-message is-success">{message}</p> : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <button type="submit" disabled={!file || isSaving}>
         <Camera size={15} aria-hidden="true" />
         {isSaving ? "Uploading..." : "Upload photo"}

@@ -28,18 +28,14 @@ export function validateReportQueryPayload(body) {
 }
 
 export function validateHeadstonePayload(body) {
-  const lastInspectedAt = optionalText(body?.lastInspectedAt, "Last inspected date", 10);
-  if (lastInspectedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(lastInspectedAt)) throw new BadRequestError("Last inspected date must use YYYY-MM-DD format.");
+  const lastInspectedAt = optionalDate(body?.lastInspectedAt, "Last inspected date");
   const nhgInclusion = optionalText(body?.nhgInclusion, "NHG inclusion", 30) || "not_checked";
   if (!["listed", "not_listed", "not_checked", "unclear"].includes(nhgInclusion)) throw new BadRequestError("NHG inclusion is invalid.");
   const provenanceVerificationSource = optionalText(body?.provenanceVerificationSource, "Provenance verification source", 50) || "manual_review";
   if (!["field_photo", "field_survey", "documentary_record", "manual_review", "import"].includes(provenanceVerificationSource)) {
     throw new BadRequestError("Provenance verification source is invalid.");
   }
-  const provenanceVerifiedAt = optionalText(body?.provenanceVerifiedAt, "Source information verified date", 10);
-  if (provenanceVerifiedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(provenanceVerifiedAt)) {
-    throw new BadRequestError("Source information verified date must use YYYY-MM-DD format.");
-  }
+  const provenanceVerifiedAt = optionalDate(body?.provenanceVerifiedAt, "Source information verified date");
 
   return {
     markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
@@ -166,10 +162,8 @@ export function validateMaintenanceRecordPayload(body, { requireTarget = true } 
   const sourceType = optionalText(body?.sourceType, "Maintenance source", 50) || "manual";
   if (!["manual", "inspection", "work_order", "photo", "import"].includes(sourceType)) throw new BadRequestError("Maintenance source is invalid.");
 
-  const observedAt = optionalText(body?.observedAt, "Observed date", 10) || new Date().toISOString().slice(0, 10);
-  const completedAt = optionalText(body?.completedAt, "Completed date", 10) || "";
-  if (!/^\d{4}-\d{2}-\d{2}$/u.test(observedAt)) throw new BadRequestError("Observed date must use YYYY-MM-DD format.");
-  if (completedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(completedAt)) throw new BadRequestError("Completed date must use YYYY-MM-DD format.");
+  const observedAt = optionalDate(body?.observedAt, "Observed date") || new Date().toISOString().slice(0, 10);
+  const completedAt = optionalDate(body?.completedAt, "Completed date") || "";
 
   const graveSpaceId = optionalText(body?.graveSpaceId, "Gravesite", 100) ?? "";
   const headstoneId = body?.headstoneId ? validateUuid(body.headstoneId, "Marker") : "";

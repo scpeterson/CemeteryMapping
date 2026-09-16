@@ -1,3 +1,4 @@
+import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useDraftState } from "../../hooks/useDraftState";
 import { FormEvent, useState } from "react";
 import { Link2, Pencil, Trash2 } from "lucide-react";
@@ -110,20 +111,20 @@ export function MarkerRelationshipForm({
   if (!headstoneOptions.length) return <p className="muted">No other markers are available to link.</p>;
 
   return (
-    <form className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
+    <LookupForm className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
       <label>
         Related marker
-        <select value={form.relatedHeadstoneId} onChange={(event) => setForm((current) => ({ ...current, relatedHeadstoneId: event.target.value }))}>
+        <LookupSelect value={form.relatedHeadstoneId} onChange={(event) => setForm((current) => ({ ...current, relatedHeadstoneId: event.target.value }))}>
           {headstoneOptions.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Relationship
-        <select
+        <LookupSelect
           value={form.relationshipType}
           onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneRelationshipInput["relationshipType"] }))}
         >
@@ -132,37 +133,37 @@ export function MarkerRelationshipForm({
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Source
-        <select value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value as SaveHeadstoneRelationshipInput["sourceType"] }))}>
+        <LookupSelect value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value as SaveHeadstoneRelationshipInput["sourceType"] }))}>
           {markerRelationshipSourceOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Confidence
-        <select value={form.confidence} onChange={(event) => setForm((current) => ({ ...current, confidence: event.target.value as SaveHeadstoneRelationshipInput["confidence"] }))}>
+        <LookupSelect value={form.confidence} onChange={(event) => setForm((current) => ({ ...current, confidence: event.target.value as SaveHeadstoneRelationshipInput["confidence"] }))}>
           {confidenceOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Status
-        <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveHeadstoneRelationshipInput["status"] }))}>
+        <LookupSelect value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveHeadstoneRelationshipInput["status"] }))}>
           {relationshipStatusOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label className="headstone-wide-field">
         Source text
@@ -173,19 +174,19 @@ export function MarkerRelationshipForm({
         <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={2} />
       </label>
       {message ? <p className="detail-message is-success">{message}</p> : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="headstone-form-actions">
         {onCancel ? (
           <button type="button" className="secondary-button" onClick={onCancel} disabled={isSaving}>
             Cancel
           </button>
         ) : null}
-        <button type="submit" disabled={isSaving || !form.relatedHeadstoneId}>
+        <LookupSaveButton type="submit" disabled={isSaving || !form.relatedHeadstoneId}>
           <Link2 size={15} aria-hidden="true" />
           {isSaving ? "Saving..." : submitLabel}
-        </button>
+        </LookupSaveButton>
       </div>
-    </form>
+    </LookupForm>
   );
 }
 
@@ -276,7 +277,7 @@ export function MarkerRelationshipList({
           </article>
         );
       })}
-      {deleteError ? <p className="detail-message is-error">{deleteError}</p> : null}
+      {deleteError ? <p className="detail-message is-error" role="alert">{deleteError}</p> : null}
     </div>
   );
 }

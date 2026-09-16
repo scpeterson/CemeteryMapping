@@ -38,8 +38,7 @@ export async function fetchCemeteryData(attempts = 5): Promise<CemeteryData> {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       const response = await authorizedFetch(url);
-      if (!response.ok) throw new Error(`Cemetery API returned ${response.status}`);
-      return (await response.json()) as CemeteryData;
+      return await jsonResponse<CemeteryData>(response, "Cemetery API");
     } catch (error) {
       lastError = error;
       if (attempt < attempts) await wait(200 * attempt);

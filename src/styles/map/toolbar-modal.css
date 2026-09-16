@@ -32,3 +32,18 @@
   flex-basis: 100%;
   max-width: 100%;
 }
+
+.map-layer-notice {
+  flex-basis: 100%;
+  max-width: 520px;
+  padding: 10px 12px;
+  border: 1px solid #94722c;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #493815;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  font-size: 0.85rem;
+}
+.map-layer-notice p { margin: 0 0 5px; }
+.map-layer-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.map-layer-actions button { white-space: normal; }
