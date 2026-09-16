@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Restored the missing NHG STEELE/MEHRLICK reading on page 188, linked it to TLC-HS-0066 and both Steele gravesites, and recorded the quoted Church Records dates and Anna's reported age. Preserved OCR variants and existing burial names and dates (migration 397).
+
 - Distinguish failed editing-option, photo, report, and saved control-point loads from empty data, with retry actions and actionable messages. Disable lookup-dependent saves until options load, label retained report results after failures, preserve place-search error guidance, and protect unreadable control-point storage from overwrite.
 
 - Show provider-specific notices when PASDA imagery or Allegheny County parcels cannot load, with per-layer retry and Diagram view actions. Notices clear on recovery; Diagram view hides external layers.
@@ -16,6 +18,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Reject impossible calendar dates before saving and show field-specific validation messages without API jargon. People edits remain available for correction; partial birth and death dates are still supported.
 
 ### Added
+
+- Added A-0066A north of A-0066 for Anna S Steele, retaining Wilbert B Steele in the southern gravesite and the fixed TLC-HS-0066 marker spanning both (migration 396). Small estimated boundary overlaps are documented in ADR 0059.
 
 - Added A-0057A north of A-0057 for Almira C Alexander, retaining Clyde R Alexander in the southern gravesite and the fixed TLC-HS-0057 marker spanning both (migration 395). Estimated boundary overlaps are documented in ADR 0058.
 

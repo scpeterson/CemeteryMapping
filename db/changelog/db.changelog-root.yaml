@@ -1177,3 +1177,9 @@ databaseChangeLog:
   - include:
       file: changes/395-split-a-0057-alexander-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/396-split-a-0066-steele-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/397-restore-nhg-steele-mehrlick-page-188.sql
+      relativeToChangelogFile: true
