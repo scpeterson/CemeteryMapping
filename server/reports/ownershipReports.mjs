@@ -128,7 +128,7 @@ export async function runUnownedGravesites(client, definition, parameters, cemet
               SELECT DISTINCT COALESCE(
                 NULLIF(burials.display_name, ''),
                 NULLIF(burials.full_name, ''),
-                NULLIF(btrim(concat_ws(' ', burials.first_name, burials.maiden_name, burials.last_name, burials.name_suffix)), '')
+                NULLIF(btrim(concat_ws(' ', burials.name_prefix, burials.first_name, burials.maiden_name, burials.last_name, burials.name_suffix)), '')
               ) AS name
               FROM burials
               WHERE burials.gravesite_uuid = gravesites.id

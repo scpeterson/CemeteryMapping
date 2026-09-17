@@ -25,6 +25,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     displayName: burial.person.displayName ?? "",
     lastName: burial.person.lastName === "Unknown" ? "" : burial.person.lastName,
     maidenName: burial.person.maidenName ?? "",
+    namePrefix: burial.person.namePrefix ?? "",
     nameSuffix: burial.person.nameSuffix ?? "",
     birthDate: burial.person.birthDate ?? "",
     deathDate: burial.person.deathDate ?? "",

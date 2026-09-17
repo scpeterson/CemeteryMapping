@@ -120,6 +120,7 @@ test("burial payload validation accepts recorded cemetery date text", () => {
     firstName: "Henry",
     lastName: "McWilliams",
     maidenName: "Smith",
+    namePrefix: " Reverend ",
     nameSuffix: "M.D.",
     birthDate: "1909",
     deathDate: "Dec 16, 1965",
@@ -139,6 +140,9 @@ test("burial payload validation accepts recorded cemetery date text", () => {
 
   assert.equal(validateBurialPayload(basePayload).deathDate, "Dec 16, 1965");
   assert.equal(validateBurialPayload(basePayload).maidenName, "Smith");
+  assert.equal(validateBurialPayload(basePayload).namePrefix, "Reverend");
+  assert.equal(validateBurialPayload({ ...basePayload, namePrefix: "" }).namePrefix, "");
+  assertBadRequest(() => validateBurialPayload({ ...basePayload, namePrefix: "x".repeat(101) }), "Prefix or title is too long.");
   assert.equal(validateBurialPayload(basePayload).nameSuffix, "M.D.");
   assert.equal(validateBurialPayload(basePayload).sourceUrl, "https://www.findagrave.com/memorial/123/example");
   assert.deepEqual(validateBurialPayload(basePayload).militaryDecorationCodes, ["purple_heart"]);

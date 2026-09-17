@@ -55,6 +55,7 @@ export function toBurial(burial) {
       displayName: burial.display_name ?? "",
       lastName: burial.last_name ?? burial.full_name ?? "Unknown",
       maidenName: burial.maiden_name ?? "",
+      namePrefix: burial.name_prefix ?? "",
       nameSuffix: burial.name_suffix ?? "",
       birthDate: recordedDate(burial.birth_date_text, burial.birth_date),
       deathDate: recordedDate(burial.death_date_text, burial.death_date),

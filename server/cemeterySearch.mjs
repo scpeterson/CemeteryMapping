@@ -235,7 +235,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND owners.sale_date::text LIKE '%' || $1 || '%'
 
         UNION ALL
-        SELECT 'Burial', COALESCE(NULLIF(burials.display_name, ''), NULLIF(concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(${maidenNameSearchValue}, ''), NULLIF(burials.last_name, '')), ''), burials.full_name)
+        SELECT 'Burial', COALESCE(NULLIF(burials.display_name, ''), NULLIF(concat_ws(' ', NULLIF(burials.name_prefix, ''), NULLIF(burials.first_name, ''), NULLIF(${maidenNameSearchValue}, ''), NULLIF(burials.last_name, ''), NULLIF(burials.name_suffix, '')), ''), burials.full_name)
         FROM burials
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid
@@ -270,7 +270,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND burials.burial_date::text LIKE '%' || $1 || '%'
 
         UNION ALL
-        SELECT 'Veteran', COALESCE(NULLIF(burials.display_name, ''), NULLIF(concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, '')), ''), burials.full_name, 'Veteran')
+        SELECT 'Veteran', COALESCE(NULLIF(burials.display_name, ''), NULLIF(concat_ws(' ', NULLIF(burials.name_prefix, ''), NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''), NULLIF(burials.name_suffix, '')), ''), burials.full_name, 'Veteran')
         FROM burials
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid

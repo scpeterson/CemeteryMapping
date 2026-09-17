@@ -21,6 +21,10 @@ export default function BurialNameFields({ form, setForm }: {
           <small>Optional description shown in place of the assembled name. Preserve the exact inscription on the marker record.</small>
         </label>
         <label>
+          Prefix / Title
+          <input maxLength={100} value={form.namePrefix} placeholder="Rev., Reverend, Dr." onChange={(event) => setForm((current) => ({ ...current, namePrefix: event.target.value }))} />
+        </label>
+        <label>
           First name
           <input value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value, givenNameStatus: event.target.value.trim() ? "recorded" : current.givenNameStatus === "no_given_name" ? "no_given_name" : "unknown" }))} />
         </label>
@@ -33,7 +37,7 @@ export default function BurialNameFields({ form, setForm }: {
           <input value={form.maidenName} onChange={(event) => setForm((current) => ({ ...current, maidenName: event.target.value }))} />
         </label>
         <label>
-          Title / credentials
+          Suffix / Credentials
           <input
             value={form.nameSuffix}
             placeholder="M.D., Ph.D., Jr."
