@@ -21,6 +21,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added Prefix / Title to People records for names such as Reverend John Smith, and renamed Title / Credentials to Suffix / Credentials (migration 404). Prefixes appear before names in the app, search, and reports.
+
 - Added A-0077A north of A-0077 for Mildred Frampton, retaining William Walker Frampton in the southern gravesite and the fixed TLC-HS-0077 marker spanning both (migration 403). Estimated boundary overlaps are documented in ADR 0065.
 
 - Added A-0070A north of A-0070 for Marion Milford Brady, retaining Charles M Brady in the southern gravesite and the fixed TLC-HS-0070 marker spanning both (migration 401). Estimated boundary overlaps are documented in ADR 0063.

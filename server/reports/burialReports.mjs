@@ -41,7 +41,7 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
         COALESCE(marker_photo.file_url, NULLIF(headstones.photo_url, '')) AS photo_url,
         COALESCE(marker_features.features, '[]'::jsonb) AS marker_features,
         burials.id::text AS burial_uuid,
-        COALESCE(NULLIF(burials.display_name, ''), NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.maiden_name, ''), NULLIF(burials.last_name, ''))) AS person,
+        COALESCE(NULLIF(burials.display_name, ''), NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.name_prefix, ''), NULLIF(burials.first_name, ''), NULLIF(burials.maiden_name, ''), NULLIF(burials.last_name, ''), NULLIF(burials.name_suffix, ''))) AS person,
         burials.first_name,
         burials.last_name,
         burials.maiden_name,
@@ -170,7 +170,7 @@ export async function runBurialDateExtremes(client, definition, cemeteryIds) {
         cemeteries.name AS cemetery,
         concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS grave,
         gravesites.gravesite_id,
-        COALESCE(NULLIF(burials.display_name, ''), NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''))) AS person,
+        COALESCE(NULLIF(burials.display_name, ''), NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.name_prefix, ''), NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''), NULLIF(burials.name_suffix, ''))) AS person,
         burials.burial_date,
         COALESCE(burials.death_date_text, burials.death_date::text) AS death_date,
         burials.death_date AS death_date_sort

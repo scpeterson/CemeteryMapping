@@ -62,10 +62,10 @@ export function formatAdminTimestamp(value?: string) {
   return value ? new Date(value).toLocaleString() : "Not recorded";
 }
 
-export function fullName(person: { firstName: string; middleName?: string; maidenName?: string; lastName: string; nameSuffix?: string; displayName?: string; givenNameStatus?: string }) {
+export function fullName(person: { firstName: string; middleName?: string; maidenName?: string; lastName: string; namePrefix?: string; nameSuffix?: string; displayName?: string; givenNameStatus?: string }) {
   if (person.displayName?.trim()) return person.displayName.trim();
   const maidenName = person.maidenName ? `(${person.maidenName})` : undefined;
-  const name = [person.firstName, person.middleName, maidenName, person.lastName, person.nameSuffix].filter(Boolean).join(" ");
+  const name = [person.namePrefix, person.firstName, person.middleName, maidenName, person.lastName, person.nameSuffix].filter(Boolean).join(" ");
   return person.givenNameStatus === "no_given_name" ? `${name ? `${name} — ` : ""}No given name` : name;
 }
 

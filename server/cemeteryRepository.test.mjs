@@ -1231,8 +1231,9 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     first_name: "Ruth M.",
     last_name: "Soergel",
     maiden_name: "Brandt",
+    name_prefix: "Rev.",
     name_suffix: "M.D.",
-    full_name: "Ruth M. Soergel M.D.",
+    full_name: "Rev. Ruth M. Soergel M.D.",
     birth_date: "1925-10-04",
     death_date: "2017-10-22",
     burial_date: null,
@@ -1288,6 +1289,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
       firstName: "Ruth M.",
       lastName: "Soergel",
       maidenName: "Brandt",
+      namePrefix: "Rev.",
       nameSuffix: "M.D.",
       birthDate: "1925-10-04",
       deathDate: "Dec 16, 1965",
@@ -1317,7 +1319,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "Ruth M.",
     "Soergel",
     "Brandt",
-    "Ruth M. Soergel M.D.",
+    "Rev. Ruth M. Soergel M.D.",
     "1925-10-04",
     "1965-12-16",
     null,
@@ -1343,10 +1345,12 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "https://www.findagrave.com/memorial/123/ruth-soergel",
     "recorded",
     null,
+    "Rev.",
   ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");
   assert.equal(updated?.person.maidenName, "Brandt");
+  assert.equal(updated?.person.namePrefix, "Rev.");
   assert.equal(updated?.person.nameSuffix, "M.D.");
   assert.equal(updated?.person.birthDate, "1925-10-04");
   assert.equal(updated?.person.deathDate, "2017-10-22");
