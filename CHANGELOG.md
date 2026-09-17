@@ -21,6 +21,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0078A north of A-0078 for Corinne E Dozer, retaining Charles E Dozer in the southern gravesite and the fixed TLC-HS-0078 marker spanning both (migration 405). Estimated boundary overlaps are documented in ADR 0066.
+
 - Added Prefix / Title to People records for names such as Reverend John Smith, and renamed Title / Credentials to Suffix / Credentials (migration 404). Prefixes appear before names in the app, search, and reports.
 
 - Added A-0077A north of A-0077 for Mildred Frampton, retaining William Walker Frampton in the southern gravesite and the fixed TLC-HS-0077 marker spanning both (migration 403). Estimated boundary overlaps are documented in ADR 0065.
