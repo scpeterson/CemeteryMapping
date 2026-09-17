@@ -21,6 +21,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0081A north of A-0081 for Charlotte M Balz, retaining William J Balz in the southern gravesite and the fixed TLC-HS-0081 marker spanning both (migration 406). Estimated boundary overlaps are documented in ADR 0067.
+
 - Added A-0078A north of A-0078 for Corinne E Dozer, retaining Charles E Dozer in the southern gravesite and the fixed TLC-HS-0078 marker spanning both (migration 405). Estimated boundary overlaps are documented in ADR 0066.
 
 - Added Prefix / Title to People records for names such as Reverend John Smith, and renamed Title / Credentials to Suffix / Credentials (migration 404). Prefixes appear before names in the app, search, and reports.
