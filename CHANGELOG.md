@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Restored the missing NHG SNYDER/SOERGEL entry from printed page 189 (8A, 7, s) and linked it to TLC-HS-0072 and A-0072 in each existing source batch. Preserved Katherine Snyder’s existing burial details and the original OCR variant (migration 402).
+
 - Restored the missing NHG STEELE/MEHRLICK reading on page 188, linked it to TLC-HS-0066 and both Steele gravesites, and recorded the quoted Church Records dates and Anna's reported age. Preserved OCR variants and existing burial names and dates (migration 397).
 
 - Distinguish failed editing-option, photo, report, and saved control-point loads from empty data, with retry actions and actionable messages. Disable lookup-dependent saves until options load, label retained report results after failures, preserve place-search error guidance, and protect unreadable control-point storage from overwrite.
