@@ -21,6 +21,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0077A north of A-0077 for Mildred Frampton, retaining William Walker Frampton in the southern gravesite and the fixed TLC-HS-0077 marker spanning both (migration 403). Estimated boundary overlaps are documented in ADR 0065.
+
 - Added A-0070A north of A-0070 for Marion Milford Brady, retaining Charles M Brady in the southern gravesite and the fixed TLC-HS-0070 marker spanning both (migration 401). Estimated boundary overlaps are documented in ADR 0063.
 
 - Added A-0069A north of A-0069 for Bertha M Blend, retaining Henry L Blend in the southern gravesite and the fixed TLC-HS-0069 marker spanning both (migration 400). Small estimated boundary overlaps are documented in ADR 0062.
