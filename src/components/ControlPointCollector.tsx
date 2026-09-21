@@ -221,8 +221,8 @@ export function ControlPointCollector({ data, onClose }: ControlPointCollectorPr
       fitMapToData(map, data, 0);
       addSectionLayers(map, data);
       addLotLayers(map, data);
-      addGraveLayers(map, data.graves, undefined, new Set());
-      addHeadstoneLayers(map, data.headstones ?? [], undefined, new Set());
+      addGraveLayers(map, data.graves);
+      addHeadstoneLayers(map, data.headstones ?? []);
       addSectionLabelLayer(map);
 
       map.addSource("control-points", { type: "geojson", data: controlPointFeatureCollection(initialPointsRef.current) });

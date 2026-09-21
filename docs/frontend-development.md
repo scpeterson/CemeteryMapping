@@ -100,6 +100,14 @@ Use `src/hooks/useMediaUrl.ts` for protected media, as the gallery and marker re
 
 Parameters are associated with the selected report rather than reset by an effect, so query-supplied values survive a report change. Printable marker pages and their protected-photo rendering live in `components/reports/MarkerBurialPages.tsx`. Keep API response shapes and print styling stable when extending either layer.
 
+## Map Geometry and Highlighting
+
+Graves, lots, and markers have stable GeoJSON feature IDs. Selection and search use MapLibre feature state in paint expressions, with `mapHighlightState.ts` applying only changed IDs. They do not rebuild geometry. Linked marker IDs are indexed by grave, and selecting a marker takes precedence over highlighting markers associated with the selected grave.
+
+Source-update effects depend on their geometry collections: boundaries, sections, restricted areas, lots, visible graves, and markers. Marker data also depends on veteran flags. Preserve stable collection references for unrelated edits so a record change does not reload every map layer. Feature IDs must remain stable across source updates; the browser regression verifies highlighting survives a geometry refresh and Diagram mode.
+
+Run `tests/map-highlighting.spec.ts` to check real MapLibre source-update counts alongside selection and search behavior; it expects zero additional GeoJSON `setData` calls for those interactions.
+
 ## Validation
 
 Prepare a migrated, seeded TEST database using the [rebuild guide](rebuild.md), then run the checks appropriate to the change:

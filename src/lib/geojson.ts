@@ -1,7 +1,7 @@
 import type { AreaGeometry, CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types";
 import { formatGraveLabel, graveSelectionKey, lotSelectionKey } from "./format";
 
-export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey?: string, searchKeys: Set<string> = new Set()) {
+export function gravesFeatureCollection(graves: GraveSpaceSummary[]) {
   return {
     type: "FeatureCollection",
     features: graves.map((grave) => {
@@ -9,6 +9,7 @@ export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey
 
       return {
         type: "Feature",
+        id: key,
         properties: {
           key,
           id: grave.id,
@@ -18,8 +19,6 @@ export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey
           geometryType: grave.geometryType ?? "operational",
           geometryConfidence: grave.geometryConfidence ?? "estimated",
           label: formatGraveLabel(grave),
-          selected: key === selectedKey,
-          searchMatch: searchKeys.has(key),
         },
         geometry: grave.geometry,
       };
@@ -29,15 +28,13 @@ export function gravesFeatureCollection(graves: GraveSpaceSummary[], selectedKey
 
 export function headstonesFeatureCollection(
   headstones: HeadstoneSummary[],
-  selectedKey?: string,
-  searchKeys: Set<string> = new Set(),
-  selectedHeadstoneId?: string,
   veteranGraveKeys: Set<string> = new Set(),
 ) {
   return {
     type: "FeatureCollection",
     features: headstones.map((headstone) => ({
       type: "Feature",
+      id: headstone.id,
       properties: {
         id: headstone.id,
         headstoneId: headstone.headstoneId,
@@ -50,8 +47,6 @@ export function headstonesFeatureCollection(
         markerScopeCode: headstone.markerScopeCode,
         markerScope: headstone.markerScope,
         condition: headstone.condition,
-        selected: selectedHeadstoneId ? headstone.id === selectedHeadstoneId : headstone.graveKey === selectedKey,
-        searchMatch: searchKeys.has(headstone.graveKey),
         hasVeteran: veteranGraveKeys.has(headstone.graveKey),
       },
       geometry: headstone.geometry,
@@ -59,7 +54,7 @@ export function headstonesFeatureCollection(
   } satisfies GeoJSON.FeatureCollection<GeoJSON.Point>;
 }
 
-export function sectionsFeatureCollection(data: CemeteryData) {
+export function sectionsFeatureCollection(data: Pick<CemeteryData, "sections">) {
   return {
     type: "FeatureCollection",
     features: data.sections.map((section) => ({
@@ -74,7 +69,7 @@ export function sectionsFeatureCollection(data: CemeteryData) {
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 
-export function lotsFeatureCollection(data: CemeteryData, selectedKey?: string) {
+export function lotsFeatureCollection(data: Pick<CemeteryData, "lots">) {
   return {
     type: "FeatureCollection",
     features: data.lots.map((lot) => {
@@ -82,6 +77,7 @@ export function lotsFeatureCollection(data: CemeteryData, selectedKey?: string) 
 
       return {
         type: "Feature",
+        id: key,
         properties: {
           key,
           id: lot.id,
@@ -92,7 +88,6 @@ export function lotsFeatureCollection(data: CemeteryData, selectedKey?: string) 
           burialUseStatus: lot.burialUseStatus ?? "standard",
           geometryType: lot.geometryType ?? "operational",
           geometryConfidence: lot.geometryConfidence ?? "estimated",
-          selected: key === selectedKey,
         },
         geometry: lot.geometry,
       };
@@ -100,7 +95,7 @@ export function lotsFeatureCollection(data: CemeteryData, selectedKey?: string) 
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 
-export function lotRestrictedAreasFeatureCollection(data: CemeteryData) {
+export function lotRestrictedAreasFeatureCollection(data: Pick<CemeteryData, "lotRestrictedAreas">) {
   return {
     type: "FeatureCollection",
     features: (data.lotRestrictedAreas ?? []).map((area) => ({
@@ -119,7 +114,7 @@ export function lotRestrictedAreasFeatureCollection(data: CemeteryData) {
   } satisfies GeoJSON.FeatureCollection<AreaGeometry>;
 }
 
-export function boundariesFeatureCollection(data: CemeteryData) {
+export function boundariesFeatureCollection(data: Pick<CemeteryData, "boundary" | "boundaries">) {
   const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
 
   return {
@@ -139,7 +134,7 @@ function visitCoordinates(geometry: AreaGeometry, visit: (coordinate: [number, n
   });
 }
 
-export function cemeteryMarkersFeatureCollection(data: CemeteryData) {
+export function cemeteryMarkersFeatureCollection(data: Pick<CemeteryData, "boundary" | "boundaries">) {
   const boundaries = data.boundaries ?? (data.boundary ? [data.boundary] : []);
 
   return {
