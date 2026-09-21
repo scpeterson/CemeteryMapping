@@ -102,6 +102,16 @@ erDiagram
 | `military_war_service_types` | Controlled values for wars or service periods. |
 | `memorials` | Point memorial records linked to burials when a memorial is separate from the primary headstone workflow. |
 
+### Burial Name Semantics
+
+Migration 399 adds nullable `given_name_status` and `display_name`; migration 404 adds nullable `name_prefix`. Apply these migrations in each environment before deploying code that uses the fields.
+
+- `given_name_status` accepts `recorded`, `unknown`, or `no_given_name`. Database constraints require a nonblank `first_name` for `recorded` and a blank first name for either other explicit status.
+- A legacy NULL status is interpreted as `recorded` when a first name exists and `unknown` otherwise. An empty name never implies `no_given_name`; that status requires affirmative evidence.
+- A nonblank `display_name` takes precedence over the assembled name in the UI, search results, and reports. It is a description, not a replacement for structured name fields or the original marker inscription. Clearing it restores the assembled name, with a `No given name` label for that explicit status.
+- `name_prefix` precedes the name and `name_suffix` follows it. The API accepts up to 100 characters for the prefix and 255 for the display name. See [People editing examples](operator-workflows.md#recording-people-names-and-dates).
+- Older clients that omit `displayName` preserve the saved override. If `givenNameStatus` is omitted, updates infer `recorded` from a first name, preserve an existing `no_given_name` when the first name remains blank, and otherwise use `unknown`.
+
 Partial dates should be stored as known precision, not forced into fake dates. For example, `1929` should remain a year-only value rather than becoming `1929-01-01`.
 
 ## Markers, Features, Photos, And Maintenance
@@ -289,4 +299,4 @@ Related documentation:
 - [Database Auditing](database-auditing.html)
 - [Data Sources](data-sources.html)
 - [Admin Workflows](admin-workflows.html)
-- [ADR 0015: Generalized Ownership Rights](adr/0015-generalized-ownership-rights.html)
+- [ADR 0015: Generalized Ownership Rights](adr/0015-generalized-ownership-rights.md)

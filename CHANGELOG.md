@@ -90,6 +90,9 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Changed
 
+- Updated Auth0 React to 2.25.0, MapLibre GL JS to 6.9.1, Lucide React to 1.46.0, and Node.js type definitions to 26.5.1. The CI runtime remains Node.js 24; TypeScript remains 6.0.3.
+- Expanded People editing, name data-model, and error-recovery guidance; refreshed the dependency inventory and restored documentation-site navigation through ADR 0068.
+
 - Updated Auth0 React to 2.24.1, MapLibre GL JS to 6.8.0, Playwright to 1.63.0, and `eslint-plugin-react-refresh` to 0.5.6.
 
 - Automatically scope non-admin users to their one registered cemetery and zoom there; only system admins can choose a cemetery.
