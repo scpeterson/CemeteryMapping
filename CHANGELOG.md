@@ -21,6 +21,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Added A-0085A north of A-0085 for Lena G Ringeisen, retaining Andrew G Ringeisen in the southern gravesite and the fixed TLC-HS-0085 marker spanning both (migration 408). The estimated boundary overlap with A-0086 is documented in ADR 0068.
+
+- Added historical U.S. Navy Fireman First Class (F1c) to military rank options with no assigned modern pay grade (migration 407).
+
 - Added A-0081A north of A-0081 for Charlotte M Balz, retaining William J Balz in the southern gravesite and the fixed TLC-HS-0081 marker spanning both (migration 406). Estimated boundary overlaps are documented in ADR 0067.
 
 - Added A-0078A north of A-0078 for Corinne E Dozer, retaining Charles E Dozer in the southern gravesite and the fixed TLC-HS-0078 marker spanning both (migration 405). Estimated boundary overlaps are documented in ADR 0066.

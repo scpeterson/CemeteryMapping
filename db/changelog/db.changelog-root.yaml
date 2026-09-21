@@ -1210,3 +1210,9 @@ databaseChangeLog:
   - include:
       file: changes/406-split-a-0081-balz-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/407-add-navy-fireman-first-class.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/408-split-a-0085-ringeisen-gravesites.sql
+      relativeToChangelogFile: true
