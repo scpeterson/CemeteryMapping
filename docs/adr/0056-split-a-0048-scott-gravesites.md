@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0056: Split A-0048 Scott Gravesites
 
 - Status: Accepted
