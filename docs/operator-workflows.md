@@ -40,6 +40,46 @@ Use `View burial records` or `View ownership records` to open People, or select 
 
 Editing remains in the detailed views: use `Location` for the gravesite record and lot assignment, `People` for burials/ownership, `Monuments` for gravesite markers/photos, and a marker's `Details` tab for its editing and relationship controls. Saving within these views keeps the current tab. Ownership visibility and editing permissions still apply.
 
+### Recording People Names and Dates
+
+Select a gravesite, open `People`, and edit the burial record. Keep structured name fields separate from the exact inscription stored on the marker.
+
+| Field | When to use it |
+| --- | --- |
+| `Prefix / Title` | A title before the name, such as `Rev.`, `Reverend`, or `Dr.`. |
+| `First name`, `Last name`, `Maiden name` | The supported biographical name components; do not put titles in the first-name field. |
+| `Suffix / Credentials` | Text after the name, such as `Jr.`, `M.D.`, or `Ph.D.`. This replaces the former Title / Credentials label. |
+| `Given name status` | Choose `Recorded` when a first name is present; `Unknown / not recorded` when it is missing; `No given name` only with affirmative evidence that the person was never named. A blank inscription alone does not establish that. |
+| `Display name` | An optional description such as `Infant son of George & Bertie Steele`. It replaces the assembled name in displays, search results, and reports, while retaining the structured fields and marker inscription. |
+
+For example, prefix `Rev.`, first name `John`, last name `Smith`, and suffix `Ph.D.` display as `Rev. John Smith Ph.D.` when Display name is empty. Clear Display name to return to the assembled name. For a confirmed unnamed infant, leave First name blank, choose `No given name`, and add a source-supported description if useful. Without a display-name override, the name includes a `No given name` label.
+
+Entering a first name automatically selects `Recorded`. The form rejects `Recorded` without a first name and rejects a first name paired with either other status. Correct the indicated fields, save, and reopen the record to verify the result.
+
+Preserve the precision of known dates: a year such as `1929` should remain a year rather than an invented January 1 date. Impossible dates such as `2002-11-31` produce a field-specific message. Correct the date and save again; a failed save preserves your edits.
+
+### Recovering from Load and Save Errors
+
+A failed load is not evidence that a record, photo, or report is absent. Read the message and use the relevant retry control. Copy any unsaved values you need before signing out, reloading, or leaving the page; drafts are not saved across browser sessions.
+
+| Situation | Recovery |
+| --- | --- |
+| Editing choices fail to load | Select `Retry editing options`. Dependent selections and saves remain disabled until their options load. |
+| A photo fails to load | Select `Retry photo`. Follow sign-in or permission guidance if shown; retrying cannot grant missing access. |
+| Reports fail to load or run | Use `Retry loading reports` for the catalog, or run the report again. Previously retained results are labeled as stale; do not treat them as the latest successful run. |
+| Death-place search or verification fails | Use `Retry place search` or `Retry place verification`. Locally stored verified places and other burial fields remain available when the external service is unavailable. |
+| A connection, session, permission, or upload error appears | Restore connectivity, sign in again, request the appropriate access, or reduce the upload size as directed. Correct the cause before retrying. |
+| Saved control points cannot be read | Select `Retry loading control points` before editing. The application protects unreadable stored data from replacement. A storage-write warning means changes may not survive a reload. |
+| An unexpected server error includes `Reference: …` | Record the reference ID, time, action, and affected record and give them to an administrator. See [error references](database-auditing.md#unexpected-error-references) for log correlation. |
+
+For stale gravesite edits, follow the reconciliation steps below rather than repeatedly retrying the same save.
+
+### External Map Layers and Diagram View
+
+PASDA aerial imagery and Allegheny County parcel boundaries can fail independently of the cemetery records. A notice names the affected provider and offers a retry for that layer. Notices clear when the layer recovers.
+
+Select `Switch to Diagram view` in the notice, or `Diagram` in the map controls, to hide external layers and continue viewing the cemetery layout. Diagram view changes presentation; it does not move stored markers or gravesite polygons, make estimated boundaries surveyed, or create a separate schematic geometry dataset. Return to `Geographic` to view external layers again.
+
 ### Recovering a Conflicting Gravesite Edit
 
 Gravesite detail saves detect when another edit has changed the record since it was loaded. A conflict preserves the current draft and prevents overwriting the other edit.
