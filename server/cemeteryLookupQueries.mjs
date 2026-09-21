@@ -1,11 +1,5 @@
 import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
-import {
-  burialIntermentTypeLookupExists,
-  burialMilitaryBranchLookupExists,
-  burialMilitaryRankLookupExists,
-  burialMilitaryWarServiceLookupExists,
-  burialRecordStatusColumnExists,
-} from "./burialRepository.mjs";
+
 import { graveFeatureTablesExist } from "./cemeteryFeatureQueries.mjs";
 import { maintenanceTablesExist } from "./cemeteryMaintenanceQueries.mjs";
 
@@ -37,23 +31,10 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
       : { rows: [] };
     const graveFeaturePlacements = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_placement_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
     const graveFeatureMaterials = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_material_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
-    const intermentTypes = (await burialIntermentTypeLookupExists(client))
-      ? await client.query("SELECT id::text, code, label FROM burial_interment_types WHERE is_active ORDER BY sort_order, label")
-      : {
-          rows: [
-            { id: "legacy-casket", code: "casket", label: "Casket" },
-            { id: "legacy-urn", code: "urn", label: "Funeral urn" },
-            { id: "legacy-unknown", code: "unknown", label: "Unknown or not applicable" },
-          ],
-        };
-    const burialRecordStatuses = (await burialRecordStatusColumnExists(client))
-      ? await client.query("SELECT id::text, code, label FROM burial_record_status_types WHERE is_active ORDER BY sort_order, label")
-      : { rows: [{ id: "legacy-interred", code: "interred", label: "Interred" }] };
-    const militaryBranches = (await burialMilitaryBranchLookupExists(client))
-      ? await client.query("SELECT id::text, code, label FROM military_branch_types WHERE is_active ORDER BY sort_order, label")
-      : { rows: [] };
-    const militaryRanks = (await burialMilitaryRankLookupExists(client))
-      ? await client.query(`
+    const intermentTypes = await client.query("SELECT id::text, code, label FROM burial_interment_types WHERE is_active ORDER BY sort_order, label");
+    const burialRecordStatuses = await client.query("SELECT id::text, code, label FROM burial_record_status_types WHERE is_active ORDER BY sort_order, label");
+    const militaryBranches = await client.query("SELECT id::text, code, label FROM military_branch_types WHERE is_active ORDER BY sort_order, label");
+    const militaryRanks = await client.query(`
           SELECT
             military_rank_types.id::text,
             military_rank_types.code,
@@ -67,11 +48,8 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
           WHERE military_rank_types.is_active
             AND military_branch_types.is_active
           ORDER BY military_branch_types.sort_order, military_rank_types.sort_order, military_rank_types.label
-        `)
-      : { rows: [] };
-    const militaryWarServices = (await burialMilitaryWarServiceLookupExists(client))
-      ? await client.query("SELECT id::text, code, label FROM military_war_service_types WHERE is_active ORDER BY sort_order, label")
-      : { rows: [] };
+        `);
+    const militaryWarServices = await client.query("SELECT id::text, code, label FROM military_war_service_types WHERE is_active ORDER BY sort_order, label");
     const militaryDecorations = await client.query("SELECT id::text, code, label FROM military_decoration_types WHERE is_active ORDER BY sort_order, label");
     const verifiedPlaces = await client.query(`
       SELECT

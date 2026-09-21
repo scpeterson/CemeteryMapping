@@ -3,7 +3,7 @@ import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { selectHeadstoneById } from "./cemeteryHeadstoneQueries.mjs";
 import { toHeadstone } from "./cemeteryMappers.mjs";
 import { selectGraveUpdateState, selectHeadstoneMutationState } from "./cemeteryMutationTargets.mjs";
-import { recordReviewColumnsSql, tableColumnExists } from "./cemeterySchema.mjs";
+import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 export async function updateHeadstone(pool, id, headstone, { actorUser, reason, allowedCemeteryIds } = {}) {
   return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
@@ -16,10 +16,9 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     }
 
     const reviewedBy = actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? "";
-    const hasRecordReviewColumns = await tableColumnExists(client, "headstones", "data_confidence");
-    const reviewReturnSql = await recordReviewColumnsSql(client, "headstones");
-    const reviewAssignments = hasRecordReviewColumns
-      ? `,
+
+    const reviewReturnSql = recordReviewColumnsSql("headstones");
+    const reviewAssignments = `,
             data_confidence = $17,
             review_status = $18,
             review_notes = NULLIF($19, ''),
@@ -29,8 +28,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
               WHEN $18 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
               WHEN $18 = 'reviewed' THEN COALESCE(reviewed_at, now())
               ELSE reviewed_at
-            END`
-      : "";
+            END`;
     const updateValues = [
       id,
       headstone.markerTypeId,
@@ -53,15 +51,15 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       }),
       headstone.markerScopeId,
     ];
-    if (hasRecordReviewColumns) {
-      updateValues.push(
-        headstone.dataConfidence || "unknown",
-        headstone.reviewStatus || "unreviewed",
-        headstone.reviewNotes || "",
-        Boolean(headstone.sourceConflict),
-        reviewedBy,
-      );
-    }
+
+    updateValues.push(
+      headstone.dataConfidence || "unknown",
+      headstone.reviewStatus || "unreviewed",
+      headstone.reviewNotes || "",
+      Boolean(headstone.sourceConflict),
+      reviewedBy,
+    );
+
     const updateResult = await client.query(
       `
         UPDATE headstones
