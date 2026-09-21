@@ -1,9 +1,10 @@
+import { burialProjectionSql } from "./burialProjection.mjs";
 import { BadRequestError } from "./requestValidation.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { toBurial } from "./cemeteryMappers.mjs";
 import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
-import { activeBurialRecordStatusExists, activeIntermentTypeExists, burialDeathPlaceSql, burialIntermentTypeSql, burialMilitaryServiceSql, burialRecordedDateTextSql, burialRecordStatusSql, splitRecordedDate } from "./burialRepository.mjs";
+import { activeBurialRecordStatusExists, activeIntermentTypeExists, burialRecordedDateTextSql, splitRecordedDate } from "./burialRepository.mjs";
 
 async function verifiedDeathPlaceExists(client, id) {
   if (!id) return true;
@@ -24,42 +25,12 @@ async function verifiedDeathPlaceExists(client, id) {
 }
 
 async function selectBurialMutationState(client, id) {
-  const deathPlaceSql = burialDeathPlaceSql();
-  const militaryServiceSql = burialMilitaryServiceSql();
-  const intermentTypeSql = burialIntermentTypeSql();
-  const recordStatusSql = burialRecordStatusSql();
-  const recordedDateTextSql = burialRecordedDateTextSql();
-  const reviewColumnsSql = recordReviewColumnsSql("burials");
+  const projection = burialProjectionSql();
   const result = await client.query(
     `
-      SELECT
-        burials.id::text,
-        gravesites.cemetery_id::text,
-        burials.gravesite_uuid::text,
-        burials.first_name,
-        burials.last_name,
-        burials.maiden_name,
-        burials.name_prefix, burials.name_suffix, burials.given_name_status, burials.display_name,
-        burials.full_name,
-        burials.birth_date,
-        ${recordedDateTextSql.select},
-        burials.death_date,
-        ${deathPlaceSql.select},
-        burials.burial_date,
-        ${intermentTypeSql.select},
-        ${recordStatusSql.select},
-        burials.funeral_home,
-        burials.source_url,
-        ${militaryServiceSql.select},
-        COALESCE((SELECT jsonb_agg(jsonb_build_object('id', military_decoration_types.id::text, 'code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label) FROM burial_military_decorations JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id WHERE burial_military_decorations.burial_uuid = burials.id), '[]'::jsonb) AS military_decorations,
-        burials.notes,
-        ${reviewColumnsSql},
-        burials.updated_at
+      SELECT ${projection.select}, gravesites.cemetery_id::text, burials.updated_at
       FROM burials
-      ${deathPlaceSql.join}
-      ${intermentTypeSql.join}
-      ${recordStatusSql.join}
-      ${militaryServiceSql.join}
+      ${projection.joins}
       JOIN gravesites
         ON gravesites.id = burials.gravesite_uuid
       WHERE burials.id = $1
@@ -74,20 +45,12 @@ async function selectBurialMutationState(client, id) {
 }
 
 async function selectBurialById(client, id) {
-  const deathPlaceSql = burialDeathPlaceSql();
-  const militaryServiceSql = burialMilitaryServiceSql();
-  const intermentTypeSql = burialIntermentTypeSql();
-  const recordStatusSql = burialRecordStatusSql();
-  const recordedDateTextSql = burialRecordedDateTextSql();
-  const reviewColumnsSql = recordReviewColumnsSql("burials");
+  const projection = burialProjectionSql();
   const result = await client.query(
     `
-      SELECT burials.id::text, burials.gravesite_uuid::text, burials.first_name, burials.last_name, burials.maiden_name, burials.name_prefix, burials.name_suffix, burials.given_name_status, burials.display_name, burials.full_name, burials.birth_date, ${recordedDateTextSql.select}, burials.death_date, ${deathPlaceSql.select}, burials.burial_date, ${intermentTypeSql.select}, ${recordStatusSql.select}, burials.funeral_home, burials.source_url, ${militaryServiceSql.select}, COALESCE((SELECT jsonb_agg(jsonb_build_object('id', military_decoration_types.id::text, 'code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label) FROM burial_military_decorations JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id WHERE burial_military_decorations.burial_uuid = burials.id), '[]'::jsonb) AS military_decorations, burials.notes, ${reviewColumnsSql}
+      SELECT ${projection.select}
       FROM burials
-      ${deathPlaceSql.join}
-      ${intermentTypeSql.join}
-      ${recordStatusSql.join}
-      ${militaryServiceSql.join}
+      ${projection.joins}
       WHERE burials.id = $1
         AND burials.deleted_at IS NULL
       LIMIT 1
