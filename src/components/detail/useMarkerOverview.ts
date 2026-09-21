@@ -8,24 +8,25 @@ export function useMarkerOverview(graves: GraveSpaceSummary[]) {
   const [result, setResult] = useState<{ source: GraveSpaceSummary[]; records: LinkedGrave[] }>();
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    let active = true;
+    const controller = new AbortController();
     let next = 0;
     const records: LinkedGrave[] = new Array(graves.length);
     const worker = async () => {
-      while (active && next < graves.length) {
+      while (!controller.signal.aborted && next < graves.length) {
         const index = next++;
         const summary = graves[index];
         try {
-          records[index] = { summary, detail: await fetchGraveSpace(summary.cemeteryId, summary.id) };
+          records[index] = { summary, detail: await fetchGraveSpace(summary.cemeteryId, summary.id, controller.signal) };
         } catch {
+          if (controller.signal.aborted) return;
           records[index] = { summary, failed: true };
         }
       }
     };
     void Promise.all(Array.from({ length: Math.min(4, graves.length) }, worker)).then(() => {
-      if (active) setResult({ source: graves, records });
+      if (!controller.signal.aborted) setResult({ source: graves, records });
     });
-    return () => { active = false; };
+    return () => controller.abort();
   }, [graves, attempt]);
   return {
     records: result?.source === graves ? result.records : [],

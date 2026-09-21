@@ -61,7 +61,7 @@ test("marker Overview groups linked people and owners and defaults after reselec
   await select(page, "A-TEST");
   await overview(page).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await expect(page.getByRole("tab", { name: "Overview", exact: true })).toHaveAttribute("aria-selected", "true");
-  await panel.getByRole("region", { name: "Linked gravesites" }).getByRole("button", { name: "A-B-TEST", exact: true }).click();
+  await panel.getByRole("region", { name: "Linked gravesites", exact: true }).getByRole("button", { name: "A-B-TEST", exact: true }).click();
   await expect(overview(page)).toContainText("Bob Example");
 });
 
@@ -113,4 +113,31 @@ test("legacy marker photo is used when there are no linked photo assets", async 
   await select(page, "A-TEST");
   await overview(page).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await expect(overview(page).getByRole("img", { name: "Marker HS-OVERVIEW" })).toBeVisible();
+});
+
+test("leaving a marker overview aborts its pending linked-grave request", async ({ page }) => {
+  await overviewFixture(page);
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = (input, options) => {
+      if (String(input).includes("/grave-spaces/B-TEST") && options?.signal) {
+        document.documentElement.dataset.overviewPending = "true";
+        return new Promise<Response>((_resolve, reject) => {
+          options.signal!.addEventListener("abort", () => {
+            document.documentElement.dataset.overviewAborted = "true";
+            reject(new DOMException("Aborted", "AbortError"));
+          }, { once: true });
+        });
+      }
+      return originalFetch(input, options);
+    };
+  });
+  await page.goto("/");
+  await select(page, "A-TEST");
+  await overview(page).getByRole("button", { name: /HS-OVERVIEW/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-overview-pending", "true");
+  await select(page, "A-TEST");
+  await expect(page.locator("html")).toHaveAttribute("data-overview-aborted", "true");
+  await expect(overview(page)).toContainText("Alice Example");
+  await expect(overview(page)).not.toContainText("Some linked gravesite details could not be loaded");
 });
