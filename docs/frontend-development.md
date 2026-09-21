@@ -104,6 +104,12 @@ Preserve cascade order when moving rules. Check print output when changing repor
 
 Use `src/hooks/useMediaUrl.ts` for protected media, as the gallery and marker reports do. It fetches same-API-origin `/media/` images through `authorizedFetch`, creates an object URL, aborts stale loads, and revokes the object URL on cleanup. External image URLs bypass the authenticated fetch. Do not use a plain `<img src="/media/...">` for protected assets or persist a temporary `blob:` URL as a share link.
 
+## Reports
+
+`ReportsPanel` composes controls around `useReportWorkflow`, which owns catalog loading, selected parameters, report execution, query matching, and stale-result feedback. Catalog loading has separate state from execution. A new execution aborts the previous one; selecting another report, changing cemetery scope, or closing the panel also cancels execution. Completion handlers check cancellation before updating results or clearing loading state.
+
+Parameters are associated with the selected report rather than reset by an effect, so query-supplied values survive a report change. Printable marker pages and their protected-photo rendering live in `components/reports/MarkerBurialPages.tsx`. Keep API response shapes and print styling stable when extending either layer.
+
 ## Validation
 
 Prepare a migrated, seeded TEST database using the [rebuild guide](rebuild.md), then run the checks appropriate to the change:
