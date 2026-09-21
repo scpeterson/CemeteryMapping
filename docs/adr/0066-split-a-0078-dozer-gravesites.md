@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0066: Split A-0078 Dozer Gravesites
 
 - Status: Accepted

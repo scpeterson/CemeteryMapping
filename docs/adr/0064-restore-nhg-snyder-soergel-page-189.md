@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0064: Restore NHG Snyder/Soergel Reading on Page 189
 
 - Status: Accepted

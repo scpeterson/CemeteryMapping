@@ -44,6 +44,16 @@ Use `src/components/ui/` for common behavior:
 
 Use `protectDrafts` on editable panels that must check drafts before Escape closes them. Photo viewers and nested action confirmations do not discard editor drafts just by closing. The navigation-discard warning currently uses the browser's synchronous confirmation, independently of `useConfirmation`.
 
+## Error Recovery
+
+Use the shared API client in `src/api/apiClient.ts` for actionable connection, session, permission, conflict, upload, and server-error messages. Unexpected server failures can include a `referenceId`; retain the displayed reference for support without exposing internal exception details.
+
+Distinguish loading, empty, failed, and stale states. Provide scoped retry actions for editing options, photos, reports, place searches, and linked records. Disable lookup-dependent edits and saves until options load. Keep existing drafts after failed saves and label retained report results after a failed request.
+
+Announce validation errors accessibly and associate date errors with their fields. Validate calendar dates, including leap years, while preserving supported partial-date precision. External map-layer notices identify the failed provider, allow per-layer retry, and clear on recovery; Diagram view hides external layers. Control-point load failures must not overwrite unreadable stored data.
+
+The [operator recovery guide](operator-workflows.md#recovering-from-load-and-save-errors) describes the user-facing actions.
+
 ## Draft State and Navigation
 
 `src/hooks/useDraftState.ts` intentionally distinguishes edits from loading or accepting a record. It compares JSON-serializable values against a saved baseline; update values immutably and keep files, DOM nodes, and other non-serializable objects outside this state.
