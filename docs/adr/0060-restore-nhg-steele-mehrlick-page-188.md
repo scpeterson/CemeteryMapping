@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0060: Restore the Steele/Mehrlick NHG Reading
 
 - Status: Accepted
