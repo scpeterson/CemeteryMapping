@@ -53,9 +53,10 @@ export async function fetchAppVersion(): Promise<AppVersion> {
   return jsonResponse<AppVersion>(response, "Version API");
 }
 
-export async function fetchGraveSpace(cemeteryId: string, id: string): Promise<GraveSpace> {
+export async function fetchGraveSpace(cemeteryId: string, id: string, signal?: AbortSignal): Promise<GraveSpace> {
   const response = await authorizedFetch(
     `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(id)}`,
+    { signal },
   );
   return jsonResponse<GraveSpace>(response, "Grave API");
 }
