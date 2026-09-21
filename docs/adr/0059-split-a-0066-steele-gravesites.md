@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0059: Split A-0066 Steele Gravesites
 
 - Status: Accepted

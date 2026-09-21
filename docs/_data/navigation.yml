@@ -22,92 +22,96 @@
   url: /auth0-production-checklist.html
 - title: "ADR Index"
   url: /adr/
-- title: "ADR 0001: Frontend"
+- title: "ADR 0001: Use a Vite React TypeScript Frontend"
   url: /adr/0001-vite-react-typescript-frontend.html
-- title: "ADR 0002: API and PostGIS"
+- title: "ADR 0002: Use an Express API Backed by PostgreSQL and PostGIS"
   url: /adr/0002-express-postgres-postgis-api.html
-- title: "ADR 0003: Liquibase"
+- title: "ADR 0003: Manage Schema Changes with Liquibase"
   url: /adr/0003-liquibase-schema-management.html
-- title: "ADR 0004: Environments"
+- title: "ADR 0004: Support DEV, TEST, STAGE, and PROD Environments"
   url: /adr/0004-environment-model.html
-- title: "ADR 0005: Map Detail Flow"
+- title: "ADR 0005: Load Summary Map Geometry Before Grave Details"
   url: /adr/0005-summary-map-detail-api-flow.html
-- title: "ADR 0006: Spatial Validation"
+- title: "ADR 0006: Use Staging and Validation for Spatial Imports"
   url: /adr/0006-spatial-import-staging-validation.html
-- title: "ADR 0007: File Geodatabase Import"
+- title: "ADR 0007: Import Cemetery, Section, Block, and Lot Geometry from an Esri File Geodatabase"
   url: /adr/0007-file-geodatabase-cemetery-section-import.html
-- title: "ADR 0008: Headstone Spreadsheet Import"
+- title: "ADR 0008: Generate Gravesites and Headstones from Headstone GPS Spreadsheet Rows"
   url: /adr/0008-headstone-spreadsheet-import.html
-- title: "ADR 0009: Headstone Model"
+- title: "ADR 0009: Model Headstones as Physical Markers Separate from Burials"
   url: /adr/0009-headstone-marker-model.html
-- title: "ADR 0010: CI Rebuild Validation"
+- title: "ADR 0010: Use CI to Validate Rebuildability"
   url: /adr/0010-ci-rebuild-validation.html
-- title: "ADR 0011: Security and Audit"
+- title: "ADR 0011: Secure Access with RBAC, Soft Deletes, and Audit Logging"
   url: /adr/0011-security-rbac-soft-delete-audit.html
-- title: "ADR 0012: Auth0 Identity Provider"
+- title: "ADR 0012: Use Auth0 as the Identity Provider"
   url: /adr/0012-use-auth0-for-identity-provider.html
-- title: "ADR 0013: Admin Editing Workflow Priority"
+- title: "ADR 0013: Prioritize Admin Editing Workflows"
   url: /adr/0013-prioritize-admin-editing-workflows.html
-- title: "ADR 0014: Documentation Navigation"
+- title: "ADR 0014: Use a Custom Documentation Layout with Sequential Navigation"
   url: /adr/0014-documentation-navigation-layout.html
-- title: "ADR 0015: Ownership Rights"
+- title: "ADR 0015: Model Ownership as Rights That Can Target Lots or Gravesites"
   url: /adr/0015-generalized-ownership-rights/
-- title: "ADR 0016: Versioned Releases"
+- title: "ADR 0016: Version Application Releases with SemVer and Database Tags"
   url: /adr/0016-versioned-releases.html
-- title: "ADR 0017: Historic Lot Evidence"
+- title: "ADR 0017: Preserve Historic Lot Map Observations as Reviewable Evidence"
   url: /adr/0017-historic-lot-map-evidence.html
-- title: "ADR 0018: Section C Lot 70"
+- title: "ADR 0018: Create Reviewed Section C Lot 70 from Gravesite Perimeter"
   url: /adr/0018-reviewed-section-c-lot-70.html
-- title: "ADR 0019: Section C Lot 51"
+- title: "ADR 0019: Create Reviewed Section C Lot 51 with Missing Gravesite"
   url: /adr/0019-reviewed-section-c-lot-51.html
-- title: "ADR 0020: Section C 0172 Passageway"
+- title: "ADR 0020: Shift Section C 0172 Passageway Gravesites North"
   url: /adr/0020-shift-section-c-0172-passageway-gravesites.html
-- title: "ADR 0021: Section C Lot 29"
+- title: "ADR 0021: Create Reviewed Section C Lot 29"
   url: /adr/0021-create-section-c-lot-29.html
-- title: "ADR 0022: Section C Lot 10"
+- title: "ADR 0022: Create Reviewed Section C Lot 10"
   url: /adr/0022-create-section-c-lot-10.html
-- title: "ADR 0023: Section C Lots 101-105"
+- title: "ADR 0023: Create Section C Lots 101 Through 105"
   url: /adr/0023-create-section-c-lots-101-through-105.html
-- title: "ADR 0024: Section C Lots 106-110"
+- title: "ADR 0024: Create Section C Lots 106 Through 110"
   url: /adr/0024-create-section-c-lots-106-through-110.html
-- title: "ADR 0025: Section C Lots 111-115"
+- title: "ADR 0025: Create Section C Lots 111 Through 115"
   url: /adr/0025-create-section-c-lots-111-through-115.html
-- title: "ADR 0026: Section C Lots 116-120"
+- title: "ADR 0026: Create Section C Lots 116 Through 120"
   url: /adr/0026-create-section-c-lots-116-through-120.html
-- title: "ADR 0027: Section C Non-Standard Lot Row"
+- title: "ADR 0027: Create Section C Non-Standard Lot Row"
   url: /adr/0027-create-section-c-nonstandard-lot-row.html
-- title: "ADR 0028: Second Section C Non-Standard Lot Row"
+- title: "ADR 0028: Create Second Section C Non-Standard Lot Row"
   url: /adr/0028-create-second-section-c-nonstandard-lot-row.html
-- title: "ADR 0029: Third and Fourth Section C Non-Standard Lot Rows"
+- title: "ADR 0029: Create Third and Fourth Section C Non-Standard Lot Rows"
   url: /adr/0029-create-third-and-fourth-section-c-nonstandard-lot-rows.html
-- title: "ADR 0030: Section B Lot 8"
+- title: "ADR 0030: Create Section B Lot 8"
   url: /adr/0030-create-section-b-lot-8.html
-- title: "ADR 0031: Section B Lot 11"
+- title: "ADR 0031: Create Section B Lot 11"
   url: /adr/0031-create-section-b-lot-11.html
 - title: "ADR 0032: Shift Section B Lots 8 and 11 West"
   url: /adr/0032-shift-section-b-lots-8-and-11-west.html
-- title: "ADR 0033: Section B Lots 7 and 12"
+- title: "ADR 0033: Create Section B Lots 7 and 12"
   url: /adr/0033-create-section-b-lots-7-and-12.html
-- title: "ADR 0034: Section B Lots 6 and 13"
+- title: "ADR 0034: Create Section B Lots 6 and 13"
   url: /adr/0034-create-section-b-lots-6-and-13.html
 - title: "ADR 0035: Shift Six Section B Lots North"
   url: /adr/0035-shift-section-b-six-lots-north.html
 - title: "ADR 0036: Shift Six Section B Lots North Six Inches"
   url: /adr/0036-shift-section-b-six-lots-north-six-inches.html
-- title: "ADR 0037: Section B Lots 5 and 14"
+- title: "ADR 0037: Create Section B Lots 5 and 14"
   url: /adr/0037-create-section-b-lots-5-and-14.html
 - title: "ADR 0038: Shift Section B Lots 5 and 14"
   url: /adr/0038-shift-section-b-lots-5-and-14.html
-- title: "ADR 0039: Section B Lots 4, 15, and 21"
+- title: "ADR 0039: Create Section B Lots 4, 15, and 21"
   url: /adr/0039-create-section-b-lots-4-15-and-21.html
 - title: "ADR 0040: Shift Five Section B Lots North"
   url: /adr/0040-shift-section-b-five-lots-north.html
-- title: "ADR 0041: Modularize Large Domain Repositories"
+- title: "ADR 0041: Modularize Large Domain Repositories Behind Stable Facades"
   url: /adr/0041-modularize-domain-repositories.html
-- title: "ADR 0042: Section C Shared-Marker Splits"
+- title: "ADR 0042: Split Reviewed Section C Shared-Marker Gravesites"
   url: /adr/0042-split-reviewed-section-c-shared-marker-gravesites.html
-- title: "ADR 0043: Retire C-0424 Placeholder"
+- title: "ADR 0043: Retire C-0424 as a Military Foot-Marker Placeholder"
   url: /adr/0043-retire-c-0424-military-foot-marker-placeholder.html
+- title: "ADR 0044: Bound Inline Photo Galleries and Preserve Full History"
+  url: /adr/0044-bound-inline-photo-galleries.html
+- title: "ADR 0045: Retire the A-0017 Burgess Monolith Placeholder"
+  url: /adr/0045-retire-a-0017-burgess-monolith-placeholder.html
 - title: "ADR 0046: Split A-0012 Seeke Gravesites"
   url: /adr/0046-split-a-0012-seeke-gravesites.html
 - title: "ADR 0047: Split A-0015 Stertz Gravesites"
@@ -116,7 +120,43 @@
   url: /adr/0048-split-a-0027-miller-gravesites.html
 - title: "ADR 0049: Split A-0026 Brandt Gravesites"
   url: /adr/0049-split-a-0026-brandt-gravesites.html
-- title: "ADR Template"
-  url: /adr/0000-template.html
 - title: "ADR 0050: Split A-0020 Pfeiffer Gravesites"
   url: /adr/0050-split-a-0020-pfeiffer-gravesites.html
+- title: "ADR 0051: Primary Photo Override"
+  url: /adr/0051-primary-photo-override.html
+- title: "ADR 0052: Separate Crea Markers on a Common Base"
+  url: /adr/0052-crea-common-base-markers.html
+- title: "ADR 0053: Split A-0041 Schnabel Gravesites"
+  url: /adr/0053-split-a-0041-schnabel-gravesites.html
+- title: "ADR 0054: Split A-0006 Scott Gravesites"
+  url: /adr/0054-split-a-0006-scott-gravesites.html
+- title: "ADR 0055: Split A-0044 Scott Gravesites"
+  url: /adr/0055-split-a-0044-scott-gravesites.html
+- title: "ADR 0056: Split A-0048 Scott Gravesites"
+  url: /adr/0056-split-a-0048-scott-gravesites.html
+- title: "ADR 0057: Split A-0049 Elser Gravesites"
+  url: /adr/0057-split-a-0049-elser-gravesites.html
+- title: "ADR 0058: Split A-0057 Alexander Gravesites"
+  url: /adr/0058-split-a-0057-alexander-gravesites.html
+- title: "ADR 0059: Split A-0066 Steele Gravesites"
+  url: /adr/0059-split-a-0066-steele-gravesites.html
+- title: "ADR 0060: Restore the Steele/Mehrlick NHG Reading"
+  url: /adr/0060-restore-nhg-steele-mehrlick-page-188.html
+- title: "ADR 0061: Split A-0067 Steele Gravesites"
+  url: /adr/0061-split-a-0067-steele-gravesites.html
+- title: "ADR 0062: Split A-0069 Blend Gravesites"
+  url: /adr/0062-split-a-0069-blend-gravesites.html
+- title: "ADR 0063: Split A-0070 Brady Gravesites"
+  url: /adr/0063-split-a-0070-brady-gravesites.html
+- title: "ADR 0064: Restore NHG Snyder/Soergel Reading on Page 189"
+  url: /adr/0064-restore-nhg-snyder-soergel-page-189.html
+- title: "ADR 0065: Split A-0077 Frampton Gravesites"
+  url: /adr/0065-split-a-0077-frampton-gravesites.html
+- title: "ADR 0066: Split A-0078 Dozer Gravesites"
+  url: /adr/0066-split-a-0078-dozer-gravesites.html
+- title: "ADR 0067: Split A-0081 Balz Gravesites"
+  url: /adr/0067-split-a-0081-balz-gravesites.html
+- title: "ADR 0068: Split A-0085 Ringeisen Gravesites"
+  url: /adr/0068-split-a-0085-ringeisen-gravesites.html
+- title: "ADR Template"
+  url: /adr/0000-template.html

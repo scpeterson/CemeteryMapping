@@ -31,7 +31,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0004: Support DEV, TEST, STAGE, and PROD Environments](0004-environment-model.md)
 - [ADR 0005: Load Summary Map Geometry Before Grave Details](0005-summary-map-detail-api-flow.md)
 - [ADR 0006: Use Staging and Validation for Spatial Imports](0006-spatial-import-staging-validation.md)
-- [ADR 0007: Import Cemetery and Section Geometry from an Esri File Geodatabase](0007-file-geodatabase-cemetery-section-import.md)
+- [ADR 0007: Import Cemetery, Section, Block, and Lot Geometry from an Esri File Geodatabase](0007-file-geodatabase-cemetery-section-import.md)
 - [ADR 0008: Generate Gravesites and Headstones from Headstone GPS Spreadsheet Rows](0008-headstone-spreadsheet-import.md)
 - [ADR 0009: Model Headstones as Physical Markers Separate from Burials](0009-headstone-marker-model.md)
 - [ADR 0010: Use CI to Validate Rebuildability](0010-ci-rebuild-validation.md)
@@ -75,11 +75,24 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0048: Split A-0027 Miller Gravesites](0048-split-a-0027-miller-gravesites.md)
 - [ADR 0049: Split A-0026 Brandt Gravesites](0049-split-a-0026-brandt-gravesites.md)
 - [ADR 0050: Split A-0020 Pfeiffer Gravesites](0050-split-a-0020-pfeiffer-gravesites.md)
-- [0051: Primary Photo Override](0051-primary-photo-override.md)
+- [ADR 0051: Primary Photo Override](0051-primary-photo-override.md)
 - [ADR 0052: Separate Crea Markers on a Common Base](0052-crea-common-base-markers.md)
 - [ADR 0053: Split A-0041 Schnabel Gravesites](0053-split-a-0041-schnabel-gravesites.md)
 - [ADR 0054: Split A-0006 Scott Gravesites](0054-split-a-0006-scott-gravesites.md)
 - [ADR 0055: Split A-0044 Scott Gravesites](0055-split-a-0044-scott-gravesites.md)
+- [ADR 0056: Split A-0048 Scott Gravesites](0056-split-a-0048-scott-gravesites.md)
+- [ADR 0057: Split A-0049 Elser Gravesites](0057-split-a-0049-elser-gravesites.md)
+- [ADR 0058: Split A-0057 Alexander Gravesites](0058-split-a-0057-alexander-gravesites.md)
+- [ADR 0059: Split A-0066 Steele Gravesites](0059-split-a-0066-steele-gravesites.md)
+- [ADR 0060: Restore the Steele/Mehrlick NHG Reading](0060-restore-nhg-steele-mehrlick-page-188.md)
+- [ADR 0061: Split A-0067 Steele Gravesites](0061-split-a-0067-steele-gravesites.md)
+- [ADR 0062: Split A-0069 Blend Gravesites](0062-split-a-0069-blend-gravesites.md)
+- [ADR 0063: Split A-0070 Brady Gravesites](0063-split-a-0070-brady-gravesites.md)
+- [ADR 0064: Restore NHG Snyder/Soergel Reading on Page 189](0064-restore-nhg-snyder-soergel-page-189.md)
+- [ADR 0065: Split A-0077 Frampton Gravesites](0065-split-a-0077-frampton-gravesites.md)
+- [ADR 0066: Split A-0078 Dozer Gravesites](0066-split-a-0078-dozer-gravesites.md)
+- [ADR 0067: Split A-0081 Balz Gravesites](0067-split-a-0081-balz-gravesites.md)
+- [ADR 0068: Split A-0085 Ringeisen Gravesites](0068-split-a-0085-ringeisen-gravesites.md)
 
 ## Creating a New ADR
 
@@ -94,23 +107,25 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 The main software choices are captured in the ADRs. Exact JavaScript dependency versions come from `package-lock.json`; container image versions come from `docker-compose.yml`; CI runtime versions come from `.github/workflows/ci.yml`.
 
-Current core versions as of 2026-09-01:
+Current core versions as of 2026-09-21:
 
 | Component | Version | Source |
 | --- | --- | --- |
 | Node.js in CI | 24 | `.github/workflows/ci.yml` |
 | React | 19.2.8 | `package-lock.json` |
 | React DOM | 19.2.8 | `package-lock.json` |
-| Auth0 React SDK | 2.22.1 | `package-lock.json` |
+| Auth0 React SDK | 2.25.0 | `package-lock.json` |
 | Vite | 8.2.1 | `package-lock.json` |
 | TypeScript | 6.0.3 | `package-lock.json` |
 | Express | 5.2.1 | `package-lock.json` |
 | pg | 8.22.0 | `package-lock.json` |
-| MapLibre GL JS | 6.6.0 | `package-lock.json` |
+| MapLibre GL JS | 6.9.1 | `package-lock.json` |
+| Lucide React | 1.46.0 | `package-lock.json` |
+| Node.js type definitions | 26.5.1 | `package-lock.json` |
 | ExcelJS | 4.4.0 | `package-lock.json` |
 | PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | `docker-compose.yml` |
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
-| Playwright | 1.62.1 | `package-lock.json` |
+| Playwright | 1.63.0 | `package-lock.json` |
 | ESLint | 10.8.0 | `package-lock.json` |
 | Ruby for documentation builds | 3.4.1 | local Ruby toolchain and `docs/Gemfile.lock` |
 | Bundler for documentation builds | 2.6.2 | `docs/Gemfile.lock` |

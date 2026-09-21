@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0063: Split A-0070 Brady Gravesites
 
 - Status: Accepted
