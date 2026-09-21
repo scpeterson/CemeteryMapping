@@ -1,3 +1,5 @@
+import { BadRequestError, ConflictError } from "./requestValidation.mjs";
+import { validateFaceReferences, validateMarkerFaces, validateFacesRevision } from "./markerFaces.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { selectHeadstoneById } from "./cemeteryHeadstoneQueries.mjs";
@@ -13,6 +15,19 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     }
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
       return rollback(undefined);
+    }
+
+    if (headstone.faces === undefined && existing.faces?.length > 1
+        && (headstone.inscription || null) !== existing.inscription) {
+      throw new BadRequestError("Edit individual marker faces instead of the combined inscription.");
+    }
+    if (headstone.faces !== undefined) {
+      headstone.faces = validateMarkerFaces(headstone.faces);
+      const revision = validateFacesRevision(headstone.facesRevision);
+      if (existing.faces_revision !== revision) {
+        throw new ConflictError("Marker faces changed since you opened the editor. Reload the marker before saving.");
+      }
+      await validateFaceReferences(client, id, headstone.faces);
     }
 
     const reviewedBy = actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? "";
@@ -58,6 +73,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       headstone.reviewNotes || "",
       Boolean(headstone.sourceConflict),
       reviewedBy,
+      headstone.faces === undefined ? null : JSON.stringify(headstone.faces),
     );
 
     const updateResult = await client.query(
@@ -72,7 +88,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
             vase_placement_type_id = NULLIF($7, '')::uuid,
             vase_notes = $8,
             condition_notes = $9,
-            inscription = $10,
+            faces = COALESCE($22::jsonb, faces),
+            inscription = CASE WHEN $22::jsonb IS NULL THEN $10 ELSE inscription END,
             design_notes = $11,
             back_description = $12,
             photo_url = $13,
@@ -103,6 +120,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           vase_notes,
           condition_notes,
           inscription,
+          faces,
+          faces_revision,
           design_notes,
           back_description,
           photo_url,
@@ -325,6 +344,12 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
       ],
     );
     const headstoneUuid = insertResult.rows[0].id;
+    if (headstone.faces !== undefined) {
+      const faces = validateMarkerFaces(headstone.faces);
+      await validateFaceReferences(client, headstoneUuid, faces);
+      await client.query("UPDATE headstones SET faces=$2::jsonb WHERE id=$1", [headstoneUuid, JSON.stringify(faces)]);
+    }
+
 
     await client.query(
       `

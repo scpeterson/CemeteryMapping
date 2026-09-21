@@ -34,6 +34,15 @@ export type HeadstoneGravesiteRelationship = {
   notes: string;
 };
 
+export type MarkerFace = {
+  id: string;
+  label: string;
+  inscription: string;
+  notes: string;
+  burialIds: string[];
+  mediaAssetIds: string[];
+};
+
 export type Headstone = {
   id: string;
   headstoneId: string;
@@ -47,6 +56,9 @@ export type Headstone = {
   vaseNotes: string;
   conditionNotes: string;
   inscription: string;
+  faces?: MarkerFace[];
+  facesRevision?: number;
+  facePeople?: { id: string; fullName: string }[];
   designNotes: string;
   backDescription: string;
   photoUrl: string;
@@ -169,6 +181,8 @@ export type SaveHeadstoneInput = {
   vaseNotes: string;
   conditionNotes: string;
   inscription: string;
+  faces?: MarkerFace[];
+  facesRevision?: number;
   designNotes: string;
   backDescription: string;
   photoUrl: string;

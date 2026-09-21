@@ -94,6 +94,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0067: Split A-0081 Balz Gravesites](0067-split-a-0081-balz-gravesites.md)
 - [ADR 0068: Split A-0085 Ringeisen Gravesites](0068-split-a-0085-ringeisen-gravesites.md)
 
+- [ADR 0069: Multiple Faces on One Physical Marker](0069-marker-faces.md)
+
 ## Creating a New ADR
 
 1. Copy [ADR 0000: Title](0000-template.md).

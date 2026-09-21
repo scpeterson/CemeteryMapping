@@ -1,3 +1,5 @@
+import { editableMarkerFaces, isEmptyNewMarkerFace } from "../../lib/markerFaces";
+import { MarkerFacesEditor, MarkerFacesView } from "./MarkerFaces";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useId } from "react";
 import { useDraftState } from "../../hooks/useDraftState";
@@ -71,6 +73,8 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     vaseNotes: headstone.vaseNotes ?? "",
     conditionNotes: headstone.conditionNotes ?? "",
     inscription: headstone.inscription ?? "",
+    faces: editableMarkerFaces(headstone),
+    facesRevision: headstone.facesRevision ?? 0,
     designNotes: headstone.designNotes ?? "",
     backDescription: headstone.backDescription ?? "",
     photoUrl: headstone.photoUrl ?? "",
@@ -143,7 +147,10 @@ export function HeadstoneRecord({
     setIsSaving(true);
     setError(undefined);
     try {
-      const saved = await onSave(headstone.id, form);
+      const saved = await onSave(headstone.id, {
+        ...form,
+        faces: form.faces?.filter((face) => !isEmptyNewMarkerFace(face, headstone)),
+      });
       setForm(blankHeadstoneForm(saved, markerTypeOptions, cemeteryName));
       if (saved.burialNhgPropagation) {
         const { updated, skipped } = saved.burialNhgPropagation;
@@ -251,10 +258,8 @@ export function HeadstoneRecord({
           Condition notes
           <textarea value={form.conditionNotes} onChange={(event) => setForm((current) => ({ ...current, conditionNotes: event.target.value }))} rows={3} />
         </label>
-        <label className="headstone-wide-field">
-          Inscription
-          <textarea value={form.inscription} onChange={(event) => setForm((current) => ({ ...current, inscription: event.target.value }))} rows={3} />
-        </label>
+        <MarkerFacesEditor headstone={headstone} faces={form.faces ?? []} disabled={isSaving}
+          onChange={(faces) => setForm((current) => ({ ...current, faces }))} />
         <label className="headstone-wide-field">
           Flourishes or designs
           <textarea value={form.designNotes} onChange={(event) => setForm((current) => ({ ...current, designNotes: event.target.value }))} rows={3} />
@@ -350,6 +355,8 @@ export function HeadstoneRecord({
     );
   }
 
+  const assignedPhotoIds = new Set((headstone.faces ?? []).flatMap((face) => face.mediaAssetIds));
+  const unassignedPhotos = (headstone.mediaAssets ?? []).filter((asset) => !assignedPhotoIds.has(asset.id));
   const relationshipDetails = headstoneRelationshipDetails(headstone.relationshipType);
   const relationshipTitle = headstone.relationshipNotes ? `${relationshipDetails.description} Notes: ${headstone.relationshipNotes}` : relationshipDetails.description;
 
@@ -420,7 +427,7 @@ export function HeadstoneRecord({
       {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
       <ReviewBadgeGroup dataConfidence={headstone.dataConfidence} reviewStatus={headstone.reviewStatus} sourceConflict={headstone.sourceConflict} reviewNotes={headstone.reviewNotes} />
       {provenanceMessage ? <p className="detail-message is-success" role="status">{provenanceMessage}</p> : null}
-      {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
+      <MarkerFacesView headstone={headstone} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
       {headstone.features?.length ? (
@@ -435,8 +442,8 @@ export function HeadstoneRecord({
           onDelete={onDeleteGraveFeature}
         />
       ) : null}
-      {headstone.mediaAssets?.length ? (
-        <MediaGallery assets={headstone.mediaAssets} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
+      {unassignedPhotos.length ? (
+        <MediaGallery assets={unassignedPhotos} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
       ) : null}
       {canUploadPhotos ? <PhotoUploadForm headstones={[headstone]} fixedHeadstone={headstone} onUpload={onUploadPhoto} /> : null}
       {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
