@@ -4,6 +4,9 @@ import { selectRelationshipsForHeadstone } from "./cemeteryRelationshipQueries.m
 import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 const headstoneDetailColumnsSql = `
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id', b.id::text, 'fullName', b.full_name) ORDER BY b.full_name, b.id), '[]'::jsonb)
+    FROM headstone_burials hb JOIN burials b ON b.id=hb.burial_uuid
+    WHERE hb.headstone_uuid=headstones.id AND hb.deleted_at IS NULL AND b.deleted_at IS NULL) AS face_people,
   headstones.id::text,
   headstones.headstone_id,
   marker_types.id::text AS marker_type_id,
@@ -30,6 +33,8 @@ const headstoneDetailColumnsSql = `
   headstones.vase_notes,
   headstones.condition_notes,
   headstones.inscription,
+  headstones.faces,
+  headstones.faces_revision,
   headstones.design_notes,
   headstones.back_description,
   headstones.photo_url,
@@ -151,6 +156,8 @@ const headstoneDetailGroupBySql = `
   headstones.vase_notes,
   headstones.condition_notes,
   headstones.inscription,
+  headstones.faces,
+  headstones.faces_revision,
   headstones.design_notes,
   headstones.back_description,
   headstones.photo_url,

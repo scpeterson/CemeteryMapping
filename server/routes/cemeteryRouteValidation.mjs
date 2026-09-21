@@ -1,3 +1,4 @@
+import { validateMarkerFaces, validateFacesRevision } from "../markerFaces.mjs";
 import { optionalCoordinate, optionalText, requiredText, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
 import { optionalBoolean, optionalDate, optionalRecordedDate, validateDataConfidence, validateReviewStatus } from "./routeValidationHelpers.mjs";
@@ -38,12 +39,13 @@ export function validateHeadstonePayload(body) {
   const provenanceVerifiedAt = optionalDate(body?.provenanceVerifiedAt, "Source information verified date");
 
   return {
+    ...(body?.faces === undefined ? {} : { faces: validateMarkerFaces(body.faces), facesRevision: validateFacesRevision(body.facesRevision) }),
     markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
     markerScopeId: validateUuid(body?.markerScopeId, "Marker scope"),
     materialId: validateUuid(body?.materialId, "Marker material"),
     conditionId: validateUuid(body?.conditionId, "Condition"),
     conditionNotes: optionalText(body?.conditionNotes, "Condition notes", 4000),
-    inscription: optionalText(body?.inscription, "Inscription", 20_000),
+    inscription: body?.faces === undefined ? optionalText(body?.inscription, "Inscription", 20_000) : null,
     designNotes: optionalText(body?.designNotes, "Design notes", 20_000),
     backDescription: optionalText(body?.backDescription, "Back description", 20_000),
     photoUrl: optionalText(body?.photoUrl, "Photo URL", 300),

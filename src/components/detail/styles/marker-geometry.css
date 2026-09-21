@@ -270,3 +270,47 @@
   color: var(--text-muted);
 }
 
+
+.marker-faces-editor,
+.marker-face-editor,
+.marker-face-editor fieldset {
+  min-inline-size: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.marker-faces-editor legend,
+.marker-face-editor legend {
+  font-weight: 600;
+}
+
+.marker-face-editor {
+  margin: 12px 0;
+}
+
+.marker-face-view {
+  border-top: 1px solid var(--panel-border);
+  padding: 12px 0;
+  overflow-wrap: anywhere;
+}
+
+.marker-face-view h5 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.marker-faces-editor button {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  cursor: pointer;
+}
+
+.marker-faces-editor button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

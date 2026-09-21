@@ -133,3 +133,11 @@ APP_ENV=test npm run test:e2e
 `tests/improvements.spec.ts` covers delayed saves, conflict recovery, authenticated photos, toolbar overlap/clicks, draft navigation, mobile navigation, and search recovery. `tests/ui.spec.ts` covers keyboard tabs, nested dialog focus, administration rendering/selection, and horizontal overflow. Responsive tests save screenshots under Playwright's `test-results/` output. Review these images as well as assertions; overflow checks alone do not catch overlapping controls.
 
 Shared browser fixtures live in `tests/fixtures/cemetery.ts`. The nested-dialog harness and its mounting helper are test-only files. Keep API mocking limited to the boundaries a test needs, and retain API-backed coverage for real record reads and mutations. CI rebuilds TEST and runs lint, build, server, database, and browser checks. Test counts change as coverage grows; use the current run's results rather than a fixed documented count.
+
+## Marker Faces
+
+In marker Details, Edit opens Faces / Inscriptions. Add a face, give it a direction or custom label, transcribe its text, and select existing marker-linked people and photos. Photos can be assigned to multiple faces. Save and upload new photos before assigning them. Removing a face does not delete its people or photos. Unknown orientations stay Unspecified face.
+
+`MarkerFaces.tsx` shares the marker editor’s draft and save lifecycle. The API returns HTTP 409 for stale face revisions; the editor preserves the draft and asks the user to reload. Face galleries use the existing authenticated photo viewer. See [ADR 0069](adr/0069-marker-faces.md).
+
+Ordinary markers show a plain Inscription field in Edit, including markers with no previous inscription. Entering text automatically stores an Unspecified face; no face label, person selection, or photo assignment is required. Manage faces opens the optional multi-face editor. Add face starts another draft; Save marker saves all completed faces and ignores empty new drafts. A draft with inscription, notes, people, or photos still requires a label. Back of stone remains independently editable. Photos assigned to faces display only in those face galleries, with the usual photo controls; the general gallery displays unassigned photos.

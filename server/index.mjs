@@ -148,11 +148,22 @@ export function createApp(config, pool) {
 }
 
 export async function startServer(config = loadApiConfig(), pool = new Pool(config.database)) {
-  await assertCurrentSchema(pool);
-  const app = createApp(config, pool);
-  const server = app.listen(config.apiPort, "127.0.0.1", () => {
-    console.log(`Cemetery API listening on http://127.0.0.1:${config.apiPort} (${config.appEnv.toUpperCase()})`);
-  });
+  let app;
+  let server;
+  try {
+    await assertCurrentSchema(pool);
+    app = createApp(config, pool);
+    await new Promise((resolve, reject) => {
+      server = app.listen(config.apiPort, "127.0.0.1", (error) => error ? reject(error) : resolve());
+    });
+  } catch (error) {
+    await pool.end().catch((cleanupError) => console.error("Database pool cleanup failed:", cleanupError));
+    if (error.code === "EADDRINUSE") {
+      throw new Error(`Cemetery API could not start: port ${config.apiPort} is already in use. Stop the existing API process or choose a different API_PORT.`, { cause: error });
+    }
+    throw error;
+  }
+  console.log(`Cemetery API listening on http://127.0.0.1:${server.address().port} (${config.appEnv.toUpperCase()})`);
   const stop = createGracefulShutdown(server, pool);
   const shutdown = () => stop().finally(() => {
     process.off("SIGINT", onSignal);

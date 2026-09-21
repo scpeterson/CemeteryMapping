@@ -127,6 +127,10 @@ Marker photos are now modeled through general media evidence instead of only `he
 
 This keeps photo files outside Postgres, allows one photo to document multiple cemetery records, and preserves future flexibility for documents, scans, maps, and staged or review-needed images. Local uploads currently write to `uploads/media` by default and can be moved with `MEDIA_UPLOAD_DIR`; any production deployment needs durable file storage or object storage in addition to database backups.
 
+## Monument Faces
+
+A physical marker can have multiple labeled faces, each with its own inscription, notes, associated people, and photos. Existing inscriptions are preserved as Unspecified face. See [ADR 0069](0069-marker-faces.md) for storage, compatibility, and editing details.
+
 ## Update Triggers
 
 Update this ADR when condition values change, marker type/material lookup values change materially, inspection history is added, marker photos are modeled differently, marker-to-burial or marker-to-gravesite cardinality changes, or headstones become first-class API/UI objects.
