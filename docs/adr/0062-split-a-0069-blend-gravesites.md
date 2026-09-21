@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0062: Split A-0069 Blend Gravesites
 
 - Status: Accepted
