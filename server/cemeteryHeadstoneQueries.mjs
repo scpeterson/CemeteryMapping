@@ -1,7 +1,7 @@
 import { selectFeaturesForHeadstones } from "./cemeteryFeatureQueries.mjs";
 import { selectMaintenanceForHeadstones } from "./cemeteryMaintenanceQueries.mjs";
 import { selectRelationshipsForHeadstone } from "./cemeteryRelationshipQueries.mjs";
-import { recordReviewColumnsSql, tableColumnExists } from "./cemeterySchema.mjs";
+import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 const headstoneDetailColumnsSql = `
   headstones.id::text,
@@ -158,26 +158,24 @@ const headstoneDetailGroupBySql = `
   headstones.source_properties
 `;
 
-async function headstoneDetailReviewSql(client) {
-  const selectSql = await recordReviewColumnsSql(client, "headstones");
-  const hasReviewColumns = await tableColumnExists(client, "headstones", "data_confidence");
+function headstoneDetailReviewSql() {
+  const selectSql = recordReviewColumnsSql("headstones");
+
   return {
     select: selectSql,
-    groupBy: hasReviewColumns
-      ? `
+    groupBy: `
           headstones.data_confidence,
           headstones.review_status,
           headstones.review_notes,
           headstones.source_conflict,
           headstones.reviewed_by,
           headstones.reviewed_at
-        `
-      : "",
+        `,
   };
 }
 
 export async function selectHeadstonesForGrave(client, graveUuid) {
-  const reviewSql = await headstoneDetailReviewSql(client);
+  const reviewSql = headstoneDetailReviewSql();
   const result = await client.query(
     `
       WITH selected_headstones AS (
@@ -227,7 +225,7 @@ export async function selectHeadstonesForGrave(client, graveUuid) {
 }
 
 export async function selectHeadstoneById(client, id) {
-  const reviewSql = await headstoneDetailReviewSql(client);
+  const reviewSql = headstoneDetailReviewSql();
   const result = await client.query(
     `
       WITH selected_headstones AS (

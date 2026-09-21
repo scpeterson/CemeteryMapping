@@ -13,7 +13,7 @@ export async function selectActiveCemeteries(client) {
 }
 
 export async function selectSectionsForCemeteries(client, cemeteryIds) {
-  const alternateNamesSelect = await sectionAlternateNamesSelect(client);
+  const alternateNamesSelect = sectionAlternateNamesSelect();
   const result = await client.query(
     `
       SELECT section_id::text AS uuid, name AS section_id, name, ${alternateNamesSelect}, ST_AsGeoJSON(geometry)::json AS geometry

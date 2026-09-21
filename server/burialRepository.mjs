@@ -60,176 +60,53 @@ export function burialDeathPlaceSql() {
   };
 }
 
-export async function burialMilitaryServiceColumnsExist(client) {
-  void client;
-  return true;
-}
-
-async function burialRecordedDateTextColumnsExist(client) {
-  void client;
-  return true;
-}
-
-export async function burialRecordedDateTextSql(client, firstSetParameter = 15) {
-  if (await burialRecordedDateTextColumnsExist(client)) {
-    return {
-      select: "burials.birth_date_text, burials.death_date_text",
-      set: `birth_date_text = $${firstSetParameter},\n            death_date_text = $${firstSetParameter + 1}`,
-      return: "birth_date_text,\n          death_date_text",
-      hasColumns: true,
-    };
-  }
-
+export function burialRecordedDateTextSql(firstSetParameter = 15) {
   return {
-    select: "NULL::text AS birth_date_text, NULL::text AS death_date_text",
-    set: "",
-    return: "NULL::text AS birth_date_text,\n          NULL::text AS death_date_text",
-    hasColumns: false,
+    select: "burials.birth_date_text, burials.death_date_text",
+    set: `birth_date_text = $${firstSetParameter},\n            death_date_text = $${firstSetParameter + 1}`,
+    return: "birth_date_text,\n          death_date_text",
   };
 }
 
-export async function legacyBurialMilitaryBranchColumnExists(client) {
-  void client;
-  return false;
-}
-
-export async function legacyBurialMilitaryWarsColumnExists(client) {
-  void client;
-  return false;
-}
-
-export async function burialIntermentTypeLookupExists(client) {
-  void client;
-  return true;
-}
-
-export async function burialIntermentTypeColumnExists(client) {
-  void client;
-  return true;
-}
-
-export async function legacyBurialIntermentTypeColumnExists(client) {
-  void client;
-  return false;
-}
-
-export async function burialIntermentTypeSql(client) {
-  if (await burialIntermentTypeColumnExists(client)) {
-    return {
-      select: "burial_interment_types.code AS interment_type, burial_interment_types.label AS interment_type_label",
-      join: "JOIN burial_interment_types ON burial_interment_types.id = burials.interment_type_id",
-      hasLookup: true,
-    };
-  }
-
-  if (await legacyBurialIntermentTypeColumnExists(client)) {
-    return {
-      select: "COALESCE(NULLIF(burials.interment_type, ''), 'casket') AS interment_type, CASE WHEN burials.interment_type = 'urn' THEN 'Funeral urn' ELSE 'Casket' END AS interment_type_label",
-      join: "",
-      hasLookup: false,
-    };
-  }
-
+export function burialIntermentTypeSql() {
   return {
-    select: "'casket'::text AS interment_type, 'Casket'::text AS interment_type_label",
-    join: "",
-    hasLookup: false,
+    select: "burial_interment_types.code AS interment_type, burial_interment_types.label AS interment_type_label",
+    join: "JOIN burial_interment_types ON burial_interment_types.id = burials.interment_type_id",
   };
 }
 
 export async function activeIntermentTypeExists(client, code) {
-  if (!(await burialIntermentTypeColumnExists(client))) return true;
   const result = await client.query("SELECT EXISTS (SELECT 1 FROM burial_interment_types WHERE code = $1 AND is_active) AS exists", [code]);
   return Boolean(result.rows[0]?.exists);
 }
 
-export async function burialRecordStatusColumnExists(client) {
-  void client;
-  return true;
-}
-
-export async function burialRecordStatusSql(client) {
-  if (await burialRecordStatusColumnExists(client)) {
-    return {
-      select: "burial_record_status_types.code AS record_status_code, burial_record_status_types.label AS record_status_label",
-      join: "JOIN burial_record_status_types ON burial_record_status_types.id = burials.burial_record_status_type_id",
-      hasLookup: true,
-    };
-  }
-
+export function burialRecordStatusSql() {
   return {
-    select: "'interred'::text AS record_status_code, 'Interred'::text AS record_status_label",
-    join: "",
-    hasLookup: false,
+    select: "burial_record_status_types.code AS record_status_code, burial_record_status_types.label AS record_status_label",
+    join: "JOIN burial_record_status_types ON burial_record_status_types.id = burials.burial_record_status_type_id",
   };
 }
 
 export async function activeBurialRecordStatusExists(client, code) {
-  if (!(await burialRecordStatusColumnExists(client))) return true;
   const result = await client.query("SELECT EXISTS (SELECT 1 FROM burial_record_status_types WHERE code = $1 AND is_active) AS exists", [code]);
   return Boolean(result.rows[0]?.exists);
 }
 
-export async function burialMilitaryBranchLookupExists(client) {
-  void client;
-  return true;
-}
-
-export async function burialMilitaryBranchTypeColumnExists(client) {
-  void client;
-  return true;
-}
-
-export async function burialMilitaryWarServiceLookupExists(client) {
-  void client;
-  return true;
-}
-
-export async function burialMilitaryWarServiceTypeColumnExists(client) {
-  void client;
-  return true;
-}
-
-export async function burialMilitaryRankLookupExists(client) {
-  void client;
-  return true;
-}
-
-export async function burialMilitaryRankTypeColumnExists(client) {
-  void client;
-  return true;
-}
-
-export async function burialMilitaryServiceSql(client) {
-  if (!(await burialMilitaryServiceColumnsExist(client))) {
-    return {
-      select:
-        "NULL::text AS veteran, NULL::text AS military_branch_code, NULL::text AS military_branch, NULL::text AS military_rank_code, NULL::text AS military_rank, NULL::text AS military_rank_abbreviation, NULL::text AS military_rank_pay_grade, NULL::text AS military_war_service_code, NULL::text AS military_wars, NULL::date AS military_enlisted_date, NULL::date AS military_discharged_date",
-      join: "",
-      hasLookup: false,
-    };
-  }
-
-  const hasBranchLookup = await burialMilitaryBranchTypeColumnExists(client);
-  const hasWarServiceLookup = await burialMilitaryWarServiceTypeColumnExists(client);
-  const hasRankLookup = await burialMilitaryRankTypeColumnExists(client);
-  const hasLegacyBranchColumn = !hasBranchLookup && (await legacyBurialMilitaryBranchColumnExists(client));
-  const hasLegacyWarsColumn = !hasWarServiceLookup && (await legacyBurialMilitaryWarsColumnExists(client));
-  const branchCodeSelect = hasBranchLookup ? "military_branch_types.code AS military_branch_code" : "NULL::text AS military_branch_code";
-  const branchLabelSelect = hasBranchLookup ? "military_branch_types.label AS military_branch" : hasLegacyBranchColumn ? "burials.military_branch" : "NULL::text AS military_branch";
-  const rankCodeSelect = hasRankLookup ? "military_rank_types.code AS military_rank_code" : "NULL::text AS military_rank_code";
-  const rankLabelSelect = hasRankLookup ? "military_rank_types.label AS military_rank" : "NULL::text AS military_rank";
-  const rankAbbreviationSelect = hasRankLookup ? "military_rank_types.abbreviation AS military_rank_abbreviation" : "NULL::text AS military_rank_abbreviation";
-  const rankPayGradeSelect = hasRankLookup ? "military_rank_types.pay_grade AS military_rank_pay_grade" : "NULL::text AS military_rank_pay_grade";
-  const warServiceCodeSelect = hasWarServiceLookup ? "military_war_service_types.code AS military_war_service_code" : "NULL::text AS military_war_service_code";
-  const warServiceLabelSelect = hasWarServiceLookup ? "military_war_service_types.label AS military_wars" : hasLegacyWarsColumn ? "burials.military_wars" : "NULL::text AS military_wars";
-  const branchJoin = hasBranchLookup ? "LEFT JOIN military_branch_types ON military_branch_types.id = burials.military_branch_type_id" : "";
-  const rankJoin = hasRankLookup ? "LEFT JOIN military_rank_types ON military_rank_types.id = burials.military_rank_type_id" : "";
-  const warServiceJoin = hasWarServiceLookup ? "LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id" : "";
+export function burialMilitaryServiceSql() {
+  const branchCodeSelect = "military_branch_types.code AS military_branch_code";
+  const branchLabelSelect = "military_branch_types.label AS military_branch";
+  const rankCodeSelect = "military_rank_types.code AS military_rank_code";
+  const rankLabelSelect = "military_rank_types.label AS military_rank";
+  const rankAbbreviationSelect = "military_rank_types.abbreviation AS military_rank_abbreviation";
+  const rankPayGradeSelect = "military_rank_types.pay_grade AS military_rank_pay_grade";
+  const warServiceCodeSelect = "military_war_service_types.code AS military_war_service_code";
+  const warServiceLabelSelect = "military_war_service_types.label AS military_wars";
+  const branchJoin = "LEFT JOIN military_branch_types ON military_branch_types.id = burials.military_branch_type_id";
+  const rankJoin = "LEFT JOIN military_rank_types ON military_rank_types.id = burials.military_rank_type_id";
+  const warServiceJoin = "LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id";
 
   return {
     select: `burials.veteran, ${branchCodeSelect}, ${branchLabelSelect}, ${rankCodeSelect}, ${rankLabelSelect}, ${rankAbbreviationSelect}, ${rankPayGradeSelect}, ${warServiceCodeSelect}, ${warServiceLabelSelect}, burials.military_enlisted_date, burials.military_discharged_date`,
     join: [branchJoin, rankJoin, warServiceJoin].filter(Boolean).join("\n"),
-    hasLookup: hasBranchLookup || hasRankLookup || hasWarServiceLookup,
   };
 }
