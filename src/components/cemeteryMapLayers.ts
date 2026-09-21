@@ -223,7 +223,7 @@ export function addSectionLabelLayer(map: Map) {
 
 export function addLotLayers(map: Map, data: CemeteryData) {
   ensureProhibitedLotPattern(map);
-  map.addSource("lots", { type: "geojson", data: lotsFeatureCollection(data) });
+  map.addSource("lots", { type: "geojson", promoteId: "key", data: lotsFeatureCollection(data) });
   map.addSource("lot-restricted-areas", { type: "geojson", data: lotRestrictedAreasFeatureCollection(data) });
   map.addLayer({
     id: "lots-fill",
@@ -329,8 +329,10 @@ export function addLotLayers(map: Map, data: CemeteryData) {
 }
 
 export function addGraveLayers(map: Map, graves: GraveSpaceSummary[]) {
+  // Promote string keys so tiled features retain the IDs used by feature-state.
   map.addSource("graves", {
     type: "geojson",
+    promoteId: "key",
     data: gravesFeatureCollection(graves),
   });
 
@@ -417,6 +419,7 @@ export function addHeadstoneLayers(
 ) {
   map.addSource("headstones", {
     type: "geojson",
+    promoteId: "id",
     data: headstonesFeatureCollection(headstones, veteranGraveKeys),
   });
 
