@@ -4,7 +4,7 @@ import type { CemeteryData } from "../types";
 import { cemeteryMarkersFeatureCollection } from "../lib/geojson";
 import { fitMapToGeometry } from "./cemeteryMapBounds";
 
-export function syncCemeteryMarkers(map: Map, data: CemeteryData, markers: maplibregl.Marker[]) {
+export function syncCemeteryMarkers(map: Map, data: Pick<CemeteryData, "boundary" | "boundaries">, markers: maplibregl.Marker[]) {
   markers.splice(0).forEach((marker) => marker.remove());
 
   cemeteryMarkersFeatureCollection(data).features.forEach((feature) => {
