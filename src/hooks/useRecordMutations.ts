@@ -1,3 +1,4 @@
+import { primaryPhotoUpdater } from "./primaryPhotoUpdates";
 import type { Dispatch, SetStateAction } from "react";
 import {
   createOwnershipEvent,
@@ -34,7 +35,6 @@ import type {
   GraveSpaceSummary,
   Headstone,
   HeadstoneSummary,
-  MediaAsset,
   SaveBurialInput,
   SaveGraveSpaceInput,
   SaveGraveFeatureInput,
@@ -324,10 +324,7 @@ export function useRecordMutations({
       return;
     }
     if (direction === "primary" || direction === "automatic") {
-      const apply = (assets: MediaAsset[]) => assets.map((photo) => {
-        const update = [...result.updates].reverse().find((item) => item.id === photo.mediaLinkId);
-        return update ? { ...photo, isPrimary: update.is_primary } : photo;
-      });
+      const apply = primaryPhotoUpdater(result.updates);
       setSelectedGraveDetails((current) => current ? { ...current, mediaAssets: apply(current.mediaAssets), headstones: current.headstones.map((marker) => ({ ...marker, mediaAssets: apply(marker.mediaAssets) })) } : current);
       setSelectedHeadstoneDetails((current) => current ? { ...current, mediaAssets: apply(current.mediaAssets) } : current);
       return;
