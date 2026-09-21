@@ -138,6 +138,12 @@ For hosted production databases, prefer managed authentication or a database acc
 
 Administrators can review recent audit events in the application under **Admin > Audit Log**. The tab is read-only and supports filtering by date range, actor, entity type, operation, record ID, and result limit. Selecting an audit row shows captured actor details, database user/session user, changed fields, reason, and the old/new JSON values stored in `audit_events`.
 
+## Unexpected Error References
+
+Unexpected API failures return a reference ID with the user-facing error. Ask the operator for that ID, the time, the attempted action, and the affected record. Correlate it with `referenceId` in system-event metadata or the API console logs to locate the internal failure details. System events diagnose application failures; row-level audit events record database changes and are not a substitute for error logs.
+
+Expected validation and permission failures generally provide corrective guidance instead of an unexpected-error reference. See [operator recovery steps](operator-workflows.md#recovering-from-load-and-save-errors).
+
 ## Retention
 
 Migration `071-audit-retention-policy.sql` adds a singleton `audit_retention_policies` row that controls audit cleanup. The default policy keeps seven years of audit history (`2555` days), preserves at least one year as the minimum configurable retention, and deletes at most `5000` audit rows per run.

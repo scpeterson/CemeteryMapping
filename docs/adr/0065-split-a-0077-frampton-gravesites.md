@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0065: Split A-0077 Frampton Gravesites
 
 - Status: Accepted

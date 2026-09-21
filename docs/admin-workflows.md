@@ -159,8 +159,14 @@ Second admin edit workflow.
 
 Admins need to correct names and dates imported from the spreadsheet or later source documents. When a public web page supports the burial information, enter its absolute `http` or `https` address in the optional Information source URL field instead of embedding the link in notes. For example, a Find a Grave memorial can support the conclusion that a person is deceased even when the death date remains unknown. The burial detail card exposes the saved page as an external link.
 
-Initial fields:
+See [Recording People Names and Dates](operator-workflows.md#recording-people-names-and-dates) for current field labels, given-name status choices, and display-name examples.
 
+Name and date fields include:
+
+- `name_prefix`
+- `name_suffix`
+- `given_name_status`
+- `display_name`
 - `first_name`
 - `last_name`
 - `full_name`
@@ -234,7 +240,7 @@ Expected future work:
 - Add an ADR for separating evidence geometry, operational geometry, and schematic presentation geometry.
 - Add geometry metadata such as source type, confidence, review notes, reviewed timestamp, and reviewer where useful.
 - Consider a separate schematic geometry layer instead of forcing readable diagram layouts into the same PostGIS geometry used for geographic display.
-- Add map modes or layers such as `Geographic`, `Diagram`, and `Evidence`.
+- Extend the existing `Geographic` and `Diagram` presentation modes with evidence-specific or separately stored schematic layers. Current Diagram view hides external layers and changes styling; it does not establish a separate geometry source of truth. See [external map layer recovery](operator-workflows.md#external-map-layers-and-diagram-view).
 - Add legends and detail-panel labels that tell users whether a marker point is GPS-observed and whether a gravesite or lot polygon is estimated, reviewed, or schematic.
 - Build alignment-run tools for sections such as C so gravesite polygons can be regularized between anchors without moving GPS marker points or accumulating east-west spacing error one grave at a time.
 
