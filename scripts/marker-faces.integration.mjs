@@ -19,6 +19,7 @@ test("marker faces round-trip with links, legacy text, authorization and stale-w
   try {
     await client.query("BEGIN");
     const { rows: [target] } = await client.query(`SELECT h.id,h.gravesite_uuid FROM headstones h
+      JOIN gravesites g ON g.id=h.gravesite_uuid AND g.deleted_at IS NULL
       JOIN headstone_burials hb ON hb.headstone_uuid=h.id AND hb.deleted_at IS NULL
       JOIN burials b ON b.id=hb.burial_uuid AND b.deleted_at IS NULL
       WHERE h.deleted_at IS NULL LIMIT 1`);
