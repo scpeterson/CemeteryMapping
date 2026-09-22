@@ -1219,3 +1219,12 @@ databaseChangeLog:
   - include:
       file: changes/409-marker-faces.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/410-retire-b-0098-deer-monument-placeholder.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/411-link-deer-family-monument.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/412-split-b-0094-opperman-gravesites.sql
+      relativeToChangelogFile: true
