@@ -6,6 +6,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Correct TLC-HS-0098 to link B-0092, B-0093, B-0099 and B-0100, remove the incorrect B-0094 association, and associate the Front, Left and Back faces with Nannie/F. Myrtle, Mary and William Deer respectively (migration 411).
+
+- Retire B-0098 and its imported Deer Family Headstone pseudo-burial. Preserve family monument TLC-HS-0098, face inscriptions and photos, and real gravesite links; remove obsolete pseudo-person associations from its faces (migration 410).
+
 - Report API startup failures accurately, including an occupied port, and release database connections before exiting instead of falsely reporting that the API is listening.
 
 - Restored the missing NHG SNYDER/SOERGEL entry from printed page 189 (8A, 7, s) and linked it to TLC-HS-0072 and A-0072 in each existing source batch. Preserved Katherine Snyder’s existing burial details and the original OCR variant (migration 402).
@@ -22,6 +26,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Reject impossible calendar dates before saving and show field-specific validation messages without API jargon. People edits remain available for correction; partial birth and death dates are still supported.
 
 ### Added
+
+- Split the six Opperman burials into B-0094 and B-0094A–E around fixed TLC-HS-0094. Caroline and Ida are east of the monument; Carl, Anna, Mary and William are west. Preserve faces, photos and burial details; boundaries and within-group order are estimated (migration 412, ADR 0070).
 
 - Added multiple labeled faces per marker, with separate inscriptions, notes, linked people, and photos. Existing inscriptions migrate to Unspecified face; ordinary inscription entry needs no face setup. Face-assigned photos display once with their controls, and face edits detect stale saves. Requires migration 409.
 

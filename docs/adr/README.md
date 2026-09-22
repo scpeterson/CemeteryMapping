@@ -95,6 +95,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0068: Split A-0085 Ringeisen Gravesites](0068-split-a-0085-ringeisen-gravesites.md)
 
 - [ADR 0069: Multiple Faces on One Physical Marker](0069-marker-faces.md)
+- [ADR 0070: Split B-0094 Opperman Gravesites](0070-split-b-0094-opperman-gravesites.md)
 
 ## Creating a New ADR
 
