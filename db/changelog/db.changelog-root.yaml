@@ -1228,3 +1228,6 @@ databaseChangeLog:
   - include:
       file: changes/412-split-b-0094-opperman-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/413-split-b-0096-deer-gravesites.sql
+      relativeToChangelogFile: true
