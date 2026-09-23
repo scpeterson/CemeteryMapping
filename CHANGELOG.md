@@ -27,6 +27,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Add B-0097A north of B-0097 for Mary Miller, retaining Johannes (John) Mülller (Miller) in B-0097 and fixed TLC-HS-0097 linked to both. Estimated boundaries avoid mapped neighboring gravesites (migration 414, ADR 0072).
+
 - Add B-0096A north of B-0096 for Obbie Mae Deer, retaining Charles W Deer in B-0096 and fixed TLC-HS-0096 linked to both. Estimated 4-by-10-foot boundaries avoid mapped neighboring gravesites (migration 413, ADR 0071).
 
 - Split the six Opperman burials into B-0094 and B-0094A–E around fixed TLC-HS-0094. Caroline and Ida are east of the monument; Carl, Anna, Mary and William are west. Preserve faces, photos and burial details; boundaries and within-group order are estimated (migration 412, ADR 0070).
