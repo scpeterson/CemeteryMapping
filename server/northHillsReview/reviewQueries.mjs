@@ -318,7 +318,6 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
               )
             )
           ORDER BY score DESC, burial.full_name
-          LIMIT 5
         ) candidate
       ) matches ON true
       WHERE ${where.join("\n        AND ")}

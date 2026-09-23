@@ -66,7 +66,7 @@ function buildProcessingSummary({ candidateMatches, sourceFacts, observations })
       pendingCount,
       totalCount,
       label: "Processed",
-      detail: "All matches, source facts, and observations returned by the review service have been linked, rejected, reviewed, promoted, or flagged.",
+      detail: "All review matches, source facts, and observations have been linked, rejected, reviewed, promoted, or flagged.",
     };
   }
   return {
@@ -102,7 +102,16 @@ export function toSummary(row) {
 }
 
 export function toEntry(row) {
-  const candidateMatches = (row.candidate_matches ?? []).map(toCandidateMatch);
+  const allMatches = (row.candidate_matches ?? []).map(toCandidateMatch);
+  // Preserve the original five-item review workload. Browsing extra suggestions
+  // must never reopen a completed reading, including through shared markers.
+  const originalMatches = allMatches.slice(0, 5);
+  const extraMatches = allMatches.slice(5);
+  const candidateMatches = [...originalMatches, ...extraMatches.filter((match) => match.gravesiteEvidence.length > 0)];
+  const additionalCandidateMatches = extraMatches.filter((match) => match.gravesiteEvidence.length === 0);
+  const summaryMatches = [...originalMatches, ...extraMatches
+    .filter((match) => match.gravesiteEvidence.length > 0)
+    .map((match) => ({ ...match, headstoneCandidates: match.headstoneCandidates.filter((headstone) => headstone.evidence.length > 0) }))];
   const sourceFacts = row.source_facts ?? [];
   const observations = row.observations ?? [];
   return {
@@ -127,11 +136,12 @@ export function toEntry(row) {
     parseConfidence: row.parse_confidence,
     parseNotes: row.parse_notes ?? [],
     status: row.status,
-    candidateMatchCount: Number(row.candidate_match_count ?? 0),
+    candidateMatchCount: candidateMatches.length,
     candidateMatches,
+    additionalCandidateMatches,
     sourceFacts,
     observations,
-    processingSummary: buildProcessingSummary({ candidateMatches, sourceFacts, observations }),
+    processingSummary: buildProcessingSummary({ candidateMatches: summaryMatches, sourceFacts, observations }),
   };
 }
 
