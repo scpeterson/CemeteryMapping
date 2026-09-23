@@ -55,6 +55,8 @@ Deed investigation cases are documentation and recommendation workflows. They do
 
 The Admin UI also has a Readings tab for staged North Hills Genealogists OCR imports. The OCR importer preserves each raw reading entry, parsed section/row/position, marker descriptor text, surnames, inscription text, detected years, parser confidence, and parser notes. The review screen compares staged readings to existing burial rows by source page, surname, and birth/death years. Admins can edit a staged reading when OCR or parser cleanup is needed, link a reading to a candidate gravesite, link it to a candidate headstone, reject a candidate match, or flag a candidate for field checking. These review actions write evidence-link rows with reviewer identity, timestamp, confidence, status, and optional notes; they do not overwrite burials, headstones, lots, owners, or deeds. Linked North Hills evidence appears in the regular grave-detail panel for the associated gravesite or headstone.
 
+The first five ranked matches retain their existing completion requirements. **Show more possible matches** expands optional suggestions without changing the reading’s completion status or the `Next unresolved` queue. Saving a gravesite link, rejection, or field-check decision moves that suggestion into the main list. Unreviewed markers on these extra matches remain optional; shared-marker decisions alone do not add other gravesites to the review workload. Unlinking an extra gravesite returns it to the optional list.
+
 How to use the Readings tab:
 
 1. Open `Admin -> Readings`.

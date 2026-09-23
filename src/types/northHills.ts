@@ -182,6 +182,7 @@ export type NorthHillsOcrReviewEntry = {
   status: string;
   candidateMatchCount: number;
   candidateMatches: NorthHillsOcrCandidateMatch[];
+  additionalCandidateMatches?: NorthHillsOcrCandidateMatch[];
   sourceFacts: NorthHillsSourceFact[];
   observations: NorthHillsOcrObservation[];
   processingSummary: NorthHillsProcessingSummary;
