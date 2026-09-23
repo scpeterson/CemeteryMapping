@@ -1231,3 +1231,6 @@ databaseChangeLog:
   - include:
       file: changes/413-split-b-0096-deer-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/414-split-b-0097-miller-gravesites.sql
+      relativeToChangelogFile: true
