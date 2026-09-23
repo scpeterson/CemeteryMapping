@@ -259,6 +259,10 @@ export function toMediaAsset(row) {
     notes: row.notes ?? "",
     source: row.source,
     status: row.status,
+    mediaLinkId: row.media_link_id ?? undefined,
+    mediaLinkType: row.media_link_type ?? undefined,
+    isPrimary: row.is_primary === true,
+    displayOrder: row.display_order ?? undefined,
   };
 }
 

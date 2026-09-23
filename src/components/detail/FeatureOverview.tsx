@@ -2,7 +2,7 @@ import { formatDate, fullName, statusColors, statusLabels } from "../../lib/form
 import type { Burial, GraveSpace, Headstone, HeadstoneSummary, Owner } from "../../types";
 import { StatusBadge } from "../ui/Feedback";
 import { OverviewPhoto } from "./OverviewPhoto";
-import { overviewImages } from "./overviewImages";
+import { graveOverviewImages } from "./overviewImages";
 
 export function OverviewPeople({ burials, emptyMessage }: { burials: Burial[]; emptyMessage: string }) {
   return burials.length ? <ul className="overview-list">
@@ -37,7 +37,7 @@ export function GraveOverview({ grave, headstones, owners, canViewOwnership, mar
       <StatusBadge color={statusColors[grave.status]}>{statusLabels[grave.status]}</StatusBadge>
       <p>Section {grave.section || "not recorded"}{grave.lot ? ` · Lot ${grave.lot}` : ""}</p>
     </div>
-    <OverviewPhoto images={overviewImages(grave.mediaAssets ?? [], headstones)} />
+    <OverviewPhoto images={graveOverviewImages(grave, headstones)} />
     <section aria-label="People buried here">
       <h3>People buried here</h3>
       <OverviewPeople burials={grave.burials} emptyMessage="No burial recorded." />

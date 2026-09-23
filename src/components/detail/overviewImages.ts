@@ -25,3 +25,41 @@ export function overviewImages(assets: MediaAsset[], markers: Headstone[] = []):
   }
   return images;
 }
+
+// Gravesites prefer photos specific to the selected grave over a shared monument's
+// primary photo. Marker Overviews continue to use overviewImages directly.
+export function graveOverviewImages(
+  grave: { id: string; burials: { id: string }[]; mediaAssets?: MediaAsset[] },
+  markers: Headstone[] = [],
+): OverviewImage[] {
+  const burialIds = new Set(grave.burials.map((burial) => burial.id));
+  const individualMarkers = markers.filter((marker) => {
+    const graves = new Set([
+      ...(marker.associatedGravesiteIds ?? []),
+      ...(marker.gravesiteRelationships ?? []).map((link) => link.gravesiteId),
+    ]);
+    const people = marker.burialIds ?? [];
+    const belongsHere = graves.has(grave.id) || people.some((id) => burialIds.has(id));
+    return belongsHere && [...graves].every((id) => id === grave.id)
+      && people.every((id) => burialIds.has(id));
+  });
+  const matchingFaces = markers.map((marker) => {
+    const photoIds = new Set((marker.faces ?? [])
+      .filter((face) => face.burialIds.some((id) => burialIds.has(id)))
+      .flatMap((face) => face.mediaAssetIds));
+    return { ...marker, photoUrl: "", mediaAssets: (marker.mediaAssets ?? []).filter((photo) => photoIds.has(photo.id)) };
+  });
+  const ownPhotos = grave.mediaAssets ?? [];
+  const tiers = [
+    overviewImages(ownPhotos.filter((photo) => photo.isPrimary)),
+    overviewImages(ownPhotos, individualMarkers),
+    overviewImages([], matchingFaces),
+    overviewImages([], markers),
+  ];
+  const seen = new Set<string>();
+  return tiers.flat().filter((image) => {
+    if (seen.has(image.url)) return false;
+    seen.add(image.url);
+    return true;
+  });
+}
