@@ -4,11 +4,11 @@ import { marker, overviewFixture, overviewGrave } from "./fixtures/overview";
 
 const overview = (page: import("@playwright/test").Page) => page.getByRole("tabpanel", { name: "Overview", exact: true });
 
-test("gravesite Overview shows newest photo, people and owners without editing controls", async ({ page }, testInfo) => {
+test("gravesite Overview prefers its own photo, people and owners without editing controls", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 1200 });
   await overviewFixture(page);
   let token = "";
-  await page.route("**/media/latest-marker.png", async (route) => {
+  await page.route("**/media/older-grave.png", async (route) => {
     token = route.request().headers().authorization;
     await route.fallback();
   });
@@ -18,8 +18,7 @@ test("gravesite Overview shows newest photo, people and owners without editing c
   await expect(panel).toContainText("Alice Example");
   await expect(panel).toContainText("Owner A-TEST");
   await expect(panel).toContainText("Occupied");
-  await expect(panel).toContainText("Photo of linked marker HS-OVERVIEW");
-  await expect(panel.getByRole("img", { name: "latest-marker" })).toBeVisible();
+  await expect(panel.getByRole("img", { name: "older-grave" })).toBeVisible();
   expect(token).toBe("Bearer fixture-token");
   await expect(panel.locator("input, select, textarea")).toHaveCount(0);
   await expect(panel.getByRole("button", { name: /Edit|Save|Delete|Upload/ })).toHaveCount(0);

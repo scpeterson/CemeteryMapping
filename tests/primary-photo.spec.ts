@@ -20,7 +20,7 @@ test("select, replace and remove a primary photo, including after reload", async
   await overviewFixture(page);
   await page.route("**/api/me", (route) => route.fulfill({ json: { role: "admin", assignedCemeteryIds: [], permissions: { canManageUsers: true, canOpenAdminPanel: true, canViewOwnership: true, canUpdateGravesites: true, canDeletePhotos: true } } }));
   let primary = "";
-  const record = () => ({ ...overviewGrave("A-TEST"), headstones: [{ ...marker, mediaAssets: marker.mediaAssets.map((photo) => ({ ...photo, mediaLinkId: `link-${photo.id}`, mediaLinkType: "headstone", isPrimary: primary === photo.id })) }] });
+  const record = () => ({ ...overviewGrave("A-TEST"), mediaAssets: [], headstones: [{ ...marker, mediaAssets: marker.mediaAssets.map((photo) => ({ ...photo, mediaLinkId: `link-${photo.id}`, mediaLinkType: "headstone", isPrimary: primary === photo.id })) }] });
   await page.route(gravePath("A-TEST"), (route) => route.fulfill({ json: record() }));
   await page.route("**/api/media-assets/*/order", (route) => {
     const body = route.request().postDataJSON();
