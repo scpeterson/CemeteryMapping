@@ -1,0 +1,11 @@
+**
+!package.json
+!package-lock.json
+!server
+!server/**
+!db
+!db/env
+!db/env/test.env
+!deploy
+!deploy/test
+!deploy/test/Dockerfile

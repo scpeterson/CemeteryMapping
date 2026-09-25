@@ -5,7 +5,7 @@
 
 [Documentation Home](index.md)
 
-Use a separate Auth0 tenant for non-production authentication testing. This keeps test users, callback URLs, and API permissions away from future production identity configuration.
+Use a dedicated Auth0 tenant for TEST, separate from DEV, STAGE, and PROD. Each environment has its own applications, API audience, users, signing keys, and management credentials. Separate applications in one tenant do not provide this isolation. Keep frontend values in environment-specific ignored files such as `.env.test.local`, never a shared `.env.local`.
 
 ## Tenant
 

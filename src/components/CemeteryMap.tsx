@@ -2,7 +2,7 @@ import { createMapHighlightState, markerIdsByGrave, linkedMarkerIds } from "./ma
 import { createMapLayerHealth, externalMapLayers, type ExternalMapLayer } from "./mapLayerHealth";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Maximize2, Ruler, Trash2, ZoomIn, ZoomOut } from "lucide-react";
-import * as maplibregl from "maplibre-gl";
+import * as maplibregl from "../lib/maplibre";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, CemeteryLot, GraveSpaceSummary, GraveStatus, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotRestrictedAreasFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";

@@ -4,7 +4,8 @@
   min-height: 0;
 }
 
-.map-canvas {
+/* Keep the full-panel layout regardless of the vendor stylesheet load order. */
+.map-canvas.maplibregl-map {
   position: absolute;
   inset: 0;
 }
@@ -270,4 +271,3 @@
   fill: #fbfcf7;
   opacity: 0.86;
 }
-
