@@ -10,7 +10,8 @@ The dedicated host is managed separately from local TEST. See
 
 Place a selected source revision and a TEST frontend build in
 `/srv/nhcemeteries/app`. Run Compose from `deploy/test` in that directory.
-Create `.env` containing a fresh `POSTGRES_PASSWORD` and `runtime.env` containing
+Create `.env` containing distinct, fresh `POSTGRES_PASSWORD` and
+`CEMETERY_API_PASSWORD` secrets and `runtime.env` containing
 `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `GIT_SHA`, and `BUILD_TIME`. Restrict both files
 to the host administrator. Optional Auth0 Management API credentials must be
 scoped to the TEST tenant. Never copy a DEV database password to the host.
@@ -40,10 +41,26 @@ Existing DEV passwords and role assignments are not migrated automatically.
 Create the database first with `docker compose up -d db`, restore an approved
 custom-format dump using `pg_restore --no-owner --no-privileges`, and copy the
 matching media to `/srv/nhcemeteries/media` (owned by UID 1000). Ensure the
-required schema changeset exists before starting `docker compose up -d api web`.
+required schema changeset exists, then run
+`docker compose exec -T db sh /usr/local/bin/configure-api-role.sh`
+before starting `docker compose up -d api web`.
 For the initial restore, use an empty database created from `template0`; the
 image’s preinstalled PostGIS/tiger objects can conflict with a complete dump.
 The restore is only for initial deployment, never a routine code update.
+
+### Upgrade an existing deployment to restricted API credentials
+
+Back up first. Add a new, distinct `CEMETERY_API_PASSWORD` to the administrator-only
+`.env` file. Run `docker compose up -d db` to load the new environment and mounted
+role setup script (this preserves the database volume). Run the role setup command
+above, then rebuild/recreate the API with `docker compose up -d --build api`.
+The API now connects as `cemetery_api`; `cemetery_app` remains the administrative
+account for migrations, restores, and backups. Never supply its password to the API.
+Run the role setup script again after every migration or restore to grant access to
+new application tables. It is repeatable and does not change application records.
+No default grants are used, so newly created tables remain inaccessible until this
+explicit step. Verify map reads, an authorized edit, photo access, and audit events
+after switching credentials. Other hosted environments must use the same separation.
 
 Configure the Cloudflare tunnel route to `http://127.0.0.1:8080`, with a final
 404 catch-all. Protect the entire hostname with Access before adding its DNS

@@ -159,6 +159,19 @@ API_PORT=3010 APP_ENV=stage npm run api
 
 `APP_ENV` selects `db/env/<environment>.env`. Override `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, or `PGPASSWORD` to connect to a different Postgres instance.
 
+After local migrations or restores, run `APP_ENV=dev npm run db:configure-api`
+and `APP_ENV=test npm run db:configure-api` against the running local containers.
+This creates a restricted `cemetery_api` account with a separate generated password
+in each ignored `db/env/<environment>.local.env` file (mode 0600). Restart the API
+after initial setup. Runtime reads these credentials; migration, backup, and import
+tools retain the administrative `POSTGRES_USER`/`POSTGRES_PASSWORD` credentials.
+Explicit `PGUSER`/`PGPASSWORD` overrides must be removed from API launch commands
+to use the restricted account. Re-run the setup command after migrations introduce
+new tables; it preserves the existing API password and refreshes grants. Automated
+CI performs this step before running application tests. Tests that create migration
+schemas use administrative fixture connections, while application queries use the
+restricted account. Local automated tests retain their explicit disabled-auth mode.
+
 Verified death-location search uses GeoNames. Set `GEONAMES_USERNAME` in the environment's ignored `db/env/<environment>.local.env` file to enable it. `GEONAMES_BASE_URL` and `GEONAMES_TIMEOUT_MS` are optional. If GeoNames is unconfigured or unavailable, the burial editor continues to offer locally stored verified places and all other burial fields remain editable.
 
 ### API Security

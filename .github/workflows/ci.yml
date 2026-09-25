@@ -51,6 +51,9 @@ jobs:
       - name: Load demo seed data
         run: npm run db:seed:demo
 
+      - name: Configure restricted API database account
+        run: npm run db:configure-api
+
       - name: Check database migration status
         run: npm run db:status
 

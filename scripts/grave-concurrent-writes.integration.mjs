@@ -5,12 +5,13 @@ import pg from "pg";
 import { loadApiConfig } from "../server/config.mjs";
 import { updateGraveSpaceMutation } from "../server/cemeteryGraveMutations.mjs";
 import { ConflictError } from "../server/requestValidation.mjs";
+import { integrationAdminDatabase } from "./lib/integration-admin.mjs";
 
 test("two real database writers cannot overwrite a grave from the same loaded version", async () => {
   const config = loadApiConfig();
   assert.equal(config.appEnv, "test", "Run this integration test only with APP_ENV=test");
   const schema = `concurrency_${randomUUID().replaceAll("-", "")}`;
-  const setup = new pg.Pool(config.database);
+  const setup = new pg.Pool(integrationAdminDatabase(config));
   let writers;
   try {
     await setup.query(`CREATE SCHEMA ${schema}`);
@@ -21,6 +22,8 @@ test("two real database writers cannot overwrite a grave from the same loaded ve
     await setup.query(`INSERT INTO ${schema}.gravesites SELECT * FROM public.gravesites WHERE deleted_at IS NULL LIMIT 1`);
     const { rows: [grave] } = await setup.query(`SELECT id, cemetery_id, gravesite_id, xmin::text AS version FROM ${schema}.gravesites`);
     assert.ok(grave, "Test database must contain a seeded grave");
+    const role = `"${config.database.user.replaceAll('"', '""')}"`;
+    await setup.query(`GRANT USAGE ON SCHEMA ${schema} TO ${role}; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${schema} TO ${role}`);
     writers = new pg.Pool({ ...config.database, max: 2, options: `-c search_path=${schema},public` });
     const save = (name) => updateGraveSpaceMutation(writers, grave.cemetery_id, grave.gravesite_id,
       { name, status: "available", cost: null, expectedVersion: grave.version }, {},

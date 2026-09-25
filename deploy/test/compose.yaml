@@ -8,10 +8,12 @@ services:
       POSTGRES_DB: cemetery_mapping_test
       POSTGRES_USER: cemetery_app
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set the hosted database password}
+      CEMETERY_API_PASSWORD: ${CEMETERY_API_PASSWORD:?Set a separate API database password}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - database:/var/lib/postgresql/data
+      - ./configure-api-role.sh:/usr/local/bin/configure-api-role.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cemetery_app -d cemetery_mapping_test"]
       interval: 5s
@@ -30,8 +32,8 @@ services:
       PGHOST: 127.0.0.1
       PGPORT: 5432
       PGDATABASE: cemetery_mapping_test
-      PGUSER: cemetery_app
-      PGPASSWORD: ${POSTGRES_PASSWORD:?Set the hosted database password}
+      PGUSER: cemetery_api
+      PGPASSWORD: ${CEMETERY_API_PASSWORD:?Set a separate API database password}
       API_PORT: 3001
       MEDIA_UPLOAD_DIR: /media
     volumes:
