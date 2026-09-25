@@ -104,6 +104,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0073: Private TEST Deployment on a Separate Cloud Server](0073-private-hosted-test.md)
 - [ADR 0074: Restricted API Database Accounts](0074-restricted-api-database-accounts.md)
 
+- [ADR 0075: Split B-0103 Mashey Gravesites](0075-split-b-0103-mashey-gravesites.md)
+
 ## Creating a New ADR
 
 1. Copy [ADR 0000: Title](0000-template.md).
