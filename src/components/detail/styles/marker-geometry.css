@@ -271,6 +271,19 @@
 }
 
 
+.marker-inscription-editor {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.marker-inscription-editor > button {
+  justify-self: start;
+}
+
+.marker-inscription-editor > p {
+  margin: 0;
+}
+
 .marker-faces-editor,
 .marker-face-editor,
 .marker-face-editor fieldset {
