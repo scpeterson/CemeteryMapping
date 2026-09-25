@@ -1,5 +1,5 @@
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useLayoutEffect } from "react";
 import { SessionContext } from "./sessionContext";
 import { confirmDiscardChanges } from "../hooks/useDraftState";
 import { setAccessTokenProvider } from "../api/cemeteryApi";
@@ -12,7 +12,8 @@ type Auth0AppProviderProps = {
 export function AuthenticatedShell({ children }: Auth0AppProviderProps) {
   const { error, getAccessTokenSilently, isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
 
-  useEffect(() => {
+  // Install authentication before descendant passive effects issue API requests.
+  useLayoutEffect(() => {
     if (!isAuthenticated) {
       setAccessTokenProvider(undefined);
       return undefined;

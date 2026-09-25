@@ -25,6 +25,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0073: Private Hosted TEST](0073-private-hosted-test.md)
+
 - [ADR 0001: Use a Vite React TypeScript Frontend](0001-vite-react-typescript-frontend.md)
 - [ADR 0002: Use an Express API Backed by PostgreSQL and PostGIS](0002-express-postgres-postgis-api.md)
 - [ADR 0003: Manage Schema Changes with Liquibase](0003-liquibase-schema-management.md)

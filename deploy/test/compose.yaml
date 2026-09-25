@@ -1,0 +1,65 @@
+# Dedicated Linux host only. The API deliberately keeps its loopback binding.
+name: nhcemeteries-test
+services:
+  db:
+    image: postgis/postgis:17-3.5@sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cemetery_mapping_test
+      POSTGRES_USER: cemetery_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set the hosted database password}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cemetery_app -d cemetery_mapping_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/test/Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    env_file: runtime.env
+    environment:
+      APP_ENV: test
+      AUTH_MODE: auth0
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: cemetery_mapping_test
+      PGUSER: cemetery_app
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set the hosted database password}
+      API_PORT: 3001
+      MEDIA_UPLOAD_DIR: /media
+    volumes:
+      - /srv/nhcemeteries/media:/media
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    image: nginx:stable-alpine@sha256:985220252f3863977e468f611ef118ebd01421289dd86ee1ae99cb068c3bce2b
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ../../dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [api]
+  tunnel:
+    image: cloudflare/cloudflared:latest@sha256:b269e8abd07a5bf6f3f4be65d5050b2174eca89c56a0241a8ff32a16aec454e4
+    restart: unless-stopped
+    network_mode: host
+    command: tunnel --no-autoupdate run --token-file /run/secrets/tunnel-token
+    volumes:
+      - ./tunnel-token:/run/secrets/tunnel-token:ro
+    profiles: [tunnel]
+    depends_on: [web]
+volumes:
+  database:
