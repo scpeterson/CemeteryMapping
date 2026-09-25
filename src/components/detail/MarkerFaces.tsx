@@ -8,7 +8,7 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
 }) {
   const labelListId = useId();
   const [manageFaces, setManageFaces] = useState(() => faces.length > 1 || faces.some((face) => face.label !== "Unspecified face"));
-  if (!manageFaces) return <div className="headstone-wide-field">
+  if (!manageFaces) return <div className="headstone-wide-field marker-inscription-editor">
     <label>Inscription
       <textarea value={faces[0]?.inscription ?? ""} rows={5} maxLength={20000} disabled={disabled}
         onChange={(event) => onChange([{ ...(faces[0] ?? { id: crypto.randomUUID(), label: "Unspecified face", notes: "", burialIds: [], mediaAssetIds: [] }), inscription: event.target.value }])} />
