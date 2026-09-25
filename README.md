@@ -10,6 +10,7 @@ For a beginner-friendly setup guide with Mac and Windows notes, see `docs/gettin
 npm install
 npm run db:up
 npm run db:migrate
+npm run db:configure-api
 npm run db:seed:demo
 npm run dev
 ```
@@ -86,6 +87,7 @@ Start the local Postgres/PostGIS container and apply the Liquibase changelog:
 ```bash
 npm run db:up
 npm run db:migrate
+npm run db:configure-api
 ```
 
 The API verifies the current Liquibase changeset before it begins listening and exits with migration guidance when the database schema is out of date.

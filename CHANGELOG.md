@@ -4,6 +4,16 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+### Security
+
+- Enforce cemetery assignments when deleting North Hills evidence links, including denying unassigned cemetery administrators (PR #581).
+- Separate API runtime database privileges from administrative accounts in hosted TEST, local DEV, local automated TEST, and CI; add repeatable role setup and authorization regressions (PR #581).
+- Update vulnerable transitive dependencies (PR #581).
+
+### Maintenance
+
+- Merge MapLibre GL 6.10.0, Auth0 React 2.27.0, React DOM/type updates, and Node type updates (PRs #576–#579). Source merges do not automatically update running deployments.
+
 ### Fixed
 
 - Correct TLC-HS-0098 to link B-0092, B-0093, B-0099 and B-0100, remove the incorrect B-0094 association, and associate the Front, Left and Back faces with Nannie/F. Myrtle, Mary and William Deer respectively (migration 411).

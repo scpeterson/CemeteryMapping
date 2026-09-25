@@ -39,6 +39,7 @@ APP_ENV=test npm run db:up
 APP_ENV=test npm run db:validate
 APP_ENV=test npm run db:rollback:test
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 APP_ENV=test npm run db:seed:demo
 npm run lint
 npm run build:test
