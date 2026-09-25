@@ -99,6 +99,19 @@ test("local environment files override checked-in database defaults", () => {
   );
 });
 
+test("API credentials are separate from administrative database tooling", () => {
+  withTemporaryProject({
+    "db/env/dev.env": "POSTGRES_USER=cemetery_app\nPOSTGRES_PASSWORD=admin_password\n",
+    "db/env/dev.local.env": "CEMETERY_API_PASSWORD=runtime_password\n",
+  }, () => {
+    const config = loadApiConfig();
+    assert.equal(config.database.user, "cemetery_api");
+    assert.equal(config.database.password, "runtime_password");
+    assert.equal(loadDbEnvironment("dev").POSTGRES_PASSWORD, "admin_password");
+    assert.equal(loadDbEnvironment("dev").POSTGRES_USER, "cemetery_app");
+  });
+});
+
 test("stage and production fail closed when authentication is not explicitly configured", () => {
   withTemporaryProject(
     {

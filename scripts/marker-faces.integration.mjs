@@ -3,6 +3,7 @@ import test from "node:test";
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { loadApiConfig } from "../server/config.mjs";
+import { integrationAdminDatabase } from "./lib/integration-admin.mjs";
 import { updateHeadstone } from "../server/cemeteryHeadstoneMutations.mjs";
 import { selectHeadstoneById, selectHeadstonesForGrave } from "../server/cemeteryHeadstoneQueries.mjs";
 import { ConflictError } from "../server/requestValidation.mjs";
@@ -72,7 +73,7 @@ test("migration preserves legacy inscriptions exactly and does not guess orienta
   const { readFile } = await import("node:fs/promises");
   const config = loadApiConfig();
   assert.equal(config.appEnv, "test");
-  const pool = new pg.Pool(config.database);
+  const pool = new pg.Pool(integrationAdminDatabase(config));
   const client = await pool.connect();
   const schema = `faces_${randomUUID().replaceAll("-", "")}`;
   try {

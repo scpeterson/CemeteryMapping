@@ -44,6 +44,7 @@
     "db:down:prod": "APP_ENV=prod node scripts/db-compose.mjs down",
     "db:logs": "node scripts/db-compose.mjs logs",
     "db:validate": "node scripts/db-liquibase.mjs validate",
+    "db:configure-api": "node scripts/db-configure-api.mjs",
     "db:status": "node scripts/db-liquibase.mjs status --verbose",
     "db:migrate": "node scripts/db-liquibase.mjs update",
     "db:rollback": "node scripts/db-rollback-count.mjs",

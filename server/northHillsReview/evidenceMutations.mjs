@@ -57,7 +57,7 @@ export async function saveNorthHillsOcrEvidenceLink(pool, entryId, evidence, { a
   return result.rows[0] ? toEvidenceLink(result.rows[0]) : undefined;
 }
 
-export async function deleteNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser } = {}) {
+export async function deleteNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser, allowedCemeteryIds } = {}) {
   const targetType = String(evidence?.targetType ?? "").trim();
   const targetId = String(evidence?.targetId ?? "").trim();
 
@@ -73,6 +73,10 @@ export async function deleteNorthHillsOcrEvidenceLink(pool, entryId, evidence, {
         DELETE FROM ${table}
         WHERE entry_id = $1
           AND ${targetColumn} = $2
+          AND ($3::uuid[] IS NULL OR EXISTS (
+            SELECT 1 FROM north_hills_ocr_entries entry
+            WHERE entry.id = $1 AND entry.cemetery_id = ANY($3::uuid[])
+          ))
         RETURNING
           id::text,
           entry_id::text,
@@ -84,7 +88,7 @@ export async function deleteNorthHillsOcrEvidenceLink(pool, entryId, evidence, {
           reviewed_by_email,
           reviewed_at
       `,
-      [entryId, targetId],
+      [entryId, targetId, allowedCemeteryIds ?? null],
     ),
   );
 
