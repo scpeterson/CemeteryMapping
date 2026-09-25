@@ -101,6 +101,9 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0071: Split B-0096 Deer Gravesites](0071-split-b-0096-deer-gravesites.md)
 - [ADR 0072: Split B-0097 Miller Gravesites](0072-split-b-0097-miller-gravesites.md)
 
+- [ADR 0073: Private TEST Deployment on a Separate Cloud Server](0073-private-hosted-test.md)
+- [ADR 0074: Restricted API Database Accounts](0074-restricted-api-database-accounts.md)
+
 ## Creating a New ADR
 
 1. Copy [ADR 0000: Title](0000-template.md).
@@ -114,21 +117,21 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 The main software choices are captured in the ADRs. Exact JavaScript dependency versions come from `package-lock.json`; container image versions come from `docker-compose.yml`; CI runtime versions come from `.github/workflows/ci.yml`.
 
-Current core versions as of 2026-09-21:
+Core versions in the merged source as of 2026-09-25 (running deployments may lag):
 
 | Component | Version | Source |
 | --- | --- | --- |
 | Node.js in CI | 24 | `.github/workflows/ci.yml` |
-| React | 19.2.8 | `package-lock.json` |
-| React DOM | 19.2.8 | `package-lock.json` |
-| Auth0 React SDK | 2.25.0 | `package-lock.json` |
+| React | 19.3.0 | `package-lock.json` |
+| React DOM | 19.3.0 | `package-lock.json` |
+| Auth0 React SDK | 2.27.0 | `package-lock.json` |
 | Vite | 8.2.1 | `package-lock.json` |
 | TypeScript | 6.0.3 | `package-lock.json` |
 | Express | 5.2.1 | `package-lock.json` |
 | pg | 8.22.0 | `package-lock.json` |
-| MapLibre GL JS | 6.9.1 | `package-lock.json` |
+| MapLibre GL JS | 6.10.0 | `package-lock.json` |
 | Lucide React | 1.46.0 | `package-lock.json` |
-| Node.js type definitions | 26.5.1 | `package-lock.json` |
+| Node.js type definitions | 26.6.2 | `package-lock.json` |
 | ExcelJS | 4.4.0 | `package-lock.json` |
 | PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | `docker-compose.yml` |
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
@@ -150,6 +153,7 @@ npm run db:up:test
 APP_ENV=test npm run db:validate
 APP_ENV=test npm run db:rollback:test
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 APP_ENV=test npm run db:seed:demo
 npm run lint
 npm run build:test

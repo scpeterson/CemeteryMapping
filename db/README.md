@@ -56,7 +56,9 @@ Apply migrations:
 
 ```bash
 npm run db:migrate
+npm run db:configure-api
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 ```
 
 Check migration status:
@@ -135,6 +137,8 @@ APP_ENV=prod npm run db:down
 
 ## Connection
 
+The following are administrative bootstrap connection defaults for local database maintenance, not API runtime credentials. Ignored local environment files can override them. Never use these local defaults for a hosted deployment.
+
 The local DEV Docker database uses:
 
 ```text
@@ -156,6 +160,13 @@ database: cemetery_mapping_test
 user: cemetery_app
 password: cemetery_app_test
 ```
+
+After migrations or restores, run `APP_ENV=dev npm run db:configure-api` or
+`APP_ENV=test npm run db:configure-api` to create or refresh the restricted
+`cemetery_api` runtime account. Its generated password is stored as
+`CEMETERY_API_PASSWORD` in the corresponding ignored local environment file.
+Restart the API after initial setup. Keep administrative credentials for migrations,
+imports, and backups; do not override API `PGUSER`/`PGPASSWORD` with them.
 
 This project does not use Docker Compose profiles for environments. Do not use `docker compose --profile test ...` for TEST commands; it will not target the running TEST project.
 

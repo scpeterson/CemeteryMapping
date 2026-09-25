@@ -47,6 +47,7 @@ DEV is the default environment:
 ```bash
 npm run db:up
 npm run db:migrate
+npm run db:configure-api
 ```
 
 For TEST:
@@ -54,6 +55,7 @@ For TEST:
 ```bash
 APP_ENV=test npm run db:up
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 ```
 
 The DEV and TEST containers use separate Docker Compose projects, databases, ports, and Docker volumes, so they can exist side by side on the same machine.
@@ -120,6 +122,7 @@ bundle --version
 APP_ENV=test npm run db:validate
 APP_ENV=test npm run db:rollback:test
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 APP_ENV=test npm run db:status
 ```
 

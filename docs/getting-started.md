@@ -183,12 +183,14 @@ Run:
 
 ```bash
 npm run db:migrate
+npm run db:configure-api
 ```
 
 Expected result:
 
 - Liquibase runs database changesets.
-- The command says the update was successful, or reports that there are no pending changes.
+- The migration command says the update was successful, or reports that there are no pending changes.
+- The account setup command creates or refreshes the restricted API login and stores its password in the ignored local environment file. Re-run it after future migrations or restores.
 
 Check migration status:
 

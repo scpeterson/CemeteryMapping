@@ -176,7 +176,7 @@ npm run dev:web:test
 
 If you edit `.env.test.local`, stop and restart Vite. Vite does not reload environment variables while the dev server is already running.
 
-Playwright e2e tests intentionally clear the frontend Auth0 variables in `playwright.config.ts` so automated tests can keep using `AUTH_MODE=disabled` even when `.env.test.local` is configured for manual Auth0 testing.
+Playwright e2e tests explicitly set `VITE_AUTH_MODE=disabled` for the frontend and `AUTH_MODE=disabled` for the API in `playwright.config.ts`, even when `.env.test.local` contains Auth0 settings for manual testing. Database access still uses the restricted account configured by `APP_ENV=test npm run db:configure-api`.
 
 Run the API with Auth0 validation:
 

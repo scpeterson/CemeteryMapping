@@ -542,7 +542,9 @@ Use these checks when switching between DEV, TEST, STAGE, and PROD.
 
    ```bash
    APP_ENV=dev npm run db:migrate
+   APP_ENV=dev npm run db:configure-api
    APP_ENV=test npm run db:migrate
+   APP_ENV=test npm run db:configure-api
    ```
 
 4. Check migration status when unsure:
@@ -605,6 +607,7 @@ Before opening or merging a PR:
 
    ```bash
    APP_ENV=dev npm run db:migrate
+   APP_ENV=dev npm run db:configure-api
    ```
 
 3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes:
@@ -616,13 +619,14 @@ Before opening or merging a PR:
    APP_ENV=test npm run db:validate
    APP_ENV=test npm run db:rollback:one
    APP_ENV=test npm run db:migrate
+   APP_ENV=test npm run db:configure-api
    APP_ENV=test npm run test:db-rules
    ```
 
 4. Open a PR to `main`.
 5. Let GitHub Actions rebuild TEST from migrations, seed demo data, run rollback checks, run unit/integration tests, build, and run end-to-end tests.
 
-The change is promoted to TEST when the PR checks pass. It is promoted into the main code line when the PR merges.
+Passing PR checks validates the change in isolated automated TEST. Merging promotes the source into `main`; neither step deploys the persistent hosted TEST environment. Deploy selected releases separately using the [hosted TEST runbook](hosted-test.md), preserving its database and media.
 
 ### TEST To STAGE
 
