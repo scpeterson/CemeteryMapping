@@ -75,7 +75,7 @@
     "maplibre-gl": "^6.9.1",
     "pg": "^8.22.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react-dom": "^19.3.0",
     "vite": "^8.2.1"
   },
   "devDependencies": {
@@ -85,7 +85,7 @@
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.5.1",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.5",
+    "@types/react-dom": "^19.3.0",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
