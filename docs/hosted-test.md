@@ -6,6 +6,39 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
+## Availability and cost
+
+The accepted setup keeps hosted TEST available independently of the developer's
+Mac. No scheduled shutdown or automatic snapshot-and-recreate workflow is
+currently configured.
+
+DigitalOcean's bundled-plan CPU Droplets continue to incur compute charges when
+powered off; billing ends when the Droplet is destroyed. Stopping Docker services
+or scheduling a nightly shutdown therefore does not reduce those charges. See
+[DigitalOcean's billing rules](https://docs.digitalocean.com/products/droplets/details/pricing/).
+
+Two possible cost reductions remain options, not adopted operating procedures:
+
+- For frequent testing, measure CPU, memory, and disk usage to assess whether a
+  smaller continuously running Droplet can support the API and PostgreSQL/PostGIS.
+- For long gaps between testing, retain a snapshot and destroy the Droplet, then
+  create a replacement from that snapshot when testing resumes. Snapshot storage
+  remains billable, as do any other retained paid resources. DigitalOcean lists
+  Droplet snapshots at $0.06 per GB per month as of September 28, 2026; verify
+  [current snapshot pricing](https://docs.digitalocean.com/products/snapshots/details/)
+  before estimating savings. This requires a restore and verification period
+  before testers can use the site again.
+
+Before adopting snapshot-and-recreate, verify a restore procedure that preserves
+the current TEST database, uploaded media, deployment settings, and credentials.
+Keep a logical database backup and a separate copy of media outside the Droplet;
+shut down cleanly before taking the final snapshot, and confirm that the snapshot
+will be retained when deleting the server. Account for any separately attached
+storage. On recreation, restore the Cloudflare Tunnel connection and verify
+database health, Access protection, Auth0 login, map records, and photos using the
+checks below. Update ADR 0073 and this runbook if the availability model or server
+sizing changes.
+
 ## Deployment files
 
 Place a selected source revision and a TEST frontend build in

@@ -439,7 +439,9 @@ The recommended minimum viable field collection feature is photo capture, inscri
 
 ### Future Hosting Options
 
-This concept captures future hosting considerations for Cemetery Mapping. It is not an accepted deployment decision yet. Re-check current provider pricing before making a final choice because hosting plans and included quotas change over time.
+Hosted TEST has an accepted deployment decision: a dedicated DigitalOcean Droplet with Cloudflare Access and Tunnel, as described in [ADR 0073](adr/0073-private-hosted-test.md) and the [Hosted TEST runbook](hosted-test.md). The options below remain future considerations for production hosting; they do not replace the TEST decision. Re-check current provider pricing before making a final choice because hosting plans and included quotas change over time.
+
+For TEST cost planning, see the runbook's [availability and cost guidance](hosted-test.md#availability-and-cost). Powering off a bundled-plan Droplet does not stop its compute charges.
 
 The application is expected to have low public traffic, but it has a real database, uploaded media, authentication, audit history, and import/rebuild needs. Hosting should therefore optimize for predictable cost, backups, maintainability, and a simple recovery path rather than raw scale.
 
