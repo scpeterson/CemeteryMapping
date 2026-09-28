@@ -16,6 +16,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Include `cemetery-admin` and its cemetery/deed permissions in Auth0 setup; application roles and cemetery assignments remain enforced by the application database.
 - Improve spacing around the Manage faces control in marker details (PR #583).
 
 - Correct TLC-HS-0098 to link B-0092, B-0093, B-0099 and B-0100, remove the incorrect B-0094 association, and associate the Front, Left and Back faces with Nannie/F. Myrtle, Mary and William Deer respectively (migration 411).

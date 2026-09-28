@@ -10,12 +10,14 @@ export const requiredApiPermissions = [
 export const requiredRolePermissions = {
   reader: ["read:cemetery"],
   "power-user": ["read:cemetery", "write:cemetery", "read:deeds", "write:deeds"],
+  "cemetery-admin": ["read:cemetery", "write:cemetery", "read:deeds", "write:deeds"],
   admin: ["read:cemetery", "write:cemetery", "read:deeds", "write:deeds"],
 };
 
 const roleDescriptions = {
   reader: "Can view cemetery map, gravesite, and burial information.",
   "power-user": "Can view and edit deed/owner information and update existing cemetery records.",
+  "cemetery-admin": "Can administer assigned cemeteries; application database assignments enforce cemetery access. Cannot manage system-wide users or roles.",
   admin: "Can manage users and roles, add records, update records, and soft-delete records.",
 };
 

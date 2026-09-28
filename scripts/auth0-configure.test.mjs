@@ -66,16 +66,20 @@ test("configureAuth0 merges scopes, enables RBAC, creates missing roles, and ass
   const createdRoles = requests.filter((request) => request.url.endsWith("/api/v2/roles") && request.init.method === "POST");
   assert.deepEqual(
     createdRoles.map((request) => JSON.parse(request.init.body).name).sort(),
-    ["admin", "power-user"],
+    ["admin", "cemetery-admin", "power-user"],
   );
 
   const permissionRequests = requests.filter((request) => request.url.includes("/permissions") && request.init.method === "POST");
-  assert.equal(permissionRequests.length, 3);
+  assert.equal(permissionRequests.length, 4);
   for (const request of permissionRequests) {
     const body = JSON.parse(request.init.body);
     assert.ok(body.permissions.every((permission) => permission.resource_server_identifier === "https://cemetery-mapping.test/api"));
   }
-  assert.deepEqual(Object.keys(requiredRolePermissions), ["reader", "power-user", "admin"]);
+  const cemeteryAdminPermissions = permissionRequests.find((request) => request.url.endsWith("/role-cemetery-admin/permissions"));
+  assert.deepEqual(JSON.parse(cemeteryAdminPermissions.init.body).permissions.map((permission) => permission.permission_name).sort(),
+    ["read:cemetery", "read:deeds", "write:cemetery", "write:deeds"]);
+  assert.equal(requests.some((request) => request.url.includes("/api/v2/users")), false);
+  assert.deepEqual(Object.keys(requiredRolePermissions), ["reader", "power-user", "cemetery-admin", "admin"]);
   assert.ok(logMessages.includes("Auth0 tenant configuration complete."));
 });
 
@@ -109,9 +113,10 @@ test("configureAuth0 skips role permission writes when roles already have permis
             roles: [
               { id: "role-reader", name: "reader" },
               { id: "role-power-user", name: "power-user" },
+              { id: "role-cemetery-admin", name: "cemetery-admin" },
               { id: "role-admin", name: "admin" },
             ],
-            total: 3,
+            total: 4,
           });
         }
         if (url.includes("/permissions") && init?.method !== "POST") {
