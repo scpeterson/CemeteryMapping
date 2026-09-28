@@ -16,6 +16,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Improve spacing around the Manage faces control in marker details (PR #583).
+
 - Correct TLC-HS-0098 to link B-0092, B-0093, B-0099 and B-0100, remove the incorrect B-0094 association, and associate the Front, Left and Back faces with Nannie/F. Myrtle, Mary and William Deer respectively (migration 411).
 
 - Retire B-0098 and its imported Deer Family Headstone pseudo-burial. Preserve family monument TLC-HS-0098, face inscriptions and photos, and real gravesite links; remove obsolete pseudo-person associations from its faces (migration 410).
