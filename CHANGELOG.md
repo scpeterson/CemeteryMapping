@@ -16,6 +16,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Normalize Mary Mashey’s legacy combined surname before migration 415 on older TEST snapshots, preserving her burial and marker links and all TEST access records (migration 417).
+
 - Include `cemetery-admin` and its cemetery/deed permissions in Auth0 setup; application roles and cemetery assignments remain enforced by the application database.
 - Improve spacing around the Manage faces control in marker details (PR #583).
 

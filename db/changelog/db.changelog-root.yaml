@@ -1234,6 +1234,10 @@ databaseChangeLog:
   - include:
       file: changes/414-split-b-0097-miller-gravesites.sql
       relativeToChangelogFile: true
+  # Prerequisite repair must run before the unchanged, already-deployed split.
+  - include:
+      file: changes/417-normalize-mary-mashey-prerequisite.sql
+      relativeToChangelogFile: true
   - include:
       file: changes/415-split-b-0103-mashey-gravesites.sql
       relativeToChangelogFile: true
