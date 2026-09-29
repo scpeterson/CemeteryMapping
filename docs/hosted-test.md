@@ -157,3 +157,14 @@ and verify cemetery IDs still match the assignments after replacement. Use a
 reviewed data-only refresh or a tested preservation/restore procedure; do not run
 a whole-database DEV restore as a routine release. Verify the same TEST accounts
 can sign in with the same cemetery permissions before reopening the site.
+
+### September 2026 migration exception
+
+Hosted TEST's older Trinity snapshot does not satisfy migration 415's prerequisite
+for the Amos and Mary Mashey burial links. Its attempted transaction rolled back;
+no DEV cemetery data was restored. The onboarding release applied only migration
+416 through a temporary changelog that includes `changes/416-access-requests.sql`
+with `relativeToChangelogFile: true`, preserving the normal changeset identity.
+Migration 415 remains pending. Reconcile its prerequisites against the approved
+Trinity data before a later full migration run; do not mark it executed or bypass
+its assertions. This data correction is independent of the access-request schema.
