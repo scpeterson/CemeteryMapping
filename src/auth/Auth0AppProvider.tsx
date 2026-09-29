@@ -47,10 +47,11 @@ export function AuthenticatedShell({ children }: Auth0AppProviderProps) {
     return (
       <main className="auth-screen">
         <h1>Cemetery Mapping</h1>
-        <p>Sign in with the configured Auth0 tenant to access cemetery records.</p>
+        <p>Sign in with an approved account to access cemetery records.</p>
         <button type="button" onClick={() => void loginWithRedirect()}>
           Sign in
         </button>
+        <p>Need an account? <a href="/request-access">Request access</a></p>
       </main>
     );
   }

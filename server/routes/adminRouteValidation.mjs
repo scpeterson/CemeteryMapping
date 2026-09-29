@@ -13,6 +13,7 @@ export function validateAdminUserPayload(body, roles) {
   }
 
   return {
+    ...(body?.accessRequestId ? { accessRequestId: validateUuid(body.accessRequestId, "Access request") } : {}),
     externalSubject: requiredText(body?.externalSubject, "Auth0 user ID", 300),
     email: requiredText(body?.email, "Email", 320),
     displayName: optionalText(body?.displayName, "Display name", 250),

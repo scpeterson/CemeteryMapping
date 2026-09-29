@@ -1,4 +1,5 @@
 import express from "express";
+import { registerAccessRequestRoutes } from "./routes/accessRequestRoutes.mjs";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
@@ -107,6 +108,7 @@ export function createApp(config, pool) {
   const requirePowerUser = requireRole(config.auth, pool, "power-user");
   const requireCemeteryAdmin = requireRole(config.auth, pool, "cemetery-admin");
   const requireAdmin = requireRole(config.auth, pool, "admin");
+  registerAccessRequestRoutes(app, { pool, requireAdmin });
   registerCemeteryRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
     createGraveFeature, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, createMaintenanceRecord,

@@ -129,3 +129,10 @@ For each production user:
 - Sign in as a `power-user` or `cemetery-admin` with cemetery access and confirm assigned cemetery edits work.
 - Sign in as an `admin` and confirm user management and audit/system event tabs are visible.
 - Confirm an audit event records the application user fields and database user/session fields after an edit.
+
+## Access requests and private browsing
+
+Production requires approved application users for all cemetery browsing. Deploy
+the public request page and admin review described in [Requesting and Approving Access](access-requests.md).
+Verify public form reachability separately from protected record access, configure
+submission rate limiting at the edge, and test invitation delivery before launch.

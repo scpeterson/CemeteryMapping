@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "409-marker-faces";
+export const requiredSchemaChangeset = "416-access-requests";
 
 export async function assertCurrentSchema(pool) {
   let result;

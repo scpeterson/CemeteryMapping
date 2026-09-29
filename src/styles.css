@@ -8,3 +8,18 @@
 @import "./styles/responsive.css";
 
 @import "./components/ui/ui.css";
+
+.access-request-page { max-width: 36rem; margin: 3rem auto; padding: 1.5rem; }
+.access-request-page form, .access-request-page label { display: grid; gap: .6rem; }
+.access-request-page form { gap: 1rem; }
+.access-request-page input, .access-request-page textarea { box-sizing: border-box; width: 100%; padding: .7rem; font: inherit; }
+.access-request-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.access-request-card { border-top: 1px solid #ccd5d1; padding: 1rem 0; overflow-wrap: anywhere; }
+.access-request-reason { white-space: pre-wrap; }
+.access-request-page { line-height: 1.5; }
+.access-request-page h1 { margin-bottom: .75rem; }
+.access-request-page > p { margin: .75rem 0 1.5rem; }
+.access-request-page button { min-height: 44px; border: 0; border-radius: .4rem; background: #2d6246; color: white; padding: .7rem 1rem; font: inherit; cursor: pointer; }
+.access-request-page button:disabled { opacity: .65; cursor: wait; }
+.access-request-page input, .access-request-page textarea { border: 1px solid #86978b; border-radius: .3rem; }
+.access-request-page a { color: #245137; }
