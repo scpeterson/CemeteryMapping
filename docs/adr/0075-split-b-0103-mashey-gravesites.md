@@ -43,3 +43,14 @@ and marker and unused new identifiers. Environments without the source grave
 are skipped. Rollback is empty: preserve a database backup and recover through
 a reviewed forward correction or deliberate restore. Applying this migration to
 DEV does not automatically apply it to persistent hosted TEST.
+
+## Older-snapshot prerequisite repair
+
+Migration 417 is ordered before 415 without modifying 415's applied checksum.
+Hosted TEST still had Mary's original imported `Mashey/Gollmar` surname and no
+maiden name. The existing burial UUID and marker link match DEV. Normalize only
+that known legacy name to surname `Mashey`, maiden name `Gollmar`, and full name
+`Mary Mashey`; preserve all other personal details and links. Require the expected
+Amos/Mary pair under the source grave and marker, and stop on conflicting data.
+Skip environments where 415 has already run or the active Trinity source is
+absent. The subsequent split remains migration 415's responsibility.

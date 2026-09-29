@@ -162,13 +162,22 @@ reviewed data-only refresh or a tested preservation/restore procedure; do not ru
 a whole-database DEV restore as a routine release. Verify the same TEST accounts
 can sign in with the same cemetery permissions before reopening the site.
 
-### September 2026 migration exception
+### Resolving the September 2026 Mashey prerequisite
 
-Hosted TEST's older Trinity snapshot does not satisfy migration 415's prerequisite
-for the Amos and Mary Mashey burial links. Its attempted transaction rolled back;
-no DEV cemetery data was restored. The onboarding release applied only migration
-416 through a temporary changelog that includes `changes/416-access-requests.sql`
-with `relativeToChangelogFile: true`, preserving the normal changeset identity.
-Migration 415 remains pending. Reconcile its prerequisites against the approved
-Trinity data before a later full migration run; do not mark it executed or bypass
-its assertions. This data correction is independent of the access-request schema.
+The older hosted TEST snapshot stored Mary's surname as `Mashey/Gollmar` with an
+empty maiden name. Her existing burial and marker link were present; migration
+415 correctly refused to split the graves because it expected `Mashey` and
+`Gollmar` in separate fields. The failed transaction changed no cemetery data.
+
+Migration 417 normalizes only that known imported name, matching the approved DEV
+record. The root changelog deliberately includes 417 **before** the unchanged 415
+changeset. Already-split databases are left alone, and environments without the
+Trinity source are skipped. Unexpected or conflicting records still stop with a
+prerequisite error; do not mark 415 executed or bypass its assertions.
+
+Back up TEST, rehearse the full changelog against a copy, then run the normal
+root changelog update. Verify Mary in B-0103A north of Amos in B-0103, their fixed
+shared marker, unchanged neighboring graves and personal dates, and unchanged
+TEST users, assignments, requests, photos, and roles. Rerun API grants and confirm
+Liquibase reports no pending changes. This targeted repair is not a DEV database
+refresh and does not replace TEST identity mappings.
