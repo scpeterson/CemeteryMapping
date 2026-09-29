@@ -10,6 +10,8 @@
   url: /data-sources.html
 - title: "Data Model"
   url: /data-model.html
+- title: "Synthetic Cemetery Data Coverage Plan"
+  url: /test-data-coverage.html
 - title: "Admin Workflows"
   url: /admin-workflows.html
 - title: "Operator Workflows"
@@ -18,6 +20,10 @@
   url: /database-auditing.html
 - title: "Auth0 Test Tenant"
   url: /auth0-test-tenant.html
+- title: "Hosted TEST"
+  url: /hosted-test.html
+- title: "Requesting and Approving Access"
+  url: /access-requests.html
 - title: "Auth0 Production Checklist"
   url: /auth0-production-checklist.html
 - title: "ADR Index"
