@@ -28,6 +28,7 @@ function userFormFromUser(user: AppUser): UserFormState {
 
 export function useUserAdministration() {
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [requestRefreshKey, setRequestRefreshKey] = useState(0);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [form, setForm] = useDraftState<UserFormState>(blankUser);
   const [isSaving, setIsSaving] = useState(false);
@@ -99,7 +100,8 @@ export function useUserAdministration() {
         return current.map((user) => (user.id === saved.id ? saved : user));
       });
       setForm(userFormFromUser(saved));
-      setMessage(`${saved.email} saved.`);
+      setMessage(`${saved.email} saved.${userToSave.accessRequestId ? " Access request approved. If an invitation was not sent, arrange password setup before notifying the user." : ""}`);
+      setRequestRefreshKey((value) => value + 1);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save user.");
     } finally {
@@ -140,6 +142,7 @@ export function useUserAdministration() {
   };
 
   return {
+    requestRefreshKey,
     form,
     setForm,
     roles,

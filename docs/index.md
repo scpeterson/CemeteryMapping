@@ -20,6 +20,7 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 - [Database Auditing](database-auditing.md)
 - [Auth0 Test Tenant Setup](auth0-test-tenant.md)
 - [Hosted TEST Deployment](hosted-test.md)
+- [Requesting and Approving Access](access-requests.md)
 - [Auth0 Production Checklist](auth0-production-checklist.md)
 
 ## Architecture Decisions

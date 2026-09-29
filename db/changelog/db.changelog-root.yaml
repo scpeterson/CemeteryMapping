@@ -1237,3 +1237,6 @@ databaseChangeLog:
   - include:
       file: changes/415-split-b-0103-mashey-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/416-access-requests.sql
+      relativeToChangelogFile: true

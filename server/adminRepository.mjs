@@ -1,3 +1,4 @@
+import { lockAccessRequest, finishAccessRequest } from "./accessRequestRepository.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 
 const systemRoles = [
@@ -147,6 +148,7 @@ async function selectUserById(client, id) {
 
 export async function createUser(pool, user) {
   return withAuditContext(pool, { actorUser: user.actorUser }, async (client) => {
+    await lockAccessRequest(client, user);
     const result = await client.query(
       `
         INSERT INTO app_users (external_subject, email, display_name, role_name, is_active)
@@ -156,12 +158,14 @@ export async function createUser(pool, user) {
       [user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
     );
     await replaceCemeteryAssignments(client, result.rows[0].id, user.assignedCemeteryIds);
+    await finishAccessRequest(client, user, result.rows[0].id);
     return selectUserById(client, result.rows[0].id);
   });
 }
 
 export async function updateUser(pool, id, user) {
   return withAuditContext(pool, { actorUser: user.actorUser }, async (client) => {
+    await lockAccessRequest(client, user);
     const result = await client.query(
       `
         UPDATE app_users
@@ -177,6 +181,7 @@ export async function updateUser(pool, id, user) {
     );
     if (!result.rows[0]) return undefined;
     await replaceCemeteryAssignments(client, id, user.assignedCemeteryIds);
+    await finishAccessRequest(client, user, id);
     return selectUserById(client, id);
   });
 }

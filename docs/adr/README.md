@@ -105,6 +105,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0074: Restricted API Database Accounts](0074-restricted-api-database-accounts.md)
 
 - [ADR 0075: Split B-0103 Mashey Gravesites](0075-split-b-0103-mashey-gravesites.md)
+- [ADR 0076: Public Access Requests with Private Cemetery Records](0076-public-access-requests.md)
 
 ## Creating a New ADR
 

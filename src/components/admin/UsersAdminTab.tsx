@@ -1,3 +1,5 @@
+import { AccessRequestsPanel } from "./AccessRequestsPanel";
+import { confirmDiscardChanges } from "../../hooks/useDraftState";
 import { ShieldCheck, UserCheck, UserCog, UserPlus, UserX } from "lucide-react";
 import type { AppRole, AppRoleName, AppUser, CemeteryAdminRecords } from "../../types";
 import { useUserAdministration, type UserFormState } from "./useUserAdministration";
@@ -35,6 +37,7 @@ function userFormFromUser(user: AppUser): UserFormState {
 
 export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAdminRecords }) {
   const {
+    requestRefreshKey,
     form,
     setForm,
     roles,
@@ -56,12 +59,22 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
       {isLoading ? <p className="admin-message" role="status">Loading users…</p> : null}
       {error ? <p className="admin-message is-error" role="alert">{error}</p> : null}
       {message ? <p className="admin-message" role="status">{message}</p> : null}
+      <AccessRequestsPanel refreshKey={requestRefreshKey} onReview={(request) => {
+        if (!confirmDiscardChanges()) return;
+        const existing = users.find((user) => user.email.toLowerCase() === request.email.toLowerCase());
+        setForm(existing ? { ...userFormFromUser(existing), isActive: true, accessRequestId: request.id } : {
+          email: request.email, displayName: request.displayName, externalSubject: "", role: "reader",
+          assignedCemeteryIds: [], isActive: true, accessRequestId: request.id,
+        });
+        document.getElementById("user-setup-form")?.scrollIntoView({ behavior: "smooth" });
+      }} />
       <section className="admin-section">
         <div className="section-title">
           <UserCog size={17} aria-hidden="true" />
           <h3>{form.id ? "Edit User" : "Add User"}</h3>
         </div>
-        <form className="admin-form" onSubmit={(event) => void saveUser(event)}>
+        <form id="user-setup-form" className="admin-form" onSubmit={(event) => void saveUser(event)}>
+          {form.accessRequestId && <p>Reviewing an access request. Save this active user to approve it, or choose New user to cancel.</p>}
           <label>
             Email
             <input

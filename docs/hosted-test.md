@@ -113,8 +113,9 @@ in the same provider account; a separate offsite copy remains follow-up work.
 - `docker compose ps` must show healthy database and running application services.
 - Check `http://127.0.0.1:8080/api/health` from the host and confirm TEST metadata.
 - Direct external access to ports 5432, 3001, and 8080 must be blocked.
-- An unauthenticated browser must encounter Cloudflare Access before application
-  content. Verify the approved email can sign in and another email cannot.
+- An unauthenticated browser can load `/request-access` and its `/assets/*` files
+  and POST `/api/access-requests`. All other application paths remain behind
+  Cloudflare Access. Verify the approved email can sign in and another email cannot.
 - Auth0 login must return to the TEST hostname and resolve to an active
   `app_users` record with the intended role.
 - Check a map record and protected photo through the public hostname.
@@ -125,3 +126,34 @@ and matching media. Build a new release without altering persisted data. Apply
 reviewed migrations deliberately, then check health and browser access. Code
 rollback does not undo database migrations; use their reviewed rollback or
 forward-fix procedure. Never use `docker compose down -v` on this host.
+
+## Tester access and DEV data refreshes
+
+Send potential testers `https://test.nhcemeteries.org/request-access`. A global
+Admin reviews requests under **Admin → Users**. To permit Trinity editing, select
+**Power user** and assign **Trinity Lutheran Church Cemetery** before saving.
+The tester edits the hosted TEST copy, not DEV or the future production database.
+Add the approved email to the existing Cloudflare Access allowlist as well;
+application approval does not yet synchronize that list.
+
+Public routing exceptions must be limited to `/request-access`,
+`/request-access/`, `/assets/*`, and `/api/access-requests`. The submission endpoint
+has an Nginx per-visitor limit and a second API process limit. The origin listens
+only on loopback; the visitor header used by Nginx is supplied by Cloudflare.
+Do not open `/api/*` or `/media/*` publicly.
+
+A code deployment preserves TEST users, cemetery assignments, access requests,
+and cemetery edits, except for changes explicitly made by reviewed migrations.
+A DEV cemetery-data refresh is a separate, deliberate operation: replacement
+cemetery records may overwrite tester edits. A full DEV database restore would
+also overwrite TEST's `app_users`, `app_user_cemetery_access`, and `access_requests`.
+Auth0 TEST identities live outside PostgreSQL and survive, but their application
+access would be lost or replaced with incorrect DEV identity mappings.
+
+There is not yet an automated refresh that preserves TEST identities. Before any
+refresh, back up the complete TEST database and media, retain TEST-specific users,
+roles, active flags, cemetery assignments, access requests and their audit history,
+and verify cemetery IDs still match the assignments after replacement. Use a
+reviewed data-only refresh or a tested preservation/restore procedure; do not run
+a whole-database DEV restore as a routine release. Verify the same TEST accounts
+can sign in with the same cemetery permissions before reopening the site.
