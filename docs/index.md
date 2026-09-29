@@ -15,6 +15,7 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
 - [Data Model](data-model.md)
+- [Synthetic Cemetery Data Coverage Plan](test-data-coverage.md)
 - [Admin Workflow Roadmap](admin-workflows.md)
 - [Operator Workflows](operator-workflows.md)
 - [Database Auditing](database-auditing.md)

@@ -136,6 +136,17 @@ The tester edits the hosted TEST copy, not DEV or the future production database
 Add the approved email to the existing Cloudflare Access allowlist as well;
 application approval does not yet synchronize that list.
 
+As verified on September 29, 2026, hosted TEST has Auth0 account provisioning
+enabled with a TEST-only Management API client scoped to `read:users` and
+`create:users`. Its credentials and database connection are configured in the
+host's protected `runtime.env`, along with `AUTH0_PASSWORD_RESET_CLIENT_ID` for
+the hosted TEST SPA. Admin → Users can find or create an approved tester's
+Auth0 identity when the Auth0 user ID is left blank. See
+[Requesting and Approving Access](access-requests.md) for the full workflow.
+Password-setup email configuration is enabled, but delivery has not yet been
+verified with a real tester. Confirm receipt and successful password setup with
+the first tester; finding an existing identity does not resend the invitation.
+
 Public routing exceptions must be limited to `/request-access`,
 `/request-access/`, `/assets/*`, and `/api/access-requests`. The submission endpoint
 has an Nginx per-visitor limit and a second API process limit. The origin listens
@@ -181,3 +192,12 @@ shared marker, unchanged neighboring graves and personal dates, and unchanged
 TEST users, assignments, requests, photos, and roles. Rerun API grants and confirm
 Liquibase reports no pending changes. This targeted repair is not a DEV database
 refresh and does not replace TEST identity mappings.
+
+Completed on September 29, 2026 after merging
+[PR #589](https://github.com/scpeterson/CemeteryMapping/pull/589): the full
+changelog was rehearsed against an isolated copy, a fresh hosted backup was
+taken, and migrations 417 and 415 were applied to TEST. Verification confirmed
+Mary in B-0103A, Amos in B-0103, their shared marker links, and preservation of
+TEST users, assignments, access requests, photos, and unrelated cemetery data.
+API grants were reapplied, the API health check passed, and Liquibase reported
+no pending changes at that verification. No DEV cemetery-data refresh was run.
