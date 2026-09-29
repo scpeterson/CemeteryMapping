@@ -140,7 +140,11 @@ Public routing exceptions must be limited to `/request-access`,
 `/request-access/`, `/assets/*`, and `/api/access-requests`. The submission endpoint
 has an Nginx per-visitor limit and a second API process limit. The origin listens
 only on loopback; the visitor header used by Nginx is supplied by Cloudflare.
-Do not open `/api/*` or `/media/*` publicly.
+Do not open `/api/*` or `/media/*` publicly. Hosted TEST implements these exceptions
+with the **North Hills TEST public request resources** Access application and a
+reusable Bypass policy; the original whole-host allowlist remains in place.
+Because Access path destinations also match descendants, Nginx rejects unused
+subpaths beneath the form and submission endpoint.
 
 A code deployment preserves TEST users, cemetery assignments, access requests,
 and cemetery edits, except for changes explicitly made by reviewed migrations.

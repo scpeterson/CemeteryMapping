@@ -52,9 +52,11 @@ restart and is not a distributed abuse-control system.
 The public page and its static assets must be reachable without gateway login,
 as must its submission endpoint. This is a deployment requirement, not permission
 to bypass the gateway for all API or media routes. All record endpoints continue
-to require application authorization. Hosted TEST's current whole-host Cloudflare
-Access policy is unchanged; until its routing is deliberately configured, outside
-visitors cannot reach this page on that host. Production hosting remains separate.
+to require application authorization. Hosted TEST keeps its
+whole-host allowlist and uses a separate, narrowly scoped Access application with
+a reusable Bypass policy for the request page, assets, and submission endpoint.
+Nginx rejects unused descendants of the public page and endpoint. Production
+hosting remains separate.
 
 ## Deployment and validation
 
