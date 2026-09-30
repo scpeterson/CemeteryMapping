@@ -22,6 +22,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Shift B-24, B-18, and boundary-shaped B-1 two feet west to contain TLC-HS-0138 and TLC-HS-0139, preserving standard footprints and B-1 southern/western edge lengths (migration 420).
+
 - Normalize Mary Mashey’s legacy combined surname before migration 415 on older TEST snapshots, preserving her burial and marker links and all TEST access records (migration 417).
 
 - Include `cemetery-admin` and its cemetery/deed permissions in Auth0 setup; application roles and cemetery assignments remain enforced by the application database.

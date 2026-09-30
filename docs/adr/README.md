@@ -108,6 +108,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0076: Public Access Requests with Private Cemetery Records](0076-public-access-requests.md)
 - [ADR 0077: Create Two Northern Section B Lot Rows](0077-create-section-b-two-northern-lot-rows.md)
 - [ADR 0078: Create Section B Lots 24, 18, and Boundary-Shaped 1](0078-create-section-b-lots-24-18-and-1.md)
+- [ADR 0079: Shift the Section B Boundary Row Two Feet West](0079-shift-section-b-boundary-row-west.md)
 
 ## Creating a New ADR
 
