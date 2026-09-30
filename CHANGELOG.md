@@ -4,6 +4,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+### Added
+
+- Add eight Trinity Section B lots in two adjoining four-lot rows, with a six-foot gap north of B-4 (migration 418).
+
 ### Security
 
 - Enforce cemetery assignments when deleting North Hills evidence links, including denying unassigned cemetery administrators (PR #581).

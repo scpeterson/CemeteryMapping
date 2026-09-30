@@ -168,3 +168,5 @@
   url: /adr/0068-split-a-0085-ringeisen-gravesites.html
 - title: "ADR Template"
   url: /adr/0000-template.html
+- title: "ADR 0077: Create Two Northern Section B Lot Rows"
+  url: /adr/0077-create-section-b-two-northern-lot-rows.html
