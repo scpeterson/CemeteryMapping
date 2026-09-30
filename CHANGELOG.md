@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Add Trinity Section B lots B-24 and B-18, plus irregular B-1 following the cemetery boundary, six feet north of B-23 (migration 419).
+
 - Add eight Trinity Section B lots in two adjoining four-lot rows, with a six-foot gap north of B-4 (migration 418).
 
 ### Security

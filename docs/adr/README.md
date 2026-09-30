@@ -107,6 +107,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0075: Split B-0103 Mashey Gravesites](0075-split-b-0103-mashey-gravesites.md)
 - [ADR 0076: Public Access Requests with Private Cemetery Records](0076-public-access-requests.md)
 - [ADR 0077: Create Two Northern Section B Lot Rows](0077-create-section-b-two-northern-lot-rows.md)
+- [ADR 0078: Create Section B Lots 24, 18, and Boundary-Shaped 1](0078-create-section-b-lots-24-18-and-1.md)
 
 ## Creating a New ADR
 
