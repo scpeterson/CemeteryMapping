@@ -16,7 +16,7 @@ The GitHub Pages documentation used the default `jekyll-theme-minimal` layout. T
 
 Use a custom Jekyll layout under `docs/_layouts/default.html` with:
 
-- A persistent sidebar generated from `docs/_data/navigation.yml`.
+- A persistent sidebar generated from `docs/_data/navigation.yml`, with one ADR Index link instead of individual ADR entries.
 - Previous and next page links rendered in the page header and footer.
 - A custom stylesheet under `docs/assets/css/style.css`.
 - A pinned local documentation build bundle in `docs/Gemfile` and `docs/Gemfile.lock`.
@@ -29,7 +29,7 @@ An explicit ordered navigation data file keeps the reading order clear and maint
 
 ## Consequences
 
-New documentation pages should be added to `docs/_data/navigation.yml` when they belong in the guided reading order. New ADRs should also be added to `docs/adr/README.md`.
+New documentation pages should be added to `docs/_data/navigation.yml` when they belong in the guided reading order. New ADRs should also be added to `docs/adr/README.md`. Individual ADR entries in the navigation data remain available for previous/next links but are automatically omitted from the sidebar, including future ADRs. On an ADR page, the sidebar highlights the ADR Index as the current location.
 
 The custom CSS becomes part of the documentation surface and should be reviewed when adding major new documentation sections.
 
