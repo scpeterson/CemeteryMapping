@@ -170,3 +170,5 @@
   url: /adr/0000-template.html
 - title: "ADR 0077: Create Two Northern Section B Lot Rows"
   url: /adr/0077-create-section-b-two-northern-lot-rows.html
+- title: "ADR 0078: Create Section B Lots 24, 18, and Boundary-Shaped 1"
+  url: /adr/0078-create-section-b-lots-24-18-and-1.html

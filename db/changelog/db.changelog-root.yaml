@@ -1247,3 +1247,6 @@ databaseChangeLog:
   - include:
       file: changes/418-create-trinity-b-two-northern-lot-rows.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/419-create-trinity-b-lots-24-18-and-1.sql
+      relativeToChangelogFile: true
