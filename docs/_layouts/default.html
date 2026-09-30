@@ -51,10 +51,14 @@
         </search>
 
         <nav class="site-nav">
+          {% assign current_url_prefix = current_url | slice: 0, 5 %}
           {% for item in ordered_pages %}
-            <a href="{{ item.url | relative_url }}" {% if item.url == current_url %}aria-current="page"{% endif %}>
-              {{ item.title }}
-            </a>
+            {% assign item_url_prefix = item.url | slice: 0, 5 %}
+            {% if item_url_prefix != '/adr/' or item.url == '/adr/' %}
+              <a href="{{ item.url | relative_url }}" {% if item.url == current_url %}aria-current="page"{% elsif item.url == '/adr/' and current_url_prefix == '/adr/' %}aria-current="location"{% endif %}>
+                {{ item.title }}
+              </a>
+            {% endif %}
           {% endfor %}
         </nav>
       </aside>
