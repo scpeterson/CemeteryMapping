@@ -14,37 +14,63 @@ media locally without the hosted Cloudflare gateway.
 Arrows show the direction of a request or action; responses return along the same
 connection. Dashed arrows show optional provisioning and backup operations.
 
+### Hosting and stored records
+
 ```mermaid
 flowchart TB
   browser["User's browser<br/>React application + MapLibre map"]
-  edge["Cloudflare DNS + Access<br/>Hostname routing and email allowlist / one-time PIN"]
-  auth["Auth0<br/>Application sign-in and access tokens"]
-  imagery["Penn State PASDA<br/>Allegheny County 2017 aerial imagery"]
-  parcels["Allegheny County GIS<br/>Parcel boundary images"]
-  geo["GeoNames<br/>Verified geographic place lookup"]
-  backup["DigitalOcean backups<br/>Host recovery copies"]
-
-  subgraph host["DigitalOcean Droplet — hosted TEST server"]
-    tunnel["Cloudflare Tunnel connector<br/>cloudflared: outbound connection to Cloudflare"]
-    web["Nginx<br/>Serves frontend; forwards API and media requests"]
-    api["Express API<br/>Validates tokens; enforces application permissions"]
-    db[("PostgreSQL + PostGIS<br/>Cemetery records, geometry, users, roles, and audit history")]
-    media["Local media directory<br/>Uploaded photographs and files"]
-    tunnel -->|"Local HTTP on port 8080"| web
-    web -->|"API and protected media on port 3001"| api
-    api -->|"Read / write through restricted database account"| db
-    api -->|"Store uploads / serve authorized files"| media
+  edge["Cloudflare DNS + Access<br/>Routes hostname; checks email allowlist / PIN"]
+  browser -->|"HTTPS requests"| edge
+  subgraph host["DigitalOcean Droplet — hosted TEST"]
+    tunnel["Cloudflare Tunnel connector<br/>Outbound connection to Cloudflare"]
+    web["Nginx<br/>Serves frontend; forwards API and media"]
+    api["Express API<br/>Checks identity and permissions"]
+    db[("PostgreSQL + PostGIS<br/>Records, geometry, users, and audit history")]
+    media["Local media directory<br/>Photos and uploaded files"]
+    tunnel -->|"Local HTTP: 8080"| web
+    web -->|"API / media: 3001"| api
+    api -->|"Read / write"| db
+    api -->|"Store / serve files"| media
   end
+  edge -->|"Established tunnel"| tunnel
+```
 
-  browser -->|"HTTPS: page, API, and media requests"| edge
-  edge -->|"Traffic over connector's established tunnel"| tunnel
-  browser -->|"Sign in and obtain access token"| auth
-  api -->|"Fetch signing keys to validate JWTs"| auth
-  api -.->|"Find / create users; request password setup email"| auth
-  browser -->|"Request aerial images for map viewport"| imagery
-  browser -->|"Request parcel overlay tiles"| parcels
-  api -->|"Search / verify places when configured"| geo
-  host -.->|"Daily provider backup"| backup
+DigitalOcean's daily provider backups cover the host, including its stored data
+and media. Logical database dumps are also created locally; a separate offsite
+copy remains follow-up work.
+
+### Sign-in and application permissions
+
+```mermaid
+flowchart TB
+  browser["User's browser"]
+  auth["Auth0<br/>Signs users in; issues access tokens"]
+  api["Express API<br/>Validates token and enforces permissions"]
+  db[("Application database<br/>Active users, roles, and cemetery assignments")]
+  browser -->|"Sign in / obtain token"| auth
+  browser -->|"API request with token via Cloudflare and Nginx"| api
+  api -->|"Fetch signing keys"| auth
+  api -->|"Resolve permitted access"| db
+  api -.->|"Admin provisioning: find / create identity"| auth
+```
+
+When configured, the API also asks Auth0 to send password setup emails for newly
+created identities. Cloudflare's gateway email allowlist is managed separately
+from Auth0 and application permissions.
+
+### External map and place data
+
+```mermaid
+flowchart TB
+  browser["Browser / MapLibre<br/>Displays cemetery map"]
+  imagery["Penn State PASDA<br/>2017 aerial imagery"]
+  parcels["Allegheny County GIS<br/>Parcel boundaries"]
+  api["Express API<br/>Death-location search and verification"]
+  geo["GeoNames<br/>Geographic place lookup"]
+  browser -->|"Viewport imagery"| imagery
+  browser -->|"Parcel overlay tiles"| parcels
+  browser -->|"Place search via application gateway"| api
+  api -->|"Search / verify when configured"| geo
 ```
 
 Nginx delivers the frontend files to the browser, where React and MapLibre run.
