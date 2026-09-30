@@ -176,3 +176,5 @@
   url: /adr/0079-shift-section-b-boundary-row-west.html
 - title: "ADR 0080: Shift Eight Section B Lots West and North"
   url: /adr/0080-shift-section-b-eight-lots-west-and-north.html
+- title: "ADR 0081: Shift Five Section B Lots One Foot North"
+  url: /adr/0081-shift-section-b-five-lots-north.html
