@@ -2,6 +2,8 @@
   url: /
 - title: "Getting Started"
   url: /getting-started.html
+- title: "Application and Third-Party Services"
+  url: /service-architecture.html
 - title: "Frontend Development"
   url: /frontend-development.html
 - title: "Rebuild Guide"
