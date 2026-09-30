@@ -273,6 +273,8 @@ a:hover {
 .content .mermaid svg {
   display: block;
   max-width: none;
+  width: auto;
+  height: auto;
 }
 
 .content code {
