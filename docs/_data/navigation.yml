@@ -174,3 +174,5 @@
   url: /adr/0078-create-section-b-lots-24-18-and-1.html
 - title: "ADR 0079: Shift the Section B Boundary Row Two Feet West"
   url: /adr/0079-shift-section-b-boundary-row-west.html
+- title: "ADR 0080: Shift Eight Section B Lots West and North"
+  url: /adr/0080-shift-section-b-eight-lots-west-and-north.html

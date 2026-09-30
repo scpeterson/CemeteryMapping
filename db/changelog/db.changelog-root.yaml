@@ -1253,3 +1253,6 @@ databaseChangeLog:
   - include:
       file: changes/420-shift-trinity-b-boundary-row-west.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/421-shift-trinity-b-eight-lots-west-and-north.sql
+      relativeToChangelogFile: true
