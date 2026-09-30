@@ -22,6 +22,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Shift the eight Section B lots B-23/B-19/B-17/B-2 and B-22/B-20/B-16/B-3 together 1.5 feet west and one foot north, preserving their footprints (migration 421).
+
 - Shift B-24, B-18, and boundary-shaped B-1 two feet west to contain TLC-HS-0138 and TLC-HS-0139, preserving standard footprints and B-1 southern/western edge lengths (migration 420).
 
 - Normalize Mary Mashey’s legacy combined surname before migration 415 on older TEST snapshots, preserving her burial and marker links and all TEST access records (migration 417).

@@ -109,6 +109,7 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0077: Create Two Northern Section B Lot Rows](0077-create-section-b-two-northern-lot-rows.md)
 - [ADR 0078: Create Section B Lots 24, 18, and Boundary-Shaped 1](0078-create-section-b-lots-24-18-and-1.md)
 - [ADR 0079: Shift the Section B Boundary Row Two Feet West](0079-shift-section-b-boundary-row-west.md)
+- [ADR 0080: Shift Eight Section B Lots West and North](0080-shift-section-b-eight-lots-west-and-north.md)
 
 ## Creating a New ADR
 
