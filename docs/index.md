@@ -11,6 +11,7 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 
 - [Getting Started](getting-started.md)
 - [Rebuild Guide](rebuild.md)
+- [Application and Third-Party Services](service-architecture.md)
 - [Frontend Development](frontend-development.md)
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)

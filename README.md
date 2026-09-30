@@ -102,6 +102,8 @@ A beginner-friendly setup guide is available in `docs/getting-started.md`.
 
 A clean rebuild guide is available in `docs/rebuild.md`.
 
+A diagram of hosting, identity, external data, and development services is available in [Application and Third-Party Services](docs/service-architecture.md).
+
 Component boundaries, shared controls, draft handling, styling, and UI validation are covered in [Frontend Development](docs/frontend-development.md).
 
 Data origins and stewardship placeholders are tracked in `docs/data-sources.md`.
