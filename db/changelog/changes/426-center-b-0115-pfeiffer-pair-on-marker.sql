@@ -1,10 +1,14 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:426-center-b-0115-pfeiffer-pair-on-marker splitStatements:false
+--validCheckSum 9:2c800826fc43dc2ab7f151ea8a275d6d
 SELECT assert_migration_prerequisite(
-  (SELECT count(*) FROM gravesites WHERE gravesite_id IN ('TLC-GPS-0115', 'TLC-GPS-0115-01') AND deleted_at IS NULL) = 2
-  AND EXISTS (SELECT 1 FROM headstones WHERE headstone_id = 'TLC-HS-0115' AND geometry IS NOT NULL AND deleted_at IS NULL),
-  'both active Pfeiffer gravesites and fixed marker TLC-HS-0115 must exist'
+  NOT EXISTS (SELECT 1 FROM gravesites WHERE gravesite_id = 'TLC-GPS-0115' AND deleted_at IS NULL)
+  OR (
+    (SELECT count(*) FROM gravesites WHERE gravesite_id IN ('TLC-GPS-0115', 'TLC-GPS-0115-01') AND deleted_at IS NULL) = 2
+    AND EXISTS (SELECT 1 FROM headstones WHERE headstone_id = 'TLC-HS-0115' AND geometry IS NOT NULL AND deleted_at IS NULL)
+  ),
+  'both active Pfeiffer gravesites and fixed marker TLC-HS-0115 must exist when the original grave is present'
 );
 
 WITH source_record AS (
