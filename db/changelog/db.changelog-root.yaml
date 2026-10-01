@@ -1274,3 +1274,6 @@ databaseChangeLog:
   - include:
       file: changes/427-review-b-0115-pfeiffer-overlap.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/428-split-b-0122-pfeiffer-gravesites.sql
+      relativeToChangelogFile: true
