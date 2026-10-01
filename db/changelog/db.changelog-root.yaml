@@ -1277,3 +1277,9 @@ databaseChangeLog:
   - include:
       file: changes/428-split-b-0122-pfeiffer-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/429-remove-b-0131-obelisk-pseudo-burial.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/430-retire-b-0131-obelisk-placeholder.sql
+      relativeToChangelogFile: true
