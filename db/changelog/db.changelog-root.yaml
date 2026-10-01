@@ -1259,3 +1259,18 @@ databaseChangeLog:
   - include:
       file: changes/422-shift-trinity-b-five-lots-north.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/423-split-b-0115-pfeiffer-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/424-resize-b-0115-pfeiffer-gravesites.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/425-correct-b-0115-pfeiffer-length.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/426-center-b-0115-pfeiffer-pair-on-marker.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/427-review-b-0115-pfeiffer-overlap.sql
+      relativeToChangelogFile: true
