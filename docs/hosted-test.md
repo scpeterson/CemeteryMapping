@@ -201,3 +201,47 @@ Mary in B-0103A, Amos in B-0103, their shared marker links, and preservation of
 TEST users, assignments, access requests, photos, and unrelated cemetery data.
 API grants were reapplied, the API health check passed, and Liquibase reported
 no pending changes at that verification. No DEV cemetery-data refresh was run.
+
+## September 30, 2026 DEV data refresh
+
+At the owner's request, hosted TEST cemetery data and media were replaced from a
+consistent DEV snapshot, discarding TEST cemetery edits. The source revision was
+`f95df46` (PR #598), with migrations 418–422 already applied in DEV. The restored
+TEST database now includes those migration records and the final lot placements;
+these migrations were not rerun over the restored snapshot.
+
+This was a data/media refresh, not a code deployment. API/frontend release
+metadata remains `d82e8e5`, built September 29. TEST Auth0 configuration, the
+Cloudflare gateway, and protected runtime settings were retained.
+
+Before cutover, a separate database was restored from `template0` using
+`--no-owner --no-privileges`. TEST users, cemetery assignments, access requests,
+audit history, system events, and retention settings were preserved. DEV identity
+mappings were disabled before reinstating the exact TEST records; no DEV identity
+was granted active TEST access. Every foreign key was checked explicitly after
+preservation, and restricted API grants were refreshed. The media copy was staged
+and checksum-compared before switching paths.
+
+During a brief API/web stop, a final TEST backup and fresh access-record export
+were taken. The databases and media directories were swapped, then API and web
+containers were recreated to bind the refreshed media directory. The prior TEST
+database and media remain available for rollback, alongside validated database
+backups. Account-specific backup locations are recorded in the private operations
+repository; they contain private data and must stay outside Git.
+
+Verification on September 30 by Codex confirmed:
+
+- Counts and full row-content hashes match DEV for all 70 domain tables checked.
+- All 498 active media references resolve, and the API can read their files.
+- Both active TEST users, the cemetery assignment, and both access requests were
+  preserved exactly, including roles, active flags, identity subjects, and timestamps.
+- The recent lots are present; TLC-HS-0138 and TLC-HS-0139 remain strictly inside B-1.
+- Database health passes and the API remains in Auth0 mode using restricted credentials.
+- The public request page returns 200; unauthenticated origin map access returns
+  401 and Cloudflare redirects protected map requests to its access check.
+
+No fresh interactive Auth0 sign-in or real invitation-email delivery was tested
+in this refresh. Existing identity mappings and runtime settings were verified;
+confirm those interactive workflows with an approved tester when available.
+This one-time preservation/rehearsal procedure does not establish an automated
+refresh workflow. Continue to follow the review and backup requirements above.
