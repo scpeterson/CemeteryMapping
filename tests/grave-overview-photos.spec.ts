@@ -19,7 +19,7 @@ const shared = { ...marker, mediaAssets: [william, front], faces: [
 
 test("individual marker beats a newer primary on a shared monument; duplicates keep the individual primary", () => {
   const images = graveOverviewImages({ ...grave, mediaAssets: [{ ...nannie, isPrimary: false }, front] }, [shared, individual]);
-  expect(images.map((image) => image.url)).toEqual([nannie.fileUrl, front.fileUrl, william.fileUrl]);
+  expect(images.map((image) => image.url)).toEqual([nannie.fileUrl, william.fileUrl, front.fileUrl]);
   expect(images[0].isPrimary).toBe(true);
 });
 
@@ -27,7 +27,7 @@ test("individual markers can be identified by burial links when gravesite IDs ar
   const legacyIndividual = { ...individual, associatedGravesiteIds: [] };
   expect(graveOverviewImages(grave, [shared, legacyIndividual])[0].url).toBe(nannie.fileUrl);
   const otherGrave = { ...legacyIndividual, associatedGravesiteIds: ["B-TEST"] };
-  expect(graveOverviewImages(grave, [shared, otherGrave])[0].url).toBe(front.fileUrl);
+  expect(graveOverviewImages(grave, [shared, otherGrave])[0].url).toBe(william.fileUrl);
 });
 
 test("an explicit gravesite primary wins over individual marker primaries", () => {
@@ -35,8 +35,10 @@ test("an explicit gravesite primary wins over individual marker primaries", () =
   expect(graveOverviewImages({ ...grave, mediaAssets: [own] }, [individual, shared])[0].url).toBe(own.fileUrl);
 });
 
-test("shared monument face follows burial IDs and marker Overview keeps its own primary", () => {
-  expect(graveOverviewImages(grave, [shared])[0].url).toBe(front.fileUrl);
+test("shared marker primary precedes face photos; automatic selection follows burial IDs", () => {
+  expect(graveOverviewImages(grave, [shared])[0].url).toBe(william.fileUrl);
+  const automatic = { ...shared, mediaAssets: shared.mediaAssets!.map((asset) => ({ ...asset, isPrimary: false })) };
+  expect(graveOverviewImages(grave, [automatic])[0].url).toBe(front.fileUrl);
   expect(graveOverviewImages({ ...grave, burials: [{ id: "bob" }] }, [shared])[0].url).toBe(william.fileUrl);
   expect(overviewImages([], [shared])[0].url).toBe(william.fileUrl);
 });
@@ -48,20 +50,36 @@ test("missing face links fall back and empty or legacy photos remain usable", ()
   expect(graveOverviewImages(grave, [])).toEqual([]);
 });
 
-test("shared primary flags do not leak into the gravesite photo tier", () => {
+test("shared primary overrides non-primary direct grave photos without changing their flags", () => {
   const own = photo("own", "2022-01-01");
   const images = graveOverviewImages({ ...grave, mediaAssets: [{ ...william, isPrimary: false, capturedAt: "2020-01-01" }, own] }, [shared]);
-  expect(images[0].url).toBe(own.fileUrl);
+  expect(images[0].url).toBe(william.fileUrl);
+  expect(images[0].isPrimary).toBe(true);
 });
 
-test("gravesite Overview shows the associated face, while the monument retains its primary", async ({ page }) => {
+test("gravesite and monument Overviews show the shared primary", async ({ page }) => {
   await overviewFixture(page);
   await page.route(gravePath("A-TEST"), (route) => route.fulfill({ json: { ...overviewGrave("A-TEST"), mediaAssets: [], headstones: [shared] } }));
   await page.route("**/api/headstones/marker-1", (route) => route.fulfill({ json: shared }));
   await page.goto("/tests/auth.html");
   await select(page, "A-TEST");
   const panel = page.getByRole("tabpanel", { name: "Overview", exact: true });
-  await expect(panel.getByRole("img", { name: "front", exact: true })).toBeVisible();
+  await expect(panel.getByRole("img", { name: "william", exact: true })).toBeVisible();
   await panel.getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await expect(panel.getByRole("img", { name: "william", exact: true })).toBeVisible();
+});
+
+test("split couple graves use the same marker primary despite duplicate grave links", () => {
+  const primary = photo("primary", "2020-01-01", true);
+  const recent = photo("recent", "2026-01-01");
+  const couple = { ...shared, mediaAssets: [primary, recent], faces: [] };
+  const original = { ...grave, mediaAssets: [{ ...primary, isPrimary: false }, recent] };
+  const added = { ...grave, id: "B-TEST", burials: [{ id: "bob" }], mediaAssets: [] };
+  for (const selected of [original, added]) {
+    const images = graveOverviewImages(selected, [couple]);
+    expect(images[0].url).toBe(primary.fileUrl);
+    expect(images[0].isPrimary).toBe(true);
+    expect(images.filter((image) => image.url === primary.fileUrl)).toHaveLength(1);
+  }
+  expect(original.mediaAssets[0].isPrimary).toBe(false);
 });
