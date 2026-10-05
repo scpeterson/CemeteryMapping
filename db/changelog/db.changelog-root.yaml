@@ -1286,3 +1286,9 @@ databaseChangeLog:
   - include:
       file: changes/431-split-b-0136-hieber-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/432-remove-d-0438-obelisk-pseudo-burial.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/433-retire-d-0438-obelisk-placeholder.sql
+      relativeToChangelogFile: true
