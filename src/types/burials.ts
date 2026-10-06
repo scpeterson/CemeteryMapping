@@ -56,6 +56,7 @@ export type Burial = {
   id: string;
   person: Person;
   burialDate?: string;
+  birthPlace?: VerifiedPlace;
   deathPlace?: VerifiedPlace;
   recordStatusCode?: string;
   recordStatusLabel?: string;
@@ -97,6 +98,7 @@ export type SaveBurialInput = {
   nameSuffix: string;
   birthDate: string;
   deathDate: string;
+  birthPlaceId: string;
   deathPlaceId: string;
   burialDate: string;
   intermentType: string;

@@ -1342,6 +1342,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "",
     "M.D.",
     null,
+    null,
     "https://www.findagrave.com/memorial/123/ruth-soergel",
     "recorded",
     null,
