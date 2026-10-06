@@ -59,6 +59,22 @@ test("report catalog failures can be retried and stale results are labeled", asy
   await expect(page.getByText(/Previous results—latest request failed/)).toHaveCount(0);
 });
 
+test("birth place search preserves permission guidance and can retry", async ({ page }) => {
+  await overviewFixture(page);
+  let available = false;
+  await page.route("**/api/places/search?**", (route) => available ? route.fulfill({ json: { available: true, results: [] } }) : route.fulfill({ status: 403, json: {} }));
+  await page.goto("/"); await select(page, "A-TEST");
+  await page.getByRole("tab", { name: "People and ownership" }).click();
+  await page.getByRole("button", { name: "Edit burial Alice Example" }).click();
+  await page.getByRole("textbox", { name: "Find another verified birth location" }).fill("Pittsburgh");
+  await page.getByRole("group", { name: "Birth location geographic search" }).getByRole("button", { name: "Search geographic registry" }).click();
+  await expect(page.getByRole("alert")).toContainText("don't have permission");
+  available = true;
+  await page.getByRole("button", { name: "Retry place search" }).click();
+  await expect(page.getByText("No matching places found.")).toBeVisible();
+});
+
+
 test("place search preserves permission guidance and can retry", async ({ page }) => {
   await overviewFixture(page);
   let available = false;
@@ -67,7 +83,7 @@ test("place search preserves permission guidance and can retry", async ({ page }
   await page.getByRole("tab", { name: "People and ownership" }).click();
   await page.getByRole("button", { name: "Edit burial Alice Example" }).click();
   await page.getByRole("textbox", { name: "Find another verified death location" }).fill("Pittsburgh");
-  await page.getByRole("button", { name: "Search geographic registry" }).click();
+  await page.getByRole("group", { name: "Death location geographic search" }).getByRole("button", { name: "Search geographic registry" }).click();
   await expect(page.getByRole("alert")).toContainText("don't have permission");
   available = true;
   await page.getByRole("button", { name: "Retry place search" }).click();

@@ -60,6 +60,25 @@ export function burialDeathPlaceSql() {
   };
 }
 
+export function burialBirthPlaceSql() {
+  return {
+    select: `birth_places.id::text AS birth_place_id,
+        birth_places.display_name AS birth_place_name,
+        birth_places.locality AS birth_place_locality,
+        birth_places.administrative_area AS birth_place_administrative_area,
+        birth_places.country_name AS birth_place_country_name,
+        birth_places.country_code AS birth_place_country_code,
+        birth_places.authority_name AS birth_place_authority_name,
+        birth_places.authority_identifier AS birth_place_authority_identifier,
+        birth_places.authority_url AS birth_place_authority_url,
+        birth_places.verification_status AS birth_place_verification_status`,
+    join: `LEFT JOIN places AS birth_places
+        ON birth_places.id = burials.birth_place_uuid
+       AND birth_places.deleted_at IS NULL
+       AND birth_places.is_active`,
+  };
+}
+
 export function burialRecordedDateTextSql(firstSetParameter = 15) {
   return {
     select: "burials.birth_date_text, burials.death_date_text",

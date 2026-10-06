@@ -6,7 +6,7 @@ import { toBurial } from "./cemeteryMappers.mjs";
 import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 import { activeBurialRecordStatusExists, activeIntermentTypeExists, burialRecordedDateTextSql, splitRecordedDate } from "./burialRepository.mjs";
 
-async function verifiedDeathPlaceExists(client, id) {
+async function verifiedPlaceExists(client, id) {
   if (!id) return true;
   const result = await client.query(
     `
@@ -80,7 +80,10 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     if (!(await activeBurialRecordStatusExists(client, effectiveRecordStatusCode))) {
       throw new BadRequestError("Burial record status is no longer available. Reload the record and select an active status.");
     }
-    if (!(await verifiedDeathPlaceExists(client, burial.deathPlaceId))) {
+    if (!(await verifiedPlaceExists(client, burial.birthPlaceId))) {
+      throw new BadRequestError("Birth place is no longer available. Search for and select a verified place again.");
+    }
+    if (!(await verifiedPlaceExists(client, burial.deathPlaceId))) {
       throw new BadRequestError("Death place is no longer available. Search for and select a verified place again.");
     }
 
@@ -189,6 +192,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     updateValues.push(burial.nameSuffix || null);
     const deathPlaceParameter = updateValues.length + 1;
     updateValues.push(burial.deathPlaceId || null);
+    const birthPlaceParameter = updateValues.length + 1;
+    updateValues.push(burial.birthPlaceId === undefined ? existing.birth_place_id ?? null : burial.birthPlaceId || null);
     const sourceUrlParameter = updateValues.length + 1;
     updateValues.push(burial.sourceUrl || null);
     const nameStatusParameter = updateValues.length + 1;
@@ -215,6 +220,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
             funeral_home = $10,
             veteran = $11,
             ${militaryServiceSetSql}${recordedDateAssignments}${reviewAssignments},
+            birth_place_uuid = $${birthPlaceParameter}::uuid,
             death_place_uuid = $${deathPlaceParameter}::uuid,
             source_url = $${sourceUrlParameter}
         WHERE id = $1
@@ -232,6 +238,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           birth_date,
           ${recordedDateTextSql.return},
           death_date,
+          birth_place_uuid::text,
           death_place_uuid::text,
           burial_date,
           ${intermentTypeReturnSql},

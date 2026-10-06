@@ -27,6 +27,6 @@ test("burial mutation accepts only verified place identifiers", () => {
 test("burial editor selects and displays verified death locations", () => {
   assert.match(detailPanel, /Death location/u);
   assert.match(detailPanel, /lookups\.verifiedPlaces/u);
-  assert.match(detailPanel, /Only places verified against an authoritative geographic registry/u);
+  assert.match(readFileSync(new URL("../src/components/detail/BurialPlaceField.tsx", import.meta.url), "utf8"), /Only places verified against an authoritative geographic registry/u);
   assert.match(detailPanel, /burial\.deathPlace\.authorityUrl/u);
 });

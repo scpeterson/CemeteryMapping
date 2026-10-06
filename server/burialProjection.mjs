@@ -1,8 +1,9 @@
-import { burialDeathPlaceSql, burialIntermentTypeSql, burialMilitaryServiceSql, burialRecordedDateTextSql, burialRecordStatusSql } from "./burialRepository.mjs";
+import { burialBirthPlaceSql, burialDeathPlaceSql, burialIntermentTypeSql, burialMilitaryServiceSql, burialRecordedDateTextSql, burialRecordStatusSql } from "./burialRepository.mjs";
 import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 // Shared fields only: each caller owns its scope, deleted-row policy and locks.
 export function burialProjectionSql() {
+  const birthPlaceSql = burialBirthPlaceSql();
   const deathPlaceSql = burialDeathPlaceSql();
   const militaryServiceSql = burialMilitaryServiceSql();
   const intermentTypeSql = burialIntermentTypeSql();
@@ -23,6 +24,7 @@ export function burialProjectionSql() {
       burials.birth_date,
       ${recordedDateTextSql.select},
       burials.death_date,
+      ${birthPlaceSql.select},
       ${deathPlaceSql.select},
       burials.burial_date,
       ${intermentTypeSql.select},
@@ -33,7 +35,8 @@ export function burialProjectionSql() {
       COALESCE((SELECT jsonb_agg(jsonb_build_object('id', military_decoration_types.id::text, 'code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label) FROM burial_military_decorations JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id WHERE burial_military_decorations.burial_uuid = burials.id), '[]'::jsonb) AS military_decorations,
       burials.notes,
       ${reviewColumnsSql}`,
-    joins: `      ${deathPlaceSql.join}
+    joins: `      ${birthPlaceSql.join}
+      ${deathPlaceSql.join}
       ${intermentTypeSql.join}
       ${recordStatusSql.join}
       ${militaryServiceSql.join}`,
