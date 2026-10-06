@@ -21,6 +21,13 @@ function relationshipOptions(isMonolith: boolean, currentType?: string) {
       : option);
 }
 
+function relationshipTooltip(isMonolith: boolean, value: string, saved = false) {
+  const option = relationshipOptions(isMonolith, value).find((option) => option.value === value);
+  return option
+    ? `${option.label}: ${option.description}${saved ? " Changing this selection saves immediately." : ""}`
+    : "Choose how this marker relates to the gravesite.";
+}
+
 export function MarkerGravesiteRelationshipManager({ headstone, graves, lookups, canUpdate, onSelectGrave, onSave, onUpdate, onDelete }: {
   headstone: Headstone;
   graves: GraveSpaceSummary[];
@@ -74,14 +81,14 @@ export function MarkerGravesiteRelationshipManager({ headstone, graves, lookups,
         {relationship.notes ? <p className="muted">{relationship.notes}</p> : null}
       </div>
       {canUpdate ? <div className="inline-actions">
-        <select title={relationshipTypes.find((option) => option.value === relationship.relationshipType)?.description} aria-label={`Relationship to ${relationship.gravesiteId}`} disabled={busy} value={relationship.relationshipType} onChange={(event) => void changeType(relationship, event.target.value as SaveHeadstoneGravesiteRelationshipInput["relationshipType"])}>{relationshipOptions(isMonolith, relationship.relationshipType).map((option) => <option key={option.value} value={option.value} title={option.description}>{option.label}</option>)}</select>
+        <select title={relationshipTooltip(isMonolith, relationship.relationshipType, true)} aria-label={`Relationship to ${relationship.gravesiteId}`} disabled={busy} value={relationship.relationshipType} onChange={(event) => void changeType(relationship, event.target.value as SaveHeadstoneGravesiteRelationshipInput["relationshipType"])}>{relationshipOptions(isMonolith, relationship.relationshipType).map((option) => <option key={option.value} value={option.value} title={option.description}>{option.label}</option>)}</select>
         <button type="button" className="icon-button danger" disabled={busy} aria-label={`Remove link to ${relationship.gravesiteId}`} onClick={() => void remove(relationship)}><Trash2 size={15} aria-hidden="true" /></button>
       </div> : <span title={relationshipTypes.find((option) => option.value === relationship.relationshipType)?.description}>{relationshipOptions(isMonolith, relationship.relationshipType).find((option) => option.value === relationship.relationshipType)?.label ?? relationship.relationshipType}</span>}
     </div>)}
     {!relationships.length ? <p className="muted">No gravesites are associated with this marker.</p> : null}
     {canUpdate && availableGravesites.length ? <form className="headstone-form marker-gravesite-form" onSubmit={submit}>
-      <label className="headstone-wide-field">Add gravesite<select required value={form.gravesiteId} onChange={(event) => setForm((current) => ({ ...current, gravesiteId: event.target.value }))}><option value="">Select a gravesite</option>{availableGravesites.map((grave) => <option key={grave.id} value={grave.id}>{grave.label}</option>)}</select></label>
-      <label className="headstone-wide-field">Relationship<select aria-describedby={relationshipHelpId} title={options.find((option) => option.value === form.relationshipType)?.description} value={form.relationshipType} onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneGravesiteRelationshipInput["relationshipType"] }))}>{options.map((option) => <option key={option.value} value={option.value} title={option.description}>{option.label}</option>)}</select><small id={relationshipHelpId} className="marker-gravesite-help">{options.find((option) => option.value === form.relationshipType)?.description}</small></label>
+      <label className="headstone-wide-field">Add gravesite<select title={form.gravesiteId ? `${availableGravesites.find((grave) => grave.id === form.gravesiteId)?.label ?? "Selected gravesite"}. Add a link between this marker and this gravesite.` : "Select the gravesite to associate with this marker. Gravesites already linked are excluded."} required value={form.gravesiteId} onChange={(event) => setForm((current) => ({ ...current, gravesiteId: event.target.value }))}><option value="">Select a gravesite</option>{availableGravesites.map((grave) => <option key={grave.id} value={grave.id} title={grave.label}>{grave.label}</option>)}</select></label>
+      <label className="headstone-wide-field">Relationship<select aria-describedby={relationshipHelpId} title={relationshipTooltip(isMonolith, form.relationshipType)} value={form.relationshipType} onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneGravesiteRelationshipInput["relationshipType"] }))}>{options.map((option) => <option key={option.value} value={option.value} title={option.description}>{option.label}</option>)}</select><small id={relationshipHelpId} className="marker-gravesite-help">{options.find((option) => option.value === form.relationshipType)?.description}</small></label>
       <label className="headstone-wide-field">Notes<textarea rows={3} value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label>
       <div className="headstone-form-actions"><button type="submit" disabled={busy || !form.gravesiteId}>{busy ? "Saving…" : "Add gravesite link"}</button></div>
     </form> : null}
