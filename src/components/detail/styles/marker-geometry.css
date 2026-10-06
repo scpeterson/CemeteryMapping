@@ -327,3 +327,69 @@
   opacity: 0.6;
   cursor: default;
 }
+
+.marker-gravesite-manager,
+.marker-gravesite-form {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.marker-gravesite-manager > p {
+  margin: 0;
+}
+
+.marker-gravesite-form {
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.marker-gravesite-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.marker-gravesite-form .headstone-form-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.marker-gravesite-manager .associated-gravesite-row > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.marker-gravesite-manager .inline-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.marker-gravesite-manager .inline-actions select {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 8px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.marker-gravesite-help {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.marker-gravesite-manager .associated-gravesite-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
