@@ -208,7 +208,7 @@ export function MarkerDetailPanel({
         <section className="detail-section">
           <div className="section-title">
             <MapPinned size={17} aria-hidden="true" />
-            <h3>{isMonolith ? "Gravesites Spanned by This Monolith" : "Associated Gravesites"}</h3>
+            <h3>{isMonolith ? "Gravesites Associated with This Monolith" : "Associated Gravesites"}</h3>
           </div>
           {headstone ? (
             <MarkerGravesiteRelationshipManager
