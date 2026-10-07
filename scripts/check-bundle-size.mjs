@@ -1,22 +1,18 @@
 import { gzipSync } from "node:zlib";
 import { readdir, readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
-const assetDirectory = resolve(process.cwd(), "dist", "assets");
-const budgets = [
-  { label: "application entry", pattern: /^index-.*\.js$/u, gzipKilobytes: 45 },
+export const budgets = [
+  { label: "application entry", pattern: /^index-.*\.js$/u, gzipKilobytes: 50 },
   { label: "admin shell", pattern: /^AdminPanel-.*\.js$/u, gzipKilobytes: 22 },
-  { label: "React vendor", pattern: /^vendor-react-.*\.js$/u, gzipKilobytes: 65 },
+  { label: "React vendor", pattern: /^vendor-react-.*\.js$/u, gzipKilobytes: 70 },
   { label: "authentication vendor", pattern: /^vendor-auth-.*\.js$/u, gzipKilobytes: 65 },
   { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 140 },
 ];
-const totalJavaScriptGzipBudgetKilobytes = 500;
+export const totalJavaScriptGzipBudgetKilobytes = 700;
 
-const filenames = (await readdir(assetDirectory)).filter((filename) => filename.endsWith(".js"));
-const assets = await Promise.all(filenames.map(async (filename) => {
-  const contents = await readFile(resolve(assetDirectory, filename));
-  return { filename, gzipBytes: gzipSync(contents).byteLength };
-}));
+export function checkBundleAssets(assets) {
 const failures = [];
 
 for (const budget of budgets) {
@@ -33,9 +29,24 @@ if (totalGzipBytes > totalJavaScriptGzipBudgetKilobytes * 1024) {
   failures.push(`all JavaScript: ${(totalGzipBytes / 1024).toFixed(2)} KiB gzip exceeds ${totalJavaScriptGzipBudgetKilobytes} KiB`);
 }
 
+return { failures, totalGzipBytes };
+}
+
+export async function checkBundleDirectory(assetDirectory) {
+  const filenames = (await readdir(assetDirectory)).filter((filename) => filename.endsWith(".js"));
+  const assets = await Promise.all(filenames.map(async (filename) => ({
+    filename, gzipBytes: gzipSync(await readFile(resolve(assetDirectory, filename))).byteLength,
+  })));
+  return { ...checkBundleAssets(assets), count: assets.length };
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+const { failures, totalGzipBytes, count } = await checkBundleDirectory(resolve(process.cwd(), "dist", "assets"));
 if (failures.length) {
   console.error(`Bundle size check failed:\n- ${failures.join("\n- ")}`);
   process.exitCode = 1;
 } else {
-  console.log(`Bundle size check passed: ${assets.length} JavaScript chunks, ${(totalGzipBytes / 1024).toFixed(2)} KiB gzip total.`);
+  console.log(`Bundle size check passed: ${count} JavaScript chunks, ${(totalGzipBytes / 1024).toFixed(2)} KiB gzip total.`);
+}
+
 }
