@@ -141,3 +141,7 @@ In marker Details, Edit opens Faces / Inscriptions. Add a face, give it a direct
 `MarkerFaces.tsx` shares the marker editor’s draft and save lifecycle. The API returns HTTP 409 for stale face revisions; the editor preserves the draft and asks the user to reload. Face galleries use the existing authenticated photo viewer. See [ADR 0069](adr/0069-marker-faces.md).
 
 Ordinary markers show a plain Inscription field in Edit, including markers with no previous inscription. Entering text automatically stores an Unspecified face; no face label, person selection, or photo assignment is required. Manage faces opens the optional multi-face editor. Add face starts another draft; Save marker saves all completed faces and ignores empty new drafts. A draft with inscription, notes, people, or photos still requires a label. Back of stone remains independently editable. Photos assigned to faces display only in those face galleries, with the usual photo controls; the general gallery displays unassigned photos.
+
+## Local Scratch Scripts
+
+Keep disposable investigations under root `tmp/`, which Git and ESLint ignore. Maintained application, server, test, and script sources remain linted. Move a reusable tool into `scripts/` with tests before committing it. `ApplicationRoot` owns route composition and lazy components so the bootstrap file remains compatible with Fast Refresh linting.

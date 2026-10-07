@@ -25,3 +25,6 @@ deploy/test/tunnel-token
 field-media-inbox/
 
 /deploy/test/frontend.env
+
+# Local investigation scripts are not maintained application sources.
+/tmp/
