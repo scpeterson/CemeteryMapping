@@ -43,6 +43,8 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   const north = page.getByRole("region", { name: "North", exact: true });
   await expect(north).toContainText("Alice Example");
   await expect(north.locator(".inscription-box")).toHaveText("  ALICE\n1901–1981  ", { useInnerText: false });
+  // Protected galleries download only near the viewport.
+  await north.scrollIntoViewIfNeeded();
   await expect(north.getByRole("img")).toBeVisible();
   await expect(page.getByRole("tabpanel", { name: "Details", exact: true }).getByRole("img", { name: "latest-marker", exact: true })).toHaveCount(1);
   await expect(page.getByRole("region", { name: "Base", exact: true })).toContainText("Last word weathered");
