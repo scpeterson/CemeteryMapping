@@ -187,20 +187,21 @@ export async function selectHeadstonesForGrave(client, graveUuid) {
   const result = await client.query(
     `
       WITH selected_headstones AS (
-        SELECT DISTINCT ON (headstones.id, COALESCE(headstone_gravesites.relationship_type, 'primary'), headstone_gravesites.notes)
+        SELECT DISTINCT ON (headstones.id)
           headstones.*,
           COALESCE(headstone_gravesites.relationship_type, 'primary') AS selected_relationship_type,
           headstone_gravesites.notes AS selected_relationship_notes
         FROM headstones
         LEFT JOIN headstone_gravesites
           ON headstone_gravesites.headstone_uuid = headstones.id
+         AND headstone_gravesites.gravesite_uuid = $1
          AND headstone_gravesites.deleted_at IS NULL
         WHERE headstones.deleted_at IS NULL
           AND (
             headstones.gravesite_uuid = $1
             OR headstone_gravesites.gravesite_uuid = $1
           )
-        ORDER BY headstones.id, COALESCE(headstone_gravesites.relationship_type, 'primary'), headstone_gravesites.notes
+        ORDER BY headstones.id
       )
       SELECT
         ${headstoneDetailColumnsSql},
