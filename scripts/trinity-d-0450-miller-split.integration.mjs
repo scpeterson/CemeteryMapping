@@ -120,3 +120,19 @@ test("Miller split is a no-op without the original gravesite", async () => {
     assert.deepEqual((await client.query("SELECT * FROM burials ORDER BY id")).rows, before);
   });
 });
+
+test("Miller overlap is flagged on both graves without moving the neighbor", async () => {
+  await withFixture(async (client) => {
+    await client.query(`INSERT INTO gravesites SELECT
+      (jsonb_populate_record(NULL::gravesites,to_jsonb(g) || jsonb_build_object(
+        'id',gen_random_uuid(),'grave_id','0449','gravesite_id','TLC-GPS-0449',
+        'name','Heinrich P Miller'))).* FROM gravesites g`);
+    const before = (await client.query("SELECT geometry FROM gravesites WHERE grave_id='0449'")).rows[0];
+    await client.query(migration);
+    const after = (await client.query("SELECT geometry FROM gravesites WHERE grave_id='0449'")).rows[0];
+    assert.deepEqual(after, before);
+    const flags = (await client.query("SELECT geometry_notes FROM gravesites WHERE grave_id IN ('0449','0450')")).rows;
+    assert.equal(flags.length, 2);
+    for (const flag of flags) assert.match(flag.geometry_notes, /Field review required/u);
+  });
+});

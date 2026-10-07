@@ -153,3 +153,24 @@ marker_gravesite_links AS (
 SELECT count(*) AS christina_burials_reassigned FROM updated_christina_burial;
 
 --rollback empty
+
+--changeset cemeterymapping:435-flag-miller-neighbor-overlap
+UPDATE gravesites g
+SET geometry_notes = concat_ws(' ', NULLIF(g.geometry_notes, ''),
+    'Field review required: the marker-centered Miller layout was approved on 2026-10-07; estimated D-0450 and D-0449 boundaries overlap by approximately 18.26 square feet. Verify the physical burial limits before resolving this overlap. See ADR 0086.'),
+  updated_at = now()
+WHERE g.deleted_at IS NULL
+  AND g.gravesite_id IN ('TLC-GPS-0450', 'TLC-GPS-0449')
+  AND g.cemetery_id IN (
+    SELECT cemetery_id FROM gravesites
+    WHERE gravesite_id = 'TLC-GPS-0450-01' AND deleted_at IS NULL
+  )
+  AND EXISTS (
+    SELECT 1 FROM gravesites peter JOIN gravesites neighbor ON neighbor.cemetery_id = peter.cemetery_id
+    WHERE peter.gravesite_id = 'TLC-GPS-0450' AND neighbor.gravesite_id = 'TLC-GPS-0449'
+      AND peter.deleted_at IS NULL AND neighbor.deleted_at IS NULL
+      AND peter.cemetery_id = g.cemetery_id
+      AND ST_Area(ST_Intersection(peter.geometry, neighbor.geometry)::geography) > 0.001
+  );
+
+--rollback empty

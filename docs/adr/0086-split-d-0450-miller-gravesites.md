@@ -9,3 +9,5 @@ Peter remains in D-0450 (TLC-GPS-0450), whose polygon moves south. Christina mov
 Migration 435 verifies the existing records, the marker geometry, the two burial associations, and availability of the new identifier before making changes. Databases without the source grave skip the correction. No automatic rollback is provided for this data correction.
 
 A transactional preview against DEV found approximately 18.26 square feet of overlap between the proposed Peter polygon and the estimated D-0449 (Heinrich P Miller) polygon. Christina's proposed polygon does not overlap neighboring graves. The correction does not move D-0449 or suppress spatial validation findings; field review is needed to establish the actual neighboring burial limits.
+
+The user approved retaining the layout and flagging the overlap for field review on 2026-10-07. Add explicit field-review geometry notes to D-0450 and D-0449 when they overlap. Leave D-0449's geometry unchanged and keep the spatial validation finding visible.
