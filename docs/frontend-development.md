@@ -7,6 +7,8 @@
 
 ## Component Boundaries
 
+`useApplicationData` owns startup map/identity/options loading and lookup retry. `useCemeteryScope` owns scope filtering and labels. `selectionPermissions` centralizes selected-record access calculations; the API remains the authorization authority. Behavioral mutation tests in `tests/targeted-mutations.spec.ts` assert state and network effects rather than source formatting.
+
 Keep the application shell responsible for selection, workspace navigation, and coordinating data. Keep workflow-specific state and API operations in the relevant hooks. Preserve the lazy-loading boundaries for administration, reports, and control points.
 
 - `src/components/detail/` contains record views, editors, evidence lists, and galleries; `DetailPanel.tsx` coordinates the appropriate detail view.
