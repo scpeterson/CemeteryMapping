@@ -1,3 +1,4 @@
+import { runBoundedQueries } from "./queryBatch.mjs";
 import { selectFeaturesForHeadstones } from "./cemeteryFeatureQueries.mjs";
 import { selectMaintenanceForHeadstones } from "./cemeteryMaintenanceQueries.mjs";
 import { selectRelationshipsForHeadstone } from "./cemeteryRelationshipQueries.mjs";
@@ -231,7 +232,7 @@ export async function selectHeadstonesForGrave(client, graveUuid) {
   return result.rows;
 }
 
-export async function selectHeadstoneById(client, id) {
+export async function selectHeadstoneById(client, id, { parallel = false } = {}) {
   const reviewSql = headstoneDetailReviewSql();
   const result = await client.query(
     `
@@ -339,9 +340,11 @@ export async function selectHeadstoneById(client, id) {
   const headstone = result.rows[0];
   if (!headstone) return undefined;
 
-  const featuresByHeadstone = await selectFeaturesForHeadstones(client, [headstone.id]);
-  const maintenanceByHeadstone = await selectMaintenanceForHeadstones(client, [headstone.id]);
-  const relationships = await selectRelationshipsForHeadstone(client, headstone.id);
+  const [featuresByHeadstone, maintenanceByHeadstone, relationships] = await runBoundedQueries([
+    () => selectFeaturesForHeadstones(client, [headstone.id]),
+    () => selectMaintenanceForHeadstones(client, [headstone.id]),
+    () => selectRelationshipsForHeadstone(client, headstone.id),
+  ], parallel ? 3 : 1);
   return {
     ...headstone,
     features: featuresByHeadstone.get(headstone.id) ?? [],
