@@ -1,3 +1,4 @@
+import { isVeteran as veteranFlag } from "../shared/recordNormalization.mjs";
 export function parseGeometry(value) {
   if (!value) return undefined;
   return typeof value === "string" ? JSON.parse(value) : value;
@@ -42,8 +43,7 @@ export function toOwner(owner) {
 }
 
 export function toBurial(burial) {
-  const veteranText = String(burial.veteran ?? "").trim().toLowerCase();
-  const isVeteran = ["yes", "y", "true", "1"].includes(veteranText);
+  const isVeteran = veteranFlag(burial.veteran);
   const normalizedProvenance = burial.source_properties?.NormalizedProvenance ?? {};
 
   return {

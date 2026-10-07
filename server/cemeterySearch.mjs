@@ -1,3 +1,5 @@
+import { normalizeSearchText } from "../shared/recordNormalization.mjs";
+import { normalizedSearchSql, veteranSql } from "./searchNormalizationSql.mjs";
 import { derivedGravesiteStatusSql } from "./gravesiteStatusSql.mjs";
 
 const statusLabels = {
@@ -8,13 +10,6 @@ const statusLabels = {
   needs_review: "Needs review",
   unknown: "Unknown",
 };
-
-function normalize(value) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/gu, "");
-}
 
 function normalizeStatus(status) {
   return Object.hasOwn(statusLabels, status) ? status : "unknown";
@@ -58,7 +53,7 @@ function groupSearchRows(rows, cleanedQuery) {
 }
 
 export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds, cemeteryId, limit = 50, offset = 0 } = {}) {
-  const cleanedQuery = normalize(query.trim());
+  const cleanedQuery = normalizeSearchText(query);
   const scopedOwnershipCemeteryIds = ownershipCemeteryIds?.map((id) => String(id));
   const birthDateSearchValue = "COALESCE(burials.birth_date_text, burials.birth_date::text)";
   const deathDateSearchValue = "COALESCE(burials.death_date_text, burials.death_date::text)";
@@ -77,7 +72,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
-          AND lower(coalesce(${militaryBranchValue}, '')) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`coalesce(${militaryBranchValue}, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Military rank', ${militaryRankValue}
@@ -86,7 +81,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
-          AND lower(coalesce(${militaryRankValue}, '')) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`coalesce(${militaryRankValue}, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'War service', ${militaryWarServiceValue}
@@ -95,7 +90,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
-          AND lower(coalesce(${militaryWarServiceValue}, '')) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`coalesce(${militaryWarServiceValue}, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Military decoration', military_decoration_types.label
@@ -105,7 +100,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
-          AND lower(military_decoration_types.label) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`military_decoration_types.label`)} LIKE '%' || $1 || '%'
       `;
   const result = await pool.query(
     `
@@ -163,32 +158,32 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         UNION ALL
         SELECT 'Grave', concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)
         WHERE $1 <> ''
-          AND lower(concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Cemetery', base_graves.cemetery_name
         WHERE $1 <> ''
-          AND lower(base_graves.cemetery_name) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`base_graves.cemetery_name`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Cemetery facility ID', base_graves.cemetery_facility_id
         WHERE $1 <> ''
-          AND lower(coalesce(base_graves.cemetery_facility_id, '')) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`coalesce(base_graves.cemetery_facility_id, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Lot name', base_graves.lot_name
         WHERE $1 <> ''
-          AND lower(coalesce(base_graves.lot_name, '')) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`coalesce(base_graves.lot_name, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Lot number', base_graves.lot_id
         WHERE $1 <> ''
-          AND lower(coalesce(base_graves.lot_id, '')) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`coalesce(base_graves.lot_id, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Status', base_graves.status_label
         WHERE $1 <> ''
-          AND lower(base_graves.status_label) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`base_graves.status_label`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Owner', owner_names.display_name
@@ -201,7 +196,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND $1 <> ''
           AND owners.gravesite_uuid = base_graves.grave_uuid
           AND owners.deleted_at IS NULL
-          AND lower(owner_names.display_name) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`owner_names.display_name`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Owner', current_ownership_right_owners.display_name
@@ -211,7 +206,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND $1 <> ''
           AND current_ownership_right_owners.target_type = 'gravesite'
           AND current_ownership_right_owners.gravesite_uuid = base_graves.grave_uuid
-          AND lower(current_ownership_right_owners.display_name) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`current_ownership_right_owners.display_name`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Ownership date', current_ownership_right_owners.effective_date::text
@@ -241,7 +236,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
-          AND lower(concat_ws(' ', burials.display_name, burials.first_name, ${maidenNameSearchValue}, burials.last_name, burials.full_name)) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`concat_ws(' ', burials.display_name, burials.first_name, ${maidenNameSearchValue}, burials.last_name, burials.full_name)`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Birth', ${birthDateSearchValue}
@@ -250,7 +245,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
           AND ${birthDateSearchValue} IS NOT NULL
-          AND lower(${birthDateSearchValue}) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`${birthDateSearchValue}`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Death', ${deathDateSearchValue}
@@ -259,7 +254,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
           AND ${deathDateSearchValue} IS NOT NULL
-          AND lower(${deathDateSearchValue}) LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`${deathDateSearchValue}`)} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Burial date', burials.burial_date::text
@@ -276,7 +271,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         WHERE $1 <> ''
           AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
-          AND lower(coalesce(burials.veteran, '')) IN ('yes', 'y', 'true', '1')
+          AND ${veteranSql("burials.veteran")}
           AND 'veteran' LIKE '%' || $1 || '%'
 
         ${militaryServiceSearchSql}
