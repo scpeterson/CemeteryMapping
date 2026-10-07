@@ -1,31 +1,25 @@
 import { EditingOptionsContext } from "./components/detail/editingOptionsContext";
 import { ConfirmationProvider } from "./components/ui/ConfirmationProvider";
 import { confirmDiscardChanges, useDraftNavigationGuard } from "./hooks/useDraftState";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { ApplicationHeader } from "./components/ApplicationHeader";
-import {
-  fetchCemeteryData,
-  fetchCurrentUser,
-  fetchHeadstoneLookups,
-} from "./api/cemeteryApi";
+import { useCemeterySearch } from "./hooks/useCemeterySearch";
+import { useApplicationData } from "./hooks/useApplicationData";
+import { useCemeteryScope } from "./hooks/useCemeteryScope";
+import { selectionPermissions } from "./lib/selectionPermissions";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
-import { cemeteryData } from "./data/cemeteryData";
 import { graveSelectionKey, lotSelectionKey } from "./lib/format";
 import { searchGraves, searchLots } from "./lib/search";
-import { useCemeterySearch } from "./hooks/useCemeterySearch";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import { useRecordMutations } from "./hooks/useRecordMutations";
 import type {
   CemeterySearchMatch,
-  CemeteryData,
   CemeteryLot,
-  CurrentUser,
   GraveSpaceSummary,
   GraveStatus,
-  HeadstoneLookups,
   HeadstoneSummary,
   SearchMatch,
 } from "./types";
@@ -37,32 +31,6 @@ const ControlPointCollector = lazy(() =>
 const ReportsPanel = lazy(() => import("./components/ReportsPanel").then((module) => ({ default: module.ReportsPanel })));
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
-const emptyHeadstoneLookups: HeadstoneLookups = {
-  headstones: [],
-  gravesites: [],
-  markerTypes: [],
-  markerScopes: [],
-  materials: [],
-  conditions: [],
-  vaseTypes: [],
-  vaseMaterials: [],
-  vasePlacements: [],
-  graveFeatureTypes: [],
-  graveFeatureSubtypes: [],
-  graveFeaturePlacements: [],
-  graveFeatureMaterials: [],
-  intermentTypes: [],
-  burialRecordStatuses: [],
-  militaryBranches: [],
-  militaryRanks: [],
-  militaryWarServices: [],
-  militaryDecorations: [],
-  verifiedPlaces: [],
-  maintenanceIssueTypes: [],
-  maintenanceActionTypes: [],
-  maintenancePriorities: [],
-};
-
 type PickedMarkerPoint = {
   latitude: number;
   longitude: number;
@@ -80,18 +48,10 @@ export default function App() {
   const [adminCemeteryScope, setAdminCemeteryScope] = useState("");
   const [query, setQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<GraveStatus>>(() => new Set(allStatuses));
-  const [data, setData] = useState<CemeteryData>(cemeteryData);
-  const [loadError, setLoadError] = useState<string>();
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
   const [selectedLot, setSelectedLot] = useState<CemeteryLot | undefined>();
   const [selectedHeadstone, setSelectedHeadstone] = useState<HeadstoneSummary | undefined>();
-  const [currentUser, setCurrentUser] = useState<CurrentUser>();
-  const [lookupError, setLookupError] = useState<string>();
-  const [lookupLoading, setLookupLoading] = useState(true);
-  const [lookupAttempt, setLookupAttempt] = useState(0);
-  const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
-  const [userError, setUserError] = useState<string>();
+  const { data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading, retryLookups } = useApplicationData(setSelectedGrave);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isReportsPanelOpen, setIsReportsPanelOpen] = useState(false);
   const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
@@ -108,99 +68,8 @@ export default function App() {
     refreshDetails,
   } = useSelectedRecordDetails({ selectedGrave, selectedHeadstone });
 
-  useEffect(() => {
-    let isCurrent = true;
-
-    fetchCurrentUser()
-      .then((user) => {
-        if (!isCurrent) return;
-        setCurrentUser(user);
-        setUserError(undefined);
-      })
-      .catch((error: unknown) => {
-        if (!isCurrent) return;
-        setUserError(error instanceof Error ? error.message : "Unable to load user permissions");
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let isCurrent = true;
-
-    setLookupLoading(true);
-    setLookupError(undefined);
-    fetchHeadstoneLookups()
-      .then((lookups) => {
-        if (isCurrent) setHeadstoneLookups(lookups);
-      })
-      .catch((error: unknown) => {
-        if (isCurrent) setLookupError(error instanceof Error ? error.message : "Try again.");
-      })
-      .finally(() => { if (isCurrent) setLookupLoading(false); });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [lookupAttempt]);
-
-  useEffect(() => {
-    let isCurrent = true;
-
-    fetchCemeteryData()
-      .then((nextData) => {
-        if (!isCurrent) return;
-        setData(nextData);
-        setSelectedGrave((current) =>
-          current ? nextData.graves.find((grave) => graveSelectionKey(grave) === graveSelectionKey(current)) : undefined,
-        );
-        setLoadError(undefined);
-      })
-      .catch((error: unknown) => {
-        if (!isCurrent) return;
-        setLoadError(error instanceof Error ? error.message : "Unable to load cemetery data");
-      })
-      .finally(() => {
-        if (isCurrent) setIsLoading(false);
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  const cemeteryScope = currentUser?.role === "admin"
-    ? adminCemeteryScope
-    : currentUser?.assignedCemeteryIds.length === 1 ? currentUser.assignedCemeteryIds[0] : null;
-
+  const { cemeteryScope, cemeteries, mapData, cemeteryScopeLabel } = useCemeteryScope(data, currentUser, adminCemeteryScope);
   const { remoteMatches, searchError, isSearching, hasMore, loadMore, retry } = useCemeterySearch(query, selectedStatuses, cemeteryScope);
-
-  const cemeteries = useMemo(() => {
-    const names = new Map<string, string>();
-    for (const boundary of data.boundaries ?? (data.boundary ? [data.boundary] : [])) {
-      if (boundary.properties.id) names.set(boundary.properties.id, boundary.properties.name);
-    }
-    for (const grave of data.graves) names.set(grave.cemeteryId, grave.cemeteryName);
-    return [...names].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [data]);
-  const mapData = useMemo<CemeteryData>(() => {
-    if (cemeteryScope === "") return data;
-    if (cemeteryScope === null) return { boundaries: [], sections: [], lots: [], graves: [], headstones: [], lotRestrictedAreas: [] };
-    const name = cemeteries.find((cemetery) => cemetery.id === cemeteryScope)?.name;
-    const boundaries = (data.boundaries ?? (data.boundary ? [data.boundary] : [])).filter((boundary) =>
-      boundary.properties.id ? boundary.properties.id === cemeteryScope : boundary.properties.name === name);
-    return {
-      ...data,
-      boundary: boundaries[0],
-      boundaries,
-      graves: data.graves.filter((grave) => grave.cemeteryId === cemeteryScope),
-      lots: data.lots.filter((lot) => lot.cemeteryId === cemeteryScope),
-      headstones: data.headstones.filter((marker) => marker.cemeteryId === cemeteryScope),
-      lotRestrictedAreas: data.lotRestrictedAreas?.filter((area) => area.cemeteryId === cemeteryScope),
-    };
-  }, [data, cemeteryScope, cemeteries]);
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
   const lotMatches = useMemo(() => searchLots(data, query), [data, query]);
   const matches = useMemo<CemeterySearchMatch[]>(() => [...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, remoteMatches, cemeteryScope]);
@@ -242,30 +111,7 @@ export default function App() {
     const associatedIdSet = new Set(associatedIds);
     return data.graves.filter((grave) => grave.cemeteryId === selectedHeadstone.cemeteryId && associatedIdSet.has(grave.id));
   }, [data.graves, selectedHeadstone, selectedHeadstoneDetails]);
-  const hasScopedEditAccess = currentUser?.role === "power-user" || currentUser?.role === "cemetery-admin";
-  const canViewSelectedOwnership =
-    currentUser?.role === "admin" ||
-    (hasScopedEditAccess && (selectedGrave || selectedHeadstone) ? (currentUser?.assignedCemeteryIds ?? []).includes((selectedGrave ?? selectedHeadstone)!.cemeteryId) : false);
-  const canUpdateSelectedHeadstones =
-    currentUser?.role === "admin" ||
-    (hasScopedEditAccess && selectedGrave ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false) ||
-    (hasScopedEditAccess && selectedHeadstone ? (currentUser?.assignedCemeteryIds ?? []).includes(selectedHeadstone.cemeteryId) : false);
-  const canUpdateSelectedGravesites = canUpdateSelectedHeadstones;
-  const canManageSelectedGraveLot =
-    currentUser?.role === "admin" ||
-    (currentUser?.role === "cemetery-admin" && selectedGrave ? (currentUser.assignedCemeteryIds ?? []).includes(selectedGrave.cemeteryId) : false);
-  const canUpdateSelectedBurials = canUpdateSelectedHeadstones;
-  const cemeteryScopeLabel = useMemo(() => {
-    if (!currentUser) return "Loading cemetery…";
-    if (currentUser.role !== "admin") {
-      if (cemeteryScope === null) return "Contact your administrator to register one cemetery.";
-      return cemeteries.find((cemetery) => cemetery.id === cemeteryScope)?.name ?? "Your registered cemetery";
-    }
-    const cemeteryNames = [...new Set((data.boundaries ?? (data.boundary ? [data.boundary] : [])).map((boundary) => boundary.properties.name))];
-    if (cemeteryNames.length === 0) return "Cemetery records";
-    if (cemeteryNames.length === 1) return "1 cemetery";
-    return `${cemeteryNames.length} cemeteries`;
-  }, [data.boundaries, data.boundary, currentUser, cemeteryScope, cemeteries]);
+  const { canViewSelectedOwnership, canUpdateSelectedHeadstones, canUpdateSelectedGravesites, canManageSelectedGraveLot, canUpdateSelectedBurials } = selectionPermissions(currentUser, selectedGrave?.cemeteryId, selectedHeadstone?.cemeteryId);
 
   const changeCemeteryScope = (id: string) => {
     if (currentUser?.role !== "admin" || !confirmDiscardChanges()) return;
@@ -444,7 +290,7 @@ export default function App() {
               onPickMarkerPoint={pickMarkerPoint}
             />
           </section>
-          <EditingOptionsContext.Provider value={{ loading: lookupLoading, error: lookupError, retry: () => setLookupAttempt((value) => value + 1) }}>
+          <EditingOptionsContext.Provider value={{ loading: lookupLoading, error: lookupError, retry: retryLookups }}>
           <DetailPanel
             selectionVersion={selectionVersion}
             onSelectHeadstone={selectHeadstone}
