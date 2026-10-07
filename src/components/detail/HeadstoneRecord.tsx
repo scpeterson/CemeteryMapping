@@ -357,7 +357,8 @@ export function HeadstoneRecord({
 
   const assignedPhotoIds = new Set((headstone.faces ?? []).flatMap((face) => face.mediaAssetIds));
   const unassignedPhotos = (headstone.mediaAssets ?? []).filter((asset) => !assignedPhotoIds.has(asset.id));
-  const relationshipDetails = headstoneRelationshipDetails(headstone.relationshipType);
+  const sharedMarker = headstone.spansMultipleGravesites || headstone.relationshipType === "spans";
+  const relationshipDetails = headstoneRelationshipDetails(sharedMarker ? "spans" : headstone.relationshipType);
   const relationshipTitle = headstone.relationshipNotes ? `${relationshipDetails.description} Notes: ${headstone.relationshipNotes}` : relationshipDetails.description;
 
   return (
@@ -446,11 +447,11 @@ export function HeadstoneRecord({
         <MediaGallery assets={unassignedPhotos} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
       ) : null}
       {canUploadPhotos ? <PhotoUploadForm headstones={[headstone]} fixedHeadstone={headstone} onUpload={onUploadPhoto} /> : null}
-      {headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
+      {sharedMarker || headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
         <p className="marker-relationship" title={relationshipTitle} aria-label={relationshipTitle}>
           <Info size={14} aria-hidden="true" />
           <span>
-            {relationshipDetails.label} <span className="marker-relationship-code">({headstone.relationshipType})</span>
+            {relationshipDetails.label}{!sharedMarker ? <> <span className="marker-relationship-code">({headstone.relationshipType})</span></> : null}
             {headstone.relationshipNotes ? ` - ${headstone.relationshipNotes}` : ""}
           </span>
         </p>

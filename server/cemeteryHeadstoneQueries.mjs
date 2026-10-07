@@ -5,6 +5,13 @@ import { selectRelationshipsForHeadstone } from "./cemeteryRelationshipQueries.m
 import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 const headstoneDetailColumnsSql = `
+  EXISTS (
+    SELECT 1 FROM headstone_gravesites shared_link
+    JOIN gravesites shared_grave ON shared_grave.id = shared_link.gravesite_uuid
+    WHERE shared_link.headstone_uuid = headstones.id
+      AND shared_link.relationship_type = 'spans'
+      AND shared_link.deleted_at IS NULL AND shared_grave.deleted_at IS NULL
+  ) AS spans_multiple_gravesites,
   (SELECT COALESCE(jsonb_agg(jsonb_build_object('id', b.id::text, 'fullName', b.full_name) ORDER BY b.full_name, b.id), '[]'::jsonb)
     FROM headstone_burials hb JOIN burials b ON b.id=hb.burial_uuid
     WHERE hb.headstone_uuid=headstones.id AND hb.deleted_at IS NULL AND b.deleted_at IS NULL) AS face_people,
