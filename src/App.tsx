@@ -7,7 +7,6 @@ import {
   fetchCemeteryData,
   fetchCurrentUser,
   fetchHeadstoneLookups,
-  fetchSearchMatches,
 } from "./api/cemeteryApi";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
@@ -16,6 +15,7 @@ import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environ
 import { cemeteryData } from "./data/cemeteryData";
 import { graveSelectionKey, lotSelectionKey } from "./lib/format";
 import { searchGraves, searchLots } from "./lib/search";
+import { useCemeterySearch } from "./hooks/useCemeterySearch";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import { useRecordMutations } from "./hooks/useRecordMutations";
 import type {
@@ -86,10 +86,6 @@ export default function App() {
   const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
   const [selectedLot, setSelectedLot] = useState<CemeteryLot | undefined>();
   const [selectedHeadstone, setSelectedHeadstone] = useState<HeadstoneSummary | undefined>();
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string>();
-  const [searchAttempt, setSearchAttempt] = useState(0);
-  const [remoteMatches, setRemoteMatches] = useState<SearchMatch[]>();
   const [currentUser, setCurrentUser] = useState<CurrentUser>();
   const [lookupError, setLookupError] = useState<string>();
   const [lookupLoading, setLookupLoading] = useState(true);
@@ -175,41 +171,11 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    const cleanedQuery = query.trim();
-    setSearchError(undefined);
-    setRemoteMatches(undefined);
-    setIsSearching(Boolean(cleanedQuery));
-    if (!cleanedQuery) {
-      setRemoteMatches(undefined);
-      return;
-    }
-
-    let isCurrent = true;
-    const controller = new AbortController();
-    const searchTimeout = window.setTimeout(() => {
-      fetchSearchMatches(cleanedQuery, selectedStatuses, controller.signal)
-        .then((matches) => {
-          if (isCurrent) setRemoteMatches(matches);
-        })
-        .catch((error: unknown) => {
-          if (!isCurrent || (error instanceof DOMException && error.name === "AbortError")) return;
-          setRemoteMatches(undefined);
-          setSearchError("Search is unavailable. Showing matches from loaded map data.");
-        })
-        .finally(() => { if (isCurrent) setIsSearching(false); });
-    }, 250);
-
-    return () => {
-      isCurrent = false;
-      window.clearTimeout(searchTimeout);
-      controller.abort();
-    };
-  }, [query, selectedStatuses, searchAttempt]);
-
   const cemeteryScope = currentUser?.role === "admin"
     ? adminCemeteryScope
     : currentUser?.assignedCemeteryIds.length === 1 ? currentUser.assignedCemeteryIds[0] : null;
+
+  const { remoteMatches, searchError, isSearching, hasMore, loadMore, retry } = useCemeterySearch(query, selectedStatuses, cemeteryScope);
 
   const cemeteries = useMemo(() => {
     const names = new Map<string, string>();
@@ -428,9 +394,12 @@ export default function App() {
             {(["search", "map", "details"] as const).map((view) => <button key={view} type="button" aria-pressed={mobileView === view} onClick={() => setMobileView(view)}>{view === "search" ? "Search" : view === "map" ? "Map" : "Details"}</button>)}
           </nav>
           <SearchPanel
+            hasMore={hasMore}
+            onLoadMore={loadMore}
+            scopeKey={cemeteryScope ?? "unassigned"}
             isSearching={isSearching}
             error={searchError}
-            onRetry={() => setSearchAttempt((attempt) => attempt + 1)}
+            onRetry={retry}
             query={query}
             onQueryChange={setQuery}
             selectedStatuses={selectedStatuses}
