@@ -57,7 +57,7 @@ function groupSearchRows(rows, cleanedQuery) {
   return [...matchesByGrave.values()];
 }
 
-export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds } = {}) {
+export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds, cemeteryId, limit = 50, offset = 0 } = {}) {
   const cleanedQuery = normalize(query.trim());
   const scopedOwnershipCemeteryIds = ownershipCemeteryIds?.map((id) => String(id));
   const birthDateSearchValue = "COALESCE(burials.birth_date_text, burials.birth_date::text)";
@@ -109,7 +109,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
       `;
   const result = await pool.query(
     `
-      WITH base_graves AS (
+      WITH base_graves AS MATERIALIZED (
         SELECT
           gravesites.id AS grave_uuid,
           gravesites.cemetery_id::text,
@@ -138,11 +138,12 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           ON derived_status_type.code = derived_status.status
         WHERE gravesites.deleted_at IS NULL
           AND cemeteries.deleted_at IS NULL
+          AND ($5::uuid IS NULL OR gravesites.cemetery_id = $5::uuid)
           AND (
             cardinality($2::text[]) = 0
             OR derived_status.status = ANY($2::text[])
           )
-      )
+      ), matched_rows AS MATERIALIZED (
       SELECT
         base_graves.cemetery_id,
         base_graves.cemetery_name,
@@ -280,16 +281,20 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
 
         ${militaryServiceSearchSql}
       ) reasons ON reasons.reason_value IS NOT NULL
-      ORDER BY
-        base_graves.cemetery_name,
-        base_graves.section_id,
-        base_graves.lot_id,
-        base_graves.grave_id,
-        base_graves.gravesite_id,
-        reasons.reason_label,
-        reasons.reason_value
+      ), page_graves AS (
+        SELECT DISTINCT cemetery_id, cemetery_name, section_id, lot_id, grave_id, gravesite_id
+        FROM matched_rows
+        ORDER BY cemetery_name, section_id, lot_id, grave_id, gravesite_id, cemetery_id
+        LIMIT $6::integer OFFSET $7::integer
+      )
+      SELECT matched_rows.*
+      FROM page_graves
+      JOIN matched_rows USING (cemetery_id, gravesite_id)
+      ORDER BY page_graves.cemetery_name, page_graves.section_id, page_graves.lot_id,
+        page_graves.grave_id, page_graves.gravesite_id, page_graves.cemetery_id,
+        matched_rows.reason_label, matched_rows.reason_value
     `,
-    [cleanedQuery, statuses, includeOwnership, scopedOwnershipCemeteryIds],
+    [cleanedQuery, statuses, includeOwnership, scopedOwnershipCemeteryIds, cemeteryId ?? null, limit + 1, offset],
   );
 
   return groupSearchRows(result.rows, cleanedQuery);

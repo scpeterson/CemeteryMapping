@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "./ui/Button";
 import { EmptyState, Notice, StatusBadge } from "./ui/Feedback";
 import { Filter, Search, X } from "lucide-react";
@@ -5,6 +6,9 @@ import type { CemeterySearchMatch, GraveStatus } from "../types";
 import { formatGraveLocation, graveSelectionKey, lotSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type SearchPanelProps = {
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  scopeKey?: string;
   isSearching: boolean;
   error?: string;
   onRetry: () => void;
@@ -24,7 +28,7 @@ type SearchPanelProps = {
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 
 export function SearchPanel({
-  isSearching, error, onRetry,
+  isSearching, error, onRetry, hasMore = false, onLoadMore, scopeKey = "",
   query,
   onQueryChange,
   selectedStatuses,
@@ -37,6 +41,18 @@ export function SearchPanel({
   selectedLotKey,
   onSelectMatch,
 }: SearchPanelProps) {
+  const pageKey = JSON.stringify([query, [...selectedStatuses].sort(), scopeKey]);
+  const [pagination, setPagination] = useState({ key: "", page: 0 });
+  const page = pagination.key === pageKey ? pagination.page : 0;
+  const pageSize = 50;
+  const lastPage = Math.max(0, Math.ceil(matches.length / pageSize) - 1);
+  const currentPage = Math.min(page, lastPage);
+  const shown = matches.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const hasNext = currentPage < lastPage || hasMore;
+  const changePage = (next: number) => {
+    if (next > lastPage && hasMore) onLoadMore?.();
+    setPagination({ key: pageKey, page: next });
+  };
   return (
     <aside className="search-panel" aria-label="Search and filters">
       <label className="search-box">
@@ -85,13 +101,13 @@ export function SearchPanel({
       </label> : null}
 
       <div className="results-heading" role="status" aria-live="polite" aria-atomic="true">
-        <span>{isSearching ? "Searching records…" : `${matches.length} result${matches.length === 1 ? "" : "s"}${error ? " from loaded map data" : ""}`}</span>
+        <span>{isSearching ? "Searching records…" : `${matches.length} result${matches.length === 1 ? "" : "s"}${hasMore ? " loaded; more available" : ""}${error ? " from loaded map data" : ""}`}</span>
       </div>
 
       <div className="results-list" id="cemetery-search-results" aria-busy={isSearching}>
         {error ? <Notice tone="error">{error} <Button variant="secondary" onClick={onRetry}>Retry search</Button></Notice> : null}
         {!isSearching && !error && !matches.length ? <EmptyState title="No matching records">Try a different name, grave, or lot, or enable more status filters.</EmptyState> : null}
-        {!isSearching && matches.map((match) => {
+        {!isSearching && shown.map((match) => {
           if ("lot" in match) {
             const key = lotSelectionKey(match.lot);
             return (
@@ -130,6 +146,11 @@ export function SearchPanel({
           );
         })}
       </div>
+      {matches.length > pageSize || hasMore ? <nav aria-label="Search result pages">
+        <Button variant="secondary" disabled={isSearching || currentPage === 0} onClick={() => changePage(currentPage - 1)}>Previous results</Button>
+        <span role="status">Page {currentPage + 1}</span>
+        <Button variant="secondary" disabled={isSearching || !hasNext} onClick={() => changePage(currentPage + 1)}>Next results</Button>
+      </nav> : null}
     </aside>
   );
 }

@@ -112,13 +112,17 @@ export async function updateMaintenanceRecord(id: string, record: SaveMaintenanc
   return jsonResponse<MaintenanceRecord>(response, "Update maintenance record API");
 }
 
-export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal): Promise<SearchMatch[]> {
-  const params = new URLSearchParams();
+export async function fetchSearchPage(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal, options: { cemeteryId?: string; offset?: number } = {}): Promise<{ matches: SearchMatch[]; hasMore: boolean }> {
+  const params = new URLSearchParams({ status: [...statuses].join(","), limit: "50", offset: String(options.offset ?? 0) });
   if (query.trim()) params.set("q", query);
-  params.set("status", [...statuses].join(","));
-
+  if (options.cemeteryId) params.set("cemeteryId", options.cemeteryId);
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/search?${params.toString()}`, { signal });
-  return jsonResponse<SearchMatch[]>(response, "Search API");
+  const matches = await jsonResponse<SearchMatch[]>(response, "Search API");
+  return { matches, hasMore: response.headers.get("X-Search-Has-More") === "true" };
+}
+
+export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal): Promise<SearchMatch[]> {
+  return (await fetchSearchPage(query, statuses, signal)).matches;
 }
 
 export async function fetchCurrentUser(): Promise<CurrentUser> {

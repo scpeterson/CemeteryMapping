@@ -58,7 +58,7 @@ function emptyCemeteryPool() {
       assert.doesNotMatch(sql, /SELECT 'Cemetery ID'/u);
       assert.doesNotMatch(sql, /SELECT 'Lot ID'/u);
       assert.doesNotMatch(sql, /WITH status_labels/u);
-      assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true, undefined]);
+      assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true, undefined, null, 51, 0]);
       return { rows: [] };
     },
   };
@@ -297,7 +297,7 @@ test("search includes generalized ownership rights only through ownership-aware 
         };
       }
       assert.match(sql, /current_ownership_right_owners/);
-      assert.deepEqual(values, ["baur", [], false, []]);
+      assert.deepEqual(values, ["baur", [], false, [], null, 51, 0]);
       return { rows: [] };
     },
   };
@@ -323,7 +323,7 @@ test("search returns cemetery name and lot field reasons", async () => {
           ],
         };
       }
-      assert.deepEqual(values, ["trinity", [], true, undefined]);
+      assert.deepEqual(values, ["trinity", [], true, undefined, null, 51, 0]);
       return {
         rows: [
           {
