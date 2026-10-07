@@ -1,3 +1,4 @@
+import { veteranSql } from "../../server/searchNormalizationSql.mjs";
 import { optionalTextParameter, reportResult, scopedWhere } from "./shared.mjs";
 
 export async function runMarkerBurialPages(client, definition, parameters, cemeteryIds) {
@@ -51,7 +52,7 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
         burial_interment_types.label AS interment_type,
         burial_record_status_types.label AS record_status,
         burials.funeral_home,
-        lower(btrim(coalesce(burials.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran') AS veteran,
+        ${veteranSql("burials.veteran")} AS veteran,
         military_branch_types.label AS military_branch,
         military_rank_types.label AS military_rank,
         military_war_service_types.label AS military_war_service,
@@ -236,7 +237,7 @@ export async function runVeteranServiceSummary(client, definition, cemeteryIds) 
         ON military_war_service_types.id = burials.military_war_service_type_id
       WHERE burials.deleted_at IS NULL
         AND gravesites.deleted_at IS NULL
-        AND lower(btrim(coalesce(burials.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran')
+        AND ${veteranSql("burials.veteran")}
         ${scope}
     )
     SELECT 'Summary' AS group_name, 'Veteran burials' AS label, count(*)::int AS count

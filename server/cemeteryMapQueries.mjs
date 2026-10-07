@@ -1,3 +1,4 @@
+import { veteranSql } from "./searchNormalizationSql.mjs";
 import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 import { sectionAlternateNamesSelect } from "./cemeterySchema.mjs";
 import { derivedGravesiteStatusSql } from "./gravesiteStatusSql.mjs";
@@ -63,7 +64,7 @@ export async function selectGravesForCemeteries(client, cemeteryIds, { includeCo
         SELECT gravesite_uuid, gravesite_id
         FROM burials
         WHERE deleted_at IS NULL
-          AND lower(btrim(coalesce(veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran')
+          AND ${veteranSql("veteran")}
       ),
       veteran_gravesite_uuids AS (
         SELECT DISTINCT gravesite_uuid

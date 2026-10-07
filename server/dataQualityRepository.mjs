@@ -1,3 +1,4 @@
+import { veteranSql } from "./searchNormalizationSql.mjs";
 import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 const severityOrder = new Map([
   ["high", 1],
@@ -213,7 +214,7 @@ export async function listDataQualityDashboard(pool, options = {}) {
           'medium' AS severity,
           'Burials' AS category
         FROM scoped_burials burial
-        WHERE lower(btrim(COALESCE(burial.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran')
+        WHERE ${veteranSql("burial.veteran")}
           AND (
             burial.military_branch_type_id IS NULL
             OR burial.military_rank_type_id IS NULL

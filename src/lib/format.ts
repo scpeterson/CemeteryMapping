@@ -1,3 +1,4 @@
+import { normalizeSearchText } from "../../shared/recordNormalization.mjs";
 import type { CemeteryLot, GeometryConfidence, GeometryType, GraveSpaceSummary, GraveStatus } from "../types";
 
 export const statusLabels: Record<GraveStatus, string> = {
@@ -92,5 +93,5 @@ export function lotSelectionKey(lot: Pick<CemeteryLot, "cemeteryId" | "section" 
 }
 
 export function normalize(value: string) {
-  return value.trim().toLowerCase();
+  return normalizeSearchText(value);
 }
