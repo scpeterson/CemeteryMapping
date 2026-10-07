@@ -102,7 +102,7 @@ Preserve cascade order when moving rules. Check print output when changing repor
 
 ## Protected Photos
 
-Use `src/hooks/useMediaUrl.ts` for protected media, as the gallery and marker reports do. It fetches same-API-origin `/media/` images through `authorizedFetch`, creates an object URL, aborts stale loads, and revokes the object URL on cleanup. External image URLs bypass the authenticated fetch. Do not use a plain `<img src="/media/...">` for protected assets or persist a temporary `blob:` URL as a share link.
+Use `src/hooks/useMediaUrl.ts` for protected media, as the gallery and marker reports do. It fetches same-API-origin `/media/` images through `authorizedFetch`, creates an object URL, aborts stale loads, and revokes the object URL on cleanup. Gallery downloads begin near the viewport, preview existing thumbnails, and load originals in a viewer only when opened. Protected downloads remain uncached; report photos remain eager for printing. External image URLs bypass the authenticated fetch. Do not use a plain `<img src="/media/...">` for protected assets or persist a temporary `blob:` URL as a share link.
 
 ## Reports
 
