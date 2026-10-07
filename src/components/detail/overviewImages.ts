@@ -1,7 +1,7 @@
 import { sortedMediaAssets } from "../../lib/media";
 import type { Headstone, MediaAsset } from "../../types";
 
-export type OverviewImage = { url: string; label: string; date?: string; linkedMarker?: string; isPrimary?: boolean };
+export type OverviewImage = { url: string; thumbnailUrl?: string; label: string; date?: string; linkedMarker?: string; isPrimary?: boolean };
 
 export function overviewImages(assets: MediaAsset[], markers: Headstone[] = []): OverviewImage[] {
   const all = [...assets, ...markers.flatMap((marker) => marker.mediaAssets ?? [])];
@@ -12,7 +12,7 @@ export function overviewImages(assets: MediaAsset[], markers: Headstone[] = []):
   }
   const unique = [...byId.values()];
   const images: OverviewImage[] = sortedMediaAssets(unique).map((asset) => ({
-    url: asset.fileUrl, label: asset.notes || asset.originalFilename || "Cemetery record photo",
+    url: asset.fileUrl, thumbnailUrl: asset.thumbnailUrl || undefined, label: asset.notes || asset.originalFilename || "Cemetery record photo",
     isPrimary: asset.isPrimary,
     date: asset.capturedAt ?? asset.uploadedAt,
     linkedMarker: markers.find((marker) => marker.mediaAssets?.some((photo) => photo.id === asset.id))?.headstoneId,

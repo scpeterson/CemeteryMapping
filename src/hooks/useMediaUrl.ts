@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { authorizedFetch, jsonResponse } from "../api/apiClient";
 import { apiBaseUrl } from "../config/environment";
 
-export function useMediaUrl(fileUrl: string) {
+export function useMediaUrl(fileUrl: string, enabled = true) {
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<{ source: string; attempt: number; url: string }>();
   const [failure, setFailure] = useState<{ source: string; attempt: number; message: string }>();
@@ -12,7 +12,7 @@ export function useMediaUrl(fileUrl: string) {
   const sourceUrl = source.href;
 
   useEffect(() => {
-    if (!protectedMedia) return;
+    if (!protectedMedia || !enabled) return;
     const controller = new AbortController();
     let objectUrl: string | undefined;
     void authorizedFetch(sourceUrl, { signal: controller.signal, cache: "no-store" })
@@ -30,7 +30,7 @@ export function useMediaUrl(fileUrl: string) {
       controller.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [sourceUrl, protectedMedia, attempt]);
+  }, [sourceUrl, protectedMedia, attempt, enabled]);
 
   const url = protectedMedia ? (loaded?.source === sourceUrl && loaded.attempt === attempt ? loaded.url : undefined) : sourceUrl;
   const error = failure?.source === sourceUrl && failure.attempt === attempt ? failure.message : undefined;
