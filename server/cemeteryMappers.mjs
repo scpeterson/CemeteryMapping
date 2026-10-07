@@ -240,6 +240,7 @@ export function toHeadstone(row) {
     provenanceVerificationSource: normalizedProvenance.verificationSourceType ?? normalizedProvenance.markerGeometrySourceType ?? "manual_review",
     provenanceVerifiedAt: normalizedProvenance.verifiedAt,
     relationshipType: row.relationship_type ?? "primary",
+    spansMultipleGravesites: Boolean(row.spans_multiple_gravesites) || row.relationship_type === "spans",
     relationshipNotes: row.relationship_notes ?? "",
     associatedGravesiteIds: row.associated_gravesite_ids ?? [],
     burialIds: row.burial_ids ?? [],

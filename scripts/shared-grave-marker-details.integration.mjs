@@ -16,6 +16,8 @@ test("grave details return one shared marker with only the selected grave's rela
     for (const table of ["headstones", "headstone_gravesites", "headstone_burials"]) {
       await client.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING ALL) ON COMMIT DROP`);
     }
+    await client.query("CREATE TEMP TABLE gravesites (id uuid, deleted_at timestamptz) ON COMMIT DROP");
+    await client.query("INSERT INTO gravesites (id) VALUES ($1),($2)", [primaryGrave, sharedGrave]);
     const { rows: [marker] } = await client.query(`
       INSERT INTO headstones (headstone_id,gravesite_uuid,marker_type_id,material_type_id,condition_type_id)
       VALUES ('SHARED-MARKER-TEST',$1,
@@ -25,12 +27,13 @@ test("grave details return one shared marker with only the selected grave's rela
     await client.query(`INSERT INTO headstone_gravesites (headstone_uuid,gravesite_uuid,relationship_type,notes)
       VALUES ($1,$2,'primary','Peter'),($1,$3,'spans','Christina')`, [marker.id, primaryGrave, sharedGrave]);
 
-    async function expectMarker(grave, relationship, notes) {
+    async function expectMarker(grave, relationship, notes, shared = true) {
       const rows = await selectHeadstonesForGrave(client, grave);
       assert.equal(rows.length, 1);
       assert.equal(rows[0].id, marker.id);
       assert.equal(rows[0].relationship_type, relationship);
       assert.equal(rows[0].relationship_notes, notes);
+      assert.equal(rows[0].spans_multiple_gravesites, shared);
     }
     await expectMarker(primaryGrave, "primary", "Peter");
     await expectMarker(sharedGrave, "spans", "Christina");
@@ -44,7 +47,7 @@ test("grave details return one shared marker with only the selected grave's rela
     // A deleted shared relationship must neither show a marker nor leak its notes.
     await client.query("UPDATE headstone_gravesites SET deleted_at=now() WHERE gravesite_uuid=$1", [sharedGrave]);
     assert.deepEqual(await selectHeadstonesForGrave(client, sharedGrave), []);
-    await expectMarker(primaryGrave, "primary", null);
+    await expectMarker(primaryGrave, "primary", null, false);
     await client.query("UPDATE headstones SET deleted_at=now()");
     assert.deepEqual(await selectHeadstonesForGrave(client, primaryGrave), []);
   } finally {

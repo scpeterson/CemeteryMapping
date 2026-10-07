@@ -74,6 +74,7 @@ export type Headstone = {
   provenanceVerificationSource: "field_photo" | "field_survey" | "documentary_record" | "manual_review" | "import";
   provenanceVerifiedAt?: string;
   relationshipType: string;
+  spansMultipleGravesites?: boolean;
   relationshipNotes: string;
   associatedGravesiteIds: string[];
   burialIds: string[];
