@@ -24,6 +24,9 @@ export {
 
 
 export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwnership = true } = {}) {
+  if (typeof pool.query === "function") {
+    return loadDetailedGrave(pool, cemeteryId, gravesiteId, includeOwnership, { parallel: true });
+  }
   const client = await pool.connect();
   try {
     return await loadDetailedGrave(client, cemeteryId, gravesiteId, includeOwnership);
@@ -37,6 +40,10 @@ export async function updateGraveSpace(pool, cemeteryId, gravesiteId, graveSpace
 }
 
 export async function getHeadstone(pool, id) {
+  if (typeof pool.query === "function") {
+    const headstone = await selectHeadstoneById(pool, id, { parallel: true });
+    return headstone ? toHeadstone(headstone) : undefined;
+  }
   const client = await pool.connect();
   try {
     const headstone = await selectHeadstoneById(client, id);

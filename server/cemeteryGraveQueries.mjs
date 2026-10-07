@@ -1,3 +1,4 @@
+import { runBoundedQueries } from "./queryBatch.mjs";
 import { selectBurialsForGrave } from "./cemeteryBurialQueries.mjs";
 import { selectFeaturesForGrave } from "./cemeteryFeatureQueries.mjs";
 import { selectHeadstonesForGrave } from "./cemeteryHeadstoneQueries.mjs";
@@ -205,17 +206,23 @@ export function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstone
 
   return includeOwnership ? detailedGrave : ownershipRedactedGrave(detailedGrave);
 }
-export async function loadDetailedGrave(client, cemeteryId, gravesiteId, includeOwnership = true) {
+export async function loadDetailedGrave(client, cemeteryId, gravesiteId, includeOwnership = true, { parallel = false } = {}) {
   const grave = await selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId);
   if (!grave) return undefined;
 
-  const owners = includeOwnership ? await selectOwnersForGrave(client, grave.uuid) : [];
-  const burials = await selectBurialsForGrave(client, grave.uuid);
-  const headstones = await selectHeadstonesForGrave(client, grave.uuid);
-  const northHillsEvidence = await selectNorthHillsEvidenceForGrave(client, grave.uuid);
-  const mediaAssets = await selectMediaAssetsForGrave(client, grave.uuid);
-  const features = await selectFeaturesForGrave(client, grave.uuid);
-  const maintenanceRecords = await selectMaintenanceForGrave(client, grave.uuid);
+  const queries = [
+    () => includeOwnership ? selectOwnersForGrave(client, grave.uuid) : Promise.resolve([]),
+    () => selectBurialsForGrave(client, grave.uuid),
+    () => selectHeadstonesForGrave(client, grave.uuid),
+    () => selectNorthHillsEvidenceForGrave(client, grave.uuid),
+    () => selectMediaAssetsForGrave(client, grave.uuid),
+    () => selectFeaturesForGrave(client, grave.uuid),
+    () => selectMaintenanceForGrave(client, grave.uuid),
+  ];
+  const rows = [];
+  if (parallel) rows.push(...await runBoundedQueries(queries));
+  else for (const query of queries) rows.push(await query());
+  const [owners, burials, headstones, northHillsEvidence, mediaAssets, features, maintenanceRecords] = rows;
 
   return toDetailedGrave(grave, owners, burials, headstones, northHillsEvidence, mediaAssets, features, maintenanceRecords, includeOwnership);
 }
