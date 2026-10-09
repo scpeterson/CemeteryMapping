@@ -5,6 +5,8 @@ import { resolve } from "node:path";
 
 export const budgets = [
   { label: "application entry", pattern: /^index-.*\.js$/u, gzipKilobytes: 50 },
+  // The map application is now loaded separately from the public entry.
+  { label: "map application", pattern: /^App-.*\.js$/u, gzipKilobytes: 50 },
   { label: "admin shell", pattern: /^AdminPanel-.*\.js$/u, gzipKilobytes: 22 },
   { label: "React vendor", pattern: /^vendor-react-.*\.js$/u, gzipKilobytes: 70 },
   { label: "authentication vendor", pattern: /^vendor-auth-.*\.js$/u, gzipKilobytes: 65 },
