@@ -33,8 +33,8 @@ test("marker faces round-trip with links, legacy text, authorization and stale-w
     const input = { markerTypeId: original.markerType.id, markerScopeId: original.markerScope.id,
       materialId: original.material.id, conditionId: original.condition.id, inscription: original.inscription,
       facesRevision: original.facesRevision,
-      faces: [{ id: randomUUID(), label: "North", inscription: "  Name\nDates  ", notes: "Weathered", burialIds: [original.facePeople[0].id], mediaAssetIds: [photoId] },
-        { id: randomUUID(), label: "Base", inscription: "Family\nMemorial", notes: "", burialIds: [original.facePeople[0].id], mediaAssetIds: [photoId] }] };
+      faces: [{ id: randomUUID(), label: "North", designNotes: "Etched ivy border", inscription: "  Name\nDates  ", notes: "Weathered", burialIds: [original.facePeople[0].id], mediaAssetIds: [photoId] },
+        { id: randomUUID(), label: "Base", designNotes: "Carved rose", inscription: "Family\nMemorial", notes: "", burialIds: [original.facePeople[0].id], mediaAssetIds: [photoId] }] };
     assert.equal(await updateHeadstone(nestedPool, target.id, input, { allowedCemeteryIds: [] }), undefined);
     assert.equal((await selectHeadstoneById(client, target.id)).faces_revision, original.facesRevision);
     const saved = await updateHeadstone(nestedPool, target.id, input);
