@@ -8,7 +8,8 @@ export const budgets = [
   { label: "admin shell", pattern: /^AdminPanel-.*\.js$/u, gzipKilobytes: 22 },
   { label: "React vendor", pattern: /^vendor-react-.*\.js$/u, gzipKilobytes: 70 },
   { label: "authentication vendor", pattern: /^vendor-auth-.*\.js$/u, gzipKilobytes: 65 },
-  { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 140 },
+  // MapLibre 6.12.0 measures 141.42 KiB gzip; allow modest upgrade headroom.
+  { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 145 },
 ];
 export const totalJavaScriptGzipBudgetKilobytes = 700;
 
