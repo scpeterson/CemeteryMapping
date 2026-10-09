@@ -74,7 +74,7 @@
     "express-oauth2-jwt-bearer": "^1.10.0",
     "lucide-react": "^1.46.0",
     "maplibre-gl": "^6.11.2",
-    "pg": "^8.23.0",
+    "pg": "^8.23.1",
     "react": "^19.2.8",
     "react-dom": "^19.3.0",
     "vite": "^8.2.1"
