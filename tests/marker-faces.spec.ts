@@ -31,6 +31,7 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   const first = page.getByRole("group", { name: "Face 1", exact: true });
   await first.getByLabel("Face label", { exact: true }).fill("North");
   await first.getByRole("textbox", { name: "Inscription", exact: true }).fill("  ALICE\n1901–1981  ");
+  await first.getByRole("textbox", { name: "Flourishes or designs", exact: true }).fill("Etched ivy border");
   await first.getByLabel("Alice Example", { exact: true }).check();
   await first.getByLabel("latest-marker.png", { exact: true }).check();
   await page.getByRole("button", { name: "Add face", exact: true }).click();
@@ -38,6 +39,7 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   await second.getByLabel("Face label", { exact: true }).fill("Base");
   await second.getByRole("textbox", { name: "Inscription", exact: true }).fill("Family\nMemorial");
   await second.getByRole("textbox", { name: "Face notes", exact: true }).fill("Last word weathered");
+  await second.getByRole("textbox", { name: "Flourishes or designs", exact: true }).fill("Carved rose");
   await second.getByLabel("Alice Example", { exact: true }).check();
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   const north = page.getByRole("region", { name: "North", exact: true });
@@ -50,6 +52,10 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   await expect(page.getByRole("region", { name: "Base", exact: true })).toContainText("Last word weathered");
   await expect(north.getByRole("button", { name: "Delete photo latest-marker.png", exact: true })).toBeVisible();
   await expect(north.getByRole("button", { name: "Remove primary: latest-marker.png", exact: true })).toBeVisible();
+  await expect(north).toContainText("Designs: Etched ivy border");
+  await expect(page.getByRole("region", { name: "Base", exact: true })).toContainText("Designs: Carved rose");
+  expect(current.faces[0].designNotes).toBe("Etched ivy border");
+  expect(current.faces[1].designNotes).toBe("Carved rose");
   expect(current.faces[0].inscription).toBe("  ALICE\n1901–1981  ");
   await north.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("marker-faces.png"), fullPage: true });
@@ -74,6 +80,8 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   await page.getByRole("tab", { name: "Details", exact: true }).click();
   await expect(north).toContainText("Alice Example");
   await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await expect(first.getByRole("textbox", { name: "Flourishes or designs", exact: true })).toHaveValue("Etched ivy border");
+  await expect(second.getByRole("textbox", { name: "Flourishes or designs", exact: true })).toHaveValue("Carved rose");
   await second.getByRole("button", { name: "Remove face" }).click();
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   expect(current.faces).toHaveLength(1);
@@ -167,12 +175,12 @@ test("saving ignores empty new faces but requires labels for faces with content"
   await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
   await page.getByRole("button", { name: "Add face", exact: true }).click();
   const second = page.getByRole("group", { name: "Face 2", exact: true });
-  await second.getByRole("textbox", { name: "Inscription", exact: true }).fill("DEER");
+  await second.getByRole("textbox", { name: "Flourishes or designs", exact: true }).fill("Carved deer");
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   expect(await second.getByLabel("Face label", { exact: true }).evaluate((input: HTMLInputElement) => input.validity.valueMissing)).toBe(true);
   expect(saves).toBe(1);
   await second.getByLabel("Face label", { exact: true }).fill("Back");
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Back", exact: true })).toContainText("DEER");
+  await expect(page.getByRole("region", { name: "Back", exact: true })).toContainText("Designs: Carved deer");
   expect(current.faces).toHaveLength(2);
 });

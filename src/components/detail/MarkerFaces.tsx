@@ -34,6 +34,9 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
       <label className="headstone-wide-field">Inscription
         <textarea value={face.inscription} rows={5} maxLength={20000} onChange={(event) => update(face.id, { inscription: event.target.value })} />
       </label>
+      <label className="headstone-wide-field">Flourishes or designs
+        <textarea value={face.designNotes ?? ""} rows={3} maxLength={20000} onChange={(event) => update(face.id, { designNotes: event.target.value })} />
+      </label>
       <label className="headstone-wide-field">Face notes
         <textarea value={face.notes} rows={2} maxLength={4000} onChange={(event) => update(face.id, { notes: event.target.value })} />
       </label>
@@ -66,12 +69,13 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
 }
 
 export function MarkerFacesView({ headstone, ...photoControls }: { headstone: Headstone } & Pick<ComponentProps<typeof MediaGallery>, "canDelete" | "onDelete" | "onMove">) {
-  const faces = headstone.faces ?? (headstone.inscription ? [{ id: "legacy", label: "Unspecified face", inscription: headstone.inscription, notes: "", burialIds: [], mediaAssetIds: [] }] : []);
+  const faces: MarkerFace[] = headstone.faces ?? (headstone.inscription ? [{ id: "legacy", label: "Unspecified face", inscription: headstone.inscription, notes: "", burialIds: [], mediaAssetIds: [] }] : []);
   return <section aria-label="Faces / Inscriptions">
     <h4>Faces / Inscriptions</h4>
     {!faces.length ? <p className="muted">No faces or inscriptions recorded.</p> : faces.map((face) => <section key={face.id} className="marker-face-view" aria-label={face.label}>
       <h5>{face.label}</h5>
       {face.inscription ? <p className="note-box inscription-box">{face.inscription}</p> : <p className="muted">No inscription recorded.</p>}
+      {face.designNotes ? <p className="note-box">Designs: {face.designNotes}</p> : null}
       {face.notes ? <p className="note-box">{face.notes}</p> : null}
       {face.burialIds.length ? <p>Associated people: {face.burialIds.map((id) => headstone.facePeople?.find((p) => p.id === id)?.fullName ?? "Person no longer linked").join("; ")}</p> : null}
       {face.mediaAssetIds.length ? <MediaGallery {...photoControls} assets={headstone.mediaAssets.filter((asset) => face.mediaAssetIds.includes(asset.id))} emptyMessage="These face photos are no longer available." /> : null}

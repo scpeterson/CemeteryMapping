@@ -35,6 +35,7 @@ export type HeadstoneGravesiteRelationship = {
 };
 
 export type MarkerFace = {
+  designNotes?: string;
   id: string;
   label: string;
   inscription: string;

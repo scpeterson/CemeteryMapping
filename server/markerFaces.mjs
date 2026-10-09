@@ -21,6 +21,7 @@ export function validateMarkerFaces(value) {
     if (!label) throw new BadRequestError("Each face needs a label.");
     return { id: validateUuid(face.id, "Face id").toLowerCase(), label,
       inscription: text(face.inscription, "Face inscription", 20000), notes: text(face.notes, "Face notes", 4000),
+      ...(face.designNotes === undefined ? {} : { designNotes: text(face.designNotes, "Face design notes", 20000) }),
       burialIds: ids(face.burialIds ?? [], "Face people"), mediaAssetIds: ids(face.mediaAssetIds ?? [], "Face photos") };
   });
   if (new Set(faces.map((f) => f.id)).size !== faces.length) throw new BadRequestError("Face ids must be unique.");

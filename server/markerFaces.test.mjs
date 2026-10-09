@@ -29,3 +29,12 @@ test("face associations accept only active records belonging to this marker", as
   await assert.rejects(validateFaceReferences({ query: async () => ({ rows: [] }) }, id(99), [face()]), /active burial records/);
   await assert.rejects(validateFaceReferences({ query: async () => ({ rows: [] }) }, id(99), [{ ...face(), burialIds: [] }]), /active photos/);
 });
+
+test("face designs preserve text, accept legacy faces, and reject invalid values", () => {
+  const designed = { ...face(), designNotes: "  Etched ivy\nCarved rose  " };
+  assert.deepEqual(validateMarkerFaces([designed]), [designed]);
+  assert.deepEqual(validateMarkerFaces([face()]), [face()]);
+  for (const designNotes of [42, null, "x".repeat(20001)]) {
+    assert.throws(() => validateMarkerFaces([{ ...face(), designNotes }]), /Face design notes/);
+  }
+});
