@@ -56,7 +56,7 @@ export function loadApiConfig() {
   }
 
   const turnstileHostnames = (process.env.TURNSTILE_HOSTNAMES ?? "").split(",").map((value) => value.trim()).filter(Boolean);
-  const turnstileRequired = appEnv === "stage" || appEnv === "prod" || authMode === "auth0" || Boolean(process.env.TURNSTILE_SECRET);
+  const turnstileRequired = appEnv === "stage" || appEnv === "prod" || (appEnv !== "dev" && authMode === "auth0") || Boolean(process.env.TURNSTILE_SECRET);
   if ((appEnv === "stage" || appEnv === "prod" || authMode === "auth0") && turnstileHostnames.some((hostname) => !/^(?=.{1,253}$)[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/u.test(hostname) || hostname === "localhost" || hostname.endsWith(".localhost") || /^\d+\.\d+\.\d+\.\d+$/u.test(hostname))) {
     throw new Error("Hosted TURNSTILE_HOSTNAMES must contain exact public DNS hostnames, without URLs, ports, local domains or IP addresses.");
   }

@@ -69,8 +69,8 @@ widget for the request form and configure:
 - Hosted TEST allowlist: `test.nhcemeteries.org`; PROD: `nhcemeteries.org`. Do not include local domains or test keys in hosted API configuration.
 - The supplied loopback Nginx/Tunnel deployment sets `ACCESS_REQUEST_TRUST_PROXY=loopback`; Nginx overwrites `X-Access-Request-IP`. Never enable this behind an externally exposed origin or a proxy that preserves client-supplied headers.
 
-Hosted Auth0, STAGE and PROD reject unverified submissions even when configuration
-is missing. Local DEV/TEST with authentication disabled and no Turnstile secret
+Hosted TEST with Auth0, STAGE and PROD reject unverified submissions even when configuration
+is missing. Local DEV without a secret, and local TEST with authentication disabled and no Turnstile secret
 can use the form without a widget; browser CI exercises it using an offline mock.
 Turnstile scripts/frames need access to `https://challenges.cloudflare.com` if
 adding a Content Security Policy. The normal map does not load the widget script.

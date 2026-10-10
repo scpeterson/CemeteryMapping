@@ -175,11 +175,14 @@ test("hosted access requests require verification and reject local hosts and tes
   const previousSecret = process.env.TURNSTILE_SECRET;
   const previousHosts = process.env.TURNSTILE_HOSTNAMES;
   try {
-    withTemporaryProject({ "db/env/prod.env": "POSTGRES_DB=cemetery_mapping_prod\nPOSTGRES_USER=cemetery_app\nPOSTGRES_PASSWORD=prod_password\n" }, () => {
+    withTemporaryProject({ "db/env/dev.env": "POSTGRES_DB=cemetery_mapping_dev\nPOSTGRES_USER=cemetery_app\nPOSTGRES_PASSWORD=dev_password\n", "db/env/prod.env": "POSTGRES_DB=cemetery_mapping_prod\nPOSTGRES_USER=cemetery_app\nPOSTGRES_PASSWORD=prod_password\n" }, () => {
       process.env.APP_ENV = "prod"; process.env.AUTH_MODE = "auth0";
       process.env.AUTH0_DOMAIN = "cemetery.example.auth0.com"; process.env.AUTH0_AUDIENCE = "https://cemetery.example/api";
       delete process.env.TURNSTILE_SECRET; delete process.env.TURNSTILE_HOSTNAMES;
       assert.equal(loadApiConfig().accessRequests.required, true);
+      process.env.APP_ENV = "dev";
+      assert.equal(loadApiConfig().accessRequests.required, false);
+      process.env.APP_ENV = "prod";
       for (const host of ["localhost", "127.0.0.1", "https://nhcemeteries.org", "nhcemeteries.org:443"]) {
         process.env.TURNSTILE_HOSTNAMES = host;
         assert.throws(() => loadApiConfig(), /Hosted TURNSTILE_HOSTNAMES/);
