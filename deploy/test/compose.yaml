@@ -35,6 +35,7 @@ services:
       PGUSER: cemetery_api
       PGPASSWORD: ${CEMETERY_API_PASSWORD:?Set a separate API database password}
       API_PORT: 3001
+      ACCESS_REQUEST_TRUST_PROXY: loopback
       MEDIA_UPLOAD_DIR: /media
     volumes:
       - /srv/nhcemeteries/media:/media

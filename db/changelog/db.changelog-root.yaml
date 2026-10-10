@@ -1240,3 +1240,6 @@ databaseChangeLog:
   - include:
       file: changes/416-access-requests.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/438-access-request-capacity-index.sql
+      relativeToChangelogFile: true

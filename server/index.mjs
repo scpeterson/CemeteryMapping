@@ -101,14 +101,14 @@ export function createApp(config, pool) {
   });
 
   const uploadRoot = mediaUploadRoot();
-  app.use(express.json());
 
   const requireReader = requireRole(config.auth, pool, "reader");
   registerMediaDownloadRoutes(app, { pool, requireReader, uploadRoot });
   const requirePowerUser = requireRole(config.auth, pool, "power-user");
   const requireCemeteryAdmin = requireRole(config.auth, pool, "cemetery-admin");
   const requireAdmin = requireRole(config.auth, pool, "admin");
-  registerAccessRequestRoutes(app, { pool, requireAdmin });
+  registerAccessRequestRoutes(app, { pool, requireAdmin, protection: config.accessRequests });
+  app.use(express.json());
   registerCemeteryRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
     createGraveFeature, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, createMaintenanceRecord,
