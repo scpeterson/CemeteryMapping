@@ -41,6 +41,7 @@ return to the application's sign-in page.
    email allowlist, add them there too. Application approval does not change
    Cloudflare Access policy.
 
+The queue shows pending/hourly counts and warns at 80% of capacity. Check this regularly during onboarding.
 The queue shows the oldest 200 pending requests; refresh after reviewing them to
 load more. Reviewed requests remain stored for accountability. A repeat public
 submission never overwrites a request or reopens a rejected request. If you
@@ -58,9 +59,33 @@ lookup is needed because cemetery interest is entered as text.
 Configure hosting so an unauthenticated browser can reach that page and submit
 its form. If a gateway protects the host, arrange narrowly scoped routing for
 this page, its assets, and the submission endpoint; do not broadly expose
-`/api/*` or `/media/*`. Configure gateway or reverse-proxy rate limiting for form submissions. The
-API's additional per-process limit uses the directly observed IP, so proxied
-visitors may share a bucket. Check this under the real proxy before launch.
+`/api/*` or `/media/*`.
+
+Apply migration 438 before releasing abuse protection. Create a managed Turnstile
+widget for the request form and configure:
+
+- Frontend build: `VITE_TURNSTILE_SITE_KEY` (public key).
+- Protected API runtime: `TURNSTILE_SECRET` and `TURNSTILE_HOSTNAMES` (comma-separated exact frontend hostnames).
+- Hosted TEST allowlist: `test.nhcemeteries.org`; PROD: `nhcemeteries.org`. Do not include local domains or test keys in hosted API configuration.
+- The supplied loopback Nginx/Tunnel deployment sets `ACCESS_REQUEST_TRUST_PROXY=loopback`; Nginx overwrites `X-Access-Request-IP`. Never enable this behind an externally exposed origin or a proxy that preserves client-supplied headers.
+
+Hosted Auth0, STAGE and PROD reject unverified submissions even when configuration
+is missing. Local DEV/TEST with authentication disabled and no Turnstile secret
+can use the form without a widget; browser CI exercises it using an offline mock.
+Turnstile scripts/frames need access to `https://challenges.cloudflare.com` if
+adding a Content Security Policy. The normal map does not load the widget script.
+
+Limits: 20 attempts per visitor and 100 total per API process per ten minutes;
+Nginx five per visitor per minute (burst five), 30 total per minute (burst ten);
+100 new stored requests per rolling hour and 200 pending across all instances.
+Full capacity returns 429 with Retry-After; reviewing pending requests frees queue
+space, while the hourly count naturally ages out. Already stored requests remain
+available for review. The database-backed limits survive API restarts.
+
+Monitor the admin queue warning, Nginx 429 counts, and Turnstile Analytics. No
+per-rejection database logs or automatic emails are created. At release, submit
+one real verified request, check that its token cannot be replayed, and confirm
+missing/forged tokens produce no database rows.
 
 In a signed-out browser, verify the page loads, a request succeeds, and cemetery,
 search, photo, and admin endpoints still deny access. Then review a test request
@@ -69,4 +94,4 @@ information remain restricted.
 
 For hosted TEST routing, tester assignments, and preservation of TEST users during
 DEV data refreshes, see [Hosted TEST](hosted-test.md).
-See [ADR 0076](adr/0076-public-access-requests.md).
+See [ADR 0076](adr/0076-public-access-requests.md) and [ADR 0088](adr/0088-access-request-abuse-protection.md).

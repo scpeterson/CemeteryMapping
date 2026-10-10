@@ -170,3 +170,28 @@ test("database tooling requires an external password when a tracked environment 
     },
   );
 });
+
+test("hosted access requests require verification and reject local hosts and test secrets", () => {
+  const previousSecret = process.env.TURNSTILE_SECRET;
+  const previousHosts = process.env.TURNSTILE_HOSTNAMES;
+  try {
+    withTemporaryProject({ "db/env/prod.env": "POSTGRES_DB=cemetery_mapping_prod\nPOSTGRES_USER=cemetery_app\nPOSTGRES_PASSWORD=prod_password\n" }, () => {
+      process.env.APP_ENV = "prod"; process.env.AUTH_MODE = "auth0";
+      process.env.AUTH0_DOMAIN = "cemetery.example.auth0.com"; process.env.AUTH0_AUDIENCE = "https://cemetery.example/api";
+      delete process.env.TURNSTILE_SECRET; delete process.env.TURNSTILE_HOSTNAMES;
+      assert.equal(loadApiConfig().accessRequests.required, true);
+      for (const host of ["localhost", "127.0.0.1", "https://nhcemeteries.org", "nhcemeteries.org:443"]) {
+        process.env.TURNSTILE_HOSTNAMES = host;
+        assert.throws(() => loadApiConfig(), /Hosted TURNSTILE_HOSTNAMES/);
+      }
+      process.env.TURNSTILE_HOSTNAMES = "nhcemeteries.org";
+      process.env.TURNSTILE_SECRET = "1x0000000000000000000000000000000AA";
+      assert.throws(() => loadApiConfig(), /cannot use a Turnstile test secret/);
+      process.env.TURNSTILE_SECRET = "unit-test-placeholder";
+      assert.deepEqual(loadApiConfig().accessRequests.hostnames, ["nhcemeteries.org"]);
+    });
+  } finally {
+    if (previousSecret === undefined) delete process.env.TURNSTILE_SECRET; else process.env.TURNSTILE_SECRET = previousSecret;
+    if (previousHosts === undefined) delete process.env.TURNSTILE_HOSTNAMES; else process.env.TURNSTILE_HOSTNAMES = previousHosts;
+  }
+});

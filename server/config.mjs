@@ -55,6 +55,15 @@ export function loadApiConfig() {
     throw new Error(`A database password is required for APP_ENV=${appEnv}. Set PGPASSWORD or use the ignored ${appEnv}.local.env file.`);
   }
 
+  const turnstileHostnames = (process.env.TURNSTILE_HOSTNAMES ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+  const turnstileRequired = appEnv === "stage" || appEnv === "prod" || authMode === "auth0" || Boolean(process.env.TURNSTILE_SECRET);
+  if ((appEnv === "stage" || appEnv === "prod" || authMode === "auth0") && turnstileHostnames.some((hostname) => !/^(?=.{1,253}$)[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/u.test(hostname) || hostname === "localhost" || hostname.endsWith(".localhost") || /^\d+\.\d+\.\d+\.\d+$/u.test(hostname))) {
+    throw new Error("Hosted TURNSTILE_HOSTNAMES must contain exact public DNS hostnames, without URLs, ports, local domains or IP addresses.");
+  }
+  if ((appEnv === "stage" || appEnv === "prod" || authMode === "auth0") && /^[123]x0000000000000000000000000000000AA$/u.test(process.env.TURNSTILE_SECRET ?? "")) {
+    throw new Error("Hosted access requests cannot use a Turnstile test secret.");
+  }
+
   return {
     appEnv,
     apiPort,
@@ -74,6 +83,13 @@ export function loadApiConfig() {
           passwordResetClientId: process.env.AUTH0_PASSWORD_RESET_CLIENT_ID,
         },
       },
+    },
+    accessRequests: {
+      // Hosted environments fail closed unless a real widget is configured.
+      required: turnstileRequired,
+      secret: process.env.TURNSTILE_SECRET,
+      hostnames: turnstileHostnames,
+      trustProxy: process.env.ACCESS_REQUEST_TRUST_PROXY === "loopback",
     },
     database: {
       host: process.env.PGHOST ?? "127.0.0.1",

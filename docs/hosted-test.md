@@ -245,3 +245,18 @@ in this refresh. Existing identity mappings and runtime settings were verified;
 confirm those interactive workflows with an approved tester when available.
 This one-time preservation/rehearsal procedure does not establish an automated
 refresh workflow. Continue to follow the review and backup requirements above.
+
+### Access-request abuse protection
+
+Before deploying ADR 0088, apply migration 438 and add `TURNSTILE_SECRET` and
+`TURNSTILE_HOSTNAMES=test.nhcemeteries.org` to the existing protected
+`deploy/test/runtime.env` (mode 0600). Set the widget's public
+`VITE_TURNSTILE_SITE_KEY` in `deploy/test/frontend.env`, then rebuild TEST using
+that file. Recreate API and web services together; the Compose configuration
+enables the loopback-only trusted visitor header. Preserve existing database,
+media, Auth0 settings, tunnel credentials, and gateway policies.
+
+Check `nginx -t`, signed-out verification, token replay rejection, missing-token
+rejection, admin-only capacity counts, and private record endpoints. The absence
+of a widget/key deliberately closes public submission; do not deploy half of
+this change. Inspect queue capacity under Admin → Users and Turnstile Analytics.

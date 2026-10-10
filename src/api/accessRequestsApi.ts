@@ -8,3 +8,8 @@ export async function fetchAccessRequests() {
 export async function rejectAccessRequest(id: string) {
   return jsonResponse(await authorizedFetch(`${base}/${encodeURIComponent(id)}/reject`, jsonRequest("POST", {})), "Reject request");
 }
+
+export type AccessRequestStats = { pending: number; lastHour: number; limits: { pending: number; hourly: number } };
+export async function fetchAccessRequestStats() {
+  return jsonResponse<AccessRequestStats>(await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/access-request-stats`), "Access request capacity");
+}

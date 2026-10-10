@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { loadApiConfig } from "../server/config.mjs";
 import { createUser } from "../server/adminRepository.mjs";
-import { submitAccessRequest, rejectAccessRequest } from "../server/accessRequestRepository.mjs";
+import { accessRequestStats, submitBoundedAccessRequest, submitAccessRequest, rejectAccessRequest } from "../server/accessRequestRepository.mjs";
 
 test("access request approval is atomic, cannot be replayed, and preserves duplicate requests", async () => {
   const config = loadApiConfig(); assert.equal(config.appEnv, "test");
@@ -40,4 +40,27 @@ test("access request approval is atomic, cannot be replayed, and preserves dupli
     await assert.rejects(createUser(nested, { ...user, email: third.email, accessRequestId: pending.id }));
     assert.equal((await client.query("SELECT status FROM access_requests WHERE id=$1", [pending.id])).rows[0].status, "pending");
   } finally { await client.query("ROLLBACK"); client.release(); await pool.end(); }
+});
+
+test("global access-request capacity is atomic across concurrent database clients", async () => {
+  const config = loadApiConfig(); assert.equal(config.appEnv, "test");
+  const pool = new pg.Pool(config.database);
+  const emails = [0, 1, 2].map(() => `capacity-${randomUUID()}@example.test`);
+  const input = (email) => ({ email, displayName: "Capacity test", cemeteryInterest: "Fictional", reason: "Research" });
+  try {
+    const before = await accessRequestStats(pool);
+    const lock = await pool.connect();
+    try {
+      await lock.query("BEGIN"); await lock.query("SELECT pg_advisory_xact_lock(416, 1)");
+      assert.equal(await submitBoundedAccessRequest(pool, input(emails[0])), false);
+    } finally { await lock.query("ROLLBACK"); lock.release(); }
+    const limits = { hourly: before.lastHour + 1, pending: before.pending + 1 };
+    const results = await Promise.all(emails.slice(0, 2).map((email) => submitBoundedAccessRequest(pool, input(email), limits)));
+    assert.equal(results.filter(Boolean).length, 1);
+    assert.equal(await submitBoundedAccessRequest(pool, input(emails[2]), limits), false);
+    // Separate hourly and pending ceilings, independent of process-local counters.
+    assert.equal(await submitBoundedAccessRequest(pool, input(emails[2]), { hourly: before.lastHour + 1, pending: 10000 }), false);
+    assert.equal(await submitBoundedAccessRequest(pool, input(emails[2]), { hourly: 10000, pending: before.pending + 1 }), false);
+    assert.equal((await pool.query("SELECT count(*)::int AS count FROM access_requests WHERE email=ANY($1)", [emails])).rows[0].count, 1);
+  } finally { await pool.query("DELETE FROM access_requests WHERE email=ANY($1)", [emails]); await pool.end(); }
 });
