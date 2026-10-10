@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchAccessRequests, rejectAccessRequest, type AccessRequest } from "../../api/accessRequestsApi";
+import { fetchAccessRequestStats, type AccessRequestStats, fetchAccessRequests, rejectAccessRequest, type AccessRequest } from "../../api/accessRequestsApi";
 
 export function AccessRequestsPanel({ onReview, refreshKey }: { onReview: (request: AccessRequest) => void; refreshKey: number }) {
   const [requests, setRequests] = useState<AccessRequest[]>([]);
+  const [stats, setStats] = useState<AccessRequestStats>();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const reload = useCallback(async () => {
     setBusy(true); setError("");
-    try { setRequests(await fetchAccessRequests()); }
+    try {
+      const [requests, capacity] = await Promise.all([fetchAccessRequests(), fetchAccessRequestStats()]);
+      setRequests(requests); setStats(capacity);
+    }
     catch (failure) { setError(failure instanceof Error ? failure.message : "Unable to load requests."); }
     finally { setBusy(false); }
   }, []);
@@ -21,6 +25,8 @@ export function AccessRequestsPanel({ onReview, refreshKey }: { onReview: (reque
   return <section className="admin-section">
     <h3>Access requests</h3>
     <p>Review requests before creating accounts. New accounts default to Read-only. Saving an active user approves the selected request.</p>
+    {stats && <p>{stats.pending} of {stats.limits.pending} pending requests; {stats.lastHour} of {stats.limits.hourly} new requests in the last hour.</p>}
+    {stats && (stats.pending >= stats.limits.pending * 0.8 || stats.lastHour >= stats.limits.hourly * 0.8) && <p role="alert">Access requests are nearing capacity. Review the queue and check for unusual submissions.</p>}
     <button type="button" disabled={busy} onClick={() => void reload()}>Refresh requests</button>
     {busy && <p role="status">Loading…</p>}
     {error && <p role="alert">{error}</p>}

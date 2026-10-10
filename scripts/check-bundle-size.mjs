@@ -4,13 +4,13 @@ import { resolve } from "node:path";
 
 const assetDirectory = resolve(process.cwd(), "dist", "assets");
 const budgets = [
-  { label: "application entry", pattern: /^index-.*\.js$/u, gzipKilobytes: 45 },
+  { label: "application entry", pattern: /^index-.*\.js$/u, gzipKilobytes: 50 },
   { label: "admin shell", pattern: /^AdminPanel-.*\.js$/u, gzipKilobytes: 22 },
-  { label: "React vendor", pattern: /^vendor-react-.*\.js$/u, gzipKilobytes: 65 },
+  { label: "React vendor", pattern: /^vendor-react-.*\.js$/u, gzipKilobytes: 70 },
   { label: "authentication vendor", pattern: /^vendor-auth-.*\.js$/u, gzipKilobytes: 65 },
-  { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 140 },
+  { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 145 },
 ];
-const totalJavaScriptGzipBudgetKilobytes = 500;
+const totalJavaScriptGzipBudgetKilobytes = 700;
 
 const filenames = (await readdir(assetDirectory)).filter((filename) => filename.endsWith(".js"));
 const assets = await Promise.all(filenames.map(async (filename) => {

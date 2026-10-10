@@ -1,5 +1,6 @@
 import { withAuditContext } from "./auditContext.mjs";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
+import { accessRequestLimits } from "./accessRequestProtection.mjs";
 import { requiredText } from "./inputValidation.mjs";
 
 export function validateAccessRequest(body) {
@@ -22,6 +23,32 @@ export async function submitAccessRequest(pool, input) {
   await pool.query(`INSERT INTO access_requests (email, display_name, cemetery_interest, reason)
     SELECT $1,$2,$3,$4 WHERE NOT EXISTS (SELECT 1 FROM app_users WHERE lower(email)=$1)
     ON CONFLICT (email) DO NOTHING`, [input.email, input.displayName, input.cemeteryInterest, input.reason]);
+}
+
+// Serialize the capacity check and insert across every API instance. Use a try-lock
+// so a submission flood cannot fill the pool with transactions waiting for a lock.
+export async function submitBoundedAccessRequest(pool, input, limits = accessRequestLimits) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows: [lock] } = await client.query("SELECT pg_try_advisory_xact_lock(416, 1) AS acquired");
+    if (!lock.acquired) { await client.query("ROLLBACK"); return { accepted: false, retryAfter: 5 }; }
+    const stats = await accessRequestStats(client);
+    if (stats.pending >= limits.pending || stats.lastHour >= limits.hourly) {
+      await client.query("ROLLBACK"); return { accepted: false, retryAfter: 3600 };
+    }
+    await submitAccessRequest(client, input);
+    await client.query("COMMIT");
+    return { accepted: true };
+  } catch (error) { await client.query("ROLLBACK"); throw error; }
+  finally { client.release(); }
+}
+
+export async function accessRequestStats(pool) {
+  const { rows: [row] } = await pool.query(`SELECT
+    (SELECT count(*)::int FROM access_requests WHERE status='pending') AS pending,
+    (SELECT count(*)::int FROM access_requests WHERE created_at > now() - interval '1 hour') AS "lastHour"`);
+  return { ...row, limits: accessRequestLimits };
 }
 
 export async function listAccessRequests(pool) {
