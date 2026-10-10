@@ -174,3 +174,5 @@ bundle exec jekyll build
 For real cemetery data imports, see ADR 0007 and ADR 0008 before running import commands.
 
 - [ADR 0087: Split the D-0453 Brandt burials](0087-split-d-0453-brandt-gravesites.md)
+
+- [ADR 0088: Access-request abuse protection](0088-access-request-abuse-protection.md)

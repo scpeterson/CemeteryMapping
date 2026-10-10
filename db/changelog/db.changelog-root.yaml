@@ -1304,3 +1304,6 @@ databaseChangeLog:
   - include:
       file: changes/437-split-d-0453-brandt-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/438-access-request-capacity-index.sql
+      relativeToChangelogFile: true

@@ -17,9 +17,16 @@ test("public request validates bounded text and email", () => {
 test("request endpoint is public, generic and cannot grant roles; review requires global admin", async (t) => {
   const app = express(); app.use(express.json());
   const statements = [];
-  const pool = { query: async (sql, values) => { statements.push({ sql, values }); return { rows: [] }; } };
+  const pool = {
+    query: async (sql, values) => { statements.push({ sql, values });
+      if (sql.includes("pg_try_advisory")) return { rows: [{ acquired: true }] };
+      if (sql.includes("AS pending")) return { rows: [{ pending: 0, lastHour: 0 }] };
+      return { rows: [] };
+    },
+    connect: async () => ({ query: pool.query, release() {} }),
+  };
   const config = { mode: "trusted-header", roleHeader: "x-role", emailHeader: "x-email", subjectHeader: "x-subject" };
-  registerAccessRequestRoutes(app, { pool, requireAdmin: requireRole(config, "admin") });
+  registerAccessRequestRoutes(app, { pool, protection: { required: false }, requireAdmin: requireRole(config, "admin") });
   app.get("/api/cemeteries", requireRole(config, "reader"), (_req, res) => res.json([]));
   app.use((error, _req, res, next) => { if (res.headersSent) return next(error); res.status(error.statusCode ?? 500).json({ error: error.message }); });
   const server = app.listen(0, "127.0.0.1");
@@ -31,15 +38,17 @@ test("request endpoint is public, generic and cannot grant roles; review require
   assert.equal(first.status, 202);
   assert.equal(first.headers.get("cache-control"), "no-store");
   assert.deepEqual(await first.json(), await (await post(input)).json());
-  assert.equal(statements.length, 2);
+  assert.equal(statements.filter(({ sql }) => sql.startsWith("INSERT INTO access_requests")).length, 2);
   assert.ok(statements.every(({ sql }) => !/INSERT INTO app_users|UPDATE app_users/.test(sql)));
   assert.equal((await post({ ...input, website: "bot" })).status, 202);
-  assert.equal(statements.length, 2);
+  assert.equal(statements.filter(({ sql }) => sql.startsWith("INSERT INTO access_requests")).length, 2);
   assert.equal((await fetch(`${base}/api/cemeteries`)).status, 401);
   assert.equal((await fetch(`${base}/api/admin/access-requests`)).status, 401);
+  assert.equal((await fetch(`${base}/api/admin/access-request-stats`)).status, 401);
   for (const role of ["reader", "power-user", "cemetery-admin"]) {
     const headers = { "x-role": role, "x-email": "user@example.test" };
     assert.equal((await fetch(`${base}/api/admin/access-requests`, { headers })).status, 403);
+    assert.equal((await fetch(`${base}/api/admin/access-request-stats`, { headers })).status, 403);
     assert.equal((await fetch(`${base}/api/admin/access-requests/11111111-1111-4111-8111-111111111111/reject`, { method: "POST", headers })).status, 403);
   }
   assert.equal((await fetch(`${base}/api/admin/access-requests`, { headers: { "x-role": "admin", "x-email": "admin@example.test" } })).status, 200);
@@ -64,7 +73,7 @@ test("real application keeps record, media and admin routes private alongside th
   await new Promise((resolve) => server.once("listening", resolve));
   t.after(() => new Promise((resolve) => server.close(resolve)));
   const base = `http://127.0.0.1:${server.address().port}`;
-  for (const path of ["/api/cemetery-map", "/api/search?q=smith", "/api/headstone-lookups", "/api/admin/users", "/api/admin/access-requests", "/media/photo.jpg"]) {
+  for (const path of ["/api/cemetery-map", "/api/search?q=smith", "/api/headstone-lookups", "/api/admin/users", "/api/admin/access-requests", "/api/admin/access-request-stats", "/media/photo.jpg"]) {
     assert.equal((await fetch(`${base}${path}`)).status, 401, path);
   }
 });

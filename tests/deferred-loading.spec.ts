@@ -6,6 +6,7 @@ test("public access form does not download the map application or authentication
   page.on("request", (request) => {
     if (/\/src\/(App\.tsx|components\/(CemeteryMap|DetailPanel)\.tsx|auth\/Auth0AppProvider\.tsx)/u.test(new URL(request.url()).pathname)) appRequests.push(request.url());
   });
+  await page.route("https://challenges.cloudflare.com/**", (route) => route.abort());
   await page.goto("/request-access");
   await expect(page.getByRole("button", { name: "Submit request" })).toBeVisible();
   expect(appRequests).toEqual([]);
