@@ -11,10 +11,6 @@ export function accessRequestLimiter({ now = Date.now, limit = 20, windowMs = 60
     response.set("Cache-Control", "no-store");
     const time = now();
     for (const [key, value] of buckets) if (value.until <= time) buckets.delete(key);
-    if (global.until <= time) global = { count: 0, until: time + windowMs };
-    if (++global.count > globalLimit) {
-      response.set("Retry-After", String(Math.ceil((global.until - time) / 1000))).status(429).json({ error: "Please try again later." }); return;
-    }
     const key = accessRequestIp(request, trustProxy);
     if (!buckets.has(key) && buckets.size >= 1000) {
       response.set("Retry-After", "600").status(429).json({ error: "Please try again later." });
@@ -26,6 +22,10 @@ export function accessRequestLimiter({ now = Date.now, limit = 20, windowMs = 60
     if (bucket.count > limit) {
       response.set("Retry-After", String(Math.ceil((bucket.until - time) / 1000))).status(429).json({ error: "Please try again later." });
       return;
+    }
+    if (global.until <= time) global = { count: 0, until: time + windowMs };
+    if (++global.count > globalLimit) {
+      response.set("Retry-After", String(Math.ceil((global.until - time) / 1000))).status(429).json({ error: "Please try again later." }); return;
     }
     next();
   };
@@ -40,8 +40,9 @@ export function registerAccessRequestRoutes(app, { pool, requireAdmin, protectio
         if (!await verifyToken(request.body?.turnstileToken, accessRequestIp(request, protection?.trustProxy), protection)) {
           response.status(403).json({ error: "Verification failed. Please complete the verification and try again." }); return;
         }
-        if (!await submitBoundedAccessRequest(pool, input)) {
-          response.set("Retry-After", "3600").status(429).json({ error: "Requests are temporarily at capacity. Please try again later." }); return;
+        const submission = await submitBoundedAccessRequest(pool, input);
+        if (!submission.accepted) {
+          response.set("Retry-After", String(submission.retryAfter)).status(429).json({ error: "Requests are temporarily at capacity. Please try again later." }); return;
         }
       }
       response.status(202).json({ message: "Your request has been received. An administrator will review it. Submitting a request does not grant access." });

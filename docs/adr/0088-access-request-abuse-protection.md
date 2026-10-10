@@ -27,14 +27,14 @@ set. Other deployments retain the directly observed peer; raw forwarding headers
 are ignored. The tunnel and both origin listeners must remain private/loopback.
 
 Keep 20 attempts per visitor per ten minutes with at most 1,000 in-memory visitor
-buckets, plus 100 attempts total per API process per ten minutes, before JSON
+buckets, plus 100 attempts passing the visitor limit per API process per ten minutes, before JSON
 parsing or verification. The public route accepts at most 16 KiB of uncompressed
 JSON. Hosted Nginx additionally limits each visitor to five per minute (burst five)
 and all visitors together to 30 per minute (burst ten).
 
 Use a PostgreSQL transaction advisory try-lock to atomically check capacity and
 insert across API instances: at most 100 new stored requests per rolling hour
-and 200 pending requests. A busy lock or full queue returns 429 with Retry-After.
+and 200 pending requests. A busy lock returns 429 with a five-second Retry-After; full capacity returns 429 with a one-hour Retry-After.
 Migration 438 indexes creation time for the rolling-hour count. Existing pending
 rows are retained, even if already over capacity. Reviewed rows remain historical;
 reviewing a request frees pending capacity but does not reset the rolling-hour count.

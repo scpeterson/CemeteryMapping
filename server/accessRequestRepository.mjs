@@ -32,14 +32,14 @@ export async function submitBoundedAccessRequest(pool, input, limits = accessReq
   try {
     await client.query("BEGIN");
     const { rows: [lock] } = await client.query("SELECT pg_try_advisory_xact_lock(416, 1) AS acquired");
-    if (!lock.acquired) { await client.query("ROLLBACK"); return false; }
+    if (!lock.acquired) { await client.query("ROLLBACK"); return { accepted: false, retryAfter: 5 }; }
     const stats = await accessRequestStats(client);
     if (stats.pending >= limits.pending || stats.lastHour >= limits.hourly) {
-      await client.query("ROLLBACK"); return false;
+      await client.query("ROLLBACK"); return { accepted: false, retryAfter: 3600 };
     }
     await submitAccessRequest(client, input);
     await client.query("COMMIT");
-    return true;
+    return { accepted: true };
   } catch (error) { await client.query("ROLLBACK"); throw error; }
   finally { client.release(); }
 }

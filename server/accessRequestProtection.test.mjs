@@ -61,3 +61,13 @@ test("failed verification and oversized bodies never reach the database", async 
   assert.equal((await post({ ...input, turnstileToken: "forged" })).status, 403);
   assert.equal((await post({ ...input, padding: "x".repeat(17_000) })).status, 413);
 });
+
+test("a blocked visitor cannot consume the remaining shared verification budget", () => {
+  let allowed = 0;
+  const limiter = accessRequestLimiter({ limit: 1, globalLimit: 2 });
+  const response = { set() { return this; }, status() { return this; }, json() {} };
+  limiter({ ip: "192.0.2.1" }, response, () => allowed++);
+  for (let i = 0; i < 100; i++) limiter({ ip: "192.0.2.1" }, response, () => allowed++);
+  limiter({ ip: "192.0.2.2" }, response, () => allowed++);
+  assert.equal(allowed, 2);
+});
