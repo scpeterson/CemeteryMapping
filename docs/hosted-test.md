@@ -251,7 +251,7 @@ refresh workflow. Continue to follow the review and backup requirements above.
 Before deploying ADR 0088, apply migration 438 and add `TURNSTILE_SECRET` and
 `TURNSTILE_HOSTNAMES=test.nhcemeteries.org` to the existing protected
 `deploy/test/runtime.env` (mode 0600). Set the widget's public
-`VITE_TURNSTILE_SITE_KEY` in `deploy/test/frontend.env`, then rebuild TEST using
+`VITE_TURNSTILE_SITE_KEY` and `VITE_TURNSTILE_REQUIRED=true` in `deploy/test/frontend.env`, then rebuild TEST using
 that file. Recreate API and web services together; the Compose configuration
 enables the loopback-only trusted visitor header. Preserve existing database,
 media, Auth0 settings, tunnel credentials, and gateway policies.

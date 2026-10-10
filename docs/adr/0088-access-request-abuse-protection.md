@@ -18,7 +18,7 @@ requires a genuine success, the expected action, and an exact environment-specif
 hostname. Missing configuration, invalid/expired/replayed tokens, network errors,
 and malformed verification responses deny storage. The browser clears and resets
 tokens after every submission attempt, handles expiry, and offers widget-load retry.
-Only local DEV/TEST with disabled/trusted-header authentication and no configured
+Hosted TEST requires the widget via `VITE_TURNSTILE_REQUIRED=true`; STAGE/PROD require it automatically. Local frontend Auth0 configuration alone does not require a widget, because the public page does not sign users in. The API only permits local DEV/TEST with disabled/trusted-header authentication and no configured
 Turnstile secret may omit verification. Hosted Auth0, STAGE and PROD require it.
 
 Nginx overwrites `X-Access-Request-IP` using Cloudflare's visitor IP. The API uses

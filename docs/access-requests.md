@@ -64,7 +64,7 @@ this page, its assets, and the submission endpoint; do not broadly expose
 Apply migration 438 before releasing abuse protection. Create a managed Turnstile
 widget for the request form and configure:
 
-- Frontend build: `VITE_TURNSTILE_SITE_KEY` (public key).
+- Frontend build: `VITE_TURNSTILE_SITE_KEY` (public key). Hosted TEST also sets `VITE_TURNSTILE_REQUIRED=true`; STAGE/PROD always require the widget.
 - Protected API runtime: `TURNSTILE_SECRET` and `TURNSTILE_HOSTNAMES` (comma-separated exact frontend hostnames).
 - Hosted TEST allowlist: `test.nhcemeteries.org`; PROD: `nhcemeteries.org`. Do not include local domains or test keys in hosted API configuration.
 - The supplied loopback Nginx/Tunnel deployment sets `ACCESS_REQUEST_TRUST_PROXY=loopback`; Nginx overwrites `X-Access-Request-IP`. Never enable this behind an externally exposed origin or a proxy that preserves client-supplied headers.

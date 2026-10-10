@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { AccessRequestVerification } from "./AccessRequestVerification";
-import { appEnvironment, isAuth0Enabled, apiBaseUrl } from "../config/environment";
+import { appEnvironment, apiBaseUrl } from "../config/environment";
 import { jsonRequest, jsonResponse, normalizeBaseUrl } from "../api/apiClient";
 
 export function RequestAccessPage() {
   const [form, setForm] = useState({ displayName: "", email: "", cemeteryInterest: "", reason: "", website: "" });
   const sitekey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
-  const verificationRequired = Boolean(sitekey) || isAuth0Enabled || ["STAGE", "PROD"].includes(appEnvironment);
+  const verificationRequired = Boolean(sitekey) || import.meta.env.VITE_TURNSTILE_REQUIRED === "true" || ["STAGE", "PROD"].includes(appEnvironment);
   const [token, setToken] = useState("");
   const [resetKey, setResetKey] = useState(0);
   const [busy, setBusy] = useState(false);
