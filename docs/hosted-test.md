@@ -210,8 +210,9 @@ consistent DEV snapshot, discarding TEST cemetery edits. The source revision was
 TEST database now includes those migration records and the final lot placements;
 these migrations were not rerun over the restored snapshot.
 
-This was a data/media refresh, not a code deployment. API/frontend release
-metadata remains `d82e8e5`, built September 29. TEST Auth0 configuration, the
+This was a data/media refresh, not a code deployment. At that refresh, API/frontend
+release metadata remained `d82e8e5`, built September 29. The October 10 security
+deployment below supersedes that code-release status. TEST Auth0 configuration, the
 Cloudflare gateway, and protected runtime settings were retained.
 
 Before cutover, a separate database was restored from `template0` using
@@ -246,17 +247,122 @@ confirm those interactive workflows with an approved tester when available.
 This one-time preservation/rehearsal procedure does not establish an automated
 refresh workflow. Continue to follow the review and backup requirements above.
 
-### Access-request abuse protection
+## Access-request abuse protection
 
-Before deploying ADR 0088, apply migration 438 and add `TURNSTILE_SECRET` and
-`TURNSTILE_HOSTNAMES=test.nhcemeteries.org` to the existing protected
-`deploy/test/runtime.env` (mode 0600). Set the widget's public
-`VITE_TURNSTILE_SITE_KEY` and `VITE_TURNSTILE_REQUIRED=true` in `deploy/test/frontend.env`, then rebuild TEST using
-that file. Recreate API and web services together; the Compose configuration
-enables the loopback-only trusted visitor header. Preserve existing database,
-media, Auth0 settings, tunnel credentials, and gateway policies.
+Use [ADR 0088](adr/0088-access-request-abuse-protection.md) and the
+[access-request guide](access-requests.md) for the verification contract and limits.
+Migration 438 adds only the creation-time index on `access_requests`. It creates
+no new table, so existing API table grants continue to apply.
 
-Check `nginx -t`, signed-out verification, token replay rejection, missing-token
-rejection, admin-only capacity counts, and private record endpoints. The absence
-of a widget/key deliberately closes public submission; do not deploy half of
-this change. Inspect queue capacity under Admin → Users and Turnstile Analytics.
+Keep `TURNSTILE_SECRET` and `TURNSTILE_HOSTNAMES=test.nhcemeteries.org` in the
+existing protected `deploy/test/runtime.env` (mode 0600). Store the public
+`VITE_TURNSTILE_SITE_KEY` and `VITE_TURNSTILE_REQUIRED=true`, together with the
+existing TEST Auth0 frontend settings, in ignored `deploy/test/frontend.env`.
+Never substitute the public site key for the private secret. A dummy-token
+Siteverify probe reporting `invalid-input-response`, without `invalid-input-secret`,
+validates the secret; it does not validate the full form flow. Keep secrets out of
+command arguments, output, source archives, and issue reports.
+
+Build the frontend from those settings. Preserve database, media, Auth0 settings,
+tunnel credentials, and gateway policies. Keep the loopback listeners and
+`ACCESS_REQUEST_TRUST_PROXY=loopback`; Nginx must overwrite the visitor header.
+If a Content Security Policy is introduced, permit the widget's scripts/frames
+from `https://challenges.cloudflare.com` and test it before release.
+
+### Safe release procedure
+
+1. Record the selected source revision, frontend build, image digests, and migration
+   scope. Back up the existing database and application/settings. Rehearse the
+   selected changelog on an isolated database copy before changing live TEST.
+2. Build and fully transfer the release archive before extracting it. Compare
+   source/frontend hashes against the completed local release. Do not start
+   deployment while the transfer is still running.
+3. Preserve protected env files when overlaying source. The Dockerfile uses
+   `COPY --chown=node:node server ./server` so private source directory modes do
+   not prevent `USER node` from reading routes. Do not solve container read errors
+   by making the host's server/database/secret trees broadly readable.
+4. Build the API image and apply only the reviewed, rehearsed migration scope.
+   Make generated public `dist` directories traversable and files readable by
+   Nginx (directories 0755, files 0644); this does not apply to protected settings.
+5. Recreate the API after runtime settings change. If `dist` was replaced by a
+   directory rename, force-recreate web to bind the new directory:
+
+   ```sh
+   cd /srv/nhcemeteries/app/deploy/test
+   docker compose up -d --no-deps api
+   docker compose up -d --no-deps --force-recreate web
+   docker compose exec -T web nginx -t
+   ```
+
+   If changing only the mounted Nginx configuration, validate it and reload Nginx
+   explicitly; `compose up` can leave an existing web container running with its
+   old worker configuration. Keep database and tunnel services running.
+6. Confirm healthy TEST metadata, the actual public form/assets, missing/forged
+   token rejection without stored rows, anonymous private/admin endpoint denial,
+   and a small controlled burst returning 429. Submit a synthetic request with a
+   real token, verify replay rejection using a client that keeps tokens private,
+   and reject the synthetic request without provisioning an account.
+7. Record results and gaps. Remove disposable rehearsal databases and temporary
+   credential files after verification; retain protected recovery backups.
+
+### Operating and troubleshooting
+
+- Check **Admin → Users → Access requests** and review pending requests. The queue
+  warns at 80% of the 100-per-hour or 200-pending ceilings. Reviewed requests remain
+  historical; rejecting one frees pending capacity, not the rolling-hour count.
+- Watch Nginx 429 counts and Turnstile Analytics. API visitor/global rate buckets
+  reset on process restart; database capacity limits survive restart. Do not
+  restart services to evade limits or create a database log/email per rejection.
+- A 403 verification failure can mean a missing/expired/invalid token, wrong secret,
+  action/hostname mismatch, or failed outbound Siteverify call. Check configuration
+  and connectivity without logging secrets or tokens; preserve fail-closed behavior.
+- A 429 can originate at Nginx, the API attempt limiter, database lock contention,
+  or queue/hourly capacity. Honor Retry-After when supplied. Nginx 429 responses
+  currently lack that header. Investigate before increasing limits.
+- For a 502 after release, inspect API startup and source ownership. For a blank
+  public page, check asset hashes, browser errors, readable public assets, and the
+  web container's directory mount before changing authentication or gateway rules.
+- Prefer a forward fix that keeps verification enabled. Rolling back to a release
+  before protection removes verification/capacity controls; if unavoidable,
+  temporarily close public submission until a protected release is restored.
+  Code rollback does not undo migration 438; the additive index can remain with
+  older code. Do not restore a database over later TEST edits as routine rollback.
+
+## October 10, 2026 security deployment
+
+Recorded by Codex from the completed deployment and checks on October 10.
+[PR #637](https://github.com/scpeterson/CemeteryMapping/pull/637) added protection
+to main. A full current-main rehearsal stopped at the unrelated migration 428
+Pfeiffer burial prerequisite; the running database was not changed by that failed
+rehearsal. Do not bypass that assertion or mark the migration executed.
+
+The reviewed security-only release in
+[PR #638](https://github.com/scpeterson/CemeteryMapping/pull/638) backported the
+protection onto the deployed `d82e8e5` code. Its merged source/build identifier is
+`21d4e3c55462f443f27ff44437970e978551daa8`. The maintenance branch is
+`codex/hosted-test-release`; its selected root adds migration 438 without bringing
+in migrations 423–437. This is a reviewed backport, not an instruction to edit the
+main changelog or skip failed data migrations in future releases.
+
+Migration 438 was rehearsed and applied. Existing cemetery data, media, TEST
+identities, and existing requests were retained. Full main/backport CI passed.
+The container source-ownership fix is merged into the hosted branch in
+[PR #639](https://github.com/scpeterson/CemeteryMapping/pull/639)
+(`295c9b310071c990a12cdeff5a77de2a5ace19de`) and into main in
+[PR #640](https://github.com/scpeterson/CemeteryMapping/pull/640). The host includes
+that Dockerfile fix; observed API/frontend security build metadata remains
+`21d4e3c`, so metadata alone does not identify the build-file follow-up.
+
+Deployment initially exposed source-directory ownership and an incomplete-transfer
+asset problem. Both were corrected; all 163 checked server/frontend files then
+matched the completed release. API health and public form/assets passed;
+anonymous private/admin routes returned 401; missing/forged tokens returned 403
+without storing smoke requests; a controlled eight-request burst returned six
+403s followed by two 429s. A fresh real Turnstile token submitted successfully;
+the synthetic request was rejected and no access was granted.
+
+Live replay validation remains pending because automatic approval review blocked
+exporting the captured token as a credential. Automated tests cover replay
+failure. Fresh Auth0 sign-in and real invitation delivery were not verified in
+this release. Production was not deployed. Preserve the dated distinction between
+passed checks and these remaining validation tasks.

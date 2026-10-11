@@ -9,7 +9,10 @@ access. There is no anonymous map or burial browsing in production.
 ## Applicant
 
 Open `/request-access` on the application's website and provide your name, email,
-cemetery of interest, and reason for access. Submit once. An administrator must
+cemetery of interest, and reason for access. Complete the Cloudflare verification
+when shown, then submit once. If verification expires or fails, complete it again
+before retrying. A temporary capacity message means you should wait and retry;
+it does not mean an administrator rejected your application. An administrator must
 review the request before you can sign in to view records. The confirmation is
 not an approval or proof that an account exists. Existing users should contact
 an administrator about access problems rather than submit another request.
@@ -78,7 +81,10 @@ adding a Content Security Policy. The normal map does not load the widget script
 Limits: 20 attempts per visitor and 100 total per API process per ten minutes;
 Nginx five per visitor per minute (burst five), 30 total per minute (burst ten);
 100 new stored requests per rolling hour and 200 pending across all instances.
-Full capacity returns 429 with Retry-After; reviewing pending requests frees queue
+API rate/capacity limits return 429 with Retry-After. A busy database lock asks
+for a five-second retry; full queue/hourly capacity asks for one hour. Nginx can
+return 429 before the API and does not currently add a Retry-After header.
+Reviewing pending requests frees queue
 space, while the hourly count naturally ages out. Already stored requests remain
 available for review. The database-backed limits survive API restarts.
 
@@ -95,3 +101,22 @@ information remain restricted.
 For hosted TEST routing, tester assignments, and preservation of TEST users during
 DEV data refreshes, see [Hosted TEST](hosted-test.md).
 See [ADR 0076](adr/0076-public-access-requests.md) and [ADR 0088](adr/0088-access-request-abuse-protection.md).
+
+## Deployed verification status — October 10, 2026
+
+Hosted TEST has the real widget and protected runtime secret installed. Full CI,
+an isolated index-migration rehearsal, missing/forged-token rejection, anonymous
+private/admin endpoint denial, and a controlled burst returning 429 passed. A
+fresh real token successfully submitted a synthetic request; the request was
+subsequently rejected without granting account access.
+
+Live replay rejection remains unverified: automatic approval review blocked
+exporting the captured token for the check. Automated tests cover replay failure,
+but are not evidence of live single-use validation. Complete that check using a
+trusted test client that keeps the token in memory and sends it only to the
+protected endpoint; never print tokens or the widget secret into logs or chat.
+This deployment did not verify a new Auth0 login or invitation-email delivery.
+Production hostname configuration is documented, but this is not a PROD deployment.
+
+See the [security deployment record](hosted-test.md#october-10-2026-security-deployment)
+for the hosted release and migration scope.

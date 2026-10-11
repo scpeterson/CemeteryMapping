@@ -58,6 +58,17 @@ When configured, the API also asks Auth0 to send password setup emails for newly
 created identities. Cloudflare's gateway email allowlist is managed separately
 from Auth0 and application permissions.
 
+### Public access-request verification
+
+The public form loads Cloudflare Turnstile only on `/request-access`. Its token
+travels to the existing Express submission handler, which calls Siteverify with
+its private runtime secret and validates success, action `request_access`, and
+an exact environment-specific hostname before storing a request. Nginx/API
+attempt limits bound work before verification; PostgreSQL enforces shared hourly
+and pending-queue ceilings. A verified request still requires administrator
+approval and does not grant cemetery access. See [the access guide](access-requests.md)
+and [ADR 0088](adr/0088-access-request-abuse-protection.md).
+
 ### External map and place data
 
 ```mermaid
@@ -84,6 +95,7 @@ Cloudflare and Auth0 do not store the application's cemetery records.
 | --- | --- | --- |
 | **Cloudflare DNS** | Browser → hosted hostname | Routes the TEST hostname to the Cloudflare Tunnel. |
 | **Cloudflare Access** | Browser → application gateway | Checks the hosted TEST email allowlist using an emailed one-time PIN before allowing protected traffic. This is separate from Auth0 login. |
+| **Cloudflare Turnstile** | Public form → widget; Express → Siteverify | Verifies public access-request submissions. Only the public site key reaches the browser; the private secret stays in the API runtime. |
 | **Cloudflare Tunnel** | Cloudflare edge ↔ `cloudflared` → Nginx | The connector establishes an outbound tunnel from the Droplet, allowing Cloudflare to reach the loopback web listener without exposing public web or database ports. |
 | **DigitalOcean Droplet** | Hosts Nginx, Express, PostgreSQL/PostGIS, media, and the tunnel connector | Keeps hosted TEST available independently of the developer's computer. Docker Compose runs the application services on this server. |
 | **DigitalOcean backups** | Droplet → provider backup storage | Supplies daily host recovery copies. The local backup script also creates logical database dumps; a separate offsite media/database copy remains follow-up work. |

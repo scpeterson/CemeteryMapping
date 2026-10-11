@@ -61,3 +61,16 @@ The hostname allowlist for TEST must contain only `test.nhcemeteries.org`; PROD 
 `nhcemeteries.org`. Do not use a test secret or local hostname in hosted environments.
 Limits deliberately trade temporary submission availability for bounded workload;
 administrators can review the queue before increasing limits with measured evidence.
+
+## Deployment evidence — October 10, 2026
+
+Main protection merged in #637; hosted TEST received the security-only backport
+#638 and image source-ownership fix #639 (also #640 on main). Only index migration
+438 was added to the existing TEST data. The full-main rehearsal failed unrelated
+migration 428 prerequisites on a disposable copy; those assertions were preserved.
+
+Full CI and a fresh real-token submission passed. Live missing/forged-token denial,
+private/admin authorization, and Nginx burst throttling passed. Live replay
+validation remains pending after automatic approval review blocked exporting the
+captured token; automated replay tests do not replace this check. See the
+[dated runbook record](../hosted-test.md#october-10-2026-security-deployment).
