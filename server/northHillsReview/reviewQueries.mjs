@@ -1,6 +1,29 @@
 import { compact, normalizeLimit, validConfidence, validStatuses, validSorts } from "./normalization.mjs";
 import { toBatch, toSummary, toEntry } from "./reviewMapping.mjs";
 
+// Illegible readings cannot match a surname. Spreadsheet page references can
+// fall on the neighboring page when a surveyed row spans a printed page break.
+const unknownRowCandidate = `
+  upper(trim(coalesce(entry.name_text, ''))) = 'UNKNOWN'
+  AND entry.parsed_section_name IS NOT NULL
+  AND entry.parsed_row_number IS NOT NULL
+  AND entry.source_page_number IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM headstones row_marker
+    LEFT JOIN headstone_gravesites row_link
+      ON row_link.headstone_uuid = row_marker.id AND row_link.deleted_at IS NULL
+    WHERE row_marker.deleted_at IS NULL
+      AND (row_marker.gravesite_uuid = gravesite.id OR row_link.gravesite_uuid = gravesite.id)
+      AND upper(row_marker.source_properties->>'NhgSection') = upper(entry.parsed_section_name)
+      AND row_marker.source_properties->>'NhgRow' = entry.parsed_row_number::text
+      AND row_marker.source_properties->>'NhgPage' IN (
+        (entry.source_page_number - 1)::text,
+        entry.source_page_number::text,
+        (entry.source_page_number + 1)::text
+      )
+  )
+`;
+
 export async function listNorthHillsOcrReview(pool, filters = {}) {
   const batchResult = await pool.query(`
     SELECT
@@ -23,8 +46,10 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
       JOIN gravesites gravesite ON gravesite.id = burial.gravesite_uuid
       WHERE gravesite.cemetery_id = entry.cemetery_id
         AND burial.deleted_at IS NULL
+        AND gravesite.deleted_at IS NULL
         AND (
           (entry.source_page_number IS NOT NULL AND burial.notes ILIKE ('%' || 'North Hills Genealogists page: ' || entry.source_page_number::text || '%'))
+          OR (${unknownRowCandidate})
           OR EXISTS (
             SELECT 1
             FROM unnest(entry.surnames) AS surname(value)
@@ -309,8 +334,10 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
           ) headstone_candidates ON true
           WHERE gravesite.cemetery_id = entry.cemetery_id
             AND burial.deleted_at IS NULL
+            AND gravesite.deleted_at IS NULL
             AND (
               (entry.source_page_number IS NOT NULL AND burial.notes ILIKE ('%' || 'North Hills Genealogists page: ' || entry.source_page_number::text || '%'))
+              OR (${unknownRowCandidate})
               OR EXISTS (
                 SELECT 1
                 FROM unnest(entry.surnames) AS surname(value)
