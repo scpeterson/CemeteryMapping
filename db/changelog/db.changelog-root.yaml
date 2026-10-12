@@ -1307,3 +1307,6 @@ databaseChangeLog:
   - include:
       file: changes/438-access-request-capacity-index.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/439-correct-d-0454-soergel-obelisk.sql
+      relativeToChangelogFile: true
