@@ -1319,3 +1319,6 @@ databaseChangeLog:
   - include:
       file: changes/442-split-d-0473-brandt-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/443-correct-d-0471-miller-monolith.sql
+      relativeToChangelogFile: true
