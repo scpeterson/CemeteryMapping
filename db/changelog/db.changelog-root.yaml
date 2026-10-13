@@ -1322,3 +1322,9 @@ databaseChangeLog:
   - include:
       file: changes/443-correct-d-0471-miller-monolith.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/444-remove-d-0482-plot-marker-pseudo-burial.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/445-retire-d-0482-plot-marker-gravesite.sql
+      relativeToChangelogFile: true
