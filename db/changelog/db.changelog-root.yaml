@@ -1316,3 +1316,6 @@ databaseChangeLog:
   - include:
       file: changes/441-remove-d-0462-note-placeholder-burial.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/442-split-d-0473-brandt-gravesites.sql
+      relativeToChangelogFile: true

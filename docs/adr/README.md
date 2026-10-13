@@ -176,3 +176,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0087: Split the D-0453 Brandt burials](0087-split-d-0453-brandt-gravesites.md)
 
 - [ADR 0088: Access-request abuse protection](0088-access-request-abuse-protection.md)
+
+- [ADR 0089: Split the D-0473 Brandt burials](0089-split-d-0473-brandt-gravesites.md)
