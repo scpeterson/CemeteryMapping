@@ -97,8 +97,9 @@ export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords>
   return jsonResponse<CemeteryAdminRecords>(response, "Cemetery admin records API");
 }
 
-export async function fetchDataQualityDashboard(): Promise<DataQualityDashboard> {
-  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/data-quality-dashboard`);
+export async function fetchDataQualityDashboard(cemeteryId = ""): Promise<DataQualityDashboard> {
+  const query = cemeteryId ? `?cemeteryId=${encodeURIComponent(cemeteryId)}` : "";
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/data-quality-dashboard${query}`);
   return jsonResponse<DataQualityDashboard>(response, "Data quality dashboard API");
 }
 
