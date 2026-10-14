@@ -1337,3 +1337,6 @@ databaseChangeLog:
   - include:
       file: changes/448-split-d-0478-hague-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/449-family-first-lookup-labels.sql
+      relativeToChangelogFile: true

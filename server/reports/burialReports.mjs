@@ -57,7 +57,7 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
         military_rank_types.label AS military_rank,
         military_war_service_types.label AS military_war_service,
         COALESCE((
-          SELECT jsonb_agg(jsonb_build_object('code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label)
+          SELECT jsonb_agg(jsonb_build_object('code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY lower(military_decoration_types.label), military_decoration_types.code)
           FROM burial_military_decorations
           JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id
           WHERE burial_military_decorations.burial_uuid = burials.id
@@ -111,7 +111,7 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
             'notes', grave_features.notes,
             'status', grave_features.status
           )
-          ORDER BY grave_feature_types.sort_order, grave_feature_subtypes.sort_order NULLS LAST, grave_features.created_at
+          ORDER BY lower(grave_feature_types.label), lower(grave_feature_subtypes.label) NULLS LAST, grave_features.created_at
         ) AS features
         FROM grave_features
         JOIN grave_feature_types ON grave_feature_types.id = grave_features.feature_type_id

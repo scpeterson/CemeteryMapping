@@ -89,14 +89,10 @@ export function validateLookupTable(value) {
 }
 
 export function validateLookupPayload(body) {
-  const sortOrder = Number.parseInt(String(body?.sortOrder ?? ""), 10);
-  if (!Number.isFinite(sortOrder)) throw new BadRequestError("Sort order is required.");
-
   return {
     code: validateLookupCode(body?.code),
     label: requiredText(body?.label, "Label", 100),
     description: requiredText(body?.description, "Description", 500),
-    sortOrder,
     isActive: body?.isActive !== false,
     sourceNotes: optionalText(body?.sourceNotes, "Source notes", 500),
     sourceUrl: optionalText(body?.sourceUrl, "Source URL", 500),

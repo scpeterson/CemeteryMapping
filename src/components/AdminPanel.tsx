@@ -196,15 +196,12 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     setNewLookupRecord,
     isLoadingLookups,
     savingLookupKey,
-    recentlyMovedLookupIds,
     selectedLookupDefinition,
     selectedLookupRows,
-    duplicateLookupSortOrders,
     loadLookupRecords,
     openLookupsTab,
     updateLocalLookupRecord,
     saveLookupRecord,
-    moveLookupRecord,
     viewLookupAudit,
     addLookupRecord
   } = useLookupAdministration({ setError, setActiveTab, setMessage, setAuditSeedFilters });
@@ -420,11 +417,8 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
               setShowInactiveLookups={setShowInactiveLookups}
               selectedLookupDefinition={selectedLookupDefinition}
               selectedLookupRows={selectedLookupRows}
-              duplicateLookupSortOrders={duplicateLookupSortOrders}
               savingLookupKey={savingLookupKey}
-              recentlyMovedLookupIds={recentlyMovedLookupIds}
               updateLocalLookupRecord={updateLocalLookupRecord}
-              moveLookupRecord={moveLookupRecord}
               viewLookupAudit={viewLookupAudit}
               saveLookupRecord={saveLookupRecord}
               newLookupRecord={newLookupRecord}

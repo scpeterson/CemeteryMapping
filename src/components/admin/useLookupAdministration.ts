@@ -1,6 +1,6 @@
 import { useConfirmation } from "../ui/confirmationContext";
 import type * as React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   createLookupRecord,
   fetchLookupAdminRecords,
@@ -12,7 +12,7 @@ import type {
   LookupRecord
 } from "../../types";
 import { defaultAuditFilters } from "../AdminEventDefaults";
-import { AdminTab, blankLookupRecord, emptyLookupAdminRecords, lookupCodeFromLabel, lookupDuplicateSortOrders, lookupUsageText } from "./adminWorkflowConfig";
+import { AdminTab, blankLookupRecord, emptyLookupAdminRecords, lookupCodeFromLabel, lookupUsageText } from "./adminWorkflowConfig";
 
 type Context = {
   setError: React.Dispatch<React.SetStateAction<string | undefined>>;
@@ -35,10 +35,6 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
 
   const [savingLookupKey, setSavingLookupKey] = useState<string>();
 
-  const [recentlyMovedLookupIds, setRecentlyMovedLookupIds] = useState<Set<string>>(() => new Set());
-
-  const movedLookupTimeoutRef = useRef<number | undefined>(undefined);
-
   const selectedLookupDefinition = useMemo(
     () => lookupRecords.tables.find((table) => table.table === selectedLookupTable),
     [lookupRecords.tables, selectedLookupTable],
@@ -51,22 +47,17 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
     [selectedLookupAllRows, showInactiveLookups],
   );
 
-  const duplicateLookupSortOrders = useMemo(() => lookupDuplicateSortOrders(selectedLookupAllRows), [selectedLookupAllRows]);
-
-  useEffect(
-    () => () => {
-      if (movedLookupTimeoutRef.current) window.clearTimeout(movedLookupTimeoutRef.current);
-    },
-    [],
-  );
-
   const loadLookupRecords = async () => {
     setIsLoadingLookups(true);
     setError(undefined);
 
     try {
       const nextLookups = await fetchLookupAdminRecords();
-      setLookupRecords(nextLookups);
+      setLookupRecords({ ...nextLookups, lookups: Object.fromEntries(
+        Object.entries(nextLookups.lookups).map(([table, rows]) => [table, [...rows].sort(
+          (a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()) || a.code.localeCompare(b.code),
+        )]),
+      ) });
       setSelectedLookupTable((current) => (nextLookups.tables.some((table) => table.table === current) ? current : (nextLookups.tables[0]?.table ?? "")));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load lookup records.");
@@ -90,7 +81,7 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
         ...current,
         lookups: {
           ...current.lookups,
-          [table]: nextRows.sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label) || a.code.localeCompare(b.code)),
+          [table]: nextRows.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()) || a.code.localeCompare(b.code)),
         },
       };
     });
@@ -123,36 +114,6 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
       setMessage(`${saved.label} saved.`);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save lookup row.");
-    } finally {
-      setSavingLookupKey(undefined);
-    }
-  };
-
-  const moveLookupRecord = async (table: string, row: LookupRecord, direction: -1 | 1) => {
-    const rows = [...(showInactiveLookups ? lookupRecords.lookups[table] ?? [] : (lookupRecords.lookups[table] ?? []).filter((candidate) => candidate.isActive))].sort(
-      (a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label) || a.code.localeCompare(b.code),
-    );
-    const rowIndex = rows.findIndex((candidate) => candidate.id === row.id);
-    const swapWith = rows[rowIndex + direction];
-    if (!swapWith) return;
-
-    const key = `${table}:move:${row.id}`;
-    const nextRow = { ...row, sortOrder: swapWith.sortOrder };
-    const nextSwapWith = { ...swapWith, sortOrder: row.sortOrder };
-    setSavingLookupKey(key);
-    setMessage(undefined);
-    setError(undefined);
-
-    try {
-      const [savedRow, savedSwapWith] = await Promise.all([updateLookupRecord(table, nextRow.id, nextRow), updateLookupRecord(table, nextSwapWith.id, nextSwapWith)]);
-      replaceLookupRecord(table, savedRow);
-      replaceLookupRecord(table, savedSwapWith);
-      setRecentlyMovedLookupIds(new Set([savedRow.id, savedSwapWith.id]));
-      if (movedLookupTimeoutRef.current) window.clearTimeout(movedLookupTimeoutRef.current);
-      movedLookupTimeoutRef.current = window.setTimeout(() => setRecentlyMovedLookupIds(new Set()), 1600);
-      setMessage(`${row.label} moved ${direction < 0 ? "up" : "down"}.`);
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to reorder lookup rows.");
     } finally {
       setSavingLookupKey(undefined);
     }
@@ -197,15 +158,12 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
     setNewLookupRecord,
     isLoadingLookups,
     savingLookupKey,
-    recentlyMovedLookupIds,
     selectedLookupDefinition,
     selectedLookupRows,
-    duplicateLookupSortOrders,
     loadLookupRecords,
     openLookupsTab,
     updateLocalLookupRecord,
     saveLookupRecord,
-    moveLookupRecord,
     viewLookupAudit,
     addLookupRecord
   };

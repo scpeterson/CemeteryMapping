@@ -121,7 +121,6 @@ export type LookupRecord = {
   code: string;
   label: string;
   description: string;
-  sortOrder: number;
   isActive: boolean;
   usageCount: number;
   usageLabel: string;

@@ -156,7 +156,6 @@ function toLookupRow(row, definition) {
     code: row.code,
     label: row.label,
     description: row.description,
-    sortOrder: Number(row.sort_order),
     isActive: row.is_active,
     usageCount: Number(row.usage_count ?? 0),
     usageLabel: definition.usageLabel,
@@ -201,7 +200,7 @@ export async function listLookupRecords(pool) {
             WHERE usage_records.${definition.usageColumn} = ${definition.table}.id${usageWhere}
           ) AS usage_count${sourceFields}
         FROM ${definition.table}
-        ORDER BY sort_order, label, code
+        ORDER BY lower(label), label, code
       `);
       lookups[table.table] = result.rows.map((row) => toLookupRow(row, definition));
     }
@@ -218,24 +217,23 @@ export async function updateLookupRecord(pool, table, id, record, { actorUser } 
   return withAuditContext(pool, { actorUser }, async (client) => {
     const sourceAssignments = definition.hasSourceFields
       ? `,
-            source_notes = NULLIF($5, ''),
-            source_url = NULLIF($6, ''),
-            is_active = $7`
+            source_notes = NULLIF($4, ''),
+            source_url = NULLIF($5, ''),
+            is_active = $6`
       : `,
-            is_active = $5`;
+            is_active = $4`;
     const returningSourceFields = definition.hasSourceFields ? ", source_notes, source_url" : "";
     const usageWhere = definition.usageWhere ? ` AND ${definition.usageWhere}` : "";
     const usageCountSelect = `(SELECT count(*) FROM ${definition.usageTable} usage_records WHERE usage_records.${definition.usageColumn} = ${definition.table}.id${usageWhere})`;
     const values = definition.hasSourceFields
-      ? [id, record.label, record.description, record.sortOrder, record.sourceNotes ?? "", record.sourceUrl ?? "", record.isActive]
-      : [id, record.label, record.description, record.sortOrder, record.isActive];
+      ? [id, record.label, record.description, record.sourceNotes ?? "", record.sourceUrl ?? "", record.isActive]
+      : [id, record.label, record.description, record.isActive];
 
     const result = await client.query(
       `
         UPDATE ${definition.table}
         SET label = $2,
-            description = $3,
-            sort_order = $4${sourceAssignments}
+            description = $3${sourceAssignments}
         WHERE id = $1::uuid
         RETURNING id::text, code, label, description, sort_order, is_active, created_at, updated_at, ${usageCountSelect} AS usage_count${returningSourceFields}
       `,
@@ -251,19 +249,19 @@ export async function createLookupRecord(pool, table, record, { actorUser } = {}
 
   return withAuditContext(pool, { actorUser }, async (client) => {
     const sourceColumns = definition.hasSourceFields ? ", source_notes, source_url" : "";
-    const sourceValues = definition.hasSourceFields ? ", NULLIF($5, ''), NULLIF($6, '')" : "";
-    const activeIndex = definition.hasSourceFields ? 7 : 5;
+    const sourceValues = definition.hasSourceFields ? ", NULLIF($4, ''), NULLIF($5, '')" : "";
+    const activeIndex = definition.hasSourceFields ? 6 : 4;
     const returningSourceFields = definition.hasSourceFields ? ", source_notes, source_url" : "";
     const usageWhere = definition.usageWhere ? ` AND ${definition.usageWhere}` : "";
     const usageCountSelect = `(SELECT count(*) FROM ${definition.usageTable} usage_records WHERE usage_records.${definition.usageColumn} = ${definition.table}.id${usageWhere})`;
     const values = definition.hasSourceFields
-      ? [record.code, record.label, record.description, record.sortOrder, record.sourceNotes ?? "", record.sourceUrl ?? "", record.isActive]
-      : [record.code, record.label, record.description, record.sortOrder, record.isActive];
+      ? [record.code, record.label, record.description, record.sourceNotes ?? "", record.sourceUrl ?? "", record.isActive]
+      : [record.code, record.label, record.description, record.isActive];
 
     const result = await client.query(
       `
         INSERT INTO ${definition.table} (code, label, description, sort_order${sourceColumns}, is_active)
-        VALUES ($1, $2, $3, $4${sourceValues}, $${activeIndex})
+        VALUES ($1, $2, $3, 100${sourceValues}, $${activeIndex})
         RETURNING id::text, code, label, description, sort_order, is_active, created_at, updated_at, ${usageCountSelect} AS usage_count${returningSourceFields}
       `,
       values,
