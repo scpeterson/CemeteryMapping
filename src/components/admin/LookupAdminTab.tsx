@@ -1,8 +1,8 @@
-import { ArrowDown, ArrowUp, History, ListChecks } from "lucide-react";
+import { History, ListChecks } from "lucide-react";
 import { lookupRowTitle, lookupUsageText } from "../admin/adminWorkflowConfig";
 import { useLookupAdministration } from "../admin/useLookupAdministration";
 
-type Props = Pick<ReturnType<typeof useLookupAdministration>, "selectedLookupTable" | "setSelectedLookupTable" | "lookupRecords" | "loadLookupRecords" | "isLoadingLookups" | "showInactiveLookups" | "setShowInactiveLookups" | "selectedLookupDefinition" | "selectedLookupRows" | "duplicateLookupSortOrders" | "savingLookupKey" | "recentlyMovedLookupIds" | "updateLocalLookupRecord" | "moveLookupRecord" | "viewLookupAudit" | "saveLookupRecord" | "newLookupRecord" | "setNewLookupRecord" | "addLookupRecord">;
+type Props = Pick<ReturnType<typeof useLookupAdministration>, "selectedLookupTable" | "setSelectedLookupTable" | "lookupRecords" | "loadLookupRecords" | "isLoadingLookups" | "showInactiveLookups" | "setShowInactiveLookups" | "selectedLookupDefinition" | "selectedLookupRows" | "savingLookupKey" | "updateLocalLookupRecord" | "viewLookupAudit" | "saveLookupRecord" | "newLookupRecord" | "setNewLookupRecord" | "addLookupRecord">;
 
 export function LookupAdminTab({
   selectedLookupTable,
@@ -14,11 +14,8 @@ export function LookupAdminTab({
   setShowInactiveLookups,
   selectedLookupDefinition,
   selectedLookupRows,
-  duplicateLookupSortOrders,
   savingLookupKey,
-  recentlyMovedLookupIds,
   updateLocalLookupRecord,
-  moveLookupRecord,
   viewLookupAudit,
   saveLookupRecord,
   newLookupRecord,
@@ -57,16 +54,15 @@ export function LookupAdminTab({
           </label>
         </div>
 
+        <p>Values are listed alphabetically. Name related items with the shared term first, such as “Granite, gray”.</p>
+
         {isLoadingLookups ? <div className="admin-message" role="status">Loading lookup records...</div> : null}
 
         {selectedLookupDefinition ? (
           <>
             <div className="lookup-row-list" role="table" aria-label={`${selectedLookupDefinition.label} lookup values`}>
-              {selectedLookupRows.map((row, rowIndex) => {
-                const hasDuplicateSortOrder = duplicateLookupSortOrders.has(row.sortOrder);
-                const moveKey = `${selectedLookupTable}:move:${row.id}`;
-                const isSavingRow = savingLookupKey === `${selectedLookupTable}:${row.id}` || savingLookupKey === moveKey;
-                const sortWasRecentlyMoved = recentlyMovedLookupIds.has(row.id);
+              {selectedLookupRows.map((row) => {
+                const isSavingRow = savingLookupKey === `${selectedLookupTable}:${row.id}`;
 
                 return (
                   <article
@@ -82,40 +78,6 @@ export function LookupAdminTab({
                         title="Human-readable label shown in admin screens and future form controls."
                       />
                     </label>
-                    <div className={`lookup-sort lookup-field ${sortWasRecentlyMoved ? "was-reordered" : ""}`}>
-                      <span>Sort</span>
-                      <div className="lookup-sort-control">
-                        <input
-                          type="number"
-                          value={row.sortOrder}
-                          onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sortOrder: Number(event.target.value) })}
-                          title="Display order for this lookup value."
-                        />
-                        <span className="lookup-sort-buttons" aria-label={`Change sort order for ${row.label}`}>
-                          <button
-                            type="button"
-                            className="icon-button"
-                            onClick={() => void moveLookupRecord(selectedLookupTable, row, -1)}
-                            disabled={rowIndex === 0 || isSavingRow}
-                            title="Move this lookup value up by swapping sort order with the previous visible value."
-                            aria-label={`Move ${row.label} up`}
-                          >
-                            <ArrowUp size={16} aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            className="icon-button"
-                            onClick={() => void moveLookupRecord(selectedLookupTable, row, 1)}
-                            disabled={rowIndex === selectedLookupRows.length - 1 || isSavingRow}
-                            title="Move this lookup value down by swapping sort order with the next visible value."
-                            aria-label={`Move ${row.label} down`}
-                          >
-                            <ArrowDown size={16} aria-hidden="true" />
-                          </button>
-                        </span>
-                      </div>
-                      {hasDuplicateSortOrder ? <small className="lookup-warning">Duplicate sort order</small> : null}
-                    </div>
                     <label className="lookup-description">
                       Description
                       <textarea
@@ -193,15 +155,6 @@ export function LookupAdminTab({
                   value={newLookupRecord.label}
                   onChange={(event) => setNewLookupRecord((current) => ({ ...current, label: event.target.value }))}
                   title="Human-readable label for the new lookup value."
-                />
-              </label>
-              <label className="lookup-sort">
-                Sort
-                <input
-                  type="number"
-                  value={newLookupRecord.sortOrder}
-                  onChange={(event) => setNewLookupRecord((current) => ({ ...current, sortOrder: Number(event.target.value) }))}
-                  title="Display order for the new lookup value."
                 />
               </label>
               <label className="lookup-description">

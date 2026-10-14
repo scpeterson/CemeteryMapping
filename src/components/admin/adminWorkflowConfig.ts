@@ -152,7 +152,6 @@ export const blankLookupRecord: LookupRecord = {
   code: "",
   label: "",
   description: "",
-  sortOrder: 100,
   isActive: true,
   usageCount: 0,
   usageLabel: "",
@@ -487,9 +486,4 @@ export function lookupCodeFromLabel(label: string, existingCodes: Set<string>) {
   }
 
   return code;
-}
-
-export function lookupDuplicateSortOrders(rows: LookupRecord[]) {
-  const sortCounts = rows.reduce((counts, row) => counts.set(row.sortOrder, (counts.get(row.sortOrder) ?? 0) + 1), new Map<number, number>());
-  return new Set([...sortCounts.entries()].filter(([, count]) => count > 1).map(([sortOrder]) => sortOrder));
 }

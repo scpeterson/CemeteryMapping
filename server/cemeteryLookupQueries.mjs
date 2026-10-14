@@ -6,15 +6,15 @@ import { maintenanceTablesExist } from "./cemeteryMaintenanceQueries.mjs";
 export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = {}) {
   const client = await pool.connect();
   try {
-    const markerTypes = await client.query("SELECT id::text, code, label FROM marker_types WHERE is_active ORDER BY sort_order, label");
-    const markerScopes = await client.query("SELECT id::text, code, label FROM marker_scope_types WHERE is_active ORDER BY sort_order, label");
-    const materials = await client.query("SELECT id::text, code, label FROM marker_material_types WHERE is_active ORDER BY sort_order, label");
-    const conditions = await client.query("SELECT id::text, code, label FROM headstone_condition_types WHERE is_active ORDER BY sort_order, label");
-    const vaseTypes = await client.query("SELECT id::text, code, label FROM headstone_vase_types WHERE is_active ORDER BY sort_order, label");
-    const vaseMaterials = await client.query("SELECT id::text, code, label FROM headstone_vase_material_types WHERE is_active ORDER BY sort_order, label");
-    const vasePlacements = await client.query("SELECT id::text, code, label FROM headstone_vase_placement_types WHERE is_active ORDER BY sort_order, label");
+    const markerTypes = await client.query("SELECT id::text, code, label FROM marker_types WHERE is_active ORDER BY lower(label), label, code");
+    const markerScopes = await client.query("SELECT id::text, code, label FROM marker_scope_types WHERE is_active ORDER BY lower(label), label, code");
+    const materials = await client.query("SELECT id::text, code, label FROM marker_material_types WHERE is_active ORDER BY lower(label), label, code");
+    const conditions = await client.query("SELECT id::text, code, label FROM headstone_condition_types WHERE is_active ORDER BY lower(label), label, code");
+    const vaseTypes = await client.query("SELECT id::text, code, label FROM headstone_vase_types WHERE is_active ORDER BY lower(label), label, code");
+    const vaseMaterials = await client.query("SELECT id::text, code, label FROM headstone_vase_material_types WHERE is_active ORDER BY lower(label), label, code");
+    const vasePlacements = await client.query("SELECT id::text, code, label FROM headstone_vase_placement_types WHERE is_active ORDER BY lower(label), label, code");
     const graveFeatureLookupExists = await graveFeatureTablesExist(client);
-    const graveFeatureTypes = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
+    const graveFeatureTypes = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_types WHERE is_active ORDER BY lower(label), label, code") : { rows: [] };
     const graveFeatureSubtypes = graveFeatureLookupExists
       ? await client.query(`
           SELECT
@@ -26,14 +26,14 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
           LEFT JOIN grave_feature_types
             ON grave_feature_types.id = grave_feature_subtypes.grave_feature_type_id
           WHERE grave_feature_subtypes.is_active
-          ORDER BY grave_feature_subtypes.sort_order, grave_feature_subtypes.label
+          ORDER BY lower(grave_feature_types.label), lower(grave_feature_subtypes.label), grave_feature_subtypes.code
         `)
       : { rows: [] };
-    const graveFeaturePlacements = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_placement_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
-    const graveFeatureMaterials = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_material_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
-    const intermentTypes = await client.query("SELECT id::text, code, label FROM burial_interment_types WHERE is_active ORDER BY sort_order, label");
-    const burialRecordStatuses = await client.query("SELECT id::text, code, label FROM burial_record_status_types WHERE is_active ORDER BY sort_order, label");
-    const militaryBranches = await client.query("SELECT id::text, code, label FROM military_branch_types WHERE is_active ORDER BY sort_order, label");
+    const graveFeaturePlacements = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_placement_types WHERE is_active ORDER BY lower(label), label, code") : { rows: [] };
+    const graveFeatureMaterials = graveFeatureLookupExists ? await client.query("SELECT id::text, code, label FROM grave_feature_material_types WHERE is_active ORDER BY lower(label), label, code") : { rows: [] };
+    const intermentTypes = await client.query("SELECT id::text, code, label FROM burial_interment_types WHERE is_active ORDER BY lower(label), label, code");
+    const burialRecordStatuses = await client.query("SELECT id::text, code, label FROM burial_record_status_types WHERE is_active ORDER BY lower(label), label, code");
+    const militaryBranches = await client.query("SELECT id::text, code, label FROM military_branch_types WHERE is_active ORDER BY lower(label), label, code");
     const militaryRanks = await client.query(`
           SELECT
             military_rank_types.id::text,
@@ -47,10 +47,10 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
             ON military_branch_types.id = military_rank_types.military_branch_type_id
           WHERE military_rank_types.is_active
             AND military_branch_types.is_active
-          ORDER BY military_branch_types.sort_order, military_rank_types.sort_order, military_rank_types.label
+          ORDER BY lower(military_branch_types.label), lower(military_rank_types.label), military_rank_types.code
         `);
-    const militaryWarServices = await client.query("SELECT id::text, code, label FROM military_war_service_types WHERE is_active ORDER BY sort_order, label");
-    const militaryDecorations = await client.query("SELECT id::text, code, label FROM military_decoration_types WHERE is_active ORDER BY sort_order, label");
+    const militaryWarServices = await client.query("SELECT id::text, code, label FROM military_war_service_types WHERE is_active ORDER BY lower(label), label, code");
+    const militaryDecorations = await client.query("SELECT id::text, code, label FROM military_decoration_types WHERE is_active ORDER BY lower(label), label, code");
     const verifiedPlaces = await client.query(`
       SELECT
         id::text,
@@ -68,12 +68,12 @@ export async function listHeadstoneLookupOptions(pool, { allowedCemeteryIds } = 
       WHERE verification_status = 'verified'
         AND is_active
         AND deleted_at IS NULL
-      ORDER BY display_name
+      ORDER BY lower(display_name), display_name
     `);
     const maintenanceLookupExists = await maintenanceTablesExist(client);
-    const maintenanceIssueTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_issue_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
-    const maintenanceActionTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_action_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
-    const maintenancePriorities = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_priority_types WHERE is_active ORDER BY sort_order, label") : { rows: [] };
+    const maintenanceIssueTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_issue_types WHERE is_active ORDER BY lower(label), label, code") : { rows: [] };
+    const maintenanceActionTypes = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_action_types WHERE is_active ORDER BY lower(label), label, code") : { rows: [] };
+    const maintenancePriorities = maintenanceLookupExists ? await client.query("SELECT id::text, code, label FROM maintenance_priority_types WHERE is_active ORDER BY lower(label), label, code") : { rows: [] };
     const headstones = await client.query(
       `
         SELECT
