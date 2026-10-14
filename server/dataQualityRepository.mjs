@@ -29,6 +29,15 @@ function toMetric(row) {
 
 export async function listDataQualityDashboard(pool, options = {}) {
   const cemeteryIds = cemeteryScopeValues(options.cemeteryIds);
+  const selectedCemeteryId = options.cemeteryId;
+  const metricCemeteryIds = selectedCemeteryId
+    ? (cemeteryIds === null || cemeteryIds.includes(selectedCemeteryId) ? [selectedCemeteryId] : [])
+    : cemeteryIds;
+  const cemeteryResult = await pool.query(`
+    SELECT id::text, name FROM cemeteries
+    WHERE deleted_at IS NULL AND ($1::uuid[] IS NULL OR id = ANY($1::uuid[]))
+    ORDER BY lower(name), name, id
+  `, [cemeteryIds]);
   const burialReviewCondition = "burial.review_status IN ('needs_review', 'conflict') OR burial.source_conflict OR burial.data_confidence = 'low'";
   const markerReviewCondition = "headstone.review_status IN ('needs_review', 'conflict') OR headstone.source_conflict OR headstone.data_confidence = 'low'";
   const result = await pool.query(
@@ -281,11 +290,13 @@ export async function listDataQualityDashboard(pool, options = {}) {
         END,
         label
     `,
-    [cemeteryIds],
+    [metricCemeteryIds],
   );
 
   const metrics = result.rows.map(toMetric);
   return {
+    cemeteries: cemeteryResult.rows,
+    selectedCemeteryId: selectedCemeteryId ?? "",
     generatedAt: new Date().toISOString(),
     scope: cemeteryIds === null ? "all" : "assigned",
     totalOpenItems: metrics

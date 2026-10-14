@@ -23,6 +23,7 @@ export function registerAdminGovernanceRoutes(app, context) {
         try {
           response.json(
             await listDataQualityDashboard(pool, {
+              cemeteryId: request.query.cemeteryId ? validateUuid(request.query.cemeteryId, "Cemetery ID") : undefined,
               cemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
             }),
           );

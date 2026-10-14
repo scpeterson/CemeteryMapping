@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, RefreshCw, ShieldAlert } from "lucide-react";
 import { fetchDataQualityDashboard } from "../api/cemeteryApi";
 import type { DataQualityDashboard, DataQualityMetric, DataQualitySeverity } from "../types";
@@ -61,24 +61,29 @@ const reviewTargetLabels: Record<DataQualityReviewTarget, string> = {
 
 export function DataQualityAdminTab({ onError, onOpenReviewTarget }: DataQualityAdminTabProps) {
   const [dashboard, setDashboard] = useState<DataQualityDashboard>();
+  const [cemeteryId, setCemeteryId] = useState("");
+  const requestVersion = useRef(0);
   const [isLoading, setIsLoading] = useState(false);
   const groupedMetrics = useMemo(() => groupMetrics(dashboard?.metrics ?? []), [dashboard?.metrics]);
 
   const loadDashboard = useCallback(async () => {
+    const version = ++requestVersion.current;
     setIsLoading(true);
     onError(undefined);
 
     try {
-      setDashboard(await fetchDataQualityDashboard());
+      const result = await fetchDataQualityDashboard(cemeteryId);
+      if (version === requestVersion.current) setDashboard(result);
     } catch (error) {
-      onError(error instanceof Error ? error.message : "Unable to load data quality dashboard.");
+      if (version === requestVersion.current) onError(error instanceof Error ? error.message : "Unable to load data quality dashboard.");
     } finally {
-      setIsLoading(false);
+      if (version === requestVersion.current) setIsLoading(false);
     }
-  }, [onError]);
+  }, [onError, cemeteryId]);
 
   useEffect(() => {
     void loadDashboard();
+    return () => { requestVersion.current += 1; };
   }, [loadDashboard]);
 
   return (
@@ -88,11 +93,19 @@ export function DataQualityAdminTab({ onError, onOpenReviewTarget }: DataQuality
         <h3>Data Quality</h3>
       </div>
 
+      <label className="data-quality-cemetery-filter">
+        Cemetery
+        <select value={cemeteryId} onChange={event => { setDashboard(current => current ? { ...current, metrics: [], totalOpenItems: 0 } : current); setCemeteryId(event.target.value); }}>
+          <option value="">{dashboard?.scope === "assigned" ? "All assigned cemeteries" : "All cemeteries"}</option>
+          {(dashboard?.cemeteries ?? []).map(cemetery => <option key={cemetery.id} value={cemetery.id}>{cemetery.name}</option>)}
+        </select>
+      </label>
+
       <article className="data-quality-overview" title="Current data quality summary for the cemeteries available to this user.">
         <div>
           <strong>{dashboard?.totalOpenItems ?? 0}</strong>
           <span>Open cleanup signals</span>
-          <small>{dashboard?.scope === "all" ? "All cemeteries" : "Assigned cemetery scope"}</small>
+          <small>{cemeteryId ? dashboard?.cemeteries?.find(cemetery => cemetery.id === cemeteryId)?.name : dashboard?.scope === "all" ? "All cemeteries" : "Assigned cemetery scope"}</small>
         </div>
         <div>
           <strong>{dashboard?.metrics.filter((metric) => metric.count > 0).length ?? 0}</strong>

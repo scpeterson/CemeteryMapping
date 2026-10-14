@@ -104,6 +104,8 @@ export type DataQualityMetric = {
 };
 
 export type DataQualityDashboard = {
+  cemeteries?: { id: string; name: string }[];
+  selectedCemeteryId?: string;
   generatedAt: string;
   scope: "all" | "assigned";
   totalOpenItems: number;

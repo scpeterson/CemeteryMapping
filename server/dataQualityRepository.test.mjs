@@ -40,12 +40,12 @@ test("listDataQualityDashboard scopes admins to all cemeteries and totals action
 
   const dashboard = await listDataQualityDashboard(pool);
 
-  assert.equal(queries.length, 1);
+  assert.equal(queries.length, 2);
   assert.equal(queries[0].values[0], null);
-  assert.match(queries[0].sql, /scoped_cemeteries/u);
-  assert.match(queries[0].sql, /headstone_gravesites/u);
-  assert.match(queries[0].sql, /burials_review_needed/u);
-  assert.match(queries[0].sql, /markers_review_needed/u);
+  assert.match(queries[1].sql, /scoped_cemeteries/u);
+  assert.match(queries[1].sql, /headstone_gravesites/u);
+  assert.match(queries[1].sql, /burials_review_needed/u);
+  assert.match(queries[1].sql, /markers_review_needed/u);
   assert.equal(dashboard.scope, "all");
   assert.equal(dashboard.totalOpenItems, 5);
   assert.deepEqual(
@@ -70,3 +70,14 @@ test("listDataQualityDashboard deduplicates assigned cemetery scope", async () =
   assert.equal(dashboard.scope, "assigned");
   assert.equal(dashboard.totalOpenItems, 0);
 });
+
+for (const allowed of [undefined, ['11111111-1111-4111-8111-111111111111'], []]) {
+  test(`selected cemetery cannot broaden assigned access (${JSON.stringify(allowed)})`, async () => {
+    const values = [];
+    const pool = { query: async (_sql, params) => { values.push(params[0]); return { rows: [] }; } };
+    const id = '22222222-2222-4222-8222-222222222222';
+    await listDataQualityDashboard(pool, { cemeteryIds: allowed, cemeteryId: id });
+    assert.deepEqual(values[0], allowed ?? null);
+    assert.deepEqual(values[1], allowed === undefined ? [id] : []);
+  });
+}
