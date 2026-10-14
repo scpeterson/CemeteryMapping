@@ -49,12 +49,16 @@ for (const kind of ["graves", "lots", "markers"] as const) {
     }, layer)).toBeGreaterThan(0);
     await expect.poll(() => page.evaluate(() => window.mapHighlightTest.map.isMoving())).toBe(false);
     await page.getByRole("button", { name: new RegExp(`^Select ${kind === "graves" ? "gravesites" : kind}:`) }).click();
+    // Move the fixture feature below the selection toolbar so the real click
+    // reaches the canvas rather than an overlaid mode button.
+    await page.evaluate(() => window.mapHighlightTest.map.panBy([0, -120], { duration: 0 }));
     const point = await page.evaluate(() => {
       const map = window.mapHighlightTest.map;
       const p = map.project([-80.0005, 40.0005]);
       const rect = map.getCanvas().getBoundingClientRect();
       return { x: rect.left + p.x, y: rect.top + p.y };
     });
+    expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, point)).toBe("CANVAS");
     await page.mouse.click(point.x, point.y);
     await expect(page.locator(".detail-panel")).toContainText(kind === "markers" ? marker.headstoneId : kind === "lots" ? "Test lot" : "Record ID: A-TEST");
     // Query the tiled, rendered feature: getFeatureState alone does not prove

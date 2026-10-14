@@ -1334,3 +1334,6 @@ databaseChangeLog:
   - include:
       file: changes/447-link-d-0505-foot-marker-to-d-0499.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/448-split-d-0478-hague-gravesites.sql
+      relativeToChangelogFile: true
