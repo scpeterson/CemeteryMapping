@@ -43,7 +43,11 @@
 
 .lookup-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.5fr) minmax(130px, auto) minmax(88px, auto) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "label description description"
+    "active usage actions";
+  min-width: 0;
   align-items: end;
   gap: 10px;
   padding: 11px 12px;
@@ -53,7 +57,7 @@
 }
 
 .lookup-row.has-source-fields {
-  grid-template-columns: minmax(170px, 0.9fr) minmax(260px, 1.5fr) minmax(120px, auto);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-areas:
     "label description description"
     "notes notes notes"
@@ -62,11 +66,12 @@
   align-items: start;
 }
 
-.lookup-row.has-source-fields .lookup-label {
+.lookup-row .lookup-label {
   grid-area: label;
+  align-self: start;
 }
 
-.lookup-row.has-source-fields .lookup-description {
+.lookup-row .lookup-description {
   grid-area: description;
 }
 
@@ -78,22 +83,22 @@
   grid-area: url;
 }
 
-.lookup-row.has-source-fields .lookup-active {
+.lookup-row .lookup-active {
   grid-area: active;
   align-self: center;
 }
 
-.lookup-row.has-source-fields .lookup-usage {
+.lookup-row .lookup-usage {
   grid-area: usage;
   align-self: center;
 }
 
-.lookup-row.has-source-fields .lookup-actions {
+.lookup-row .lookup-actions {
   grid-area: actions;
   align-self: center;
 }
 
-.lookup-row-new.has-source-fields > button {
+.lookup-row-new > button {
   grid-area: actions;
   align-self: center;
 }
@@ -104,13 +109,17 @@
 }
 
 .lookup-row-new {
+  grid-template-areas:
+    "title title title"
+    "label description description"
+    "active . actions";
   margin-top: var(--space-1);
   border-style: dashed;
   background: #fbfcf8;
 }
 
 .lookup-row h4 {
-  grid-column: 1 / -1;
+  grid-area: title;
   margin: 0;
   color: #26342d;
   font-size: 0.95rem;
@@ -125,7 +134,7 @@
   min-height: 38px;
 }
 
-.lookup-row.has-source-fields .lookup-description textarea,
+.lookup-row .lookup-description textarea,
 .lookup-row.has-source-fields .lookup-source-notes textarea {
   min-height: 84px;
 }
@@ -210,3 +219,35 @@
   grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
 }
 
+
+.lookup-row-new.has-source-fields {
+  grid-template-areas:
+    "title title title"
+    "label description description"
+    "notes notes notes"
+    "url url url"
+    "active . actions";
+}
+
+.lookup-row .lookup-actions {
+  justify-self: end;
+}
+
+.lookup-row .lookup-usage {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 800px) {
+  .lookup-row,
+  .lookup-row.has-source-fields,
+  .lookup-row-new,
+  .lookup-row-new.has-source-fields {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+  }
+
+  .lookup-row > *,
+  .lookup-row.has-source-fields > * {
+    grid-area: auto;
+  }
+}
