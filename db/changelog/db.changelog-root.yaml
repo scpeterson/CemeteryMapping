@@ -1355,3 +1355,6 @@ databaseChangeLog:
   - include:
       file: changes/454-correct-tlc-hs-0505-burial-link.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/455-admin-military-ranks-and-tec4.sql
+      relativeToChangelogFile: true

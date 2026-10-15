@@ -23,7 +23,7 @@ const BulkAdminTab = lazy(() => import("./admin/BulkAdminTab").then((module) => 
 const NorthHillsAdminTab = lazy(() => import("./admin/NorthHillsAdminTab").then((module) => ({ default: module.NorthHillsAdminTab })));
 const SourcePeopleAdminTab = lazy(() => import("./admin/SourcePeopleAdminTab").then((module) => ({ default: module.SourcePeopleAdminTab })));
 const LookupAdminTab = lazy(() => import("./admin/LookupAdminTab").then((module) => ({ default: module.LookupAdminTab })));
-export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
+export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>(currentUser.permissions.canManageUsers ? "users" : "records");
   const [auditSeedFilters, setAuditSeedFilters] = useState<AuditEventFilters>();
   const [message, setMessage] = useState<string>();
@@ -204,7 +204,7 @@ export function AdminPanel({ currentUser, onClose }: AdminPanelProps) {
     saveLookupRecord,
     viewLookupAudit,
     addLookupRecord
-  } = useLookupAdministration({ setError, setActiveTab, setMessage, setAuditSeedFilters });
+  } = useLookupAdministration({ setError, setActiveTab, setMessage, setAuditSeedFilters, onLookupsChanged });
 
   const {
     headstoneLookups,

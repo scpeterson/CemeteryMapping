@@ -48,6 +48,7 @@ export function candidateGravesiteLabel(match: NorthHillsOcrReviewEntry["candida
 }
 
 export type AdminPanelProps = {
+  onLookupsChanged?: () => void;
   currentUser: CurrentUser;
   onClose: () => void;
 };
@@ -148,6 +149,10 @@ export const emptyLookupAdminRecords: LookupAdminRecords = {
 };
 
 export const blankLookupRecord: LookupRecord = {
+  militaryBranchId: "",
+  abbreviation: "",
+  payGrade: "",
+  rankGroup: "enlisted",
   id: "",
   code: "",
   label: "",

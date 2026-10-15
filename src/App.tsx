@@ -351,7 +351,7 @@ export default function App() {
         </main>
         <Suspense fallback={null}>
           {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onClose={() => setIsReportsPanelOpen(false)} /> : null}
-          {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onClose={() => setIsAdminPanelOpen(false)} /> : null}
+          {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onLookupsChanged={retryLookups} onClose={() => setIsAdminPanelOpen(false)} /> : null}
           {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
             <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
           ) : null}

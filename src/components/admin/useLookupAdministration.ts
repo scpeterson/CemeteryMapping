@@ -15,19 +15,21 @@ import { defaultAuditFilters } from "../AdminEventDefaults";
 import { AdminTab, blankLookupRecord, emptyLookupAdminRecords, lookupCodeFromLabel, lookupUsageText } from "./adminWorkflowConfig";
 
 type Context = {
+  onLookupsChanged?: () => void;
   setError: React.Dispatch<React.SetStateAction<string | undefined>>;
   setActiveTab: React.Dispatch<React.SetStateAction<AdminTab>>;
   setMessage: React.Dispatch<React.SetStateAction<string | undefined>>;
   setAuditSeedFilters: React.Dispatch<React.SetStateAction<AuditEventFilters | undefined>>
 };
 
-export function useLookupAdministration({ setError, setActiveTab, setMessage, setAuditSeedFilters }: Context) {
+export function useLookupAdministration({ setError, setActiveTab, setMessage, setAuditSeedFilters, onLookupsChanged }: Context) {
   const confirm = useConfirmation();
   const [lookupRecords, setLookupRecords] = useState<LookupAdminRecords>(emptyLookupAdminRecords);
 
   const [selectedLookupTable, setSelectedLookupTable] = useState("");
 
   const [showInactiveLookups, setShowInactiveLookups] = useState(false);
+  const [editedLookupKeys, setEditedLookupKeys] = useState<Set<string>>(new Set());
 
   const [newLookupRecord, setNewLookupRecord] = useState<LookupRecord>(blankLookupRecord);
 
@@ -43,8 +45,8 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
   const selectedLookupAllRows = useMemo(() => lookupRecords.lookups[selectedLookupTable] ?? [], [lookupRecords.lookups, selectedLookupTable]);
 
   const selectedLookupRows = useMemo(
-    () => (showInactiveLookups ? selectedLookupAllRows : selectedLookupAllRows.filter((row) => row.isActive)),
-    [selectedLookupAllRows, showInactiveLookups],
+    () => (showInactiveLookups ? selectedLookupAllRows : selectedLookupAllRows.filter((row) => row.isActive || editedLookupKeys.has(`${selectedLookupTable}:${row.id}`))),
+    [selectedLookupAllRows, showInactiveLookups, editedLookupKeys, selectedLookupTable],
   );
 
   const loadLookupRecords = async () => {
@@ -53,6 +55,7 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
 
     try {
       const nextLookups = await fetchLookupAdminRecords();
+      setEditedLookupKeys(new Set());
       setLookupRecords({ ...nextLookups, lookups: Object.fromEntries(
         Object.entries(nextLookups.lookups).map(([table, rows]) => [table, [...rows].sort(
           (a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()) || a.code.localeCompare(b.code),
@@ -88,6 +91,7 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
   };
 
   const updateLocalLookupRecord = (table: string, id: string, patch: Partial<LookupRecord>) => {
+    setEditedLookupKeys(current => new Set(current).add(`${table}:${id}`));
     setLookupRecords((current) => ({
       ...current,
       lookups: {
@@ -111,6 +115,12 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
     try {
       const saved = await updateLookupRecord(table, row.id, row);
       replaceLookupRecord(table, saved);
+      setEditedLookupKeys(current => {
+        const next = new Set(current);
+        next.delete(`${table}:${row.id}`);
+        return next;
+      });
+      onLookupsChanged?.();
       setMessage(`${saved.label} saved.`);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save lookup row.");
@@ -128,7 +138,7 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
   const addLookupRecord = async () => {
     if (!selectedLookupDefinition) return;
     const key = `${selectedLookupDefinition.table}:new`;
-    const existingCodes = new Set((lookupRecords.lookups[selectedLookupDefinition.table] ?? []).map((row) => row.code));
+    const existingCodes = new Set((lookupRecords.lookups[selectedLookupDefinition.table] ?? []).filter(row => !selectedLookupDefinition.hasRankFields || row.militaryBranchId === newLookupRecord.militaryBranchId).map((row) => row.code));
     const lookupToCreate = {
       ...newLookupRecord,
       code: lookupCodeFromLabel(newLookupRecord.label, existingCodes),
@@ -140,6 +150,7 @@ export function useLookupAdministration({ setError, setActiveTab, setMessage, se
     try {
       const saved = await createLookupRecord(selectedLookupDefinition.table, lookupToCreate);
       replaceLookupRecord(selectedLookupDefinition.table, saved);
+      onLookupsChanged?.();
       setNewLookupRecord(blankLookupRecord);
       setMessage(`${saved.label} added.`);
     } catch (saveError) {

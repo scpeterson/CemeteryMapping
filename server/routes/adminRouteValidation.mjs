@@ -88,8 +88,20 @@ export function validateLookupTable(value) {
   return table;
 }
 
-export function validateLookupPayload(body) {
+export function validateLookupPayload(body, table) {
+  let rankFields = {};
+  if (table === "military_rank_types") {
+    const rankGroup = requiredText(body?.rankGroup, "Rank group", 30);
+    if (!["enlisted", "warrant_officer", "officer"].includes(rankGroup)) throw new BadRequestError("Invalid rank group.");
+    rankFields = {
+      militaryBranchId: validateUuid(body?.militaryBranchId, "Military branch"),
+      abbreviation: requiredText(body?.abbreviation, "Abbreviation", 20),
+      payGrade: optionalText(body?.payGrade, "Pay grade", 10) ?? "",
+      rankGroup,
+    };
+  }
   return {
+    ...rankFields,
     code: validateLookupCode(body?.code),
     label: requiredText(body?.label, "Label", 100),
     description: requiredText(body?.description, "Description", 500),
