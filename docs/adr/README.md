@@ -190,3 +190,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0094: Split D-0497 Schmeltz burials](0094-split-d-0497-schmeltz-gravesites.md)
 
 - [ADR 0095: Associate TLC-HS-0505 only with Clifford Chester Brant](0095-correct-tlc-hs-0505-burial-link.md)
+
+- [ADR 0096: Split D-0499 Brant burials](0096-split-d-0499-brant-gravesites.md)
