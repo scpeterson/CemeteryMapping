@@ -40,7 +40,7 @@ export function BulkAdminTab({
   return <>
     <section className="admin-section">
       <div className="section-title"><ListChecks size={17} aria-hidden="true" /><h3>Bulk Edit Tools</h3></div>
-      <label>Change reason<input value={reason} onChange={(event) => setReason(event.target.value)} title="Required audit reason used for all bulk edits from this tab." /></label>
+      <label className="bulk-change-reason">Change reason<input value={reason} onChange={(event) => setReason(event.target.value)} title="Required audit reason used for all bulk edits from this tab." /></label>
     </section>
     <section className="admin-section bulk-tool-grid">
       <form className="admin-form bulk-tool-card" onSubmit={onSaveMarkers}>
