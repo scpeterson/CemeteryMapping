@@ -163,17 +163,21 @@ Sections may exist before they have geometry. A section with no geometry can sti
 
 ### Lookup Maintenance
 
-Use `Admin -> Lookups` to maintain controlled values such as marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types.
+Use `Admin -> Lookups` to maintain controlled values such as marker types, marker materials, headstone conditions, gravesite statuses, lot ownership event types, and military ranks.
 
 1. Open `Admin -> Lookups`.
 2. Choose the lookup table from the dropdown.
-3. Edit user-facing labels, descriptions, sort order, active status, and source fields where applicable.
+3. Edit user-facing labels, descriptions, active status, and source fields where applicable.
 4. Keep labels clear for regular users. The hidden code remains the stable import/seed identifier and should not be exposed as the primary admin editing target.
-5. Use the sort field or move controls to adjust display order. Check for duplicate sort values before saving if ordering looks odd.
+5. Values are listed alphabetically by label. Related values should share a leading term.
 6. Mark obsolete values inactive instead of deleting or repurposing them.
 7. Use `Show inactive` when reviewing retired values or reactivating one.
 8. Use the usage count before deactivating a value. If a value is already used by records, deactivation hides it from new choices but preserves historical data.
 9. Use the audit jump link when you need to see who last changed a lookup row.
+
+For military ranks, choose **Military ranks** from the lookup table dropdown. Add a label and description, select the military branch, enter the abbreviation, and choose Enlisted, Warrant officer, or Officer. Pay grade is optional and accepts historical grades such as `4th Grade` as well as modern values such as `E-5`. Click **Add value**. Existing ranks support label, description, abbreviation, pay-grade, rank-group, and active-status edits. Their branch stays fixed to preserve existing burial references; add a new rank for another branch instead. Saved changes refresh burial-form lookup choices without a page reload. Changes use the existing audit log and deactivation confirmation for ranks used by burials.
+
+The Army's **Technician Fourth Grade (Tec 4)** is seeded with the historical `4th Grade`, not modern `E-4`. It is also known as `T/4`; source: [Technician fourth grade](https://en.wikipedia.org/wiki/Technician_fourth_grade).
 
 Gravesite status labels are not all manually assigned. `reserved` and `needs_review` are human workflow flags, while `occupied`, `sold`, `available`, and `unknown` are derived from active burials and current deed or ownership-right records. `sold` means the gravesite has a deed or ownership right, either directly or through its lot, but has no active burial.
 

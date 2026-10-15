@@ -1,3 +1,4 @@
+import { MilitaryRankFields } from "./MilitaryRankFields";
 import { History, ListChecks } from "lucide-react";
 import { lookupRowTitle, lookupUsageText } from "../admin/adminWorkflowConfig";
 import { useLookupAdministration } from "../admin/useLookupAdministration";
@@ -67,7 +68,7 @@ export function LookupAdminTab({
                 return (
                   <article
                     key={row.id}
-                    className={`${row.isActive ? "lookup-row" : "lookup-row is-inactive"} ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""}`}
+                    className={`${row.isActive ? "lookup-row" : "lookup-row is-inactive"} ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""}`}
                     title={lookupRowTitle(row)}
                   >
                     <label className="lookup-label">
@@ -108,6 +109,7 @@ export function LookupAdminTab({
                         </label>
                       </>
                     ) : null}
+                    {selectedLookupDefinition.hasRankFields ? <MilitaryRankFields record={row} branches={lookupRecords.lookups.military_branch_types ?? []} onChange={patch => updateLocalLookupRecord(selectedLookupTable, row.id, patch)} /> : null}
                     <div className="lookup-usage" title={lookupUsageText(row)}>
                       {lookupUsageText(row)}
                     </div>
@@ -133,7 +135,7 @@ export function LookupAdminTab({
                       <button
                         type="button"
                         onClick={() => void saveLookupRecord(selectedLookupTable, row)}
-                        disabled={isSavingRow || !row.label.trim() || !row.description.trim()}
+                        disabled={isSavingRow || !row.label.trim() || !row.description.trim() || (selectedLookupDefinition.hasRankFields && (!row.militaryBranchId || !row.abbreviation?.trim()))}
                         title="Save changes to this lookup value."
                       >
                         {savingLookupKey === `${selectedLookupTable}:${row.id}` ? "Saving..." : "Save"}
@@ -145,7 +147,7 @@ export function LookupAdminTab({
             </div>
 
             <article
-              className={`lookup-row lookup-row-new ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""}`}
+              className={`lookup-row lookup-row-new ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""}`}
               title={`Add a new value to ${selectedLookupDefinition.label}.`}
             >
               <h4>Add lookup value</h4>
@@ -187,6 +189,7 @@ export function LookupAdminTab({
                   </label>
                 </>
               ) : null}
+              {selectedLookupDefinition.hasRankFields ? <MilitaryRankFields record={newLookupRecord} branches={lookupRecords.lookups.military_branch_types ?? []} onChange={patch => setNewLookupRecord(current => ({ ...current, ...patch }))} /> : null}
               <label className="checkbox-row lookup-active" title="New lookup values are active by default.">
                 <input
                   type="checkbox"
@@ -202,7 +205,8 @@ export function LookupAdminTab({
                 disabled={
                   savingLookupKey === `${selectedLookupTable}:new` ||
                   !newLookupRecord.label.trim() ||
-                  !newLookupRecord.description.trim()
+                  !newLookupRecord.description.trim() ||
+                  (selectedLookupDefinition.hasRankFields && (!newLookupRecord.militaryBranchId || !newLookupRecord.abbreviation?.trim()))
                 }
                 title="Add this lookup value."
               >

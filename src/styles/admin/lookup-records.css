@@ -237,17 +237,49 @@
   overflow-wrap: anywhere;
 }
 
+.lookup-row.has-rank-fields {
+  grid-template-areas: "label description description" "rank rank rank" "active usage actions";
+}
+.lookup-row-new.has-rank-fields {
+  grid-template-areas: "title title title" "label description description" "rank rank rank" "active . actions";
+}
+.lookup-rank-fields {
+  grid-area: rank;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+.lookup-rank-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+
 @media (max-width: 800px) {
   .lookup-row,
   .lookup-row.has-source-fields,
   .lookup-row-new,
-  .lookup-row-new.has-source-fields {
+  .lookup-row-new.has-source-fields,
+  .lookup-row.has-rank-fields,
+  .lookup-row-new.has-rank-fields {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: none;
   }
 
   .lookup-row > *,
-  .lookup-row.has-source-fields > * {
+  .lookup-row.has-source-fields > *,
+  .lookup-row.has-rank-fields > * {
     grid-area: auto;
   }
+}
+
+@media (max-width: 800px) {
+  .lookup-rank-fields { grid-template-columns: minmax(0, 1fr); }
 }
