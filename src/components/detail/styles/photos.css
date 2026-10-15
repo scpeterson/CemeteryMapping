@@ -247,3 +247,11 @@
   opacity: 0.6;
   cursor: wait;
 }
+
+.photo-upload-form > p,
+.photo-upload-form > ul {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
