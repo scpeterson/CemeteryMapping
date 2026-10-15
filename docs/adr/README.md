@@ -184,3 +184,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0091: Separate Mehrlich graves and common-base monuments](0091-split-d-0485-mehrlich-common-base-markers.md)
 
 - [ADR 0092: Split D-0491 Sarver burials](0092-split-d-0491-sarver-gravesites.md)
+
+- [ADR 0093: Split D-0496 Reichold burials](0093-split-d-0496-reichold-gravesites.md)
