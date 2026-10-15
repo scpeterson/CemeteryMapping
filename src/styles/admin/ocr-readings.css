@@ -129,6 +129,7 @@
 
 .reading-edit-subsection-title {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
   align-items: center;
@@ -142,13 +143,13 @@
 
 .reading-edit-repeat-row {
   display: grid;
-  grid-template-columns: 74px minmax(120px, 0.55fr) minmax(160px, 1fr) 140px 115px 120px minmax(180px, 1fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 7px;
   align-items: start;
 }
 
 .reading-edit-observation-row {
-  grid-template-columns: minmax(150px, 0.5fr) 120px minmax(180px, 1fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
 }
 
 @media (max-width: 1060px) {
