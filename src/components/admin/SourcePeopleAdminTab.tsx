@@ -44,7 +44,7 @@ export function SourcePeopleAdminTab({
 }: Props) {
   return (
     <>
-      <section className="admin-section">
+      <section className="admin-section source-people-section">
         <div className="section-title">
           <BookOpenText size={17} aria-hidden="true" />
           <h3>Source People</h3>
