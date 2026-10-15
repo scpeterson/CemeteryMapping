@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import {
 deedConfidenceLabel,
 formatList,
@@ -22,7 +23,7 @@ export function ReadingList({ northHillsOcrReview, isLoadingNorthHillsReview, ca
                 className={`deed-entry-row confidence-${entry.parseConfidence} ${focusedNorthHillsEntryId === entry.id ? "is-review-target" : ""}`}
                 title={readingEntryTitle(entry)}
               >
-                <header>
+                <header className="reading-entry-header">
                   {canEditNorthHillsEntries ? (
                     <label className="reading-select-checkbox" title="Select this NHG reading for bulk actions.">
                       <input
@@ -33,15 +34,17 @@ export function ReadingList({ northHillsOcrReview, isLoadingNorthHillsReview, ca
                       <span className="sr-only">Select {entry.nameText || "NHG reading"}</span>
                     </label>
                   ) : null}
-                  <span>
+                  <span className="reading-entry-page">
                     <strong>Page {entry.sourcePageNumber ?? entry.sourcePageIndex}</strong>
                     <small>Lines {entry.sourceLineStart}-{entry.sourceLineEnd}</small>
                   </span>
-                  <span>
-                    <strong>{entry.nameText || "Unnamed reading"}</strong>
+                  <span className="reading-entry-name">
+                    <strong>{(entry.nameText || "Unnamed reading").split("/").map((part, index, parts) => (
+                      <Fragment key={index}>{part}{index < parts.length - 1 ? <>/<wbr /></> : null}</Fragment>
+                    ))}</strong>
                     <small>{deedConfidenceLabel(entry.parseConfidence)}</small>
                   </span>
-                  <span>
+                  <span className="reading-entry-matches">
                     <strong>{entry.candidateMatchCount} possible match{entry.candidateMatchCount === 1 ? "" : "es"}</strong>
                     <small>{entry.status}</small>
                   </span>

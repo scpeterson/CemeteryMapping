@@ -179,3 +179,41 @@
   }
 }
 
+
+.reading-review-filter-form .deed-review-filter-actions {
+  grid-column: 2 / -1;
+}
+
+.deed-entry-row .reading-entry-header {
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-areas:
+    "select page name matches"
+    "edit edit status status";
+}
+
+.reading-entry-header .reading-select-checkbox { grid-area: select; }
+.reading-entry-header .reading-entry-page { grid-area: page; }
+.reading-entry-header .reading-entry-name { grid-area: name; }
+.reading-entry-header .reading-entry-matches { grid-area: matches; }
+.reading-entry-header .reading-entry-header-actions {
+  grid-area: edit;
+  justify-self: start;
+}
+.reading-entry-header .reading-processing-status {
+  grid-area: status;
+  justify-self: end;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  .reading-review-filter-form .deed-review-filter-actions { grid-column: 1 / -1; }
+  .deed-entry-row .reading-entry-header {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "select page"
+      "name name"
+      "matches matches"
+      "edit status";
+  }
+}
