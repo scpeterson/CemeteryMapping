@@ -9,7 +9,7 @@ defaultNorthHillsReviewFilters
 import { Props } from "./shared";
 
 export function ReadingFilters({ applyNorthHillsReviewFilters, northHillsReviewFilters, updateNorthHillsReviewFilter, northHillsOcrReview, isLoadingNorthHillsReview, setNorthHillsReviewFilters, loadNorthHillsOcrReview }: Pick<Props, "applyNorthHillsReviewFilters" | "northHillsReviewFilters" | "updateNorthHillsReviewFilter" | "northHillsOcrReview" | "isLoadingNorthHillsReview" | "setNorthHillsReviewFilters" | "loadNorthHillsOcrReview">) {
-  return (<form className="deed-review-filter-form" onSubmit={applyNorthHillsReviewFilters}>
+  return (<form className="deed-review-filter-form reading-review-filter-form" onSubmit={applyNorthHillsReviewFilters}>
           <label>
             Import batch
             <select

@@ -4,7 +4,7 @@ import { cemeteryId, fixture } from "./fixtures/cemetery";
 const longText = "A long cemetery record description with additional context for administrators ".repeat(4);
 const cemetery = { id: cemeteryId, name: "Trinity Lutheran Church Cemetery", fullAddress: longText, municipality: "Pittsburgh", agency: "Church", agencyUrl: "", operationalHours: "", contactName: "", contactPhone: "", contactEmail: "", imageUrl: "", notes: longText, createdAt: "", updatedAt: "" };
 const event = { id: "event-1", occurredAt: "2026-10-15T12:00:00Z", source: "test", actorEmail: "long-administrator-email@example.test", action: "UPDATE", targetTable: "gravesites", targetRecordId: cemeteryId, changedFields: ["notes"], previousValues: { notes: "" }, newValues: { notes: longText }, reason: longText, eventType: "job_run", severity: "info", status: "success", message: longText, detail: longText, metadata: {}, requestPath: "", environment: "test" };
-const reading = { id: "reading-1", batchId: "batch-1", nameText: "MILLER", surnames: ["MILLER"], rawText: longText, inscriptionText: longText, parsedSectionName: "D", parsedRowNumber: 3, parsedPositionNumber: 1, parsedMarkerScope: "couple", parsedYears: [1841, 1920], parseConfidence: "high", parseNotes: [], status: "staged", sourcePageNumber: 222, sourceLineStart: 1, sourceLineEnd: 2, candidateMatches: [], sourceFacts: [], observations: [], processingSummary: { isProcessed: false, pendingCount: 1, totalCount: 1, label: "1 pending", detail: longText } };
+const reading = { id: "reading-1", batchId: "batch-1", nameText: "STEELE/STEEL/MEHRLICH", surnames: ["STEELE", "STEEL", "MEHRLICH"], rawText: longText, inscriptionText: longText, parsedSectionName: "D", parsedRowNumber: 3, parsedPositionNumber: 1, parsedMarkerScope: "couple", parsedYears: [1841, 1920], parseConfidence: "high", parseNotes: [], status: "staged", sourcePageNumber: 222, sourceLineStart: 1, sourceLineEnd: 2, candidateMatches: [], sourceFacts: [], observations: [], processingSummary: { isProcessed: false, pendingCount: 1, totalCount: 1, label: "1 pending", detail: longText } };
 
 for (const tab of ["Users", "Records", "Quality", "Deeds", "Readings", "Audit", "System"]) {
   test(`Admin ${tab} fits within the dialog and scrolls to its final controls`, async ({ page }) => {
@@ -33,7 +33,18 @@ for (const tab of ["Users", "Records", "Quality", "Deeds", "Readings", "Audit", 
     await expect(admin.locator('[role="alert"]')).toHaveCount(0);
     if (tab === "Readings") {
       await expect(admin.locator(".deed-entry-row")).toHaveCount(1);
-      await admin.locator(".deed-entry-row").getByRole("button", { name: "Edit", exact: true }).click();
+      const filters = admin.locator(".reading-review-filter-form");
+      const limit = await filters.getByRole("combobox", { name: "Limit", exact: true }).boundingBox();
+      const apply = await filters.getByRole("button", { name: "Apply filters", exact: true }).boundingBox();
+      expect(apply!.x).toBeGreaterThan(limit!.x + limit!.width);
+      expect(Math.abs(apply!.y - limit!.y)).toBeLessThan(2);
+      const header = admin.locator(".reading-entry-header");
+      await expect(header.locator(".reading-entry-name strong")).toHaveText("STEELE/STEEL/MEHRLICH");
+      await expect(header.locator("wbr")).toHaveCount(2);
+      const edit = await header.getByRole("button", { name: "Edit", exact: true }).boundingBox();
+      const status = await header.locator(".reading-processing-status").boundingBox();
+      expect(edit!.x).toBeLessThan(status!.x);
+      await header.getByRole("button", { name: "Edit", exact: true }).click();
       await expect(admin.locator(".reading-entry-edit-form")).toBeVisible();
     }
     const failures: string[] = [];
