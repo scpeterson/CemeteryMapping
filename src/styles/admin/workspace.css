@@ -44,6 +44,7 @@
 
 .admin-workspace {
   display: grid;
+  flex-shrink: 0;
   grid-template-columns: 132px minmax(0, 1fr);
   gap: 14px;
   min-height: 0;
@@ -217,13 +218,51 @@
 
 .bulk-tool-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: var(--space-3);
   align-items: start;
 }
 
 .bulk-tool-card {
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
+  min-width: 0;
+  padding: 14px;
+  border: 2px solid #bac7b5;
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.bulk-tool-card > * {
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+
+.bulk-tool-card .admin-form-actions {
+  flex-wrap: wrap;
+}
+
+.bulk-change-reason {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.bulk-change-reason input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.bulk-tool-card input,
+.bulk-tool-card select,
+.bulk-tool-card textarea {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bulk-tool-card h4,
