@@ -1352,3 +1352,6 @@ databaseChangeLog:
   - include:
       file: changes/453-split-d-0497-schmeltz-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/454-correct-tlc-hs-0505-burial-link.sql
+      relativeToChangelogFile: true
