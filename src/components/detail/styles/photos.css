@@ -163,7 +163,7 @@
   display: grid;
   gap: 5px;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-small);
   font-weight: 760;
 }
 
@@ -181,7 +181,7 @@
   border: 1px solid #cbd6c7;
   border-radius: 7px;
   background: #fff;
-  color: var(--text-main);
+  color: var(--color-text);
   font: inherit;
 }
 
@@ -194,7 +194,7 @@
   border: 1px solid #cbd6c7;
   border-radius: 7px;
   background: #fff;
-  color: var(--text-main);
+  color: var(--color-text);
   font: inherit;
 }
 
@@ -254,4 +254,20 @@
   min-width: 0;
   overflow-wrap: anywhere;
   margin: 0;
+}
+
+/* Keep compact desktop controls; allow comfortable touch targets on phones. */
+@media (max-width: 760px) {
+  .media-gallery-modal-close,
+  .media-delete-button,
+  .media-order-controls button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .media-order-controls {
+    bottom: 50px;
+    flex-wrap: wrap;
+    max-width: calc(100% - 12px);
+  }
 }

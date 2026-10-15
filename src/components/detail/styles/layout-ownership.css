@@ -67,6 +67,8 @@
 
 .owner-row-header {
   display: flex;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
@@ -108,7 +110,7 @@
   border: 1px solid #cbd6c7;
   border-radius: 7px;
   background: #fff;
-  color: var(--text-main);
+  color: var(--color-text);
   font: inherit;
 }
 

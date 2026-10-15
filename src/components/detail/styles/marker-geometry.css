@@ -192,7 +192,7 @@
   border: 1px solid #cbd6c7;
   border-radius: 7px;
   background: #fff;
-  color: var(--text-main);
+  color: var(--color-text);
   font: inherit;
 }
 
@@ -376,7 +376,7 @@
   border: 1px solid #cbd6c7;
   border-radius: 7px;
   background: #fff;
-  color: var(--text-main);
+  color: var(--color-text);
   font: inherit;
 }
 

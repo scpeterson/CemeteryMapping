@@ -18,7 +18,7 @@
 }
 
 .grave-feature-row strong {
-  color: var(--text-main);
+  color: var(--color-text);
   font-size: 0.9rem;
 }
 
@@ -92,7 +92,7 @@
 }
 
 .maintenance-row strong {
-  color: var(--text-main);
+  color: var(--color-text);
   font-size: 0.9rem;
 }
 
