@@ -1349,3 +1349,6 @@ databaseChangeLog:
   - include:
       file: changes/452-split-d-0496-reichold-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/453-split-d-0497-schmeltz-gravesites.sql
+      relativeToChangelogFile: true
