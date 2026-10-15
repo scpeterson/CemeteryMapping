@@ -102,7 +102,7 @@
 
 .deed-entry-row header {
   display: grid;
-  grid-template-columns: minmax(80px, 0.38fr) minmax(0, 1fr) minmax(125px, 0.62fr) minmax(135px, 0.66fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
   gap: 10px;
   align-items: start;
 }
@@ -110,6 +110,7 @@
 .deed-entry-row header span,
 .deed-entry-row header strong,
 .deed-entry-row header small {
+  overflow-wrap: anywhere;
   display: block;
   min-width: 0;
 }
@@ -131,7 +132,7 @@
 
 .deed-mapping-editor {
   display: grid;
-  grid-template-columns: minmax(130px, 0.55fr) minmax(160px, 1fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
   gap: 9px;
   align-items: end;
   padding: 10px;
@@ -142,6 +143,7 @@
 
 .deed-mapping-editor label,
 .deed-mapping-editor small {
+  min-width: 0;
   display: grid;
   gap: var(--space-1);
 }
@@ -232,3 +234,9 @@
   font-size: 0.82rem;
 }
 
+
+.deed-mapping-editor input,
+.deed-mapping-editor select {
+  min-width: 0;
+  max-width: 100%;
+}
