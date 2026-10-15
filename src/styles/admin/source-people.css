@@ -1,6 +1,6 @@
 .source-person-workspace {
   display: grid;
-  grid-template-columns: minmax(320px, 0.75fr) minmax(580px, 1.25fr);
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
   gap: 14px;
   align-items: start;
   min-height: 0;
@@ -147,7 +147,7 @@
 }
 
 .source-person-edit-grid {
-  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .source-person-edit-grid input,
@@ -193,3 +193,41 @@
   line-height: 1.35;
 }
 
+
+.source-people-section {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.source-person-edit-grid > label,
+.source-person-edit-grid input,
+.source-person-edit-grid select,
+.source-person-edit-grid textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@container (max-width: 1000px) {
+  .source-person-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .source-person-editor {
+    position: static;
+    max-height: none;
+  }
+
+  .source-person-edit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 560px) {
+  .source-person-edit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .review-workbench-toolbar {
+    flex-wrap: wrap;
+  }
+}
