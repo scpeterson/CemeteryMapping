@@ -357,10 +357,11 @@ Use `Monuments` in the gravesite detail panel for field photo collection, or `De
 
 1. On the iPhone, open the application and select the gravesite on the map or from search results.
 2. Open `Monuments`. For an image of the full grave space, use `Gravesite Photos`; for a specific physical marker, use the upload form under that marker. When selecting a marker directly, its upload form is in `Details`.
-3. Tap the photo file control. On iPhone this should offer the camera or photo library.
+3. Tap the photo file control and select one or more photos. On iPhone this should offer the camera or photo library.
 4. Confirm that you are using the form for the intended gravesite or marker; the form fixes the photo link to that feature.
-5. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty.
-6. Upload the photo and confirm it appears in the photo gallery.
+5. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty. The link, notes, and optional `Date taken` apply to all selected photos; use separate uploads when those values differ. Leave the date blank to use each photo’s available date metadata.
+6. Select `Upload photos` (or `Upload photo` for one file). Files upload one at a time, with progress and a result for each file. Confirm successful uploads appear in the photo gallery.
+7. If some files fail, review their errors, correct the cause, and select `Retry failed photos`. Successful uploads remain saved; retry submits only the failed files retained in the form. Choosing a new selection replaces that retry list, so finish retries before selecting more photos.
 
 The inline gallery shows up to four linked photos, ordered newest first by capture date, falling back to upload date when capture date is absent; display order breaks ties. `View all photos (N)` opens the complete history when more are available. Marker/headstone photos appear in that marker's gallery rather than being duplicated in `Gravesite Photos`. The read-only gravesite `Overview` considers both galleries when choosing its latest photo and labels a preview from a linked marker.
 
@@ -616,7 +617,7 @@ Before opening or merging a PR:
    APP_ENV=dev npm run db:configure-api
    ```
 
-3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes:
+3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes. Run the rollback/reapply checks below only on disposable automated TEST data and after reviewing the selected rollback action. Changesets 461–472 have empty rollback actions and use backup recovery; rollback does not undo their data changes. For these changesets, rehearse on an isolated database copy and verify backup recovery or a reviewed forward fix instead of treating rollback/reapply as proof of reversibility. See [Rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
 
    ```bash
    npm run lint
