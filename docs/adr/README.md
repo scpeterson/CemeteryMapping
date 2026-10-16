@@ -212,3 +212,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [0105: Add the boundary-clipped Section D lot row](0105-create-section-d-boundary-lot-row.md)
 
 - [0106: Confirm the Weitzel interments](0106-confirm-weitzel-burials.md)
+
+- [0107: Correct Jerry Weitzel's pre-need notes](0107-correct-weitzel-pre-need-notes.md)
