@@ -204,3 +204,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [0101: Add the Section D northern lot row](0101-create-section-d-north-lot-row.md)
 
 - [0102: Add the eight-lot Section D row](0102-create-section-d-eight-lot-row.md)
+
+- [0103: Add the adjoining northern Section D row](0103-create-section-d-adjoining-lot-row.md)
