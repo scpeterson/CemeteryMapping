@@ -1403,3 +1403,6 @@ databaseChangeLog:
   - include:
       file: changes/470-create-section-d-boundary-lot-row.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/471-confirm-weitzel-burials.sql
+      relativeToChangelogFile: true
