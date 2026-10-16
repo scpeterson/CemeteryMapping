@@ -196,3 +196,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0097: Split D-0500 Brant burials](0097-split-d-0500-brant-gravesites.md)
 
 - [ADR 0098: Add the Weitzel monument at an estimated location](0098-add-weitzel-estimated-monument.md)
+
+- [ADR 0099: Revise the estimated Weitzel location and add two gravesites](0099-create-weitzel-estimated-gravesite-pair.md)
