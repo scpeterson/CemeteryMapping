@@ -1376,3 +1376,9 @@ databaseChangeLog:
   - include:
       file: changes/461-align-section-e-gravesites-northeast.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/462-create-section-d-north-lot-row.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/463-shift-section-d-north-row-west.sql
+      relativeToChangelogFile: true
