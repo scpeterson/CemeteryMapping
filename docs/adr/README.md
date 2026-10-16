@@ -210,3 +210,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [0104: Add two northern Section D lot rows](0104-create-section-d-two-northern-rows.md)
 
 - [0105: Add the boundary-clipped Section D lot row](0105-create-section-d-boundary-lot-row.md)
+
+- [0106: Confirm the Weitzel interments](0106-confirm-weitzel-burials.md)
