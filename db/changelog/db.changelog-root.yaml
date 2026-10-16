@@ -1388,3 +1388,9 @@ databaseChangeLog:
   - include:
       file: changes/465-shift-section-d-eight-lot-row-west.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/466-create-section-d-adjoining-lot-row.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/467-shift-section-d-paired-rows-west.sql
+      relativeToChangelogFile: true
