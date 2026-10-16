@@ -1367,3 +1367,9 @@ databaseChangeLog:
   - include:
       file: changes/458-add-weitzel-estimated-monument.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/459-create-weitzel-estimated-gravesite-pair.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/460-shift-weitzel-pair-east-south.sql
+      relativeToChangelogFile: true
