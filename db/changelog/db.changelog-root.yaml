@@ -1394,3 +1394,9 @@ databaseChangeLog:
   - include:
       file: changes/467-shift-section-d-paired-rows-west.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/468-create-section-d-two-northern-rows.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/469-shift-section-d-northern-pair-west.sql
+      relativeToChangelogFile: true
