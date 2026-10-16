@@ -200,3 +200,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0099: Revise the estimated Weitzel location and add two gravesites](0099-create-weitzel-estimated-gravesite-pair.md)
 
 - [ADR 0100: Align Section E graves northeast from fixed monuments](0100-align-section-e-gravesites-northeast.md)
+
+- [0101: Add the Section D northern lot row](0101-create-section-d-north-lot-row.md)
