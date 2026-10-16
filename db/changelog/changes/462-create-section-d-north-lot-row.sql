@@ -54,3 +54,6 @@ BEGIN
   WHERE source.cemetery_id=anchor.cemetery_id AND source.section_id='C'
     AND source.block_id IS NULL AND source.deleted_at IS NULL;
 END $$;
+
+-- Recovery uses the pre-migration backup; preserve the owner-directed layout.
+--rollback empty

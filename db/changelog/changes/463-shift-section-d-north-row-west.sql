@@ -39,3 +39,6 @@ BEGIN
   WHERE cemetery_id=anchor.cemetery_id AND section_id='D' AND block_id IS NULL
     AND deleted_at IS NULL AND lot_id IN ('38','47','58','67','68','77');
 END $$;
+
+-- Recovery uses the pre-migration backup; preserve the owner-directed layout.
+--rollback empty
