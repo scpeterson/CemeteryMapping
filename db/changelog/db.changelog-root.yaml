@@ -1373,3 +1373,6 @@ databaseChangeLog:
   - include:
       file: changes/460-shift-weitzel-pair-east-south.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/461-align-section-e-gravesites-northeast.sql
+      relativeToChangelogFile: true
