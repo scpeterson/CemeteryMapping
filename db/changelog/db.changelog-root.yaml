@@ -1382,3 +1382,9 @@ databaseChangeLog:
   - include:
       file: changes/463-shift-section-d-north-row-west.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/464-create-section-d-eight-lot-row.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/465-shift-section-d-eight-lot-row-west.sql
+      relativeToChangelogFile: true
