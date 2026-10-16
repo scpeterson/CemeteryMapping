@@ -68,7 +68,13 @@ npm run db:status
 APP_ENV=stage npm run db:status
 ```
 
-Roll back the latest changeset:
+### Rollback and backup recovery
+
+Inspect the selected changesets before using rollback. Recent data corrections 461–472 declare `--rollback empty` and require recovery from a pre-migration backup. Liquibase can remove their execution entries without reversing their data changes; a successful rollback command does not prove that the data was restored. Reapplying those changesets may fail prerequisites or repeat changes.
+
+Before applying these corrections to a persistent environment, retain a validated database backup and record the source revision and migration status. Rehearse migrations and recovery on an isolated database copy. Recover using the reviewed backup procedure or a reviewed forward-fix migration, accounting for edits made since the backup. Do not use rollback/reapply as a recovery test on live data.
+
+Roll back the latest changeset only when its rollback action is appropriate:
 
 ```bash
 npm run db:rollback
@@ -92,7 +98,7 @@ Roll back to a tag:
 npm run db:rollback:tag -- before-owner-import
 ```
 
-Test that pending migrations can be applied, rolled back, and applied again:
+Test pending migration rollback mechanics on a disposable database (empty rollback actions do not verify data recovery):
 
 ```bash
 npm run db:rollback:test

@@ -43,6 +43,11 @@ sizing changes.
 
 Place a selected source revision and a TEST frontend build in
 `/srv/nhcemeteries/app`. Run Compose from `deploy/test` in that directory.
+Include the `shared/` source directory in the release archive alongside `server/`.
+The API imports shared normalization modules at runtime; the Dockerfile and its
+allowlist in `deploy/test/Dockerfile.dockerignore` must both include `shared/`.
+Missing shared modules can prevent the API from starting.
+
 Create `.env` containing distinct, fresh `POSTGRES_PASSWORD` and
 `CEMETERY_API_PASSWORD` secrets and `runtime.env` containing
 `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `GIT_SHA`, and `BUILD_TIME`. Restrict both files
@@ -125,7 +130,11 @@ Before updates, make a logical database backup and retain the current release
 and matching media. Build a new release without altering persisted data. Apply
 reviewed migrations deliberately, then check health and browser access. Code
 rollback does not undo database migrations; use their reviewed rollback or
-forward-fix procedure. Never use `docker compose down -v` on this host.
+forward-fix procedure. Changesets 461–472 have empty rollback actions and require
+pre-migration backup recovery or a reviewed forward fix; Liquibase rollback alone
+does not restore their data. Rehearse recovery on an isolated copy and account for
+subsequent TEST edits before restoring a backup. See [rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
+Never use `docker compose down -v` on this host.
 
 ## Tester access and DEV data refreshes
 
@@ -281,7 +290,16 @@ from `https://challenges.cloudflare.com` and test it before release.
    `COPY --chown=node:node server ./server` so private source directory modes do
    not prevent `USER node` from reading routes. Do not solve container read errors
    by making the host's server/database/secret trees broadly readable.
-4. Build the API image and apply only the reviewed, rehearsed migration scope.
+4. Build the API image and verify that the runtime user can import the shared
+   module before recreating the service:
+
+   ```sh
+   docker compose run --rm --no-deps api node --input-type=module -e "await import('./shared/recordNormalization.mjs')"
+   ```
+
+   A missing-module or permission error must be corrected in the release archive,
+   build allowlist, or image ownership before proceeding. Apply only the reviewed,
+   rehearsed migration scope.
    Make generated public `dist` directories traversable and files readable by
    Nginx (directories 0755, files 0644); this does not apply to protected settings.
 5. Recreate the API after runtime settings change. If `dist` was replaced by a
