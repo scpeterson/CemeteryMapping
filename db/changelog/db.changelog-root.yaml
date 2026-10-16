@@ -1400,3 +1400,6 @@ databaseChangeLog:
   - include:
       file: changes/469-shift-section-d-northern-pair-west.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/470-create-section-d-boundary-lot-row.sql
+      relativeToChangelogFile: true
