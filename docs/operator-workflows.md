@@ -939,6 +939,7 @@ Later Section C shared-marker corrections use a consistent north/south split: th
 - `C-0379` retains Albert D Hieber; new northern `C-0379A` contains Ida C Hieber; marker `TLC-HS-0379` spans both.
 - `C-0380` retains Adam Sandrock; new northern `C-0380A` contains Clara B Sandrock; marker `TLC-HS-0380` spans both.
 - `C-0381` retains H Carl Brandt; new northern `C-0381A` contains Alice R Brandt; marker `TLC-HS-0381` spans both.
+- `C-0382` retains William DeWitt DeCourcy; new northern `C-0382A` contains Louise Hamilton DeCourcy; marker `TLC-HS-0382` spans both. The original migration offsets the pair one foot south; its restoration repairs migration history without changing lot assignments.
 - `C-0389` retains George Wolfarth; new northern `C-0389A` contains Catherine O Wolfarth; marker `TLC-HS-0389` spans both.
 - `C-0392` retains Elmer B Kaelin; new northern `C-0392A` contains Elizabeth A Kaelin; marker `TLC-HS-0392` spans both.
 - `C-0395` retains Arthur Dennis Wochley; new northern `C-0395A` contains Luceil Wochley; marker `TLC-HS-0395` spans both.

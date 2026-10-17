@@ -21,7 +21,7 @@ The GPS point is observed marker evidence. The surrounding gravesite polygons ar
 
 ## Decision
 
-Apply the reviewed north/south split pattern in Liquibase migrations 341 through 345, 348 through 350, 353, and 355 through 364:
+Apply the reviewed north/south split pattern in Liquibase migrations 341 through 346, 348 through 350, 353, and 355 through 364:
 
 | Migration | Original southern gravesite | New northern gravesite | Fixed shared marker |
 | --- | --- | --- | --- |
@@ -30,6 +30,7 @@ Apply the reviewed north/south split pattern in Liquibase migrations 341 through
 | 343 | `C-0379`, Albert D Hieber | `C-0379A`, Ida C Hieber | `TLC-HS-0379` |
 | 344 | `C-0380`, Adam Sandrock | `C-0380A`, Clara B Sandrock | `TLC-HS-0380` |
 | 345 | `C-0381`, H Carl Brandt | `C-0381A`, Alice R Brandt | `TLC-HS-0381` |
+| 346 | `C-0382`, William DeWitt DeCourcy | `C-0382A`, Louise Hamilton DeCourcy | `TLC-HS-0382` |
 | 348 | `C-0421`, Scott Simpson | `C-0421A`, Lynn Simpson (sold/pre-need) | `TLC-HS-0421` |
 | 349 | `C-0389`, George Wolfarth | `C-0389A`, Catherine O Wolfarth | `TLC-HS-0389` |
 | 350, 352 | `C-0392`, Elmer B Kaelin | `C-0392A`, Elizabeth A Kaelin | `TLC-HS-0392` |
@@ -69,6 +70,14 @@ The new `A` suffixes are operational identifiers created by reviewed repair; the
 Future corrections must not infer a second gravesite solely because two names appear on a marker. Review burial evidence, inscription context, neighboring geometry, and pre-need status first. A living or pre-need person may require a reserved or sold space rather than an occupied burial, and an unknown death date must remain unknown rather than being fabricated.
 
 These migrations use empty rollback declarations because reversing a reviewed authoritative data correction could discard subsequent edits or relationships. Recovery should use a database backup or a forward-fix migration based on the current records.
+
+## Migration 346 History Repair (2026-10-17)
+
+Migration 346 was executed in DEV and hosted TEST on August 28, 2026, but its SQL and root include were missing from `main`. Restore the original changeset unchanged, between 345 and 347. Its Liquibase v9 checksum is `9:c000ed388b4420abf954b08bf3f2a4d1`. Existing execution history must remain intact so Liquibase validates and skips this changeset; do not clear checksums, delete its history row, or execute its SQL manually on an already corrected database. Fresh databases apply it when the source records exist and otherwise leave unrelated records unchanged.
+
+Regression coverage pins the original SQL bytes and root include order. Database tests use disposable schemas and real Liquibase execution to verify the original split, preserved marker and burial links, source-data prerequisite failures, absent-source behavior, and checksum validation and skipping after subsequent edits.
+
+The original correction places the pair one foot south of the marker-centered position to avoid C-0383. This history repair does not change the original geometry or lot assignments. The small intersection with the neighboring lot boundary requires a separate review.
 
 ## Rebuild And Validation
 
