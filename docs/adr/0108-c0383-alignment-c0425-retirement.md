@@ -23,7 +23,7 @@ After the migration-473 correction to Louise's neighboring grave, only about 3.4
 
 ## Decision
 
-Migration 474 soft-deletes the C-0425 pseudo-burial, placeholder gravesite, and active marker links. It detaches `TLC-HS-0425` from the retired gravesite and preserves the active standalone marker, its geometry, inscription, classification, faces, media references, and source evidence. Retained historical records receive an explanatory retirement reason. The migration rejects real burial facts, missing expected marker evidence, and conflicting marker relationships before mutation.
+Migration 474 soft-deletes the C-0425 pseudo-burial, placeholder gravesite, and active marker links. It detaches `TLC-HS-0425` from the retired gravesite and preserves the active standalone marker, its geometry, inscription, classification, faces, media references, and source evidence. Retained historical records receive an explanatory retirement reason. The migration recognizes either the recorded W inscription or, for a blank legacy inscription, matching high-confidence TrinityCemeteryFinal3 shapefile provenance plus the original plot-marker import label. It preserves blank inscriptions and unknown marker classifications rather than inventing field observations. The migration rejects real burial facts, missing expected marker evidence, conflicting inscriptions, and conflicting marker relationships before mutation.
 
 Migration 475 translates only `TLC-GPS-0383` west by 0.295 feet (3.54 inches) in EPSG:32617. This eliminates its C-82 spill while preserving its C-83 assignment, dimensions, estimated operational classification, burial records and links, and observed marker. C-0425 must already be retired. The original footprint and expected marker/assignment must match; later geometry edits require review. No historical migration is edited.
 
@@ -36,6 +36,10 @@ The active map retains the W marker without presenting it as an occupied grave o
 Both migrations skip absent source records and safely repeat without further changes. Database regressions use temporary tables containing reviewed coordinates and the migration-473 neighbor layout. They verify containment, approximately 40-square-foot area, preservation of unrelated records and the complete marker record except its retired primary-grave reference, retirement reasons and links, repeat safety, and prerequisite failures without partial changes.
 
 Run `npm run lint`, `npm run test:server`, and `APP_ENV=test npm run test:db-rules` against a freshly migrated, demo-seeded TEST database with the restricted runtime role configured. Recovery uses a backup or a reviewed forward migration; empty rollback declarations preserve subsequent evidence and edits.
+
+## Hosted TEST Preflight
+
+The first hosted TEST rehearsal found a blank legacy inscription and unknown marker type; DEV had a later W inscription and reviewed classification. The initial guard rejected that valid older import. Before migration 474 was applied to DEV or hosted TEST, its prerequisite was corrected to recognize the exact original import provenance. No checksums were cleared, execution history bypassed, or marker evidence copied from DEV. Regressions cover both marker versions and reject unidentified blanks or conflicting inscriptions.
 
 ## Update Triggers
 
