@@ -12,7 +12,12 @@ BEGIN
   SELECT * INTO marker FROM headstones WHERE headstone_id='TLC-HS-0425' AND deleted_at IS NULL;
   PERFORM assert_migration_prerequisite(
     grave.section_id='C' AND grave.name='Plot marker, W' AND marker.id IS NOT NULL
-    AND marker.gravesite_uuid=grave.id AND marker.geometry IS NOT NULL AND btrim(marker.inscription)='W'
+    AND marker.gravesite_uuid=grave.id AND marker.geometry IS NOT NULL
+    AND (btrim(marker.inscription)='W' OR (NULLIF(btrim(marker.inscription),'') IS NULL
+      AND marker.source_properties->>'Person1Last'='Plot marker, W'
+      AND marker.source_properties#>>'{ShapefileGeometryUpdate,source}'='TrinityCemeteryFinal3.shp'
+      AND marker.source_properties#>>'{ShapefileGeometryUpdate,shapefileName}'='Plot marker, W'
+      AND marker.source_properties#>>'{ShapefileGeometryUpdate,matchConfidence}'='high'))
     AND EXISTS(SELECT 1 FROM headstone_gravesites WHERE headstone_uuid=marker.id
       AND gravesite_uuid=grave.id AND deleted_at IS NULL),
     'Migration 474 requires the C-0425 placeholder and its active W plot marker');

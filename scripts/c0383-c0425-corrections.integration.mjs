@@ -101,11 +101,27 @@ test('474 retires only the plot-marker import artifacts and 475 aligns C-0383 wi
   assert.ok(Math.abs(remaining[0].sqft-4.8223)<0.001);
   await c.query(retire);await c.query(align);assert.deepEqual(await snapshot(c),after);
 }));
+test('474 recognizes the hosted legacy plot marker by provenance without inventing inscription or classification',async()=>fixture(async c=>{
+  await c.query(`UPDATE headstones SET inscription=NULL,faces='[]',
+    marker_type_id=(SELECT id FROM marker_types WHERE code='unknown'),source_properties=
+    '{"Person1Last":"Plot marker, W","ShapefileGeometryUpdate":{"source":"TrinityCemeteryFinal3.shp","shapefileName":"Plot marker, W","matchConfidence":"high"}}'
+    WHERE headstone_id='TLC-HS-0425'`);
+  const {rows:[before]}=await c.query("SELECT * FROM headstones WHERE headstone_id='TLC-HS-0425'");
+  await c.query(retire);
+  const {rows:[after]}=await c.query("SELECT * FROM headstones WHERE headstone_id='TLC-HS-0425'");
+  assert.equal(after.gravesite_uuid,null);assert.equal(after.deleted_at,null);
+  after.gravesite_uuid=before.gravesite_uuid;after.updated_at=before.updated_at;
+  assert.deepEqual(after,before);
+  assert.equal((await c.query("SELECT count(*)::int n FROM burials WHERE gravesite_id='TLC-GPS-0425' AND deleted_at IS NULL")).rows[0].n,0);
+  assert.ok((await c.query("SELECT deleted_at FROM gravesites WHERE gravesite_id='TLC-GPS-0425'")).rows[0].deleted_at);
+}));
 test('474 and 475 safely skip absent source records',async()=>fixture(async c=>{
   const before=await snapshot(c);await c.query(retire);await c.query(align);assert.deepEqual(await snapshot(c),before);
 },false));
 
 for(const [name,mutation,migration,expected] of [
+  ['unidentified blank marker',"UPDATE headstones SET inscription=NULL WHERE headstone_id='TLC-HS-0425'",retire,/active W plot marker/],
+  ['conflicting inscription despite provenance',`UPDATE headstones SET inscription='Real person',source_properties='{"Person1Last":"Plot marker, W","ShapefileGeometryUpdate":{"source":"TrinityCemeteryFinal3.shp","shapefileName":"Plot marker, W","matchConfidence":"high"}}' WHERE headstone_id='TLC-HS-0425'`,retire,/active W plot marker/],
   ['missing plot marker',"DELETE FROM headstones WHERE headstone_id='TLC-HS-0425'",retire,/active W plot marker/],
   ['real burial name',"UPDATE burials SET full_name='Real Person' WHERE gravesite_id='TLC-GPS-0425'",retire,/no real burial/],
   ['interment date on pseudo-burial',"UPDATE burials SET burial_date='1957-12-02' WHERE gravesite_id='TLC-GPS-0425'",retire,/no real burial/],
