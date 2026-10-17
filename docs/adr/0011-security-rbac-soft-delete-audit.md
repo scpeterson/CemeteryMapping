@@ -182,3 +182,7 @@ Auth0 is the identity-provider user data source. The application database remain
 ## Update Triggers
 
 Update this ADR or add a superseding ADR when the identity provider changes, roles change, public access rules change, request validation policy changes, hard-delete exceptions are introduced, audit retention rules are defined, trigger-enforced auditing is replaced by application-managed auditing, or the admin editing workflow changes materially.
+
+## October 17, 2026 account-assignment update
+
+Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. Admin/API validation applies to creation and updates, including readers, before automatic Auth0 provisioning from the form. It does not add a database constraint or backfill legacy accounts. Reader assignments are returned by `/api/me` for map scope without granting edit access. System admins initially fit all cemetery boundaries; other accounts fit their one assignment. A missing or multiple assignment produces an empty map scope. See [operator guidance](../operator-workflows.md#cemetery-scope-and-navigation) and the [audit procedure](../hosted-test.md#cemetery-assignment-audit).

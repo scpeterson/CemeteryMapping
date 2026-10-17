@@ -267,7 +267,7 @@ erDiagram
 | --- | --- |
 | `app_roles` | Application roles: `reader`, `power-user`, `cemetery-admin`, and `admin`. |
 | `app_users` | Local application user records mapped to Auth0 or trusted-header identities. The application database remains the source of truth for role and active status. |
-| `app_user_cemetery_access` | Cemetery assignments for scoped users. Non-admin users can only query or edit the cemeteries assigned to them. |
+| `app_user_cemetery_access` | Cemetery assignments for all non-admin roles, including readers. Admin/API account creation and updates require an assignment; the current map workflow expects exactly one. Reader assignments set map scope without granting edits. Editing additionally requires an authorized role and `can_edit`; system admins have system-wide access. |
 | `audit_events` | Append-only row-level history written by database triggers for authoritative business/admin tables. |
 | `audit_retention_policies` | Retention and purge settings for audit rows. |
 | `system_events` | Operational events such as unexpected API errors, health checks, job runs, warnings, and integration failures. |

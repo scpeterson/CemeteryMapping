@@ -124,7 +124,7 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
                 setForm((current) => ({
                   ...current,
                   role,
-                  assignedCemeteryIds: role === "power-user" || role === "cemetery-admin" ? current.assignedCemeteryIds : [],
+                  assignedCemeteryIds: role !== "admin" ? current.assignedCemeteryIds : [],
                 }));
               }}
               title={roleDescriptions[form.role]}
@@ -136,7 +136,7 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
               ))}
             </select>
           </label>
-          {form.role === "power-user" || form.role === "cemetery-admin" ? (
+          {form.role !== "admin" ? (
             <label>
               Assigned cemetery
               <select
@@ -148,7 +148,7 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
                   }))
                 }
                 required
-                title="The cemetery this user can edit. They retain read-only access to other cemeteries."
+                title="The cemetery shown by default when this user opens the map. Editing depends on their role."
               >
                 <option value="">Select cemetery</option>
                 {cemeteryRecords.cemeteries.map((cemetery) => (

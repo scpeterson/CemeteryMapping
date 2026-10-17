@@ -125,6 +125,8 @@ scans, and Esri geodatabases are source files; see the [Data Source Register](da
    the user can access. Passing Cloudflare or signing into Auth0 alone does not
    grant cemetery access.
 
+Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. The `/api/me` response includes read-only assignments as well as editable ones for map scoping; edit permissions continue to use the role and editable assignments. Initial map fitting waits for user and map data, fits all cemetery boundaries for admins, and fits the assigned cemetery for other users.
+
 An administrator approves requests in the application and can provision an Auth0
 identity. They must **also add the approved email to Cloudflare Access manually**;
 application approval does not synchronize the gateway allowlist. No automatic

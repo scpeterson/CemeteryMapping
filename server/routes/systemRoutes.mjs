@@ -44,7 +44,7 @@ export function registerSystemRoutes(app, context) {
           email: request.user.email,
           displayName: request.user.displayName,
           role,
-          assignedCemeteryIds,
+          assignedCemeteryIds: [...new Set((request.user.cemeteryAccess ?? []).map((assignment) => assignment.cemeteryId))],
           permissions: {
             canViewOwnership: role === "admin" || hasScopedEditAccess,
             canManageUsers: canManageUsers(role),

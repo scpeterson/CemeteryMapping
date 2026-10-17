@@ -1367,3 +1367,45 @@ databaseChangeLog:
   - include:
       file: changes/458-add-weitzel-estimated-monument.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/459-create-weitzel-estimated-gravesite-pair.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/460-shift-weitzel-pair-east-south.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/461-align-section-e-gravesites-northeast.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/462-create-section-d-north-lot-row.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/463-shift-section-d-north-row-west.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/464-create-section-d-eight-lot-row.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/465-shift-section-d-eight-lot-row-west.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/466-create-section-d-adjoining-lot-row.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/467-shift-section-d-paired-rows-west.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/468-create-section-d-two-northern-rows.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/469-shift-section-d-northern-pair-west.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/470-create-section-d-boundary-lot-row.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/471-confirm-weitzel-burials.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/472-correct-weitzel-pre-need-notes.sql
+      relativeToChangelogFile: true
