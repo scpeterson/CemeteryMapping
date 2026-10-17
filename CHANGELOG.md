@@ -22,6 +22,9 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Retire the C-0425 plot-marker placeholder and imported pseudo-burial while retaining standalone marker TLC-HS-0425 and its evidence (migration 474).
+- Align C-0383 3.54 inches west within schematic C-83; preserve its marker, burial and lot assignment, and record the remaining C-0384 overlap for separate review (migration 475).
+
 - Align the two estimated DeCourcy gravesites C-0382/C-0382A 4.56 inches west inside schematic lot C-83, preserving marker coordinates, assignments, burial links, and C-0383 (migration 473).
 
 - Shift B-21, B-15, B-4, B-14, and B-5 together one additional foot north, preserving footprints and alignment (migration 422).

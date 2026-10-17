@@ -1415,3 +1415,9 @@ databaseChangeLog:
   - include:
       file: changes/473-align-c-0382-decourcy-with-lot-83.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/474-retire-c-0425-plot-marker-placeholder.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/475-align-c-0383-decourcy-with-lot-83.sql
+      relativeToChangelogFile: true
