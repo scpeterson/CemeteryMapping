@@ -137,7 +137,7 @@ Use `Admin -> Users` when adding, editing, deactivating, or reactivating applica
    - `power-user` can do reader tasks and can view/edit deed-owner data and existing cemetery records for assigned cemeteries.
    - `cemetery-admin` can administer assigned cemeteries and has read-only access elsewhere.
    - `admin` can manage the whole system, including users, lookups, audit review, structural records, and deletes.
-6. Assign the cemetery for `power-user` or `cemetery-admin` users. The database supports multiple assignments, but the current UI manages one assignment per user.
+6. Assign a cemetery for every non-admin user, including `reader`. Creating or saving a non-admin account requires an assignment; system admins are exempt because they have system-wide access. The database supports multiple assignments, but the current UI manages one assignment per user.
 7. Save the user and have them sign out and back in so any Auth0 token and local role changes are reflected.
 8. Use `Deactivate` when access should be blocked without deleting the Auth0 account or local history.
 9. Use `Reactivate` only after confirming the user's role and cemetery assignment are still correct.
