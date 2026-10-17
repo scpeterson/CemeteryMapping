@@ -137,7 +137,7 @@ Use `Admin -> Users` when adding, editing, deactivating, or reactivating applica
    - `power-user` can do reader tasks and can view/edit deed-owner data and existing cemetery records for assigned cemeteries.
    - `cemetery-admin` can administer assigned cemeteries and has read-only access elsewhere.
    - `admin` can manage the whole system, including users, lookups, audit review, structural records, and deletes.
-6. Assign the cemetery for `power-user` or `cemetery-admin` users. The database supports multiple assignments, but the current UI manages one assignment per user.
+6. Assign a cemetery for every non-admin user, including `reader`. Creating or saving a non-admin account requires an assignment; system admins are exempt because they have system-wide access. The database supports multiple assignments, but the current UI manages one assignment per user.
 7. Save the user and have them sign out and back in so any Auth0 token and local role changes are reflected.
 8. Use `Deactivate` when access should be blocked without deleting the Auth0 account or local history.
 9. Use `Reactivate` only after confirming the user's role and cemetery assignment are still correct.
@@ -357,10 +357,11 @@ Use `Monuments` in the gravesite detail panel for field photo collection, or `De
 
 1. On the iPhone, open the application and select the gravesite on the map or from search results.
 2. Open `Monuments`. For an image of the full grave space, use `Gravesite Photos`; for a specific physical marker, use the upload form under that marker. When selecting a marker directly, its upload form is in `Details`.
-3. Tap the photo file control. On iPhone this should offer the camera or photo library.
+3. Tap the photo file control and select one or more photos. On iPhone this should offer the camera or photo library.
 4. Confirm that you are using the form for the intended gravesite or marker; the form fixes the photo link to that feature.
-5. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty.
-6. Upload the photo and confirm it appears in the photo gallery.
+5. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty. The link, notes, and optional `Date taken` apply to all selected photos; use separate uploads when those values differ. Leave the date blank to use each photo’s available date metadata.
+6. Select `Upload photos` (or `Upload photo` for one file). Files upload one at a time, with progress and a result for each file. Confirm successful uploads appear in the photo gallery.
+7. If some files fail, review their errors, correct the cause, and select `Retry failed photos`. Successful uploads remain saved; retry submits only the failed files retained in the form. Choosing a new selection replaces that retry list, so finish retries before selecting more photos.
 
 The inline gallery shows up to four linked photos, ordered newest first by capture date, falling back to upload date when capture date is absent; display order breaks ties. `View all photos (N)` opens the complete history when more are available. Marker/headstone photos appear in that marker's gallery rather than being duplicated in `Gravesite Photos`. The read-only gravesite `Overview` considers both galleries when choosing its latest photo and labels a preview from a linked marker.
 
@@ -616,7 +617,7 @@ Before opening or merging a PR:
    APP_ENV=dev npm run db:configure-api
    ```
 
-3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes:
+3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes. Run the rollback/reapply checks below only on disposable automated TEST data and after reviewing the selected rollback action. Changesets 461–472 have empty rollback actions and use backup recovery; rollback does not undo their data changes. For these changesets, rehearse on an isolated database copy and verify backup recovery or a reviewed forward fix instead of treating rollback/reapply as proof of reversibility. See [Rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
 
    ```bash
    npm run lint
@@ -1067,7 +1068,9 @@ Do not load OCR readings directly into production burial or headstone fields. Th
 
 ### Cemetery scope and navigation
 
-Users automatically open the map at their one registered cemetery, with search and map records scoped to that cemetery. Only system admins see the cemetery selector in the application header and can change cemetery scope. System admins use it to focus the map and narrow search results to one cemetery. Choose **All cemeteries** to return to the full view. Changing cemetery clears the selected record and checks for unsaved edits. The map's fit button fits the chosen cemetery while a scope is active.
+System admins initially open the map fitted to all cemetery boundaries. Non-admin users automatically open the map at their one registered cemetery, with search and map records scoped to that cemetery. Only system admins see the cemetery selector in the application header and can change cemetery scope. System admins use it to focus the map and narrow search results to one cemetery. Choose **All cemeteries** to return to the full view. Changing cemetery clears the selected record and checks for unsaved edits. The map's fit button fits the chosen cemetery while a scope is active. Initial fitting waits for the account and map data to load. A non-admin account with zero or multiple assignments shows an empty scope and a message to contact an administrator; it never falls back to all cemeteries.
+
+Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. This validation does not backfill existing accounts or add a database constraint. Correct legacy assignments in Admin before reactivation or other account updates. See the [assignment audit](hosted-test.md#cemetery-assignment-audit).
 
 Search accepts names, owners (when permitted), dates, gravesites, and lots. Use the status chips for a combination of statuses, **Show one status** for a single status, and **Reset filters** to restore all statuses. Resetting status filters preserves the search text and cemetery selection.
 

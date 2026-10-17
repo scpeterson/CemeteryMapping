@@ -68,7 +68,13 @@ npm run db:status
 APP_ENV=stage npm run db:status
 ```
 
-Roll back the latest changeset:
+### Rollback and backup recovery
+
+Inspect the selected changesets before using rollback. Recent data corrections 461–472 declare `--rollback empty` and require recovery from a pre-migration backup. Liquibase can remove their execution entries without reversing their data changes; a successful rollback command does not prove that the data was restored. Reapplying those changesets may fail prerequisites or repeat changes.
+
+Before applying these corrections to a persistent environment, retain a validated database backup and record the source revision and migration status. Rehearse migrations and recovery on an isolated database copy. Recover using the reviewed backup procedure or a reviewed forward-fix migration, accounting for edits made since the backup. Do not use rollback/reapply as a recovery test on live data.
+
+Roll back the latest changeset only when its rollback action is appropriate:
 
 ```bash
 npm run db:rollback
@@ -92,7 +98,7 @@ Roll back to a tag:
 npm run db:rollback:tag -- before-owner-import
 ```
 
-Test that pending migrations can be applied, rolled back, and applied again:
+Test pending migration rollback mechanics on a disposable database (empty rollback actions do not verify data recovery):
 
 ```bash
 npm run db:rollback:test
@@ -307,7 +313,7 @@ The security foundation uses:
 
 - `app_roles` for application roles. Current values are `reader`, `power-user`, `cemetery-admin`, and `admin`.
 - `app_users` for identity-provider subjects mapped to application roles.
-- `app_user_cemetery_access` for cemetery-scoped edit assignments used by `power-user` and `cemetery-admin` users.
+- `app_user_cemetery_access` for cemetery assignments used by every non-admin role, including readers. Admin/API account creation and updates require at least one assignment; the current form and map workflow expect one. Reader assignments establish map scope without granting edits; power-user and cemetery-admin edits still require the appropriate role and `can_edit`. Direct SQL and imports must preserve this invariant because it is not a database constraint. See the [assignment audit](../docs/hosted-test.md#cemetery-assignment-audit).
 - `audit_events` for append-only row-level change history.
 - `audit_retention_policies` for the global audit retention window and purge batch size.
 - `system_events` for operational failures, warnings, health-check failures, integration failures, and scheduled job runs.
