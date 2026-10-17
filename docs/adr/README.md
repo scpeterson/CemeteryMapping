@@ -196,3 +196,21 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0097: Split D-0500 Brant burials](0097-split-d-0500-brant-gravesites.md)
 
 - [ADR 0098: Add the Weitzel monument at an estimated location](0098-add-weitzel-estimated-monument.md)
+
+- [ADR 0099: Revise the estimated Weitzel location and add two gravesites](0099-create-weitzel-estimated-gravesite-pair.md)
+
+- [ADR 0100: Align Section E graves northeast from fixed monuments](0100-align-section-e-gravesites-northeast.md)
+
+- [0101: Add the Section D northern lot row](0101-create-section-d-north-lot-row.md)
+
+- [0102: Add the eight-lot Section D row](0102-create-section-d-eight-lot-row.md)
+
+- [0103: Add the adjoining northern Section D row](0103-create-section-d-adjoining-lot-row.md)
+
+- [0104: Add two northern Section D lot rows](0104-create-section-d-two-northern-rows.md)
+
+- [0105: Add the boundary-clipped Section D lot row](0105-create-section-d-boundary-lot-row.md)
+
+- [0106: Confirm the Weitzel interments](0106-confirm-weitzel-burials.md)
+
+- [0107: Correct Jerry Weitzel's pre-need notes](0107-correct-weitzel-pre-need-notes.md)

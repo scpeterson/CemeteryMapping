@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --chown=node:node server ./server
+COPY --chown=node:node shared ./shared
 COPY db/env/test.env ./db/env/test.env
 USER node
 CMD ["node", "server/index.mjs"]

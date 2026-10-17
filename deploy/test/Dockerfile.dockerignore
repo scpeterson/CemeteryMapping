@@ -3,6 +3,8 @@
 !package-lock.json
 !server
 !server/**
+!shared
+!shared/**
 !db
 !db/env
 !db/env/test.env

@@ -118,6 +118,8 @@ bundle --version
 
 ## Validate Database Migrations
 
+Run rollback testing only against disposable TEST data after reviewing pending changesets. Changesets 461–472 have empty rollback actions: this check does not reverse their data changes or validate backup recovery. Rehearse these corrections and their recovery on an isolated database copy; see [Rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
+
 ```bash
 APP_ENV=test npm run db:validate
 APP_ENV=test npm run db:rollback:test
