@@ -141,6 +141,8 @@ Never use `docker compose down -v` on this host.
 Send potential testers `https://test.nhcemeteries.org/request-access`. A global
 Admin reviews requests under **Admin → Users**. To permit Trinity editing, select
 **Power user** and assign **Trinity Lutheran Church Cemetery** before saving.
+Read-only testers also require a cemetery assignment. Every non-admin account
+requires an assignment on creation and update; system admins remain exempt.
 The tester edits the hosted TEST copy, not DEV or the future production database.
 Add the approved email to the existing Cloudflare Access allowlist as well;
 application approval does not yet synchronize that list.
@@ -384,3 +386,35 @@ exporting the captured token as a credential. Automated tests cover replay
 failure. Fresh Auth0 sign-in and real invitation delivery were not verified in
 this release. Production was not deployed. Preserve the dated distinction between
 passed checks and these remaining validation tasks.
+
+## Cemetery assignment audit
+
+After account-data restores or changes to onboarding, check the target application
+database in a read-only transaction. Include inactive accounts; system admins are
+exempt. Run through the documented database connection for that environment:
+
+```sql
+BEGIN READ ONLY;
+SELECT u.email, u.display_name, u.role_name, u.is_active,
+       count(a.cemetery_id) AS cemetery_assignments
+FROM app_users u
+LEFT JOIN app_user_cemetery_access a ON a.app_user_id = u.id
+WHERE u.role_name <> 'admin'
+GROUP BY u.id, u.email, u.display_name, u.role_name, u.is_active
+HAVING count(a.cemetery_id) <> 1
+ORDER BY u.email;
+ROLLBACK;
+```
+
+Zero rows means every non-admin account has exactly one assignment. Review any
+zero-assignment or multiple-assignment account with its administrator and select
+the intended cemetery in Admin → Users; do not infer an assignment from free-text
+access requests. Creating or saving non-admin accounts requires an assignment,
+but existing records are not backfilled and direct SQL can bypass validation.
+The initial map is empty for a non-admin account without exactly one assignment.
+System admins initially see all cemeteries.
+
+Read-only audit on October 17, 2026 found no unassigned non-admin accounts in local
+DEV, local TEST, or hosted TEST. Local databases each contained one active admin;
+hosted TEST contained one active admin and one active, assigned power user. This
+is a dated account-data observation, not confirmation that PR #685 is deployed.

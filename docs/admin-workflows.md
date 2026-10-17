@@ -92,7 +92,7 @@ Current role behavior:
 - `cemetery-admin`: can administer assigned cemeteries and has read-only access to other cemeteries.
 - `admin`: full system access, including user management, lookup maintenance, audit review, adding structural records, and soft deletes.
 
-Power users and cemetery admins receive cemetery assignments through the local `app_user_cemetery_access` table. The Admin UI currently treats this as one assigned cemetery per user, while the database allows multiple assignments if a future workflow needs them.
+Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. Assignments are stored in `app_user_cemetery_access`. A reader assignment sets the map scope without granting editing permission. Switching between non-admin roles preserves the selected assignment. See [cemetery scope and navigation](operator-workflows.md#cemetery-scope-and-navigation).
 
 Admin UI hover explanations should avoid exposing Auth0 user IDs in list-row tooltips. The Auth0 user ID is shown only when intentionally editing a user record.
 
