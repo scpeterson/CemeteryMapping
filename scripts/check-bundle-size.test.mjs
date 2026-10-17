@@ -15,3 +15,15 @@ test("counts lazy chunks and workers toward the total budget", () => {
   const assets = [...baseline(), { filename: "worker.js", gzipBytes: totalJavaScriptGzipBudgetKilobytes * 1024 }];
   assert.match(checkBundleAssets(assets).failures.join("\n"), /all JavaScript/u);
 });
+
+test("allows the upstream MapLibre chunk while retaining application limits", () => {
+  const assets = baseline();
+  assets.find(asset => asset.filename.startsWith("vendor-map-")).gzipBytes = 274 * 1024;
+  assert.deepEqual(checkBundleAssets(assets).failures, []);
+  for (const prefix of ["index-", "App-", "AdminPanel-"]) {
+    const applicationAssets = assets.map(asset => ({ ...asset }));
+    const budget = budgets.find(budget => budget.pattern.test(`${prefix}fixture.js`));
+    applicationAssets.find(asset => asset.filename.startsWith(prefix)).gzipBytes = budget.gzipKilobytes * 1024 + 1;
+    assert.equal(checkBundleAssets(applicationAssets).failures.length, 1);
+  }
+});
