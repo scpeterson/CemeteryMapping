@@ -8,7 +8,7 @@ export function validateAdminUserPayload(body, roles) {
   const assignedCemeteryIds = Array.isArray(body?.assignedCemeteryIds)
     ? [...new Set(body.assignedCemeteryIds.map((id, index) => validateUuid(id, `Assigned cemetery ${index + 1}`)))]
     : [];
-  if ((role === "power-user" || role === "cemetery-admin") && assignedCemeteryIds.length === 0) {
+  if (role !== "admin" && assignedCemeteryIds.length === 0) {
     throw new BadRequestError("Assigned cemetery is required for this role.");
   }
 

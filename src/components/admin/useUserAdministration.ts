@@ -92,6 +92,9 @@ export function useUserAdministration() {
     setError(undefined);
 
     try {
+      if (form.role !== "admin" && form.assignedCemeteryIds.length === 0) {
+        throw new Error("Assigned cemetery is required for this role.");
+      }
       const userToSave = form.id || form.externalSubject.trim() ? form : await resolveAuth0Subject(form);
       const saved = form.id ? await updateAdminUser(form.id, userToSave) : await createAdminUser(userToSave);
       setUsers((current) => {
