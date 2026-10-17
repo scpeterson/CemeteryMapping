@@ -1412,3 +1412,6 @@ databaseChangeLog:
   - include:
       file: changes/472-correct-weitzel-pre-need-notes.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/473-align-c-0382-decourcy-with-lot-83.sql
+      relativeToChangelogFile: true

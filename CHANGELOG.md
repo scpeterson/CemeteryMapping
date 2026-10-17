@@ -22,6 +22,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Align the two estimated DeCourcy gravesites C-0382/C-0382A 4.56 inches west inside schematic lot C-83, preserving marker coordinates, assignments, burial links, and C-0383 (migration 473).
+
 - Shift B-21, B-15, B-4, B-14, and B-5 together one additional foot north, preserving footprints and alignment (migration 422).
 
 - Shift the eight Section B lots B-23/B-19/B-17/B-2 and B-22/B-20/B-16/B-3 together 1.5 feet west and one foot north, preserving their footprints (migration 421).

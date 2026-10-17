@@ -77,7 +77,17 @@ Migration 346 was executed in DEV and hosted TEST on August 28, 2026, but its SQ
 
 Regression coverage pins the original SQL bytes and root include order. Database tests use disposable schemas and real Liquibase execution to verify the original split, preserved marker and burial links, source-data prerequisite failures, absent-source behavior, and checksum validation and skipping after subsequent edits.
 
-The original correction places the pair one foot south of the marker-centered position to avoid C-0383. This history repair does not change the original geometry or lot assignments. The small intersection with the neighboring lot boundary requires a separate review.
+The original correction places the pair one foot south of the marker-centered position to avoid C-0383. This history repair does not change the original geometry or lot assignments. Migration 473 addresses the small intersection with the neighboring schematic lot boundary as a separate forward correction.
+
+## Migration 473 Lot Alignment (2026-10-17)
+
+The deed registry lists William & Louise DeCourcy against lot 83, and the fixed shared marker lies inside C-83. DEV and hosted TEST both showed approximately 38.498 square feet of each 40-square-foot polygon in C-83 and 1.502 square feet in C-82. Keep both C-83 assignments. These lot boundaries are schematic, not surveyed ownership or burial boundaries.
+
+Migration 473 translates only `TLC-GPS-0382` and `TLC-GPS-0382-01` west by 0.38 feet (4.56 inches), using EPSG:32617 for the metric translation. Both polygons then fit C-83 without new neighboring or mutual overlaps. Preserve their 4-by-10-foot dimensions, estimated operational classification, north/south arrangement and prior one-foot south offset, identifiers, burial facts, links, lot assignments, and the observed marker point. Preserve migration 346 and its checksum unchanged.
+
+The migration skips databases without either source gravesite and skips an already contained pair on repeat execution. Partial pairs, changed assignments or dimensions, missing shared-marker links, later edits to the original footprints, and proposed containment or overlap failures require review before any mutation. Regressions reconstruct the historical split and check containment, preservation, repeat execution, and prerequisite failures using temporary tables.
+
+C-0383 is outside this correction. Its lot-boundary spill and existing overlaps with C-0384 and the C-0425 plot-marker polygon remain for a separate review. Do not shift the shared marker or change the lot grid to resolve this pair's schematic alignment. Recovery follows the backup/forward-correction policy above.
 
 ## Rebuild And Validation
 
