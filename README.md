@@ -42,7 +42,7 @@ npm run build:stage
 npm run build:prod
 ```
 
-`npm run build` and `npm run build:prod` also enforce gzip bundle budgets for the application entry, Admin shell, major vendor chunks, and total JavaScript output. To recheck an existing production build without rebuilding it, run `npm run check:bundle`.
+`npm run build` and `npm run build:prod` also enforce gzip bundle budgets for the application entry, Admin shell, major vendor chunks, and total JavaScript output. Vendor allowances may be adjusted for verified third-party package growth; application-code limits remain separate. See [bundle budget policy](docs/adr/0074-production-bundle-budgets.md). To recheck an existing production build without rebuilding it, run `npm run check:bundle`.
 
 Database commands default to DEV. Set `APP_ENV` or use the convenience scripts:
 
