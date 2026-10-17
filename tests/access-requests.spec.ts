@@ -76,7 +76,8 @@ test("admin reviews a request through user setup defaulting to reader", async ({
   await fixture(page);
   const request = { id: "11111111-1111-4111-8111-111111111111", email: "visitor@example.test", displayName: "Demo Visitor", cemeteryInterest: "Fictional", reason: "Research", createdAt: "2026-09-29T12:00:00Z", status: "pending" };
   let approved = false;
-  await page.route("**/api/admin/cemetery-records", (route) => route.fulfill({ json: { cemeteries: [], sections: [], lots: [] } }));
+  const cemeteryId = "22222222-2222-4222-8222-222222222222";
+  await page.route("**/api/admin/cemetery-records", (route) => route.fulfill({ json: { cemeteries: [{ id: cemeteryId, name: "Fictional" }], sections: [], lots: [] } }));
   await page.route("**/api/admin/access-request-stats", (route) => route.fulfill({ json: { pending: 1, lastHour: 1, limits: { pending: 200, hourly: 100 } } }));
   await page.route("**/api/admin/access-requests", (route) => route.fulfill({ json: approved ? [] : [request] }));
   await page.route("**/api/admin/roles", (route) => route.fulfill({ json: [{ name: "reader", description: "Read-only", userCount: 0 }, { name: "admin", description: "Admin", userCount: 1 }] }));
@@ -85,6 +86,7 @@ test("admin reviews a request through user setup defaulting to reader", async ({
     if (route.request().method() === "GET") return route.fulfill({ json: [] });
     const body = route.request().postDataJSON();
     expect(body.role).toBe("reader"); expect(body.accessRequestId).toBe(request.id);
+    expect(body.assignedCemeteryIds).toEqual([cemeteryId]);
     approved = true;
     return route.fulfill({ status: 201, json: { ...body, id: "new-user", createdAt: "2026-09-29" } });
   });
@@ -94,6 +96,11 @@ test("admin reviews a request through user setup defaulting to reader", async ({
   await admin.getByRole("button", { name: "Users", exact: true }).click();
   await admin.getByRole("button", { name: "Set up user" }).click();
   await expect(admin.getByRole("combobox", { name: "Role", exact: true })).toHaveValue("reader");
+  const cemetery = admin.getByRole("combobox", { name: "Assigned cemetery", exact: true });
+  await expect(cemetery).toHaveAttribute("required", "");
+  await admin.getByRole("button", { name: "Save user", exact: true }).click();
+  expect(approved).toBe(false);
+  await cemetery.selectOption(cemeteryId);
   await admin.getByRole("button", { name: "Save user", exact: true }).click();
   await expect(admin).toContainText("Access request approved");
   await expect(admin).toContainText("No pending requests");
