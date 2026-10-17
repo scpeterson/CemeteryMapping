@@ -87,7 +87,7 @@ Migration 473 translates only `TLC-GPS-0382` and `TLC-GPS-0382-01` west by 0.38 
 
 The migration skips databases without either source gravesite and skips an already contained pair on repeat execution. Partial pairs, changed assignments or dimensions, missing shared-marker links, later edits to the original footprints, and proposed containment or overlap failures require review before any mutation. Regressions reconstruct the historical split and check containment, preservation, repeat execution, and prerequisite failures using temporary tables.
 
-C-0383 is outside this correction. Its lot-boundary spill and existing overlaps with C-0384 and the C-0425 plot-marker polygon remain for a separate review. Do not shift the shared marker or change the lot grid to resolve this pair's schematic alignment. Recovery follows the backup/forward-correction policy above.
+C-0383 is outside migration 473. The subsequent review led to migrations 474/475, documented in [ADR 0108](0108-c0383-alignment-c0425-retirement.md): retire the C-0425 import artifacts and align C-0383 west within C-83. The existing C-0384 overlap remains for separate review. Do not shift the shared marker or change the lot grid to resolve this pair's schematic alignment. Recovery follows the backup/forward-correction policy above.
 
 ## Rebuild And Validation
 

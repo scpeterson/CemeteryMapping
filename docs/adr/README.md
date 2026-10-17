@@ -214,3 +214,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [0106: Confirm the Weitzel interments](0106-confirm-weitzel-burials.md)
 
 - [0107: Correct Jerry Weitzel's pre-need notes](0107-correct-weitzel-pre-need-notes.md)
+
+- [0108: Align C-0383 and retire the C-0425 import placeholder](0108-c0383-alignment-c0425-retirement.md)
