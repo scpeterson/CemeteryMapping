@@ -8,11 +8,12 @@ export function validateAdminUserPayload(body, roles) {
   const assignedCemeteryIds = Array.isArray(body?.assignedCemeteryIds)
     ? [...new Set(body.assignedCemeteryIds.map((id, index) => validateUuid(id, `Assigned cemetery ${index + 1}`)))]
     : [];
-  if ((role === "power-user" || role === "cemetery-admin") && assignedCemeteryIds.length === 0) {
+  if (role !== "admin" && assignedCemeteryIds.length === 0) {
     throw new BadRequestError("Assigned cemetery is required for this role.");
   }
 
   return {
+    ...(body?.accessRequestId ? { accessRequestId: validateUuid(body.accessRequestId, "Access request") } : {}),
     externalSubject: requiredText(body?.externalSubject, "Auth0 user ID", 300),
     email: requiredText(body?.email, "Email", 320),
     displayName: optionalText(body?.displayName, "Display name", 250),
@@ -87,15 +88,23 @@ export function validateLookupTable(value) {
   return table;
 }
 
-export function validateLookupPayload(body) {
-  const sortOrder = Number.parseInt(String(body?.sortOrder ?? ""), 10);
-  if (!Number.isFinite(sortOrder)) throw new BadRequestError("Sort order is required.");
-
+export function validateLookupPayload(body, table) {
+  let rankFields = {};
+  if (table === "military_rank_types") {
+    const rankGroup = requiredText(body?.rankGroup, "Rank group", 30);
+    if (!["enlisted", "warrant_officer", "officer"].includes(rankGroup)) throw new BadRequestError("Invalid rank group.");
+    rankFields = {
+      militaryBranchId: validateUuid(body?.militaryBranchId, "Military branch"),
+      abbreviation: requiredText(body?.abbreviation, "Abbreviation", 20),
+      payGrade: optionalText(body?.payGrade, "Pay grade", 10) ?? "",
+      rankGroup,
+    };
+  }
   return {
+    ...rankFields,
     code: validateLookupCode(body?.code),
     label: requiredText(body?.label, "Label", 100),
     description: requiredText(body?.description, "Description", 500),
-    sortOrder,
     isActive: body?.isActive !== false,
     sourceNotes: optionalText(body?.sourceNotes, "Source notes", 500),
     sourceUrl: optionalText(body?.sourceUrl, "Source URL", 500),

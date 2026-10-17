@@ -5,7 +5,7 @@ import { validateMediaUploadMetadata } from "./mediaRouteValidation.mjs";
 export function registerMediaRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto, createHeadstonePhoto,
-    express, moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset,
+    express, moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   } = context;
     app.post(
       "/api/headstones/:id/media-assets",
@@ -25,6 +25,7 @@ export function registerMediaRoutes(app, context) {
             },
             metadata,
             {
+              uploadRoot,
               actorUser: request.user,
               allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
             },
@@ -68,6 +69,7 @@ export function registerMediaRoutes(app, context) {
             },
             metadata,
             {
+              uploadRoot,
               actorUser: request.user,
               allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
             },
@@ -116,13 +118,13 @@ export function registerMediaRoutes(app, context) {
         const linkType = optionalText(request.body?.linkType, "Media link type", 20);
         const direction = optionalText(request.body?.direction, "Move direction", 20);
         if (!["headstone", "gravesite"].includes(linkType)) throw new BadRequestError("Media link type is invalid.");
-        if (!["earlier", "later"].includes(direction)) throw new BadRequestError("Move direction is invalid.");
+        if (!["earlier", "later", "primary", "automatic"].includes(direction)) throw new BadRequestError("Move direction is invalid.");
         const result = await moveMediaAssetLink(pool, id, {
           linkId,
           linkType,
           direction,
           actorUser: request.user,
-          reason: validateMutationReason(request.body?.reason) ?? "Reordered photo display",
+          reason: validateMutationReason(request.body?.reason) ?? (direction === "primary" ? "Selected primary photo" : direction === "automatic" ? "Removed primary photo" : "Reordered photo display"),
           allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
         });
         if (!result) {

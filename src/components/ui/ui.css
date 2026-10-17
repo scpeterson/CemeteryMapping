@@ -1,0 +1,37 @@
+.ui-button { min-height: var(--control-height); padding: 8px 12px; border: 1px solid transparent; border-radius: var(--radius-md); font: inherit; font-weight: 650; background: var(--focus); color: white; }
+.ui-button--secondary { background: var(--panel); border-color: var(--panel-border); color: inherit; }
+.ui-button--danger { background: #a03232; color: white; }
+.ui-button:disabled { cursor: default; opacity: .6; }
+.ui-field { display: grid; gap: 6px; }
+.ui-field input { width: 100%; min-height: var(--control-height); padding: var(--space-2); border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: white; color: inherit; }
+.ui-field-error { color: #9d2525; }
+.ui-notice { padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: var(--panel); }
+.ui-notice--error { color: #862727; border-color: #dca6a6; background: #fff3f3; }
+.ui-notice--success { color: #235738; }
+.ui-empty-state { padding: 24px 12px; color: var(--text-muted); text-align: center; }
+.ui-status-badge { display: inline-flex; padding: 3px 8px; border-radius: 20px; background: #e8ece8; color: #354238; font-size: .8rem; }
+.ui-status-badge--success { background: #e1f1e4; color: #235738; }
+.ui-status-badge--warning { background: #fff0ce; color: #73521a; }
+.ui-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.ui-confirmation { width: min(440px, calc(100vw - 32px)); padding: var(--space-6); border: 1px solid var(--panel-border); border-radius: var(--radius-lg); background: var(--panel); }
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Domain status colors keep the same meaning as map fills and filter dots. */
+.ui-status-badge--colored {
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--status-color) 16%, white);
+  color: #26342d;
+}
+.ui-status-badge--colored::before {
+  content: "";
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-color);
+}

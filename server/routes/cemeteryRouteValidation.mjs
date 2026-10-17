@@ -1,3 +1,4 @@
+import { validateMarkerFaces, validateFacesRevision } from "../markerFaces.mjs";
 import { optionalCoordinate, optionalText, requiredText, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
 import { optionalBoolean, optionalDate, optionalRecordedDate, validateDataConfidence, validateReviewStatus } from "./routeValidationHelpers.mjs";
@@ -28,26 +29,23 @@ export function validateReportQueryPayload(body) {
 }
 
 export function validateHeadstonePayload(body) {
-  const lastInspectedAt = optionalText(body?.lastInspectedAt, "Last inspected date", 10);
-  if (lastInspectedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(lastInspectedAt)) throw new BadRequestError("Last inspected date must use YYYY-MM-DD format.");
+  const lastInspectedAt = optionalDate(body?.lastInspectedAt, "Last inspected date");
   const nhgInclusion = optionalText(body?.nhgInclusion, "NHG inclusion", 30) || "not_checked";
   if (!["listed", "not_listed", "not_checked", "unclear"].includes(nhgInclusion)) throw new BadRequestError("NHG inclusion is invalid.");
   const provenanceVerificationSource = optionalText(body?.provenanceVerificationSource, "Provenance verification source", 50) || "manual_review";
-  if (!["field_survey", "documentary_record", "manual_review", "import"].includes(provenanceVerificationSource)) {
+  if (!["field_photo", "field_survey", "documentary_record", "manual_review", "import"].includes(provenanceVerificationSource)) {
     throw new BadRequestError("Provenance verification source is invalid.");
   }
-  const provenanceVerifiedAt = optionalText(body?.provenanceVerifiedAt, "Source information verified date", 10);
-  if (provenanceVerifiedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(provenanceVerifiedAt)) {
-    throw new BadRequestError("Source information verified date must use YYYY-MM-DD format.");
-  }
+  const provenanceVerifiedAt = optionalDate(body?.provenanceVerifiedAt, "Source information verified date");
 
   return {
+    ...(body?.faces === undefined ? {} : { faces: validateMarkerFaces(body.faces), facesRevision: validateFacesRevision(body.facesRevision) }),
     markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
     markerScopeId: validateUuid(body?.markerScopeId, "Marker scope"),
     materialId: validateUuid(body?.materialId, "Marker material"),
     conditionId: validateUuid(body?.conditionId, "Condition"),
     conditionNotes: optionalText(body?.conditionNotes, "Condition notes", 4000),
-    inscription: optionalText(body?.inscription, "Inscription", 20_000),
+    inscription: body?.faces === undefined ? optionalText(body?.inscription, "Inscription", 20_000) : null,
     designNotes: optionalText(body?.designNotes, "Design notes", 20_000),
     backDescription: optionalText(body?.backDescription, "Back description", 20_000),
     photoUrl: optionalText(body?.photoUrl, "Photo URL", 300),
@@ -166,10 +164,8 @@ export function validateMaintenanceRecordPayload(body, { requireTarget = true } 
   const sourceType = optionalText(body?.sourceType, "Maintenance source", 50) || "manual";
   if (!["manual", "inspection", "work_order", "photo", "import"].includes(sourceType)) throw new BadRequestError("Maintenance source is invalid.");
 
-  const observedAt = optionalText(body?.observedAt, "Observed date", 10) || new Date().toISOString().slice(0, 10);
-  const completedAt = optionalText(body?.completedAt, "Completed date", 10) || "";
-  if (!/^\d{4}-\d{2}-\d{2}$/u.test(observedAt)) throw new BadRequestError("Observed date must use YYYY-MM-DD format.");
-  if (completedAt && !/^\d{4}-\d{2}-\d{2}$/u.test(completedAt)) throw new BadRequestError("Completed date must use YYYY-MM-DD format.");
+  const observedAt = optionalDate(body?.observedAt, "Observed date") || new Date().toISOString().slice(0, 10);
+  const completedAt = optionalDate(body?.completedAt, "Completed date") || "";
 
   const graveSpaceId = optionalText(body?.graveSpaceId, "Gravesite", 100) ?? "";
   const headstoneId = body?.headstoneId ? validateUuid(body.headstoneId, "Marker") : "";
@@ -197,6 +193,8 @@ export function validateMaintenanceRecordPayload(body, { requireTarget = true } 
 }
 
 export function validateGraveSpacePayload(body) {
+  const expectedVersion = requiredText(body?.expectedVersion, "Record version", 20);
+  if (!/^\d+$/u.test(expectedVersion)) throw new BadRequestError("Record version is invalid. Reload the gravesite.");
   const status = optionalText(body?.status, "Gravesite status", 30) || "unknown";
   if (!["available", "reserved", "occupied", "sold", "needs_review", "unknown"].includes(status)) {
     throw new BadRequestError("Gravesite status is invalid.");
@@ -206,6 +204,7 @@ export function validateGraveSpacePayload(body) {
   if (costText && (!Number.isFinite(cost) || cost < 0)) throw new BadRequestError("Cost must be a non-negative number.");
 
   return {
+    expectedVersion,
     name: optionalText(body?.name, "Name", 255) ?? "",
     status,
     cost,
@@ -221,12 +220,25 @@ export function validateGraveLotAssignmentPayload(body) {
 }
 
 export function validateBurialPayload(body) {
+  const firstName = optionalText(body?.firstName, "First name", 100) ?? "";
+  const givenNameStatus = optionalText(body?.givenNameStatus, "Given name status", 30);
+  if (givenNameStatus && !["recorded", "unknown", "no_given_name"].includes(givenNameStatus)) {
+    throw new BadRequestError("Choose a valid given name status.");
+  }
+  if (givenNameStatus === "recorded" && !firstName) {
+    throw new BadRequestError("Enter a first name or choose Unknown / not recorded or No given name.");
+  }
+  if (firstName && givenNameStatus && givenNameStatus !== "recorded") {
+    throw new BadRequestError("Clear the first name or choose Recorded as the given name status.");
+  }
   const intermentType = optionalText(body?.intermentType, "Interment type", 20) || "unknown";
   if (!/^[a-z0-9_]+$/u.test(intermentType)) throw new BadRequestError("Interment type is invalid.");
   const recordStatusCode = optionalText(body?.recordStatusCode, "Burial record status", 50) || "interred";
   if (!["interred", "pre_need_inscription", "memorial", "unknown"].includes(recordStatusCode)) {
     throw new BadRequestError("Burial record status is invalid.");
   }
+  const birthPlaceIdText = optionalText(body?.birthPlaceId, "Birth place", 36) ?? "";
+  const birthPlaceId = birthPlaceIdText ? validateUuid(birthPlaceIdText, "Birth place") : "";
   const deathPlaceIdText = optionalText(body?.deathPlaceId, "Death place", 36) ?? "";
   const deathPlaceId = deathPlaceIdText ? validateUuid(deathPlaceIdText, "Death place") : "";
   const militaryEnlistedDate = optionalDate(body?.militaryEnlistedDate, "Enlisted date") ?? "";
@@ -240,19 +252,36 @@ export function validateBurialPayload(body) {
   if (militaryDecorationCodes.some((code) => !/^[a-z0-9_]+$/u.test(code))) {
     throw new BadRequestError("Military decoration is invalid.");
   }
+  const sourceUrl = optionalText(body?.sourceUrl, "Information source URL", 2000) ?? "";
+  if (sourceUrl) {
+    let parsedSourceUrl;
+    try {
+      parsedSourceUrl = new URL(sourceUrl);
+    } catch {
+      throw new BadRequestError("Information source URL must be a valid absolute URL.");
+    }
+    if (!["http:", "https:"].includes(parsedSourceUrl.protocol)) {
+      throw new BadRequestError("Information source URL must use http or https.");
+    }
+  }
 
   return {
-    firstName: optionalText(body?.firstName, "First name", 100) ?? "",
+    firstName,
+    givenNameStatus: givenNameStatus || undefined,
+    displayName: body?.displayName === undefined ? undefined : optionalText(body.displayName, "Display name", 255) ?? "",
     lastName: optionalText(body?.lastName, "Last name", 100) ?? "",
     maidenName: optionalText(body?.maidenName, "Maiden name", 150) ?? "",
-    nameSuffix: optionalText(body?.nameSuffix, "Title or credentials", 100) ?? "",
+    namePrefix: optionalText(body?.namePrefix, "Prefix or title", 100) ?? "",
+    nameSuffix: optionalText(body?.nameSuffix, "Suffix or credentials", 100) ?? "",
     birthDate: optionalRecordedDate(body?.birthDate, "Birth date") ?? "",
     deathDate: optionalRecordedDate(body?.deathDate, "Death date") ?? "",
+    birthPlaceId,
     deathPlaceId,
     burialDate: optionalDate(body?.burialDate, "Burial date") ?? "",
     intermentType,
     recordStatusCode,
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
+    sourceUrl,
     veteran: optionalBoolean(body?.veteran, "Veteran"),
     militaryBranchCode: optionalText(body?.militaryBranchCode, "Military branch", 50) ?? "",
     militaryRankCode: optionalText(body?.militaryRankCode, "Military rank", 50) ?? "",

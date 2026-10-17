@@ -37,6 +37,7 @@ export function toMediaAsset(row) {
     gpsAccuracy: row.gps_accuracy === null || row.gps_accuracy === undefined ? undefined : Number(row.gps_accuracy),
     deviceMake: row.device_make ?? "", deviceModel: row.device_model ?? "", notes: row.notes ?? "", source: row.source,
     status: row.status, mediaLinkId: row.media_link_id ?? undefined, mediaLinkType: row.media_link_type ?? undefined,
+    isPrimary: row.is_primary === true,
     displayOrder: row.display_order === null || row.display_order === undefined ? undefined : Number(row.display_order),
   };
 }

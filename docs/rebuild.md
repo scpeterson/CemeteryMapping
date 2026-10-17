@@ -47,6 +47,7 @@ DEV is the default environment:
 ```bash
 npm run db:up
 npm run db:migrate
+npm run db:configure-api
 ```
 
 For TEST:
@@ -54,6 +55,7 @@ For TEST:
 ```bash
 APP_ENV=test npm run db:up
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 ```
 
 The DEV and TEST containers use separate Docker Compose projects, databases, ports, and Docker volumes, so they can exist side by side on the same machine.
@@ -116,10 +118,13 @@ bundle --version
 
 ## Validate Database Migrations
 
+Run rollback testing only against disposable TEST data after reviewing pending changesets. Changesets 461–472 have empty rollback actions: this check does not reverse their data changes or validate backup recovery. Rehearse these corrections and their recovery on an isolated database copy; see [Rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
+
 ```bash
 APP_ENV=test npm run db:validate
 APP_ENV=test npm run db:rollback:test
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 APP_ENV=test npm run db:status
 ```
 

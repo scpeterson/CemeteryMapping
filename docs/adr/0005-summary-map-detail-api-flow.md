@@ -59,3 +59,7 @@ curl -s "http://127.0.0.1:3001/api/search?q=Garcia"
 ## Update Triggers
 
 Update this ADR when map payload shape, detail loading or mutation-refresh behavior, grave selection behavior, map/search label formatting, or search response structure changes.
+
+## Client Map Updates
+
+Use stable GeoJSON IDs (cemetery-qualified grave keys, lot selection keys, and marker UUIDs) for MapLibre feature state. Keep transient selection/search highlights in paint state rather than embedding them in source data. Source effects follow changes to their own geometry collections, while a separate highlight synchronizer updates only changed IDs. This preserves the summary-first API and avoids serializing complete grave and marker collections on each selection. Verify source-update counts, geometry-refresh persistence, and Geographic/Diagram presentation in browser tests.

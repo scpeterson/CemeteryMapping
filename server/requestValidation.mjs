@@ -64,3 +64,23 @@ export function validateMutationReason(value) {
 
   return reason || undefined;
 }
+
+export class ConflictError extends Error {
+  constructor(message = "This record changed since you opened it. Reload the latest values before saving.") {
+    super(message);
+    this.name = "ConflictError";
+  }
+}
+
+export function validateSearchPage({ limit, offset, cemeteryId } = {}) {
+  const integer = (value, fallback, maximum, label) => {
+    if (value === undefined) return fallback;
+    if (typeof value !== "string" || !/^\d+$/u.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) > maximum) {
+      throw new BadRequestError(`${label} must be an integer between 0 and ${maximum}.`);
+    }
+    return Number(value);
+  };
+  const pageLimit = integer(limit, 50, 100, "Search limit");
+  if (!pageLimit) throw new BadRequestError("Search limit must be at least 1.");
+  return { limit: pageLimit, offset: integer(offset, 0, 100000, "Search offset"), cemeteryId: cemeteryId === undefined ? undefined : validateCemeteryId(cemeteryId) };
+}

@@ -1,11 +1,8 @@
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { AccessRequestsPanel } from "./AccessRequestsPanel";
+import { confirmDiscardChanges } from "../../hooks/useDraftState";
 import { ShieldCheck, UserCheck, UserCog, UserPlus, UserX } from "lucide-react";
 import type { AppRole, AppRoleName, AppUser, CemeteryAdminRecords } from "../../types";
-import type { SaveUserInput } from "../../api/cemeteryApi";
-
-export type UserFormState = SaveUserInput & {
-  id?: string;
-};
+import { useUserAdministration, type UserFormState } from "./useUserAdministration";
 
 const roleLabels: Record<AppRoleName, string> = {
   reader: "Read-only",
@@ -38,45 +35,46 @@ function userFormFromUser(user: AppUser): UserFormState {
   };
 }
 
-type UsersAdminTabProps = {
-  form: UserFormState;
-  setForm: Dispatch<SetStateAction<UserFormState>>;
-  roles: AppRole[];
-  roleOptions: AppRoleName[];
-  users: AppUser[];
-  cemeteryRecords: CemeteryAdminRecords;
-  isSaving: boolean;
-  isResolvingAuth0User: boolean;
-  togglingUserIds: Set<string>;
-  saveUser: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  resolveAuth0SubjectFromForm: () => Promise<void>;
-  resetForm: () => void;
-  toggleUserActive: (user: AppUser) => Promise<void>;
-};
-
-export function UsersAdminTab({
-  form,
-  setForm,
-  roles,
-  roleOptions,
-  users,
-  cemeteryRecords,
-  isSaving,
-  isResolvingAuth0User,
-  togglingUserIds,
-  saveUser,
-  resolveAuth0SubjectFromForm,
-  resetForm,
-  toggleUserActive,
-}: UsersAdminTabProps) {
+export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAdminRecords }) {
+  const {
+    requestRefreshKey,
+    form,
+    setForm,
+    roles,
+    roleOptions,
+    users,
+    isSaving,
+    isResolvingAuth0User,
+    togglingUserIds,
+    saveUser,
+    resolveAuth0SubjectFromForm,
+    resetForm,
+    toggleUserActive,
+    isLoading,
+    message,
+    error
+  } = useUserAdministration();
   return (
-        <>
+    <>
+      {isLoading ? <p className="admin-message" role="status">Loading users…</p> : null}
+      {error ? <p className="admin-message is-error" role="alert">{error}</p> : null}
+      {message ? <p className="admin-message" role="status">{message}</p> : null}
+      <AccessRequestsPanel refreshKey={requestRefreshKey} onReview={(request) => {
+        if (!confirmDiscardChanges()) return;
+        const existing = users.find((user) => user.email.toLowerCase() === request.email.toLowerCase());
+        setForm(existing ? { ...userFormFromUser(existing), isActive: true, accessRequestId: request.id } : {
+          email: request.email, displayName: request.displayName, externalSubject: "", role: "reader",
+          assignedCemeteryIds: [], isActive: true, accessRequestId: request.id,
+        });
+        document.getElementById("user-setup-form")?.scrollIntoView({ behavior: "smooth" });
+      }} />
       <section className="admin-section">
         <div className="section-title">
           <UserCog size={17} aria-hidden="true" />
           <h3>{form.id ? "Edit User" : "Add User"}</h3>
         </div>
-        <form className="admin-form" onSubmit={(event) => void saveUser(event)}>
+        <form id="user-setup-form" className="admin-form" onSubmit={(event) => void saveUser(event)}>
+          {form.accessRequestId && <p>Reviewing an access request. Save this active user to approve it, or choose New user to cancel.</p>}
           <label>
             Email
             <input
@@ -126,7 +124,7 @@ export function UsersAdminTab({
                 setForm((current) => ({
                   ...current,
                   role,
-                  assignedCemeteryIds: role === "power-user" || role === "cemetery-admin" ? current.assignedCemeteryIds : [],
+                  assignedCemeteryIds: role !== "admin" ? current.assignedCemeteryIds : [],
                 }));
               }}
               title={roleDescriptions[form.role]}
@@ -138,7 +136,7 @@ export function UsersAdminTab({
               ))}
             </select>
           </label>
-          {form.role === "power-user" || form.role === "cemetery-admin" ? (
+          {form.role !== "admin" ? (
             <label>
               Assigned cemetery
               <select
@@ -150,7 +148,7 @@ export function UsersAdminTab({
                   }))
                 }
                 required
-                title="The cemetery this user can edit. They retain read-only access to other cemeteries."
+                title="The cemetery shown by default when this user opens the map. Editing depends on their role."
               >
                 <option value="">Select cemetery</option>
                 {cemeteryRecords.cemeteries.map((cemetery) => (
@@ -189,7 +187,7 @@ export function UsersAdminTab({
         <div className="admin-table" role="table" aria-label="Application users">
           {users.map((user) => (
             <article key={user.id} className="admin-user-row" title={userTitle(user)}>
-              <button type="button" className="admin-user-edit" onClick={() => setForm(userFormFromUser(user))} title={userTitle(user)}>
+              <button type="button" className="admin-user-edit" data-discard-draft onClick={() => setForm(userFormFromUser(user))} title={userTitle(user)}>
                 <span>
                   <strong>{user.displayName || user.email}</strong>
                   <small>{user.email}</small>
@@ -240,6 +238,6 @@ export function UsersAdminTab({
           ))}
         </div>
       </section>
-        </>
+    </>
   );
 }

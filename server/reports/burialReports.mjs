@@ -1,3 +1,4 @@
+import { veteranSql } from "../../server/searchNormalizationSql.mjs";
 import { optionalTextParameter, reportResult, scopedWhere } from "./shared.mjs";
 
 export async function runMarkerBurialPages(client, definition, parameters, cemeteryIds) {
@@ -14,7 +15,7 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
   }
   if (personName) {
     values.push(`%${personName}%`);
-    filters.push(`lower(COALESCE(NULLIF(burials.full_name, ''), btrim(COALESCE(burials.first_name, '') || ' ' || COALESCE(burials.last_name, '')))) LIKE lower($${values.length})`);
+    filters.push(`lower(concat_ws(' ', burials.display_name, burials.full_name, burials.first_name, burials.last_name)) LIKE lower($${values.length})`);
   }
   if (sectionName) {
     values.push(sectionName);
@@ -41,7 +42,7 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
         COALESCE(marker_photo.file_url, NULLIF(headstones.photo_url, '')) AS photo_url,
         COALESCE(marker_features.features, '[]'::jsonb) AS marker_features,
         burials.id::text AS burial_uuid,
-        COALESCE(NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.maiden_name, ''), NULLIF(burials.last_name, ''))) AS person,
+        COALESCE(NULLIF(burials.display_name, ''), NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.name_prefix, ''), NULLIF(burials.first_name, ''), NULLIF(burials.maiden_name, ''), NULLIF(burials.last_name, ''), NULLIF(burials.name_suffix, ''))) AS person,
         burials.first_name,
         burials.last_name,
         burials.maiden_name,
@@ -51,12 +52,12 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
         burial_interment_types.label AS interment_type,
         burial_record_status_types.label AS record_status,
         burials.funeral_home,
-        lower(btrim(coalesce(burials.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran') AS veteran,
+        ${veteranSql("burials.veteran")} AS veteran,
         military_branch_types.label AS military_branch,
         military_rank_types.label AS military_rank,
         military_war_service_types.label AS military_war_service,
         COALESCE((
-          SELECT jsonb_agg(jsonb_build_object('code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY military_decoration_types.sort_order, military_decoration_types.label)
+          SELECT jsonb_agg(jsonb_build_object('code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY lower(military_decoration_types.label), military_decoration_types.code)
           FROM burial_military_decorations
           JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id
           WHERE burial_military_decorations.burial_uuid = burials.id
@@ -110,7 +111,7 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
             'notes', grave_features.notes,
             'status', grave_features.status
           )
-          ORDER BY grave_feature_types.sort_order, grave_feature_subtypes.sort_order NULLS LAST, grave_features.created_at
+          ORDER BY lower(grave_feature_types.label), lower(grave_feature_subtypes.label) NULLS LAST, grave_features.created_at
         ) AS features
         FROM grave_features
         JOIN grave_feature_types ON grave_feature_types.id = grave_features.feature_type_id
@@ -170,7 +171,7 @@ export async function runBurialDateExtremes(client, definition, cemeteryIds) {
         cemeteries.name AS cemetery,
         concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS grave,
         gravesites.gravesite_id,
-        COALESCE(NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''))) AS person,
+        COALESCE(NULLIF(burials.display_name, ''), NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.name_prefix, ''), NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''), NULLIF(burials.name_suffix, ''))) AS person,
         burials.burial_date,
         COALESCE(burials.death_date_text, burials.death_date::text) AS death_date,
         burials.death_date AS death_date_sort
@@ -236,7 +237,7 @@ export async function runVeteranServiceSummary(client, definition, cemeteryIds) 
         ON military_war_service_types.id = burials.military_war_service_type_id
       WHERE burials.deleted_at IS NULL
         AND gravesites.deleted_at IS NULL
-        AND lower(btrim(coalesce(burials.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran')
+        AND ${veteranSql("burials.veteran")}
         ${scope}
     )
     SELECT 'Summary' AS group_name, 'Veteran burials' AS label, count(*)::int AS count

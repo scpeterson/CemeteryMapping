@@ -1,0 +1,285 @@
+.admin-table,
+.role-list,
+.lookup-row-list,
+.record-editor-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.lookup-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.lookup-toolbar label,
+.lookup-row label,
+.lookup-row .lookup-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: var(--font-size-small);
+  font-weight: 760;
+}
+
+.lookup-toolbar .secondary-button,
+.lookup-row button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 720;
+}
+
+.lookup-toolbar .secondary-button {
+  border-color: #c8d1c3;
+  background: #fff;
+  color: #405048;
+}
+
+.lookup-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "label description description"
+    "active usage actions";
+  min-width: 0;
+  align-items: end;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 3px solid #bac7b5;
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.lookup-row.has-source-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "label description description"
+    "notes notes notes"
+    "active usage actions"
+    "url url url";
+  align-items: start;
+}
+
+.lookup-row .lookup-label {
+  grid-area: label;
+  align-self: start;
+}
+
+.lookup-row .lookup-description {
+  grid-area: description;
+}
+
+.lookup-row.has-source-fields .lookup-source-notes {
+  grid-area: notes;
+}
+
+.lookup-row.has-source-fields .lookup-source-url {
+  grid-area: url;
+}
+
+.lookup-row .lookup-active {
+  grid-area: active;
+  align-self: center;
+}
+
+.lookup-row .lookup-usage {
+  grid-area: usage;
+  align-self: center;
+}
+
+.lookup-row .lookup-actions {
+  grid-area: actions;
+  align-self: center;
+}
+
+.lookup-row-new > button {
+  grid-area: actions;
+  align-self: center;
+}
+
+.lookup-row.is-inactive {
+  background: #f7f8f5;
+  opacity: 0.82;
+}
+
+.lookup-row-new {
+  grid-template-areas:
+    "title title title"
+    "label description description"
+    "active . actions";
+  margin-top: var(--space-1);
+  border-style: dashed;
+  background: #fbfcf8;
+}
+
+.lookup-row h4 {
+  grid-area: title;
+  margin: 0;
+  color: #26342d;
+  font-size: 0.95rem;
+}
+
+.lookup-description,
+.lookup-source-notes {
+  align-self: stretch;
+}
+
+.lookup-description textarea {
+  min-height: 38px;
+}
+
+.lookup-row .lookup-description textarea,
+.lookup-row.has-source-fields .lookup-source-notes textarea {
+  min-height: 84px;
+}
+
+.lookup-usage {
+  color: #657267;
+  font-size: var(--font-size-small);
+  font-weight: 680;
+}
+
+
+.lookup-actions {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 6px;
+}
+
+.lookup-actions .icon-button {
+  display: inline-grid;
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  place-items: center;
+}
+
+.lookup-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.lookup-active {
+  justify-content: start;
+  align-self: center;
+}
+
+.record-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.record-picker {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: var(--font-size-small);
+  font-weight: 760;
+}
+
+.record-editor-empty {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px dashed #cfd9ca;
+  border-radius: var(--radius-md);
+  background: #f8faf6;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.admin-user-row,
+.role-row,
+.record-editor-row {
+  display: grid;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 11px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: #26342d;
+  text-align: left;
+}
+
+.admin-user-row {
+  grid-template-columns: minmax(0, 1fr) 126px;
+}
+
+.role-row {
+  grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr) auto;
+}
+
+
+.lookup-row-new.has-source-fields {
+  grid-template-areas:
+    "title title title"
+    "label description description"
+    "notes notes notes"
+    "url url url"
+    "active . actions";
+}
+
+.lookup-row .lookup-actions {
+  justify-self: end;
+}
+
+.lookup-row .lookup-usage {
+  overflow-wrap: anywhere;
+}
+
+.lookup-row.has-rank-fields {
+  grid-template-areas: "label description description" "rank rank rank" "active usage actions";
+}
+.lookup-row-new.has-rank-fields {
+  grid-template-areas: "title title title" "label description description" "rank rank rank" "active . actions";
+}
+.lookup-rank-fields {
+  grid-area: rank;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+.lookup-rank-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+
+@media (max-width: 800px) {
+  .lookup-row,
+  .lookup-row.has-source-fields,
+  .lookup-row-new,
+  .lookup-row-new.has-source-fields,
+  .lookup-row.has-rank-fields,
+  .lookup-row-new.has-rank-fields {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+  }
+
+  .lookup-row > *,
+  .lookup-row.has-source-fields > *,
+  .lookup-row.has-rank-fields > * {
+    grid-area: auto;
+  }
+}
+
+@media (max-width: 800px) {
+  .lookup-rank-fields { grid-template-columns: minmax(0, 1fr); }
+}

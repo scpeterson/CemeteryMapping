@@ -18,18 +18,92 @@ For a brand-new cemetery, start with the one-time onboarding workflows, verify t
 
 ## Ongoing Maintenance Workflows
 
+### Navigation, Search, and Editing
+
+On desktop, search, map, and record details share the workspace. At widths of 760 pixels or less, use the `Search`, `Map`, and `Details` buttons at the top. The initial phone view is Map. Selecting a record opens Details; switching views keeps mounted editors and their drafts available. Picking a new marker location switches to Map and returns to Details after the point is chosen. This navigation is available now; the dedicated Field Collection concept described later remains future work.
+
+The application header shows Cemetery Map, the cemetery count, Reports/Control/Admin actions (subject to your permissions), and signed-in account controls. On phones, open Menu to reach application actions from any workspace view; Escape closes the menu. Search and filters start directly at the top of the search panel. Map view and feature-selection modes stay above the map. Zoom, fit, and measurement controls occupy a separate column, with measurement instructions in the map toolbar.
+
+Search announces progress and the result count. If the remote search fails, the app labels results from the currently loaded map data and offers `Retry search`. Those fallback matches are not a complete substitute for remote burial/owner search. An empty successful search shows `No matching records`; try another term or enable more status filters. Status buttons expose whether each filter is enabled.
+
+Administration, Reports, Control, and full-history photos open as dialogs. Tab and Shift+Tab stay inside the active dialog; Escape closes that dialog and returns focus to its opener. A nested confirmation closes independently of its parent. Use the close button or Escape for the photo viewer; clicking its backdrop does not close it.
+
+Editors using draft protection warn before a guarded record/tab change, cancel/close action, or leaving the page. Choose Cancel in the warning to keep editing; confirming discards the tracked unsaved changes. Successful saves establish a new baseline, while failed saves retain the draft. Drafts are held in memory, not saved automatically or restored after reload. Save work before changing tasks, even when a particular control does not display a warning.
+
+### Feature Overview
+
+Selecting a gravesite or marker opens its read-only `Overview`, including when selecting the same feature again. It shows the primary photo when selected, otherwise the newest available photo, names and dates, current owners when your access permits, and related features. If no photo or person record exists, the overview says so explicitly; an absent burial record does not imply an available grave.
+
+Gravesite previews consider both gravesite and linked-marker photos and label linked-marker images. Select the photo to enlarge it, then use Close photo or Escape to return. Photo ordering follows the gallery: primary photos first, then newest capture date (or upload date when capture date is absent), then display order. A legacy marker photo URL is a fallback when no photo assets exist.
+
+Use `View burial records` or `View ownership records` to open People, or select an associated marker to open its Overview. Marker overviews group people and current owners by linked gravesite. Explicit marker-to-burial links determine the displayed people when available; otherwise the summary labels them as people in linked gravesites. A failure to load linked records shows an error and Retry instead of claiming that no records exist.
+
+Editing remains in the detailed views: use `Location` for the gravesite record and lot assignment, `People` for burials/ownership, `Monuments` for gravesite markers/photos, and a marker's `Details` tab for its editing and relationship controls. Saving within these views keeps the current tab. Ownership visibility and editing permissions still apply.
+
+### Recording People Names and Dates
+
+Select a gravesite, open `People`, and edit the burial record. Keep structured name fields separate from the exact inscription stored on the marker.
+
+| Field | When to use it |
+| --- | --- |
+| `Prefix / Title` | A title before the name, such as `Rev.`, `Reverend`, or `Dr.`. |
+| `First name`, `Last name`, `Maiden name` | The supported biographical name components; do not put titles in the first-name field. |
+| `Suffix / Credentials` | Text after the name, such as `Jr.`, `M.D.`, or `Ph.D.`. This replaces the former Title / Credentials label. |
+| `Given name status` | Choose `Recorded` when a first name is present; `Unknown / not recorded` when it is missing; `No given name` only with affirmative evidence that the person was never named. A blank inscription alone does not establish that. |
+| `Display name` | An optional description such as `Infant son of George & Bertie Steele`. It replaces the assembled name in displays, search results, and reports, while retaining the structured fields and marker inscription. |
+
+For example, prefix `Rev.`, first name `John`, last name `Smith`, and suffix `Ph.D.` display as `Rev. John Smith Ph.D.` when Display name is empty. Clear Display name to return to the assembled name. For a confirmed unnamed infant, leave First name blank, choose `No given name`, and add a source-supported description if useful. Without a display-name override, the name includes a `No given name` label.
+
+Entering a first name automatically selects `Recorded`. The form rejects `Recorded` without a first name and rejects a first name paired with either other status. Correct the indicated fields, save, and reopen the record to verify the result.
+
+Preserve the precision of known dates: a year such as `1929` should remain a year rather than an invented January 1 date. Impossible dates such as `2002-11-31` produce a field-specific message. Correct the date and save again; a failed save preserves your edits.
+
+### Recovering from Load and Save Errors
+
+A failed load is not evidence that a record, photo, or report is absent. Read the message and use the relevant retry control. Copy any unsaved values you need before signing out, reloading, or leaving the page; drafts are not saved across browser sessions.
+
+| Situation | Recovery |
+| --- | --- |
+| Editing choices fail to load | Select `Retry editing options`. Dependent selections and saves remain disabled until their options load. |
+| A photo fails to load | Select `Retry photo`. Follow sign-in or permission guidance if shown; retrying cannot grant missing access. |
+| Reports fail to load or run | Use `Retry loading reports` for the catalog, or run the report again. Previously retained results are labeled as stale; do not treat them as the latest successful run. |
+| Death-place search or verification fails | Use `Retry place search` or `Retry place verification`. Locally stored verified places and other burial fields remain available when the external service is unavailable. |
+| A connection, session, permission, or upload error appears | Restore connectivity, sign in again, request the appropriate access, or reduce the upload size as directed. Correct the cause before retrying. |
+| Saved control points cannot be read | Select `Retry loading control points` before editing. The application protects unreadable stored data from replacement. A storage-write warning means changes may not survive a reload. |
+| An unexpected server error includes `Reference: …` | Record the reference ID, time, action, and affected record and give them to an administrator. See [error references](database-auditing.md#unexpected-error-references) for log correlation. |
+
+For stale gravesite edits, follow the reconciliation steps below rather than repeatedly retrying the same save.
+
+### External Map Layers and Diagram View
+
+PASDA aerial imagery and Allegheny County parcel boundaries can fail independently of the cemetery records. A notice names the affected provider and offers a retry for that layer. Notices clear when the layer recovers.
+
+Select `Switch to Diagram view` in the notice, or `Diagram` in the map controls, to hide external layers and continue viewing the cemetery layout. Diagram view changes presentation; it does not move stored markers or gravesite polygons, make estimated boundaries surveyed, or create a separate schematic geometry dataset. Return to `Geographic` to view external layers again.
+
+### Recovering a Conflicting Gravesite Edit
+
+Gravesite detail saves detect when another edit has changed the record since it was loaded. A conflict preserves the current draft and prevents overwriting the other edit.
+
+1. Copy any draft values you want to retain.
+2. Select `Reload latest values (discard edits)` to replace the form with the current server values.
+3. Compare those values with your intended change, reapply the appropriate edits, and save again.
+
+This protection applies to the gravesite detail edit, not every mutation in the application. If you select another record while a save is in progress, its completion does not switch the visible selection back to the original grave.
+
 ### Marker Burial Pages Report
 
 Use `Reports -> Marker burial pages` when you need a printable record for every burial linked to one or more markers. The report is available to readers and higher roles and remains scoped to the cemeteries the signed-in user may access.
 
-1. Open `Reports` from the main application toolbar.
+1. Open `Reports` from the application header; on phones, open `Menu` first.
 2. Select `Marker burial pages` under Burials.
 3. Narrow the output with any combination of marker ID, burial name, and section. Marker ID and burial name accept partial text; section matching is case-insensitive.
 4. Run the report and review the returned pages before printing. Each marker appears once, followed by every burial associated with it.
 5. Confirm the marker photo, marker metadata, associated features such as flag holders, gravesite, burial details, and North Hills Genealogists text are correct. NHG text can come from reviewed evidence linked to either the marker or the burial's gravesite.
-6. Select `Print`. The print layout uses letter-sized portrait pages, starts each marker on a new page, renders the marker photo three inches high, and keeps each burial record together when possible.
+6. Wait for the marker photos to finish loading, then select `Print`. The print layout uses letter-sized portrait pages, starts each marker on a new page, renders the marker photo three inches high, and keeps each burial record together when possible.
 
 You can also ask an approved report question such as `Print burial pages for marker TLC-HS-0228`, `Show marker burial pages for Schug`, or `Print marker burial pages for section C`. Use the explicit fields when combining filters or when a name could be interpreted more than one way.
+
+Report photos use the same authenticated download flow as the gallery. Open reports while signed in; a temporary browser `blob:` image URL is not a durable share link. `Photo unavailable` indicates a failed image load and should be investigated separately from a missing linked photo.
 
 No photo or NHG placeholder means no qualifying linked record is currently available; it does not prove that the physical marker lacks a photograph or that NHG contains no relevant entry. Review marker media and NHG evidence links before treating missing report content as a data conclusion.
 
@@ -63,7 +137,7 @@ Use `Admin -> Users` when adding, editing, deactivating, or reactivating applica
    - `power-user` can do reader tasks and can view/edit deed-owner data and existing cemetery records for assigned cemeteries.
    - `cemetery-admin` can administer assigned cemeteries and has read-only access elsewhere.
    - `admin` can manage the whole system, including users, lookups, audit review, structural records, and deletes.
-6. Assign the cemetery for `power-user` or `cemetery-admin` users. The database supports multiple assignments, but the current UI manages one assignment per user.
+6. Assign a cemetery for every non-admin user, including `reader`. Creating or saving a non-admin account requires an assignment; system admins are exempt because they have system-wide access. The database supports multiple assignments, but the current UI manages one assignment per user.
 7. Save the user and have them sign out and back in so any Auth0 token and local role changes are reflected.
 8. Use `Deactivate` when access should be blocked without deleting the Auth0 account or local history.
 9. Use `Reactivate` only after confirming the user's role and cemetery assignment are still correct.
@@ -89,17 +163,21 @@ Sections may exist before they have geometry. A section with no geometry can sti
 
 ### Lookup Maintenance
 
-Use `Admin -> Lookups` to maintain controlled values such as marker types, marker materials, headstone conditions, gravesite statuses, and lot ownership event types.
+Use `Admin -> Lookups` to maintain controlled values such as marker types, marker materials, headstone conditions, gravesite statuses, lot ownership event types, and military ranks.
 
 1. Open `Admin -> Lookups`.
 2. Choose the lookup table from the dropdown.
-3. Edit user-facing labels, descriptions, sort order, active status, and source fields where applicable.
+3. Edit user-facing labels, descriptions, active status, and source fields where applicable.
 4. Keep labels clear for regular users. The hidden code remains the stable import/seed identifier and should not be exposed as the primary admin editing target.
-5. Use the sort field or move controls to adjust display order. Check for duplicate sort values before saving if ordering looks odd.
+5. Values are listed alphabetically by label. Related values should share a leading term.
 6. Mark obsolete values inactive instead of deleting or repurposing them.
 7. Use `Show inactive` when reviewing retired values or reactivating one.
 8. Use the usage count before deactivating a value. If a value is already used by records, deactivation hides it from new choices but preserves historical data.
 9. Use the audit jump link when you need to see who last changed a lookup row.
+
+For military ranks, choose **Military ranks** from the lookup table dropdown. Add a label and description, select the military branch, enter the abbreviation, and choose Enlisted, Warrant officer, or Officer. Pay grade is optional and accepts historical grades such as `4th Grade` as well as modern values such as `E-5`. Click **Add value**. Existing ranks support label, description, abbreviation, pay-grade, rank-group, and active-status edits. Their branch stays fixed to preserve existing burial references; add a new rank for another branch instead. Saved changes refresh burial-form lookup choices without a page reload. Changes use the existing audit log and deactivation confirmation for ranks used by burials.
+
+The Army's **Technician Fourth Grade (Tec 4)** is seeded with the historical `4th Grade`, not modern `E-4`. It is also known as `T/4`; source: [Technician fourth grade](https://en.wikipedia.org/wiki/Technician_fourth_grade).
 
 Gravesite status labels are not all manually assigned. `reserved` and `needs_review` are human workflow flags, while `occupied`, `sold`, `available`, and `unknown` are derived from active burials and current deed or ownership-right records. `sold` means the gravesite has a deed or ownership right, either directly or through its lot, but has no active burial.
 
@@ -256,7 +334,7 @@ Audit events are read-only. If an audit result looks wrong, correct the source r
 Use the normal grave-detail panel or the Markers panel, not the Admin drawer, for operational marker/headstone updates.
 
 1. Select a gravesite on the map or from search results.
-2. Review the marker/headstone section in the detail panel.
+2. Open `Monuments` and review the marker/headstone section in the detail panel.
 3. Users with `reader` access can view marker information but cannot edit it.
 4. `power-user` and `cemetery-admin` users can edit marker details for assigned cemeteries.
 5. `admin` users can edit marker details for any cemetery.
@@ -265,29 +343,31 @@ Use the normal grave-detail panel or the Markers panel, not the Admin drawer, fo
 8. Section G gravesites can contain either one casket burial or up to two funeral urn burials. The database enforces this capacity rule when burial rows are created, restored, or updated.
 9. Save the marker and confirm the detail panel reflects the update.
 
-To add a secondary marker, such as a footstone, select the gravesite first and use `Markers -> Add marker` in the detail panel. Choose the marker type and marker-to-gravesite relationship, such as `Footstone` or `Secondary marker`. Enter coordinates manually or use `Pick point on map`, then click the map where the marker is located; the form fills latitude and longitude from that click. Saving creates the marker record and links it to the selected gravesite.
+To add a secondary marker, such as a footstone, select the gravesite, open `Monuments`, and use `Markers -> Add marker` in the detail panel. Choose the marker type and marker-to-gravesite relationship, such as `Footstone` or `Secondary marker`. Enter coordinates manually or use `Pick point on map`, then click the map where the marker is located; the form fills latitude and longitude from that click. Saving creates the marker record and links it to the selected gravesite.
 
-For standalone cemetery markers that are not tied to a gravesite, open the marker from the Markers panel and use the same edit flow. The marker relationship label explains how a marker relates to a gravesite when one exists: `primary` is the normal relationship, `spans` means one marker covers multiple gravesites, `nearby` means the marker is close but not confidently placed on that gravesite, `inferred` means the link came from records or import logic and may need field confirmation, `footstone` means a smaller marker is placed at the foot of the gravesite, and `secondary` means another marker belongs to the gravesite separately from the primary headstone or monument.
+For standalone cemetery markers that are not tied to a gravesite, open the marker from the Markers panel, select `Details`, and use the same edit flow. The marker relationship label explains how a marker relates to a gravesite when one exists: `primary` is the normal relationship, `spans` means one marker covers multiple gravesites, `nearby` means the marker is close but not confidently placed on that gravesite, `inferred` means the link came from records or import logic and may need field confirmation, `footstone` means a smaller marker is placed at the foot of the gravesite, and `secondary` means another marker belongs to the gravesite separately from the primary headstone or monument.
 
 Linked North Hills evidence supports interpretation of a headstone or gravesite, but editing marker condition/material/type does not alter the linked reading evidence.
 
 ### Photo Collection
 
-Use the normal grave-detail panel for field photo collection. Photos are stored as media evidence and linked to the selected gravesite, with an optional marker/headstone link.
+Use `Make primary` beneath a photo to keep the front of a marker first in its gallery and on Overview. Choose a different photo to replace the primary, or `Remove primary` to restore newest-first sorting. These controls use the existing photo-order editing permissions and are available in the inline gallery and full-history dialog. Each marker and gravesite has its own choice; when an Overview combines several markers, primary photos come first and the newest primary wins. All remaining photos stay newest first.
+
+Use `Monuments` in the gravesite detail panel for field photo collection, or `Details` when a marker is selected directly. `Overview` provides a read-only preview. Photos are stored as media evidence and linked to the selected gravesite or marker/headstone.
 
 1. On the iPhone, open the application and select the gravesite on the map or from search results.
-2. Open the `Photos` section in the detail panel.
-3. Tap the photo file control. On iPhone this should offer the camera or photo library.
-4. Choose `Gravesite overview` when the image documents the full grave space.
-5. Choose a marker/headstone when the image documents a specific physical marker.
-6. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty.
-7. Upload the photo and confirm it appears in the photo gallery.
+2. Open `Monuments`. For an image of the full grave space, use `Gravesite Photos`; for a specific physical marker, use the upload form under that marker. When selecting a marker directly, its upload form is in `Details`.
+3. Tap the photo file control and select one or more photos. On iPhone this should offer the camera or photo library.
+4. Confirm that you are using the form for the intended gravesite or marker; the form fixes the photo link to that feature.
+5. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty. The link, notes, and optional `Date taken` apply to all selected photos; use separate uploads when those values differ. Leave the date blank to use each photo’s available date metadata.
+6. Select `Upload photos` (or `Upload photo` for one file). Files upload one at a time, with progress and a result for each file. Confirm successful uploads appear in the photo gallery.
+7. If some files fail, review their errors, correct the cause, and select `Retry failed photos`. Successful uploads remain saved; retry submits only the failed files retained in the form. Choosing a new selection replaces that retry list, so finish retries before selecting more photos.
 
-The gallery shows the latest linked photo for that gravesite or marker. If a photo is linked to a marker/headstone, it appears under that marker rather than being duplicated in the gravesite overview `Photos` section.
+The inline gallery shows up to four linked photos, ordered newest first by capture date, falling back to upload date when capture date is absent; display order breaks ties. `View all photos (N)` opens the complete history when more are available. Marker/headstone photos appear in that marker's gallery rather than being duplicated in `Gravesite Photos`. The read-only gravesite `Overview` considers both galleries when choosing its latest photo and labels a preview from a linked marker.
 
-Readers can view linked photos. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
+Readers can view linked photos while authenticated. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
 
-In local DEV and TEST environments, uploaded image files are written under `/Users/scottpeterson/Dev/CemeteryMapping/uploads/media` unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the gravesite/headstone links, but not the image bytes.
+In local DEV and TEST environments, uploaded image files are written under the repository's `uploads/media` directory unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the gravesite/headstone links, but not the image bytes.
 
 ### Field media intake and retention
 
@@ -305,6 +385,24 @@ Use this intake checklist:
 6. Delete local intake copies only after both the application link and durable archive have been verified.
 
 The intake directory is deliberately excluded from Git and database backups. Include both `MEDIA_UPLOAD_DIR` and the separate durable evidence archive in operational backup planning.
+
+### Recovering Interrupted Media Uploads
+
+Uploads stage files before publishing them and clean up known transaction failures. Files whose database commit outcome is uncertain remain available for reconciliation. Stop uploads across all API instances sharing the storage directory before inspecting or deleting orphaned files.
+
+Use the same `APP_ENV`, database configuration, and `MEDIA_UPLOAD_DIR` as the target API. For example, from the repository root, preview TEST storage:
+
+```bash
+APP_ENV=test node scripts/reconcile-media-storage.mjs
+```
+
+The command lists unreferenced generated media files, including `.pending` files, older than 24 hours. Review the candidates and confirm the target database and storage directory before applying deletion:
+
+```bash
+APP_ENV=test node scripts/reconcile-media-storage.mjs --apply
+```
+
+Keep uploads stopped through both runs. The command retains files referenced by any media asset, including soft-deleted evidence. It does not replace database/media backups or reconstruct missing files.
 
 ### Future Field Collection Workflow Concept
 
@@ -346,7 +444,9 @@ The recommended minimum viable field collection feature is photo capture, inscri
 
 ### Future Hosting Options
 
-This concept captures future hosting considerations for Cemetery Mapping. It is not an accepted deployment decision yet. Re-check current provider pricing before making a final choice because hosting plans and included quotas change over time.
+Hosted TEST has an accepted deployment decision: a dedicated DigitalOcean Droplet with Cloudflare Access and Tunnel, as described in [ADR 0073](adr/0073-private-hosted-test.md) and the [Hosted TEST runbook](hosted-test.md). The options below remain future considerations for production hosting; they do not replace the TEST decision. Re-check current provider pricing before making a final choice because hosting plans and included quotas change over time.
+
+For TEST cost planning, see the runbook's [availability and cost guidance](hosted-test.md#availability-and-cost). Powering off a bundled-plan Droplet does not stop its compute charges.
 
 The application is expected to have low public traffic, but it has a real database, uploaded media, authentication, audit history, and import/rebuild needs. Hosting should therefore optimize for predictable cost, backups, maintainability, and a simple recovery path rather than raw scale.
 
@@ -449,7 +549,9 @@ Use these checks when switching between DEV, TEST, STAGE, and PROD.
 
    ```bash
    APP_ENV=dev npm run db:migrate
+   APP_ENV=dev npm run db:configure-api
    APP_ENV=test npm run db:migrate
+   APP_ENV=test npm run db:configure-api
    ```
 
 4. Check migration status when unsure:
@@ -493,6 +595,14 @@ Do not skip environments for schema, permission, import, or data-repair changes.
 5. Treat media files as deployment data. Database rows reference media URLs, but image files also need backup and environment-specific storage.
 6. Record every production-affecting release in the project notes or release history with the PR number, migration range, data scripts run, and verification result.
 
+### API Restart and Media Storage
+
+On `SIGINT` or `SIGTERM`, the API stops accepting connections, lets active HTTP requests finish, then closes the PostgreSQL pool. The shutdown has a 10-second deadline; exceeding it forces HTTP connections closed and exits with failure. Allow the process manager more than 10 seconds before forcing termination. Repeated signals share the same shutdown operation.
+
+Keep PostgreSQL available while requests drain. A forced stop can leave an upload's commit outcome uncertain; use the media recovery workflow above if reconciliation is needed. After restart, check `/api/health`, sign in, and verify record reads and a protected gallery/report photo.
+
+Uploads and downloads resolve the same `MEDIA_UPLOAD_DIR` (default `uploads/media` under the repository). Use durable storage and the same configured directory across instances serving those files. Back up the directory separately from PostgreSQL. Route `/media/` requests through the API's reader-authenticated endpoint; do not expose the upload directory as an unauthenticated reverse-proxy static directory. Protected responses use `Cache-Control: private, no-store`; soft-deleted assets are no longer downloadable even though their files remain on disk.
+
 ### DEV To TEST
 
 Use DEV while building and doing first-pass local checks.
@@ -504,9 +614,10 @@ Before opening or merging a PR:
 
    ```bash
    APP_ENV=dev npm run db:migrate
+   APP_ENV=dev npm run db:configure-api
    ```
 
-3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes:
+3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes. Run the rollback/reapply checks below only on disposable automated TEST data and after reviewing the selected rollback action. Changesets 461–472 have empty rollback actions and use backup recovery; rollback does not undo their data changes. For these changesets, rehearse on an isolated database copy and verify backup recovery or a reviewed forward fix instead of treating rollback/reapply as proof of reversibility. See [Rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
 
    ```bash
    npm run lint
@@ -515,13 +626,14 @@ Before opening or merging a PR:
    APP_ENV=test npm run db:validate
    APP_ENV=test npm run db:rollback:one
    APP_ENV=test npm run db:migrate
+   APP_ENV=test npm run db:configure-api
    APP_ENV=test npm run test:db-rules
    ```
 
 4. Open a PR to `main`.
 5. Let GitHub Actions rebuild TEST from migrations, seed demo data, run rollback checks, run unit/integration tests, build, and run end-to-end tests.
 
-The change is promoted to TEST when the PR checks pass. It is promoted into the main code line when the PR merges.
+Passing PR checks validates the change in isolated automated TEST. Merging promotes the source into `main`; neither step deploys the persistent hosted TEST environment. Deploy selected releases separately using the [hosted TEST runbook](hosted-test.md), preserving its database and media.
 
 ### TEST To STAGE
 
@@ -827,7 +939,20 @@ Later Section C shared-marker corrections use a consistent north/south split: th
 - `C-0379` retains Albert D Hieber; new northern `C-0379A` contains Ida C Hieber; marker `TLC-HS-0379` spans both.
 - `C-0380` retains Adam Sandrock; new northern `C-0380A` contains Clara B Sandrock; marker `TLC-HS-0380` spans both.
 - `C-0381` retains H Carl Brandt; new northern `C-0381A` contains Alice R Brandt; marker `TLC-HS-0381` spans both.
-- `C-0382` retains William DeWitt DeCourcy; new northern `C-0382A` contains Louise Hamilton DeCourcy; marker `TLC-HS-0382` spans both. The pair is offset one foot south of the marker-centered position to avoid C-0383.
+- `C-0382` retains William DeWitt DeCourcy; new northern `C-0382A` contains Louise Hamilton DeCourcy; marker `TLC-HS-0382` spans both. The original migration offsets the pair one foot south; its restoration repairs migration history without changing lot assignments.
+- `C-0389` retains George Wolfarth; new northern `C-0389A` contains Catherine O Wolfarth; marker `TLC-HS-0389` spans both.
+- `C-0392` retains Elmer B Kaelin; new northern `C-0392A` contains Elizabeth A Kaelin; marker `TLC-HS-0392` spans both.
+- `C-0395` retains Arthur Dennis Wochley; new northern `C-0395A` contains Luceil Wochley; marker `TLC-HS-0395` spans both.
+- `C-0398` retains George William Luster; new northern `C-0398A` contains Mary L Luster; marker `TLC-HS-0398` spans both.
+- `C-0401` retains Harold B Kivlan; new northern `C-0401A` contains Grace C Kivlan; marker `TLC-HS-0401` spans both.
+- `C-0402` retains Constance Pagano; new northern `C-0402A` contains Pat Pagano; marker `TLC-HS-0402` spans both.
+- `C-0403` retains George J Bohn; new northern `C-0403A` contains Emma E Bohn; marker `TLC-HS-0403` spans both.
+- `C-0409` retains James T Fisher; new northern `C-0409A` contains Arlie D Fisher; marker `TLC-HS-0409` spans both.
+- `C-0410` retains Ralph S Eaglen; new northern `C-0410A` contains Elva Eaglen; marker `TLC-HS-0410` spans both.
+- `C-0413` retains Theresa P Wolfarth; new northern `C-0413A` contains the Raymond A Wolfarth burial linked to `TLC-HS-0413`; the distinct Raymond A Wolfarth burial in `C-0396` remains unchanged.
+- `C-0416` retains Howard L Sarver; new northern `C-0416A` contains Ellen Clara Sarver; marker `TLC-HS-0416` spans both.
+- `C-0419` retains Ralph C Magee; new northern `C-0419A` contains Jeannette B Magee; marker `TLC-HS-0419` spans both.
+- `C-0420` retains Paul John Brasses; new northern `C-0420A` contains Alice M Brasses; marker `TLC-HS-0420` spans both.
 
 These letter suffixes are operational identifiers created during reviewed data repair, not labels transcribed from NHG. Do not move an observed marker point merely to center it in one of the interpreted gravesite polygons.
 
@@ -940,3 +1065,14 @@ Verify:
 5. Confirm linked evidence appears in the regular detail panel.
 
 Do not load OCR readings directly into production burial or headstone fields. The OCR data remains staged evidence until reviewed.
+
+
+### Cemetery scope and navigation
+
+System admins initially open the map fitted to all cemetery boundaries. Non-admin users automatically open the map at their one registered cemetery, with search and map records scoped to that cemetery. Only system admins see the cemetery selector in the application header and can change cemetery scope. System admins use it to focus the map and narrow search results to one cemetery. Choose **All cemeteries** to return to the full view. Changing cemetery clears the selected record and checks for unsaved edits. The map's fit button fits the chosen cemetery while a scope is active. Initial fitting waits for the account and map data to load. A non-admin account with zero or multiple assignments shows an empty scope and a message to contact an administrator; it never falls back to all cemeteries.
+
+Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. This validation does not backfill existing accounts or add a database constraint. Correct legacy assignments in Admin before reactivation or other account updates. See the [assignment audit](hosted-test.md#cemetery-assignment-audit).
+
+Search accepts names, owners (when permitted), dates, gravesites, and lots. Use the status chips for a combination of statuses, **Show one status** for a single status, and **Reset filters** to restore all statuses. Resetting status filters preserves the search text and cemetery selection.
+
+Detail tabs wrap so that **Maintenance** and **Location** remain visible. Expand **Map legend** for the map symbols and status colors; collapse it to free map space. On phones, Search, Map, and Details share the space below the header, with record panels scrolling within that space.

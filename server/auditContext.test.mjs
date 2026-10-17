@@ -80,3 +80,30 @@ test("withAuditContext rolls back and releases the client when a mutation fails"
     ["BEGIN", "SELECT set_config($1, $2, true)", "ROLLBACK", "release"],
   );
 });
+
+test("withAuditContext preserves the mutation error and discards a client when rollback fails", async () => {
+  const original = new Error("mutation failed");
+  const rollbackFailure = new Error("connection lost");
+  let releasedWith;
+  const pool = { connect: async () => ({
+    query: async (sql) => { if (sql === "ROLLBACK") throw rollbackFailure; return { rows: [] }; },
+    release: (error) => { releasedWith = error; },
+  }) };
+  await assert.rejects(withAuditContext(pool, {}, () => { throw original; }), (error) => error === original);
+  assert.equal(releasedWith, rollbackFailure);
+});
+
+test("withAuditContext supports a deliberate rollback result without committing", async () => {
+  const queries = [];
+  const pool = { connect: async () => ({ query: async (sql) => { queries.push(sql); }, release() {} }) };
+  const result = await withAuditContext(pool, {}, (_client, rollback) => rollback({ forbidden: true }));
+  assert.deepEqual(result, { forbidden: true });
+  assert.equal(queries.at(-1), "ROLLBACK");
+  assert.ok(!queries.includes("COMMIT"));
+});
+
+test("withAuditContext does not report a successful no-op if its rollback failed", async () => {
+  const failure = new Error("rollback failed");
+  const pool = { connect: async () => ({ query: async (sql) => { if (sql === "ROLLBACK") throw failure; }, release() {} }) };
+  await assert.rejects(withAuditContext(pool, {}, (_client, rollback) => rollback(undefined)), (error) => error === failure);
+});

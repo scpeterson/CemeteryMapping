@@ -38,8 +38,7 @@ export async function fetchCemeteryData(attempts = 5): Promise<CemeteryData> {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       const response = await authorizedFetch(url);
-      if (!response.ok) throw new Error(`Cemetery API returned ${response.status}`);
-      return (await response.json()) as CemeteryData;
+      return await jsonResponse<CemeteryData>(response, "Cemetery API");
     } catch (error) {
       lastError = error;
       if (attempt < attempts) await wait(200 * attempt);
@@ -54,9 +53,10 @@ export async function fetchAppVersion(): Promise<AppVersion> {
   return jsonResponse<AppVersion>(response, "Version API");
 }
 
-export async function fetchGraveSpace(cemeteryId: string, id: string): Promise<GraveSpace> {
+export async function fetchGraveSpace(cemeteryId: string, id: string, signal?: AbortSignal): Promise<GraveSpace> {
   const response = await authorizedFetch(
     `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(id)}`,
+    { signal },
   );
   return jsonResponse<GraveSpace>(response, "Grave API");
 }
@@ -112,13 +112,17 @@ export async function updateMaintenanceRecord(id: string, record: SaveMaintenanc
   return jsonResponse<MaintenanceRecord>(response, "Update maintenance record API");
 }
 
-export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal): Promise<SearchMatch[]> {
-  const params = new URLSearchParams();
+export async function fetchSearchPage(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal, options: { cemeteryId?: string; offset?: number } = {}): Promise<{ matches: SearchMatch[]; hasMore: boolean }> {
+  const params = new URLSearchParams({ status: [...statuses].join(","), limit: "50", offset: String(options.offset ?? 0) });
   if (query.trim()) params.set("q", query);
-  params.set("status", [...statuses].join(","));
-
+  if (options.cemeteryId) params.set("cemeteryId", options.cemeteryId);
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/search?${params.toString()}`, { signal });
-  return jsonResponse<SearchMatch[]>(response, "Search API");
+  const matches = await jsonResponse<SearchMatch[]>(response, "Search API");
+  return { matches, hasMore: response.headers.get("X-Search-Has-More") === "true" };
+}
+
+export async function fetchSearchMatches(query: string, statuses: Set<GraveStatus>, signal?: AbortSignal): Promise<SearchMatch[]> {
+  return (await fetchSearchPage(query, statuses, signal)).matches;
 }
 
 export async function fetchCurrentUser(): Promise<CurrentUser> {

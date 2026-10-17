@@ -1,3 +1,5 @@
+import { veteranSql } from "./searchNormalizationSql.mjs";
+import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 const severityOrder = new Map([
   ["high", 1],
   ["medium", 2],
@@ -27,6 +29,15 @@ function toMetric(row) {
 
 export async function listDataQualityDashboard(pool, options = {}) {
   const cemeteryIds = cemeteryScopeValues(options.cemeteryIds);
+  const selectedCemeteryId = options.cemeteryId;
+  const metricCemeteryIds = selectedCemeteryId
+    ? (cemeteryIds === null || cemeteryIds.includes(selectedCemeteryId) ? [selectedCemeteryId] : [])
+    : cemeteryIds;
+  const cemeteryResult = await pool.query(`
+    SELECT id::text, name FROM cemeteries
+    WHERE deleted_at IS NULL AND ($1::uuid[] IS NULL OR id = ANY($1::uuid[]))
+    ORDER BY lower(name), name, id
+  `, [cemeteryIds]);
   const burialReviewCondition = "burial.review_status IN ('needs_review', 'conflict') OR burial.source_conflict OR burial.data_confidence = 'low'";
   const markerReviewCondition = "headstone.review_status IN ('needs_review', 'conflict') OR headstone.source_conflict OR headstone.data_confidence = 'low'";
   const result = await pool.query(
@@ -52,30 +63,8 @@ export async function listDataQualityDashboard(pool, options = {}) {
       scoped_headstones AS (
         SELECT headstones.*
         FROM headstones
-        LEFT JOIN gravesites AS direct_gravesite
-          ON direct_gravesite.id = headstones.gravesite_uuid
-         AND direct_gravesite.deleted_at IS NULL
-        LEFT JOIN LATERAL (
-          SELECT gravesites.cemetery_id
-          FROM headstone_gravesites
-          JOIN gravesites
-            ON gravesites.id = headstone_gravesites.gravesite_uuid
-           AND gravesites.deleted_at IS NULL
-          WHERE headstone_gravesites.headstone_uuid = headstones.id
-            AND headstone_gravesites.deleted_at IS NULL
-          ORDER BY gravesites.gravesite_id, gravesites.id
-          LIMIT 1
-        ) linked_gravesite ON true
-        LEFT JOIN LATERAL (
-          SELECT cemeteries.id
-          FROM cemeteries
-          WHERE headstones.geometry IS NOT NULL
-            AND cemeteries.deleted_at IS NULL
-            AND ST_Covers(cemeteries.geometry, headstones.geometry)
-          ORDER BY cemeteries.name, cemeteries.id
-          LIMIT 1
-        ) containing_cemetery ON true
-        JOIN scoped_cemeteries ON scoped_cemeteries.id = COALESCE(direct_gravesite.cemetery_id, linked_gravesite.cemetery_id, containing_cemetery.id)
+        ${headstoneCemeteryJoinsSql}
+        JOIN scoped_cemeteries ON scoped_cemeteries.id = ${headstoneCemeteryIdSql}
         WHERE headstones.deleted_at IS NULL
       ),
       scoped_burials AS (
@@ -234,7 +223,7 @@ export async function listDataQualityDashboard(pool, options = {}) {
           'medium' AS severity,
           'Burials' AS category
         FROM scoped_burials burial
-        WHERE lower(btrim(COALESCE(burial.veteran, ''))) IN ('yes', 'y', 'true', '1', 'veteran')
+        WHERE ${veteranSql("burial.veteran")}
           AND (
             burial.military_branch_type_id IS NULL
             OR burial.military_rank_type_id IS NULL
@@ -301,11 +290,13 @@ export async function listDataQualityDashboard(pool, options = {}) {
         END,
         label
     `,
-    [cemeteryIds],
+    [metricCemeteryIds],
   );
 
   const metrics = result.rows.map(toMetric);
   return {
+    cemeteries: cemeteryResult.rows,
+    selectedCemeteryId: selectedCemeteryId ?? "",
     generatedAt: new Date().toISOString(),
     scope: cemeteryIds === null ? "all" : "assigned",
     totalOpenItems: metrics

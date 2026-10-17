@@ -9,6 +9,10 @@ This page records the first administrative editing workflows for Cemetery Mappin
 
 ## Guiding Rules
 
+For a flower receptacle formed directly into a marker or its base, select vase type **Built-in / integral vase**, the observed material (for example, Granite), and placement **Attached to marker**. Use type **Attached to marker** for a separately manufactured vase fastened to the stone. Existing classifications are not automatically reinterpreted.
+
+Marker editing includes **Field photo review** (`field_photo`) in the Verification source dropdown. Use it for information verified from photographs; it does not assert a surveyed location or confirmed interment. **Field survey** and **Manual review** remain separate choices. Photo filenames, GPS metadata, and other evidence are retained independently of this selection.
+
 - Admin workflows require authenticated `admin` access.
 - Reader workflows remain read-only and must not expose deed/owner information.
 - Power-user workflows can view and edit deed/owner information and update existing cemetery records, but cannot add structural records, delete records, or manage users.
@@ -16,6 +20,14 @@ This page records the first administrative editing workflows for Cemetery Mappin
 - Creates and updates should create audit events before they are exposed in the UI.
 - Spatial geometry edits should be handled carefully and should not be the first editing workflow unless the source data workflow is also defined.
 - Spatial records should distinguish measured evidence, operational interpretation, and user-friendly presentation. GPS marker/headstone points are evidence; gravesite and lot polygons are often interpreted working geometry; historic scans and schematic layouts can support readable presentation without being survey-grade.
+
+## Panel and Draft Behavior
+
+Admin now opens in a modal dialog with contained keyboard focus and focus restoration on close. Escape closes the active dialog; a nested destructive-action confirmation does not close the Admin panel. For phone navigation and search recovery, see [Operator Workflows](operator-workflows.md#navigation-search-and-editing).
+
+Tracked edits in user, deed, source-person, North Hills reading, and record-detail forms warn before guarded navigation or dismissal. Canceling the warning preserves the draft. Confirming discards tracked unsaved changes; this can include more than one edited form. Drafts are in memory only. Save before moving to another task; not every hierarchy or lookup field uses this tracking yet.
+
+Gravesite detail edits also detect concurrent updates. A conflict preserves the draft; `Reload latest values (discard edits)` loads the current form before you reapply your change. See [conflict recovery](operator-workflows.md#recovering-a-conflicting-gravesite-edit). API clients must supply `expectedVersion` from the detail response; it is an opaque PostgreSQL row version, not a date. Other mutation APIs should not be assumed to provide the same version check.
 
 ## Workflow Priority
 
@@ -43,6 +55,8 @@ Deed investigation cases are documentation and recommendation workflows. They do
 
 The Admin UI also has a Readings tab for staged North Hills Genealogists OCR imports. The OCR importer preserves each raw reading entry, parsed section/row/position, marker descriptor text, surnames, inscription text, detected years, parser confidence, and parser notes. The review screen compares staged readings to existing burial rows by source page, surname, and birth/death years. Admins can edit a staged reading when OCR or parser cleanup is needed, link a reading to a candidate gravesite, link it to a candidate headstone, reject a candidate match, or flag a candidate for field checking. These review actions write evidence-link rows with reviewer identity, timestamp, confidence, status, and optional notes; they do not overwrite burials, headstones, lots, owners, or deeds. Linked North Hills evidence appears in the regular grave-detail panel for the associated gravesite or headstone.
 
+The first five ranked matches retain their existing completion requirements. **Show more possible matches** expands optional suggestions without changing the reading’s completion status or the `Next unresolved` queue. Saving a gravesite link, rejection, or field-check decision moves that suggestion into the main list. Unreviewed markers on these extra matches remain optional; shared-marker decisions alone do not add other gravesites to the review workload. Unlinking an extra gravesite returns it to the optional list.
+
 How to use the Readings tab:
 
 1. Open `Admin -> Readings`.
@@ -69,7 +83,7 @@ The Admin UI also has a Bulk tab for narrow, audited cleanup actions that would 
 
 The Admin UI also has a Lookups tab for maintaining controlled values. Admins can update labels, descriptions, sort order, active status, and source metadata where applicable for marker types, marker scopes, marker materials, headstone conditions, gravesite statuses, and lot ownership event types. Marker type records physical form, while marker scope records the source-supported role (`single`, `couple`, `monolith`, or `unknown`); changing scope does not add or remove gravesite or burial relationships. Lookup rows use UUID primary keys; lowercase codes remain hidden stable identifiers for imports, seed data, and compatibility. Obsolete values should be marked inactive instead of deleted. The lookup editor hides inactive values by default, shows reference counts, confirms deactivation of values that are already in use, supports move up/down sort-order controls, warns about duplicate sort orders, and can jump to the Audit Log filtered to a lookup row.
 
-The regular detail panel has a Photos section for field collection. Editors can upload an image from a phone or desktop, link it to the selected gravesite, and optionally link it to a specific marker/headstone. Uploaded files are represented by `media_assets` rows and related through `gravesite_media_assets` and `headstone_media_assets`; the image files themselves are stored outside Postgres. In local environments, the files live under `uploads/media` unless `MEDIA_UPLOAD_DIR` points somewhere else. Readers can view linked photos but cannot upload them.
+The regular detail panel has a Photos section for field collection. Editors can select and upload one or more images from a phone or desktop, linked to the selected gravesite or marker/headstone. The selected link, notes, and optional Date taken apply to every selected photo. Uploads run one at a time and show per-file results; `Retry failed photos` retries only failed files. See [Photo Collection](operator-workflows.md#photo-collection). The inline gallery shows at most four photos, ordered newest first by date taken and then upload date. When more than four photos are linked, `View all photos (N)` opens the complete newest-first history in a responsive modal; users can close it with its close button or Escape; backdrop clicks do not dismiss it. Uploaded files are represented by `media_assets` rows and related through `gravesite_media_assets` and `headstone_media_assets`; the image files themselves are stored outside Postgres. In local environments, the files live under `uploads/media` unless `MEDIA_UPLOAD_DIR` points somewhere else. Readers can view linked photos and the complete history but cannot upload them. Photo downloads require reader authentication and an undeleted media asset; the gallery fetches protected images with the current access token. Soft-deleted files remain on disk for recovery but are no longer downloadable.
 
 Current role behavior:
 
@@ -78,7 +92,7 @@ Current role behavior:
 - `cemetery-admin`: can administer assigned cemeteries and has read-only access to other cemeteries.
 - `admin`: full system access, including user management, lookup maintenance, audit review, adding structural records, and soft deletes.
 
-Power users and cemetery admins receive cemetery assignments through the local `app_user_cemetery_access` table. The Admin UI currently treats this as one assigned cemetery per user, while the database allows multiple assignments if a future workflow needs them.
+Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. Assignments are stored in `app_user_cemetery_access`. A reader assignment sets the map scope without granting editing permission. Switching between non-admin roles preserves the selected assignment. See [cemetery scope and navigation](operator-workflows.md#cemetery-scope-and-navigation).
 
 Admin UI hover explanations should avoid exposing Auth0 user IDs in list-row tooltips. The Auth0 user ID is shown only when intentionally editing a user record.
 
@@ -88,7 +102,9 @@ First regular record-editing workflow.
 
 Readers can see marker/headstone details in the normal grave detail panel. Power users and cemetery admins can edit marker details for assigned cemeteries from that same panel without opening the Admin UI; global admins can edit marker details anywhere. This keeps operational cemetery record work near the map and leaves Admin focused on users, lookups, audit review, and setup data.
 
-Burial military service details distinguish branch, rank or rating, war service, and decorations. Decorations such as the Purple Heart appear as additional labeled badges beside the general Veteran badge; they do not replace veteran status. Navy rating abbreviations such as `MM2` should use the corresponding rating-specific rank value when the inscription provides it.
+Burial military service details distinguish branch, rank or rating, war service, and decorations. Decorations such as the Purple Heart appear as additional labeled badges beside the general Veteran badge; they do not replace veteran status. Historical U.S. Navy inscriptions such as `FIREMAN 1/C` can use `Fireman First Class` (`F1c`), with no assumed modern pay grade. Preserve the exact wording in the marker inscription. Navy rating abbreviations such as `MM2` should use the corresponding rating-specific rank value when the inscription provides it. World War II U.S. Army records can use `Technician Fifth Grade` with abbreviation `T/5`. Historical U.S. Air Force records can use `Airman Second Class` (`A2C`, `E-3`), separately from the modern Airman First Class entry. Select Vietnam independently as war service when supported by the person's record; adding a rank does not assign war service. Admins can create and maintain military ranks through `Admin -> Lookups -> Military ranks`; see [Lookup Maintenance](operator-workflows.md#lookup-maintenance) for branch restrictions, historical pay grades, and deactivation guidance.
+
+Historical E-3 terminology is supported by the [Air Force Board for Correction of Military Records, BC-2019-01994](https://boards.law.af.mil/AF/BCMR/CY2019/BC-2019-01994%20BC201901994.pdf), describing a former airman second class released from active duty in 1965.
 
 Standalone markers that are not linked to an active gravesite, such as graveyard markers or field markers, can also be opened and edited from the Markers panel. These records use the same marker edit form and authorization rules as gravesite-linked headstones.
 
@@ -99,6 +115,8 @@ The marker detail panel also has a Related Markers section. This is where editor
 The marker detail panel separately manages marker-to-gravesite relationships. Editors with access to the marker's cemetery can add a gravesite, change the relationship type, or remove a link. Removing a link is a soft delete and updates the legacy `headstones.gravesite_uuid` compatibility anchor to another active relationship when necessary. Use these controls for the gravesites a marker physically marks, spans, is near, or is inferred to represent; do not substitute a marker-to-marker relationship for a marker-to-gravesite relationship.
 
 Monolith scope has a distinct presentation. A monolith remains classified by its physical form, such as `Upright headstone`, while its scope is `Monolith`. Its detail panel displays a Monolith badge, explains that the marker point does not itself imply a gravesite, and labels its relationship sections `Regular Markers Linked to This Monolith` and `Gravesites Spanned by This Monolith`. The map and Layers panel use a purple diamond symbol for monolith markers. A mapped monolith location must not be represented by a placeholder gravesite unless a real burial space is independently supported at that location.
+
+The Burgess family monument `TLC-HS-0017` is an explicit example. Imported gravesite `A-0017` and the generated `Burgess Monolith` pseudo-burial were retired by migration `365` because the monument location is not a burial space. The monument remains active without a gravesite anchor, and its photos remain linked directly to the marker.
 
 Do not use Related Markers for general gap notes or unavailable grave/lot observations. Gap notes are source observations. Plot markers should be modeled as actual marker records once their locations are known, and then linked only if there is a real marker-to-marker relationship.
 
@@ -141,16 +159,23 @@ Expected audit action:
 
 Second admin edit workflow.
 
-Admins need to correct names and dates imported from the spreadsheet or later source documents.
+Admins need to correct names and dates imported from the spreadsheet or later source documents. When a public web page supports the burial information, enter its absolute `http` or `https` address in the optional Information source URL field instead of embedding the link in notes. For example, a Find a Grave memorial can support the conclusion that a person is deceased even when the death date remains unknown. The burial detail card exposes the saved page as an external link.
 
-Initial fields:
+See [Recording People Names and Dates](operator-workflows.md#recording-people-names-and-dates) for current field labels, given-name status choices, and display-name examples.
 
+Name and date fields include:
+
+- `name_prefix`
+- `name_suffix`
+- `given_name_status`
+- `display_name`
 - `first_name`
 - `last_name`
 - `full_name`
 - `birth_date`
 - `death_date`
 - `burial_date`
+- `source_url`
 - `notes`
 
 Expected API:
@@ -217,7 +242,7 @@ Expected future work:
 - Add an ADR for separating evidence geometry, operational geometry, and schematic presentation geometry.
 - Add geometry metadata such as source type, confidence, review notes, reviewed timestamp, and reviewer where useful.
 - Consider a separate schematic geometry layer instead of forcing readable diagram layouts into the same PostGIS geometry used for geographic display.
-- Add map modes or layers such as `Geographic`, `Diagram`, and `Evidence`.
+- Extend the existing `Geographic` and `Diagram` presentation modes with evidence-specific or separately stored schematic layers. Current Diagram view hides external layers and changes styling; it does not establish a separate geometry source of truth. See [external map layer recovery](operator-workflows.md#external-map-layers-and-diagram-view).
 - Add legends and detail-panel labels that tell users whether a marker point is GPS-observed and whether a gravesite or lot polygon is estimated, reviewed, or schematic.
 - Build alignment-run tools for sections such as C so gravesite polygons can be regularized between anchors without moving GPS marker points or accumulating east-west spacing error one grave at a time.
 

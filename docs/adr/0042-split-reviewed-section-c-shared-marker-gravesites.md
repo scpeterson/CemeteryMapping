@@ -21,7 +21,7 @@ The GPS point is observed marker evidence. The surrounding gravesite polygons ar
 
 ## Decision
 
-Apply the reviewed north/south split pattern in Liquibase migrations 341 through 346:
+Apply the reviewed north/south split pattern in Liquibase migrations 341 through 346, 348 through 350, 353, and 355 through 364:
 
 | Migration | Original southern gravesite | New northern gravesite | Fixed shared marker |
 | --- | --- | --- | --- |
@@ -31,6 +31,20 @@ Apply the reviewed north/south split pattern in Liquibase migrations 341 through
 | 344 | `C-0380`, Adam Sandrock | `C-0380A`, Clara B Sandrock | `TLC-HS-0380` |
 | 345 | `C-0381`, H Carl Brandt | `C-0381A`, Alice R Brandt | `TLC-HS-0381` |
 | 346 | `C-0382`, William DeWitt DeCourcy | `C-0382A`, Louise Hamilton DeCourcy | `TLC-HS-0382` |
+| 348 | `C-0421`, Scott Simpson | `C-0421A`, Lynn Simpson (sold/pre-need) | `TLC-HS-0421` |
+| 349 | `C-0389`, George Wolfarth | `C-0389A`, Catherine O Wolfarth | `TLC-HS-0389` |
+| 350, 352 | `C-0392`, Elmer B Kaelin | `C-0392A`, Elizabeth A Kaelin | `TLC-HS-0392` |
+| 353 | `C-0395`, Arthur Dennis Wochley | `C-0395A`, Luceil Wochley | `TLC-HS-0395` |
+| 355 | `C-0398`, George William Luster | `C-0398A`, Mary L Luster | `TLC-HS-0398` |
+| 356 | `C-0419`, Ralph C Magee | `C-0419A`, Jeannette B Magee | `TLC-HS-0419` |
+| 357 | `C-0401`, Harold B Kivlan | `C-0401A`, Grace C Kivlan | `TLC-HS-0401` |
+| 358 | `C-0402`, Constance Pagano | `C-0402A`, Pat Pagano | `TLC-HS-0402` |
+| 359 | `C-0403`, George J Bohn | `C-0403A`, Emma E Bohn | `TLC-HS-0403` |
+| 360 | `C-0409`, James T Fisher | `C-0409A`, Arlie D Fisher | `TLC-HS-0409` |
+| 361 | `C-0410`, Ralph S Eaglen | `C-0410A`, Elva Eaglen | `TLC-HS-0410` |
+| 362 | `C-0413`, Theresa P Wolfarth | `C-0413A`, Raymond A Wolfarth linked to this marker | `TLC-HS-0413` |
+| 363 | `C-0416`, Howard L Sarver | `C-0416A`, Ellen Clara Sarver | `TLC-HS-0416` |
+| 364 | `C-0420`, Paul John Brasses | `C-0420A`, Alice M Brasses | `TLC-HS-0420` |
 
 Each correction:
 
@@ -43,7 +57,7 @@ Each correction:
 - asserts that the expected marker, gravesite, and uniquely identified burials exist before mutation; and
 - records the interpretation in geometry source and notes fields.
 
-Where necessary, the original gravesite polygon moves south so the fixed marker acts as the shared north/south boundary. When neighboring spacing prevents a marker-centered pair, the complete pair may be offset by a documented minimum distance while the observed marker point remains unchanged. Migration 346 offsets the pair one foot south to avoid C-0383. A migration must check the proposed polygons against active neighboring gravesites before acceptance. No new reviewed overlap exception is required for migrations 341 through 346 except where an individual migration explicitly documents an existing mapped-spacing limitation.
+Where necessary, the original gravesite polygon moves south so the fixed marker acts as the shared north/south boundary. A migration must check the proposed polygons against active neighboring gravesites before acceptance. No new reviewed overlap exception is required for migrations 341 through 345. Later migrations record existing mapped-spacing limitations where applicable; their reviewed north/south assignments control over overlapping estimated polygons.
 
 ## Rationale
 
@@ -56,6 +70,14 @@ The new `A` suffixes are operational identifiers created by reviewed repair; the
 Future corrections must not infer a second gravesite solely because two names appear on a marker. Review burial evidence, inscription context, neighboring geometry, and pre-need status first. A living or pre-need person may require a reserved or sold space rather than an occupied burial, and an unknown death date must remain unknown rather than being fabricated.
 
 These migrations use empty rollback declarations because reversing a reviewed authoritative data correction could discard subsequent edits or relationships. Recovery should use a database backup or a forward-fix migration based on the current records.
+
+## Migration 346 History Repair (2026-10-17)
+
+Migration 346 was executed in DEV and hosted TEST on August 28, 2026, but its SQL and root include were missing from `main`. Restore the original changeset unchanged, between 345 and 347. Its Liquibase v9 checksum is `9:c000ed388b4420abf954b08bf3f2a4d1`. Existing execution history must remain intact so Liquibase validates and skips this changeset; do not clear checksums, delete its history row, or execute its SQL manually on an already corrected database. Fresh databases apply it when the source records exist and otherwise leave unrelated records unchanged.
+
+Regression coverage pins the original SQL bytes and root include order. Database tests use disposable schemas and real Liquibase execution to verify the original split, preserved marker and burial links, source-data prerequisite failures, absent-source behavior, and checksum validation and skipping after subsequent edits.
+
+The original correction places the pair one foot south of the marker-centered position to avoid C-0383. This history repair does not change the original geometry or lot assignments. The small intersection with the neighboring lot boundary requires a separate review.
 
 ## Rebuild And Validation
 

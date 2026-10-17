@@ -1,0 +1,22 @@
+:root {
+  --color-text: #17201d;
+  --color-page: #eef2ea;
+  --panel: #fbfcf7;
+  --panel-border: #d5ddcf;
+  --text-muted: #657066;
+  --focus: #2f684f;
+  --color-danger: #a03232;
+  --color-surface: #fff;
+  --shadow: 0 18px 45px rgba(41, 56, 43, 0.14);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --font-size-small: 0.78rem;
+  --font-size-body: 1rem;
+  --control-height: 40px;
+}

@@ -5,7 +5,7 @@
 
 [Documentation Home](index.md)
 
-Use a separate Auth0 tenant for non-production authentication testing. This keeps test users, callback URLs, and API permissions away from future production identity configuration.
+Use a dedicated Auth0 tenant for TEST, separate from DEV, STAGE, and PROD. Each environment has its own applications, API audience, users, signing keys, and management credentials. Separate applications in one tenant do not provide this isolation. Keep frontend values in environment-specific ignored files such as `.env.test.local`, never a shared `.env.local`.
 
 ## Tenant
 
@@ -176,7 +176,7 @@ npm run dev:web:test
 
 If you edit `.env.test.local`, stop and restart Vite. Vite does not reload environment variables while the dev server is already running.
 
-Playwright e2e tests intentionally clear the frontend Auth0 variables in `playwright.config.ts` so automated tests can keep using `AUTH_MODE=disabled` even when `.env.test.local` is configured for manual Auth0 testing.
+Playwright e2e tests explicitly set `VITE_AUTH_MODE=disabled` for the frontend and `AUTH_MODE=disabled` for the API in `playwright.config.ts`, even when `.env.test.local` contains Auth0 settings for manual testing. Database access still uses the restricted account configured by `APP_ENV=test npm run db:configure-api`.
 
 Run the API with Auth0 validation:
 
@@ -264,9 +264,11 @@ SET email = EXCLUDED.email,
     updated_at = now();
 ```
 
-Insert or update a read-only test user:
+Prefer **Admin → Users** to create a reader with one assigned cemetery. For controlled manual setup, replace the cemetery UUID below with a verified existing TEST cemetery ID and run the user and assignment inserts together. Direct SQL bypasses account validation; do not create an unassigned reader.
 
 ```sql
+\set cemetery_id 'PASTE_EXISTING_TEST_CEMETERY_UUID_HERE'
+BEGIN;
 INSERT INTO app_users (external_subject, email, display_name, role_name)
 VALUES (
   'auth0|PASTE_AUTH0_USER_ID_HERE',
@@ -282,9 +284,22 @@ SET email = EXCLUDED.email,
     updated_at = now();
 ```
 
+Add the assignment before committing the manual reader setup:
+
+```sql
+INSERT INTO app_user_cemetery_access (app_user_id, cemetery_id, can_edit)
+SELECT id, :'cemetery_id'::uuid, false
+FROM app_users
+WHERE external_subject = 'auth0|PASTE_AUTH0_USER_ID_HERE'
+ON CONFLICT (app_user_id, cemetery_id) DO UPDATE SET can_edit = false;
+COMMIT;
+```
+
+Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account.
+
 Use `admin` for users who should be allowed to manage the whole system. Use `cemetery-admin` or `power-user` plus an `app_user_cemetery_access` row for users who should update assigned cemetery records and view assigned deed/owner data. Use `reader` for users who should only be able to view non-deed map, detail, and search data.
 
-Verify mappings:
+Verify mappings and run the [assignment audit](hosted-test.md#cemetery-assignment-audit). If updating an existing account, reconcile any prior assignments so it has exactly one intended cemetery before sign-in:
 
 ```sql
 SELECT external_subject, email, display_name, role_name, is_active
@@ -314,7 +329,9 @@ The Admin UI Deactivate button performs the same local access block. Use Reactiv
 With `AUTH_MODE=auth0`:
 
 - Not signed in: the frontend should show the sign-in screen.
-- Reader test user: can load map, detail, and search data without deed/owner fields.
+- Reader test user: has one cemetery assignment, opens the map at that cemetery, and can load detail and search data without deed/owner fields.
+- Non-admin account creation/update: rejects missing assignments; reader assignments do not grant edits.
+- Admin test user without assignments: initial map fits all cemeteries.
 - Reader test user: cannot call admin mutation endpoints.
 - Power-user and cemetery-admin test users: can update assigned cemetery records and cannot update unassigned cemetery records.
 - Admin test user: can call admin mutation endpoints.

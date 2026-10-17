@@ -1,0 +1,212 @@
+.record-editor-row {
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.record-editor-row:has(textarea) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
+}
+
+.record-editor-row h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #26342d;
+  font-size: 0.95rem;
+  font-weight: 780;
+}
+
+.record-editor-row-cemetery {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.record-editor-row-cemetery button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  align-self: start;
+}
+
+.record-editor-row-section {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.record-editor-row-section button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  align-self: start;
+}
+
+.record-editor-row-lot {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.record-editor-row-lot button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  align-self: start;
+}
+
+.record-editor-row label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #4f5d52;
+  font-size: var(--font-size-small);
+  font-weight: 760;
+}
+
+.record-editor-row-cemetery .record-editor-name,
+.record-editor-row-cemetery label:has(textarea),
+.record-editor-notes,
+.record-audit-fields {
+  grid-column: 1 / -1;
+}
+
+.record-editor-row-cemetery textarea {
+  min-height: 150px;
+}
+
+.record-audit-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.record-audit-fields div {
+  display: grid;
+  gap: var(--space-1);
+  padding: 9px 10px;
+  border: 1px solid #d9e0d5;
+  border-radius: 7px;
+  background: #f8faf6;
+}
+
+.record-audit-fields dt {
+  color: #4f5d52;
+  font-size: 0.74rem;
+  font-weight: 760;
+}
+
+.record-audit-fields dd {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.86rem;
+}
+
+.record-editor-row button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid #496756;
+  border-radius: 7px;
+  background: #2f5d50;
+  color: #fff;
+  font-weight: 720;
+  line-height: 1.12;
+  white-space: normal;
+}
+
+.record-editor-row button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.admin-user-row:hover {
+  border-color: #b9c6b4;
+  background: #f4f8f1;
+}
+
+.admin-user-edit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(96px, 0.6fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.admin-user-edit span:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-user-edit small,
+.role-row small,
+.role-row p {
+  color: var(--text-muted);
+}
+
+.admin-user-edit small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-status-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid #c8d1c3;
+  border-radius: 7px;
+  background: #fff;
+  color: #405048;
+  font-weight: 720;
+}
+
+.user-status-action:hover {
+  border-color: #b9c6b4;
+  background: #eef4eb;
+}
+
+.user-status-action.is-deactivate {
+  color: #8c302d;
+}
+
+.user-status-action.is-reactivate {
+  color: #2f684f;
+}
+
+.user-status-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.status-active,
+.status-inactive {
+  justify-self: end;
+  font-weight: 780;
+}
+
+.status-active {
+  color: #2f684f;
+}
+
+.status-inactive {
+  color: #8c302d;
+}
+
+.role-row p {
+  margin-bottom: 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+  color: #4d5a50;
+}
+
+.empty-state p {
+  max-width: 30rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}

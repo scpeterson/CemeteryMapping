@@ -1,3 +1,4 @@
+import { useDraftState } from "../../hooks/useDraftState";
 import { type FormEvent, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { fetchDeedRegistrySuggestions } from "../../api/cemeteryApi";
@@ -110,7 +111,7 @@ function OwnershipPartyFields({
 
 export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpace; cemeteryGraves: GraveSpaceSummary[]; onSave: (event: SaveOwnershipEventInput) => Promise<void> }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<SaveOwnershipEventInput>(() => blankOwnershipForm(grave));
+  const [form, setForm] = useDraftState<SaveOwnershipEventInput>(() => blankOwnershipForm(grave));
   const [selectedGravesiteIds, setSelectedGravesiteIds] = useState<string[]>([]);
   const [gravesiteFilter, setGravesiteFilter] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -302,7 +303,7 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: G
         Notes
         <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={3} />
       </label>
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="ownership-form-actions">
         <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
           Cancel
@@ -320,7 +321,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
   const [isConfirmingRemoval, setIsConfirmingRemoval] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
-  const [form, setForm] = useState<UpdateOwnerInput>({
+  const [form, setForm] = useDraftState<UpdateOwnerInput>({
     firstName: owner.firstName, lastName: owner.lastName, fullAddress: owner.fullAddress,
     municipality: owner.municipality, state: owner.state, zip: owner.zip,
     effectiveDate: owner.effectiveDate ?? "", deedOnFile: owner.deedOnFile, deedRegisterOnFile: owner.deedRegisterOnFile,
@@ -330,7 +331,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
     event.preventDefault();
     if (!owner.ownershipEventId) return;
     setIsSaving(true); setError(undefined);
-    try { await onSave(owner.id, owner.ownershipEventId, form); setIsEditing(false); }
+    try { await onSave(owner.id, owner.ownershipEventId, form); setForm(form); setIsEditing(false); }
     catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Unable to update owner."); }
     finally { setIsSaving(false); }
   };
@@ -360,7 +361,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
           <div><button type="button" className="secondary-button" onClick={() => setIsConfirmingRemoval(false)} disabled={isSaving}>Cancel</button><button type="button" className="danger-button" onClick={() => void remove()} disabled={isSaving}>{isSaving ? "Removing..." : "Remove connection"}</button></div>
         </div>
       ) : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
     </div>
   );
   return (
@@ -376,7 +377,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
         <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedOnFile} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />Deed on file</label>
         <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />Deed register on file</label>
       </div>
-      {error ? <p className="detail-message is-error ownership-wide-field">{error}</p> : null}
+      {error ? <p className="detail-message is-error ownership-wide-field" role="alert">{error}</p> : null}
       <div className="ownership-form-actions ownership-wide-field"><button type="button" className="secondary-button" onClick={() => setIsEditing(false)}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save owner"}</button></div>
     </form>
   );

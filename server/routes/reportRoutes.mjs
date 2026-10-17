@@ -1,3 +1,4 @@
+import { validateSearchPage } from "../requestValidation.mjs";
 export function registerReportRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, listReportsForUser, matchReportQuery, pool, requireReader, runReport,
@@ -8,16 +9,18 @@ export function registerReportRoutes(app, context) {
         try {
           const query = validateSearchQuery(request.query.q);
           const statuses = validateStatuses(request.query.status);
+          const page = validateSearchPage(request.query);
           const assignedCemeteryIds = assignedEditableCemeteryIds(request.user);
           const hasScopedOwnershipSearch = (request.user.role === "power-user" || request.user.role === "cemetery-admin") && assignedCemeteryIds.length > 0;
-          response.json(
-            await searchCemetery(pool, {
+          const matches = await searchCemetery(pool, {
+              ...page,
               query,
               statuses,
               includeOwnership: request.user.role === "admin" || hasScopedOwnershipSearch,
               ownershipCemeteryIds: request.user.role === "admin" ? undefined : assignedCemeteryIds,
-            }),
-          );
+            });
+          response.set("X-Search-Has-More", String(matches.length > page.limit));
+          response.json(matches.slice(0, page.limit));
         } catch (error) {
           next(error);
         }

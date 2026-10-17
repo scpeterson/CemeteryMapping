@@ -1,8 +1,8 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
+import { stageMediaFile } from "./media/uploadStorage.mjs";
 import { randomUUID } from "node:crypto";
 import { setAuditContext } from "./auditContext.mjs";
-import { capturedAtForUpload, cleanMediaText as cleanText, defaultMediaUploadRoot as defaultUploadRoot, isAllowedImageType, mediaFileExtension as fileExtension, optionalMediaNumber as optionalNumber, publicMediaFileUrl as publicFileUrl, toMediaAsset } from "./media/mediaMapping.mjs";
+import { capturedAtForUpload, cleanMediaText as cleanText, mediaUploadRoot, isAllowedImageType, mediaFileExtension as fileExtension, optionalMediaNumber as optionalNumber, publicMediaFileUrl as publicFileUrl, toMediaAsset } from "./media/mediaMapping.mjs";
 export { mediaUploadRoot } from "./media/mediaMapping.mjs";
 
 
@@ -47,31 +47,9 @@ async function headstoneForId(client, headstoneId) {
     `
       SELECT
         headstones.id::text,
-        COALESCE(direct_gravesite.cemetery_id, linked_gravesite.cemetery_id, containing_cemetery.id)::text AS cemetery_id
+        ${headstoneCemeteryIdSql}::text AS cemetery_id
       FROM headstones
-      LEFT JOIN gravesites AS direct_gravesite
-        ON direct_gravesite.id = headstones.gravesite_uuid
-       AND direct_gravesite.deleted_at IS NULL
-      LEFT JOIN LATERAL (
-        SELECT gravesites.cemetery_id
-        FROM headstone_gravesites
-        JOIN gravesites
-          ON gravesites.id = headstone_gravesites.gravesite_uuid
-         AND gravesites.deleted_at IS NULL
-        WHERE headstone_gravesites.headstone_uuid = headstones.id
-          AND headstone_gravesites.deleted_at IS NULL
-        ORDER BY gravesites.gravesite_id, gravesites.id
-        LIMIT 1
-      ) linked_gravesite ON true
-      LEFT JOIN LATERAL (
-        SELECT cemeteries.id
-        FROM cemeteries
-        WHERE headstones.geometry IS NOT NULL
-          AND cemeteries.deleted_at IS NULL
-          AND ST_Covers(cemeteries.geometry, headstones.geometry)
-        ORDER BY cemeteries.name, cemeteries.id
-        LIMIT 1
-      ) containing_cemetery ON true
+      ${headstoneCemeteryJoinsSql}
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
       LIMIT 1
@@ -81,7 +59,7 @@ async function headstoneForId(client, headstoneId) {
   return result.rows[0];
 }
 
-export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = defaultUploadRoot } = {}) {
+export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = mediaUploadRoot() } = {}) {
   if (!isAllowedImageType(file.contentType)) {
     throw new Error("Unsupported photo type.");
   }
@@ -89,7 +67,8 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
   if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) return undefined;
 
   const client = await pool.connect();
-  let savedFilePath;
+  let stagedFile;
+  let commitAttempted = false;
   try {
     await client.query("BEGIN");
     await setAuditContext(client, { actorUser, reason: "Photo upload" });
@@ -108,9 +87,7 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
     const assetId = randomUUID();
     const extension = fileExtension(file.contentType, file.originalFilename);
     const storageKey = `${assetId}${extension}`;
-    savedFilePath = join(uploadRoot, storageKey);
-    await mkdir(uploadRoot, { recursive: true });
-    await writeFile(savedFilePath, file.bytes);
+    stagedFile = await stageMediaFile(uploadRoot, storageKey, file.bytes);
 
     const assetResult = await client.query(
       `
@@ -233,24 +210,29 @@ export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file,
       );
     }
 
+    await stagedFile.publish();
+    commitAttempted = true;
     await client.query("COMMIT");
     return toMediaAsset(assetResult.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
+    // A failed COMMIT response may still mean the transaction committed.
+    if (!commitAttempted) await stagedFile?.discard();
     throw error;
   } finally {
     client.release();
   }
 }
 
-export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = defaultUploadRoot } = {}) {
+export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = mediaUploadRoot() } = {}) {
   if (!isAllowedImageType(file.contentType)) {
     throw new Error("Unsupported photo type.");
   }
   if (!file.bytes?.length) throw new Error("Photo file is required.");
 
   const client = await pool.connect();
-  let savedFilePath;
+  let stagedFile;
+  let commitAttempted = false;
   try {
     await client.query("BEGIN");
     await setAuditContext(client, { actorUser, reason: "Photo upload" });
@@ -263,9 +245,7 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
     const assetId = randomUUID();
     const extension = fileExtension(file.contentType, file.originalFilename);
     const storageKey = `${assetId}${extension}`;
-    savedFilePath = join(uploadRoot, storageKey);
-    await mkdir(uploadRoot, { recursive: true });
-    await writeFile(savedFilePath, file.bytes);
+    stagedFile = await stageMediaFile(uploadRoot, storageKey, file.bytes);
 
     const assetResult = await client.query(
       `
@@ -362,10 +342,14 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
       [assetId, headstone.id, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
     );
 
+    await stagedFile.publish();
+    commitAttempted = true;
     await client.query("COMMIT");
     return toMediaAsset(assetResult.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
+    // A failed COMMIT response may still mean the transaction committed.
+    if (!commitAttempted) await stagedFile?.discard();
     throw error;
   } finally {
     client.release();
@@ -470,7 +454,8 @@ export async function moveMediaAssetLink(pool, mediaAssetId, { linkId, linkType,
   const targetColumn = linkType === "gravesite" ? "gravesite_uuid" : linkType === "headstone" ? "headstone_uuid" : "";
   if (!tableName || !targetColumn) throw new Error("Unsupported media link type.");
   const moveOffset = direction === "later" ? 1 : direction === "earlier" ? -1 : 0;
-  if (!moveOffset) throw new Error("Unsupported media move direction.");
+  const primaryAction = direction === "primary" || direction === "automatic";
+  if (!moveOffset && !primaryAction) throw new Error("Unsupported media move direction.");
 
   const client = await pool.connect();
   try {
@@ -513,6 +498,35 @@ export async function moveMediaAssetLink(pool, mediaAssetId, { linkId, linkType,
     if (!selectedLink) {
       await client.query("COMMIT");
       return { moved: false, updates: [] };
+    }
+
+    // Serialize changes for this record, including concurrent primary selections.
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`${tableName}:${selectedLink.target_id}`]);
+    if (primaryAction) {
+      const eligible = await client.query(
+        `SELECT link.id FROM ${tableName} link
+         JOIN media_assets asset ON asset.id = link.media_asset_id
+         WHERE link.id = $1 AND link.media_asset_id = $2
+           AND link.deleted_at IS NULL AND link.status = 'linked'
+           AND asset.deleted_at IS NULL AND asset.status = 'linked' AND asset.asset_type = 'photo'
+         FOR UPDATE OF link`, [linkId, mediaAssetId]);
+      if (!eligible.rows.length) {
+        await client.query("COMMIT");
+        return { moved: false, updates: [] };
+      }
+      const cleared = await client.query(
+        `UPDATE ${tableName} SET is_primary = false
+         WHERE ${targetColumn} = $1 AND is_primary = true
+           AND ($2::boolean OR id = $3)
+         RETURNING id::text, is_primary`, [selectedLink.target_id, direction === "primary", linkId]);
+      const updates = cleared.rows;
+      if (direction === "primary") {
+        const selected = await client.query(
+          `UPDATE ${tableName} SET is_primary = true WHERE id = $1 RETURNING id::text, is_primary`, [linkId]);
+        updates.push(...selected.rows);
+      }
+      await client.query("COMMIT");
+      return { moved: true, updates };
     }
 
     const linksResult = await client.query(

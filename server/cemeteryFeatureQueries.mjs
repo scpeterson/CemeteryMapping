@@ -40,7 +40,7 @@ export async function selectFeaturesForGrave(client, graveUuid) {
     `SELECT ${graveFeatureSelectSql}
      FROM grave_features ${graveFeatureJoinSql}
      WHERE grave_features.deleted_at IS NULL AND grave_features.gravesite_uuid = $1
-     ORDER BY grave_feature_types.sort_order, grave_feature_subtypes.sort_order NULLS LAST, grave_features.created_at`,
+     ORDER BY lower(grave_feature_types.label), lower(grave_feature_subtypes.label) NULLS LAST, grave_features.created_at`,
     [graveUuid],
   );
   return result.rows;
@@ -52,7 +52,7 @@ export async function selectFeaturesForHeadstones(client, headstoneUuids) {
     `SELECT ${graveFeatureSelectSql}
      FROM grave_features ${graveFeatureJoinSql}
      WHERE grave_features.deleted_at IS NULL AND grave_features.headstone_uuid = ANY($1::uuid[])
-     ORDER BY grave_feature_types.sort_order, grave_feature_subtypes.sort_order NULLS LAST, grave_features.created_at`,
+     ORDER BY lower(grave_feature_types.label), lower(grave_feature_subtypes.label) NULLS LAST, grave_features.created_at`,
     [headstoneUuids],
   );
   const byHeadstone = new Map();

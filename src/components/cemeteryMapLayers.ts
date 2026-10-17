@@ -1,4 +1,4 @@
-import { type ImageSource, type Map } from "maplibre-gl";
+import { type ImageSource, type RasterTileSource, type Map } from "maplibre-gl";
 import type { CemeteryData, GraveSpaceSummary, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotRestrictedAreasFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
 import { statusColors } from "../lib/format";
@@ -133,6 +133,7 @@ function pasdaExportForViewport(map: Map) {
 }
 
 function updatePasdaImagery(map: Map) {
+  if (map.getLayer("pasda-imagery-2017") && map.getLayoutProperty("pasda-imagery-2017", "visibility") === "none") return;
   const source = map.getSource("pasda-imagery-2017") as ImageSource | undefined;
   source?.updateImage(pasdaExportForViewport(map));
 }
@@ -146,7 +147,7 @@ export function addRasterLayers(map: Map) {
     id: "pasda-imagery-2017",
     type: "raster",
     source: "pasda-imagery-2017",
-    paint: { "raster-fade-duration": 0 },
+    paint: { "raster-fade-duration": 0, "raster-saturation": -0.65, "raster-opacity": 0.8 },
   });
 
   map.once("idle", () => updatePasdaImagery(map));
@@ -222,7 +223,7 @@ export function addSectionLabelLayer(map: Map) {
 
 export function addLotLayers(map: Map, data: CemeteryData) {
   ensureProhibitedLotPattern(map);
-  map.addSource("lots", { type: "geojson", data: lotsFeatureCollection(data) });
+  map.addSource("lots", { type: "geojson", promoteId: "key", data: lotsFeatureCollection(data) });
   map.addSource("lot-restricted-areas", { type: "geojson", data: lotRestrictedAreasFeatureCollection(data) });
   map.addLayer({
     id: "lots-fill",
@@ -268,7 +269,7 @@ export function addLotLayers(map: Map, data: CemeteryData) {
     paint: {
       "line-color": [
         "case",
-        ["boolean", ["get", "selected"], false],
+        ["boolean", ["feature-state", "selected"], false],
         "#ff1493",
         ["==", ["get", "burialUseStatus"], "non_burial"],
         "#475569",
@@ -279,7 +280,7 @@ export function addLotLayers(map: Map, data: CemeteryData) {
         "#f97316",
       ],
       "line-opacity": ["case", ["==", ["get", "geometryConfidence"], "estimated"], 0.72, ["==", ["get", "geometryConfidence"], "draft"], 0.56, 0.95],
-      "line-width": ["case", ["boolean", ["get", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 1.8, 2.4],
+      "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 1.8, 2.4],
     },
   });
   map.addLayer({
@@ -327,10 +328,12 @@ export function addLotLayers(map: Map, data: CemeteryData) {
   });
 }
 
-export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKey: string | undefined, searchResultIds: Set<string>) {
+export function addGraveLayers(map: Map, graves: GraveSpaceSummary[]) {
+  // Promote string keys so tiled features retain the IDs used by feature-state.
   map.addSource("graves", {
     type: "geojson",
-    data: gravesFeatureCollection(graves, selectedKey, searchResultIds),
+    promoteId: "key",
+    data: gravesFeatureCollection(graves),
   });
 
   map.addLayer({
@@ -353,7 +356,7 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
         statusColors.needs_review,
         statusColors.unknown,
       ],
-      "fill-opacity": ["case", ["boolean", ["get", "searchMatch"], false], 0.9, 0.72],
+      "fill-opacity": ["case", ["boolean", ["feature-state", "searchMatch"], false], 0.9, 0.72],
     },
   });
 
@@ -362,9 +365,9 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
     type: "line",
     source: "graves",
     paint: {
-      "line-color": ["case", ["boolean", ["get", "selected"], false], "#ff1493", ["boolean", ["get", "searchMatch"], false], "#f9fafb", "#31413c"],
+      "line-color": ["case", ["boolean", ["feature-state", "selected"], false], "#ff1493", ["boolean", ["feature-state", "searchMatch"], false], "#f9fafb", "#31413c"],
       "line-opacity": ["case", ["==", ["get", "geometryConfidence"], "draft"], 0.62, ["==", ["get", "geometryConfidence"], "estimated"], 0.78, 1],
-      "line-width": ["case", ["boolean", ["get", "selected"], false], 4, ["boolean", ["get", "searchMatch"], false], 2.8, 1.1],
+      "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, ["boolean", ["feature-state", "searchMatch"], false], 2.8, 1.1],
     },
   });
 
@@ -412,14 +415,12 @@ export function addGraveLayers(map: Map, graves: GraveSpaceSummary[], selectedKe
 export function addHeadstoneLayers(
   map: Map,
   headstones: HeadstoneSummary[],
-  selectedKey: string | undefined,
-  searchResultIds: Set<string>,
-  selectedHeadstoneId?: string,
   veteranGraveKeys: Set<string> = new Set(),
 ) {
   map.addSource("headstones", {
     type: "geojson",
-    data: headstonesFeatureCollection(headstones, selectedKey, searchResultIds, selectedHeadstoneId, veteranGraveKeys),
+    promoteId: "id",
+    data: headstonesFeatureCollection(headstones, veteranGraveKeys),
   });
 
   map.addLayer({
@@ -429,9 +430,9 @@ export function addHeadstoneLayers(
     paint: {
       "circle-radius": [
         "case",
-        ["boolean", ["get", "selected"], false],
+        ["boolean", ["feature-state", "selected"], false],
         7,
-        ["boolean", ["get", "searchMatch"], false],
+        ["boolean", ["feature-state", "searchMatch"], false],
         6,
         ["==", ["get", "markerScopeCode"], "monolith"],
         7,
@@ -451,9 +452,9 @@ export function addHeadstoneLayers(
     paint: {
       "circle-radius": [
         "case",
-        ["boolean", ["get", "selected"], false],
+        ["boolean", ["feature-state", "selected"], false],
         5,
-        ["boolean", ["get", "searchMatch"], false],
+        ["boolean", ["feature-state", "searchMatch"], false],
         4.5,
         ["==", ["get", "markerScopeCode"], "monolith"],
         5.4,
@@ -463,9 +464,9 @@ export function addHeadstoneLayers(
       ],
       "circle-color": [
         "case",
-        ["boolean", ["get", "selected"], false],
+        ["boolean", ["feature-state", "selected"], false],
         "#ff1493",
-        ["boolean", ["get", "searchMatch"], false],
+        ["boolean", ["feature-state", "searchMatch"], false],
         "#f8d465",
         ["==", ["get", "markerScopeCode"], "monolith"],
         "#6d4cc2",
@@ -522,6 +523,9 @@ export function enforceMapLayerOrder(map: Map) {
 }
 
 export function applyMapViewMode(map: Map, mode: MapViewMode) {
+  for (const id of ["pasda-imagery-2017", "allegheny-parcels"]) {
+    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", mode === "diagram" ? "none" : "visible");
+  }
   if (map.getLayer("lots-fill")) {
     map.setPaintProperty(
       "lots-fill",
@@ -561,20 +565,27 @@ export function applyMapViewMode(map: Map, mode: MapViewMode) {
       "lots-line",
       "line-width",
       mode === "diagram"
-        ? ["case", ["boolean", ["get", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 2.8, 1.6]
-        : ["case", ["boolean", ["get", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 1.6, 2.4],
+        ? ["case", ["boolean", ["feature-state", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 2.8, 1.6]
+        : ["case", ["boolean", ["feature-state", "selected"], false], 4, ["==", ["get", "geometryType"], "schematic"], 1.6, 2.4],
     );
   }
   if (map.getLayer("lots-label")) {
     map.setPaintProperty("lots-label", "text-opacity", mode === "diagram" ? ["case", ["==", ["get", "geometryType"], "schematic"], 1, 0.5] : 0.86);
   }
   if (map.getLayer("graves-fill")) {
-    map.setPaintProperty("graves-fill", "fill-opacity", mode === "diagram" ? ["case", ["boolean", ["get", "searchMatch"], false], 0.82, 0.42] : ["case", ["boolean", ["get", "searchMatch"], false], 0.9, 0.72]);
+    map.setPaintProperty("graves-fill", "fill-opacity", mode === "diagram" ? ["case", ["boolean", ["feature-state", "searchMatch"], false], 0.82, 0.42] : ["case", ["boolean", ["feature-state", "searchMatch"], false], 0.9, 0.72]);
   }
   if (map.getLayer("headstones-halo")) {
     map.setPaintProperty("headstones-halo", "circle-opacity", mode === "diagram" ? 0.46 : 0.95);
   }
   if (map.getLayer("headstones-circle")) {
     map.setPaintProperty("headstones-circle", "circle-opacity", mode === "diagram" ? 0.62 : 1);
+  }
+}
+
+export function retryExternalMapLayer(map: Map, id: string) {
+  if (id === "pasda-imagery-2017") updatePasdaImagery(map);
+  if (id === "allegheny-parcels") {
+    (map.getSource(id) as RasterTileSource | undefined)?.setTiles([alleghenyParcelsTileUrl]);
   }
 }

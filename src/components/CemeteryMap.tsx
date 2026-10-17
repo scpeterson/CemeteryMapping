@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createMapHighlightState, markerIdsByGrave, linkedMarkerIds } from "./mapHighlightState";
+import { createMapLayerHealth, externalMapLayers, type ExternalMapLayer } from "./mapLayerHealth";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Maximize2, Ruler, Trash2, ZoomIn, ZoomOut } from "lucide-react";
-import * as maplibregl from "maplibre-gl";
+import * as maplibregl from "../lib/maplibre";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { CemeteryData, CemeteryLot, GraveSpaceSummary, GraveStatus, HeadstoneSummary } from "../types";
 import { boundariesFeatureCollection, gravesFeatureCollection, headstonesFeatureCollection, lotRestrictedAreasFeatureCollection, lotsFeatureCollection, sectionsFeatureCollection } from "../lib/geojson";
@@ -12,6 +14,7 @@ import {
   addHeadstoneLayers,
   addLotLayers,
   addRasterLayers,
+  retryExternalMapLayer,
   addSectionLabelLayer,
   addSectionLayers,
   applyMapViewMode,
@@ -32,6 +35,7 @@ type CemeteryMapProps = {
   visibleGraves: GraveSpaceSummary[];
   searchResultIds: Set<string>;
   initialFitCemeteryIds?: string[];
+  cemeteryScope?: string;
   isInitialFitReady: boolean;
   onSelectGrave: (grave: GraveSpaceSummary) => void;
   onSelectLot: (lot: CemeteryLot) => void;
@@ -69,38 +73,6 @@ function veteranGraveKeySet(graves: GraveSpaceSummary[]) {
 
 function getGeoJsonSource(map: MapLibreMap, sourceName: string) {
   return map.getSource(sourceName) as GeoJSONSource | undefined;
-}
-
-function refreshStaticSources(map: MapLibreMap, data: CemeteryData) {
-  const boundarySource = getGeoJsonSource(map, "boundary");
-  const sectionsSource = getGeoJsonSource(map, "sections");
-  const lotRestrictedAreasSource = getGeoJsonSource(map, "lot-restricted-areas");
-
-  boundarySource?.setData(boundariesFeatureCollection(data));
-  sectionsSource?.setData(sectionsFeatureCollection(data));
-  lotRestrictedAreasSource?.setData(lotRestrictedAreasFeatureCollection(data));
-
-  return Boolean(boundarySource || sectionsSource || lotRestrictedAreasSource);
-}
-
-function refreshLotSource(map: MapLibreMap, data: CemeteryData, selectedLot: CemeteryLot | undefined) {
-  const selectedLotKey = selectedLot ? lotSelectionKey(selectedLot) : undefined;
-  getGeoJsonSource(map, "lots")?.setData(lotsFeatureCollection(data, selectedLotKey));
-}
-
-function refreshSelectableSources(
-  map: MapLibreMap,
-  headstones: HeadstoneSummary[] | undefined,
-  visibleGraves: GraveSpaceSummary[],
-  selectedGrave: GraveSpaceSummary | undefined,
-  selectedHeadstone: HeadstoneSummary | undefined,
-  searchResultIds: Set<string>,
-) {
-  const selectedGraveKey = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
-  const veteranGraveKeys = veteranGraveKeySet(visibleGraves);
-
-  getGeoJsonSource(map, "graves")?.setData(gravesFeatureCollection(visibleGraves, selectedGraveKey, searchResultIds));
-  getGeoJsonSource(map, "headstones")?.setData(headstonesFeatureCollection(headstones ?? [], selectedGraveKey, searchResultIds, selectedHeadstone?.id, veteranGraveKeys));
 }
 
 function existingLayers(map: MapLibreMap, layers: readonly string[]) {
@@ -171,6 +143,7 @@ export function CemeteryMap({
   visibleGraves,
   searchResultIds,
   initialFitCemeteryIds,
+  cemeteryScope = "",
   isInitialFitReady,
   onSelectGrave,
   onSelectLot,
@@ -178,6 +151,9 @@ export function CemeteryMap({
   isPickingMarkerPoint = false,
   onPickMarkerPoint,
 }: CemeteryMapProps) {
+  const [failedLayers, setFailedLayers] = useState<ExternalMapLayer[]>([]);
+  const layerHealthRef = useRef<ReturnType<typeof createMapLayerHealth> | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [scale, setScale] = useState<MapScale>();
   const [mapViewMode, setMapViewMode] = useState<MapViewMode>("geographic");
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("gravesites");
@@ -190,40 +166,44 @@ export function CemeteryMap({
   const isMeasuringRef = useRef(false);
   const isPickingMarkerPointRef = useRef(false);
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const { boundary, boundaries, sections, lots, lotRestrictedAreas, headstones } = data;
+  const highlightStateRef = useRef(createMapHighlightState());
+  const markerIndex = useMemo(() => markerIdsByGrave(headstones ?? []), [headstones]);
+  const veteranKeys = useMemo(() => veteranGraveKeySet(visibleGraves), [visibleGraves]);
+  const selectedGraveKey = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
+  const selectedLotKey = selectedLot ? lotSelectionKey(selectedLot) : undefined;
+  const selectedMarkerId = selectedHeadstone?.id;
   const dataRef = useRef(data);
+  const cemeteryScopeRef = useRef(cemeteryScope);
   const initialFitCemeteryIdsRef = useRef(initialFitCemeteryIds);
   const isInitialFitReadyRef = useRef(isInitialFitReady);
-  const gravesBySelectionKeyRef = useRef(graveSelectionIndex(data.graves));
-  const lotsBySelectionKeyRef = useRef(lotSelectionIndex(data.lots));
-  const headstonesByIdRef = useRef(headstoneSelectionIndex(data.headstones ?? []));
+  const gravesBySelectionKeyRef = useRef<Map<string, GraveSpaceSummary>>(new Map());
+  const lotsBySelectionKeyRef = useRef<Map<string, CemeteryLot>>(new Map());
+  const headstonesByIdRef = useRef<Map<string, HeadstoneSummary>>(new Map());
   const visibleGravesRef = useRef(visibleGraves);
-  const searchResultIdsRef = useRef(searchResultIds);
-  const selectedRef = useRef(selectedGrave ? graveSelectionKey(selectedGrave) : undefined);
-  const selectedHeadstoneIdRef = useRef(selectedHeadstone?.id);
   const onSelectRef = useRef(onSelectGrave);
   const onSelectLotRef = useRef(onSelectLot);
   const onSelectHeadstoneRef = useRef(onSelectHeadstone);
   const onPickMarkerPointRef = useRef(onPickMarkerPoint);
-  const didSkipInitialSelectionFitRef = useRef(false);
+  const previousCemeteryScopeRef = useRef(cemeteryScope);
   const didFitInitialScopeRef = useRef(false);
+
+  useEffect(() => { gravesBySelectionKeyRef.current = graveSelectionIndex(data.graves); }, [data.graves]);
+  useEffect(() => { lotsBySelectionKeyRef.current = lotSelectionIndex(lots); }, [lots]);
+  useEffect(() => { headstonesByIdRef.current = headstoneSelectionIndex(headstones ?? []); }, [headstones]);
 
   useEffect(() => {
     dataRef.current = data;
+    cemeteryScopeRef.current = cemeteryScope;
     initialFitCemeteryIdsRef.current = initialFitCemeteryIds;
     isInitialFitReadyRef.current = isInitialFitReady;
-    gravesBySelectionKeyRef.current = graveSelectionIndex(data.graves);
-    lotsBySelectionKeyRef.current = lotSelectionIndex(data.lots);
-    headstonesByIdRef.current = headstoneSelectionIndex(data.headstones ?? []);
     visibleGravesRef.current = visibleGraves;
-    searchResultIdsRef.current = searchResultIds;
-    selectedRef.current = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
-    selectedHeadstoneIdRef.current = selectedHeadstone?.id;
     onSelectRef.current = onSelectGrave;
     onSelectLotRef.current = onSelectLot;
     onSelectHeadstoneRef.current = onSelectHeadstone;
     isPickingMarkerPointRef.current = isPickingMarkerPoint;
     onPickMarkerPointRef.current = onPickMarkerPoint;
-  }, [data, initialFitCemeteryIds, isInitialFitReady, isPickingMarkerPoint, onPickMarkerPoint, onSelectGrave, onSelectHeadstone, onSelectLot, searchResultIds, selectedGrave, selectedHeadstone, selectedLot, visibleGraves]);
+  }, [data, cemeteryScope, initialFitCemeteryIds, isInitialFitReady, isPickingMarkerPoint, onPickMarkerPoint, onSelectGrave, onSelectHeadstone, onSelectLot, searchResultIds, selectedGrave, selectedHeadstone, selectedLot, visibleGraves]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -254,7 +234,24 @@ export function CemeteryMap({
       },
     });
 
+    const layerHealth = createMapLayerHealth(setFailedLayers);
+    layerHealthRef.current = layerHealth;
+    const handleLayerError = (event: maplibregl.ErrorEvent) => {
+      const sourceEvent = event as maplibregl.ErrorEvent & { sourceId?: string };
+      if (sourceEvent.sourceId && Object.hasOwn(externalMapLayers, sourceEvent.sourceId)) layerHealth.error(sourceEvent);
+      else console.error(event.error);
+    };
+    const beginViewportLoad = () => {
+      // Failed tiles from the old viewport must not keep a recovered layer in error.
+      layerHealth.retry("pasda-imagery-2017");
+      layerHealth.retry("allegheny-parcels");
+    };
+    map.on("movestart", beginViewportLoad);
+    map.on("error", handleLayerError);
+    map.on("sourcedata", layerHealth.data);
+
     map.on("load", () => {
+      setMapLoaded(true);
       updateScale();
 
       addRasterLayers(map);
@@ -262,13 +259,10 @@ export function CemeteryMap({
 
       addSectionLayers(map, dataRef.current);
       addLotLayers(map, dataRef.current);
-      addGraveLayers(map, visibleGravesRef.current, selectedRef.current, searchResultIdsRef.current);
+      addGraveLayers(map, visibleGravesRef.current);
       addHeadstoneLayers(
         map,
         dataRef.current.headstones ?? [],
-        selectedRef.current,
-        searchResultIdsRef.current,
-        selectedHeadstoneIdRef.current,
         veteranGraveKeySet(visibleGravesRef.current),
       );
       addSectionLabelLayer(map);
@@ -310,7 +304,7 @@ export function CemeteryMap({
 
       syncCemeteryMarkers(map, dataRef.current, cemeteryMarkers);
       if (isInitialFitReadyRef.current) {
-        fitMapToCemeteries(map, dataRef.current, initialFitCemeteryIdsRef.current, 0);
+        fitMapToCemeteries(map, dataRef.current, cemeteryScopeRef.current ? [cemeteryScopeRef.current] : initialFitCemeteryIdsRef.current, 0);
         didFitInitialScopeRef.current = true;
       }
 
@@ -364,6 +358,11 @@ export function CemeteryMap({
       map.off("move", updateScale);
       map.off("zoom", updateScale);
       cemeteryMarkers.splice(0).forEach((marker) => marker.remove());
+      map.off("movestart", beginViewportLoad);
+      map.off("error", handleLayerError);
+      map.off("sourcedata", layerHealth.data);
+      layerHealthRef.current = null;
+      highlightStateRef.current = createMapHighlightState();
       map.remove();
       mapRef.current = null;
     };
@@ -393,12 +392,21 @@ export function CemeteryMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapLoaded) return;
+    const geometry = { boundary, boundaries };
+    getGeoJsonSource(map, "boundary")?.setData(boundariesFeatureCollection(geometry));
+    syncCemeteryMarkers(map, geometry, cemeteryMarkersRef.current);
+  }, [boundary, boundaries, mapLoaded]);
 
-    if (refreshStaticSources(map, data)) {
-      syncCemeteryMarkers(map, data, cemeteryMarkersRef.current);
-    }
-  }, [data]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && mapLoaded) getGeoJsonSource(map, "sections")?.setData(sectionsFeatureCollection({ sections }));
+  }, [sections, mapLoaded]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && mapLoaded) getGeoJsonSource(map, "lot-restricted-areas")?.setData(lotRestrictedAreasFeatureCollection({ lotRestrictedAreas }));
+  }, [lotRestrictedAreas, mapLoaded]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -409,29 +417,38 @@ export function CemeteryMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    refreshLotSource(map, data, selectedLot);
-  }, [data, selectedLot]);
+    if (map && mapLoaded) getGeoJsonSource(map, "lots")?.setData(lotsFeatureCollection({ lots }));
+  }, [lots, mapLoaded]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-
-    refreshSelectableSources(map, data.headstones, visibleGraves, selectedGrave, selectedHeadstone, searchResultIds);
-  }, [data.headstones, searchResultIds, selectedGrave, selectedHeadstone, visibleGraves]);
+    if (map && mapLoaded) getGeoJsonSource(map, "graves")?.setData(gravesFeatureCollection(visibleGraves));
+  }, [visibleGraves, mapLoaded]);
 
   useEffect(() => {
-    if (!selectedGrave || !mapRef.current) return;
-    if (!didSkipInitialSelectionFitRef.current) {
-      didSkipInitialSelectionFitRef.current = true;
-      return;
-    }
+    const map = mapRef.current;
+    if (map && mapLoaded) getGeoJsonSource(map, "headstones")?.setData(headstonesFeatureCollection(headstones ?? [], veteranKeys));
+  }, [headstones, veteranKeys, mapLoaded]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+    const sync = highlightStateRef.current;
+    sync(map, "graves", "selected", new Set(selectedGraveKey ? [selectedGraveKey] : []));
+    sync(map, "lots", "selected", new Set(selectedLotKey ? [selectedLotKey] : []));
+    sync(map, "headstones", "selected", selectedMarkerId ? new Set([selectedMarkerId]) : linkedMarkerIds(markerIndex, selectedGraveKey ? [selectedGraveKey] : []));
+    sync(map, "graves", "searchMatch", searchResultIds);
+    sync(map, "headstones", "searchMatch", linkedMarkerIds(markerIndex, searchResultIds));
+  }, [selectedGraveKey, selectedLotKey, selectedMarkerId, searchResultIds, markerIndex, mapLoaded]);
+
+  useEffect(() => {
+    if (!selectedGrave || !mapRef.current || !mapLoaded) return;
 
     const ring = exteriorRing(selectedGrave.geometry);
     if (!ring?.length) return;
     const bounds = ring.reduce((mapBounds, coordinate) => mapBounds.extend(coordinate as [number, number]), new maplibregl.LngLatBounds(ring[0] as [number, number], ring[0] as [number, number]));
     mapRef.current.fitBounds(bounds, { padding: 140, maxZoom: 20.5, duration: 450 });
-  }, [selectedGrave]);
+  }, [selectedGrave, mapLoaded]);
 
   useEffect(() => {
     if (!selectedLot || !mapRef.current) return;
@@ -440,6 +457,13 @@ export function CemeteryMap({
     if (!bounds) return;
     mapRef.current.fitBounds(bounds, { padding: 140, maxZoom: 20.5, duration: 450 });
   }, [selectedLot]);
+
+  useEffect(() => {
+    if (previousCemeteryScopeRef.current === cemeteryScope) return;
+    previousCemeteryScopeRef.current = cemeteryScope;
+    const map = mapRef.current;
+    if (map) fitMapToCemeteries(map, data, cemeteryScope ? [cemeteryScope] : undefined);
+  }, [cemeteryScope, data]);
 
   const zoomIn = useCallback(() => {
     mapRef.current?.zoomIn({ duration: 250 });
@@ -451,8 +475,11 @@ export function CemeteryMap({
 
   const fitAll = useCallback(() => {
     const map = mapRef.current;
-    if (map) fitMapToData(map, data);
-  }, [data]);
+    if (map) {
+      if (cemeteryScope) fitMapToCemeteries(map, data, [cemeteryScope]);
+      else fitMapToData(map, data);
+    }
+  }, [data, cemeteryScope]);
 
   const toggleMeasure = useCallback(() => {
     setIsMeasuring((current) => !current);
@@ -462,11 +489,37 @@ export function CemeteryMap({
     setMeasurementPoints([]);
   }, []);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => mapRef.current?.resize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   const measurementDistanceFeet = totalMeasurementDistanceFeet(measurementPoints);
 
   return (
     <>
       <div ref={containerRef} className="map-canvas" aria-label="Interactive cemetery map" />
+      <div className="map-toolbar" aria-label="Map tools">
+        {mapViewMode === "geographic" && failedLayers.length > 0 ? (
+          <section className="map-layer-notice" aria-label="Map layer availability">
+            <div role="status" aria-live="polite">
+              {failedLayers.map((id) => <p key={id}><strong>{externalMapLayers[id]}</strong> couldn't be loaded.</p>)}
+              <p>Cemetery records remain available.</p>
+            </div>
+            <div className="map-layer-actions">
+              {failedLayers.map((id) => <button key={id} type="button" onClick={() => {
+                const map = mapRef.current;
+                if (!map) return;
+                layerHealthRef.current?.retry(id);
+                retryExternalMapLayer(map, id);
+              }}>Retry {externalMapLayers[id]}</button>)}
+              <button type="button" onClick={() => setMapViewMode("diagram")}>Switch to Diagram view</button>
+            </div>
+          </section>
+        ) : null}
       <div className="map-view-toggle" aria-label="Map view">
         <button
           type="button"
@@ -521,34 +574,6 @@ export function CemeteryMap({
           Markers
         </button>
       </div>
-      <div className="map-controls" aria-label="Map controls">
-        <div className="north-arrow" role="img" aria-label="North arrow" title="North">
-          <span>N</span>
-          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-            <path className="north-arrow-needle" d="M20 3 L32 37 L20 30 L8 37 Z" />
-            <path className="north-arrow-cutout" d="M20 14 L25 29 L20 26 L15 29 Z" />
-          </svg>
-        </div>
-        <button type="button" onClick={zoomIn} aria-label="Zoom in" title="Zoom in">
-          <ZoomIn size={18} aria-hidden="true" />
-        </button>
-        <button type="button" onClick={zoomOut} aria-label="Zoom out" title="Zoom out">
-          <ZoomOut size={18} aria-hidden="true" />
-        </button>
-        <button type="button" onClick={fitAll} aria-label="Fit all cemetery data" title="Fit all cemetery data">
-          <Maximize2 size={18} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className={isMeasuring ? "is-active" : ""}
-          onClick={toggleMeasure}
-          aria-label={isMeasuring ? "Stop measuring distances" : "Measure distances between map points"}
-          aria-pressed={isMeasuring}
-          title={isMeasuring ? "Stop measuring distances." : "Measure distances between map points."}
-        >
-          <Ruler size={18} aria-hidden="true" />
-        </button>
-      </div>
       {!isPickingMarkerPoint && (isMeasuring || measurementPoints.length) ? (
         <div className="map-measurement" aria-live="polite">
           <div>
@@ -574,6 +599,35 @@ export function CemeteryMap({
           </div>
         </div>
       ) : null}
+      </div>
+      <div className="map-controls" aria-label="Map controls">
+        <div className="north-arrow" role="img" aria-label="North arrow" title="North">
+          <span>N</span>
+          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+            <path className="north-arrow-needle" d="M20 3 L32 37 L20 30 L8 37 Z" />
+            <path className="north-arrow-cutout" d="M20 14 L25 29 L20 26 L15 29 Z" />
+          </svg>
+        </div>
+        <button type="button" onClick={zoomIn} aria-label="Zoom in" title="Zoom in">
+          <ZoomIn size={18} aria-hidden="true" />
+        </button>
+        <button type="button" onClick={zoomOut} aria-label="Zoom out" title="Zoom out">
+          <ZoomOut size={18} aria-hidden="true" />
+        </button>
+        <button type="button" onClick={fitAll} aria-label={cemeteryScope ? "Fit selected cemetery" : "Fit all cemetery data"} title={cemeteryScope ? "Fit selected cemetery" : "Fit all cemetery data"}>
+          <Maximize2 size={18} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className={isMeasuring ? "is-active" : ""}
+          onClick={toggleMeasure}
+          aria-label={isMeasuring ? "Stop measuring distances" : "Measure distances between map points"}
+          aria-pressed={isMeasuring}
+          title={isMeasuring ? "Stop measuring distances." : "Measure distances between map points."}
+        >
+          <Ruler size={18} aria-hidden="true" />
+        </button>
+      </div>
       {scale ? (
         <div className="map-scale" aria-label="Map scale">
           <div className="map-scale-fraction">Scale {scale.representativeFraction}</div>
@@ -589,7 +643,9 @@ export function CemeteryMap({
           </div>
         </div>
       ) : null}
-      <div className="map-legend" aria-label="Map legend">
+      <details className="map-legend" aria-label="Map legend">
+        <summary>Map legend</summary>
+        <div className="map-legend-content">
         <section>
           <h2>Layers</h2>
           <span>
@@ -651,7 +707,8 @@ export function CemeteryMap({
             ))}
           </div>
         </section>
-      </div>
+        </div>
+      </details>
     </>
   );
 }

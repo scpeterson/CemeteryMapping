@@ -143,7 +143,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
           canUpdateHeadstones: false,
           canDeleteCemeteryRecords: false,
         },
-        assignedCemeteryIds: [],
+        assignedCemeteryIds: [cemeteryId],
       }),
     });
   });
@@ -210,7 +210,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   await expect(page.locator(".detail-panel")).toContainText("Good");
   await expect(page.locator(".detail-panel")).toContainText("Designs: Carved roses above the name");
   await expect(page.locator(".detail-panel")).toContainText("Back: Back side lists children");
-  await expect(page.locator(".marker-relationship")).toContainText("Marker spans multiple gravesites (spans) - Shared by adjacent gravesites");
+  await expect(page.locator(".marker-relationship")).toContainText("Marker spans multiple gravesites - Shared by adjacent gravesites");
   await expect(page.locator(".marker-relationship")).toHaveAttribute(
     "title",
     "One physical marker or headstone is shared by this gravesite and at least one neighboring gravesite, such as a two-person headstone centered between burial spaces. Notes: Shared by adjacent gravesites",
@@ -493,7 +493,7 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
-  await expect(page.locator(".panel-heading .eyebrow")).toContainText(/Cemetery records|\d+ cemeteries/);
+  await expect(page.locator(".application-brand p")).toContainText(/Cemetery records|\d+ cemeteries/);
   await expect(page.getByLabel("North arrow")).toBeVisible();
   await expect(page.getByRole("button", { name: /Open administration/u })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
@@ -513,11 +513,14 @@ test("loads API-backed cemetery records and supports search", async ({ page }) =
   await expect(page.getByLabel("Map legend")).toContainText("Gravesite Status");
   await expect(page.getByLabel("Map legend")).toContainText("Headstone marker");
   await expect(page.getByText(/\d+ results/)).toBeVisible();
-  const firstResult = page.locator(".result-card").first();
+  await page.getByRole("combobox", { name: "Cemetery", exact: true }).selectOption({ label: "St. Mark Church Cemetery" });
+  const firstResult = page.locator(".result-card")
+    .filter({ hasText: "St. Mark Church Cemetery" })
+    .filter({ hasText: "Section A, Lot 01, Space 01" }).first();
   await firstResult.click();
   await expect(page.getByRole("heading", { name: "A-01-01" })).toBeVisible();
-  await expect(page.getByText("St. Mark Church Cemetery").first()).toBeVisible();
-  await expect(page.locator(".result-card").filter({ hasText: "Reserved" }).first().locator(".result-meta")).toHaveCSS("color", "rgb(217, 164, 65)");
+  await expect(page.locator(".detail-panel").getByText("St. Mark Church Cemetery", { exact: true })).toBeVisible();
+  await expect(page.locator(".result-card").filter({ hasText: "Reserved" }).first().locator(".ui-status-badge")).toHaveCSS("color", "rgb(38, 52, 45)");
   await expect(firstResult.locator(".result-reason")).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "Loading grave details..." })).toBeHidden();
   await expect.poll(() => graveDetailRequests).toHaveLength(1);
@@ -751,7 +754,7 @@ test("admin can edit cemetery section alternate names", async ({ page }) => {
   await adminSectionsNav.getByRole("button", { name: "Records" }).click();
   await expect(page.getByRole("heading", { name: "Cemetery Records" })).toBeVisible();
 
-  await page.getByRole("combobox", { name: "Cemetery" }).selectOption({ label: "St. Mark Church Cemetery" });
+  await page.getByTitle("Search for and select the cemetery record to edit.", { exact: true }).selectOption({ label: "St. Mark Church Cemetery" });
   await expect(page.getByRole("combobox", { name: "Section" })).toBeVisible();
   await page.getByRole("combobox", { name: "Section" }).selectOption({ label: "Section A" });
   await expect(page.getByRole("combobox", { name: "Lot" })).toBeVisible();

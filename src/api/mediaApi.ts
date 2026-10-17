@@ -68,10 +68,10 @@ export type MoveMediaAssetInput = {
   id: string;
   linkId: string;
   linkType: "headstone" | "gravesite";
-  direction: "earlier" | "later";
+  direction: "earlier" | "later" | "primary" | "automatic";
 };
 
-export async function moveMediaAsset(input: MoveMediaAssetInput): Promise<{ moved: boolean }> {
+export async function moveMediaAsset(input: MoveMediaAssetInput): Promise<{ moved: boolean; updates: { id: string; is_primary?: boolean }[] }> {
   const response = await authorizedFetch(
     `${normalizeBaseUrl(apiBaseUrl)}/media-assets/${encodeURIComponent(input.id)}/order`,
     jsonRequest("PATCH", {
@@ -80,6 +80,6 @@ export async function moveMediaAsset(input: MoveMediaAssetInput): Promise<{ move
       direction: input.direction,
     }),
   );
-  return jsonResponse<{ moved: boolean }>(response, "Photo order API");
+  return jsonResponse<{ moved: boolean; updates: { id: string; is_primary?: boolean }[] }>(response, "Photo order API");
 }
 

@@ -49,7 +49,7 @@ export async function fetchAdminUsers(): Promise<AppUser[]> {
   return jsonResponse<AppUser[]>(response, "Users API");
 }
 
-export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "assignedCemeteryIds" | "isActive">;
+export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "assignedCemeteryIds" | "isActive"> & { accessRequestId?: string };
 
 export type ResolveAuth0UserInput = Pick<AppUser, "email" | "displayName">;
 
@@ -84,7 +84,7 @@ export type SaveCemeteryTextInput = Pick<
 >;
 export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames" | "notes">;
 export type SaveLotTextInput = Pick<LotTextRecord, "name">;
-export type SaveLookupInput = Pick<LookupRecord, "code" | "label" | "description" | "sortOrder" | "isActive" | "sourceNotes" | "sourceUrl">;
+export type SaveLookupInput = Pick<LookupRecord, "code" | "label" | "description" | "isActive" | "sourceNotes" | "sourceUrl" | "militaryBranchId" | "abbreviation" | "payGrade" | "rankGroup">;
 export type SaveAuditRetentionPolicyInput = Pick<AuditRetentionPolicy, "retentionDays" | "minimumProtectedDays" | "batchSize" | "isEnabled"> & {
   reason?: string;
 };
@@ -97,8 +97,9 @@ export async function fetchCemeteryAdminRecords(): Promise<CemeteryAdminRecords>
   return jsonResponse<CemeteryAdminRecords>(response, "Cemetery admin records API");
 }
 
-export async function fetchDataQualityDashboard(): Promise<DataQualityDashboard> {
-  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/data-quality-dashboard`);
+export async function fetchDataQualityDashboard(cemeteryId = ""): Promise<DataQualityDashboard> {
+  const query = cemeteryId ? `?cemeteryId=${encodeURIComponent(cemeteryId)}` : "";
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/data-quality-dashboard${query}`);
   return jsonResponse<DataQualityDashboard>(response, "Data quality dashboard API");
 }
 

@@ -1,3 +1,4 @@
+import { isVeteran as veteranFlag } from "../shared/recordNormalization.mjs";
 export function parseGeometry(value) {
   if (!value) return undefined;
   return typeof value === "string" ? JSON.parse(value) : value;
@@ -42,8 +43,7 @@ export function toOwner(owner) {
 }
 
 export function toBurial(burial) {
-  const veteranText = String(burial.veteran ?? "").trim().toLowerCase();
-  const isVeteran = ["yes", "y", "true", "1"].includes(veteranText);
+  const isVeteran = veteranFlag(burial.veteran);
   const normalizedProvenance = burial.source_properties?.NormalizedProvenance ?? {};
 
   return {
@@ -51,12 +51,29 @@ export function toBurial(burial) {
     person: {
       id: `person-${burial.id}`,
       firstName: burial.first_name ?? "",
+      givenNameStatus: burial.given_name_status ?? (burial.first_name?.trim() ? "recorded" : "unknown"),
+      displayName: burial.display_name ?? "",
       lastName: burial.last_name ?? burial.full_name ?? "Unknown",
       maidenName: burial.maiden_name ?? "",
+      namePrefix: burial.name_prefix ?? "",
       nameSuffix: burial.name_suffix ?? "",
       birthDate: recordedDate(burial.birth_date_text, burial.birth_date),
       deathDate: recordedDate(burial.death_date_text, burial.death_date),
     },
+    birthPlace: burial.birth_place_id
+      ? {
+          id: burial.birth_place_id,
+          displayName: burial.birth_place_name,
+          locality: burial.birth_place_locality ?? "",
+          administrativeArea: burial.birth_place_administrative_area ?? "",
+          countryName: burial.birth_place_country_name ?? "",
+          countryCode: burial.birth_place_country_code ?? "",
+          authorityName: burial.birth_place_authority_name ?? "",
+          authorityIdentifier: burial.birth_place_authority_identifier ?? "",
+          authorityUrl: burial.birth_place_authority_url ?? "",
+          verificationStatus: burial.birth_place_verification_status ?? "verified",
+        }
+      : undefined,
     deathPlace: burial.death_place_id
       ? {
           id: burial.death_place_id,
@@ -79,6 +96,7 @@ export function toBurial(burial) {
       burial.interment_type_label ??
       (burial.interment_type === "urn" ? "Funeral urn" : burial.interment_type === "casket" ? "Casket" : "Unknown or not applicable"),
     funeralHome: burial.funeral_home ?? "",
+    sourceUrl: burial.source_url ?? "",
     veteran: isVeteran,
     militaryBranchCode: burial.military_branch_code ?? "",
     militaryBranch: burial.military_branch ?? "",
@@ -204,6 +222,9 @@ export function toHeadstone(row) {
     vaseNotes: row.vase_notes ?? "",
     conditionNotes: row.condition_notes ?? "",
     inscription: row.inscription ?? "",
+    faces: row.faces ?? [],
+    facesRevision: row.faces_revision ?? 0,
+    facePeople: row.face_people ?? [],
     designNotes: row.design_notes ?? "",
     backDescription: row.back_description ?? "",
     photoUrl: row.photo_url ?? "",
@@ -219,6 +240,7 @@ export function toHeadstone(row) {
     provenanceVerificationSource: normalizedProvenance.verificationSourceType ?? normalizedProvenance.markerGeometrySourceType ?? "manual_review",
     provenanceVerifiedAt: normalizedProvenance.verifiedAt,
     relationshipType: row.relationship_type ?? "primary",
+    spansMultipleGravesites: Boolean(row.spans_multiple_gravesites) || row.relationship_type === "spans",
     relationshipNotes: row.relationship_notes ?? "",
     associatedGravesiteIds: row.associated_gravesite_ids ?? [],
     burialIds: row.burial_ids ?? [],
@@ -252,6 +274,10 @@ export function toMediaAsset(row) {
     notes: row.notes ?? "",
     source: row.source,
     status: row.status,
+    mediaLinkId: row.media_link_id ?? undefined,
+    mediaLinkType: row.media_link_type ?? undefined,
+    isPrimary: row.is_primary === true,
+    displayOrder: row.display_order ?? undefined,
   };
 }
 

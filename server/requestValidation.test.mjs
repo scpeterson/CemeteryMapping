@@ -58,7 +58,7 @@ function emptyCemeteryPool() {
       assert.doesNotMatch(sql, /SELECT 'Cemetery ID'/u);
       assert.doesNotMatch(sql, /SELECT 'Lot ID'/u);
       assert.doesNotMatch(sql, /WITH status_labels/u);
-      assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true, undefined]);
+      assert.deepEqual(values, ["garcia'; drop table gravesites; --", [], true, undefined, null, 51, 0]);
       return { rows: [] };
     },
   };
@@ -120,12 +120,14 @@ test("burial payload validation accepts recorded cemetery date text", () => {
     firstName: "Henry",
     lastName: "McWilliams",
     maidenName: "Smith",
+    namePrefix: " Reverend ",
     nameSuffix: "M.D.",
     birthDate: "1909",
     deathDate: "Dec 16, 1965",
     burialDate: "",
     intermentType: "casket",
     funeralHome: "",
+    sourceUrl: "https://www.findagrave.com/memorial/123/example",
     veteran: false,
     militaryBranchCode: "",
     militaryRankCode: "",
@@ -138,12 +140,39 @@ test("burial payload validation accepts recorded cemetery date text", () => {
 
   assert.equal(validateBurialPayload(basePayload).deathDate, "Dec 16, 1965");
   assert.equal(validateBurialPayload(basePayload).maidenName, "Smith");
+  assert.equal(validateBurialPayload(basePayload).namePrefix, "Reverend");
+  assert.equal(validateBurialPayload({ ...basePayload, namePrefix: "" }).namePrefix, "");
+  assertBadRequest(() => validateBurialPayload({ ...basePayload, namePrefix: "x".repeat(101) }), "Prefix or title is too long.");
   assert.equal(validateBurialPayload(basePayload).nameSuffix, "M.D.");
+  assert.equal(validateBurialPayload(basePayload).sourceUrl, "https://www.findagrave.com/memorial/123/example");
   assert.deepEqual(validateBurialPayload(basePayload).militaryDecorationCodes, ["purple_heart"]);
   assert.equal(validateBurialPayload({ ...basePayload, deathPlaceId: "12121212-1212-4121-8121-121212121212" }).deathPlaceId, "12121212-1212-4121-8121-121212121212");
   assert.equal(validateBurialPayload({ ...basePayload, birthDate: "Nov. 1929," }).birthDate, "Nov. 1929,");
   assert.equal(validateBurialPayload({ ...basePayload, deathDate: "December 16 1965" }).deathDate, "December 16 1965");
   assert.equal(validateBurialPayload({ ...basePayload, veteran: true, militaryEnlistedDate: "1942-10-02" }).militaryEnlistedDate, "1942-10-02");
+});
+
+test("burial payload validation rejects unsafe or relative information source URLs", () => {
+  const payload = {
+    firstName: "Henry",
+    lastName: "McWilliams",
+    birthDate: "",
+    deathDate: "",
+    burialDate: "",
+    intermentType: "casket",
+    funeralHome: "",
+    veteran: false,
+    notes: "",
+  };
+
+  assertBadRequest(
+    () => validateBurialPayload({ ...payload, sourceUrl: "javascript:alert(1)" }),
+    "Information source URL must use http or https.",
+  );
+  assertBadRequest(
+    () => validateBurialPayload({ ...payload, sourceUrl: "findagrave.com/memorial/123" }),
+    "Information source URL must be a valid absolute URL.",
+  );
 });
 
 test("ownership payload validation accepts a year-only effective date", () => {
@@ -268,7 +297,7 @@ test("search includes generalized ownership rights only through ownership-aware 
         };
       }
       assert.match(sql, /current_ownership_right_owners/);
-      assert.deepEqual(values, ["baur", [], false, []]);
+      assert.deepEqual(values, ["baur", [], false, [], null, 51, 0]);
       return { rows: [] };
     },
   };
@@ -294,7 +323,7 @@ test("search returns cemetery name and lot field reasons", async () => {
           ],
         };
       }
-      assert.deepEqual(values, ["trinity", [], true, undefined]);
+      assert.deepEqual(values, ["trinity", [], true, undefined, null, 51, 0]);
       return {
         rows: [
           {

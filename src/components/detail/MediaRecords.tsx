@@ -1,25 +1,12 @@
-import { type ChangeEvent, type FormEvent, useState } from "react";
-import { Camera, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
-import { apiBaseUrl } from "../../config/environment";
+import { sortedMediaAssets } from "../../lib/media";
+import { Modal } from "../ui/Modal";
+import { type ChangeEvent, type FormEvent, useRef, useState } from "react";
+import { Camera, Star, Trash2, X } from "lucide-react";
+import { MediaPhoto } from "./MediaPhoto";
 import { formatDate } from "../../lib/format";
 import type { Headstone, MediaAsset } from "../../types";
 
-function mediaUrl(asset: MediaAsset) {
-  if (/^https?:\/\//u.test(asset.fileUrl)) return asset.fileUrl;
-  if (/^https?:\/\//u.test(apiBaseUrl)) return `${new URL(apiBaseUrl).origin}${asset.fileUrl}`;
-  return asset.fileUrl;
-}
-
-function sortedMediaAssets(assets: MediaAsset[]) {
-  return [...assets].sort((left, right) => {
-    const leftOrder = left.displayOrder ?? Number.MAX_SAFE_INTEGER;
-    const rightOrder = right.displayOrder ?? Number.MAX_SAFE_INTEGER;
-    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
-    const leftDate = Date.parse(left.capturedAt ?? left.uploadedAt ?? "");
-    const rightDate = Date.parse(right.capturedAt ?? right.uploadedAt ?? "");
-    return (Number.isNaN(rightDate) ? 0 : rightDate) - (Number.isNaN(leftDate) ? 0 : leftDate);
-  });
-}
+const galleryPreviewLimit = 4;
 
 export function MediaGallery({
   assets,
@@ -32,12 +19,17 @@ export function MediaGallery({
   emptyMessage?: string;
   canDelete?: boolean;
   onDelete?: (assetId: string, reason?: string) => Promise<void>;
-  onMove?: (asset: MediaAsset, direction: "earlier" | "later") => Promise<void>;
+  onMove?: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;
 }) {
   const sortedAssets = sortedMediaAssets(assets);
+  const previewAssets = sortedAssets.slice(0, galleryPreviewLimit);
+  const [isShowingAll, setIsShowingAll] = useState(false);
   const [deletingId, setDeletingId] = useState<string>();
   const [movingId, setMovingId] = useState<string>();
   const [error, setError] = useState<string>();
+
+
+
   if (!sortedAssets.length) return <p className="muted">{emptyMessage}</p>;
 
   const deleteAsset = async (asset: MediaAsset) => {
@@ -55,49 +47,35 @@ export function MediaGallery({
     }
   };
 
-  const moveAsset = async (asset: MediaAsset, direction: "earlier" | "later") => {
+  const moveAsset = async (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => {
     if (!onMove) return;
     setMovingId(asset.id);
     setError(undefined);
     try {
       await onMove(asset, direction);
     } catch (moveError) {
-      setError(moveError instanceof Error ? moveError.message : "Unable to reorder photo.");
+      setError(moveError instanceof Error ? moveError.message : "Unable to change primary photo.");
     } finally {
       setMovingId(undefined);
     }
   };
 
-  return (
-    <>
-      <div className="media-gallery">
-        {sortedAssets.map((asset, index) => (
+  const gallery = (visibleAssets: MediaAsset[], expanded: boolean) => (
+    <div className={`media-gallery${expanded ? " media-gallery-expanded" : ""}`}>
+      {visibleAssets.map((asset) => {
+        return (
           <div key={asset.id} className="media-gallery-card">
-            <a className="media-gallery-item" href={mediaUrl(asset)} target="_blank" rel="noreferrer">
-              <img src={mediaUrl(asset)} alt={asset.notes || asset.originalFilename || "Cemetery record photo"} loading="lazy" />
+            <MediaPhoto asset={asset}>
               <span>{asset.capturedAt ? `Date taken: ${formatDate(asset.capturedAt)}` : `Uploaded: ${formatDate(asset.uploadedAt)}`}</span>
-            </a>
-            {onMove && sortedAssets.length > 1 ? (
-              <div className="media-order-controls" aria-label="Photo display order">
-                <button
-                  type="button"
-                  onClick={() => void moveAsset(asset, "earlier")}
-                  disabled={index === 0 || movingId === asset.id}
-                  aria-label="Move photo earlier"
-                  title="Move photo earlier"
-                >
-                  <ChevronLeft size={14} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void moveAsset(asset, "later")}
-                  disabled={index === sortedAssets.length - 1 || movingId === asset.id}
-                  aria-label="Move photo later"
-                  title="Move photo later"
-                >
-                  <ChevronRight size={14} aria-hidden="true" />
-                </button>
-              </div>
+            </MediaPhoto>
+            {asset.isPrimary ? <span className="media-primary-label"><Star size={14} aria-hidden="true" /> Primary photo</span> : null}
+            {onMove && asset.mediaLinkId ? (
+              <button type="button" className="media-primary-button"
+                onClick={() => void moveAsset(asset, asset.isPrimary ? "automatic" : "primary")}
+                disabled={Boolean(movingId)}
+                aria-label={`${asset.isPrimary ? "Remove primary" : "Make primary"}: ${asset.originalFilename || asset.id}`}>
+                {movingId === asset.id ? "Saving…" : asset.isPrimary ? "Remove primary" : "Make primary"}
+              </button>
             ) : null}
             {canDelete && onDelete ? (
               <button
@@ -112,9 +90,34 @@ export function MediaGallery({
               </button>
             ) : null}
           </div>
-        ))}
-      </div>
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <>
+      {gallery(previewAssets, false)}
+      {sortedAssets.length > galleryPreviewLimit ? (
+        <button type="button" className="media-gallery-view-all" onClick={() => setIsShowingAll(true)}>
+          View all photos ({sortedAssets.length})
+        </button>
+      ) : null}
+      {isShowingAll ? (
+        <Modal className="media-gallery-modal" label="All photos" onClose={() => setIsShowingAll(false)}>
+            <header>
+              <div>
+                <h3 id="media-gallery-modal-title">All photos</h3>
+                <p>{sortedAssets.length} photos, {sortedAssets.some((asset) => asset.isPrimary) ? "primary first, then newest first" : "newest first"}</p>
+              </div>
+              <button type="button" className="media-gallery-modal-close" onClick={() => setIsShowingAll(false)} aria-label="Close all photos">
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
+            {gallery(sortedAssets, true)}
+        </Modal>
+      ) : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
     </>
   );
 }
@@ -130,38 +133,62 @@ export function PhotoUploadForm({
   gravesiteOnly?: boolean;
   onUpload: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
 }) {
-  const [file, setFile] = useState<File>();
+  const [files, setFiles] = useState<File[]>([]);
   const [headstoneId, setHeadstoneId] = useState(fixedHeadstone?.id ?? "");
   const [capturedAt, setCapturedAt] = useState("");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
+  const [results, setResults] = useState<{ name: string; status: string }[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const uploading = useRef(false);
 
   const chooseFile = (event: ChangeEvent<HTMLInputElement>) => {
-    setFile(event.target.files?.[0]);
+    setFiles(Array.from(event.target.files ?? []));
+    setResults([]);
     setMessage(undefined);
     setError(undefined);
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = event.currentTarget;
-    if (!file) return;
+    if (!files.length || uploading.current) return;
+    uploading.current = true;
     setIsSaving(true);
     setError(undefined);
     setMessage(undefined);
+    const queue = files;
+    const failed: File[] = [];
+    const nextResults = queue.map(file => ({ name: file.name, status: "Waiting" }));
+    setResults([...nextResults]);
     try {
-      await onUpload({ file, headstoneId: fixedHeadstone?.id ?? (headstoneId || undefined), notes, capturedAt: capturedAt || undefined });
-      setFile(undefined);
-      setHeadstoneId(fixedHeadstone?.id ?? "");
-      setCapturedAt("");
-      setNotes("");
-      setMessage("Photo uploaded and linked.");
-      form.reset();
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Unable to upload photo.");
+      for (const [index, file] of queue.entries()) {
+        nextResults[index] = { name: file.name, status: "Uploading" };
+        setResults([...nextResults]);
+        setMessage(`Uploading ${index + 1} of ${queue.length}…`);
+        try {
+          await onUpload({ file, headstoneId: fixedHeadstone?.id ?? (headstoneId || undefined), notes, capturedAt: capturedAt || undefined });
+          nextResults[index] = { name: file.name, status: "Uploaded" };
+        } catch (uploadError) {
+          failed.push(file);
+          nextResults[index] = { name: file.name, status: uploadError instanceof Error ? uploadError.message : "Unable to upload photo." };
+        }
+        setResults([...nextResults]);
+      }
+      setFiles(failed);
+      if (fileInput.current) fileInput.current.value = "";
+      const uploaded = queue.length - failed.length;
+      setMessage(queue.length === 1 && uploaded === 1 ? "Photo uploaded and linked." : `${uploaded} of ${queue.length} photos uploaded and linked.`);
+      if (failed.length) {
+        setError(`${failed.length} photo${failed.length === 1 ? "" : "s"} failed. Retry uploads only the failed photos.`);
+      } else {
+        setHeadstoneId(fixedHeadstone?.id ?? "");
+        setCapturedAt("");
+        setNotes("");
+      }
     } finally {
+      uploading.current = false;
       setIsSaving(false);
     }
   };
@@ -170,7 +197,7 @@ export function PhotoUploadForm({
     <form className="photo-upload-form" onSubmit={(event) => void submit(event)}>
       <label>
         Photo
-        <input type="file" accept="image/*" capture="environment" onChange={chooseFile} />
+        <input ref={fileInput} type="file" accept="image/*" multiple disabled={isSaving} onChange={chooseFile} />
       </label>
       {fixedHeadstone ? (
         <div className="photo-upload-linked-marker">
@@ -185,7 +212,7 @@ export function PhotoUploadForm({
       ) : (
         <label>
           Link marker
-          <select value={headstoneId} onChange={(event) => setHeadstoneId(event.target.value)}>
+          <select disabled={isSaving} value={headstoneId} onChange={(event) => setHeadstoneId(event.target.value)}>
             <option value="">Gravesite overview</option>
             {headstones.map((headstone) => (
               <option key={headstone.id} value={headstone.id}>
@@ -197,17 +224,20 @@ export function PhotoUploadForm({
       )}
       <label>
         Date taken
-        <input type="date" value={capturedAt} onChange={(event) => setCapturedAt(event.target.value)} />
+        <input type="date" disabled={isSaving} value={capturedAt} onChange={(event) => setCapturedAt(event.target.value)} />
       </label>
       <label className="headstone-wide-field">
         Notes
-        <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} />
+        <textarea disabled={isSaving} value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} />
       </label>
-      {message ? <p className="detail-message is-success">{message}</p> : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
-      <button type="submit" disabled={!file || isSaving}>
+      <p className="muted">Select one or more photos. The marker, date, and notes apply to all selected photos; leave the date blank to use each photo’s available date metadata.</p>
+      {files.length && !isSaving && !results.length ? <p>{files.length} photo{files.length === 1 ? "" : "s"} selected: {files.map(file => file.name).join(", ")}</p> : null}
+      {results.length ? <ul aria-label="Photo upload results">{results.map((result, index) => <li key={index}>{result.name}: {result.status}</li>)}</ul> : null}
+      {message ? <p className="detail-message is-success" role="status">{message}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
+      <button type="submit" disabled={!files.length || isSaving}>
         <Camera size={15} aria-hidden="true" />
-        {isSaving ? "Uploading..." : "Upload photo"}
+        {isSaving ? "Uploading..." : error && files.length ? "Retry failed photos" : files.length > 1 ? "Upload photos" : "Upload photo"}
       </button>
     </form>
   );

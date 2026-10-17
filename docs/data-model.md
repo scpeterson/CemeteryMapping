@@ -93,7 +93,7 @@ erDiagram
 
 | Table | Purpose |
 | --- | --- |
-| `burials` | Person/burial facts associated with a gravesite, including names, an optional suffix/title for credentials such as `M.D.`, date display values, interment type, record status, veteran status, branch, rank, and war service. |
+| `burials` | Person/burial facts associated with a gravesite, including names, an optional prefix/title such as `Rev.` and suffix/credentials such as `M.D.`, date display values, interment type, record status, veteran status, branch, rank, and war service. |
 | `military_decoration_types`, `burial_military_decorations` | Controlled military decorations and their many-to-many burial relationships. Initial values include Purple Heart and Bronze Star Medal. Decorations supplement veteran status rather than replacing it. |
 | `burial_interment_types` | Dropdown values for interment method, such as casket or cremation. |
 | `burial_record_status_types` | Distinguishes normal burials from records such as living/pre-need marker entries. |
@@ -101,6 +101,16 @@ erDiagram
 | `military_rank_types` | Branch-specific rank values. Ranks are tied to a military branch because branches do not all use the same rank names. |
 | `military_war_service_types` | Controlled values for wars or service periods. |
 | `memorials` | Point memorial records linked to burials when a memorial is separate from the primary headstone workflow. |
+
+### Burial Name Semantics
+
+Migration 399 adds nullable `given_name_status` and `display_name`; migration 404 adds nullable `name_prefix`. Apply these migrations in each environment before deploying code that uses the fields.
+
+- `given_name_status` accepts `recorded`, `unknown`, or `no_given_name`. Database constraints require a nonblank `first_name` for `recorded` and a blank first name for either other explicit status.
+- A legacy NULL status is interpreted as `recorded` when a first name exists and `unknown` otherwise. An empty name never implies `no_given_name`; that status requires affirmative evidence.
+- A nonblank `display_name` takes precedence over the assembled name in the UI, search results, and reports. It is a description, not a replacement for structured name fields or the original marker inscription. Clearing it restores the assembled name, with a `No given name` label for that explicit status.
+- `name_prefix` precedes the name and `name_suffix` follows it. The API accepts up to 100 characters for the prefix and 255 for the display name. See [People editing examples](operator-workflows.md#recording-people-names-and-dates).
+- Older clients that omit `displayName` preserve the saved override. If `givenNameStatus` is omitted, updates infer `recorded` from a first name, preserve an existing `no_given_name` when the first name remains blank, and otherwise use `unknown`.
 
 Partial dates should be stored as known precision, not forced into fake dates. For example, `1929` should remain a year-only value rather than becoming `1929-01-01`.
 
@@ -257,7 +267,7 @@ erDiagram
 | --- | --- |
 | `app_roles` | Application roles: `reader`, `power-user`, `cemetery-admin`, and `admin`. |
 | `app_users` | Local application user records mapped to Auth0 or trusted-header identities. The application database remains the source of truth for role and active status. |
-| `app_user_cemetery_access` | Cemetery assignments for scoped users. Non-admin users can only query or edit the cemeteries assigned to them. |
+| `app_user_cemetery_access` | Cemetery assignments for all non-admin roles, including readers. Admin/API account creation and updates require an assignment; the current map workflow expects exactly one. Reader assignments set map scope without granting edits. Editing additionally requires an authorized role and `can_edit`; system admins have system-wide access. |
 | `audit_events` | Append-only row-level history written by database triggers for authoritative business/admin tables. |
 | `audit_retention_policies` | Retention and purge settings for audit rows. |
 | `system_events` | Operational events such as unexpected API errors, health checks, job runs, warnings, and integration failures. |
@@ -289,4 +299,4 @@ Related documentation:
 - [Database Auditing](database-auditing.html)
 - [Data Sources](data-sources.html)
 - [Admin Workflows](admin-workflows.html)
-- [ADR 0015: Generalized Ownership Rights](adr/0015-generalized-ownership-rights.html)
+- [ADR 0015: Generalized Ownership Rights](adr/0015-generalized-ownership-rights.md)

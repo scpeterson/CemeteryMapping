@@ -1,0 +1,149 @@
+---
+---
+
+# Frontend Development
+
+[Documentation Home](index.md) | [Frontend ADR](adr/0001-vite-react-typescript-frontend.md)
+
+## Component Boundaries
+
+`useApplicationData` owns startup map/identity/options loading and lookup retry. `useCemeteryScope` owns scope filtering and labels. `selectionPermissions` centralizes selected-record access calculations; the API remains the authorization authority. Behavioral mutation tests in `tests/targeted-mutations.spec.ts` assert state and network effects rather than source formatting.
+
+Keep the application shell responsible for selection, workspace navigation, and coordinating data. Keep workflow-specific state and API operations in the relevant hooks. Preserve the lazy-loading boundaries for administration, reports, and control points.
+
+- `src/components/detail/` contains record views, editors, evidence lists, and galleries; `DetailPanel.tsx` coordinates the appropriate detail view.
+- `src/components/admin/use*Administration.ts` owns administration workflow state and operations.
+- `src/components/admin/deeds/` separates case filters, lists, editing, actions, and evidence review.
+- `src/components/admin/events/` contains independently lazy-loaded audit and system-event tabs; `shared.ts` holds their callback contract and JSON/retention formatting.
+- `src/components/admin/north-hills/` separates reading filters, lists, editing, source facts, and candidate matches.
+- `DeedsAdminTab.tsx` and `NorthHillsAdminTab.tsx` compose those sections with narrow typed props. Shared types and presentation helpers belong in their domain's `shared.ts`.
+
+Prefer a component with one editing or review responsibility over extending a coordinator with another large form. Avoid copying workflow state into child components unless the child intentionally owns an independent draft.
+
+## Read-Only Feature Summaries
+
+`GraveOverview` and `MarkerOverview` present names, dates, owner names, related features, and `OverviewPhoto` without editing controls. `overviewImages.ts` combines and deduplicates photo assets, then uses the gallery's shared ordering in `src/lib/media.ts`. The preview uses `useMediaUrl` for protected media and a read-only modal for enlargement. A missing photo and a failed photo load have distinct messages.
+
+Marker summaries fetch associated gravesite details through the existing authorized API, with at most four requests in flight and stale results discarded on selection changes. The overview shares an AbortController across its bounded request pool, aborts in-flight requests on cleanup or retry, and stops dequeuing linked graves after cancellation. Cancellation does not appear as a failed record. Honor explicit burial links, group people/owners by gravesite, and keep errors distinct from empty records. The API remains responsible for data access; the UI also hides ownership sections unless the selected cemetery is permitted.
+
+`App` increments `selectionVersion` only for user selections. `DetailPanel` keys the grave/marker panel by feature identity and that version so each click defaults to Overview, including repeat clicks; saves do not reset the tab. It rejects detail objects belonging to a different selection. Shared `DetailTabs` preserves keyboard navigation and draft guards. Gravesite editing belongs in Location, while standalone marker editing belongs in Details.
+
+`tests/overview.spec.ts` covers photos, linked people/owners, permissions, empty and failure states, and selection defaults.
+
+## Shared Controls and Feedback
+
+Use `src/components/ui/` for common behavior:
+
+| Component | Contract |
+| --- | --- |
+| `Button` | Primary, secondary, or danger styling; defaults to `type="button"`. Set `type="submit"` for form submission. `busy` disables the control and exposes `aria-busy`. |
+| `TextField` | Associates its label with the input, assigns an ID when needed, and connects hint/error text through `aria-describedby` and `aria-invalid`. |
+| `Notice` | Uses a status announcement for informational/success feedback and an alert for errors. |
+| `EmptyState` | Explains an empty view and can provide a useful next step. |
+| `StatusBadge` | Combines a text label with a neutral, success, or warning appearance. For cemetery statuses, pass `color` from `statusColors` to preserve the six domain colors with a dot and tinted background. Do not collapse grave statuses into generic tones or communicate status through color alone. |
+| `Modal` | Uses native `showModal()`, makes background content inert, wraps Tab/Shift+Tab, handles Escape, and restores focus. It does not dismiss on backdrop clicks. |
+| `ConfirmationProvider` / `useConfirmation` | Provides an asynchronous confirmation dialog; Cancel receives initial focus. Await the returned boolean before performing the action. |
+
+Use `protectDrafts` on editable panels that must check drafts before Escape closes them. Photo viewers and nested action confirmations do not discard editor drafts just by closing. The navigation-discard warning currently uses the browser's synchronous confirmation, independently of `useConfirmation`.
+
+## Error Recovery
+
+Use the shared API client in `src/api/apiClient.ts` for actionable connection, session, permission, conflict, upload, and server-error messages. Unexpected server failures can include a `referenceId`; retain the displayed reference for support without exposing internal exception details.
+
+Distinguish loading, empty, failed, and stale states. Provide scoped retry actions for editing options, photos, reports, place searches, and linked records. Disable lookup-dependent edits and saves until options load. Keep existing drafts after failed saves and label retained report results after a failed request.
+
+Announce validation errors accessibly and associate date errors with their fields. Validate calendar dates, including leap years, while preserving supported partial-date precision. External map-layer notices identify the failed provider, allow per-layer retry, and clear on recovery; Diagram view hides external layers. Control-point load failures must not overwrite unreadable stored data.
+
+The [operator recovery guide](operator-workflows.md#recovering-from-load-and-save-errors) describes the user-facing actions.
+
+## Draft State and Navigation
+
+`src/hooks/useDraftState.ts` intentionally distinguishes edits from loading or accepting a record. It compares JSON-serializable values against a saved baseline; update values immutably and keep files, DOM nodes, and other non-serializable objects outside this state.
+
+```tsx
+const [form, setForm] = useDraftState(initialRecord);
+
+// A functional update edits the draft and retains its baseline.
+setForm((current) => ({ ...current, name: nextName }));
+
+// A replacement loads a record or accepts a successful save as the new baseline.
+setForm(savedRecord);
+```
+
+Do not pass a replacement object from a user-edit handler: that would incorrectly mark the edit as saved. Only establish a new baseline after loading a record, explicitly discarding/reloading, or successfully saving it. A failed save must leave the draft intact. Switching records must be guarded before replacing state.
+
+`App` installs `useDraftNavigationGuard` once. It protects result selection, detail/admin tabs, marked record-selection controls, recognized cancel/close/new/reset buttons, and page exit while tracked drafts exist. Add `data-discard-draft` to a new button that replaces an editor. For map callbacks or keyboard navigation outside those click handlers, call `confirmDiscardChanges()` before changing selection. A confirmed discard resets all registered drafts to their baselines; canceled navigation must not proceed.
+
+This tracking is not universal form middleware. Audit new form state and navigation handlers explicitly. Mounted phone views retain their state while hidden; drafts are not persisted across reloads or browser sessions.
+
+Gravesite updates additionally send the detail response's `version` as `expectedVersion`. HTTP 409 preserves the draft and requires an explicit reload/reconciliation. Keep this concurrency check distinct from the local unsaved-edit warning. Async save completion may update the map data, but must not reselect a grave after the user has selected another record.
+
+## Styling and Responsive Layout
+
+`src/styles/tokens.css` defines shared colors, spacing, type sizes, radii, and control sizing. Reuse these tokens when extending controls. The stylesheet entry remains `src/styles.css`:
+
+- core map and general layout: `src/styles/core-map.css`;
+- record details and administration: `src/styles/detail.css` and `src/styles/admin.css`;
+- report/print and control-point styles: `src/components/reports.css` and `src/components/control-points.css`;
+- common UI controls, focus outlines, and reduced-motion behavior: `src/components/ui/ui.css`;
+- breakpoint overrides and phone navigation: `src/styles/responsive.css`.
+
+`src/styles/admin.css` is an ordered import entry for the feature sections in `src/styles/admin/` (workspace, deeds, records, data quality, source people, OCR readings, and events). Keep cross-feature selectors in their existing section when their position affects the cascade.
+
+`src/styles/detail.css` imports record sections from `src/components/detail/styles/`, alongside the detail components. These cover ownership, burial, review, marker geometry, maintenance, photos, and timeline evidence.
+
+`src/styles/core-map.css` imports the ordered foundation/account, panel, search, map control, map key, and toolbar/modal sections from `src/styles/map/`.
+
+Preserve cascade order when moving rules. Check print output when changing report or modal styles. At 760 pixels or less, Search/Map/Details are separate visible views while their components remain mounted. The map uses a resize observer when its container changes size. Keep map view and selection controls in the wrapping toolbar, zoom controls in their separate column, and measurement feedback in toolbar flow.
+
+## Signed-In Workspace
+
+`ApplicationHeader` displays the title and cemetery count, Reports/Control/Admin actions, and account controls in the normal-flow header above `App`'s workspace. Its styles live in `src/components/application-header.css`. `AuthenticatedShell` supplies identity and guarded logout through `SessionContext`; the header also works when authentication is disabled. Keep the workspace grid shrinkable and account text ellipsized. At 760 pixels or less, a Menu disclosure shows the application actions; Escape collapses it and restores focus to its toggle. Dialogs live outside the map panel so actions work from phone Search and Details views. Signing out checks tracked drafts before invoking Auth0 logout.
+
+`tests/auth-layout.spec.ts` runs the production shell with a controlled Auth0 context, so layout tests exercise the signed-in controls even when normal TEST authentication is disabled. Cover long identities, fallback labels, phone navigation, logout/canceled logout, and report print visibility. The application header is excluded from print output while reports remain printable. `tests/application-header.spec.ts` additionally covers header sizing, the phone menu, permissions, and dialogs launched while the map is hidden.
+
+## Protected Photos
+
+Use `src/hooks/useMediaUrl.ts` for protected media, as the gallery and marker reports do. It fetches same-API-origin `/media/` images through `authorizedFetch`, creates an object URL, aborts stale loads, and revokes the object URL on cleanup. Gallery downloads begin near the viewport, preview existing thumbnails, and load originals in a viewer only when opened. Protected downloads remain uncached; report photos remain eager for printing. External image URLs bypass the authenticated fetch. Do not use a plain `<img src="/media/...">` for protected assets or persist a temporary `blob:` URL as a share link.
+
+## Reports
+
+`ReportsPanel` composes controls around `useReportWorkflow`, which owns catalog loading, selected parameters, report execution, query matching, and stale-result feedback. Catalog loading has separate state from execution. A new execution aborts the previous one; selecting another report, changing cemetery scope, or closing the panel also cancels execution. Completion handlers check cancellation before updating results or clearing loading state.
+
+Parameters are associated with the selected report rather than reset by an effect, so query-supplied values survive a report change. Printable marker pages and their protected-photo rendering live in `components/reports/MarkerBurialPages.tsx`. Keep API response shapes and print styling stable when extending either layer.
+
+## Map Geometry and Highlighting
+
+Graves, lots, and markers have stable GeoJSON feature IDs. Selection and search use MapLibre feature state in paint expressions, with `mapHighlightState.ts` applying only changed IDs. They do not rebuild geometry. Linked marker IDs are indexed by grave, and selecting a marker takes precedence over highlighting markers associated with the selected grave.
+
+Source-update effects depend on their geometry collections: boundaries, sections, restricted areas, lots, visible graves, and markers. Marker data also depends on veteran flags. Preserve stable collection references for unrelated edits so a record change does not reload every map layer. Feature IDs must remain stable across source updates; the browser regression verifies highlighting survives a geometry refresh and Diagram mode.
+
+Run `tests/map-highlighting.spec.ts` to check real MapLibre source-update counts alongside selection and search behavior; it expects zero additional GeoJSON `setData` calls for those interactions.
+
+## Validation
+
+Prepare a migrated, seeded TEST database using the [rebuild guide](rebuild.md), then run the checks appropriate to the change:
+
+```bash
+npm run lint
+npm run build:test
+npm run test:server
+APP_ENV=test npm run test:db-rules
+APP_ENV=test npm run test:e2e
+```
+
+`tests/improvements.spec.ts` covers delayed saves, conflict recovery, authenticated photos, toolbar overlap/clicks, draft navigation, mobile navigation, and search recovery. `tests/ui.spec.ts` covers keyboard tabs, nested dialog focus, administration rendering/selection, and horizontal overflow. Responsive tests save screenshots under Playwright's `test-results/` output. Review these images as well as assertions; overflow checks alone do not catch overlapping controls.
+
+Shared browser fixtures live in `tests/fixtures/cemetery.ts`. The nested-dialog harness and its mounting helper are test-only files. Keep API mocking limited to the boundaries a test needs, and retain API-backed coverage for real record reads and mutations. CI rebuilds TEST and runs lint, build, server, database, and browser checks. Test counts change as coverage grows; use the current run's results rather than a fixed documented count.
+
+## Marker Faces
+
+In marker Details, Edit opens Faces / Inscriptions. Add a face, give it a direction or custom label, transcribe its text, and select existing marker-linked people and photos. Photos can be assigned to multiple faces. Save and upload new photos before assigning them. Removing a face does not delete its people or photos. Unknown orientations stay Unspecified face.
+
+`MarkerFaces.tsx` shares the marker editor’s draft and save lifecycle. The API returns HTTP 409 for stale face revisions; the editor preserves the draft and asks the user to reload. Face galleries use the existing authenticated photo viewer. See [ADR 0069](adr/0069-marker-faces.md).
+
+Ordinary markers show a plain Inscription field in Edit, including markers with no previous inscription. Entering text automatically stores an Unspecified face; no face label, person selection, or photo assignment is required. Manage faces opens the optional multi-face editor. Add face starts another draft; Save marker saves all completed faces and ignores empty new drafts. A draft with inscription, notes, people, or photos still requires a label. Back of stone remains independently editable. Photos assigned to faces display only in those face galleries, with the usual photo controls; the general gallery displays unassigned photos.
+
+## Local Scratch Scripts
+
+Keep disposable investigations under root `tmp/`, which Git and ESLint ignore. Maintained application, server, test, and script sources remain linted. Move a reusable tool into `scripts/` with tests before committing it. `ApplicationRoot` owns route composition and lazy components so the bootstrap file remains compatible with Fast Refresh linting.

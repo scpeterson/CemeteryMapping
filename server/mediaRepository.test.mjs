@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -441,4 +441,92 @@ test("moveMediaAssetLink treats a stale boundary move as a successful no-op", as
   assert.deepEqual(result, { moved: false, updates: [] });
   assert.equal(queries.some((query) => query.sql.includes("UPDATE headstone_media_assets SET display_order")), false);
   assert.equal(queries.at(-2).sql, "COMMIT");
+});
+
+for (const kind of ["gravesite", "headstone"]) {
+  test(`${kind} uploads honor MEDIA_UPLOAD_DIR without an explicit storage override`, async () => {
+    const uploadRoot = await mkdtemp(join(tmpdir(), "configured-media-"));
+    const previousRoot = process.env.MEDIA_UPLOAD_DIR;
+    process.env.MEDIA_UPLOAD_DIR = uploadRoot;
+    const cemeteryId = "11111111-1111-4111-8111-111111111111";
+    const pool = { async connect() { return {
+      async query(sql, values = []) {
+        if (sql.includes("INSERT INTO media_assets")) return { rows: [{ id: values[0], file_url: values[3] }] };
+        if (sql.includes("FROM gravesites") || sql.includes("FROM headstones")) return { rows: [{ id: "22222222-2222-4222-8222-222222222222", cemetery_id: cemeteryId }] };
+        return { rows: [] };
+      },
+      release() {},
+    }; } };
+    try {
+      const file = { bytes: Buffer.from("configured photo"), contentType: "image/jpeg" };
+      const asset = kind === "gravesite"
+        ? await createGraveSpacePhoto(pool, cemeteryId, "A-01", file)
+        : await createHeadstonePhoto(pool, "22222222-2222-4222-8222-222222222222", file);
+      assert.equal(await readFile(join(uploadRoot, asset.fileUrl.replace("/media/", "")), "utf8"), "configured photo");
+    } finally {
+      if (previousRoot === undefined) delete process.env.MEDIA_UPLOAD_DIR;
+      else process.env.MEDIA_UPLOAD_DIR = previousRoot;
+      await rm(uploadRoot, { recursive: true });
+    }
+  });
+  for (const failure of ["INSERT INTO media_assets", "COMMIT"]) {
+    test(`${kind} upload safely handles failure at ${failure}`, async () => {
+      const uploadRoot = await mkdtemp(join(tmpdir(), "failed-upload-"));
+      const pool = { async connect() { return {
+        async query(sql, values = []) {
+          if (sql.includes(failure)) throw new Error("injected failure");
+          if (sql.includes("INSERT INTO media_assets")) return { rows: [{ id: values[0], file_url: values[3] }] };
+          if (sql.includes("FROM gravesites") || sql.includes("FROM headstones")) return { rows: [{ id: "22222222-2222-4222-8222-222222222222", cemetery_id: "cemetery" }] };
+          return { rows: [] };
+        }, release() {},
+      }; } };
+      try {
+        const file = { bytes: Buffer.from("photo"), contentType: "image/jpeg" };
+        const upload = kind === "gravesite"
+          ? createGraveSpacePhoto(pool, "cemetery", "A-01", file, {}, { uploadRoot })
+          : createHeadstonePhoto(pool, "marker", file, {}, { uploadRoot });
+        await assert.rejects(upload, /injected failure/);
+        const files = await readdir(uploadRoot);
+        assert.equal(files.length, failure === "COMMIT" ? 1 : 0);
+        assert.ok(files.every((name) => name.endsWith(".jpg")));
+      } finally { await rm(uploadRoot, { recursive: true }); }
+    });
+  }
+}
+
+for (const linkType of ["headstone", "gravesite"]) {
+  for (const direction of ["primary", "automatic"]) {
+    test(`${direction} photo selection is scoped and transactional for ${linkType}`, async () => {
+      const queries = [];
+      const pool = { connect: async () => ({
+        query: async (sql, values = []) => {
+          queries.push({ sql, values });
+          if (sql.includes("SELECT cemetery_id::text")) return { rows: [{ cemetery_id: "cemetery" }] };
+          if (sql.includes("AS target_id")) return { rows: [{ target_id: "record" }] };
+          if (sql.includes("SELECT link.id FROM")) return { rows: [{ id: "chosen" }] };
+          if (sql.includes("SET is_primary = false")) return { rows: [{ id: "previous", is_primary: false }] };
+          if (sql.includes("SET is_primary = true")) return { rows: [{ id: "chosen", is_primary: true }] };
+          return { rows: [] };
+        }, release() {},
+      }) };
+      const result = await moveMediaAssetLink(pool, "photo", { linkId: "chosen", linkType, direction, allowedCemeteryIds: ["cemetery"] });
+      assert.equal(result.moved, true);
+      const clear = queries.find(({ sql }) => sql.includes("SET is_primary = false"));
+      assert.deepEqual(clear.values, ["record", direction === "primary", "chosen"]);
+      assert.ok(queries.findIndex(({ sql }) => sql.includes("pg_advisory_xact_lock")) < queries.indexOf(clear));
+      assert.equal(result.updates.some((update) => update.is_primary), direction === "primary");
+      assert.equal(queries.at(-1).sql, "COMMIT");
+    });
+  }
+}
+
+test("primary selection refuses photos outside the user's cemetery", async () => {
+  const queries = [];
+  const pool = { connect: async () => ({
+    query: async (sql) => { queries.push(sql); return { rows: sql.includes("SELECT cemetery_id::text") ? [{ cemetery_id: "other" }] : [] }; },
+    release() {},
+  }) };
+  assert.deepEqual(await moveMediaAssetLink(pool, "photo", { linkId: "link", linkType: "headstone", direction: "primary", allowedCemeteryIds: ["allowed"] }), { forbidden: true });
+  assert.equal(queries.at(-1), "ROLLBACK");
+  assert.equal(queries.some((sql) => sql.includes("UPDATE")), false);
 });

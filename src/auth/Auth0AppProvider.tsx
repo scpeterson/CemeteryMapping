@@ -1,5 +1,7 @@
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useLayoutEffect } from "react";
+import { SessionContext } from "./sessionContext";
+import { confirmDiscardChanges } from "../hooks/useDraftState";
 import { setAccessTokenProvider } from "../api/cemeteryApi";
 import { auth0Audience, auth0ClientId, auth0Domain, auth0Scope, isAuth0Enabled } from "../config/environment";
 
@@ -7,10 +9,11 @@ type Auth0AppProviderProps = {
   children: ReactNode;
 };
 
-function AuthenticatedShell({ children }: Auth0AppProviderProps) {
+export function AuthenticatedShell({ children }: Auth0AppProviderProps) {
   const { error, getAccessTokenSilently, isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
 
-  useEffect(() => {
+  // Install authentication before descendant passive effects issue API requests.
+  useLayoutEffect(() => {
     if (!isAuthenticated) {
       setAccessTokenProvider(undefined);
       return undefined;
@@ -44,24 +47,24 @@ function AuthenticatedShell({ children }: Auth0AppProviderProps) {
     return (
       <main className="auth-screen">
         <h1>Cemetery Mapping</h1>
-        <p>Sign in with the configured Auth0 tenant to access cemetery records.</p>
+        <p>Sign in with an approved account to access cemetery records.</p>
         <button type="button" onClick={() => void loginWithRedirect()}>
           Sign in
         </button>
+        <p>Need an account? <a href="/request-access">Request access</a></p>
       </main>
     );
   }
 
   return (
-    <>
-      <div className="auth-session" aria-label="Signed in user">
-        <span>{user?.email ?? user?.name ?? "Signed in"}</span>
-        <button type="button" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
-          Sign out
-        </button>
-      </div>
+    <SessionContext.Provider value={{
+      identity: user?.email ?? user?.name ?? "Signed in",
+      signOut: () => {
+        if (confirmDiscardChanges()) void logout({ logoutParams: { returnTo: window.location.origin } });
+      },
+    }}>
       {children}
-    </>
+    </SessionContext.Provider>
   );
 }
 

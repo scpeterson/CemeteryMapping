@@ -1,9 +1,20 @@
+import { runBoundedQueries } from "./queryBatch.mjs";
 import { selectFeaturesForHeadstones } from "./cemeteryFeatureQueries.mjs";
 import { selectMaintenanceForHeadstones } from "./cemeteryMaintenanceQueries.mjs";
 import { selectRelationshipsForHeadstone } from "./cemeteryRelationshipQueries.mjs";
-import { recordReviewColumnsSql, tableColumnExists } from "./cemeterySchema.mjs";
+import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 const headstoneDetailColumnsSql = `
+  EXISTS (
+    SELECT 1 FROM headstone_gravesites shared_link
+    JOIN gravesites shared_grave ON shared_grave.id = shared_link.gravesite_uuid
+    WHERE shared_link.headstone_uuid = headstones.id
+      AND shared_link.relationship_type = 'spans'
+      AND shared_link.deleted_at IS NULL AND shared_grave.deleted_at IS NULL
+  ) AS spans_multiple_gravesites,
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id', b.id::text, 'fullName', b.full_name) ORDER BY b.full_name, b.id), '[]'::jsonb)
+    FROM headstone_burials hb JOIN burials b ON b.id=hb.burial_uuid
+    WHERE hb.headstone_uuid=headstones.id AND hb.deleted_at IS NULL AND b.deleted_at IS NULL) AS face_people,
   headstones.id::text,
   headstones.headstone_id,
   marker_types.id::text AS marker_type_id,
@@ -30,6 +41,8 @@ const headstoneDetailColumnsSql = `
   headstones.vase_notes,
   headstones.condition_notes,
   headstones.inscription,
+  headstones.faces,
+  headstones.faces_revision,
   headstones.design_notes,
   headstones.back_description,
   headstones.photo_url,
@@ -108,7 +121,8 @@ const headstoneMediaJoinSql = `
         'status', media_assets.status,
         'mediaLinkId', headstone_media_assets.id::text,
         'mediaLinkType', 'headstone',
-        'displayOrder', headstone_media_assets.display_order
+        'displayOrder', headstone_media_assets.display_order,
+        'isPrimary', headstone_media_assets.is_primary
       )
       ORDER BY headstone_media_assets.display_order, media_assets.captured_at DESC NULLS LAST, media_assets.uploaded_at DESC, media_assets.id
     ) AS media_assets
@@ -150,6 +164,8 @@ const headstoneDetailGroupBySql = `
   headstones.vase_notes,
   headstones.condition_notes,
   headstones.inscription,
+  headstones.faces,
+  headstones.faces_revision,
   headstones.design_notes,
   headstones.back_description,
   headstones.photo_url,
@@ -157,43 +173,42 @@ const headstoneDetailGroupBySql = `
   headstones.source_properties
 `;
 
-async function headstoneDetailReviewSql(client) {
-  const selectSql = await recordReviewColumnsSql(client, "headstones");
-  const hasReviewColumns = await tableColumnExists(client, "headstones", "data_confidence");
+function headstoneDetailReviewSql() {
+  const selectSql = recordReviewColumnsSql("headstones");
+
   return {
     select: selectSql,
-    groupBy: hasReviewColumns
-      ? `
+    groupBy: `
           headstones.data_confidence,
           headstones.review_status,
           headstones.review_notes,
           headstones.source_conflict,
           headstones.reviewed_by,
           headstones.reviewed_at
-        `
-      : "",
+        `,
   };
 }
 
 export async function selectHeadstonesForGrave(client, graveUuid) {
-  const reviewSql = await headstoneDetailReviewSql(client);
+  const reviewSql = headstoneDetailReviewSql();
   const result = await client.query(
     `
       WITH selected_headstones AS (
-        SELECT DISTINCT ON (headstones.id, COALESCE(headstone_gravesites.relationship_type, 'primary'), headstone_gravesites.notes)
+        SELECT DISTINCT ON (headstones.id)
           headstones.*,
           COALESCE(headstone_gravesites.relationship_type, 'primary') AS selected_relationship_type,
           headstone_gravesites.notes AS selected_relationship_notes
         FROM headstones
         LEFT JOIN headstone_gravesites
           ON headstone_gravesites.headstone_uuid = headstones.id
+         AND headstone_gravesites.gravesite_uuid = $1
          AND headstone_gravesites.deleted_at IS NULL
         WHERE headstones.deleted_at IS NULL
           AND (
             headstones.gravesite_uuid = $1
             OR headstone_gravesites.gravesite_uuid = $1
           )
-        ORDER BY headstones.id, COALESCE(headstone_gravesites.relationship_type, 'primary'), headstone_gravesites.notes
+        ORDER BY headstones.id
       )
       SELECT
         ${headstoneDetailColumnsSql},
@@ -225,8 +240,8 @@ export async function selectHeadstonesForGrave(client, graveUuid) {
   return result.rows;
 }
 
-export async function selectHeadstoneById(client, id) {
-  const reviewSql = await headstoneDetailReviewSql(client);
+export async function selectHeadstoneById(client, id, { parallel = false } = {}) {
+  const reviewSql = headstoneDetailReviewSql();
   const result = await client.query(
     `
       WITH selected_headstones AS (
@@ -333,9 +348,11 @@ export async function selectHeadstoneById(client, id) {
   const headstone = result.rows[0];
   if (!headstone) return undefined;
 
-  const featuresByHeadstone = await selectFeaturesForHeadstones(client, [headstone.id]);
-  const maintenanceByHeadstone = await selectMaintenanceForHeadstones(client, [headstone.id]);
-  const relationships = await selectRelationshipsForHeadstone(client, headstone.id);
+  const [featuresByHeadstone, maintenanceByHeadstone, relationships] = await runBoundedQueries([
+    () => selectFeaturesForHeadstones(client, [headstone.id]),
+    () => selectMaintenanceForHeadstones(client, [headstone.id]),
+    () => selectRelationshipsForHeadstone(client, headstone.id),
+  ], parallel ? 3 : 1);
   return {
     ...headstone,
     features: featuresByHeadstone.get(headstone.id) ?? [],

@@ -1,0 +1,44 @@
+import { useState, type FormEvent } from "react";
+import { AccessRequestVerification } from "./AccessRequestVerification";
+import { appEnvironment, apiBaseUrl } from "../config/environment";
+import { jsonRequest, jsonResponse, normalizeBaseUrl } from "../api/apiClient";
+
+export function RequestAccessPage() {
+  const [form, setForm] = useState({ displayName: "", email: "", cemeteryInterest: "", reason: "", website: "" });
+  const sitekey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+  const verificationRequired = Boolean(sitekey) || import.meta.env.VITE_TURNSTILE_REQUIRED === "true" || ["STAGE", "PROD"].includes(appEnvironment);
+  const [token, setToken] = useState("");
+  const [resetKey, setResetKey] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (verificationRequired && !token) { setError("Please complete the verification before submitting."); return; }
+    setBusy(true); setError("");
+    try {
+      const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/access-requests`, jsonRequest("POST", { ...form, turnstileToken: token }));
+      const result = await jsonResponse<{ message: string }>(response, "Request access");
+      setMessage(result.message);
+    } catch (failure) {
+      setError(failure instanceof TypeError ? "Couldn't reach the server. Please try again." : failure instanceof Error ? failure.message : "Unable to submit your request.");
+    } finally { setBusy(false); setToken(""); setResetKey((value) => value + 1); }
+  }
+  return <main className="access-request-page">
+    <h1>Request access</h1>
+    <p>Cemetery records are private. An administrator must approve your account before you can view them.</p>
+    {message ? <p role="status">{message}</p> : <form onSubmit={(event) => void submit(event)}>
+      <label>Your name<input autoComplete="name" required maxLength={250} value={form.displayName} onChange={(event) => setForm({ ...form, displayName: event.target.value })} /></label>
+      <label>Email<input type="email" autoComplete="email" required maxLength={320} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
+      <label>Cemetery of interest<input required maxLength={250} value={form.cemeteryInterest} onChange={(event) => setForm({ ...form, cemeteryInterest: event.target.value })} /></label>
+      <label>Why would you like access?<textarea required maxLength={2000} rows={4} value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} /></label>
+      <div className="access-request-honeypot" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={form.website} onChange={(event) => setForm({ ...form, website: event.target.value })} /></label></div>
+      <p>Your details will be shared with the system administrator to review your request. Please do not include passwords or sensitive personal records.</p>
+      {sitekey && <AccessRequestVerification sitekey={sitekey} resetKey={resetKey} onToken={setToken} />}
+      {verificationRequired && !sitekey && <p role="alert">Requests are temporarily unavailable. Please contact an administrator.</p>}
+      {error && <p role="alert">{error}</p>}
+      <button disabled={busy || (verificationRequired && !token)} type="submit">{busy ? "Submitting…" : "Submit request"}</button>
+    </form>}
+    <p><a href="/">Return to sign in</a></p>
+  </main>;
+}

@@ -85,6 +85,12 @@ Development and CI can continue using `AUTH_MODE=disabled` until Auth0 test tena
 
 The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT validation. After validation, the API loads `app_users` using the token `sub` claim and enforces the local `role_name`. Token permissions are useful context from Auth0, but the database remains the final application authorization source.
 
+The Auth0 setup script provisions all four roles, including `cemetery-admin`,
+with the permissions listed above. It does not assign roles to users or change
+application database roles or cemetery assignments. Creating the matching Auth0
+role keeps tenant configuration consistent; it does not grant application access
+on its own.
+
 Production database access should mirror the application role model with PostgreSQL group roles such as `cemetery_reader`, `cemetery_power_user`, `cemetery_admin`, and `cemetery_system_admin`. Normal web traffic still uses the API service database account plus transaction-local application audit context; mirrored PostgreSQL roles are for direct database users, maintenance scripts, imports, and break-glass administration so `current_user` and `session_user` remain meaningful in audit rows.
 
 When Management API credentials are configured, the Admin UI can find an Auth0 user by email or create an Auth0 database-connection user before saving the local `app_users` row. If `AUTH0_PASSWORD_RESET_CLIENT_ID` is also configured, newly created users receive Auth0's password reset email so they can set their own password. This keeps Auth0 responsible for identity while keeping application roles local.

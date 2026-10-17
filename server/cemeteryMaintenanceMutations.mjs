@@ -1,23 +1,17 @@
-import { setAuditContext } from "./auditContext.mjs";
+import { withAuditContext } from "./auditContext.mjs";
 import { maintenanceRecordJoinSql, maintenanceRecordSelectSql } from "./cemeteryMaintenanceQueries.mjs";
 import { toMaintenanceRecord } from "./cemeteryMappers.mjs";
 import { resolveCemeteryMutationTargets } from "./cemeteryMutationTargets.mjs";
 
 export async function createMaintenanceRecord(pool, cemeteryId, record, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
-
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     const targets = await resolveCemeteryMutationTargets(client, cemeteryId, record);
     if (!targets) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     const { gravesiteUuid, headstoneUuid } = targets;
 
@@ -79,22 +73,13 @@ export async function createMaintenanceRecord(pool, cemeteryId, record, { actorU
       [insertResult.rows[0].id],
     );
 
-    await client.query("COMMIT");
     return toMaintenanceRecord(result.rows[0]);
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function updateMaintenanceRecord(pool, id, record, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
-
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await client.query(
       `
         SELECT id::text, cemetery_id::text
@@ -107,8 +92,7 @@ export async function updateMaintenanceRecord(pool, id, record, { actorUser, rea
     );
     const existingRecord = existing.rows[0];
     if (!existingRecord || (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existingRecord.cemetery_id))) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
 
     await client.query(
@@ -150,12 +134,7 @@ export async function updateMaintenanceRecord(pool, id, record, { actorUser, rea
       [id],
     );
 
-    await client.query("COMMIT");
     return toMaintenanceRecord(result.rows[0]);
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }

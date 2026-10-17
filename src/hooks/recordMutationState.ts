@@ -89,3 +89,13 @@ export function moveMediaAssetInGrave(grave: GraveSpace | undefined, assetId: st
     ? movedGrave
     : { ...movedGrave, headstones };
 }
+
+// A save may finish after navigation. Apply it only to the record that started it.
+export function updateMatchingGrave<T extends Pick<GraveSpaceSummary, "id" | "cemeteryId">>(
+  current: T | undefined,
+  expected: Pick<GraveSpaceSummary, "id" | "cemeteryId"> | undefined,
+  update: T | undefined | ((current: T | undefined) => T | undefined),
+): T | undefined {
+  if (!current || !expected || graveKey(current) !== graveKey(expected)) return current;
+  return typeof update === "function" ? update(current) : update;
+}

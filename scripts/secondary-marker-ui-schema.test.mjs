@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const detailPanel = readFileSync(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+const detailPanel = ["CreateHeadstoneForm", "GraveDetailPanel"].map((name) => readFileSync(new URL(`../src/components/detail/${name}.tsx`, import.meta.url), "utf8")).join("\n");
 const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
 const cemeteryMap = readFileSync(new URL("../src/components/CemeteryMap.tsx", import.meta.url), "utf8");
 const api = readFileSync(new URL("../src/api/cemeteryApi.ts", import.meta.url), "utf8");

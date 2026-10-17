@@ -1,0 +1,99 @@
+.burial-notes {
+  display: grid;
+  gap: var(--space-1);
+  margin: 12px 0 0;
+  padding-left: 18px;
+  line-height: 1.35;
+}
+
+.timeline {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline li {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  padding-left: 18px;
+}
+
+.timeline li::before {
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #51715e;
+  border-radius: 50%;
+  background: #fbfcf7;
+  content: "";
+}
+
+.timeline time {
+  color: #607066;
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.timeline strong {
+  text-transform: capitalize;
+}
+
+.timeline small,
+.timeline p {
+  color: var(--text-muted);
+}
+
+.document-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #40594b;
+  font-size: 0.84rem;
+}
+
+.note-box {
+  margin-bottom: 0;
+  color: #4c5a51;
+}
+
+.inscription-box {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.north-hills-evidence-list {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: 10px;
+}
+
+.north-hills-evidence {
+  display: grid;
+  gap: var(--space-1);
+  padding: 10px 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  background: #f8faf6;
+}
+
+.north-hills-evidence strong {
+  color: #26342d;
+  font-size: 0.9rem;
+}
+
+.north-hills-evidence small {
+  color: #59675d;
+  font-size: var(--font-size-small);
+}
+
+.north-hills-evidence p {
+  margin: 0;
+  color: #26342d;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}

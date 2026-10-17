@@ -125,7 +125,16 @@ For each production user:
 - Start the API with `AUTH_MODE=auth0`.
 - Open the production frontend URL.
 - Confirm the Auth0 sign-in screen appears.
-- Sign in as a `reader` and confirm deed/owner sections are hidden.
+- Create a `reader` without an assignment and confirm saving is blocked; assign one cemetery and confirm saving succeeds. Repeat the missing-assignment check when updating an account.
+- Sign in as that `reader` and confirm the map opens at the assigned cemetery and deed/owner sections are hidden.
 - Sign in as a `power-user` or `cemetery-admin` with cemetery access and confirm assigned cemetery edits work.
-- Sign in as an `admin` and confirm user management and audit/system event tabs are visible.
+- Sign in as an `admin` without an assignment and confirm the initial map fits all cemeteries and user management and audit/system event tabs are visible.
+- Run the [assignment audit](hosted-test.md#cemetery-assignment-audit) after deployment or account-data restores. Correct legacy unassigned users before reactivation; the release does not backfill assignments.
 - Confirm an audit event records the application user fields and database user/session fields after an edit.
+
+## Access requests and private browsing
+
+Production requires approved application users for all cemetery browsing. Deploy
+the public request page and admin review described in [Requesting and Approving Access](access-requests.md).
+Verify public form reachability separately from protected record access, configure
+submission rate limiting at the edge, and test invitation delivery before launch.

@@ -1,3 +1,4 @@
+import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "../headstoneCemeterySql.mjs";
 import { optionalPositiveIntegerParameter, optionalTextParameter, reportResult, scopedWhere } from "./shared.mjs";
 
 export async function runMaintenanceNeeds(client, definition, parameters, cemeteryIds) {
@@ -5,7 +6,7 @@ export async function runMaintenanceNeeds(client, definition, parameters, cemete
   const values = [];
 
   if (daysSinceCleaned) {
-    const scope = scopedWhere("marker_scope.cemetery_id", values, cemeteryIds);
+    const scope = scopedWhere("cemeteries.id", values, cemeteryIds);
     values.push(daysSinceCleaned);
     const daysParam = `$${values.length}`;
     const result = await client.query(
@@ -16,26 +17,13 @@ export async function runMaintenanceNeeds(client, definition, parameters, cemete
             headstones.headstone_id,
             cemeteries.id AS cemetery_id,
             cemeteries.name AS cemetery,
-            COALESCE(primary_gravesite.gravesite_id, linked_gravesite.gravesite_id) AS gravesite_id,
-            COALESCE(primary_gravesite.section_id, linked_gravesite.section_id) AS section_id,
-            COALESCE(primary_gravesite.grave_id, linked_gravesite.grave_id) AS grave_id
+            COALESCE(direct_gravesite.gravesite_id, linked_gravesite.gravesite_id) AS gravesite_id,
+            COALESCE(direct_gravesite.section_id, linked_gravesite.section_id) AS section_id,
+            COALESCE(direct_gravesite.grave_id, linked_gravesite.grave_id) AS grave_id
           FROM headstones
-          LEFT JOIN gravesites primary_gravesite
-            ON primary_gravesite.id = headstones.gravesite_uuid
-           AND primary_gravesite.deleted_at IS NULL
-          LEFT JOIN LATERAL (
-            SELECT gravesites.cemetery_id, gravesites.gravesite_id, gravesites.section_id, gravesites.grave_id
-            FROM headstone_gravesites
-            JOIN gravesites
-              ON gravesites.id = headstone_gravesites.gravesite_uuid
-             AND gravesites.deleted_at IS NULL
-            WHERE headstone_gravesites.headstone_uuid = headstones.id
-              AND headstone_gravesites.deleted_at IS NULL
-            ORDER BY gravesites.gravesite_id
-            LIMIT 1
-          ) linked_gravesite ON true
+          ${headstoneCemeteryJoinsSql}
           JOIN cemeteries
-            ON cemeteries.id = COALESCE(primary_gravesite.cemetery_id, linked_gravesite.cemetery_id)
+            ON cemeteries.id = ${headstoneCemeteryIdSql}
           WHERE headstones.deleted_at IS NULL
             AND cemeteries.deleted_at IS NULL
             ${scope}

@@ -33,6 +33,10 @@ The `pg` library is the standard low-level PostgreSQL client for Node.js and wor
 
 Repository code must not issue overlapping `client.query()` calls on the same checked-out `pg` client. Use sequential `await` calls on one client, or use separate pool queries/clients when true database concurrency is needed.
 
+## Repository Organization
+
+`server/northHillsOcrReviewRepository.mjs` preserves the public OCR review API as re-exports. Implementations live in `server/northHillsReview/`: `reviewQueries.mjs` for listing and filtering, `normalization.mjs` for input validation, `reviewMapping.mjs` for result mapping, and separate entry, evidence, and source-fact mutation modules. Keep audited mutations within `withAuditContext`, including the entry lock and cemetery authorization check.
+
 ## Consequences
 
 The application remains easy to run locally with Docker and npm scripts. SQL is explicit and inspectable, but maintainers must keep queries synchronized with Liquibase migrations.

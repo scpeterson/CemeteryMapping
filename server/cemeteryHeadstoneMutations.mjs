@@ -1,30 +1,39 @@
-import { setAuditContext } from "./auditContext.mjs";
+import { BadRequestError, ConflictError } from "./requestValidation.mjs";
+import { validateFaceReferences, validateMarkerFaces, validateFacesRevision } from "./markerFaces.mjs";
+import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { selectHeadstoneById } from "./cemeteryHeadstoneQueries.mjs";
 import { toHeadstone } from "./cemeteryMappers.mjs";
 import { selectGraveUpdateState, selectHeadstoneMutationState } from "./cemeteryMutationTargets.mjs";
-import { recordReviewColumnsSql, tableColumnExists } from "./cemeterySchema.mjs";
+import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 export async function updateHeadstone(pool, id, headstone, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await selectHeadstoneMutationState(client, id);
     if (!existing) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
+    }
+
+    if (headstone.faces === undefined && existing.faces?.length > 1
+        && (headstone.inscription || null) !== existing.inscription) {
+      throw new BadRequestError("Edit individual marker faces instead of the combined inscription.");
+    }
+    if (headstone.faces !== undefined) {
+      headstone.faces = validateMarkerFaces(headstone.faces);
+      const revision = validateFacesRevision(headstone.facesRevision);
+      if (existing.faces_revision !== revision) {
+        throw new ConflictError("Marker faces changed since you opened the editor. Reload the marker before saving.");
+      }
+      await validateFaceReferences(client, id, headstone.faces);
     }
 
     const reviewedBy = actorUser?.email ?? actorUser?.displayName ?? actorUser?.subject ?? "";
-    const hasRecordReviewColumns = await tableColumnExists(client, "headstones", "data_confidence");
-    const reviewReturnSql = await recordReviewColumnsSql(client, "headstones");
-    const reviewAssignments = hasRecordReviewColumns
-      ? `,
+
+    const reviewReturnSql = recordReviewColumnsSql("headstones");
+    const reviewAssignments = `,
             data_confidence = $17,
             review_status = $18,
             review_notes = NULLIF($19, ''),
@@ -34,8 +43,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
               WHEN $18 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
               WHEN $18 = 'reviewed' THEN COALESCE(reviewed_at, now())
               ELSE reviewed_at
-            END`
-      : "";
+            END`;
     const updateValues = [
       id,
       headstone.markerTypeId,
@@ -58,15 +66,16 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       }),
       headstone.markerScopeId,
     ];
-    if (hasRecordReviewColumns) {
-      updateValues.push(
-        headstone.dataConfidence || "unknown",
-        headstone.reviewStatus || "unreviewed",
-        headstone.reviewNotes || "",
-        Boolean(headstone.sourceConflict),
-        reviewedBy,
-      );
-    }
+
+    updateValues.push(
+      headstone.dataConfidence || "unknown",
+      headstone.reviewStatus || "unreviewed",
+      headstone.reviewNotes || "",
+      Boolean(headstone.sourceConflict),
+      reviewedBy,
+      headstone.faces === undefined ? null : JSON.stringify(headstone.faces),
+    );
+
     const updateResult = await client.query(
       `
         UPDATE headstones
@@ -79,7 +88,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
             vase_placement_type_id = NULLIF($7, '')::uuid,
             vase_notes = $8,
             condition_notes = $9,
-            inscription = $10,
+            faces = COALESCE($22::jsonb, faces),
+            inscription = CASE WHEN $22::jsonb IS NULL THEN $10 ELSE inscription END,
             design_notes = $11,
             back_description = $12,
             photo_url = $13,
@@ -110,6 +120,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           vase_notes,
           condition_notes,
           inscription,
+          faces,
+          faces_revision,
           design_notes,
           back_description,
           photo_url,
@@ -230,30 +242,19 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     });
     const updated = await selectHeadstoneById(client, id);
 
-    await client.query("COMMIT");
     return { ...toHeadstone(updated), auditEventId, burialNhgPropagation };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, headstone, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
-
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const grave = await selectGraveUpdateState(client, cemeteryId, gravesiteId);
     if (!grave) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(grave.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return { forbidden: true };
+      return rollback({ forbidden: true });
     }
 
     const insertResult = await client.query(
@@ -343,6 +344,12 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
       ],
     );
     const headstoneUuid = insertResult.rows[0].id;
+    if (headstone.faces !== undefined) {
+      const faces = validateMarkerFaces(headstone.faces);
+      await validateFaceReferences(client, headstoneUuid, faces);
+      await client.query("UPDATE headstones SET faces=$2::jsonb WHERE id=$1", [headstoneUuid, JSON.stringify(faces)]);
+    }
+
 
     await client.query(
       `
@@ -366,13 +373,11 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
     );
 
     const created = await selectHeadstoneById(client, headstoneUuid);
-    await client.query("COMMIT");
+
     return toHeadstone(created);
-  } catch (error) {
-    await client.query("ROLLBACK");
+
+  }).catch((error) => {
     if (error?.code === "23505") return { invalid: "duplicate_headstone_id" };
     throw error;
-  } finally {
-    client.release();
-  }
+  });
 }

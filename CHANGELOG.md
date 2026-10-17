@@ -6,6 +6,116 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Add Trinity Section B lots B-24 and B-18, plus irregular B-1 following the cemetery boundary, six feet north of B-23 (migration 419).
+
+- Add eight Trinity Section B lots in two adjoining four-lot rows, with a six-foot gap north of B-4 (migration 418).
+
+### Security
+
+- Enforce cemetery assignments when deleting North Hills evidence links, including denying unassigned cemetery administrators (PR #581).
+- Separate API runtime database privileges from administrative accounts in hosted TEST, local DEV, local automated TEST, and CI; add repeatable role setup and authorization regressions (PR #581).
+- Update vulnerable transitive dependencies (PR #581).
+
+### Maintenance
+
+- Merge MapLibre GL 6.10.0, Auth0 React 2.27.0, React DOM/type updates, and Node type updates (PRs #576–#579). Source merges do not automatically update running deployments.
+
+### Fixed
+
+- Shift B-21, B-15, B-4, B-14, and B-5 together one additional foot north, preserving footprints and alignment (migration 422).
+
+- Shift the eight Section B lots B-23/B-19/B-17/B-2 and B-22/B-20/B-16/B-3 together 1.5 feet west and one foot north, preserving their footprints (migration 421).
+
+- Shift B-24, B-18, and boundary-shaped B-1 two feet west to contain TLC-HS-0138 and TLC-HS-0139, preserving standard footprints and B-1 southern/western edge lengths (migration 420).
+
+- Normalize Mary Mashey’s legacy combined surname before migration 415 on older TEST snapshots, preserving her burial and marker links and all TEST access records (migration 417).
+
+- Include `cemetery-admin` and its cemetery/deed permissions in Auth0 setup; application roles and cemetery assignments remain enforced by the application database.
+- Improve spacing around the Manage faces control in marker details (PR #583).
+
+- Correct TLC-HS-0098 to link B-0092, B-0093, B-0099 and B-0100, remove the incorrect B-0094 association, and associate the Front, Left and Back faces with Nannie/F. Myrtle, Mary and William Deer respectively (migration 411).
+
+- Retire B-0098 and its imported Deer Family Headstone pseudo-burial. Preserve family monument TLC-HS-0098, face inscriptions and photos, and real gravesite links; remove obsolete pseudo-person associations from its faces (migration 410).
+
+- Report API startup failures accurately, including an occupied port, and release database connections before exiting instead of falsely reporting that the API is listening.
+
+- Restored the missing NHG SNYDER/SOERGEL entry from printed page 189 (8A, 7, s) and linked it to TLC-HS-0072 and A-0072 in each existing source batch. Preserved Katherine Snyder’s existing burial details and the original OCR variant (migration 402).
+
+- Restored the missing NHG STEELE/MEHRLICK reading on page 188, linked it to TLC-HS-0066 and both Steele gravesites, and recorded the quoted Church Records dates and Anna's reported age. Preserved OCR variants and existing burial names and dates (migration 397).
+
+- Distinguish failed editing-option, photo, report, and saved control-point loads from empty data, with retry actions and actionable messages. Disable lookup-dependent saves until options load, label retained report results after failures, preserve place-search error guidance, and protect unreadable control-point storage from overwrite.
+
+- Show provider-specific notices when PASDA imagery or Allegheny County parcels cannot load, with per-layer retry and Diagram view actions. Notices clear on recovery; Diagram view hides external layers.
+
+- Show actionable API messages for connection failures, expired sessions, permissions, missing records, conflicts, and oversized photo uploads. Unexpected server errors include a reference ID recorded in system-event metadata and console logs.
+- Validate marker and maintenance calendar dates and report unavailable burial selections as user-correctable errors. Announce detail-form errors accessibly and associate date errors with affected fields while preserving edits.
+
+- Reject impossible calendar dates before saving and show field-specific validation messages without API jargon. People edits remain available for correction; partial birth and death dates are still supported.
+
+### Added
+
+- Add a public access-request form and global administrator review in Users. Requests grant no access until an active application user is approved; new users default to Read-only. Requires migration 416 and public-page hosting configuration (ADR 0076).
+
+- Add B-0103A north of B-0103 for Mary (Gollmar) Mashey, retaining Amos Mashey in B-0103 and fixed TLC-HS-0103 linked to both. Owner-approved 2.4-by-10-foot estimated outlines fit between unchanged neighboring graves (migration 415, ADR 0075).
+
+- Add B-0097A north of B-0097 for Mary Miller, retaining Johannes (John) Mülller (Miller) in B-0097 and fixed TLC-HS-0097 linked to both. Estimated boundaries avoid mapped neighboring gravesites (migration 414, ADR 0072).
+
+- Add B-0096A north of B-0096 for Obbie Mae Deer, retaining Charles W Deer in B-0096 and fixed TLC-HS-0096 linked to both. Estimated 4-by-10-foot boundaries avoid mapped neighboring gravesites (migration 413, ADR 0071).
+
+- Split the six Opperman burials into B-0094 and B-0094A–E around fixed TLC-HS-0094. Caroline and Ida are east of the monument; Carl, Anna, Mary and William are west. Preserve faces, photos and burial details; boundaries and within-group order are estimated (migration 412, ADR 0070).
+
+- Added multiple labeled faces per marker, with separate inscriptions, notes, linked people, and photos. Existing inscriptions migrate to Unspecified face; ordinary inscription entry needs no face setup. Face-assigned photos display once with their controls, and face edits detect stale saves. Requires migration 409.
+
+- Added A-0085A north of A-0085 for Lena G Ringeisen, retaining Andrew G Ringeisen in the southern gravesite and the fixed TLC-HS-0085 marker spanning both (migration 408). The estimated boundary overlap with A-0086 is documented in ADR 0068.
+
+- Added historical U.S. Navy Fireman First Class (F1c) to military rank options with no assigned modern pay grade (migration 407).
+
+- Added A-0081A north of A-0081 for Charlotte M Balz, retaining William J Balz in the southern gravesite and the fixed TLC-HS-0081 marker spanning both (migration 406). Estimated boundary overlaps are documented in ADR 0067.
+
+- Added A-0078A north of A-0078 for Corinne E Dozer, retaining Charles E Dozer in the southern gravesite and the fixed TLC-HS-0078 marker spanning both (migration 405). Estimated boundary overlaps are documented in ADR 0066.
+
+- Added Prefix / Title to People records for names such as Reverend John Smith, and renamed Title / Credentials to Suffix / Credentials (migration 404). Prefixes appear before names in the app, search, and reports.
+
+- Added A-0077A north of A-0077 for Mildred Frampton, retaining William Walker Frampton in the southern gravesite and the fixed TLC-HS-0077 marker spanning both (migration 403). Estimated boundary overlaps are documented in ADR 0065.
+
+- Added A-0070A north of A-0070 for Marion Milford Brady, retaining Charles M Brady in the southern gravesite and the fixed TLC-HS-0070 marker spanning both (migration 401). Estimated boundary overlaps are documented in ADR 0063.
+
+- Added A-0069A north of A-0069 for Bertha M Blend, retaining Henry L Blend in the southern gravesite and the fixed TLC-HS-0069 marker spanning both (migration 400). Small estimated boundary overlaps are documented in ADR 0062.
+
+- Added explicit given-name status and an optional descriptive display name to burial records (migration 399). The People tab distinguishes confirmed no given name from unknown information; display names appear in search and reports without changing structured names or marker inscriptions.
+
+- Added A-0067A north of A-0067 for Bertie I Steele, retaining George H Steele in the southern gravesite and the fixed TLC-HS-0067 marker spanning both (migration 398). Estimated boundary overlaps are documented in ADR 0061.
+
+- Added A-0066A north of A-0066 for Anna S Steele, retaining Wilbert B Steele in the southern gravesite and the fixed TLC-HS-0066 marker spanning both (migration 396). Small estimated boundary overlaps are documented in ADR 0059.
+
+- Added A-0057A north of A-0057 for Almira C Alexander, retaining Clyde R Alexander in the southern gravesite and the fixed TLC-HS-0057 marker spanning both (migration 395). Estimated boundary overlaps are documented in ADR 0058.
+
+- Added A-0049A north of A-0049 for Eleanor H Elser, retaining William G Elser in the southern gravesite and the fixed TLC-HS-0049 marker spanning both (migration 394). Estimated boundary overlaps are documented in ADR 0057.
+
+- Added A-0048A north of A-0048 for Malinda C Scott, retaining Charles D Scott in the southern gravesite and the fixed TLC-HS-0048 marker spanning both (migration 393). Estimated southern boundary overlaps are documented in ADR 0056.
+
+- Added A-0044A north of A-0044 for Beulah M Scott, retaining Freeman Paul Scott in the southern gravesite and the fixed TLC-HS-0044 marker spanning both (migration 392). Estimated boundary overlaps are documented in ADR 0055.
+
+- Added reserved A-0006A north of A-0006 for Patricia Scott, preserving her pre-need inscription status and the fixed TLC-HS-0006 marker spanning both Scott gravesites (migration 391). Herb remains in A-0006; estimated boundary overlaps are documented in ADR 0054.
+
+- Added A-0041A north of A-0041 for Nettie Schnabel while retaining Philip Schnabel Jr. in the southern gravesite and the fixed TLC-HS-0041 marker spanning both (migration 390). Small estimated boundary overlaps are documented in ADR 0053.
+
+- Added A-0038A and TLC-HS-0038A north of James H Crea for Ella R Pfeiffer, with separate burial links and a common-base marker relationship (migration 389). Original marker and gravesite geometry are preserved; new placement is estimated.
+
+- Added a saved primary-photo choice per marker or gravesite. Primary photos lead galleries and Overviews; removing the choice restores newest-first sorting. Includes migration 379.
+
+- Added read-only gravesite and marker Overviews with the latest available photo or an explicit no-photo message, associated people, permitted current-owner information, and links to related records. Overview opens by default on every feature selection, including repeat selections.
+
+- Added phone Search/Map/Details navigation, search progress/retry/fallback feedback, and accessible filter/selection states.
+- Added shared UI controls, labeled fields, feedback, and confirmations; standardized dialog keyboard focus and Escape behavior.
+- Added in-memory draft protection for tracked record and administration editors, including guarded record switching and page-exit warnings.
+- Added concurrent gravesite-edit detection with explicit reload/reconciliation and regression coverage for delayed saves.
+- Added interrupted media-upload reconciliation with preview mode and retention of referenced evidence.
+- Expanded HTTP, database, keyboard, dialog, mobile, and responsive screenshot regression coverage.
+
+- Added an optional burial information-source URL, including safe web-link validation and a direct source link in burial details.
+- Added a full-history photo gallery modal so older gravesite and marker photos remain accessible after the inline preview reaches four images.
+- Added the World War II U.S. Army rank `Technician Fifth Grade` (`T/5`) to the controlled military-rank data.
 - Added structured multi-owner deed entry with separate names, addresses, optional shares, grantor/grantee roles, mixed lot and gravesite rights, and visual `From → To` transfer history.
 - Added removal of an incorrect direct owner-to-gravesite connection while preserving the remaining ownership event and audit history.
 - Added cemetery-admin controls to assign, change, or unlink a gravesite's explicit lot relationship without moving its geometry.
@@ -25,6 +135,30 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Changed
 
+- Updated Auth0 React to 2.25.0, MapLibre GL JS to 6.9.1, Lucide React to 1.46.0, and Node.js type definitions to 26.5.1. The CI runtime remains Node.js 24; TypeScript remains 6.0.3.
+- Expanded People editing, name data-model, and error-recovery guidance; refreshed the dependency inventory and restored documentation-site navigation through ADR 0068.
+
+- Updated Auth0 React to 2.24.1, MapLibre GL JS to 6.8.0, Playwright to 1.63.0, and `eslint-plugin-react-refresh` to 0.5.6.
+
+- Automatically scope non-admin users to their one registered cemetery and zoom there; only system admins can choose a cemetery.
+- Added a system-admin cemetery selector that narrows search and map records, single-status filtering and filter reset, and visible search guidance.
+- Wrapped detail tabs with a full Maintenance label, made the map legend collapsible, softened aerial imagery, and fitted phone workspaces to the available screen height.
+- Fixed the first gravesite selection so it zooms to the selected record.
+
+- Consolidated the application title, cemetery count, Reports/Control/Admin actions, and account controls in the header, with a Menu for application actions on phones.
+- Restored the six distinct status colors in search badges to match the filters and map legend.
+- Moved gravesite record and lot-assignment editing to Location and standalone marker editing to Details, keeping Overview read-only.
+
+- Moved signed-in account controls into a dedicated header so they cannot overlap map actions or phone navigation; sign-out now checks tracked unsaved drafts. Added authenticated-layout and report-print regression coverage.
+
+- Coordinated map actions in a wrapping toolbar, separated zoom controls, and moved measurement feedback into toolbar flow.
+- Split large detail and administration views into focused components; centralized common design tokens and moved report/control-point styles alongside their components.
+- Protected media downloads with reader authentication and active-asset checks; galleries and reports now fetch protected photos with authentication. Uploads and downloads share the configured media directory.
+- Hardened media failure cleanup, preserved expected API error statuses, and added bounded graceful API shutdown.
+- Centralized audited transaction handling and canonical marker cemetery resolution across repository consumers.
+- Updated operational and developer documentation for navigation, drafts, conflicts, media recovery, and deployment behavior. Photo-viewer backdrop clicks no longer dismiss the dialog.
+
+- Limited inline photo galleries to four images and ordered them newest first by date taken, falling back to upload date.
 - Clarified that the deed ownership event supports both newly issued deeds and historical deeds entered later.
 - Prevented a conflicting whole-lot ownership event when a gravesite in the lot already has a different direct owner.
 - Refined the Owner Holdings report to show a single cemetery beneath the title, omit its repeated Cemetery column, and show ownership Remarks instead of the internal Source label.
@@ -37,6 +171,9 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Database
 
+- Retired imported placeholder gravesite `A-0017` and its generated `Burgess Monolith` pseudo-burial; family monument `TLC-HS-0017` remains active as a standalone monolith and retains both marker photos.
+- Split reviewed Trinity shared-marker gravesites `C-0392`, `C-0395`, `C-0398`, `C-0401`, `C-0402`, `C-0403`, `C-0409`, `C-0410`, `C-0413`, `C-0416`, `C-0419`, and `C-0420`; each original identifier remains with the southern burial, each new `A` gravesite contains the northern burial, and every observed marker remains fixed while spanning both gravesites.
+- Corrected the `C-0392A` Kaelin placement so Elizabeth A Kaelin is immediately north of Elmer B Kaelin in `C-0392`.
 - Added audited in-application editing of `ModernSection` and corrected lot-number mappings for imported `Original 2017` and `Updated 2022` deed registry rows while preserving original spreadsheet values.
 - Added an explicit unknown-or-not-applicable interment type so pre-need and unverified records no longer need a provisional casket classification.
 - Added a reusable fail-fast prerequisite assertion for data migrations so missing source records cannot silently produce successful zero-row changesets.

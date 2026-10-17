@@ -1,34 +1,41 @@
+import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
+import { useDraftState } from "../../hooks/useDraftState";
 import { FormEvent, useState } from "react";
 import { Link2, Pencil, Trash2 } from "lucide-react";
 import type { Headstone, HeadstoneLookups, HeadstoneRelationship, SaveHeadstoneRelationshipInput } from "../../types";
 
-const markerRelationshipTypeOptions: Array<{ value: SaveHeadstoneRelationshipInput["relationshipType"]; label: string }> = [
-  { value: "family_obelisk", label: "Family obelisk" },
-  { value: "references_marker", label: "References marker" },
-  { value: "common_base", label: "Common base" },
-  { value: "foot_marker", label: "Foot marker" },
-  { value: "related_marker", label: "Related marker" },
+const markerRelationshipTypeOptions: Array<{ value: SaveHeadstoneRelationshipInput["relationshipType"]; label: string; description: string }> = [
+  { value: "family_obelisk", label: "Family obelisk", description: "Connects a family obelisk or monument with an individual family marker." },
+  { value: "references_marker", label: "References marker", description: "This marker refers to the other marker, such as through an inscription or documented reference." },
+  { value: "common_base", label: "Common base", description: "The two markers share the same physical base." },
+  { value: "foot_marker", label: "Foot marker", description: "Connects a foot marker with its corresponding head marker." },
+  { value: "related_marker", label: "Related marker", description: "The markers are associated, but no more specific relationship is recorded." },
 ];
 
-const markerRelationshipSourceOptions: Array<{ value: SaveHeadstoneRelationshipInput["sourceType"]; label: string }> = [
-  { value: "manual", label: "Manual" },
-  { value: "nhg", label: "NHG" },
-  { value: "field_observation", label: "Field observation" },
-  { value: "import", label: "Import" },
+const markerRelationshipSourceOptions: Array<{ value: SaveHeadstoneRelationshipInput["sourceType"]; label: string; description: string }> = [
+  { value: "manual", label: "Manual", description: "The relationship was entered manually from research or knowledge of the records." },
+  { value: "nhg", label: "NHG", description: "North Hills Genealogists documentation is the source of this relationship." },
+  { value: "field_observation", label: "Field observation", description: "The relationship was observed at the cemetery." },
+  { value: "import", label: "Import", description: "The relationship came from imported data." },
 ];
 
-const confidenceOptions: Array<{ value: SaveHeadstoneRelationshipInput["confidence"]; label: string }> = [
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
-  { value: "review", label: "Needs review" },
+const confidenceOptions: Array<{ value: SaveHeadstoneRelationshipInput["confidence"]; label: string; description: string }> = [
+  { value: "high", label: "High", description: "Strong evidence supports this relationship." },
+  { value: "medium", label: "Medium", description: "Some supporting evidence exists, but additional confirmation may be useful." },
+  { value: "low", label: "Low", description: "Evidence is limited or uncertain." },
+  { value: "review", label: "Needs review", description: "The confidence in this relationship still needs to be assessed." },
 ];
 
-const relationshipStatusOptions: Array<{ value: SaveHeadstoneRelationshipInput["status"]; label: string }> = [
-  { value: "active", label: "Active" },
-  { value: "needs_review", label: "Needs review" },
-  { value: "retired", label: "Retired" },
+const relationshipStatusOptions: Array<{ value: SaveHeadstoneRelationshipInput["status"]; label: string; description: string }> = [
+  { value: "active", label: "Active", description: "This is a current relationship." },
+  { value: "needs_review", label: "Needs review", description: "This relationship requires review or confirmation." },
+  { value: "retired", label: "Retired", description: "This relationship is retained for history and is no longer current." },
 ];
+
+function selectedOptionTooltip(options: Array<{ value: string; label: string; description: string }>, value: string) {
+  const option = options.find((option) => option.value === value);
+  return option ? `${option.label}: ${option.description}` : "Choose an option.";
+}
 
 function markerRelationshipTypeLabel(value: string) {
   return markerRelationshipTypeOptions.find((option) => option.value === value)?.label ?? value;
@@ -67,7 +74,7 @@ export function MarkerRelationshipForm({
   onSave: (relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
 }) {
   const headstoneOptions = (lookups.headstones ?? []).filter((option) => option.id !== headstone.id);
-  const [form, setForm] = useState<SaveHeadstoneRelationshipInput>(() =>
+  const [form, setForm] = useDraftState<SaveHeadstoneRelationshipInput>(() =>
     initialRelationship
       ? markerRelationshipFormFromRecord(initialRelationship)
       : {
@@ -92,6 +99,7 @@ export function MarkerRelationshipForm({
     setMessage(undefined);
     try {
       await onSave(form);
+      setForm(form);
       if (initialRelationship) {
         onCancel?.();
       } else {
@@ -108,59 +116,60 @@ export function MarkerRelationshipForm({
   if (!headstoneOptions.length) return <p className="muted">No other markers are available to link.</p>;
 
   return (
-    <form className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
+    <LookupForm className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
       <label>
         Related marker
-        <select value={form.relatedHeadstoneId} onChange={(event) => setForm((current) => ({ ...current, relatedHeadstoneId: event.target.value }))}>
+        <LookupSelect title={`${headstoneOptions.find((option) => option.id === form.relatedHeadstoneId)?.label ?? "Related marker"}: Select the other physical marker to link to this marker.`} value={form.relatedHeadstoneId} onChange={(event) => setForm((current) => ({ ...current, relatedHeadstoneId: event.target.value }))}>
           {headstoneOptions.map((option) => (
-            <option key={option.id} value={option.id}>
+            <option key={option.id} value={option.id} title={option.label}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Relationship
-        <select
+        <LookupSelect
+          title={selectedOptionTooltip(markerRelationshipTypeOptions, form.relationshipType)}
           value={form.relationshipType}
           onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneRelationshipInput["relationshipType"] }))}
         >
           {markerRelationshipTypeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} title={`${option.label}: ${option.description}`}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Source
-        <select value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value as SaveHeadstoneRelationshipInput["sourceType"] }))}>
+        <LookupSelect title={selectedOptionTooltip(markerRelationshipSourceOptions, form.sourceType)} value={form.sourceType} onChange={(event) => setForm((current) => ({ ...current, sourceType: event.target.value as SaveHeadstoneRelationshipInput["sourceType"] }))}>
           {markerRelationshipSourceOptions.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} title={`${option.label}: ${option.description}`}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Confidence
-        <select value={form.confidence} onChange={(event) => setForm((current) => ({ ...current, confidence: event.target.value as SaveHeadstoneRelationshipInput["confidence"] }))}>
+        <LookupSelect title={selectedOptionTooltip(confidenceOptions, form.confidence)} value={form.confidence} onChange={(event) => setForm((current) => ({ ...current, confidence: event.target.value as SaveHeadstoneRelationshipInput["confidence"] }))}>
           {confidenceOptions.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} title={`${option.label}: ${option.description}`}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label>
         Status
-        <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveHeadstoneRelationshipInput["status"] }))}>
+        <LookupSelect title={selectedOptionTooltip(relationshipStatusOptions, form.status)} value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SaveHeadstoneRelationshipInput["status"] }))}>
           {relationshipStatusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} title={`${option.label}: ${option.description}`}>
               {option.label}
             </option>
           ))}
-        </select>
+        </LookupSelect>
       </label>
       <label className="headstone-wide-field">
         Source text
@@ -171,19 +180,19 @@ export function MarkerRelationshipForm({
         <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} rows={2} />
       </label>
       {message ? <p className="detail-message is-success">{message}</p> : null}
-      {error ? <p className="detail-message is-error">{error}</p> : null}
+      {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="headstone-form-actions">
         {onCancel ? (
           <button type="button" className="secondary-button" onClick={onCancel} disabled={isSaving}>
             Cancel
           </button>
         ) : null}
-        <button type="submit" disabled={isSaving || !form.relatedHeadstoneId}>
+        <LookupSaveButton type="submit" disabled={isSaving || !form.relatedHeadstoneId}>
           <Link2 size={15} aria-hidden="true" />
           {isSaving ? "Saving..." : submitLabel}
-        </button>
+        </LookupSaveButton>
       </div>
-    </form>
+    </LookupForm>
   );
 }
 
@@ -274,7 +283,7 @@ export function MarkerRelationshipList({
           </article>
         );
       })}
-      {deleteError ? <p className="detail-message is-error">{deleteError}</p> : null}
+      {deleteError ? <p className="detail-message is-error" role="alert">{deleteError}</p> : null}
     </div>
   );
 }

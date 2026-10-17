@@ -1,0 +1,36 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createMapLayerHealth } from "../src/components/mapLayerHealth.ts";
+const imagery = "pasda-imagery-2017";
+const parcels = "allegheny-parcels";
+const tile = (key, state = "loaded") => ({ state, tileID: { key } });
+test("notices are deduplicated by provider and recover independently", () => {
+  const updates = [];
+  const health = createMapLayerHealth((value) => updates.push(value));
+  health.error({ sourceId: imagery });
+  health.error({ sourceId: imagery });
+  health.error({ sourceId: "graves" });
+  assert.deepEqual(updates, [[imagery]]);
+  health.error({ sourceId: parcels, tile: tile("a", "errored") });
+  health.error({ sourceId: parcels, tile: tile("b", "errored") });
+  health.data({ sourceId: imagery, sourceDataType: "idle", isSourceLoaded: true });
+  assert.deepEqual(updates.at(-1), [imagery, parcels]);
+  health.data({ sourceId: imagery, sourceDataType: "metadata" });
+  assert.deepEqual(updates.at(-1), [parcels]);
+  health.data({ sourceId: parcels, tile: tile("a"), isSourceLoaded: true });
+  assert.deepEqual(updates.at(-1), [parcels]);
+  health.data({ sourceId: parcels, tile: tile("b"), isSourceLoaded: true });
+  assert.deepEqual(updates.at(-1), []);
+});
+test("retry preserves notice until success and failed retries remain visible", () => {
+  let failed = [];
+  const health = createMapLayerHealth((value) => { failed = value; });
+  health.error({ sourceId: parcels, tile: tile("old", "errored") });
+  health.retry(parcels);
+  assert.deepEqual(failed, [parcels]);
+  health.error({ sourceId: parcels, tile: tile("new", "errored") });
+  health.data({ sourceId: parcels, tile: tile("other"), isSourceLoaded: true });
+  assert.deepEqual(failed, [parcels]);
+  health.data({ sourceId: parcels, tile: tile("new"), isSourceLoaded: true });
+  assert.deepEqual(failed, []);
+});

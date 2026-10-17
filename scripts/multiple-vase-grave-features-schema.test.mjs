@@ -10,7 +10,7 @@ const featureSchema = fs.readFileSync(
   new URL("../db/changelog/changes/119-grave-feature-lookups.sql", import.meta.url),
   "utf8",
 );
-const detailPanel = fs.readFileSync(new URL("../src/components/DetailPanel.tsx", import.meta.url), "utf8");
+const detailPanel = fs.readFileSync(new URL("../src/components/detail/MarkerDetailPanel.tsx", import.meta.url), "utf8");
 const rootChangelog = fs.readFileSync(new URL("../db/changelog/db.changelog-root.yaml", import.meta.url), "utf8");
 
 test("vases can be recorded as repeatable marker features", () => {

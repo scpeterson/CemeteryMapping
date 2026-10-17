@@ -23,6 +23,7 @@ export function registerAdminGovernanceRoutes(app, context) {
         try {
           response.json(
             await listDataQualityDashboard(pool, {
+              cemeteryId: request.query.cemeteryId ? validateUuid(request.query.cemeteryId, "Cemetery ID") : undefined,
               cemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
             }),
           );
@@ -174,7 +175,7 @@ export function registerAdminGovernanceRoutes(app, context) {
       app.post("/api/admin/lookups/:table", requireAdmin, async (request, response, next) => {
         try {
           const table = validateLookupTable(request.params.table);
-          const record = validateLookupPayload(request.body);
+          const record = validateLookupPayload(request.body, table);
           response.status(201).json(await createLookupRecord(pool, table, record, { actorUser: request.user }));
         } catch (error) {
           if (error.message?.startsWith("Unsupported lookup table:")) {
@@ -189,7 +190,7 @@ export function registerAdminGovernanceRoutes(app, context) {
         try {
           const table = validateLookupTable(request.params.table);
           const id = validateUuid(request.params.id, "Lookup id");
-          const record = validateLookupPayload(request.body);
+          const record = validateLookupPayload(request.body, table);
           const updated = await updateLookupRecord(pool, table, id, record, { actorUser: request.user });
           if (!updated) {
             response.status(404).json({ error: "Lookup row not found" });

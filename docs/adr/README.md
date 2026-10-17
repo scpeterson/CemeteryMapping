@@ -25,13 +25,15 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0073: Private Hosted TEST](0073-private-hosted-test.md)
+
 - [ADR 0001: Use a Vite React TypeScript Frontend](0001-vite-react-typescript-frontend.md)
 - [ADR 0002: Use an Express API Backed by PostgreSQL and PostGIS](0002-express-postgres-postgis-api.md)
 - [ADR 0003: Manage Schema Changes with Liquibase](0003-liquibase-schema-management.md)
 - [ADR 0004: Support DEV, TEST, STAGE, and PROD Environments](0004-environment-model.md)
 - [ADR 0005: Load Summary Map Geometry Before Grave Details](0005-summary-map-detail-api-flow.md)
 - [ADR 0006: Use Staging and Validation for Spatial Imports](0006-spatial-import-staging-validation.md)
-- [ADR 0007: Import Cemetery and Section Geometry from an Esri File Geodatabase](0007-file-geodatabase-cemetery-section-import.md)
+- [ADR 0007: Import Cemetery, Section, Block, and Lot Geometry from an Esri File Geodatabase](0007-file-geodatabase-cemetery-section-import.md)
 - [ADR 0008: Generate Gravesites and Headstones from Headstone GPS Spreadsheet Rows](0008-headstone-spreadsheet-import.md)
 - [ADR 0009: Model Headstones as Physical Markers Separate from Burials](0009-headstone-marker-model.md)
 - [ADR 0010: Use CI to Validate Rebuildability](0010-ci-rebuild-validation.md)
@@ -67,6 +69,48 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - [ADR 0040: Shift Five Section B Lots North](0040-shift-section-b-five-lots-north.md)
 - [ADR 0041: Modularize Large Domain Repositories Behind Stable Facades](0041-modularize-domain-repositories.md)
 - [ADR 0042: Split Reviewed Section C Shared-Marker Gravesites](0042-split-reviewed-section-c-shared-marker-gravesites.md)
+- [ADR 0043: Retire C-0424 as a Military Foot-Marker Placeholder](0043-retire-c-0424-military-foot-marker-placeholder.md)
+- [ADR 0044: Bound Inline Photo Galleries and Preserve Full History](0044-bound-inline-photo-galleries.md)
+- [ADR 0045: Retire the A-0017 Burgess Monolith Placeholder](0045-retire-a-0017-burgess-monolith-placeholder.md)
+- [ADR 0046: Split A-0012 Seeke Gravesites](0046-split-a-0012-seeke-gravesites.md)
+- [ADR 0047: Split A-0015 Stertz Gravesites](0047-split-a-0015-stertz-gravesites.md)
+- [ADR 0048: Split A-0027 Miller Gravesites](0048-split-a-0027-miller-gravesites.md)
+- [ADR 0049: Split A-0026 Brandt Gravesites](0049-split-a-0026-brandt-gravesites.md)
+- [ADR 0050: Split A-0020 Pfeiffer Gravesites](0050-split-a-0020-pfeiffer-gravesites.md)
+- [ADR 0051: Primary Photo Override](0051-primary-photo-override.md)
+- [ADR 0052: Separate Crea Markers on a Common Base](0052-crea-common-base-markers.md)
+- [ADR 0053: Split A-0041 Schnabel Gravesites](0053-split-a-0041-schnabel-gravesites.md)
+- [ADR 0054: Split A-0006 Scott Gravesites](0054-split-a-0006-scott-gravesites.md)
+- [ADR 0055: Split A-0044 Scott Gravesites](0055-split-a-0044-scott-gravesites.md)
+- [ADR 0056: Split A-0048 Scott Gravesites](0056-split-a-0048-scott-gravesites.md)
+- [ADR 0057: Split A-0049 Elser Gravesites](0057-split-a-0049-elser-gravesites.md)
+- [ADR 0058: Split A-0057 Alexander Gravesites](0058-split-a-0057-alexander-gravesites.md)
+- [ADR 0059: Split A-0066 Steele Gravesites](0059-split-a-0066-steele-gravesites.md)
+- [ADR 0060: Restore the Steele/Mehrlick NHG Reading](0060-restore-nhg-steele-mehrlick-page-188.md)
+- [ADR 0061: Split A-0067 Steele Gravesites](0061-split-a-0067-steele-gravesites.md)
+- [ADR 0062: Split A-0069 Blend Gravesites](0062-split-a-0069-blend-gravesites.md)
+- [ADR 0063: Split A-0070 Brady Gravesites](0063-split-a-0070-brady-gravesites.md)
+- [ADR 0064: Restore NHG Snyder/Soergel Reading on Page 189](0064-restore-nhg-snyder-soergel-page-189.md)
+- [ADR 0065: Split A-0077 Frampton Gravesites](0065-split-a-0077-frampton-gravesites.md)
+- [ADR 0066: Split A-0078 Dozer Gravesites](0066-split-a-0078-dozer-gravesites.md)
+- [ADR 0067: Split A-0081 Balz Gravesites](0067-split-a-0081-balz-gravesites.md)
+- [ADR 0068: Split A-0085 Ringeisen Gravesites](0068-split-a-0085-ringeisen-gravesites.md)
+
+- [ADR 0069: Multiple Faces on One Physical Marker](0069-marker-faces.md)
+- [ADR 0070: Split B-0094 Opperman Gravesites](0070-split-b-0094-opperman-gravesites.md)
+- [ADR 0071: Split B-0096 Deer Gravesites](0071-split-b-0096-deer-gravesites.md)
+- [ADR 0072: Split B-0097 Miller Gravesites](0072-split-b-0097-miller-gravesites.md)
+
+- [ADR 0073: Private TEST Deployment on a Separate Cloud Server](0073-private-hosted-test.md)
+- [ADR 0074: Restricted API Database Accounts](0074-restricted-api-database-accounts.md)
+
+- [ADR 0075: Split B-0103 Mashey Gravesites](0075-split-b-0103-mashey-gravesites.md)
+- [ADR 0076: Public Access Requests with Private Cemetery Records](0076-public-access-requests.md)
+- [ADR 0077: Create Two Northern Section B Lot Rows](0077-create-section-b-two-northern-lot-rows.md)
+- [ADR 0078: Create Section B Lots 24, 18, and Boundary-Shaped 1](0078-create-section-b-lots-24-18-and-1.md)
+- [ADR 0079: Shift the Section B Boundary Row Two Feet West](0079-shift-section-b-boundary-row-west.md)
+- [ADR 0080: Shift Eight Section B Lots West and North](0080-shift-section-b-eight-lots-west-and-north.md)
+- [ADR 0081: Shift Five Section B Lots One Foot North](0081-shift-section-b-five-lots-north.md)
 
 ## Creating a New ADR
 
@@ -81,23 +125,25 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 The main software choices are captured in the ADRs. Exact JavaScript dependency versions come from `package-lock.json`; container image versions come from `docker-compose.yml`; CI runtime versions come from `.github/workflows/ci.yml`.
 
-Current core versions as of 2026-08-11:
+Core versions in the merged source as of 2026-09-25 (running deployments may lag):
 
 | Component | Version | Source |
 | --- | --- | --- |
 | Node.js in CI | 24 | `.github/workflows/ci.yml` |
-| React | 19.2.8 | `package-lock.json` |
-| React DOM | 19.2.8 | `package-lock.json` |
-| Auth0 React SDK | 2.22.1 | `package-lock.json` |
-| Vite | 8.1.5 | `package-lock.json` |
+| React | 19.3.0 | `package-lock.json` |
+| React DOM | 19.3.0 | `package-lock.json` |
+| Auth0 React SDK | 2.27.0 | `package-lock.json` |
+| Vite | 8.2.1 | `package-lock.json` |
 | TypeScript | 6.0.3 | `package-lock.json` |
 | Express | 5.2.1 | `package-lock.json` |
 | pg | 8.22.0 | `package-lock.json` |
-| MapLibre GL JS | 6.1.0 | `package-lock.json` |
+| MapLibre GL JS | 6.10.0 | `package-lock.json` |
+| Lucide React | 1.46.0 | `package-lock.json` |
+| Node.js type definitions | 26.6.2 | `package-lock.json` |
 | ExcelJS | 4.4.0 | `package-lock.json` |
 | PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | `docker-compose.yml` |
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
-| Playwright | 1.62.1 | `package-lock.json` |
+| Playwright | 1.63.0 | `package-lock.json` |
 | ESLint | 10.8.0 | `package-lock.json` |
 | Ruby for documentation builds | 3.4.1 | local Ruby toolchain and `docs/Gemfile.lock` |
 | Bundler for documentation builds | 2.6.2 | `docs/Gemfile.lock` |
@@ -115,6 +161,7 @@ npm run db:up:test
 APP_ENV=test npm run db:validate
 APP_ENV=test npm run db:rollback:test
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 APP_ENV=test npm run db:seed:demo
 npm run lint
 npm run build:test
@@ -125,3 +172,45 @@ bundle exec jekyll build
 ```
 
 For real cemetery data imports, see ADR 0007 and ADR 0008 before running import commands.
+
+- [ADR 0087: Split the D-0453 Brandt burials](0087-split-d-0453-brandt-gravesites.md)
+
+- [ADR 0088: Access-request abuse protection](0088-access-request-abuse-protection.md)
+
+- [ADR 0089: Split the D-0473 Brandt burials](0089-split-d-0473-brandt-gravesites.md)
+
+- [ADR 0090: Split D-0478 Hague burials](0090-split-d-0478-hague-gravesites.md)
+
+- [ADR 0091: Separate Mehrlich graves and common-base monuments](0091-split-d-0485-mehrlich-common-base-markers.md)
+
+- [ADR 0092: Split D-0491 Sarver burials](0092-split-d-0491-sarver-gravesites.md)
+
+- [ADR 0093: Split D-0496 Reichold burials](0093-split-d-0496-reichold-gravesites.md)
+
+- [ADR 0094: Split D-0497 Schmeltz burials](0094-split-d-0497-schmeltz-gravesites.md)
+
+- [ADR 0095: Associate TLC-HS-0505 only with Clifford Chester Brant](0095-correct-tlc-hs-0505-burial-link.md)
+
+- [ADR 0096: Split D-0499 Brant burials](0096-split-d-0499-brant-gravesites.md)
+
+- [ADR 0097: Split D-0500 Brant burials](0097-split-d-0500-brant-gravesites.md)
+
+- [ADR 0098: Add the Weitzel monument at an estimated location](0098-add-weitzel-estimated-monument.md)
+
+- [ADR 0099: Revise the estimated Weitzel location and add two gravesites](0099-create-weitzel-estimated-gravesite-pair.md)
+
+- [ADR 0100: Align Section E graves northeast from fixed monuments](0100-align-section-e-gravesites-northeast.md)
+
+- [0101: Add the Section D northern lot row](0101-create-section-d-north-lot-row.md)
+
+- [0102: Add the eight-lot Section D row](0102-create-section-d-eight-lot-row.md)
+
+- [0103: Add the adjoining northern Section D row](0103-create-section-d-adjoining-lot-row.md)
+
+- [0104: Add two northern Section D lot rows](0104-create-section-d-two-northern-rows.md)
+
+- [0105: Add the boundary-clipped Section D lot row](0105-create-section-d-boundary-lot-row.md)
+
+- [0106: Confirm the Weitzel interments](0106-confirm-weitzel-burials.md)
+
+- [0107: Correct Jerry Weitzel's pre-need notes](0107-correct-weitzel-pre-need-notes.md)

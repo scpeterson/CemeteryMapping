@@ -11,13 +11,18 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 
 - [Getting Started](getting-started.md)
 - [Rebuild Guide](rebuild.md)
+- [Application and Third-Party Services](service-architecture.md)
+- [Frontend Development](frontend-development.md)
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
 - [Data Model](data-model.md)
+- [Synthetic Cemetery Data Coverage Plan](test-data-coverage.md)
 - [Admin Workflow Roadmap](admin-workflows.md)
 - [Operator Workflows](operator-workflows.md)
 - [Database Auditing](database-auditing.md)
 - [Auth0 Test Tenant Setup](auth0-test-tenant.md)
+- [Hosted TEST Deployment](hosted-test.md)
+- [Requesting and Approving Access](access-requests.md)
 - [Auth0 Production Checklist](auth0-production-checklist.md)
 
 ## Architecture Decisions
@@ -37,6 +42,7 @@ APP_ENV=test npm run db:up
 APP_ENV=test npm run db:validate
 APP_ENV=test npm run db:rollback:test
 APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
 APP_ENV=test npm run db:seed:demo
 npm run lint
 npm run build:test

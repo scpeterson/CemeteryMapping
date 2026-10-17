@@ -1,4 +1,5 @@
 import express from "express";
+import { registerAccessRequestRoutes } from "./routes/accessRequestRoutes.mjs";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
@@ -79,12 +80,15 @@ import {
 } from "./systemEventRepository.mjs";
 import { runAuditRetentionPurgeJob, runSystemEventRetentionPurgeJob } from "./retentionJobs.mjs";
 import { appVersionMetadata } from "./version.mjs";
-import { BadRequestError } from "./requestValidation.mjs";
+import { createApiErrorHandler } from "./apiErrorHandler.mjs";
 import { registerAdminRoutes } from "./routes/adminRoutes.mjs";
 import { registerCemeteryRoutes } from "./routes/cemeteryRoutes.mjs";
+import { registerMediaDownloadRoutes } from "./routes/mediaDownloadRoutes.mjs";
 import { registerMediaRoutes } from "./routes/mediaRoutes.mjs";
 import { canEditLot, canEditSection, validateHeadstoneBusinessRules } from "./routes/routeBusinessRules.mjs";
 import { assertCurrentSchema } from "./schemaContract.mjs";
+
+import { createGracefulShutdown } from "./shutdown.mjs";
 
 const { Pool } = pg;
 
@@ -96,13 +100,15 @@ export function createApp(config, pool) {
     ...config.auth.auth0.management,
   });
 
-  app.use(express.json());
-  app.use("/media", express.static(mediaUploadRoot()));
+  const uploadRoot = mediaUploadRoot();
 
   const requireReader = requireRole(config.auth, pool, "reader");
+  registerMediaDownloadRoutes(app, { pool, requireReader, uploadRoot });
   const requirePowerUser = requireRole(config.auth, pool, "power-user");
   const requireCemeteryAdmin = requireRole(config.auth, pool, "cemetery-admin");
   const requireAdmin = requireRole(config.auth, pool, "admin");
+  registerAccessRequestRoutes(app, { pool, requireAdmin, protection: config.accessRequests });
+  app.use(express.json());
   registerCemeteryRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
     createGraveFeature, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, createMaintenanceRecord,
@@ -117,7 +123,7 @@ export function createApp(config, pool) {
 
   registerMediaRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto, createHeadstonePhoto, express,
-    moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset,
+    moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   });
 
   registerAdminRoutes(app, {
@@ -138,61 +144,41 @@ export function createApp(config, pool) {
     updateSystemEventRetentionPolicy, updateUser, versionMetadata,
   });
 
-  app.use(async (error, request, response, _next) => {
-    void _next;
-    if (error instanceof BadRequestError) {
-      response.status(400).json({ error: error.message });
-      return;
-    }
-
-    console.error(error);
-    if ((request.originalUrl ?? request.url) !== "/api/health") {
-      await safelyRecordSystemEvent(pool, {
-        eventType: "error",
-        severity: "error",
-        source: "api",
-        status: "failed",
-        message: error instanceof Error ? error.message : "Unhandled API error.",
-        detail: error instanceof Error ? error.stack : String(error),
-        requestMethod: request.method,
-        requestPath: request.originalUrl ?? request.url,
-        responseStatus: 500,
-        actorEmail: request.user?.email,
-        actorRole: request.user?.role,
-        environment: config.appEnv,
-        appVersion: versionMetadata.version,
-        metadata: {
-          gitSha: versionMetadata.gitSha,
-        },
-      });
-    }
-    response.status(500).json({ error: "Internal server error" });
-  });
+  app.use(createApiErrorHandler(pool, config, versionMetadata));
 
   return app;
 }
 
 export async function startServer(config = loadApiConfig(), pool = new Pool(config.database)) {
-  await assertCurrentSchema(pool);
-  const app = createApp(config, pool);
-  const server = app.listen(config.apiPort, "127.0.0.1", () => {
-    console.log(`Cemetery API listening on http://127.0.0.1:${config.apiPort} (${config.appEnv.toUpperCase()})`);
+  let app;
+  let server;
+  try {
+    await assertCurrentSchema(pool);
+    app = createApp(config, pool);
+    await new Promise((resolve, reject) => {
+      server = app.listen(config.apiPort, "127.0.0.1", (error) => error ? reject(error) : resolve());
+    });
+  } catch (error) {
+    await pool.end().catch((cleanupError) => console.error("Database pool cleanup failed:", cleanupError));
+    if (error.code === "EADDRINUSE") {
+      throw new Error(`Cemetery API could not start: port ${config.apiPort} is already in use. Stop the existing API process or choose a different API_PORT.`, { cause: error });
+    }
+    throw error;
+  }
+  console.log(`Cemetery API listening on http://127.0.0.1:${server.address().port} (${config.appEnv.toUpperCase()})`);
+  const stop = createGracefulShutdown(server, pool);
+  const shutdown = () => stop().finally(() => {
+    process.off("SIGINT", onSignal);
+    process.off("SIGTERM", onSignal);
   });
-  const keepAlive = setInterval(() => undefined, 2 ** 31 - 1);
-
-  const shutdown = async () => {
-    clearInterval(keepAlive);
-    server.close();
-    await pool.end();
+  const onSignal = () => {
+    void shutdown().then(
+      () => process.exit(0),
+      (error) => { console.error(error); process.exit(1); },
+    );
   };
-
-  process.on("SIGINT", () => {
-    void shutdown().then(() => process.exit(0));
-  });
-
-  process.on("SIGTERM", () => {
-    void shutdown().then(() => process.exit(0));
-  });
+  process.on("SIGINT", onSignal);
+  process.on("SIGTERM", onSignal);
 
   return { app, server, shutdown };
 }

@@ -1,0 +1,30 @@
+import fs from "node:fs";
+import test from "node:test";
+import assert from "node:assert/strict";
+
+const component = fs.readFileSync(
+  new URL("../src/components/detail/MediaRecords.tsx", import.meta.url),
+  "utf8",
+);
+const styles = fs.readFileSync(new URL("../src/components/detail/styles/photos.css", import.meta.url), "utf8");
+
+test("media galleries show a maximum of four preview photos", () => {
+  assert.match(component, /const galleryPreviewLimit = 4;/u);
+  assert.match(component, /sortedAssets\.slice\(0, galleryPreviewLimit\)/u);
+  assert.match(component, /View all photos \(\{sortedAssets\.length\}\)/u);
+});
+
+test("media galleries sort newest photos first and retain the complete history", () => {
+  const ordering = fs.readFileSync(new URL("../src/lib/media.ts", import.meta.url), "utf8");
+  assert.match(ordering, /const dateDifference = .*rightDate.*leftDate/u);
+  assert.match(component, /gallery\(sortedAssets, true\)/u);
+  assert.match(component, /primary first, then newest first/u);
+});
+
+test("the complete photo history opens in an accessible modal", () => {
+  const modal = fs.readFileSync(new URL("../src/components/ui/Modal.tsx", import.meta.url), "utf8");
+  assert.match(component, /<Modal className="media-gallery-modal" label="All photos"/u);
+  assert.match(modal, /dialog.showModal\(\)/u);
+  assert.match(modal, /onCancel=/u);
+  assert.match(styles, /\.media-gallery-modal/u);
+});

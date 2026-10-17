@@ -10,6 +10,7 @@ For a beginner-friendly setup guide with Mac and Windows notes, see `docs/gettin
 npm install
 npm run db:up
 npm run db:migrate
+npm run db:configure-api
 npm run db:seed:demo
 npm run dev
 ```
@@ -41,7 +42,7 @@ npm run build:stage
 npm run build:prod
 ```
 
-`npm run build` and `npm run build:prod` also enforce gzip bundle budgets for the application entry, Admin shell, major vendor chunks, and total JavaScript output. To recheck an existing production build without rebuilding it, run `npm run check:bundle`.
+`npm run build` and `npm run build:prod` also enforce gzip bundle budgets for the application entry, Admin shell, major vendor chunks, and total JavaScript output. Vendor allowances may be adjusted for verified third-party package growth; application-code limits remain separate. See [bundle budget policy](docs/adr/0074-production-bundle-budgets.md). To recheck an existing production build without rebuilding it, run `npm run check:bundle`.
 
 Database commands default to DEV. Set `APP_ENV` or use the convenience scripts:
 
@@ -63,7 +64,7 @@ If another local PostgreSQL service already uses port `5432`, create `db/env/dev
 
 - Interactive cemetery map with all active cemetery boundaries, sections, and summary grave-space geometry
 - Map controls for zooming, fitting the view to all active cemetery data, identifying cemeteries at broad zoom levels, reading fractional and bar scale, and interpreting rendered layers
-- Clickable grave sites that load ownership, burial, and status details on selection
+- Clickable gravesites and markers that default to a read-only Overview with the latest available photo (or a no-photo message), associated people, current owners when access permits, and links to related records
 - Search by deceased name, owner name, birth date, death date, burial date, cemetery name, section, lot name, lot ID, or space
 - Status filters
 - Ownership history timeline
@@ -86,6 +87,7 @@ Start the local Postgres/PostGIS container and apply the Liquibase changelog:
 ```bash
 npm run db:up
 npm run db:migrate
+npm run db:configure-api
 ```
 
 The API verifies the current Liquibase changeset before it begins listening and exits with migration guidance when the database schema is out of date.
@@ -99,6 +101,10 @@ Design decisions are documented as Architecture Decision Records in `docs/adr`. 
 A beginner-friendly setup guide is available in `docs/getting-started.md`.
 
 A clean rebuild guide is available in `docs/rebuild.md`.
+
+A diagram of hosting, identity, external data, and development services is available in [Application and Third-Party Services](docs/service-architecture.md).
+
+Component boundaries, shared controls, draft handling, styling, and UI validation are covered in [Frontend Development](docs/frontend-development.md).
 
 Data origins and stewardship placeholders are tracked in `docs/data-sources.md`.
 
@@ -132,6 +138,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/version` for application version, git SHA, build time, and environment metadata
 - `GET /api/health` for API, database, and version health metadata
 - `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` for full grave details fetched when a grave is selected
+- `PATCH /api/cemeteries/:cemeteryId/grave-spaces/:id` for gravesite detail edits; requires `expectedVersion` from the detail response and returns HTTP 409 on a stale edit
+- `GET /media/:storageKey` for reader-authenticated downloads of undeleted media assets; protected images must be fetched with authentication
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
 - `GET /api/reports` for the role-filtered approved report catalog
 - `POST /api/reports/run` to run an approved report with validated parameters and cemetery scoping
@@ -143,6 +151,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `DELETE /api/cemeteries/:cemeteryId/grave-spaces/:id` for admin-only soft delete of a grave space
 - `POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore` for admin-only restore of a soft-deleted grave space
 
+Expected client failures keep their HTTP status: malformed input uses 400, oversized bodies 413, unsupported encodings 415, and stale gravesite edits 409. Unexpected failures use 500. See [conflict recovery](docs/operator-workflows.md#recovering-a-conflicting-gravesite-edit) and [API restart/media storage](docs/operator-workflows.md#api-restart-and-media-storage) for operational handling.
+
 Run the API by itself when needed:
 
 ```bash
@@ -152,6 +162,19 @@ API_PORT=3010 APP_ENV=stage npm run api
 ```
 
 `APP_ENV` selects `db/env/<environment>.env`. Override `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, or `PGPASSWORD` to connect to a different Postgres instance.
+
+After local migrations or restores, run `APP_ENV=dev npm run db:configure-api`
+and `APP_ENV=test npm run db:configure-api` against the running local containers.
+This creates a restricted `cemetery_api` account with a separate generated password
+in each ignored `db/env/<environment>.local.env` file (mode 0600). Restart the API
+after initial setup. Runtime reads these credentials; migration, backup, and import
+tools retain the administrative `POSTGRES_USER`/`POSTGRES_PASSWORD` credentials.
+Explicit `PGUSER`/`PGPASSWORD` overrides must be removed from API launch commands
+to use the restricted account. Re-run the setup command after migrations introduce
+new tables; it preserves the existing API password and refreshes grants. Automated
+CI performs this step before running application tests. Tests that create migration
+schemas use administrative fixture connections, while application queries use the
+restricted account. Local automated tests retain their explicit disabled-auth mode.
 
 Verified death-location search uses GeoNames. Set `GEONAMES_USERNAME` in the environment's ignored `db/env/<environment>.local.env` file to enable it. `GEONAMES_BASE_URL` and `GEONAMES_TIMEOUT_MS` are optional. If GeoNames is unconfigured or unavailable, the burial editor continues to offer locally stored verified places and all other burial fields remain editable.
 
@@ -168,6 +191,8 @@ AUTH0_AUDIENCE=<api-identifier>
 ```
 
 In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, `cemetery-admin`, and `admin` checks.
+
+Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. Non-admin maps default to their assigned cemetery; system-admin maps initially fit all cemeteries. See [user management](docs/operator-workflows.md#admin-user-management) and [cemetery scope](docs/operator-workflows.md#cemetery-scope-and-navigation).
 
 The Auth0 API must include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user`, `cemetery-admin`, and `admin`, then have affected users sign out and back in so their access tokens are refreshed. These permissions and role assignments can be applied with the configuration script below after the Auth0 tenant, API, applications, and Management API client have been created.
 

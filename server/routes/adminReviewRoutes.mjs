@@ -137,7 +137,10 @@ export function registerAdminReviewRoutes(app, context) {
         try {
           const entryId = validateUuid(request.params.entryId, "North Hills reading");
           const evidence = validateNorthHillsEvidenceTargetPayload(request.body);
-          const deleted = await deleteNorthHillsOcrEvidenceLink(pool, entryId, evidence, { actorUser: request.user });
+          const deleted = await deleteNorthHillsOcrEvidenceLink(pool, entryId, evidence, {
+            actorUser: request.user,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          });
           if (!deleted) response.status(404).json({ error: "North Hills evidence link not found." });
           else response.json(deleted);
         } catch (error) {

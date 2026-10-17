@@ -1,13 +1,23 @@
-import { CalendarSearch, Filter, Search, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "./ui/Button";
+import { EmptyState, Notice, StatusBadge } from "./ui/Feedback";
+import { Filter, Search, X } from "lucide-react";
 import type { CemeterySearchMatch, GraveStatus } from "../types";
 import { formatGraveLocation, graveSelectionKey, lotSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type SearchPanelProps = {
-  cemeteryScopeLabel: string;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  scopeKey?: string;
+  isSearching: boolean;
+  error?: string;
+  onRetry: () => void;
   query: string;
   onQueryChange: (query: string) => void;
   selectedStatuses: Set<GraveStatus>;
   onToggleStatus: (status: GraveStatus) => void;
+  onResetStatuses?: () => void;
+  onOnlyStatus?: (status: GraveStatus) => void;
   matches: CemeterySearchMatch[];
   canViewOwnership: boolean;
   selectedGraveKey?: string;
@@ -18,34 +28,42 @@ type SearchPanelProps = {
 const statuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 
 export function SearchPanel({
-  cemeteryScopeLabel,
+  isSearching, error, onRetry, hasMore = false, onLoadMore, scopeKey = "",
   query,
   onQueryChange,
   selectedStatuses,
   onToggleStatus,
+  onResetStatuses,
+  onOnlyStatus,
   matches,
   canViewOwnership,
   selectedGraveKey,
   selectedLotKey,
   onSelectMatch,
 }: SearchPanelProps) {
+  const pageKey = JSON.stringify([query, [...selectedStatuses].sort(), scopeKey]);
+  const [pagination, setPagination] = useState({ key: "", page: 0 });
+  const page = pagination.key === pageKey ? pagination.page : 0;
+  const pageSize = 50;
+  const lastPage = Math.max(0, Math.ceil(matches.length / pageSize) - 1);
+  const currentPage = Math.min(page, lastPage);
+  const shown = matches.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const hasNext = currentPage < lastPage || hasMore;
+  const changePage = (next: number) => {
+    if (next > lastPage && hasMore) onLoadMore?.();
+    setPagination({ key: pageKey, page: next });
+  };
   return (
-    <aside className="search-panel">
-      <div className="panel-heading">
-        <div>
-          <p className="eyebrow">{cemeteryScopeLabel}</p>
-          <h1>Cemetery Map</h1>
-        </div>
-        <CalendarSearch size={24} aria-hidden="true" />
-      </div>
-
+    <aside className="search-panel" aria-label="Search and filters">
       <label className="search-box">
         <Search size={18} aria-hidden="true" />
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder={canViewOwnership ? "Search names, owners, dates, graves, lots" : "Search names, dates, graves, lots"}
+          placeholder="Search records"
+          aria-describedby="cemetery-search-help"
           aria-label="Search cemetery records"
+          aria-controls="cemetery-search-results"
         />
         {query ? (
           <button type="button" className="icon-button" onClick={() => onQueryChange("")} aria-label="Clear search">
@@ -54,15 +72,18 @@ export function SearchPanel({
         ) : null}
       </label>
 
+      <p id="cemetery-search-help" className="search-help">{canViewOwnership ? "Search by name, owner, date, gravesite, or lot." : "Search by name, date, gravesite, or lot."}</p>
       <div className="filter-header">
         <Filter size={16} aria-hidden="true" />
         <span>Status</span>
+        {onResetStatuses ? <button type="button" className="filter-reset" disabled={selectedStatuses.size === statuses.length} onClick={onResetStatuses}>Reset filters</button> : null}
       </div>
       <div className="status-filter" role="group" aria-label="Filter by grave status">
         {statuses.map((status) => (
           <button
             key={status}
             type="button"
+            aria-pressed={selectedStatuses.has(status)}
             className={`status-chip ${selectedStatuses.has(status) ? "is-active" : ""}`}
             onClick={() => onToggleStatus(status)}
           >
@@ -72,18 +93,28 @@ export function SearchPanel({
         ))}
       </div>
 
-      <div className="results-heading">
-        <span>{matches.length} result{matches.length === 1 ? "" : "s"}</span>
+      {onOnlyStatus ? <label className="single-status-filter">Show one status
+        <select value={selectedStatuses.size === 1 ? [...selectedStatuses][0] : ""} onChange={(event) => { if (event.target.value) onOnlyStatus(event.target.value as GraveStatus); }}>
+          <option value="" disabled>Choose a status</option>
+          {statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
+        </select>
+      </label> : null}
+
+      <div className="results-heading" role="status" aria-live="polite" aria-atomic="true">
+        <span>{isSearching ? "Searching records…" : `${matches.length} result${matches.length === 1 ? "" : "s"}${hasMore ? " loaded; more available" : ""}${error ? " from loaded map data" : ""}`}</span>
       </div>
 
-      <div className="results-list">
-        {matches.map((match) => {
+      <div className="results-list" id="cemetery-search-results" aria-busy={isSearching}>
+        {error ? <Notice tone="error">{error} <Button variant="secondary" onClick={onRetry}>Retry search</Button></Notice> : null}
+        {!isSearching && !error && !matches.length ? <EmptyState title="No matching records">Try a different name, grave, or lot, or enable more status filters.</EmptyState> : null}
+        {!isSearching && shown.map((match) => {
           if ("lot" in match) {
             const key = lotSelectionKey(match.lot);
             return (
               <button
                 key={`lot:${key}`}
                 type="button"
+                aria-current={selectedLotKey === key ? "true" : undefined}
                 className={`result-card ${selectedLotKey === key ? "is-selected" : ""}`}
                 onClick={() => onSelectMatch(match)}
               >
@@ -103,19 +134,23 @@ export function SearchPanel({
             <button
               key={key}
               type="button"
+              aria-current={selectedGraveKey === key ? "true" : undefined}
               className={`result-card ${selectedGraveKey === key ? "is-selected" : ""}`}
               onClick={() => onSelectMatch(match)}
             >
               <span className="result-title">{formatGraveLocation(match.grave)}</span>
               <span className="result-cemetery">{match.grave.cemeteryName}</span>
-              <span className="result-meta" style={{ color: statusColors[match.grave.status] }}>
-                {statusLabel}
-              </span>
+              <StatusBadge color={statusColors[match.grave.status]}>{statusLabel}</StatusBadge>
               {reasons.length ? <span className="result-reason">{reasons.join(" | ")}</span> : null}
             </button>
           );
         })}
       </div>
+      {matches.length > pageSize || hasMore ? <nav aria-label="Search result pages">
+        <Button variant="secondary" disabled={isSearching || currentPage === 0} onClick={() => changePage(currentPage - 1)}>Previous results</Button>
+        <span role="status">Page {currentPage + 1}</span>
+        <Button variant="secondary" disabled={isSearching || !hasNext} onClick={() => changePage(currentPage + 1)}>Next results</Button>
+      </nav> : null}
     </aside>
   );
 }

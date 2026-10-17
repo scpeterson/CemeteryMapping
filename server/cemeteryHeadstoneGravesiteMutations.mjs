@@ -1,4 +1,4 @@
-import { setAuditContext } from "./auditContext.mjs";
+import { withAuditContext } from "./auditContext.mjs";
 import { selectHeadstoneMutationState } from "./cemeteryMutationTargets.mjs";
 
 async function selectGravesite(client, id) {
@@ -39,23 +39,17 @@ async function selectRelationship(client, id) {
 }
 
 export async function createHeadstoneGravesiteRelationship(pool, headstoneId, relationship, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const headstone = await selectHeadstoneMutationState(client, headstoneId);
     const gravesite = await selectGravesite(client, relationship.gravesiteId);
     if (!headstone || !gravesite) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     if (headstone.cemetery_id !== gravesite.cemetery_id) {
-      await client.query("ROLLBACK");
-      return { invalid: "different_cemetery" };
+      return rollback({ invalid: "different_cemetery" });
     }
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(headstone.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return { forbidden: true };
+      return rollback({ forbidden: true });
     }
     const result = await client.query(
       `
@@ -74,61 +68,43 @@ export async function createHeadstoneGravesiteRelationship(pool, headstoneId, re
     );
     await client.query("UPDATE headstones SET gravesite_uuid = COALESCE(gravesite_uuid, $2) WHERE id = $1", [headstone.id, gravesite.id]);
     const created = await selectRelationship(client, result.rows[0].id);
-    await client.query("COMMIT");
+
     return created;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function updateHeadstoneGravesiteRelationship(pool, id, relationship, options = {}) {
   const { actorUser, reason, allowedCemeteryIds } = options;
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await selectRelationship(client, id);
     if (!existing) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     const headstone = await selectHeadstoneMutationState(client, existing.headstone_uuid);
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(headstone?.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return { forbidden: true };
+      return rollback({ forbidden: true });
     }
     await client.query(
       "UPDATE headstone_gravesites SET relationship_type = $2, notes = NULLIF($3, '') WHERE id = $1 AND deleted_at IS NULL",
       [id, relationship.relationshipType, relationship.notes],
     );
     const updated = await selectRelationship(client, id);
-    await client.query("COMMIT");
+
     return updated;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }
 
 export async function softDeleteHeadstoneGravesiteRelationship(pool, id, { actorUser, reason, allowedCemeteryIds } = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason });
+  return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await selectRelationship(client, id);
     if (!existing) {
-      await client.query("ROLLBACK");
-      return undefined;
+      return rollback(undefined);
     }
     const headstone = await selectHeadstoneMutationState(client, existing.headstone_uuid);
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(headstone?.cemetery_id)) {
-      await client.query("ROLLBACK");
-      return { forbidden: true };
+      return rollback({ forbidden: true });
     }
     const result = await client.query(
       `
@@ -153,12 +129,8 @@ export async function softDeleteHeadstoneGravesiteRelationship(pool, id, { actor
       `,
       [headstone.id, existing.gravesiteUuid],
     );
-    await client.query("COMMIT");
+
     return { id: result.rows[0].id, deletedAt: result.rows[0].deleted_at, alreadyDeleted: false };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+
+  });
 }

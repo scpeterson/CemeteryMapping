@@ -61,3 +61,15 @@ Confirm route-registration tests still expose the same method/path contracts and
 ## Update Triggers
 
 Update this ADR if repository consumers begin importing internal modules by default, facade compatibility is removed, a different domain-boundary strategy is adopted, or server persistence moves away from the current repository pattern.
+
+Marker cemetery ownership uses `headstoneCemeterySql.mjs`: an active direct gravesite takes precedence, then an active linked gravesite ordered by public ID and UUID, then an active containing cemetery ordered by name and UUID. Deleted gravesites, links, and cemeteries are excluded. Apply permission filters only after this resolution so a caller's assignments cannot change which cemetery owns a marker. Map summaries, mutation targets, uploads, lookups, quality checks, and maintenance reports share this SQL.
+
+Cemetery mutation modules use `withAuditContext` for transaction lifetime and audit settings. Its callback may call `rollback(value)` to return a deliberate no-op result after rollback. The helper preserves mutation failures if rollback also fails and discards the unusable connection. Media uploads retain their explicit transaction boundary because file publication and uncertain commit recovery require separate coordination.
+
+The API startup schema contract requires the current Liquibase migration before serving requests. Burial and marker repositories therefore use the current columns directly; SQL projection helpers are synchronous, and obsolete schema probes and legacy fallback branches are removed. Active lookup validation, cemetery authorization, row locks, and audit transactions remain explicit. Validate this cleanup with the schema-contract, repository, burial-name, and full server tests.
+
+Burial detail reads and mutation-state reads share `burialProjection.mjs` for the selected fields and lookup joins. Query callers retain cemetery scoping, soft-delete filters, ordering, and `FOR UPDATE OF burials`; the projection does not own authorization or locking. This keeps newly added name, date, review, and military fields consistent across responses.
+
+Frontend contracts live in `src/types/` by domain: common values, events, burials, ownership, markers, evidence, cemetery/map data, reports, and administration. `src/types.ts` remains a type-only compatibility facade. Domain modules use direct type-only imports rather than importing the facade, avoiding runtime dependencies and preserving existing consumer imports. Type-check and build the application after moving contracts.
+
+`useRecordMutations` composes marker, evidence, media, and ownership action factories. Its identity-guarded gravesite setters are passed to every factory so delayed responses retain the original selection protection. Feature and maintenance mutations share pure collection updates for selected graves and linked markers; domain API calls and validation remain explicit.
