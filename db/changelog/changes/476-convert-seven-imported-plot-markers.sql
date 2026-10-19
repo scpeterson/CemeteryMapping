@@ -27,11 +27,11 @@ BEGIN
     END IF;
     PERFORM assert_migration_prerequisite(marker.geometry IS NOT NULL, 'Plot marker must retain observed geometry: '||target.marker_id);
     SELECT * INTO grave FROM gravesites WHERE gravesite_id=target.grave_id;
-    PERFORM assert_migration_prerequisite(grave.id IS NOT NULL AND lower(grave.name)='plot marker, '||lower(target.letter), 'Expected imported plot-marker label: '||target.marker_id);
+    PERFORM assert_migration_prerequisite((grave.id IS NOT NULL AND lower(grave.name)='plot marker, '||lower(target.letter)) OR (grave.id IS NULL AND marker.gravesite_uuid IS NULL AND lower(marker.source_properties#>>'{ShapefileGeometryUpdate,shapefileName}')='plot marker, '||lower(target.letter)), 'Expected imported plot-marker label: '||target.marker_id);
     PERFORM assert_migration_prerequisite(marker.gravesite_uuid IS NULL OR marker.gravesite_uuid=grave.id,'Unexpected primary gravesite: '||target.marker_id);
     PERFORM assert_migration_prerequisite(
-      NOT EXISTS(SELECT 1 FROM burials b WHERE b.gravesite_uuid=grave.id AND b.deleted_at IS NULL AND NOT (
-        lower(b.full_name) IS NOT DISTINCT FROM lower(grave.name) AND lower(b.last_name) IS NOT DISTINCT FROM lower(grave.name)
+      NOT EXISTS(SELECT 1 FROM burials b WHERE (b.gravesite_uuid=grave.id OR EXISTS(SELECT 1 FROM headstone_burials own_link WHERE own_link.burial_uuid=b.id AND own_link.headstone_uuid=marker.id AND own_link.deleted_at IS NULL)) AND b.deleted_at IS NULL AND NOT (
+        lower(b.full_name) IS NOT DISTINCT FROM lower('Plot marker, '||target.letter) AND lower(b.last_name) IS NOT DISTINCT FROM lower('Plot marker, '||target.letter)
         AND NULLIF(btrim(b.first_name),'') IS NULL AND b.birth_date IS NULL AND b.death_date IS NULL AND b.burial_date IS NULL
         AND NULLIF(btrim(b.birth_date_text),'') IS NULL AND NULLIF(btrim(b.death_date_text),'') IS NULL))
       AND NOT EXISTS(SELECT 1 FROM headstones WHERE gravesite_uuid=grave.id AND id<>marker.id AND deleted_at IS NULL)
@@ -44,8 +44,8 @@ BEGIN
       EXISTS(SELECT 1 FROM marker_types WHERE code='plot_marker') AND EXISTS(SELECT 1 FROM marker_scope_types WHERE code='plot_marker')
       AND EXISTS(SELECT 1 FROM marker_material_types WHERE code='white_marble'), 'Required plot-marker lookup values');
     UPDATE headstone_burials hb SET deleted_at=now(),delete_reason=reason FROM burials b
-      WHERE hb.burial_uuid=b.id AND b.gravesite_uuid=grave.id AND hb.deleted_at IS NULL;
-    UPDATE burials SET deleted_at=now(),delete_reason=reason,updated_at=now() WHERE gravesite_uuid=grave.id AND deleted_at IS NULL;
+      WHERE hb.burial_uuid=b.id AND (b.gravesite_uuid=grave.id OR hb.headstone_uuid=marker.id) AND hb.deleted_at IS NULL;
+    UPDATE burials SET deleted_at=now(),delete_reason=reason,updated_at=now() WHERE (gravesite_uuid=grave.id OR id IN (SELECT burial_uuid FROM headstone_burials WHERE headstone_uuid=marker.id)) AND deleted_at IS NULL;
     UPDATE headstone_gravesites SET deleted_at=now(),delete_reason=reason,updated_at=now() WHERE gravesite_uuid=grave.id AND deleted_at IS NULL;
     UPDATE headstones SET gravesite_uuid=NULL,
       marker_type_id=(SELECT id FROM marker_types WHERE code='plot_marker'),
