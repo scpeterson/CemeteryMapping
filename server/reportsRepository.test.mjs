@@ -383,3 +383,51 @@ test("maintenance report can find markers not cleaned recently", async () => {
   assert.deepEqual(query.values, [["11111111-1111-4111-8111-111111111111"], 365]);
   assert.match(result.summary, /not been cleaned in 365 days/u);
 });
+
+test("photo maintenance report is restricted to cemetery admins and higher", async () => {
+  for (const user of [readerUser, powerUser]) {
+    assert.ok(!listReportsForUser(user).some((r) => r.id === "monument-photo-exceptions"));
+    await assert.rejects(() => runReport({ connect() { throw new Error("Must not query"); } }, "monument-photo-exceptions", {}, user), /Forbidden/u);
+  }
+  for (const role of ["cemetery-admin", "admin"]) {
+    assert.ok(listReportsForUser({ role }).some((r) => r.id === "monument-photo-exceptions"));
+  }
+  assert.equal(matchReportQuery("List monuments needing photos in section C").report.id, "monument-photo-exceptions");
+  assert.equal(matchReportQuery("Which markers have no Primary photo?").report.id, "monument-photo-exceptions");
+  assert.equal(matchReportQuery("Which markers have no Primary photo?").parameters.issue, "missing-primary");
+});
+
+test("photo exceptions classify photos, preserve standalone markers and count distinct monuments", async () => {
+  const rows = [
+    { marker_uuid: "missing", section: "A", photo_count: 0, primary_count: 0, legacy_photo: false, gravesites: "A-0015" },
+    { marker_uuid: "standalone", section: "C", photo_count: 2, primary_count: 0, legacy_photo: false, gravesites: null },
+    { marker_uuid: "legacy", section: "C", photo_count: 0, primary_count: 0, legacy_photo: true },
+    { marker_uuid: "done", section: "D", photo_count: 1, primary_count: 1, legacy_photo: false },
+    { marker_uuid: "missing", section: "B", photo_count: 0, primary_count: 0, legacy_photo: false, gravesites: "B-0015" },
+  ];
+  const pool = poolForRows([{ includes: "WITH active_cemeteries", rows }]);
+  const user = { ...powerUser, role: "cemetery-admin" };
+  const result = await runReport(pool, "monument-photo-exceptions", { cemeteryId: "untrusted", sectionNames: "A, C, a", includePlotMarkers: "no" }, user);
+  assert.match(result.summary, /4 monuments checked; 3 match/u);
+  assert.equal(result.rows.length, 4);
+  assert.equal(result.rows[0].issue, "No monument photo");
+  assert.equal(result.rows[1].gravesites, "Standalone marker");
+  assert.equal(result.rows[2].issue, "Photos present; no Primary");
+  assert.deepEqual(pool.queries[0].values, [[powerUser.cemeteryAccess[0].cemeteryId], ["A", "C"]]);
+  assert.match(pool.queries[0].sql, /COALESCE\(marker_scope_types.code, ''\) <> 'plot_marker'/u);
+  assert.match(pool.queries[0].sql, /asset.asset_type='photo'/u);
+  const primaryOnly = await runReport(pool, "monument-photo-exceptions", { issue: "missing-primary" }, user);
+  assert.equal(primaryOnly.rows.length, 2);
+  const missingOnly = await runReport(pool, "monument-photo-exceptions", { issue: "missing-photo" }, user);
+  assert.ok(missingOnly.rows.every((r) => r.issue_code === "missing-photo"));
+  await assert.rejects(() => runReport(pool, "monument-photo-exceptions", { includePlotMarkers: "invalid" }, user), { code: "REPORT_PARAMETER_INVALID" });
+});
+
+test("photo exceptions scope unassigned admins to no cemeteries and allow system admin selection", async () => {
+  const pool = poolForRows([{ includes: "WITH active_cemeteries", rows: [] }]);
+  await runReport(pool, "monument-photo-exceptions", {}, { role: "cemetery-admin", cemeteryAccess: [] });
+  assert.match(pool.queries[0].sql, /AND false/u);
+  const selected = "33333333-3333-4333-8333-333333333333";
+  await runReport(pool, "monument-photo-exceptions", { cemeteryId: selected }, adminUser);
+  assert.deepEqual(pool.queries[1].values, [[selected]]);
+});
