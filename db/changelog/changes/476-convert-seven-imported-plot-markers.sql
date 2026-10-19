@@ -1,6 +1,13 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:476-convert-seven-imported-plot-markers splitStatements:false
+INSERT INTO marker_types (code,label,description,sort_order)
+VALUES ('plot_marker','Plot marker','A marker identifying a plot boundary or plot designation rather than a burial.',170)
+ON CONFLICT (code) DO NOTHING;
+INSERT INTO marker_scope_types (code,label,description,sort_order)
+VALUES ('plot_marker','Plot marker','Identifies a plot rather than an individual burial or gravesite.',40)
+ON CONFLICT (code) DO NOTHING;
+
 -- Dates are inferred from the nearest photographed marker's capture date (America/New_York).
 -- Preserve standalone marker geometry, evidence and history; remove only false burial spaces.
 DO $$
