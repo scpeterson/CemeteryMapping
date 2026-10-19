@@ -1424,3 +1424,6 @@ databaseChangeLog:
   - include:
       file: changes/476-convert-seven-imported-plot-markers.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/477-retire-c-0165-foundation-stone-placeholder.sql
+      relativeToChangelogFile: true
