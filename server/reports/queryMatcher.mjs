@@ -31,7 +31,11 @@ export function matchReportQuery(query) {
   let reportId = "";
   const parameters = {};
 
-  if (/\b(oldest|latest|earliest|recent)\b/u.test(lower) && /\bburial\b/u.test(lower)) {
+  if (/\b(photos?|pictures?|images?)\b/u.test(lower) && /\b(monuments?|markers?|headstones?)\b/u.test(lower)) {
+    reportId = "monument-photo-exceptions";
+    parameters.sectionNames = extractSectionName(text);
+    if (/\bprimary\b/u.test(lower)) parameters.issue = "missing-primary";
+  } else if (/\b(oldest|latest|earliest|recent)\b/u.test(lower) && /\bburial\b/u.test(lower)) {
     reportId = "burial-date-extremes";
   } else if (/\bveterans?\b/u.test(lower) || /\bmilitary\b/u.test(lower) || /\bwar(?:s)?\b/u.test(lower) || /\bservice branches?\b/u.test(lower)) {
     reportId = "veteran-service-summary";

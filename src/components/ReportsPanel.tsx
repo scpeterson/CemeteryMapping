@@ -99,11 +99,19 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
                   {selectedReport.parameters.map((parameter) => (
                     <label key={parameter.name}>
                       <span>{parameter.label}</span>
-                      <input
+                      {parameter.type === "select" ? (
+                        <select
+                          value={parameters[parameter.name] ?? ""}
+                          onChange={(event) => setParameters((current) => ({ ...current, [parameter.name]: event.target.value }))}
+                          required={parameter.required}
+                        >
+                          {parameter.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        </select>
+                      ) : <input
                         value={parameters[parameter.name] ?? ""}
                         onChange={(event) => setParameters((current) => ({ ...current, [parameter.name]: event.target.value }))}
                         required={parameter.required}
-                      />
+                      />}
                     </label>
                   ))}
                 </div>

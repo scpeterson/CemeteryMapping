@@ -115,6 +115,24 @@ export const reportDefinitions = [
     ],
   },
   {
+    id: "monument-photo-exceptions",
+    title: "Monument photo exceptions",
+    description: "Finds monuments without a monument photo or without a Primary photo, including standalone markers.",
+    category: "Data maintenance",
+    requiredRole: "cemetery-admin",
+    parameters: [
+      { name: "sectionNames", label: "Sections (comma-separated; blank for all)", type: "text", required: false },
+      { name: "includePlotMarkers", label: "Include plot markers", type: "select", required: false, options: [
+        { value: "", label: "Yes" }, { value: "no", label: "No" },
+      ] },
+      { name: "issue", label: "Photo issue", type: "select", required: false, options: [
+        { value: "", label: "All photo issues" }, { value: "missing-photo", label: "No monument photo" },
+        { value: "missing-primary", label: "Photos present; no Primary" },
+      ] },
+    ],
+    examples: ["Which monuments need photos?", "Which markers have no Primary photo?"],
+  },
+  {
     id: "deed-claim-trace-guide",
     title: "Deed claim trace guide",
     description: "Outlines the records to inspect when someone claims inherited lot rights without paperwork.",

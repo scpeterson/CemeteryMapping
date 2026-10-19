@@ -5,9 +5,12 @@ import { runAvailableInventory, runMarkerTypeInventory, runSpatialInventoryCount
 import { runDeedClaimTraceGuide, runMaintenanceNeeds } from "./reports/maintenanceReports.mjs";
 import { runOwnerHoldings, runUnownedGravesites } from "./reports/ownershipReports.mjs";
 
+import { runMonumentPhotoExceptions } from "./reports/photoReports.mjs";
+
 export { matchReportQuery } from "./reports/queryMatcher.mjs";
 
 const reportRunners = new Map([
+  ["monument-photo-exceptions", runMonumentPhotoExceptions],
   ["burial-date-extremes", (client, definition, _parameters, cemeteryIds) => runBurialDateExtremes(client, definition, cemeteryIds)],
   ["veteran-service-summary", (client, definition, _parameters, cemeteryIds) => runVeteranServiceSummary(client, definition, cemeteryIds)],
   ["spatial-inventory-counts", runSpatialInventoryCounts],
