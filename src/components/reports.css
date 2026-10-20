@@ -617,3 +617,14 @@
   .application-workspace { display: block; height: auto; min-height: 0; }
   .application-header { display: none; }
 }
+
+.report-record-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--color-primary, #245b78);
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}

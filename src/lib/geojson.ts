@@ -32,7 +32,7 @@ export function headstonesFeatureCollection(
 ) {
   return {
     type: "FeatureCollection",
-    features: headstones.map((headstone) => ({
+    features: headstones.filter((headstone) => headstone.geometry).map((headstone) => ({
       type: "Feature",
       id: headstone.id,
       properties: {
@@ -49,7 +49,7 @@ export function headstonesFeatureCollection(
         condition: headstone.condition,
         hasVeteran: veteranGraveKeys.has(headstone.graveKey),
       },
-      geometry: headstone.geometry,
+      geometry: headstone.geometry!,
     })),
   } satisfies GeoJSON.FeatureCollection<GeoJSON.Point>;
 }

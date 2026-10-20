@@ -123,7 +123,7 @@ export type HeadstoneSummary = {
   markerScopeCode: string;
   markerScope: string;
   condition: string;
-  geometry: GeoJSON.Point;
+  geometry: GeoJSON.Point | null;
 };
 
 export type HeadstoneLookups = {

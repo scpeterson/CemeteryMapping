@@ -171,12 +171,13 @@ export default function App() {
   };
 
   const selectHeadstone = (headstone: HeadstoneSummary) => {
-    if (!confirmDiscardChanges()) return;
+    if (!confirmDiscardChanges()) return false;
     setMobileView("details");
     setSelectionVersion((version) => version + 1);
     setSelectedHeadstone(headstone);
     setSelectedLot(undefined);
     setSelectedGrave(undefined);
+    return true;
   };
 
   const {
@@ -358,7 +359,9 @@ export default function App() {
           </EditingOptionsContext.Provider>
         </main>
         <Suspense fallback={null}>
-          {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onClose={() => setIsReportsPanelOpen(false)} /> : null}
+          {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onOpenMonument={(monument) => {
+            if (selectHeadstone(monument)) setIsReportsPanelOpen(false);
+          }} onClose={() => setIsReportsPanelOpen(false)} /> : null}
           {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onLookupsChanged={retryLookups} onClose={() => setIsAdminPanelOpen(false)} /> : null}
           {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
             <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />

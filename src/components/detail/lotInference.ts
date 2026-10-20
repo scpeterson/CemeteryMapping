@@ -24,7 +24,7 @@ export function areaCenter(geometry: AreaGeometry): GeoJSON.Position | undefined
 
 export function inferredLotForGrave(grave: GraveSpace, lots: CemeteryLot[], headstones: HeadstoneSummary[]) {
   if (grave.lot) return undefined;
-  const markerPoints = headstones.filter((marker) => marker.gravesiteId === grave.id).map((marker) => marker.geometry.coordinates);
+  const markerPoints = headstones.filter((marker) => marker.gravesiteId === grave.id).flatMap((marker) => marker.geometry ? [marker.geometry.coordinates] : []);
   const markerMatches = lots.filter((lot) => markerPoints.some((point) => pointInArea(point, lot.geometry)));
   if (markerMatches.length === 1) return { lot: markerMatches[0], source: "marker location", confidence: "high" as const };
   const center = areaCenter(grave.geometry);
