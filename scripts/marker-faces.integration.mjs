@@ -38,7 +38,7 @@ test("marker faces round-trip with links, legacy text, authorization and stale-w
     assert.equal(await updateHeadstone(nestedPool, target.id, input, { allowedCemeteryIds: [] }), undefined);
     assert.equal((await selectHeadstoneById(client, target.id)).faces_revision, original.facesRevision);
     const saved = await updateHeadstone(nestedPool, target.id, input);
-    assert.deepEqual(saved.faces, input.faces);
+    assert.deepEqual(saved.faces, input.faces.map((face) => ({ ...face, inscriptionStatus: "transcribed" })));
     assert.equal(saved.facesRevision, original.facesRevision + 1);
     assert.equal(saved.inscription, "North\n  Name\nDates  \n\nBase\nFamily\nMemorial");
     assert.deepEqual(saved.facePeople, original.facePeople);

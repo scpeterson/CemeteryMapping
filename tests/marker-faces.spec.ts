@@ -101,6 +101,7 @@ test("read-only users can read face inscriptions and photos without edit control
   await page.getByRole("tab", { name: "Details", exact: true }).click();
   const north = page.getByRole("region", { name: "North", exact: true });
   await expect(north).toContainText("Alice Example");
+  await north.scrollIntoViewIfNeeded();
   await expect(north.getByRole("img")).toBeVisible();
   await expect(page.getByRole("tabpanel", { name: "Details", exact: true }).getByRole("img", { name: "latest-marker", exact: true })).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Edit marker HS-OVERVIEW" })).toHaveCount(0);

@@ -222,6 +222,7 @@ export function toHeadstone(row) {
     vaseNotes: row.vase_notes ?? "",
     conditionNotes: row.condition_notes ?? "",
     inscription: row.inscription ?? "",
+    ...(row.inscription_status ? { inscriptionStatus: row.inscription_status } : {}),
     faces: row.faces ?? [],
     facesRevision: row.faces_revision ?? 0,
     facePeople: row.face_people ?? [],

@@ -1,3 +1,4 @@
+import { InscriptionFields } from "./InscriptionFields";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useDraftState } from "../../hooks/useDraftState";
 import { MapPinned } from "lucide-react";
@@ -34,6 +35,7 @@ function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lo
     vaseNotes: "",
     conditionNotes: "",
     inscription: "",
+    inscriptionStatus: "not_recorded",
     designNotes: "",
     backDescription: "",
     photoUrl: "",
@@ -225,10 +227,8 @@ export function CreateHeadstoneForm({
           {isPickingMarkerPoint ? "Click map to place marker" : "Pick point on map"}
         </button>
       </div>
-      <label className="headstone-wide-field">
-        Inscription
-        <textarea value={form.inscription} onChange={(event) => setForm((current) => ({ ...current, inscription: event.target.value }))} rows={3} />
-      </label>
+      <InscriptionFields text={form.inscription} status={form.inscriptionStatus} rows={3} disabled={isSaving}
+        onChange={(value) => setForm((current) => ({ ...current, ...value }))} />
       <label className="headstone-wide-field">
         Relationship notes
         <textarea value={form.relationshipNotes} onChange={(event) => setForm((current) => ({ ...current, relationshipNotes: event.target.value }))} rows={2} />

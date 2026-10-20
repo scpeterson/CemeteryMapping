@@ -555,3 +555,9 @@ SELECT
 FROM deed_registry_entries
 ORDER BY source_row_number;
 ```
+
+## Inscription status
+
+`headstones.inscription_status` and each face's `inscriptionStatus` use `not_recorded`, `transcribed`, `blank`, or `illegible`. Faces are authoritative when present; the database synchronizes the combined monument inscription and status and increments `faces_revision` when inscription data changes. A mixed set of documented Blank and Illegible faces is considered documented even though the combined transcription is empty; reports inspect faces individually.
+
+Blank and Illegible require empty inscription text, enforced by the editor, API validation, and database trigger. Transcribed can contain partial placeholders such as `[blank]`, `[illegible]`, and `[illegible lines]`. Migration 478 converts only whole-field `[blank]` and `[illegible]` tokens (ignoring case and surrounding whitespace), preserving partial text, line breaks, face IDs, and associations. The missing-inscriptions report flags Not recorded and empty Transcribed entries; it accepts Blank and Illegible without text.

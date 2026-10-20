@@ -1,3 +1,5 @@
+import type { InscriptionStatus } from "../../shared/inscriptionStatus.mjs";
+export type { InscriptionStatus } from "../../shared/inscriptionStatus.mjs";
 import type { DataConfidence, DataReviewStatus, LookupOption } from "./common";
 import type { GraveFeature, MaintenanceRecord, MediaAsset } from "./evidence";
 import type { NorthHillsOcrEvidenceStatus } from "./northHills";
@@ -39,6 +41,7 @@ export type MarkerFace = {
   id: string;
   label: string;
   inscription: string;
+  inscriptionStatus?: InscriptionStatus;
   notes: string;
   burialIds: string[];
   mediaAssetIds: string[];
@@ -57,6 +60,7 @@ export type Headstone = {
   vaseNotes: string;
   conditionNotes: string;
   inscription: string;
+  inscriptionStatus?: InscriptionStatus;
   faces?: MarkerFace[];
   facesRevision?: number;
   facePeople?: { id: string; fullName: string }[];
@@ -183,6 +187,7 @@ export type SaveHeadstoneInput = {
   vaseNotes: string;
   conditionNotes: string;
   inscription: string;
+  inscriptionStatus?: InscriptionStatus;
   faces?: MarkerFace[];
   facesRevision?: number;
   designNotes: string;
