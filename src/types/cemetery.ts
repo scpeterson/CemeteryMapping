@@ -105,4 +105,9 @@ export type LotSearchMatch = {
   reasons: string[];
 };
 
-export type CemeterySearchMatch = SearchMatch | LotSearchMatch;
+export type MonumentSearchMatch = {
+  headstone: HeadstoneSummary;
+  reasons: string[];
+};
+
+export type CemeterySearchMatch = SearchMatch | LotSearchMatch | MonumentSearchMatch;
