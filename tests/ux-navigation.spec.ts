@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cemeteryId, fixture, geometry, select, summaries } from "./fixtures/cemetery";
+import { cemeteryId, detail, fixture, geometry, gravePath, select, summaries } from "./fixtures/cemetery";
 
 const otherId = "22222222-2222-4222-8222-222222222222";
 const other = { ...summaries[0], id: "OTHER", cemeteryId: otherId, cemeteryName: "Other Cemetery" };
@@ -62,7 +62,8 @@ for (const width of [320, 390, 1280]) {
       expect(box.x).toBeGreaterThanOrEqual(0);
       expect(box.x + box.width).toBeLessThanOrEqual(width);
     }
-    await expect(page.getByRole("tab", { name: "Maintenance records and evidence" })).toContainText("Maintenance");
+    await expect(page.getByRole("tab", { name: "Maintenance records" })).toContainText("Maintenance");
+    await expect(page.getByRole("tab", { name: "Sources / Evidence", exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`ux-${width}.png`), fullPage: true });
   });
 }
@@ -127,4 +128,38 @@ test("a missing registration does not fall back to all cemeteries", async ({ pag
   await expect(page.getByLabel("Cemetery", { exact: true })).toHaveCount(0);
   await expect(page.locator(".result-card")).toHaveCount(0);
   await expect(page.locator(".cemetery-map-marker")).toHaveCount(0);
+});
+
+test("NHG evidence has its own tab and separate count from maintenance", async ({ page }) => {
+  await fixture(page);
+  await page.route(gravePath("A-TEST"), (route) => route.fulfill({ json: {
+    ...detail("A-TEST"),
+    maintenanceRecords: [{
+      id: "maintenance-1", cemeteryId, targetType: "gravesite",
+      priority: { id: "normal", label: "Normal" }, status: "completed",
+      observedAt: "2026-10-20", performedBy: "", sourceType: "inspection", notes: "Inspection completed",
+    }],
+    northHillsEvidence: [1, 2].map((id) => ({
+      id: `evidence-${id}`, entryId: `entry-${id}`, targetType: "gravesite",
+      status: "accepted", confidence: "high", nameText: `NHG reading ${id}`,
+      parsedSectionName: "A", rawText: `Historical inscription ${id}`,
+      reviewNotes: "", reviewedByEmail: "", reviewedAt: "",
+    })),
+  } }));
+  await page.goto("/tests/auth.html");
+  await select(page, "A-TEST");
+  const maintenance = page.getByRole("tab", { name: "Maintenance records", exact: true });
+  const sources = page.getByRole("tab", { name: "Sources / Evidence", exact: true });
+  await expect(maintenance.getByLabel("1 items")).toBeVisible();
+  await expect(sources.getByLabel("2 items")).toBeVisible();
+  await maintenance.click();
+  await expect(page.getByText("Inspection completed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Historical inscription 1", { exact: true })).toHaveCount(0);
+  await sources.click();
+  await expect(page.getByText("Historical inscription 1", { exact: true })).toBeVisible();
+  await expect(page.getByText("Historical inscription 2", { exact: true })).toBeVisible();
+  await expect(page.getByText("Inspection completed", { exact: true })).toHaveCount(0);
+  await select(page, "B-TEST");
+  await page.getByRole("tab", { name: "Sources / Evidence", exact: true }).click();
+  await expect(page.getByText("No NHG evidence is linked to this gravesite.")).toBeVisible();
 });
