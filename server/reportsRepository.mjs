@@ -5,12 +5,14 @@ import { runAvailableInventory, runMarkerTypeInventory, runSpatialInventoryCount
 import { runDeedClaimTraceGuide, runMaintenanceNeeds } from "./reports/maintenanceReports.mjs";
 import { runOwnerHoldings, runUnownedGravesites } from "./reports/ownershipReports.mjs";
 
+import { runMissingNhgLinks } from "./reports/nhgReports.mjs";
 import { runMissingMonumentInscriptions } from "./reports/inscriptionReports.mjs";
 import { runMonumentPhotoExceptions } from "./reports/photoReports.mjs";
 
 export { matchReportQuery } from "./reports/queryMatcher.mjs";
 
 const reportRunners = new Map([
+  ["missing-nhg-links", runMissingNhgLinks],
   ["missing-monument-inscriptions", runMissingMonumentInscriptions],
   ["monument-photo-exceptions", runMonumentPhotoExceptions],
   ["burial-date-extremes", (client, definition, _parameters, cemeteryIds) => runBurialDateExtremes(client, definition, cemeteryIds)],
