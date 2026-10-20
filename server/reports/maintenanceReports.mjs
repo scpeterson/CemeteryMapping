@@ -19,7 +19,8 @@ export async function runMaintenanceNeeds(client, definition, parameters, cemete
             cemeteries.name AS cemetery,
             COALESCE(direct_gravesite.gravesite_id, linked_gravesite.gravesite_id) AS gravesite_id,
             COALESCE(direct_gravesite.section_id, linked_gravesite.section_id) AS section_id,
-            COALESCE(direct_gravesite.grave_id, linked_gravesite.grave_id) AS grave_id
+            COALESCE(direct_gravesite.grave_id, linked_gravesite.grave_id) AS grave_id,
+            COALESCE(direct_gravesite.display_label, linked_gravesite.display_label) AS display_label
           FROM headstones
           ${headstoneCemeteryJoinsSql}
           JOIN cemeteries
@@ -44,7 +45,7 @@ export async function runMaintenanceNeeds(client, definition, parameters, cemete
           marker_scope.cemetery,
           'headstone' AS target_type,
           marker_scope.headstone_id AS target,
-          concat_ws('-', NULLIF(marker_scope.section_id, ''), NULLIF(marker_scope.grave_id, '')) AS grave,
+          marker_scope.display_label AS grave,
           last_cleaned.last_cleaned_at,
           CASE
             WHEN last_cleaned.last_cleaned_at IS NULL THEN NULL
@@ -103,7 +104,7 @@ export async function runMaintenanceNeeds(client, definition, parameters, cemete
         cemeteries.name AS cemetery,
         CASE WHEN maintenance_records.headstone_uuid IS NOT NULL THEN 'headstone' ELSE 'gravesite' END AS target_type,
         COALESCE(headstones.headstone_id, gravesites.gravesite_id) AS target,
-        concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS grave,
+        gravesites.display_label AS grave,
         maintenance_issue_types.label AS issue,
         maintenance_action_types.label AS action,
         maintenance_priority_types.label AS priority,

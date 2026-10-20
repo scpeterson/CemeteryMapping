@@ -237,6 +237,7 @@ export async function runAvailableInventory(client, definition, cemeteryIds) {
           lots.lot_id,
           gravesites.section_id,
           gravesites.grave_id,
+          gravesites.display_label,
           gravesites.gravesite_id,
           gravesites.cost,
           ${derivedStatus} AS status
@@ -274,7 +275,7 @@ export async function runAvailableInventory(client, definition, cemeteryIds) {
       SELECT
         'gravesite' AS target_type,
         cemetery,
-        concat_ws('-', NULLIF(section_id, ''), NULLIF(grave_id, '')) AS record_label,
+        display_label AS record_label,
         1 AS gravesite_count,
         cost AS total_cost,
         gravesite_id

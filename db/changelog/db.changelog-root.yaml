@@ -1430,3 +1430,6 @@ databaseChangeLog:
   - include:
       file: changes/478-inscription-status.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/481-standardize-gravesite-display-labels.sql
+      relativeToChangelogFile: true

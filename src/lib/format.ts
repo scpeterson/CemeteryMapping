@@ -70,8 +70,9 @@ export function fullName(person: { firstName: string; middleName?: string; maide
   return person.givenNameStatus === "no_given_name" ? `${name ? `${name} — ` : ""}No given name` : name;
 }
 
-export function formatGraveLabel(grave: Pick<GraveSpaceSummary, "section" | "lot" | "space">) {
-  return [grave.section, grave.lot, grave.space].map((value) => value.trim()).filter(Boolean).join("-");
+export function formatGraveLabel(grave: Pick<GraveSpaceSummary, "section" | "lot" | "space" | "displayLabel">) {
+  if (grave.displayLabel) return grave.displayLabel;
+  return [grave.section, grave.space].map((value) => value.trim()).filter(Boolean).join("-");
 }
 
 export function formatGraveLocation(grave: Pick<GraveSpaceSummary, "section" | "lot" | "space">) {

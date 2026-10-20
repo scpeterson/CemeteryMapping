@@ -3,7 +3,7 @@ import { Button } from "./ui/Button";
 import { EmptyState, Notice, StatusBadge } from "./ui/Feedback";
 import { Filter, Search, X } from "lucide-react";
 import type { CemeterySearchMatch, GraveStatus } from "../types";
-import { formatGraveLocation, graveSelectionKey, lotSelectionKey, statusColors, statusLabels } from "../lib/format";
+import { formatGraveLabel, formatGraveLocation, graveSelectionKey, lotSelectionKey, statusColors, statusLabels } from "../lib/format";
 
 type SearchPanelProps = {
   hasMore?: boolean;
@@ -138,7 +138,8 @@ export function SearchPanel({
               className={`result-card ${selectedGraveKey === key ? "is-selected" : ""}`}
               onClick={() => onSelectMatch(match)}
             >
-              <span className="result-title">{formatGraveLocation(match.grave)}</span>
+              <span className="result-title">{formatGraveLabel(match.grave)}</span>
+              <span className="result-location">{formatGraveLocation(match.grave)}</span>
               <span className="result-cemetery">{match.grave.cemeteryName}</span>
               <StatusBadge color={statusColors[match.grave.status]}>{statusLabel}</StatusBadge>
               {reasons.length ? <span className="result-reason">{reasons.join(" | ")}</span> : null}

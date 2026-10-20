@@ -9,12 +9,12 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
       SELECT id, name, geometry FROM cemeteries WHERE deleted_at IS NULL ${scope}
     ), linked_locations AS (
       SELECT h.id marker_uuid, g.id grave_uuid, g.cemetery_id, COALESCE(s.name, g.section_id) section,
-        concat_ws('-', COALESCE(s.name, g.section_id), NULLIF(g.grave_id, '')) grave_label, g.lot_id
+        g.display_label grave_label, g.lot_id
       FROM headstones h JOIN gravesites g ON g.id=h.gravesite_uuid AND g.deleted_at IS NULL
       LEFT JOIN sections s ON s.section_id=g.section_uuid AND s.deleted_at IS NULL
       UNION
       SELECT hg.headstone_uuid, g.id, g.cemetery_id, COALESCE(s.name,g.section_id),
-        concat_ws('-', COALESCE(s.name,g.section_id), NULLIF(g.grave_id,'')), g.lot_id
+        g.display_label, g.lot_id
       FROM headstone_gravesites hg JOIN gravesites g ON g.id=hg.gravesite_uuid AND g.deleted_at IS NULL
       LEFT JOIN sections s ON s.section_id=g.section_uuid AND s.deleted_at IS NULL
       WHERE hg.deleted_at IS NULL
