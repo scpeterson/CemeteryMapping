@@ -129,14 +129,15 @@ export function GraveDetailPanel({
   onRetry?: () => void;
 }) {
   const title = formatGraveLabel(summary);
-  const [activeTab, setActiveTab] = useState<"overview" | "people" | "monuments" | "records" | "location">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "people" | "monuments" | "records" | "sources" | "location">("overview");
 
   const inferredLot = grave ? inferredLotForGrave(grave, cemeteryLots, cemeteryHeadstones) : undefined;
-  const detailTabs: { id: "overview" | "people" | "monuments" | "records" | "location"; label: string; description: string; count?: number }[] = grave ? [
+  const detailTabs: { id: "overview" | "people" | "monuments" | "records" | "sources" | "location"; label: string; description: string; count?: number }[] = grave ? [
     { id: "overview", label: "Overview", description: "Overview" },
     { id: "people", label: "People", description: "People and ownership", count: grave.burials.length + (canViewOwnership ? grave.currentOwnerIds.length : 0) },
     { id: "monuments", label: "Monuments", description: "Monuments and photos", count: headstones.length + (grave.features?.length ?? 0) + mediaAssets.length },
-    { id: "records", label: "Maintenance", description: "Maintenance records and evidence", count: (grave.maintenanceRecords?.length ?? 0) + northHillsEvidence.length },
+    { id: "records", label: "Maintenance", description: "Maintenance records", count: grave.maintenanceRecords?.length ?? 0 },
+    { id: "sources", label: "Sources / Evidence", description: "Sources / Evidence", count: northHillsEvidence.length },
     { id: "location", label: "Location", description: "Location and geometry" },
   ] : [];
 
@@ -357,16 +358,17 @@ export function GraveDetailPanel({
             {canUpdateGravesites ? <MaintenanceRecordForm grave={grave} lookups={headstoneLookups} onSave={onSaveMaintenanceRecord} /> : null}
           </section>
 
-          {northHillsEvidence.length ? (
+          </> : null}
+
+          {activeTab === "sources" ? (
             <section className="detail-section">
               <div className="section-title">
                 <FileText size={17} aria-hidden="true" />
                 <h3>North Hills Genealogical (NHG) Evidence</h3>
               </div>
-              <NorthHillsEvidenceList evidence={northHillsEvidence} />
+              {northHillsEvidence.length ? <NorthHillsEvidenceList evidence={northHillsEvidence} /> : <p>No NHG evidence is linked to this gravesite.</p>}
             </section>
           ) : null}
-          </> : null}
 
           {activeTab === "location" ? (<>
           <section className="detail-section">
