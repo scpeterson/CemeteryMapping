@@ -12,7 +12,7 @@ import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { graveSelectionKey, lotSelectionKey } from "./lib/format";
-import { searchGraves, searchLots } from "./lib/search";
+import { searchGraves, searchLots, searchMonuments } from "./lib/search";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import { useRecordMutations } from "./hooks/useRecordMutations";
 import type {
@@ -71,8 +71,9 @@ export default function App() {
   const { cemeteryScope, cemeteries, mapData, cemeteryScopeLabel } = useCemeteryScope(data, currentUser, adminCemeteryScope);
   const { remoteMatches, searchError, isSearching, hasMore, loadMore, retry } = useCemeterySearch(query, selectedStatuses, cemeteryScope);
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
+  const monumentMatches = useMemo(() => searchMonuments(data, query, selectedStatuses), [data, query, selectedStatuses]);
   const lotMatches = useMemo(() => searchLots(data, query), [data, query]);
-  const matches = useMemo<CemeterySearchMatch[]>(() => [...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, remoteMatches, cemeteryScope]);
+  const matches = useMemo<CemeterySearchMatch[]>(() => [...monumentMatches, ...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("headstone" in match ? match.headstone.cemeteryId : "lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, monumentMatches, remoteMatches, cemeteryScope]);
   const visibleGraves = useMemo(() => {
     if (cemeteryScope === "" && selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
     return data.graves.filter((grave) => selectedStatuses.has(grave.status) && (cemeteryScope === "" || grave.cemeteryId === cemeteryScope));
@@ -137,6 +138,12 @@ export default function App() {
     setMobileView("details");
     setSelectionVersion((version) => version + 1);
     setSelectedHeadstone(undefined);
+    if ("headstone" in match) {
+      setSelectedGrave(undefined);
+      setSelectedLot(undefined);
+      setSelectedHeadstone(match.headstone);
+      return;
+    }
     if ("lot" in match) {
       setSelectedGrave(undefined);
       setSelectedLot(match.lot);
@@ -255,6 +262,7 @@ export default function App() {
             matches={matches}
             canViewOwnership={currentUser?.permissions.canViewOwnership ?? false}
             selectedGraveKey={selectedGrave ? graveSelectionKey(selectedGrave) : undefined}
+            selectedHeadstoneId={selectedHeadstone?.id}
             selectedLotKey={selectedLot ? lotSelectionKey(selectedLot) : undefined}
             onSelectMatch={selectMatch}
           />

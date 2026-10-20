@@ -1,4 +1,4 @@
-import type { CemeteryData, GraveStatus, LotSearchMatch, SearchMatch } from "../types";
+import type { CemeteryData, GraveStatus, MonumentSearchMatch, LotSearchMatch, SearchMatch } from "../types";
 import { formatGraveLabel, graveSelectionKey, lotSelectionKey, normalize, statusLabels } from "./format";
 
 const addReason = (reasons: string[], label: string, value: string | undefined, query: string) => {
@@ -45,4 +45,14 @@ export function searchLots(data: CemeteryData, query: string): LotSearchMatch[] 
     })
     .filter((match) => match.reasons.length > 0)
     .sort((a, b) => lotSelectionKey(a.lot).localeCompare(lotSelectionKey(b.lot)));
+}
+
+export function searchMonuments(data: CemeteryData, query: string, statuses: Set<GraveStatus>): MonumentSearchMatch[] {
+  const cleaned = normalize(query);
+  if (!cleaned) return [];
+  return data.headstones.filter((headstone) => {
+    const grave = data.graves.find((grave) => grave.cemeteryId === headstone.cemeteryId && grave.id === headstone.gravesiteId);
+    return statuses.has(grave?.status ?? "unknown") && normalize(headstone.headstoneId).includes(cleaned);
+  }).map((headstone) => ({ headstone, reasons: [`Monument ID: ${headstone.headstoneId}`] }))
+    .sort((a, b) => a.headstone.headstoneId.localeCompare(b.headstone.headstoneId));
 }

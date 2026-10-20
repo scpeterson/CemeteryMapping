@@ -32,3 +32,17 @@ test("search route returns a bounded array and continuation header without broad
   assert.equal(headers["X-Search-Has-More"], "true");
   assert.deepEqual(options, { query: "Name", statuses: [], cemeteryId, offset: 4, limit: 2, includeOwnership: false, ownershipCemeteryIds: [cemeteryId] });
 });
+
+test("monument ID matches retain ID reasons and use both active association paths", async () => {
+  const pool = { async query(sql, values) {
+    assert.equal(values[0], "tlc-hs-0270");
+    assert.match(sql, /SELECT 'Monument ID', h.headstone_id/u);
+    assert.match(sql, /h.gravesite_uuid = base_graves.grave_uuid/u);
+    assert.match(sql, /hg.gravesite_uuid = base_graves.grave_uuid/u);
+    assert.match(sql, /hg.deleted_at IS NULL/u);
+    assert.match(sql, /h.deleted_at IS NULL/u);
+    return { rows: [{ cemetery_id: cemeteryId, gravesite_id: "C-0270", status: "occupied", reason_label: "Monument ID", reason_value: "TLC-HS-0270" }] };
+  } };
+  const matches = await searchCemetery(pool, { query: "TLC-HS-0270", cemeteryId });
+  assert.deepEqual(matches[0].reasons, ["Monument ID: TLC-HS-0270"]);
+});

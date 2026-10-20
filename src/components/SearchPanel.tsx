@@ -22,6 +22,7 @@ type SearchPanelProps = {
   canViewOwnership: boolean;
   selectedGraveKey?: string;
   selectedLotKey?: string;
+  selectedHeadstoneId?: string;
   onSelectMatch: (match: CemeterySearchMatch) => void;
 };
 
@@ -39,6 +40,7 @@ export function SearchPanel({
   canViewOwnership,
   selectedGraveKey,
   selectedLotKey,
+  selectedHeadstoneId,
   onSelectMatch,
 }: SearchPanelProps) {
   const pageKey = JSON.stringify([query, [...selectedStatuses].sort(), scopeKey]);
@@ -72,7 +74,7 @@ export function SearchPanel({
         ) : null}
       </label>
 
-      <p id="cemetery-search-help" className="search-help">{canViewOwnership ? "Search by name, owner, date, gravesite, or lot." : "Search by name, date, gravesite, or lot."}</p>
+      <p id="cemetery-search-help" className="search-help">{canViewOwnership ? "Search by name, owner, date, gravesite, monument ID, or lot." : "Search by name, date, gravesite, monument ID, or lot."}</p>
       <div className="filter-header">
         <Filter size={16} aria-hidden="true" />
         <span>Status</span>
@@ -106,8 +108,21 @@ export function SearchPanel({
 
       <div className="results-list" id="cemetery-search-results" aria-busy={isSearching}>
         {error ? <Notice tone="error">{error} <Button variant="secondary" onClick={onRetry}>Retry search</Button></Notice> : null}
-        {!isSearching && !error && !matches.length ? <EmptyState title="No matching records">Try a different name, grave, or lot, or enable more status filters.</EmptyState> : null}
+        {!isSearching && !error && !matches.length ? <EmptyState title="No matching records">Try a different name, grave, monument ID, or lot, or enable more status filters.</EmptyState> : null}
         {!isSearching && shown.map((match) => {
+          if ("headstone" in match) {
+            const { headstone } = match;
+            const selected = selectedHeadstoneId === headstone.id;
+            return (
+              <button key={`monument:${headstone.id}`} type="button" aria-current={selected ? "true" : undefined}
+                className={`result-card ${selected ? "is-selected" : ""}`} onClick={() => onSelectMatch(match)}>
+                <span className="result-title">{headstone.headstoneId}</span>
+                <span className="result-cemetery">{headstone.cemeteryName}</span>
+                <span className="result-meta">Monument · {headstone.markerType}</span>
+                <span className="result-reason">{match.reasons.join(" | ")}</span>
+              </button>
+            );
+          }
           if ("lot" in match) {
             const key = lotSelectionKey(match.lot);
             return (

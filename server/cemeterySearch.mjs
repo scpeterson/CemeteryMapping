@@ -105,7 +105,12 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
       `;
   const result = await pool.query(
     `
-      WITH base_graves AS MATERIALIZED (
+      WITH matching_monuments AS MATERIALIZED (
+        SELECT h.id, h.headstone_id, h.gravesite_uuid
+        FROM headstones h
+        WHERE $1 <> '' AND h.deleted_at IS NULL
+          AND ${normalizedSearchSql("h.headstone_id")} LIKE '%' || $1 || '%'
+      ), base_graves AS MATERIALIZED (
         SELECT
           gravesites.id AS grave_uuid,
           gravesites.cemetery_id::text,
@@ -169,6 +174,18 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         SELECT 'Former grave label', alias
         FROM unnest(base_graves.label_aliases) alias
         WHERE $1 <> '' AND ${normalizedSearchSql('alias')} LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Monument ID', h.headstone_id
+        FROM matching_monuments h
+        WHERE (
+            h.gravesite_uuid = base_graves.grave_uuid
+            OR EXISTS (
+              SELECT 1 FROM headstone_gravesites hg
+              WHERE hg.headstone_uuid = h.id AND hg.gravesite_uuid = base_graves.grave_uuid
+                AND hg.deleted_at IS NULL
+            )
+          )
 
         UNION ALL
         SELECT 'Cemetery', base_graves.cemetery_name
