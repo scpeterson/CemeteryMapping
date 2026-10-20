@@ -451,6 +451,14 @@ export function CemeteryMap({
   }, [selectedGrave, mapLoaded]);
 
   useEffect(() => {
+    const map = mapRef.current;
+    const point = selectedHeadstone?.geometry;
+    if (!map || !mapLoaded || !point) return;
+
+    map.easeTo({ center: point.coordinates as [number, number], zoom: 20.5, duration: 450 });
+  }, [selectedHeadstone, mapLoaded]);
+
+  useEffect(() => {
     if (!selectedLot || !mapRef.current) return;
 
     const bounds = extendGeometryBounds(undefined, selectedLot.geometry);
