@@ -45,6 +45,12 @@ export async function runMissingNhgLinks(client, definition, _parameters, cemete
     )
     SELECT h.id::text uuid,
       COALESCE(
+        (SELECT g.cemetery_id::text FROM relations r JOIN g ON g.id = r.gid WHERE r.hid = h.id ORDER BY g.cemetery_id LIMIT 1),
+        (SELECT id::text FROM cem WHERE ST_Covers(cem.geometry, h.geometry) ORDER BY name LIMIT 1)
+      ) cemetery_id,
+      (SELECT g.gravesite_id FROM relations r JOIN g ON g.id = r.gid WHERE r.hid = h.id ORDER BY g.gravesite_id LIMIT 1) gravesite_id,
+      ST_AsGeoJSON(h.geometry)::json geometry,
+      COALESCE(
         (SELECT cem.name FROM cem JOIN g ON g.cemetery_id = cem.id
          JOIN relations r ON r.gid = g.id WHERE r.hid = h.id ORDER BY cem.name LIMIT 1),
         (SELECT name FROM cem WHERE ST_Covers(cem.geometry, h.geometry) ORDER BY name LIMIT 1)
@@ -71,7 +77,16 @@ export async function runMissingNhgLinks(client, definition, _parameters, cemete
       { key: "marker_type", label: "Marker type" }, { key: "marker_scope", label: "Marker scope" },
     ],
     rows: missing.map((row) => ({
-      ...row, gravesites: row.gravesites || "Standalone monument",
+      ...row,
+      monumentRecord: {
+        id: row.uuid, headstoneId: row.monument, cemeteryId: row.cemetery_id, cemeteryName: row.cemetery,
+        gravesiteId: row.gravesite_id ?? null,
+        graveKey: row.gravesite_id ? `${row.cemetery_id}:${row.gravesite_id}` : `${row.cemetery_id}:headstone:${row.monument}`,
+        label: row.monument, markerTypeCode: "unknown", markerType: row.marker_type ?? "Unknown",
+        markerScopeCode: "unknown", markerScope: row.marker_scope ?? "Unknown", condition: "unknown",
+        geometry: row.geometry ?? null,
+      },
+      gravesites: row.gravesites || "Standalone monument",
       nhg_inclusion: inclusionLabels[row.nhg_inclusion] ?? "Not checked",
     })),
     notes: [

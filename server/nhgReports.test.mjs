@@ -29,7 +29,7 @@ test("missing NHG links is restricted to cemetery admins and higher", async () =
 
 test("missing NHG links checks monuments and excludes Not listed in NHG", async () => {
   const pool = fixture([
-    { monument: "TLC-HS-0087", gravesites: "A-0087", direct_link: false, nhg_inclusion: "listed" },
+    { uuid: "marker-1", cemetery_id: cemeteryId, cemetery: "Test Cemetery", gravesite_id: "GPS-87", geometry: null, monument: "TLC-HS-0087", gravesites: "A-0087", direct_link: false, nhg_inclusion: "listed" },
     { monument: "TLC-HS-0270", gravesites: "C-0270", direct_link: false, nhg_inclusion: "not_checked" },
     { monument: "TLC-HS-PLOT", gravesites: null, direct_link: false, nhg_inclusion: "unclear", marker_scope: "Plot marker" },
     { monument: "TLC-HS-0561", direct_link: true, nhg_inclusion: "listed" },
@@ -42,6 +42,11 @@ test("missing NHG links checks monuments and excludes Not listed in NHG", async 
     ["A-0087", "TLC-HS-0087", "Listed in NHG"], ["C-0270", "TLC-HS-0270", "Not checked"],
     ["Standalone monument", "TLC-HS-PLOT", "Unclear"],
   ]);
+  assert.equal(result.rows[0].monumentRecord.id, "marker-1");
+  assert.equal(result.rows[0].monumentRecord.headstoneId, "TLC-HS-0087");
+  assert.equal(result.rows[0].monumentRecord.cemeteryId, cemeteryId);
+  assert.equal(result.rows[0].monumentRecord.geometry, null);
+  assert.equal(result.rows[0].monumentRecord.gravesiteId, "GPS-87");
   assert.equal(result.rows[2].marker_scope, "Plot marker");
   assert.ok(!result.columns.some((c) => ["kind", "related_link"].includes(c.key)));
   assert.deepEqual(pool.queries[0].values, [[cemeteryId]]);

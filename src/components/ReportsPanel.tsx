@@ -2,7 +2,7 @@ import { formatReportValue } from "./reports/reportFormatting";
 import { Notice, EmptyState } from "./ui/Feedback";
 import { Modal } from "./ui/Modal";
 import { Play, Printer, Search, X } from "lucide-react";
-import type { CemeteryData, CurrentUser } from "../types";
+import type { CemeteryData, CurrentUser, HeadstoneSummary } from "../types";
 import { useReportWorkflow } from "../hooks/useReportWorkflow";
 import { MarkerBurialPages } from "./reports/MarkerBurialPages";
 
@@ -10,9 +10,10 @@ type ReportsPanelProps = {
   currentUser: CurrentUser;
   data: CemeteryData;
   onClose: () => void;
+  onOpenMonument: (monument: HeadstoneSummary) => void;
 };
 
-export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) {
+export function ReportsPanel({ currentUser, data, onClose, onOpenMonument }: ReportsPanelProps) {
   const { catalogError, staleResult, selectedReportId, parameters, setParameters, selectedCemeteryId, setSelectedCemeteryId, question, setQuestion, result, message, messageTone, error, isLoading, selectedReport, cemeteryOptions, groupedReports, selectReport, executeReport, askQuestion, retryCatalog } = useReportWorkflow(currentUser, data);
 
   return (
@@ -167,7 +168,13 @@ export function ReportsPanel({ currentUser, data, onClose }: ReportsPanelProps) 
                       result.rows.map((row, rowIndex) => (
                         <tr key={rowIndex}>
                           {result.columns.map((column) => (
-                            <td key={column.key}>{formatReportValue(row[column.key])}</td>
+                            <td key={column.key}>{result.report.id === "missing-nhg-links" && column.key === "monument" && row.monumentRecord ? (
+                              <button type="button" className="report-record-link"
+                                aria-label={`Open monument ${String(row[column.key])}`}
+                                onClick={() => onOpenMonument(row.monumentRecord as HeadstoneSummary)}>
+                                {formatReportValue(row[column.key])}
+                              </button>
+                            ) : formatReportValue(row[column.key])}</td>
                           ))}
                         </tr>
                       ))
