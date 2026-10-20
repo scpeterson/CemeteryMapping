@@ -2145,3 +2145,22 @@ Franklin Park Borough               233                Allegheny County, PA`;
   assert.deepEqual(entries[1].surnames, ["KNOBLOCH"]);
   assert.equal(entries[2].parsedYears.includes(1862), true);
 });
+
+test("page 199 Jancosko/Krizovany and Pfeiffer remain separate across gap notes", () => {
+  const entries = parseNorthHillsOcrText(`Section C, Row 2
+HUBERT (2C, 14, c) upright, gray granite, exc cond "Hubert / Regis T. / 1935-1996"
+Gap, about 12 feet.
+JANCOSKO/KRIZOVANY (2C, 15, c) upright, gray granite, exc cond,
+roses & leaves, lamb, cross "Jancosko / Ronald Michael / March 13,
+1952 / Krizovany / Carol Lynne / July 7, 1951 / Feb. 28, 2002" On
+back: "Jancosko" Vase in ground
+Gap, about 35 feet.
+PFEIFFER (2C, 16, s) upright with open ledger, gray granite, exc
+cond, "Mary Pfeiffer / 1847-1904 / Asleep in Jesus"
+Franklin Park Borough 199 Allegheny County, PA`);
+  assert.deepEqual(entries.map((e) => [e.nameText, e.parsedPositionNumber]), [["HUBERT", 14], ["JANCOSKO/KRIZOVANY", 15], ["PFEIFFER", 16]]);
+  assert.match(entries[1].inscriptionText, /Ronald Michael/u);
+  assert.match(entries[1].rawText, /On back: "Jancosko" Vase in ground/u);
+  assert.doesNotMatch(entries[1].inscriptionText, /Gap|Pfeiffer/u);
+  assert.equal(entries[2].inscriptionText, "Mary Pfeiffer / 1847-1904 / Asleep in Jesus");
+});
