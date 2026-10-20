@@ -1433,3 +1433,6 @@ databaseChangeLog:
   - include:
       file: changes/481-standardize-gravesite-display-labels.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/482-restore-page-199-jancosko-krizovany.sql
+      relativeToChangelogFile: true
