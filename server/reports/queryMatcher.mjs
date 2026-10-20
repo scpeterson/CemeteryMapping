@@ -31,7 +31,9 @@ export function matchReportQuery(query) {
   let reportId = "";
   const parameters = {};
 
-  if (/\b(photos?|pictures?|images?)\b/u.test(lower) && /\b(monuments?|markers?|headstones?)\b/u.test(lower)) {
+  if (/\binscriptions?\b/u.test(lower) && /\b(missing|empty|blank|without|no|incomplete)\b/u.test(lower)) {
+    reportId = "missing-monument-inscriptions";
+  } else if (/\b(photos?|pictures?|images?)\b/u.test(lower) && /\b(monuments?|markers?|headstones?)\b/u.test(lower)) {
     reportId = "monument-photo-exceptions";
     parameters.sectionNames = extractSectionName(text);
     if (/\bprimary\b/u.test(lower)) parameters.issue = "missing-primary";

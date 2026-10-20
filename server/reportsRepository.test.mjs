@@ -431,3 +431,43 @@ test("photo exceptions scope unassigned admins to no cemeteries and allow system
   await runReport(pool, "monument-photo-exceptions", { cemeteryId: selected }, adminUser);
   assert.deepEqual(pool.queries[1].values, [[selected]]);
 });
+
+test("missing inscription report requires cemetery admin and matches inscription questions", async () => {
+  for (const user of [readerUser, powerUser]) {
+    assert.ok(!listReportsForUser(user).some((r) => r.id === "missing-monument-inscriptions"));
+    await assert.rejects(() => runReport({ connect() { throw new Error("Must not query"); } }, "missing-monument-inscriptions", {}, user), /Forbidden/u);
+  }
+  for (const role of ["cemetery-admin", "admin"]) assert.ok(listReportsForUser({ role }).some((r) => r.id === "missing-monument-inscriptions"));
+  assert.equal(matchReportQuery("Which monuments are missing inscription data?").report.id, "missing-monument-inscriptions");
+});
+
+test("inscription report checks faces or legacy text, accepting explicit blank and illegible data", async () => {
+  const base = { marker_uuid: "missing", monument: "TLC-HS-0165", gravesites: null, section: "C" };
+  const entries = [
+    { ...base, faces: [], inscription: " \n\t" },
+    { ...base, marker_uuid: "null", faces: null, inscription: null },
+    { ...base, marker_uuid: "empty-face", faces: [{ label: "Front", inscription: "[blank]" }, { label: "Back", inscription: "  " }], inscription: "Legacy text" },
+    { ...base, marker_uuid: "missing-property", faces: [{ label: "Side" }], inscription: "[illegible]" },
+    ...["[blank]", "[illegible]", "Some text"].flatMap((text, i) => [
+      { ...base, marker_uuid: `legacy-${i}`, faces: [], inscription: text },
+      { ...base, marker_uuid: `face-${i}`, faces: [{ inscription: text }], inscription: null },
+    ]),
+    { ...base, section: "D", faces: [], inscription: "" },
+  ];
+  const pool = poolForRows([{ includes: "WITH active_cemeteries", rows: entries }]);
+  const user = { ...powerUser, role: "cemetery-admin" };
+  const report = await runReport(pool, "missing-monument-inscriptions", { cemeteryId: "untrusted" }, user);
+  assert.equal(report.rows.length, 5);
+  assert.match(report.summary, /4 have missing inscription data/u);
+  assert.ok(report.columns.some((c) => c.key === "monument" && c.label === "Monument ID"));
+  assert.equal(report.rows[0].gravesites, "Standalone marker");
+  assert.equal(report.rows[2].missing_faces, "Back (face 2)");
+  assert.equal(report.rows[3].missing_faces, "Side (face 1)");
+  assert.deepEqual(pool.queries[0].values, [[powerUser.cemeteryAccess[0].cemeteryId]]);
+  assert.match(pool.queries[0].sql, /upper\(loc.section\) IN \('A','B','C','D'\)/u);
+  await runReport(pool, "missing-monument-inscriptions", {}, { role: "cemetery-admin", cemeteryAccess: [] });
+  assert.match(pool.queries[1].sql, /AND false/u);
+  const selected = "33333333-3333-4333-8333-333333333333";
+  await runReport(pool, "missing-monument-inscriptions", { cemeteryId: selected }, adminUser);
+  assert.deepEqual(pool.queries[2].values, [[selected]]);
+});
