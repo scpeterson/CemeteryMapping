@@ -7,6 +7,15 @@ const roleRank = new Map([
 
 export const reportDefinitions = [
   {
+    id: "missing-nhg-links",
+    title: "Missing NHG links",
+    description: "Lists monuments without confirmed direct NHG links, with gravesite names and monument IDs. Excludes monuments marked Not listed in NHG. All sections and plot markers are included.",
+    category: "Data maintenance",
+    requiredRole: "cemetery-admin",
+    parameters: [],
+    examples: ["Which monuments are missing NHG links?"],
+  },
+  {
     id: "burial-date-extremes",
     title: "Oldest and latest burials",
     description: "Finds the earliest and most recent recorded burial dates.",
