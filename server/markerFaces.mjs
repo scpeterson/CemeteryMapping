@@ -1,5 +1,14 @@
+import { inscriptionStatuses, inscriptionAllowsText } from "../shared/inscriptionStatus.mjs";
 import { validateUuid } from "./inputValidation.mjs";
 import { BadRequestError } from "./requestValidation.mjs";
+
+export function validateInscriptionStatus(status, inscription) {
+  if (status === undefined) return undefined;
+  if (!inscriptionStatuses.includes(status)) throw new BadRequestError("Invalid inscription status.");
+  if (!inscriptionAllowsText(status) && String(inscription ?? "").length) throw new BadRequestError("Blank or Illegible inscriptions cannot contain text.");
+  if (status === "not_recorded" && String(inscription ?? "").trim()) throw new BadRequestError("Not recorded inscriptions cannot contain text.");
+  return status;
+}
 
 function text(value, label, max) {
   if (value === undefined) return "";
@@ -21,6 +30,7 @@ export function validateMarkerFaces(value) {
     if (!label) throw new BadRequestError("Each face needs a label.");
     return { id: validateUuid(face.id, "Face id").toLowerCase(), label,
       inscription: text(face.inscription, "Face inscription", 20000), notes: text(face.notes, "Face notes", 4000),
+      ...(face.inscriptionStatus === undefined ? {} : { inscriptionStatus: validateInscriptionStatus(face.inscriptionStatus, face.inscription) }),
       ...(face.designNotes === undefined ? {} : { designNotes: text(face.designNotes, "Face design notes", 20000) }),
       burialIds: ids(face.burialIds ?? [], "Face people"), mediaAssetIds: ids(face.mediaAssetIds ?? [], "Face photos") };
   });

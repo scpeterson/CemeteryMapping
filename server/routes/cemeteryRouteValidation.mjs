@@ -1,4 +1,4 @@
-import { validateMarkerFaces, validateFacesRevision } from "../markerFaces.mjs";
+import { validateMarkerFaces, validateFacesRevision, validateInscriptionStatus } from "../markerFaces.mjs";
 import { optionalCoordinate, optionalText, requiredText, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
 import { optionalBoolean, optionalDate, optionalRecordedDate, validateDataConfidence, validateReviewStatus } from "./routeValidationHelpers.mjs";
@@ -45,6 +45,7 @@ export function validateHeadstonePayload(body) {
     materialId: validateUuid(body?.materialId, "Marker material"),
     conditionId: validateUuid(body?.conditionId, "Condition"),
     conditionNotes: optionalText(body?.conditionNotes, "Condition notes", 4000),
+    ...(body?.faces === undefined && body?.inscriptionStatus !== undefined ? { inscriptionStatus: validateInscriptionStatus(body.inscriptionStatus, body.inscription) } : {}),
     inscription: body?.faces === undefined ? optionalText(body?.inscription, "Inscription", 20_000) : null,
     designNotes: optionalText(body?.designNotes, "Design notes", 20_000),
     backDescription: optionalText(body?.backDescription, "Back description", 20_000),

@@ -117,7 +117,7 @@ export const reportDefinitions = [
   {
     id: "missing-monument-inscriptions",
     title: "Missing monument inscriptions",
-    description: "Lists monuments in sections A–D with empty face inscriptions, or an empty monument inscription when no faces exist. [blank] and [illegible] are valid data.",
+    description: "Lists monuments in sections A–D with inscriptions not recorded or empty transcriptions, including faces. Blank and Illegible statuses count as documented.",
     category: "Data maintenance",
     requiredRole: "cemetery-admin",
     parameters: [],

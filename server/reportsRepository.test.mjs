@@ -471,3 +471,18 @@ test("inscription report checks faces or legacy text, accepting explicit blank a
   await runReport(pool, "missing-monument-inscriptions", { cemeteryId: selected }, adminUser);
   assert.deepEqual(pool.queries[2].values, [[selected]]);
 });
+
+test("missing inscriptions report accepts explicit Blank/Illegible and flags incomplete faces", async () => {
+  const rows = [
+    { marker_uuid: "blank-root", faces: [], inscription: "", inscription_status: "blank" },
+    { marker_uuid: "illegible-root", faces: [], inscription: null, inscription_status: "illegible" },
+    { marker_uuid: "empty-transcribed", faces: [], inscription: " ", inscription_status: "transcribed" },
+    { marker_uuid: "documented-faces", faces: [{ label: "Front", inscription: "", inscriptionStatus: "blank" }, { label: "Back", inscription: "", inscriptionStatus: "illegible" }] },
+    { marker_uuid: "missing-face", faces: [{ label: "Front", inscription: "", inscriptionStatus: "blank" }, { label: "Back", inscription: "", inscriptionStatus: "not_recorded" }] },
+    { marker_uuid: "partial", faces: [{ label: "Front", inscription: "NAME\n[blank] – [illegible]", inscriptionStatus: "transcribed" }] },
+  ];
+  const pool = poolForRows([{ includes: "WITH active_cemeteries", rows }]);
+  const result = await runReport(pool, "missing-monument-inscriptions", {}, adminUser);
+  assert.deepEqual(result.rows.map((row) => row.marker_uuid), ["empty-transcribed", "missing-face"]);
+  assert.equal(result.rows[1].missing_faces, "Back (face 2)");
+});

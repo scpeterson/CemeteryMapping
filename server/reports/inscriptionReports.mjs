@@ -1,3 +1,4 @@
+import { inscriptionMissing } from "../../shared/inscriptionStatus.mjs";
 import { reportResult, scopedWhere } from "./shared.mjs";
 
 export async function runMissingMonumentInscriptions(client, definition, _parameters, cemeteryIds) {
@@ -30,7 +31,7 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
     )
     SELECT h.id marker_uuid, h.headstone_id monument, cem.name cemetery, loc.section,
       string_agg(DISTINCT loc.grave_label, ', ' ORDER BY loc.grave_label) gravesites,
-      marker_types.label marker_type, marker_scope_types.label marker_scope, h.inscription, h.faces,
+      marker_types.label marker_type, marker_scope_types.label marker_scope, h.inscription, h.inscription_status, h.faces,
       (SELECT string_agg(DISTINCT COALESCE(NULLIF(b.display_name,''),NULLIF(b.full_name,''),concat_ws(' ',b.first_name,b.last_name)), '; ')
        FROM headstone_burials hb JOIN burials b ON b.id=hb.burial_uuid AND b.deleted_at IS NULL
        WHERE hb.headstone_uuid=h.id AND hb.deleted_at IS NULL) names
@@ -45,8 +46,8 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
   const rows = result.rows.flatMap((row) => {
     const faces = Array.isArray(row.faces) ? row.faces : [];
     const missingFaces = faces.map((face, index) => ({ face, index }))
-      .filter(({ face }) => !String(face.inscription ?? "").trim());
-    if (faces.length ? !missingFaces.length : String(row.inscription ?? "").trim()) return [];
+      .filter(({ face }) => inscriptionMissing(face.inscriptionStatus, face.inscription));
+    if (faces.length ? !missingFaces.length : !inscriptionMissing(row.inscription_status, row.inscription)) return [];
     return [{
       ...row, gravesites: row.gravesites || "Standalone marker", face_count: faces.length,
       missing_faces: missingFaces.map(({ face, index }) => `${face.label || "Unnamed face"} (face ${index + 1})`).join("; "),
@@ -66,8 +67,8 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
       { key: "inscription", label: "Existing monument inscription" }, { key: "issue", label: "Issue" },
     ], rows,
     notes: [
-      "For monuments with faces, each face must have an inscription. Monuments without faces are checked using the monument inscription.",
-      "Only null, empty, or whitespace-only inscriptions are missing. Any nonempty text, including [blank] and [illegible], is valid data.",
+      "Faces are checked individually. Monuments without faces use their monument inscription status.",
+      "Blank and Illegible statuses are valid without text. Not recorded, or Transcribed with empty text, needs data. Partial transcriptions including [blank] and [illegible] remain valid.",
       "Includes plot markers and standalone markers. Standalone markers use their map location. Deleted records are excluded.",
       "A monument spanning sections is listed once per section; totals count distinct monuments.",
     ],

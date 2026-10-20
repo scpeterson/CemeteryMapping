@@ -38,3 +38,16 @@ test("face designs preserve text, accept legacy faces, and reject invalid values
     assert.throws(() => validateMarkerFaces([{ ...face(), designNotes }]), /Face design notes/);
   }
 });
+
+test("face status accepts blank and illegible only without text and preserves partial transcription", () => {
+  for (const inscriptionStatus of ["blank", "illegible"]) {
+    assert.equal(validateMarkerFaces([{ ...face(), inscription: "", inscriptionStatus }])[0].inscriptionStatus, inscriptionStatus);
+    for (const inscription of ["Text", " ", "[blank]", "[illegible]"]) {
+      assert.throws(() => validateMarkerFaces([{ ...face(), inscription, inscriptionStatus }]), /cannot contain text/);
+    }
+  }
+  assert.throws(() => validateMarkerFaces([{ ...face(), inscriptionStatus: "unknown" }]), /Invalid inscription status/);
+  assert.throws(() => validateMarkerFaces([{ ...face(), inscriptionStatus: "not_recorded" }]), /cannot contain text/);
+  const partial = { ...face(), inscriptionStatus: "transcribed", inscription: "  ALICE\n[blank] – 1980\n[illegible lines]  " };
+  assert.deepEqual(validateMarkerFaces([partial]), [partial]);
+});
