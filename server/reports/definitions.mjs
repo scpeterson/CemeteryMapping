@@ -115,6 +115,15 @@ export const reportDefinitions = [
     ],
   },
   {
+    id: "missing-monument-inscriptions",
+    title: "Missing monument inscriptions",
+    description: "Lists monuments in sections A–D with empty face inscriptions, or an empty monument inscription when no faces exist. [blank] and [illegible] are valid data.",
+    category: "Data maintenance",
+    requiredRole: "cemetery-admin",
+    parameters: [],
+    examples: ["Which monuments are missing inscription data?"],
+  },
+  {
     id: "monument-photo-exceptions",
     title: "Monument photo exceptions",
     description: "Finds monuments without a monument photo or without a Primary photo, including standalone markers.",
