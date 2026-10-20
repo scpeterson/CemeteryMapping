@@ -15,7 +15,7 @@ export async function runOwnerHoldings(client, definition, parameters, cemeteryI
           current_ownership_right_owners.target_type,
           CASE
             WHEN current_ownership_right_owners.target_type = 'lot' THEN concat_ws('-', NULLIF(lots.section_id, ''), NULLIF(lots.lot_id, ''))
-            ELSE concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, ''))
+            ELSE gravesites.display_label
           END AS record_label,
           current_ownership_right_owners.effective_date,
           current_ownership_right_owners.event_type,
@@ -43,7 +43,7 @@ export async function runOwnerHoldings(client, definition, parameters, cemeteryI
           cemeteries.name AS cemetery,
           matched_legacy.owner_name,
           'gravesite' AS target_type,
-          concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS record_label,
+          gravesites.display_label AS record_label,
           owners.sale_date AS effective_date,
           'purchase' AS event_type,
           NULL::text AS document_reference,
@@ -114,7 +114,7 @@ export async function runUnownedGravesites(client, definition, parameters, cemet
         SELECT
           cemeteries.name AS cemetery,
           gravesites.section_id AS section,
-          concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS gravesite,
+          gravesites.display_label AS gravesite,
           gravesites.gravesite_id AS record_id,
           CASE
             WHEN gravesites.lot_uuid IS NULL THEN 'No lot assigned'

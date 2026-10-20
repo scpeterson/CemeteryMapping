@@ -28,6 +28,7 @@ function toSearchSummary(row) {
     section: row.section_id ?? "",
     lot: row.lot_id ?? "",
     space: row.grave_id,
+    ...(row.display_label ? { displayLabel: row.display_label, labelAliases: row.label_aliases ?? [] } : {}),
     status: normalizeStatus(row.status),
     geometry: parseGeometry(row.geometry),
   };
@@ -114,6 +115,8 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           gravesites.section_id,
           gravesites.lot_id,
           gravesites.grave_id,
+          gravesites.display_label,
+          gravesites.label_aliases,
           gravesites.gravesite_id,
           derived_status.status,
           COALESCE(derived_status_type.label, 'Unknown') AS status_label,
@@ -145,6 +148,8 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         base_graves.section_id,
         base_graves.lot_id,
         base_graves.grave_id,
+        base_graves.display_label,
+        base_graves.label_aliases,
         base_graves.gravesite_id,
         base_graves.status,
         base_graves.geometry,
@@ -156,9 +161,14 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         WHERE $1 = ''
 
         UNION ALL
-        SELECT 'Grave', concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)
+        SELECT 'Grave', base_graves.display_label
         WHERE $1 <> ''
-          AND ${normalizedSearchSql(`concat_ws('-', base_graves.section_id, base_graves.lot_id, base_graves.grave_id)`)} LIKE '%' || $1 || '%'
+          AND ${normalizedSearchSql(`base_graves.display_label`)} LIKE '%' || $1 || '%'
+
+        UNION ALL
+        SELECT 'Former grave label', alias
+        FROM unnest(base_graves.label_aliases) alias
+        WHERE $1 <> '' AND ${normalizedSearchSql('alias')} LIKE '%' || $1 || '%'
 
         UNION ALL
         SELECT 'Cemetery', base_graves.cemetery_name
@@ -277,7 +287,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         ${militaryServiceSearchSql}
       ) reasons ON reasons.reason_value IS NOT NULL
       ), page_graves AS (
-        SELECT DISTINCT cemetery_id, cemetery_name, section_id, lot_id, grave_id, gravesite_id
+        SELECT DISTINCT cemetery_id, cemetery_name, section_id, lot_id, grave_id, gravesite_id, display_label, label_aliases
         FROM matched_rows
         ORDER BY cemetery_name, section_id, lot_id, grave_id, gravesite_id, cemetery_id
         LIMIT $6::integer OFFSET $7::integer
@@ -286,7 +296,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
       FROM page_graves
       JOIN matched_rows USING (cemetery_id, gravesite_id)
       ORDER BY page_graves.cemetery_name, page_graves.section_id, page_graves.lot_id,
-        page_graves.grave_id, page_graves.gravesite_id, page_graves.cemetery_id,
+        page_graves.grave_id, page_graves.display_label, page_graves.label_aliases, page_graves.gravesite_id, page_graves.cemetery_id,
         matched_rows.reason_label, matched_rows.reason_value
     `,
     [cleanedQuery, statuses, includeOwnership, scopedOwnershipCemeteryIds, cemeteryId ?? null, limit + 1, offset],

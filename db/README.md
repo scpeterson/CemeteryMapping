@@ -561,3 +561,9 @@ ORDER BY source_row_number;
 `headstones.inscription_status` and each face's `inscriptionStatus` use `not_recorded`, `transcribed`, `blank`, or `illegible`. Faces are authoritative when present; the database synchronizes the combined monument inscription and status and increments `faces_revision` when inscription data changes. A mixed set of documented Blank and Illegible faces is considered documented even though the combined transcription is empty; reports inspect faces individually.
 
 Blank and Illegible require empty inscription text, enforced by the editor, API validation, and database trigger. Transcribed can contain partial placeholders such as `[blank]`, `[illegible]`, and `[illegible lines]`. Migration 478 converts only whole-field `[blank]` and `[illegible]` tokens (ignoring case and surrounding whitespace), preserving partial text, line breaks, face IDs, and associations. The missing-inscriptions report flags Not recorded and empty Transcribed entries; it accepts Blank and Illegible without text.
+
+## Gravesite display labels and aliases
+
+Migration 481 uses `display_label` for section-plus-grave labels, retaining suffixes and leading zeros. Where that label would collide within a cemetery, the existing lot-qualified label remains. Active display labels are unique per cemetery. `label_aliases` preserves former labels for both API search and local map fallback search; later section, lot, or grave changes retain prior labels automatically.
+
+Grave numbers, imported `gravesite_id` values, UUIDs, geometry, and lot/ownership/burial/marker relationships are unchanged. Lot information remains separately available through location details. The administrator-supplied former label `C-52-0270` is retained as an alias of Trinity `C-0270`, alongside the current DEV lot-qualified label `C-23-0270`.

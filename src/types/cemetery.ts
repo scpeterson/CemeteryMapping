@@ -7,6 +7,8 @@ import type { GraveFeature, MaintenanceRecord, MediaAsset } from "./evidence";
 export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "needs_review" | "unknown";
 
 export type GraveSpaceSummary = {
+  displayLabel?: string;
+  labelAliases?: string[];
   id: string;
   cemeteryId: string;
   cemeteryName: string;

@@ -20,6 +20,7 @@ export function searchGraves(data: CemeteryData, query: string, statuses: Set<Gr
       }
 
       addReason(reasons, "Grave", formatGraveLabel(grave), cleaned);
+      for (const alias of grave.labelAliases ?? []) addReason(reasons, "Former grave label", alias, cleaned);
       addReason(reasons, "Status", statusLabels[grave.status], cleaned);
 
       return { grave, reasons };

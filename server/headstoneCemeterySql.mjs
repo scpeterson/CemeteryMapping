@@ -12,7 +12,7 @@ export const headstoneCemeteryJoinsSql = `
      WHERE cemeteries.id = direct_gravesite.cemetery_id AND cemeteries.deleted_at IS NULL
    )
   LEFT JOIN LATERAL (
-    SELECT gravesites.cemetery_id, gravesites.gravesite_id, gravesites.section_id, gravesites.grave_id
+    SELECT gravesites.cemetery_id, gravesites.gravesite_id, gravesites.section_id, gravesites.grave_id, gravesites.display_label
     FROM headstone_gravesites
     JOIN gravesites ON gravesites.id = headstone_gravesites.gravesite_uuid
       AND gravesites.deleted_at IS NULL

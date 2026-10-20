@@ -30,7 +30,7 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
         cemeteries.name AS cemetery,
         gravesites.section_id AS section,
         gravesites.gravesite_id,
-        concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS grave,
+        gravesites.display_label AS grave,
         COALESCE(NULLIF(marker_types.label, ''), marker_types.code) AS marker_type,
         COALESCE(NULLIF(marker_scope_types.label, ''), marker_scope_types.code) AS marker_scope,
         COALESCE(NULLIF(marker_material_types.label, ''), marker_material_types.code) AS marker_material,
@@ -169,7 +169,7 @@ export async function runBurialDateExtremes(client, definition, cemeteryIds) {
     WITH eligible_burials AS (
       SELECT
         cemeteries.name AS cemetery,
-        concat_ws('-', NULLIF(gravesites.section_id, ''), NULLIF(gravesites.grave_id, '')) AS grave,
+        gravesites.display_label AS grave,
         gravesites.gravesite_id,
         COALESCE(NULLIF(burials.display_name, ''), NULLIF(burials.full_name, ''), concat_ws(' ', NULLIF(burials.name_prefix, ''), NULLIF(burials.first_name, ''), NULLIF(burials.last_name, ''), NULLIF(burials.name_suffix, ''))) AS person,
         burials.burial_date,
