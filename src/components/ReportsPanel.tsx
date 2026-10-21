@@ -168,7 +168,7 @@ export function ReportsPanel({ currentUser, data, onClose, onOpenMonument }: Rep
                       result.rows.map((row, rowIndex) => (
                         <tr key={rowIndex}>
                           {result.columns.map((column) => (
-                            <td key={column.key}>{result.report.id === "missing-nhg-links" && column.key === "monument" && row.monumentRecord ? (
+                            <td key={column.key}>{column.key === "monument" && row.monumentRecord ? (
                               <button type="button" className="report-record-link"
                                 aria-label={`Open monument ${String(row[column.key])}`}
                                 onClick={() => onOpenMonument(row.monumentRecord as HeadstoneSummary)}>

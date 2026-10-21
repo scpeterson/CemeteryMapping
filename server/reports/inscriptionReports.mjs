@@ -1,3 +1,4 @@
+import { reportMonumentRecord } from "./monumentNavigation.mjs";
 import { inscriptionMissing } from "../../shared/inscriptionStatus.mjs";
 import { reportResult, scopedWhere } from "./shared.mjs";
 
@@ -29,7 +30,9 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
       ) s ON true
       WHERE h.deleted_at IS NULL AND NOT EXISTS(SELECT 1 FROM linked_locations WHERE marker_uuid=h.id)
     )
-    SELECT h.id marker_uuid, h.headstone_id monument, cem.name cemetery, loc.section,
+    SELECT h.id marker_uuid, h.headstone_id monument, cem.id::text cemetery_id, cem.name cemetery, loc.section,
+      ST_AsGeoJSON(h.geometry)::json geometry,
+      (SELECT gravesite_id FROM gravesites WHERE id=min(loc.grave_uuid::text)::uuid) gravesite_id,
       string_agg(DISTINCT loc.grave_label, ', ' ORDER BY loc.grave_label) gravesites,
       marker_types.label marker_type, marker_scope_types.label marker_scope, h.inscription, h.inscription_status, h.faces,
       (SELECT string_agg(DISTINCT COALESCE(NULLIF(b.display_name,''),NULLIF(b.full_name,''),concat_ws(' ',b.first_name,b.last_name)), '; ')
@@ -40,7 +43,7 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
     LEFT JOIN marker_types ON marker_types.id=h.marker_type_id
     LEFT JOIN marker_scope_types ON marker_scope_types.id=h.marker_scope_type_id
     WHERE h.deleted_at IS NULL AND upper(loc.section) IN ('A','B','C','D')
-    GROUP BY h.id, cem.name, loc.section, marker_types.label, marker_scope_types.label
+    GROUP BY h.id, cem.id, cem.name, loc.section, marker_types.label, marker_scope_types.label
     ORDER BY cem.name, loc.section, h.headstone_id
   `, values);
   const rows = result.rows.flatMap((row) => {
@@ -49,7 +52,7 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
       .filter(({ face }) => inscriptionMissing(face.inscriptionStatus, face.inscription));
     if (faces.length ? !missingFaces.length : !inscriptionMissing(row.inscription_status, row.inscription)) return [];
     return [{
-      ...row, gravesites: row.gravesites || "Standalone marker", face_count: faces.length,
+      ...row, monumentRecord: reportMonumentRecord(row), gravesites: row.gravesites || "Standalone marker", face_count: faces.length,
       missing_faces: missingFaces.map(({ face, index }) => `${face.label || "Unnamed face"} (face ${index + 1})`).join("; "),
       issue: faces.length ? "Face inscription missing" : "Monument inscription missing (no faces)",
     }];
