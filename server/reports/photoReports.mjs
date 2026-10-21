@@ -1,3 +1,4 @@
+import { reportMonumentRecord } from "./monumentNavigation.mjs";
 import { optionalTextParameter, reportResult, scopedWhere } from "./shared.mjs";
 
 export async function runMonumentPhotoExceptions(client, definition, parameters, cemeteryIds) {
@@ -42,7 +43,9 @@ export async function runMonumentPhotoExceptions(client, definition, parameters,
       ) s ON true
       WHERE h.deleted_at IS NULL AND NOT EXISTS(SELECT 1 FROM linked_locations WHERE marker_uuid=h.id)
     )
-    SELECT h.id marker_uuid, h.headstone_id monument, cem.name cemetery, loc.section,
+    SELECT h.id marker_uuid, h.headstone_id monument, cem.id::text cemetery_id, cem.name cemetery, loc.section,
+      ST_AsGeoJSON(h.geometry)::json geometry,
+      (SELECT gravesite_id FROM gravesites WHERE id=min(loc.grave_uuid::text)::uuid) gravesite_id,
       string_agg(DISTINCT loc.grave_label, ', ' ORDER BY loc.grave_label) gravesites,
       string_agg(DISTINCT loc.lot_id, ', ' ORDER BY loc.lot_id) lots,
       marker_types.label marker_type, marker_scope_types.label marker_scope, h.inscription,
@@ -62,11 +65,11 @@ export async function runMonumentPhotoExceptions(client, definition, parameters,
         AND NULLIF(btrim(asset.file_url),'') IS NOT NULL
     ) photos ON true
     WHERE h.deleted_at IS NULL ${filters.length ? `AND ${filters.join(" AND ")}` : ""}
-    GROUP BY h.id, cem.name, loc.section, marker_types.label, marker_scope_types.label, photos.photo_count, photos.primary_count
+    GROUP BY h.id, cem.id, cem.name, loc.section, marker_types.label, marker_scope_types.label, photos.photo_count, photos.primary_count
     ORDER BY cem.name, loc.section, h.headstone_id
   `, values);
   const exceptions = result.rows.filter((r) => r.primary_count === 0).map((r) => ({
-    ...r, gravesites: r.gravesites || "Standalone marker",
+    ...r, monumentRecord: reportMonumentRecord(r), gravesites: r.gravesites || "Standalone marker",
     issue_code: r.photo_count === 0 && !r.legacy_photo ? "missing-photo" : "missing-primary",
     issue: r.photo_count === 0 && !r.legacy_photo ? "No monument photo" : "Photos present; no Primary",
     legacy_photo: r.legacy_photo ? "Yes" : "No",

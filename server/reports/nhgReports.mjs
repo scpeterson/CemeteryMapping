@@ -1,3 +1,4 @@
+import { reportMonumentRecord } from "./monumentNavigation.mjs";
 import { reportResult, scopedWhere } from "./shared.mjs";
 
 export async function runMissingNhgLinks(client, definition, _parameters, cemeteryIds) {
@@ -78,14 +79,7 @@ export async function runMissingNhgLinks(client, definition, _parameters, cemete
     ],
     rows: missing.map((row) => ({
       ...row,
-      monumentRecord: {
-        id: row.uuid, headstoneId: row.monument, cemeteryId: row.cemetery_id, cemeteryName: row.cemetery,
-        gravesiteId: row.gravesite_id ?? null,
-        graveKey: row.gravesite_id ? `${row.cemetery_id}:${row.gravesite_id}` : `${row.cemetery_id}:headstone:${row.monument}`,
-        label: row.monument, markerTypeCode: "unknown", markerType: row.marker_type ?? "Unknown",
-        markerScopeCode: "unknown", markerScope: row.marker_scope ?? "Unknown", condition: "unknown",
-        geometry: row.geometry ?? null,
-      },
+      monumentRecord: reportMonumentRecord(row),
       gravesites: row.gravesites || "Standalone monument",
       nhg_inclusion: inclusionLabels[row.nhg_inclusion] ?? "Not checked",
     })),
