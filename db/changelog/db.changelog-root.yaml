@@ -1436,3 +1436,6 @@ databaseChangeLog:
   - include:
       file: changes/482-restore-page-199-jancosko-krizovany.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/483-retire-c-0428-military-foot-marker-placeholder.sql
+      relativeToChangelogFile: true
