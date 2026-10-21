@@ -2164,3 +2164,19 @@ Franklin Park Borough 199 Allegheny County, PA`);
   assert.doesNotMatch(entries[1].inscriptionText, /Gap|Pfeiffer/u);
   assert.equal(entries[2].inscriptionText, "Mary Pfeiffer / 1847-1904 / Asleep in Jesus");
 });
+
+test("page 221 Heinrich Weber retains partial inscription and ambiguous CRG source text", () => {
+  const entries = parseNorthHillsOcrText(`Section D, Row 2
+WEBER (2D, 1, s) upright, white marble, poor cond, hand with
+upraised index finger "Heinrich Weber / gestorben(?) / 21 [-] 1880 / []
+jahr / [-] / [ 4 illegible lines]" Note: stone is same design as (2D, 2)
+CRG: Weber, Heinrich, f. July 23, 1880 (balance illegible)
+WEBER/FLAEHIN (2D, 2, s) upright, white marble, poor cond "Our Mother / Anna Maria / Weber"
+Franklin Park Borough 221 Allegheny County, PA`);
+  assert.equal(entries.length, 2);
+  assert.deepEqual([entries[0].nameText, entries[0].parsedSectionName, entries[0].parsedRowNumber, entries[0].parsedPositionNumber], ["WEBER", "D", 2, 1]);
+  assert.equal(entries[0].inscriptionText, "Heinrich Weber / gestorben(?) / 21 [-] 1880 / [] jahr / [-] / [ 4 illegible lines]");
+  assert.match(entries[0].rawText, /Note: stone is same design as \(2D, 2\)/u);
+  assert.match(entries[0].rawText, /CRG: Weber, Heinrich, f\. July 23, 1880 \(balance illegible\)/u);
+  assert.doesNotMatch(entries[0].inscriptionText, /Anna Maria|CRG/u);
+});
