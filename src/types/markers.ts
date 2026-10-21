@@ -105,6 +105,7 @@ export type NorthHillsLinkedEvidence = {
   parsedRowNumber?: number;
   parsedPositionNumber?: number;
   rawText: string;
+  readingNotes?: string[];
   reviewNotes: string;
   reviewedByEmail: string;
   reviewedAt: string;

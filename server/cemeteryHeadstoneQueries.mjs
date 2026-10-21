@@ -83,6 +83,7 @@ const headstoneEvidenceJoinSql = `
         'parsedRowNumber', entry.parsed_row_number,
         'parsedPositionNumber', entry.parsed_position_number,
         'rawText', entry.raw_text,
+        'readingNotes', COALESCE(entry.parse_notes, ARRAY[]::text[]),
         'reviewNotes', headstone_link.notes,
         'reviewedByEmail', headstone_link.reviewed_by_email,
         'reviewedAt', headstone_link.reviewed_at
