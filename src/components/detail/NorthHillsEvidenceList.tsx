@@ -23,6 +23,12 @@ export function NorthHillsEvidenceList({ evidence }: { evidence: NorthHillsLinke
           <strong>{item.nameText || "North Hills reading"}</strong>
           <small>{northHillsLocation(item)}</small>
           <p>{item.rawText}</p>
+          {item.readingNotes?.length ? (
+            <div className="north-hills-reading-notes">
+              <strong>Reading notes</strong>
+              <ul>{item.readingNotes.map((note, index) => <li key={index}>{note}</li>)}</ul>
+            </div>
+          ) : null}
           {item.reviewNotes ? <small>Review notes: {item.reviewNotes}</small> : null}
         </article>
       ))}

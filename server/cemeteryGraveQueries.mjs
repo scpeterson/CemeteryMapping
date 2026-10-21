@@ -120,6 +120,7 @@ async function selectNorthHillsEvidenceForGrave(client, graveUuid) {
         entry.parsed_row_number,
         entry.parsed_position_number,
         entry.raw_text,
+        entry.parse_notes,
         gravesite_link.notes AS review_notes,
         gravesite_link.reviewed_by_email,
         gravesite_link.reviewed_at

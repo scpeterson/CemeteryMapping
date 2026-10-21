@@ -295,6 +295,7 @@ export function toNorthHillsEvidence(row) {
     parsedRowNumber: row.parsed_row_number,
     parsedPositionNumber: row.parsed_position_number,
     rawText: row.raw_text ?? "",
+    readingNotes: row.parse_notes ?? [],
     reviewNotes: row.review_notes ?? "",
     reviewedByEmail: row.reviewed_by_email ?? "",
     reviewedAt: row.reviewed_at,
