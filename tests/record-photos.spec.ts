@@ -51,7 +51,10 @@ async function setup(page:Page,multipleFaces=false,threeFaces=false){
 
 async function showPhotos(region:import('@playwright/test').Locator,count:number){
  await expect(region.locator('.media-gallery-card')).toHaveCount(count);
- for(const card of await region.locator('.media-gallery-card').all())await card.scrollIntoViewIfNeeded();
+ for(const card of await region.locator('.media-gallery-card').all()){
+  await card.scrollIntoViewIfNeeded();
+  await expect(card.getByRole('link',{name:/Open photo:/})).toHaveCount(1);
+ }
  await expect(region.getByRole('link',{name:/Open photo:/})).toHaveCount(count);
 }
 
