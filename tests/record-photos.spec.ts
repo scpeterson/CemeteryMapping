@@ -21,7 +21,7 @@ async function setup(page:Page,multipleFaces=false,threeFaces=false){
  if(multipleFaces)readings[0].inscription=readings[0].faces.map(f=>`${f.label}\n${f.inscription}`).join('\n\n');
  const photos=[...marker.mediaAssets];
  let links=photos.map((p,i)=>({id:`link-${i}`,mediaAssetId:p.id,inspectionId:'field' as string|undefined,maintenanceRecordId:undefined as string|undefined,phase:'unspecified',faceId:undefined as string|undefined}));
- const record=()=>({...marker,inspections:readings,mediaAssets:photos,maintenanceRecords:[{id:'cleaning',headstoneUuid:marker.id,actionType:{id:'clean',code:'clean',label:'Cleaning'},priority:{id:'normal',code:'normal',label:'Normal'},status:'completed',observedAt:'2026-10-22',performedBy:'Inspector',sourceType:'manual',notes:'Cleaned stone'}]});
+ const record=()=>({...marker,faces:multipleFaces?readings[0].faces.map(face=>({...face,notes:"",burialIds:[]})):[],inspections:readings,mediaAssets:photos,maintenanceRecords:[{id:'cleaning',headstoneUuid:marker.id,actionType:{id:'clean',code:'clean',label:'Cleaning'},priority:{id:'normal',code:'normal',label:'Normal'},status:'completed',observedAt:'2026-10-22',performedBy:'Inspector',sourceType:'manual',notes:'Cleaned stone'}]});
  await page.route('**/api/headstone-lookups',route=>route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[marker.condition]}}));
  await page.route('**/api/headstones/marker-1',async route=>{
   if(route.request().method()==='PATCH'){
@@ -121,7 +121,7 @@ test('maintenance before and after photos reuse the monument library and uploads
  await expect(photos).toContainText('No photos recorded.');
  await photos.getByText('Add photos to this record',{exact:true}).click();
  await photos.getByRole('combobox',{name:'Existing monument photo',exact:true}).selectOption('old-marker');
- await photos.getByRole('combobox',{name:'Photo phase',exact:true}).first().selectOption('before');
+ await photos.getByRole('combobox',{name:'Maintenance timing',exact:true}).first().selectOption('before');
  await photos.getByRole('button',{name:'Save photo link',exact:true}).click();
  await showPhotos(photos,1);
  await expect(photos.getByRole('link',{name:/Open photo: Before/})).toHaveCount(1);
@@ -136,7 +136,7 @@ test('maintenance before and after photos reuse the monument library and uploads
  expect(state.getLinks().filter(link=>link.inspectionId==='field')).toHaveLength(2);
  expect(state.getLinks().filter(link=>link.inspectionId==='nhg')).toHaveLength(0);
  const form=photos.locator('.photo-upload-form');
- await form.getByRole('combobox',{name:'Photo phase',exact:true}).selectOption('after');
+ await form.getByRole('combobox',{name:'Maintenance timing',exact:true}).selectOption('after');
  await form.locator('input[type=file]').setInputFiles({name:'uploaded.png',mimeType:'image/png',buffer:Buffer.from('photo')});
  await form.getByRole('button',{name:'Upload photo',exact:true}).click();
  await showPhotos(photos,2);
@@ -328,4 +328,68 @@ test('uploaded photo face labels survive switching and refresh without relabelin
  expect(state.getInspections()).toEqual(originals);
  await page.locator('.all-monument-photos > summary').click();
  await showPhotos(page.locator('.all-monument-photos'),3);
+});
+
+test('photo controls offer thumbnail selection, explicit face labels and readable maintenance timing',async({page})=>{
+ const state=await setup(page,true,true);
+ const originalInspections=structuredClone(state.getInspections());
+ const region=inspectionRegion(page);
+ const photos=region.getByRole('region',{name:'Inspection photos',exact:true});
+ await photos.getByText('Add photos to this record',{exact:true}).click();
+ const linked=photos.getByLabel('Linked photos',{exact:true});
+ await expect(linked.locator('.record-photo-link')).toHaveCount(2);
+ await expect(linked).toContainText('Face');
+ await expect(linked).not.toContainText('unspecified');
+ await expect(photos.getByRole('combobox',{name:'Maintenance timing',exact:true})).toHaveCount(0);
+ await photos.getByText('Browse photo thumbnails',{exact:true}).click();
+ const choices=photos.locator('.record-photo-choices');
+ for(const thumbnail of await choices.locator('.record-photo-thumbnail').all())await thumbnail.scrollIntoViewIfNeeded();
+ await expect(choices.locator('img')).toHaveCount(2);
+ await choices.getByRole('button',{name:'Select photo old-marker.png',exact:true}).click();
+ await expect(photos.getByRole('combobox',{name:'Existing monument photo',exact:true})).toHaveValue('old-marker');
+ await expect(choices.getByRole('button',{name:'Select photo old-marker.png',exact:true})).toHaveAttribute('aria-pressed','true');
+ await photos.getByRole('combobox',{name:'Photo face',exact:true}).selectOption('22222222-2222-4222-8222-222222222222');
+ await photos.getByRole('button',{name:'Save photo link',exact:true}).click();
+ await expect(linked).toContainText('Back');
+ await linked.locator('.record-photo-link').filter({hasText:'old-marker.png'}).getByRole('button',{name:'Edit photo link',exact:true}).click();
+ await expect(photos.getByRole('combobox',{name:'Photo face',exact:true})).toHaveValue('22222222-2222-4222-8222-222222222222');
+ const maintenance=page.getByRole('region',{name:'Maintenance photos',exact:true});
+ await maintenance.getByText('Add photos to this record',{exact:true}).click();
+ await maintenance.getByRole('combobox',{name:'Existing monument photo',exact:true}).selectOption('old-marker');
+ await maintenance.getByRole('combobox',{name:'Maintenance timing',exact:true}).first().selectOption('before');
+ await maintenance.getByRole('button',{name:'Save photo link',exact:true}).click();
+ await expect(maintenance.getByLabel('Linked photos',{exact:true})).toContainText('Maintenance timing');
+ await expect(maintenance.getByLabel('Linked photos',{exact:true})).toContainText('Before maintenance');
+ await expect(maintenance.getByLabel('Linked photos',{exact:true})).not.toContainText('unspecified');
+ expect(state.getInspections()).toEqual(originalInspections);
+ await page.locator('.all-monument-photos > summary').click();
+ await expect(page.locator('.all-monument-photos .media-photo-filename')).toHaveText(['latest-marker.png','old-marker.png']);
+ await page.setViewportSize({width:390,height:844});
+ await photos.locator('.record-photo-editor').scrollIntoViewIfNeeded();
+ const overflow=await photos.evaluate(el=>el.scrollWidth>el.clientWidth);
+ expect(overflow).toBe(false);
+});
+
+for(const record of ['Inspection photos','Maintenance photos'])test(`Cancel clears an unsaved photo selection and metadata in ${record}`,async({page})=>{
+ const state=await setup(page,true,true);
+ const before=structuredClone({inspections:state.getInspections(),links:state.getLinks(),photos:state.getPhotos()});
+ const writes:string[]=[];
+ page.on('request',request=>{if(request.url().includes('/photo-contexts/')&&request.method()!=='GET')writes.push(request.method());});
+ const photos=page.getByRole('region',{name:record,exact:true});
+ await photos.getByText('Add photos to this record',{exact:true}).click();
+ await photos.getByText('Browse photo thumbnails',{exact:true}).click();
+ const choice=photos.getByRole('button',{name:'Select photo old-marker.png',exact:true});
+ await choice.click();
+ await photos.getByRole('combobox',{name:'Photo face',exact:true}).selectOption('22222222-2222-4222-8222-222222222222');
+ if(record==='Maintenance photos')await photos.getByRole('combobox',{name:'Maintenance timing',exact:true}).first().selectOption('after');
+ await expect(photos.getByLabel('Selected photo preview',{exact:true})).toBeVisible();
+ await photos.getByRole('button',{name:'Cancel',exact:true}).click();
+ await expect(photos.getByRole('combobox',{name:'Existing monument photo',exact:true})).toHaveValue('');
+ await expect(photos.getByRole('combobox',{name:'Photo face',exact:true})).toHaveValue('');
+ if(record==='Maintenance photos')await expect(photos.getByRole('combobox',{name:'Maintenance timing',exact:true}).first()).toHaveValue('unspecified');
+ await expect(photos.getByLabel('Selected photo preview',{exact:true})).toHaveCount(0);
+ await expect(choice).toHaveAttribute('aria-pressed','false');
+ await expect(photos.getByRole('button',{name:'Save photo link',exact:true})).toBeDisabled();
+ expect(writes).toEqual([]);
+ expect({inspections:state.getInspections(),links:state.getLinks(),photos:state.getPhotos()}).toEqual(before);
 });

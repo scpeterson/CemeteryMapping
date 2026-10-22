@@ -66,6 +66,7 @@ export function MediaGallery({
         return (
           <div key={asset.id} className="media-gallery-card">
             <MediaPhoto asset={asset}>
+              {asset.originalFilename ? <span className="media-photo-filename">{asset.originalFilename}</span> : null}
               <span>{asset.capturedAt ? `Date taken: ${formatDate(asset.capturedAt)}` : `Uploaded: ${formatDate(asset.uploadedAt)}`}</span>
             </MediaPhoto>
             {asset.isPrimary ? <span className="media-primary-label"><Star size={14} aria-hidden="true" /> Primary photo</span> : null}
@@ -200,8 +201,8 @@ export function PhotoUploadForm({
         <span>Linked monument</span>
         <strong>{fixedHeadstone.headstoneId}</strong>
       </div>
-      {photoContext ? <label>Photo phase<select value={phase} disabled={isSaving} onChange={(event) => setPhase(event.target.value as typeof phase)}>
-        <option value="unspecified">Not specified</option><option value="before">Before</option><option value="during">During</option><option value="after">After</option>
+      {photoContext?.maintenanceRecordId ? <label>Maintenance timing<select value={phase} disabled={isSaving} onChange={(event) => setPhase(event.target.value as typeof phase)}>
+        <option value="unspecified">Not recorded</option><option value="before">Before maintenance</option><option value="during">During maintenance</option><option value="after">After maintenance</option>
       </select></label> : null}
       <label>
         Date taken
