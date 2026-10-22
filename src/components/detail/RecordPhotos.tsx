@@ -61,7 +61,9 @@ export function RecordPhotos({ headstone, inspectionId, maintenanceRecordId, fac
  };
  return <section className="record-photos" aria-label={label}>
   <h5>{label}</h5>
-  {loading?<p className="muted">Loading record photos…</p>:<MediaGallery assets={linked} emptyMessage="No photos recorded." />}
+  <div aria-busy={loading}>
+   <MediaGallery assets={linked} emptyMessage={loading?"Loading record photos…":"No photos recorded."} />
+  </div>
   {error?<p role="alert" className="detail-message is-error">{error}</p>:null}
   {canUpdate?<details><summary>Add photos to this record</summary>
    <div className="record-photo-links" aria-label="Linked photos">

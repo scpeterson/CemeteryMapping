@@ -396,3 +396,27 @@ for(const record of ['Inspection photos','Maintenance photos'])test(`Cancel clea
  expect(writes).toEqual([]);
  expect({inspections:state.getInspections(),links:state.getLinks(),photos:state.getPhotos()}).toEqual(before);
 });
+
+test('upload link refresh keeps already-loaded gallery images mounted',async({page})=>{
+ const state=await setup(page);
+ const photos=inspectionRegion(page).getByRole('region',{name:'Inspection photos',exact:true});
+ await showPhotos(photos,2);
+ const image=await photos.locator('.media-gallery-card img').first().elementHandle();
+ expect(image).not.toBeNull();
+ let release!:()=>void;
+ const gate=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/api/headstones/marker-1/photo-contexts',async route=>{
+  if(state.getPhotos().length>2)await gate;
+  await route.fulfill({json:state.getLinks()});
+ });
+ try{
+  await photos.getByText('Add photos to this record',{exact:true}).click();
+  const form=photos.locator('.photo-upload-form');
+  await form.locator('input[type=file]').setInputFiles({name:'uploaded.png',mimeType:'image/png',buffer:Buffer.from('photo')});
+  await form.getByRole('button',{name:'Upload photo',exact:true}).click();
+  await expect(photos.locator('[aria-busy="true"]')).toBeVisible();
+  expect(await image!.evaluate(node=>node.isConnected)).toBe(true);
+  await expect(photos.locator('.media-gallery-card img')).toHaveCount(2);
+ }finally{release();}
+ await showPhotos(photos,3);
+});
