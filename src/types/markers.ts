@@ -1,3 +1,5 @@
+import type { CurrentLegibility, HistoricalTranscription } from "../../shared/inscriptionHistory.mjs";
+export type { CurrentLegibility, HistoricalTranscription } from "../../shared/inscriptionHistory.mjs";
 import type { InscriptionStatus } from "../../shared/inscriptionStatus.mjs";
 export type { InscriptionStatus } from "../../shared/inscriptionStatus.mjs";
 import type { DataConfidence, DataReviewStatus, LookupOption } from "./common";
@@ -42,12 +44,32 @@ export type MarkerFace = {
   label: string;
   inscription: string;
   inscriptionStatus?: InscriptionStatus;
+  currentLegibility?: CurrentLegibility;
+  historicalTranscriptions?: HistoricalTranscription[];
   notes: string;
   burialIds: string[];
   mediaAssetIds: string[];
 };
 
+export type InspectionFace = { id: string; label: string; inscription: string };
+
+export type MonumentInspection = {
+  id: string;
+  inspectedAt?: string;
+  inspectionYear: number;
+  updatedAt?: string;
+  sourceType: "nhg" | "field_survey" | "historical";
+  source: string;
+  conditionId: string;
+  condition: string;
+  conditionNotes: string;
+  inscription: string;
+  faces?: InspectionFace[];
+  sourceEntries?: { entryId: string; page?: number; rawText: string }[];
+};
+
 export type Headstone = {
+  inspections?: MonumentInspection[];
   id: string;
   headstoneId: string;
   markerType: LookupOption;
@@ -61,6 +83,8 @@ export type Headstone = {
   conditionNotes: string;
   inscription: string;
   inscriptionStatus?: InscriptionStatus;
+  currentLegibility?: CurrentLegibility;
+  historicalTranscriptions?: HistoricalTranscription[];
   faces?: MarkerFace[];
   facesRevision?: number;
   facePeople?: { id: string; fullName: string }[];
@@ -177,7 +201,18 @@ export type SaveHeadstoneGravesiteRelationshipInput = {
   reason?: string;
 };
 
+export type InspectionInput = {
+  id: string; inspectedAt: string; inspectionYear?: number;
+  sourceType: "nhg" | "field_survey" | "historical"; source: string;
+  conditionId: string; conditionNotes: string; inscription: string;
+  faces?: InspectionFace[];
+  expectedUpdatedAt?: string;
+};
+
 export type SaveHeadstoneInput = {
+  inspectionChangesOnly?: boolean;
+  updatedInspections?: InspectionInput[];
+  newInspections?: InspectionInput[];
   markerTypeId: string;
   markerScopeId: string;
   materialId: string;
@@ -189,6 +224,8 @@ export type SaveHeadstoneInput = {
   conditionNotes: string;
   inscription: string;
   inscriptionStatus?: InscriptionStatus;
+  currentLegibility?: CurrentLegibility;
+  historicalTranscriptions?: HistoricalTranscription[];
   faces?: MarkerFace[];
   facesRevision?: number;
   designNotes: string;

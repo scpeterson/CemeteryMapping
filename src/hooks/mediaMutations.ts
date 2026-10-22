@@ -1,33 +1,14 @@
 import { primaryPhotoUpdater } from "./primaryPhotoUpdates";
-import { deleteMediaAsset, moveMediaAsset, uploadGravePhoto, uploadHeadstonePhoto } from "../api/cemeteryApi";
+import { deleteMediaAsset, moveMediaAsset, uploadHeadstonePhoto } from "../api/cemeteryApi";
 import { moveMediaAssetInGrave, moveMediaAssetInRecord, removeMediaAsset } from "./recordMutationState";
 import type { RecordMutationContext } from "./recordMutationContext";
 
-export function createMediaMutations({ selectedGrave, selectedHeadstone, setSelectedGraveDetails, setSelectedHeadstoneDetails, refreshDetails }: RecordMutationContext) {
-  const saveGravePhoto = async ({ file, headstoneId, notes, capturedAt }: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => {
+export function createMediaMutations({ selectedHeadstone, setSelectedGraveDetails, setSelectedHeadstoneDetails, refreshDetails }: RecordMutationContext) {
+  const saveMonumentPhoto = async ({ file, headstoneId, notes, capturedAt, inspectionId, maintenanceRecordId, faceId, phase }: { file: File; headstoneId?: string; notes?: string; capturedAt?: string; inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" }) => {
     const source = /iPhone|iPad|iPod/u.test(navigator.userAgent) ? "iphone" : "field_upload";
-    if (selectedGrave) {
-      await uploadGravePhoto({
-        cemeteryId: selectedGrave.cemeteryId,
-        graveSpaceId: selectedGrave.id,
-        file,
-        headstoneId,
-        notes,
-        capturedAt,
-        source,
-      });
-    } else if (selectedHeadstone) {
-      await uploadHeadstonePhoto({
-        cemeteryId: selectedHeadstone.cemeteryId,
-        headstoneId: selectedHeadstone.id,
-        file,
-        notes,
-        capturedAt,
-        source,
-      });
-    } else {
-      throw new Error("Select a grave site or marker before uploading a photo.");
-    }
+    const monumentId = headstoneId || selectedHeadstone?.id;
+    if (!monumentId) throw new Error("Select a monument before uploading a photo.");
+    await uploadHeadstonePhoto({ headstoneId: monumentId, file, notes, capturedAt, source, inspectionId, maintenanceRecordId, faceId, phase });
     refreshDetails({ preserveCurrent: true });
   };
 
@@ -59,5 +40,5 @@ export function createMediaMutations({ selectedGrave, selectedHeadstone, setSele
     setSelectedHeadstoneDetails((current) => moveMediaAssetInRecord(current, asset.id, direction));
   };
 
-  return { saveGravePhoto, deletePhoto, movePhoto };
+  return { saveMonumentPhoto, deletePhoto, movePhoto };
 }

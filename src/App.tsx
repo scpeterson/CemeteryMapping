@@ -196,7 +196,7 @@ export default function App() {
     deleteSavedGraveFeature,
     saveMaintenanceRecord,
     updateSavedMaintenanceRecord,
-    saveGravePhoto,
+    saveMonumentPhoto,
     deletePhoto,
     movePhoto,
     saveOwnershipEvent,
@@ -320,6 +320,7 @@ export default function App() {
             canManageLotAssignment={canManageSelectedGraveLot}
             canUpdateBurials={canUpdateSelectedBurials}
             canUpdateHeadstones={canUpdateSelectedHeadstones}
+            canEditInspections={canUpdateSelectedHeadstones && (currentUser?.role === "admin" || currentUser?.role === "cemetery-admin")}
             headstoneLookups={headstoneLookups}
             pickedMarkerPoint={pickedMarkerPoint}
             isPickingMarkerPoint={isPickingMarkerPoint}
@@ -344,7 +345,7 @@ export default function App() {
             onUpdateGraveLot={saveGraveLot}
             onSelectLotGrave={selectGrave}
             onSelectMarkerGrave={selectGrave}
-            onUploadPhoto={saveGravePhoto}
+            onUploadPhoto={saveMonumentPhoto}
             onDeletePhoto={deletePhoto}
             onMovePhoto={movePhoto}
             onStartMarkerPointPick={startMarkerPointPick}

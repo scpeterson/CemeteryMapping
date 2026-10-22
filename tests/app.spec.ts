@@ -325,8 +325,8 @@ test("power users can edit headstone marker details from grave detail", async ({
     expect(route.request().method()).toBe("PATCH");
     const body = route.request().postDataJSON() as { materialId: string; conditionId: string; conditionNotes: string; designNotes: string; backDescription: string };
     expect(body.materialId).toBe("55555555-5555-4555-8555-555555555557");
-    expect(body.conditionId).toBe("66666666-6666-4666-8666-666666666667");
-    expect(body.conditionNotes).toBe("Leaning and needs inspection");
+    expect(body.conditionId).toBe(headstone.condition.id);
+    expect(body.conditionNotes).toBe(headstone.conditionNotes);
     expect(body.designNotes).toBe("Etched ivy border");
     expect(body.backDescription).toBe("Veteran medallion attached on back");
     await route.fulfill({
@@ -334,8 +334,6 @@ test("power users can edit headstone marker details from grave detail", async ({
       body: JSON.stringify({
         ...headstone,
         material: { id: "55555555-5555-4555-8555-555555555557", code: "pink_granite", label: "Pink granite" },
-        condition: { id: "66666666-6666-4666-8666-666666666667", code: "poor", label: "Poor" },
-        conditionNotes: "Leaning and needs inspection",
         designNotes: "Etched ivy border",
         backDescription: "Veteran medallion attached on back",
         auditEventId: "77777777-7777-4777-8777-777777777777",
@@ -348,15 +346,15 @@ test("power users can edit headstone marker details from grave detail", async ({
   await page.getByRole("tab", { name: "Monuments and photos" }).click();
   await page.getByLabel("Edit marker HS-1").click();
   await page.getByRole("combobox", { name: "Material", exact: true }).selectOption("55555555-5555-4555-8555-555555555557");
-  await page.getByRole("combobox", { name: "Condition" }).selectOption("66666666-6666-4666-8666-666666666667");
-  await page.getByRole("textbox", { name: "Condition notes" }).fill("Leaning and needs inspection");
+  await expect(page.getByRole("combobox", { name: "Condition", exact: true })).toBeDisabled();
+  await expect(page.getByRole("textbox", { name: "Condition notes", exact: true })).toBeDisabled();
   await page.getByRole("textbox", { name: "Flourishes or designs" }).fill("Etched ivy border");
   await page.getByRole("textbox", { name: "Back of stone" }).fill("Veteran medallion attached on back");
   await page.getByRole("button", { name: "Save marker" }).click();
 
   await expect(page.locator(".detail-panel")).toContainText("Pink granite");
-  await expect(page.locator(".detail-panel")).toContainText("Poor");
-  await expect(page.locator(".detail-panel")).toContainText("Leaning and needs inspection");
+  await expect(page.locator(".detail-panel")).toContainText("Good");
+  await expect(page.locator(".detail-panel")).toContainText("Stable and legible");
   await expect(page.locator(".detail-panel")).toContainText("Designs: Etched ivy border");
   await expect(page.locator(".detail-panel")).toContainText("Back: Veteran medallion attached on back");
 });

@@ -49,6 +49,7 @@ type DetailPanelProps = {
   canManageLotAssignment: boolean;
   canUpdateBurials: boolean;
   canUpdateHeadstones: boolean;
+  canEditInspections: boolean;
   headstoneLookups: HeadstoneLookups;
   pickedMarkerPoint?: PickedMarkerPoint;
   isPickingMarkerPoint: boolean;
@@ -73,7 +74,7 @@ type DetailPanelProps = {
   onUpdateGraveLot: (lotId: string) => Promise<void>;
   onSelectLotGrave: (grave: GraveSpaceSummary) => void;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
-  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string; inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;
   onStartMarkerPointPick: () => void;
@@ -116,6 +117,7 @@ export function DetailPanel({
   canManageLotAssignment,
   canUpdateBurials,
   canUpdateHeadstones,
+  canEditInspections,
   headstoneLookups,
   pickedMarkerPoint,
   isPickingMarkerPoint,
@@ -160,8 +162,6 @@ export function DetailPanel({
   );
   const headstones = useMemo(() => grave?.headstones ?? [], [grave?.headstones]);
   const northHillsEvidence = grave?.northHillsEvidence ?? [];
-  const headstoneMediaIds = useMemo(() => new Set(headstones.flatMap((headstone) => (headstone.mediaAssets ?? []).map((asset) => asset.id))), [headstones]);
-  const mediaAssets = useMemo(() => (grave?.mediaAssets ?? []).filter((asset) => !headstoneMediaIds.has(asset.id)), [grave?.mediaAssets, headstoneMediaIds]);
 
   if (standaloneHeadstoneSummary) {
     return (
@@ -172,6 +172,7 @@ export function DetailPanel({
         headstone={standaloneHeadstone}
         markerGraves={markerGraves}
         canUpdateHeadstones={canUpdateHeadstones}
+        canEditInspections={canEditInspections}
         headstoneLookups={headstoneLookups}
         onSaveHeadstone={onSaveHeadstone}
         onSaveHeadstoneRelationship={onSaveHeadstoneRelationship}
@@ -219,12 +220,12 @@ export function DetailPanel({
       cemeteryHeadstones={cemeteryHeadstones}
       headstones={headstones}
       northHillsEvidence={northHillsEvidence}
-      mediaAssets={mediaAssets}
       canViewOwnership={canViewOwnership}
       canUpdateGravesites={canUpdateGravesites}
       canManageLotAssignment={canManageLotAssignment}
       canUpdateBurials={canUpdateBurials}
       canUpdateHeadstones={canUpdateHeadstones}
+        canEditInspections={canEditInspections}
       headstoneLookups={headstoneLookups}
       pickedMarkerPoint={pickedMarkerPoint}
       isPickingMarkerPoint={isPickingMarkerPoint}

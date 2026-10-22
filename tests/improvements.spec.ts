@@ -1,3 +1,4 @@
+import {marker} from "./fixtures/overview";
 import { expect, test, type Route } from "@playwright/test";
 import { detail, fixture, gravePath, select, showApplicationActions } from "./fixtures/cemetery";
 
@@ -67,7 +68,7 @@ test("the photo gallery uses authorized fetch and displays a browser object URL"
     await route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jJ1kAAAAASUVORK5CYII=", "base64") });
   });
   await page.route(gravePath("A-TEST"), (route) => route.fulfill({ json: {
-    ...detail("A-TEST"), mediaAssets: [{ id: "33333333-3333-4333-8333-333333333333", fileUrl, uploadedAt: "2026-09-07T12:00:00Z", originalFilename: "Protected photo", notes: "Protected photo" }],
+    ...detail("A-TEST"), headstones: [{...marker,mediaAssets: [{assetType:"photo", id: "33333333-3333-4333-8333-333333333333", fileUrl, uploadedAt: "2026-09-07T12:00:00Z", originalFilename: "Protected photo", notes: "Protected photo" }]}],
   } }));
   await page.goto("/");
   await page.evaluate(async () => {
@@ -76,6 +77,8 @@ test("the photo gallery uses authorized fetch and displays a browser object URL"
   });
   await select(page, "A-TEST");
   await page.getByRole("tab", { name: "Monuments and photos" }).click();
+  await page.locator(".all-monument-photos > summary").click();
+  await page.locator(".all-monument-photos .media-gallery-card").scrollIntoViewIfNeeded();
   const image = page.getByRole("img", { name: "Protected photo" });
   await expect(image).toHaveAttribute("src", /^blob:/);
   expect(authorization).toBe("Bearer integration-test-token");

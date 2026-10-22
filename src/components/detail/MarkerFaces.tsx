@@ -1,3 +1,5 @@
+import { HistoricalTranscriptions } from "./HistoricalTranscriptions";
+import { currentLegibility, legibilityLabels } from "../../../shared/inscriptionHistory.mjs";
 import { InscriptionFields } from "./InscriptionFields";
 import { inscriptionStatus } from "../../../shared/inscriptionStatus.mjs";
 import { useId, useState, type ComponentProps } from "react";
@@ -13,7 +15,7 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
   const labelListId = useId();
   const [manageFaces, setManageFaces] = useState(() => faces.length > 1 || faces.some((face) => face.label !== "Unspecified face"));
   if (!manageFaces) return <div className="headstone-wide-field marker-inscription-editor">
-    <InscriptionFields text={faces[0]?.inscription ?? ""} status={faces[0]?.inscriptionStatus} disabled={disabled}
+    <InscriptionFields text={faces[0]?.inscription ?? ""} status={faces[0]?.inscriptionStatus ?? headstone.inscriptionStatus} currentLegibility={faces[0]?.currentLegibility ?? headstone.currentLegibility} historicalTranscriptions={faces[0]?.historicalTranscriptions ?? headstone.historicalTranscriptions} disabled={disabled}
       onChange={(value) => onChange([{ ...(faces[0] ?? { id: crypto.randomUUID(), label: "Unspecified face", notes: "", burialIds: [], mediaAssetIds: [] }), ...value }])} />
     <button type="button" className="icon-text-button" disabled={disabled} onClick={() => setManageFaces(true)}>Manage faces</button>
     <p className="muted">For separate inscriptions on multiple sides, use Manage faces.</p>
@@ -33,7 +35,7 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
       <label className="headstone-wide-field">Face label
         <input value={face.label} list={labelListId} maxLength={100} required={!isEmptyNewMarkerFace(face, headstone)} onChange={(event) => update(face.id, { label: event.target.value })} />
       </label>
-      <InscriptionFields text={face.inscription} status={face.inscriptionStatus} onChange={(value) => update(face.id, value)} />
+      <InscriptionFields text={face.inscription} status={face.inscriptionStatus} currentLegibility={face.currentLegibility} historicalTranscriptions={face.historicalTranscriptions} onChange={(value) => update(face.id, value)} />
       <label className="headstone-wide-field">Flourishes or designs
         <textarea value={face.designNotes ?? ""} rows={3} maxLength={20000} onChange={(event) => update(face.id, { designNotes: event.target.value })} />
       </label>
@@ -70,19 +72,25 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
 
 export function MarkerFacesView({ headstone, ...photoControls }: { headstone: Headstone } & Pick<ComponentProps<typeof MediaGallery>, "canDelete" | "onDelete" | "onMove">) {
   const faces: MarkerFace[] = headstone.faces ?? (headstone.inscription ? [{ id: "legacy", label: "Unspecified face", inscription: headstone.inscription, notes: "", burialIds: [], mediaAssetIds: [] }] : []);
+  const faceHistoryIds = new Set(faces.flatMap((face) => (face.historicalTranscriptions ?? []).map((entry) => entry.id)));
+  const monumentHistory = headstone.historicalTranscriptions?.filter((entry) => !faceHistoryIds.has(entry.id));
   return <section aria-label="Faces / Inscriptions">
     <h4>Faces / Inscriptions</h4>
     {!faces.length ? <div>
+      <p className="muted">Current legibility: {legibilityLabels[currentLegibility(headstone.currentLegibility, headstone.inscriptionStatus)]}</p>
       <p className="muted">Inscription status: {statusLabels[inscriptionStatus(headstone.inscriptionStatus, headstone.inscription)]}</p>
       {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
     </div> : faces.map((face) => <section key={face.id} className="marker-face-view" aria-label={face.label}>
       <h5>{face.label}</h5>
+      <p className="muted">Current legibility: {legibilityLabels[currentLegibility(face.currentLegibility, face.inscriptionStatus)]}</p>
       <p className="muted">Inscription status: {statusLabels[inscriptionStatus(face.inscriptionStatus, face.inscription)]}</p>
       {face.inscription ? <p className="note-box inscription-box">{face.inscription}</p> : null}
+      <HistoricalTranscriptions entries={face.historicalTranscriptions} />
       {face.designNotes ? <p className="note-box">Designs: {face.designNotes}</p> : null}
       {face.notes ? <p className="note-box">{face.notes}</p> : null}
       {face.burialIds.length ? <p>Associated people: {face.burialIds.map((id) => headstone.facePeople?.find((p) => p.id === id)?.fullName ?? "Person no longer linked").join("; ")}</p> : null}
       {face.mediaAssetIds.length ? <MediaGallery {...photoControls} assets={headstone.mediaAssets.filter((asset) => face.mediaAssetIds.includes(asset.id))} emptyMessage="These face photos are no longer available." /> : null}
     </section>)}
+    {monumentHistory?.length ? <HistoricalTranscriptions entries={monumentHistory} /> : null}
   </section>;
 }

@@ -1,6 +1,6 @@
 import { DetailTabs } from "./DetailTabs";
 import { GraveOverview } from "./FeatureOverview";
-import { FileText, Flag, History, Images, Landmark, MapPinned, UserRound } from "lucide-react";
+import { FileText, Flag, History, Landmark, MapPinned, UserRound } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { formatDate, formatGraveLabel } from "../../lib/format";
 import type {
@@ -32,7 +32,6 @@ import { GraveFeatureForm, GraveFeatureList } from "./GraveFeatureRecords";
 import { GraveSpaceRecord } from "./GraveSpaceRecord";
 import { HeadstoneRecord } from "./HeadstoneRecord";
 import { MaintenanceRecordForm, MaintenanceRecordList } from "./MaintenanceRecords";
-import { MediaGallery, PhotoUploadForm } from "./MediaRecords";
 import { NorthHillsEvidenceList } from "./NorthHillsEvidenceList";
 import { OwnerRecord, OwnershipEventForm } from "./OwnershipRecords";
 import { PickedMarkerPoint } from "./detailTypes";
@@ -51,12 +50,12 @@ export function GraveDetailPanel({
   cemeteryHeadstones,
   headstones,
   northHillsEvidence,
-  mediaAssets,
   canViewOwnership,
   canUpdateGravesites,
   canManageLotAssignment,
   canUpdateBurials,
   canUpdateHeadstones,
+  canEditInspections,
   headstoneLookups,
   pickedMarkerPoint,
   isPickingMarkerPoint,
@@ -94,12 +93,12 @@ export function GraveDetailPanel({
   cemeteryHeadstones: HeadstoneSummary[];
   headstones: Headstone[];
   northHillsEvidence: NorthHillsLinkedEvidence[];
-  mediaAssets: MediaAsset[];
   canViewOwnership: boolean;
   canUpdateGravesites: boolean;
   canManageLotAssignment: boolean;
   canUpdateBurials: boolean;
   canUpdateHeadstones: boolean;
+  canEditInspections: boolean;
   headstoneLookups: HeadstoneLookups;
   pickedMarkerPoint?: PickedMarkerPoint;
   isPickingMarkerPoint: boolean;
@@ -116,7 +115,7 @@ export function GraveDetailPanel({
   onUpdateOwner: (partyId: string, eventId: string, owner: UpdateOwnerInput) => Promise<void>;
   onRemoveOwnershipConnection: (rightId: string) => Promise<void>;
   onUpdateGraveLot: (lotId: string) => Promise<void>;
-  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string; inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;
   onStartMarkerPointPick: () => void;
@@ -135,7 +134,7 @@ export function GraveDetailPanel({
   const detailTabs: { id: "overview" | "people" | "monuments" | "records" | "sources" | "location"; label: string; description: string; count?: number }[] = grave ? [
     { id: "overview", label: "Overview", description: "Overview" },
     { id: "people", label: "People", description: "People and ownership", count: grave.burials.length + (canViewOwnership ? grave.currentOwnerIds.length : 0) },
-    { id: "monuments", label: "Monuments", description: "Monuments and photos", count: headstones.length + (grave.features?.length ?? 0) + mediaAssets.length },
+    { id: "monuments", label: "Monuments", description: "Monuments and photos", count: headstones.length + (grave.features?.length ?? 0) },
     { id: "records", label: "Maintenance", description: "Maintenance records", count: grave.maintenanceRecords?.length ?? 0 },
     { id: "sources", label: "Sources / Evidence", description: "Sources / Evidence", count: northHillsEvidence.length },
     { id: "location", label: "Location", description: "Location and geometry" },
@@ -281,6 +280,7 @@ export function GraveDetailPanel({
                     headstone={headstone}
                     lookups={headstoneLookups}
                     canUpdate={canUpdateHeadstones}
+                    canEditInspections={canEditInspections}
                     onSave={onSaveHeadstone}
                     grave={grave}
                     cemeteryName={summary.cemeteryName}
@@ -332,20 +332,7 @@ export function GraveDetailPanel({
             {canUpdateHeadstones ? <GraveFeatureForm grave={grave} headstones={headstones} lookups={headstoneLookups} onSave={onSaveGraveFeature} /> : null}
           </section>
 
-          <section className="detail-section">
-            <div className="section-title">
-              <Images size={17} aria-hidden="true" />
-              <h3>Gravesite Photos</h3>
-            </div>
-            <MediaGallery
-              assets={mediaAssets}
-              emptyMessage="No gravesite overview photos are linked yet."
-              canDelete={canDeletePhotos}
-              onDelete={onDeletePhoto}
-              onMove={canReorderPhotos ? onMovePhoto : undefined}
-            />
-            {canUpdateHeadstones ? <PhotoUploadForm headstones={headstones} gravesiteOnly onUpload={onUploadPhoto} /> : null}
-          </section>
+
           </> : null}
 
           {activeTab === "records" ? <>
@@ -354,7 +341,7 @@ export function GraveDetailPanel({
               <History size={17} aria-hidden="true" />
               <h3>Maintenance</h3>
             </div>
-            <MaintenanceRecordList records={grave.maintenanceRecords ?? []} canUpdate={canUpdateGravesites} grave={grave} lookups={headstoneLookups} onUpdate={onUpdateMaintenanceRecord} />
+            <MaintenanceRecordList onUploadPhoto={onUploadPhoto} records={grave.maintenanceRecords ?? []} canUpdate={canUpdateGravesites} grave={grave} lookups={headstoneLookups} onUpdate={onUpdateMaintenanceRecord} />
             {canUpdateGravesites ? <MaintenanceRecordForm grave={grave} lookups={headstoneLookups} onSave={onSaveMaintenanceRecord} /> : null}
           </section>
 

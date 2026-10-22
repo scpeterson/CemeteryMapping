@@ -23,3 +23,17 @@ test("missing inscription decisions honor status and preserve legacy and partial
     assert.equal(inscriptionMissing("transcribed", text), false);
   }
 });
+
+test("current legibility and historical transcription validation remain independent", async () => {
+  const { validateHistoricalTranscriptions, validateCurrentLegibility } = await import("./markerFaces.mjs");
+  const historical = [{ id, text: "  OLD\n[illegible lines]  ", source: "NHG", sourceDate: "2005" }];
+  assert.deepEqual(validateHistoricalTranscriptions(historical), [{ ...historical[0], sourceDate: "2005-10-11" }]);
+  assert.equal(validateCurrentLegibility("illegible", ""), "illegible");
+  assert.throws(() => validateCurrentLegibility("illegible", "current text"), /cannot contain text/);
+  assert.throws(() => validateCurrentLegibility("invented", ""), /Invalid current legibility/);
+  for (const sourceDate of ["2005-02-30", "0000", "yesterday"]) assert.throws(() => validateHistoricalTranscriptions([{ ...historical[0], sourceDate }]));
+  assert.throws(() => validateHistoricalTranscriptions([{ ...historical[0], source: "" }]), /need text and a source/);
+  const result = validateHeadstonePayload({ ...payload, inscription: "", inscriptionStatus: "illegible", currentLegibility: "illegible", historicalTranscriptions: historical });
+  assert.deepEqual(result.historicalTranscriptions, [{ ...historical[0], sourceDate: "2005-10-11" }]);
+  assert.equal(result.currentLegibility, "illegible");
+});

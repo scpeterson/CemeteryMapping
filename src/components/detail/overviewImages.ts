@@ -26,8 +26,8 @@ export function overviewImages(assets: MediaAsset[], markers: Headstone[] = []):
   return images;
 }
 
-// Explicit grave primaries and individual markers take precedence. A shared
-// marker primary must outrank ordinary grave photos, including duplicate links.
+// Gravesite previews use monument photos only, preferring individual markers
+// and relevant faces of shared monuments.
 export function graveOverviewImages(
   grave: { id: string; burials: { id: string }[]; mediaAssets?: MediaAsset[] },
   markers: Headstone[] = [],
@@ -49,14 +49,11 @@ export function graveOverviewImages(
       .flatMap((face) => face.mediaAssetIds));
     return { ...marker, photoUrl: "", mediaAssets: (marker.mediaAssets ?? []).filter((photo) => photoIds.has(photo.id)) };
   });
-  const ownPhotos = grave.mediaAssets ?? [];
   const tiers = [
-    overviewImages(ownPhotos.filter((photo) => photo.isPrimary)),
     overviewImages([], individualMarkers),
     overviewImages([], markers.map((marker) => ({
       ...marker, photoUrl: "", mediaAssets: (marker.mediaAssets ?? []).filter((photo) => photo.isPrimary),
     }))),
-    overviewImages(ownPhotos),
     overviewImages([], matchingFaces),
     overviewImages([], markers),
   ];

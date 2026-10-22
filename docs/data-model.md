@@ -116,7 +116,7 @@ Partial dates should be stored as known precision, not forced into fake dates. F
 
 ## Markers, Features, Photos, And Maintenance
 
-Markers and gravesites can each have their own physical condition, photos, and features. The schema keeps these concepts separate so a marker can span more than one gravesite and a feature can belong to either the grave, the marker, or both.
+Markers and gravesites can each have their own physical condition and features. Photos belong to monuments; gravesite previews use the linked monuments’ photos. The schema keeps these concepts separate so a marker can span more than one gravesite and a feature can belong to either the grave, the marker, or both.
 
 ```mermaid
 erDiagram
@@ -169,7 +169,8 @@ erDiagram
 | `grave_features` | Physical features such as vases, memorial plaques, flag holders, veteran star holders, flower holders, and similar items. A feature can link to a gravesite, a marker, or both. Record each physical vase as a separate row so multiple vases can retain independent attributes. |
 | `grave_feature_types`, `grave_feature_subtypes`, `grave_feature_material_types`, `grave_feature_placement_types` | Feature dropdown values and classification hierarchy. Memorial plaques include a government-issued veteran plaque subtype. |
 | `media_assets` | Uploaded media metadata, including upload information and captured-at dates read from EXIF or entered manually. |
-| `gravesite_media_assets`, `headstone_media_assets` | Ordered photo/link tables for gravesites and markers. These allow multiple photos without duplicating the media record itself. |
+| `monument_photo_contexts` | Optional inspection or maintenance associations and Before/During/After phases for monument photos. Photos remain in the full monument library; new inspections do not inherit links. |
+| `headstone_media_assets` | Ordered monument photo links. Multiple photos share media records without duplicating files. `gravesite_media_assets` retains historical links for audit and recovery; the app no longer collects or displays separate gravesite photos. |
 | `maintenance_records` | Dated issue/action history for gravesites and markers, such as cleaned, repaired, listing, broken, illegible, grass needed, or leveling needed. |
 | `maintenance_issue_types`, `maintenance_action_types`, `maintenance_priority_types` | Controlled maintenance categories for reporting and work queues. |
 
@@ -300,3 +301,9 @@ Related documentation:
 - [Data Sources](data-sources.html)
 - [Admin Workflows](admin-workflows.html)
 - [ADR 0015: Generalized Ownership Rights](adr/0015-generalized-ownership-rights.md)
+
+Inspection `faces` stores independent face IDs, labels and readings for each visit.
+New visits copy those readings without media IDs; edits retain existing snapshot
+metadata. `monument_photo_contexts.face_id` optionally identifies one face of the
+inspection snapshot (or the monument for maintenance), validated before linking or
+uploading. The same asset may have different face labels in different records.

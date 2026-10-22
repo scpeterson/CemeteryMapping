@@ -34,7 +34,7 @@ Editors using draft protection warn before a guarded record/tab change, cancel/c
 
 Selecting a gravesite or marker opens its read-only `Overview`, including when selecting the same feature again. It shows the primary photo when selected, otherwise the newest available photo, names and dates, current owners when your access permits, and related features. If no photo or person record exists, the overview says so explicitly; an absent burial record does not imply an available grave.
 
-Gravesite previews consider both gravesite and linked-marker photos and label linked-marker images. Select the photo to enlarge it, then use Close photo or Escape to return. Photo ordering follows the gallery: primary photos first, then newest capture date (or upload date when capture date is absent), then display order. A legacy marker photo URL is a fallback when no photo assets exist.
+Gravesite previews use photos from linked monuments and identify the monument shown. Select the photo to enlarge it, then use Close photo or Escape to return. Photo ordering follows the gallery: primary photos first, then newest capture date (or upload date when capture date is absent), then display order. A legacy marker photo URL is a fallback when no photo assets exist.
 
 Use `View burial records` or `View ownership records` to open People, or select an associated marker to open its Overview. Marker overviews group people and current owners by linked gravesite. Explicit marker-to-burial links determine the displayed people when available; otherwise the summary labels them as people in linked gravesites. A failure to load linked records shows an error and Retry instead of claiming that no records exist.
 
@@ -351,29 +351,29 @@ Linked North Hills evidence supports interpretation of a headstone or gravesite,
 
 ### Photo Collection
 
-Use `Make primary` beneath a photo to keep the front of a marker first in its gallery and on Overview. Choose a different photo to replace the primary, or `Remove primary` to restore newest-first sorting. These controls use the existing photo-order editing permissions and are available in the inline gallery and full-history dialog. Each marker and gravesite has its own choice; when an Overview combines several markers, primary photos come first and the newest primary wins. All remaining photos stay newest first.
+Use `Make primary` beneath a photo to keep the front of a marker first in its gallery and on Overview. Choose a different photo to replace the primary, or `Remove primary` to restore newest-first sorting. These controls use the existing photo-order editing permissions and are available in the inline gallery and full-history dialog. Each monument has its own choice; when an Overview combines several markers, primary photos come first and the newest primary wins. All remaining photos stay newest first.
 
-Use `Monuments` in the gravesite detail panel for field photo collection, or `Details` when a marker is selected directly. `Overview` provides a read-only preview. Photos are stored as media evidence and linked to the selected gravesite or marker/headstone.
+Use `Monuments` in the gravesite detail panel for field photo collection, or `Details` when a marker is selected directly. `Overview` provides a read-only preview. Photos are stored as media evidence and linked to the selected monument.
 
 1. On the iPhone, open the application and select the gravesite on the map or from search results.
-2. Open `Monuments`. For an image of the full grave space, use `Gravesite Photos`; for a specific physical marker, use the upload form under that marker. When selecting a marker directly, its upload form is in `Details`.
+2. Open `Monuments`, or `Details` for a monument selected directly. Select the inspection and expand `Add photos to this record`. Maintenance actions have their own equivalent photo controls. Save a new inspection or maintenance action before adding its photos.
 3. Tap the photo file control and select one or more photos. On iPhone this should offer the camera or photo library.
-4. Confirm that you are using the form for the intended gravesite or marker; the form fixes the photo link to that feature.
+4. Confirm the selected inspection or maintenance action and linked monument. All selected photos attach to that record and remain in the monument library. Select a Before, During, or After phase when useful.
 5. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty. The link, notes, and optional `Date taken` apply to all selected photos; use separate uploads when those values differ. Leave the date blank to use each photo’s available date metadata.
 6. Select `Upload photos` (or `Upload photo` for one file). Files upload one at a time, with progress and a result for each file. Confirm successful uploads appear in the photo gallery.
 7. If some files fail, review their errors, correct the cause, and select `Retry failed photos`. Successful uploads remain saved; retry submits only the failed files retained in the form. Choosing a new selection replaces that retry list, so finish retries before selecting more photos.
 
-The inline gallery shows up to four linked photos, ordered newest first by capture date, falling back to upload date when capture date is absent; display order breaks ties. `View all photos (N)` opens the complete history when more are available. Marker/headstone photos appear in that marker's gallery rather than being duplicated in `Gravesite Photos`. The read-only gravesite `Overview` considers both galleries when choosing its latest photo and labels a preview from a linked marker.
+The inline gallery shows up to four linked photos, ordered newest first by capture date, falling back to upload date when capture date is absent; display order breaks ties. `View all photos (N)` opens the complete history when more are available. Each inspection and maintenance action displays only its own linked photos, or `No photos recorded`. Expand `All monument photos` for the full library. That library also allows uploads without a record association; use the record’s existing-photo selector to associate them later. The read-only gravesite `Overview` chooses from linked monument photos and identifies the monument shown.
 
 Readers can view linked photos while authenticated. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
 
-In local DEV and TEST environments, uploaded image files are written under the repository's `uploads/media` directory unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the gravesite/headstone links, but not the image bytes.
+In local DEV and TEST environments, uploaded image files are written under the repository's `uploads/media` directory unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the monument links, but not the image bytes.
 
 ### Field media intake and retention
 
 Keep camera originals that have not yet been reviewed under the repository-local `field-media-inbox/` directory. Git ignores this directory because field photographs and Apple Live Photo companions are large operational evidence, not source code. Do not leave loose HEIC, JPEG, or MOV files at the repository root and do not use `uploads/media` as an intake folder; that directory contains application-managed copies whose filenames correspond to database records.
 
-For an Apple Live Photo pair, upload the HEIC still through the selected gravesite or marker's Photos section. The current upload API accepts JPEG, PNG, WebP, HEIC, and HEIF still images; it does not accept MOV video companions. Retain the paired MOV file in the intake directory until it has been copied to the cemetery's durable evidence archive, then remove the local intake copy only after verifying that archive. Importing the HEIC does not preserve the MOV automatically.
+For an Apple Live Photo pair, upload the HEIC still through the selected monument's photo upload form. The current upload API accepts JPEG, PNG, WebP, HEIC, and HEIF still images; it does not accept MOV video companions. Retain the paired MOV file in the intake directory until it has been copied to the cemetery's durable evidence archive, then remove the local intake copy only after verifying that archive. Importing the HEIC does not preserve the MOV automatically.
 
 Use this intake checklist:
 
@@ -414,7 +414,7 @@ The desired iPhone workflow is:
 
 1. Find or create the field target by searching for a headstone ID, gravesite ID, name, section/row, or nearby map position.
 2. Capture a headstone photo and store it as linked media evidence, including upload time, app user, selected cemetery, optional GPS metadata, and notes.
-3. Capture a gravesite overview photo separately from the marker photo.
+3. Capture useful context photos and attach them to the relevant monument alongside inscription close-ups.
 4. Transcribe the marker inscription with line breaks preserved exactly as they appear on the marker.
 5. Capture names, birth dates, death dates, burial dates when known, and any other marker text.
 6. Identify whether the marker is shared by multiple people.
@@ -1078,3 +1078,43 @@ Every non-admin application account, including `reader`, requires a cemetery ass
 Search accepts names, owners (when permitted), dates, gravesites, and lots. Use the status chips for a combination of statuses, **Show one status** for a single status, and **Reset filters** to restore all statuses. Resetting status filters preserves the search text and cemetery selection.
 
 Detail tabs wrap so that **Maintenance** and **Location** remain visible. Expand **Map legend** for the map symbols and status colors; collapse it to free map space. On phones, Search, Map, and Details share the space below the header, with record panels scrolling within that space.
+
+
+### Inspection and maintenance photo history
+
+Photos are stored once on the monument and may document one or more inspections
+or maintenance actions. Use `Existing monument photo` to associate an existing
+image without uploading another copy. `Save photo link` can also change a link’s
+Before/During/After phase. `Unlink from this record` removes only that association;
+the photo remains in All monument photos and any other associated records.
+Global photo deletion remains a separate cemetery-admin control in the full library.
+
+The initial monument photo collection was attributed to the 2026 field inspections
+by the cemetery administrator. NHG inspections start without photos. New inspections
+copy the selected inscription and each face’s label and inscription; they do not copy photo associations. Historical
+inspections can receive scanned photos through the same record-specific controls.
+Photo capture dates remain separate from inspection or maintenance dates.
+
+Inspection face readings are snapshots for that visit. Edit them under Edit inspection;
+use Add inspection face for another surface. Face labels must be unique within the
+inspection. Unassigned legacy or historical text remains in Inspection inscription
+until an administrator identifies the face; it is never assigned by guesswork.
+Photo face is optional and applies to Save photo link and uploads in that record.
+It uses the selected inspection’s faces, or the monument’s faces for maintenance.
+Changing a photo’s face here does not relabel its associations with other records.
+
+### Inspection regression checks
+
+Run `npm run test:inspections:browser` for the inspection and photo browser suite.
+It uses a separate web server on port 5199 with mocked API state that persists
+across browser reloads; the normal development app stays running. Coverage includes
+three-face copying, save/refresh, inspection switching, both discard-prompt choices,
+uploaded face labels, independent record labels, and maintenance link/unlink.
+
+Run `APP_ENV=dev npm run test:inspections:db` against the migrated development
+database (or set APP_ENV to another prepared fixture database). These tests require
+the Trinity fixture monuments and migrations through 489. All changes are rolled
+back, including temporary inspections, photo links and audit records; uploaded
+test files are cleaned up. The safety regressions reject removal of a face with
+active photo links and reject a stale editor's save while preserving the newer
+reading and all original inspection/photo records.

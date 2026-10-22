@@ -5,6 +5,8 @@ import { registerMediaRoutes } from "./routes/mediaRoutes.mjs";
 test("photo order route returns a stale boundary move as a harmless no-op", async () => {
   let orderHandler;
   const app = {
+    get() {},
+    put() {},
     post() {},
     delete() {},
     patch(path, _middleware, handler) {
@@ -14,7 +16,6 @@ test("photo order route returns a stale boundary move as a harmless no-op", asyn
   const context = {
     assignedEditableCemeteryIds: () => [],
     canEditCemetery: () => true,
-    createGraveSpacePhoto: async () => undefined,
     createHeadstonePhoto: async () => undefined,
     express: { raw: () => (_request, _response, next) => next() },
     moveMediaAssetLink: async () => ({ moved: false, updates: [] }),
@@ -53,4 +54,16 @@ test("photo order route returns a stale boundary move as a harmless no-op", asyn
 
   assert.equal(statusCode, 200);
   assert.deepEqual(body, { moved: false, updates: [] });
+});
+
+test("retired gravesite upload route refuses uploads without creating records or files", async () => {
+  let retired;
+  const app = { get() {}, put() {}, post(path, ...handlers) { if (path.includes('grave-spaces')) retired = handlers.at(-1); }, delete() {}, patch() {} };
+  registerMediaRoutes(app, {
+    express: { raw() { return () => {}; } }, requirePowerUser() {}, requireCemeteryAdmin() {},
+    pool: { query() { throw new Error('Retired upload must not access the database'); } },
+  });
+  let status, body;
+  retired({}, {status(value) {status=value;return this;},json(value) {body=value;}});
+  assert.equal(status,410);assert.match(body.error,/attached to a monument/);
 });
