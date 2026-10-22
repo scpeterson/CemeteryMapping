@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -9,7 +10,7 @@ async function fixture(run){
   const c=new pg.Client(integrationAdminDatabase(loadApiConfig()));await c.connect();
   try{
     await c.query('BEGIN');
-    for(const table of ['gravesites','headstones','headstone_gravesites','headstone_burials','burials']) await c.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING ALL) ON COMMIT DROP`);
+    for(const table of ['gravesites','headstones','headstone_gravesites','headstone_burials','burials']) await createLegacyTableFixture(c, table);
     const {rows:[grave]}=await c.query(`INSERT INTO gravesites(cemetery_id,section_id,grave_id,gravesite_id,status_type_id,geometry)
       VALUES(gen_random_uuid(),'D','0500','TLC-GPS-0500',gen_random_uuid(),ST_Multi(ST_MakeEnvelope(-80.080523,40.60157751,-80.08048699,40.60158849,4326))) RETURNING *`);
     await c.query(`INSERT INTO gravesites(cemetery_id,section_id,grave_id,gravesite_id,name,status_type_id,geometry)

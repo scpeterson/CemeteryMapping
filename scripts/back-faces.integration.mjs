@@ -14,6 +14,7 @@ test('back migration preserves readings, face identities, historical visits and 
  const c=new pg.Client(integrationAdminDatabase(config));await c.connect();
  try{
   await c.query('BEGIN');
+  await c.query('ALTER TABLE headstones DROP CONSTRAINT IF EXISTS headstones_require_face');
   await c.query('ALTER TABLE headstones ADD COLUMN IF NOT EXISTS back_description text');
   const {id}=await createInspectionFixture(c);
   const frontId=randomUUID();const text='  FRONT\nReading  ';const back='  BACK\nFamily memorial  ';
@@ -56,7 +57,7 @@ test('back migration preserves an existing Back reading and other faces; creates
  const config=loadApiConfig();assert.equal(config.appEnv,'test');
  const c=new pg.Client(integrationAdminDatabase(config));await c.connect();
  try{
-  await c.query('BEGIN');await c.query('ALTER TABLE headstones ADD COLUMN IF NOT EXISTS back_description text');
+  await c.query('BEGIN');await c.query('ALTER TABLE headstones DROP CONSTRAINT IF EXISTS headstones_require_face');await c.query('ALTER TABLE headstones ADD COLUMN IF NOT EXISTS back_description text');
   const {id}=await createInspectionFixture(c);const {id:emptyId}=await createInspectionFixture(c);
   const front={id:randomUUID(),label:'Front',inscription:'Front',notes:'',burialIds:[],mediaAssetIds:[]};
   const back={...front,id:randomUUID(),label:'Back',inscription:'Existing Back',notes:'Keep Back notes'};

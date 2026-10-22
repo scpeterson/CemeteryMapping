@@ -359,6 +359,8 @@ Cemetery admins for the assigned cemetery and global admins can use `New inspect
 
 Trinity NHG inspections use October 11, 2005. Their conditions and transcriptions remain separate from the 2026 field observations; a missing NHG condition is Unknown. Existing monument photos from the 2026 field work belong to those field inspections. An NHG inspection with no recorded photographs displays `No photos recorded`.
 
+Every monument has at least one face, including monuments whose inscription has not been recorded or is blank or illegible. New monuments default to `Front`, and every existing single-face monument uses `Front`. Multi-face monuments keep their individual labels; a historical reading with an unknown side can remain `Unspecified face`. The face retains the monument’s current inscription, legibility and applicable historical readings; shared condition, material, designs and relationships remain on the monument. Clear or correct a reading on that face rather than removing the final face. `Remove face` is disabled when only one remains. New inspections always begin with at least one face containing the selected visit’s own reading, without photo links.
+
 A stone with writing on both sides uses `Front` and `Back` faces. There is no separate Back of stone field. Migration 490 moves existing back descriptions verbatim into Back face inscriptions and labels the former sole Unspecified face Front. The matching field inspection receives these face readings; NHG and other visits retain their own evidence. Existing photo links and face IDs are preserved. For future observations, add or edit the Back face in the selected inspection, then label its photos with `Photo face` as appropriate.
 
 ### Photo Collection

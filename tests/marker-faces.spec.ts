@@ -129,7 +129,8 @@ test("front and back inscriptions use faces without a separate back field", asyn
   await expect(page.getByRole("textbox", { name: "Inscription", exact: true })).toBeVisible();
   await expect(page.getByLabel("Face label", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
-  expect(current.faces).toEqual([]);
+  expect(current.faces).toHaveLength(1);
+  expect(current.faces[0]).toMatchObject({label:"Front",inscription:""});
   await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
   await page.getByRole("textbox", { name: "Inscription", exact: true }).fill("MYRTLE\nDEER");
   await expect(page.getByRole("textbox", { name: "Back of stone", exact: true })).toHaveCount(0);
@@ -181,6 +182,7 @@ test("saving ignores empty new faces but requires labels for faces with content"
   expect(saves).toBe(1);
   expect(current.faces).toHaveLength(1);
   await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Manage faces", exact: true }).click();
   await page.getByRole("button", { name: "Add face", exact: true }).click();
   const second = page.getByRole("group", { name: "Face 2", exact: true });
   await second.getByRole("textbox", { name: "Flourishes or designs", exact: true }).fill("Carved deer");
@@ -192,3 +194,30 @@ test("saving ignores empty new faces but requires labels for faces with content"
   await expect(page.getByRole("region", { name: "Back", exact: true })).toContainText("Designs: Carved deer");
   expect(current.faces).toHaveLength(2);
 });
+
+for (const status of ["not_recorded", "blank", "illegible"] as const) {
+  test(`a ${status} monument retains one face and cannot remove its last face`, async ({page}) => {
+    await overviewFixture(page);
+    const history = [{id:"history",text:"Earlier reading",source:"Fixture source",sourceDate:"2000"}];
+    let current = {...marker,inscription:"",inscriptionStatus:status,currentLegibility:status === "not_recorded" ? "unknown" : status,
+      historicalTranscriptions:history,faces:[] as MarkerFace[],facesRevision:0};
+    await page.route("**/api/headstone-lookups", route => route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[marker.condition]}}));
+    await page.route("**/api/headstones/marker-1", route => {
+      if(route.request().method()==="PATCH") current={...current,faces:route.request().postDataJSON().faces,facesRevision:current.facesRevision+1};
+      return route.fulfill({json:current});
+    });
+    await page.goto("/");await select(page,"A-TEST");
+    await page.getByRole("tabpanel",{name:"Overview",exact:true}).getByRole("button",{name:/HS-OVERVIEW/}).click();
+    await page.getByRole("tab",{name:"Details",exact:true}).click();
+    await page.getByRole("button",{name:"Edit marker HS-OVERVIEW"}).click();
+    await page.getByRole("button",{name:"Manage faces",exact:true}).click();
+    await expect(page.getByRole("button",{name:"Remove face",exact:true})).toBeDisabled();
+    await page.getByRole("button",{name:"Save marker",exact:true}).click();
+    expect(current.faces).toHaveLength(1);
+    expect(current.faces[0]).toMatchObject({label:"Front",inscription:"",inscriptionStatus:status,historicalTranscriptions:history,mediaAssetIds:[],burialIds:[]});
+    await page.reload();await select(page,"A-TEST");
+    await page.getByRole("tabpanel",{name:"Overview",exact:true}).getByRole("button",{name:/HS-OVERVIEW/}).click();
+    await page.getByRole("tab",{name:"Details",exact:true}).click();
+    await expect(page.getByRole("region",{name:"Front",exact:true})).toContainText("Earlier reading");
+  });
+}

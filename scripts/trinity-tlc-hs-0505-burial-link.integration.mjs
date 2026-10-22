@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -12,7 +13,7 @@ async function fixture(run) {
   try {
     await c.query('BEGIN');
     for (const table of ['gravesites','headstones','burials','headstone_burials','headstone_gravesites']) {
-      await c.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING ALL) ON COMMIT DROP`);
+      await createLegacyTableFixture(c, table);
     }
     const {rows:[grave]} = await c.query(`INSERT INTO gravesites(cemetery_id,section_id,grave_id,gravesite_id,status_type_id,geometry)
       VALUES(gen_random_uuid(),'D','0499','TLC-GPS-0499',gen_random_uuid(),ST_Multi(ST_MakeEnvelope(-80.08050,40.60155,-80.08046,40.60157,4326))) RETURNING id`);

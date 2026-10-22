@@ -10,11 +10,10 @@ export function isEmptyNewMarkerFace(face: MarkerFace, headstone: Headstone): bo
 
 export function editableMarkerFaces(headstone: Headstone): MarkerFace[] {
   if (headstone.faces?.length) return headstone.faces;
-  if (headstone.inscriptionStatus === "blank" || headstone.inscriptionStatus === "illegible") return [{
-    id: crypto.randomUUID(), label: "Unspecified face", inscription: "", inscriptionStatus: headstone.inscriptionStatus, currentLegibility: headstone.currentLegibility, historicalTranscriptions: headstone.historicalTranscriptions,
+  return [{
+    id: crypto.randomUUID(), label: "Front", inscription: headstone.inscription ?? "",
+    inscriptionStatus: headstone.inscriptionStatus, currentLegibility: headstone.currentLegibility,
+    historicalTranscriptions: headstone.historicalTranscriptions?.filter(entry => !entry.faceId),
     notes: "", burialIds: [], mediaAssetIds: [],
   }];
-  if (headstone.faces !== undefined) return headstone.faces;
-  return headstone.inscription ? [{ id: crypto.randomUUID(), label: "Unspecified face", inscription: headstone.inscription,
-    notes: "", burialIds: [], mediaAssetIds: [] }] : [];
 }

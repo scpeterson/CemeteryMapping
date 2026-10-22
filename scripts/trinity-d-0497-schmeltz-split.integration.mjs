@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -10,7 +11,7 @@ const migration = await readFile(new URL("../db/changelog/changes/453-split-d-04
 async function fixture(client) {
   // Real column types, defaults and uniqueness, isolated from maintained records.
   for (const table of ["gravesites", "headstones", "burials", "headstone_burials", "headstone_gravesites"]) {
-    await client.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING ALL) ON COMMIT DROP`);
+    await createLegacyTableFixture(client, table);
   }
   const { rows: [grave] } = await client.query(`
     INSERT INTO gravesites (cemetery_id,section_id,grave_id,gravesite_id,name,status_type_id,geometry)

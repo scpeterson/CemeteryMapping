@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -9,7 +10,7 @@ async function fixture(run){
   const c=new pg.Client(integrationAdminDatabase(loadApiConfig()));await c.connect();
   try{
     await c.query('BEGIN');
-    for(const table of ['gravesites','headstones']) await c.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING ALL) ON COMMIT DROP`);
+    for(const table of ['gravesites','headstones']) await createLegacyTableFixture(c, table);
     // Recreate the column that existed when migration 458 was authored.
     await c.query('ALTER TABLE pg_temp.headstones ADD COLUMN back_description text');
     const {rows:[grave]}=await c.query(`INSERT INTO gravesites(cemetery_id,section_id,grave_id,gravesite_id,status_type_id,geometry)

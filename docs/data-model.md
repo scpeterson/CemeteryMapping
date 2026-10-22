@@ -178,6 +178,10 @@ erDiagram
 | `maintenance_records` | Dated issue/action history for gravesites and markers, such as cleaned, repaired, listing, broken, illegible, grass needed, or leveling needed. |
 | `maintenance_issue_types`, `maintenance_action_types`, `maintenance_priority_types` | Controlled maintenance categories for reporting and work queues. |
 
+Migration 491 requires a nonempty `faces` array on every monument and inspection. Inserts that omit faces receive a persistent default face populated from that record’s own inscription; API validation and database checks reject removal of all faces. The backfill preserves existing named faces and photo contexts, and keeps historical visits independent of the current marker reading.
+
+Migration 492 names new default monument faces Front and renames the sole face of every existing single-face monument, including its single-face inspection snapshots. IDs, readings, history and photo contexts are preserved. Multi-face labels remain unchanged; historical unknown-side readings on multi-face monuments remain Unspecified face.
+
 Inspection `faces` stores independent face IDs, labels and readings for each visit.
 New visits copy those readings without media IDs; edits retain existing snapshot
 metadata. `monument_photo_contexts.face_id` optionally identifies one face of the

@@ -22,6 +22,8 @@ async function fixture(run) {
     await client.query(`SET search_path TO ${schema}, public`);
     for (const table of tables) {
       await client.query(`CREATE TABLE ${schema}.${table} (LIKE public.${table} INCLUDING ALL)`);
+      // This fixture replays migration 346, before mandatory faces existed.
+      if (table === 'headstones') await client.query(`ALTER TABLE ${schema}.headstones DROP CONSTRAINT IF EXISTS headstones_require_face`);
     }
     const db = loadDbEnvironment('test');
     function liquibase(command) {

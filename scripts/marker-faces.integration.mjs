@@ -51,9 +51,11 @@ test("marker faces round-trip with links, legacy text, authorization and stale-w
     await assert.rejects(updateHeadstone(nestedPool, target.id, { ...input, facesRevision: saved.facesRevision,
       faces: [{ ...input.faces[0], mediaAssetIds: [randomUUID()] }] }), { statusCode: 400 });
     await assert.rejects(updateHeadstone(nestedPool, target.id, { ...input, faces: undefined, inscription: "Flattened" }), { statusCode: 400 });
-    const cleared = await updateHeadstone(nestedPool, target.id, { ...input, faces: [], facesRevision: saved.facesRevision });
+    await assert.rejects(updateHeadstone(nestedPool, target.id, {...input,faces:[],facesRevision:saved.facesRevision}), {statusCode:400});
+    const cleared = await updateHeadstone(nestedPool, target.id, { ...input, faces: [{...input.faces[0],label:"Unspecified face",inscription:"",burialIds:[],mediaAssetIds:[]}], facesRevision: saved.facesRevision });
     assert.equal(cleared.inscription, "");
-    assert.deepEqual(cleared.faces, []);
+    assert.equal(cleared.faces.length, 1);
+    assert.equal(cleared.faces[0].inscription, "");
     assert.ok(cleared.mediaAssets.some((asset) => asset.id === photoId), "Removing faces preserves marker photos");
     await client.query("UPDATE headstones SET inscription=$2 WHERE id=$1", [target.id, "  Legacy\nText  "]);
     const legacy = toHeadstone(await selectHeadstoneById(client, target.id));

@@ -7,7 +7,7 @@ test("face validation preserves exact transcription and permits one person or ph
   const faces = [face(), { ...face(2), label: "Base" }];
   assert.deepEqual(validateMarkerFaces(faces), faces);
   assert.equal(validateMarkerFaces(undefined), undefined);
-  assert.deepEqual(validateMarkerFaces([]), []);
+  assert.throws(() => validateMarkerFaces([]), /between 1 and 32/);
   assert.equal(validateFacesRevision(0), 0);
 });
 test("invalid labels, duplicate IDs, unsafe associations and oversized face payloads are rejected", () => {

@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
@@ -6,7 +7,7 @@ import {loadApiConfig} from '../server/config.mjs';
 import {integrationAdminDatabase} from './lib/integration-admin.mjs';
 const sql=await readFile(new URL('../db/changelog/changes/461-align-section-e-gravesites-northeast.sql',import.meta.url),'utf8');
 async function fixture(run){const c=new pg.Client(integrationAdminDatabase(loadApiConfig()));await c.connect();try{
- await c.query('BEGIN');for(const t of ['cemeteries','gravesites','headstones'])await c.query(`CREATE TEMP TABLE ${t}(LIKE public.${t} INCLUDING ALL) ON COMMIT DROP`);
+ await c.query('BEGIN');for(const t of ['cemeteries','gravesites','headstones'])await createLegacyTableFixture(c, t);
  const {rows:[cem]}=await c.query("INSERT INTO cemeteries(name,facility_id,geometry)VALUES('Trinity','1',ST_Multi(ST_MakeEnvelope(-80.09,40.60,-80.07,40.61,4326))) RETURNING id");
  for(const [i,section,offset] of [[1,'E',0],[2,'E',0.0001],[3,'D',0.0003]]){
   const {rows:[g]}=await c.query(`INSERT INTO gravesites(cemetery_id,section_id,grave_id,gravesite_id,status_type_id,geometry,width_feet,length_feet)

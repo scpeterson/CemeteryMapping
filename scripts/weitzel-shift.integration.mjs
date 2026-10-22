@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
@@ -8,7 +9,7 @@ const sql=await readFile(new URL('../db/changelog/changes/460-shift-weitzel-pair
 test('owner correction translates only Weitzel monument and pair and preserves links/history',async()=>{
  const c=new pg.Client(integrationAdminDatabase(loadApiConfig()));await c.connect();
  try{await c.query('BEGIN');
- for(const t of ['headstones','gravesites','headstone_gravesites'])await c.query(`CREATE TEMP TABLE ${t}(LIKE public.${t} INCLUDING ALL) ON COMMIT DROP`);
+ for(const t of ['headstones','gravesites','headstone_gravesites'])await createLegacyTableFixture(c, t);
  const {rows:graves}=await c.query(`INSERT INTO gravesites(cemetery_id,section_id,grave_id,gravesite_id,name,status_type_id,geometry)
  SELECT '11111111-1111-4111-8111-111111111111'::uuid,'D',v.g,v.p,v.n,gen_random_uuid(),ST_Multi(ST_MakeEnvelope(-80.080551,40.60160,-80.080515,40.60161,4326))
  FROM (VALUES('0577','TLC-GPS-0577','Jerry Lee Weitzel'),('0577A','TLC-GPS-0577-01','Shirley Jane Weitzel'),('0554','TLC-GPS-0554','Martha E Traut'))v(g,p,n) RETURNING *`);
