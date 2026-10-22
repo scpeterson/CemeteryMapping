@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset cemeterymapping:479-legibility-and-historical-transcriptions splitStatements:false
+--changeset cemeterymapping:479-legibility-and-historical-transcriptions splitStatements:false rollbackSplitStatements:false
 ALTER TABLE headstones ADD COLUMN current_legibility text NOT NULL DEFAULT 'unknown',
   ADD COLUMN historical_transcriptions jsonb NOT NULL DEFAULT '[]'::jsonb CHECK(jsonb_typeof(historical_transcriptions)='array');
 
@@ -150,4 +150,72 @@ ALTER TABLE headstones ADD CONSTRAINT headstones_current_legibility_check CHECK(
 ALTER TABLE headstones ADD CONSTRAINT headstones_current_legibility_text_check CHECK(current_legibility NOT IN ('blank','illegible') OR COALESCE(inscription,'')='');
 
 -- Historical records remain in audit history; recovery requires a backup or forward correction.
---rollback empty
+--rollback DROP TRIGGER sync_headstone_faces ON headstones;
+--rollback CREATE OR REPLACE FUNCTION sync_headstone_faces() RETURNS trigger LANGUAGE plpgsql AS $$
+--rollback DECLARE
+--rollback   face jsonb;
+--rollback   normalized jsonb := '[]'::jsonb;
+--rollback   status text;
+--rollback   transcription text;
+--rollback BEGIN
+--rollback   IF TG_OP='INSERT' THEN
+--rollback     IF NEW.inscription_status='not_recorded' AND COALESCE(NEW.inscription,'') ~ '[^[:space:]]' THEN NEW.inscription_status:='transcribed'; END IF;
+--rollback     IF NEW.inscription_status IN ('blank','illegible') AND COALESCE(NEW.inscription,'')<>'' THEN
+--rollback       RAISE EXCEPTION 'Blank or Illegible inscriptions cannot contain text';
+--rollback     END IF;
+--rollback     IF NEW.faces='[]'::jsonb AND COALESCE(NEW.inscription,'')<>'' THEN
+--rollback       NEW.faces:=jsonb_build_array(jsonb_build_object('id',gen_random_uuid()::text,'label','Unspecified face',
+--rollback         'inscription',NEW.inscription,'inscriptionStatus',COALESCE(NEW.inscription_status,'transcribed'),
+--rollback         'notes','','burialIds','[]'::jsonb,'mediaAssetIds','[]'::jsonb));
+--rollback     END IF;
+--rollback   ELSIF NEW.faces IS NOT DISTINCT FROM OLD.faces AND
+--rollback       (NEW.inscription IS DISTINCT FROM OLD.inscription OR NEW.inscription_status IS DISTINCT FROM OLD.inscription_status) THEN
+--rollback     IF jsonb_array_length(OLD.faces)>1 THEN
+--rollback       RAISE EXCEPTION 'Edit individual marker faces instead of the combined inscription';
+--rollback     END IF;
+--rollback     status:=COALESCE(NEW.inscription_status,CASE WHEN COALESCE(NEW.inscription,'') ~ '[^[:space:]]' THEN 'transcribed' ELSE 'not_recorded' END);
+--rollback     IF status='not_recorded' AND COALESCE(NEW.inscription,'') ~ '[^[:space:]]' AND NEW.inscription_status IS NOT DISTINCT FROM OLD.inscription_status THEN status:='transcribed'; END IF;
+--rollback     IF status IN ('blank','illegible') AND COALESCE(NEW.inscription,'')<>'' THEN RAISE EXCEPTION 'Blank or Illegible inscriptions cannot contain text'; END IF;
+--rollback     IF jsonb_array_length(OLD.faces)=1 THEN
+--rollback       NEW.faces:=jsonb_set(jsonb_set(OLD.faces,'{0,inscription}',to_jsonb(COALESCE(NEW.inscription,''))),'{0,inscriptionStatus}',to_jsonb(status));
+--rollback     ELSIF COALESCE(NEW.inscription,'')<>'' THEN
+--rollback       NEW.faces:=jsonb_build_array(jsonb_build_object('id',gen_random_uuid()::text,'label','Unspecified face',
+--rollback         'inscription',NEW.inscription,'inscriptionStatus',status,'notes','','burialIds','[]'::jsonb,'mediaAssetIds','[]'::jsonb));
+--rollback     END IF;
+--rollback   END IF;
+--rollback   IF TG_OP='UPDATE' AND NEW.faces='[]'::jsonb AND NEW.faces IS DISTINCT FROM OLD.faces THEN
+--rollback     NEW.inscription:=NULL;
+--rollback     NEW.inscription_status:='not_recorded';
+--rollback   END IF;
+--rollback   FOR face IN SELECT value FROM jsonb_array_elements(NEW.faces) LOOP
+--rollback     transcription:=COALESCE(face->>'inscription','');
+--rollback     status:=COALESCE(face->>'inscriptionStatus',CASE WHEN transcription ~ '[^[:space:]]' THEN 'transcribed' ELSE 'not_recorded' END);
+--rollback     IF status NOT IN ('not_recorded','transcribed','blank','illegible') THEN RAISE EXCEPTION 'Invalid face inscription status'; END IF;
+--rollback     IF status IN ('blank','illegible') AND transcription<>'' THEN RAISE EXCEPTION 'Blank or Illegible face inscriptions cannot contain text'; END IF;
+--rollback     IF status='not_recorded' AND transcription ~ '[^[:space:]]' THEN RAISE EXCEPTION 'Not recorded face inscriptions cannot contain text'; END IF;
+--rollback     normalized:=normalized||jsonb_build_array(face||jsonb_build_object('inscriptionStatus',status));
+--rollback   END LOOP;
+--rollback   NEW.faces:=normalized;
+--rollback   IF jsonb_array_length(NEW.faces)>0 THEN
+--rollback     SELECT CASE WHEN jsonb_array_length(NEW.faces)=1 THEN NEW.faces->0->>'inscription'
+--rollback       ELSE string_agg((f->>'label')||E'\n'||(f->>'inscription'), E'\n\n' ORDER BY ordinal)
+--rollback         FILTER(WHERE COALESCE(f->>'inscription','') ~ '[^[:space:]]') END INTO NEW.inscription
+--rollback       FROM jsonb_array_elements(NEW.faces) WITH ORDINALITY AS item(f,ordinal);
+--rollback     SELECT CASE WHEN jsonb_array_length(NEW.faces)=1 THEN NEW.faces->0->>'inscriptionStatus'
+--rollback       WHEN bool_and(f->>'inscriptionStatus'='blank') THEN 'blank'
+--rollback       WHEN bool_and(f->>'inscriptionStatus'='illegible') THEN 'illegible'
+--rollback       WHEN bool_or(f->>'inscriptionStatus'='not_recorded') THEN 'not_recorded'
+--rollback       ELSE 'transcribed' END INTO NEW.inscription_status FROM jsonb_array_elements(NEW.faces) f;
+--rollback   ELSE
+--rollback     NEW.inscription_status:=COALESCE(NEW.inscription_status,CASE WHEN COALESCE(NEW.inscription,'') ~ '[^[:space:]]' THEN 'transcribed' ELSE 'not_recorded' END);
+--rollback   END IF;
+--rollback   IF NEW.inscription_status NOT IN ('not_recorded','transcribed','blank','illegible') THEN RAISE EXCEPTION 'Invalid inscription status'; END IF;
+--rollback   IF NEW.inscription_status IN ('blank','illegible') AND COALESCE(NEW.inscription,'')<>'' THEN RAISE EXCEPTION 'Blank or Illegible inscriptions cannot contain text'; END IF;
+--rollback   IF TG_OP='UPDATE' THEN NEW.faces_revision:=OLD.faces_revision+CASE WHEN NEW.faces IS DISTINCT FROM OLD.faces OR NEW.inscription_status IS DISTINCT FROM OLD.inscription_status THEN 1 ELSE 0 END; END IF;
+--rollback   RETURN NEW;
+--rollback END $$;
+--rollback CREATE TRIGGER sync_headstone_faces BEFORE INSERT OR UPDATE OF faces, inscription, inscription_status ON headstones FOR EACH ROW EXECUTE FUNCTION sync_headstone_faces();
+--rollback ALTER TABLE headstones DROP CONSTRAINT headstones_current_legibility_check, DROP CONSTRAINT headstones_current_legibility_text_check;
+--rollback ALTER TABLE headstones DROP COLUMN current_legibility, DROP COLUMN historical_transcriptions;
+--rollback DROP FUNCTION archive_inscription_text(jsonb,text,text,text);
+--rollback DROP FUNCTION merge_inscription_history(jsonb,jsonb);
