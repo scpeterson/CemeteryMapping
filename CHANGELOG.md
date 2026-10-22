@@ -6,6 +6,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Add dated monument inspection history with independent condition, source, notes, inscriptions, and face readings. New inspections copy the selected readings without photo links; Trinity NHG visits use October 11, 2005 (migrations 479–480 and 485–489, PR #707).
+- Associate monument photos with inspections or maintenance actions while retaining All monument photos. Existing 2026 field photos belong to their field inspections; gravesite previews use linked monument photos instead of a separate Gravesite Photos section (PR #707).
+- Add thumbnail photo selection, selected-photo previews, explicit face and maintenance timing labels, gallery filenames, and Cancel for unsaved photo link selections (PR #708).
+
 - Add Trinity Section B lots B-24 and B-18, plus irregular B-1 following the cemetery boundary, six feet north of B-23 (migration 419).
 
 - Add eight Trinity Section B lots in two adjoining four-lot rows, with a six-foot gap north of B-4 (migration 418).
@@ -21,6 +25,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Merge MapLibre GL 6.10.0, Auth0 React 2.27.0, React DOM/type updates, and Node type updates (PRs #576–#579). Source merges do not automatically update running deployments.
 
 ### Fixed
+
+- Preserve loaded photo previews while record links refresh after uploads, with regression coverage for delayed refreshes and inspection/maintenance selection cancellation (PR #708).
 
 - Retire the C-0425 plot-marker placeholder and imported pseudo-burial while retaining standalone marker TLC-HS-0425 and its evidence (migration 474).
 - Align C-0383 3.54 inches west within schematic C-83; preserve its marker, burial and lot assignment, and record the remaining C-0384 overlap for separate review (migration 475).

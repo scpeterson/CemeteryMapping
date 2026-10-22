@@ -145,10 +145,13 @@ erDiagram
 
 ```mermaid
 erDiagram
-  MEDIA_ASSETS ||--o{ GRAVESITE_MEDIA_ASSETS : attaches
-  GRAVESITES ||--o{ GRAVESITE_MEDIA_ASSETS : has
   MEDIA_ASSETS ||--o{ HEADSTONE_MEDIA_ASSETS : attaches
   HEADSTONES ||--o{ HEADSTONE_MEDIA_ASSETS : has
+  HEADSTONES ||--o{ MONUMENT_INSPECTIONS : records
+  MEDIA_ASSETS ||--o{ MONUMENT_PHOTO_CONTEXTS : reused_by
+  HEADSTONES ||--o{ MONUMENT_PHOTO_CONTEXTS : owns
+  MONUMENT_INSPECTIONS ||--o{ MONUMENT_PHOTO_CONTEXTS : has
+  MAINTENANCE_RECORDS ||--o{ MONUMENT_PHOTO_CONTEXTS : has
   GRAVESITES ||--o{ MAINTENANCE_RECORDS : receives
   HEADSTONES ||--o{ MAINTENANCE_RECORDS : receives
   MAINTENANCE_ISSUE_TYPES ||--o{ MAINTENANCE_RECORDS : classifies
@@ -169,10 +172,19 @@ erDiagram
 | `grave_features` | Physical features such as vases, memorial plaques, flag holders, veteran star holders, flower holders, and similar items. A feature can link to a gravesite, a marker, or both. Record each physical vase as a separate row so multiple vases can retain independent attributes. |
 | `grave_feature_types`, `grave_feature_subtypes`, `grave_feature_material_types`, `grave_feature_placement_types` | Feature dropdown values and classification hierarchy. Memorial plaques include a government-issued veteran plaque subtype. |
 | `media_assets` | Uploaded media metadata, including upload information and captured-at dates read from EXIF or entered manually. |
+| `monument_inspections` | Independent dated visits with source/type, condition, condition notes, inscription, and face snapshots. Historical and field observations remain separate. |
 | `monument_photo_contexts` | Optional inspection or maintenance associations and Before/During/After phases for monument photos. Photos remain in the full monument library; new inspections do not inherit links. |
 | `headstone_media_assets` | Ordered monument photo links. Multiple photos share media records without duplicating files. `gravesite_media_assets` retains historical links for audit and recovery; the app no longer collects or displays separate gravesite photos. |
 | `maintenance_records` | Dated issue/action history for gravesites and markers, such as cleaned, repaired, listing, broken, illegible, grass needed, or leveling needed. |
 | `maintenance_issue_types`, `maintenance_action_types`, `maintenance_priority_types` | Controlled maintenance categories for reporting and work queues. |
+
+Inspection `faces` stores independent face IDs, labels and readings for each visit.
+New visits copy those readings without media IDs; edits retain existing snapshot
+metadata. `monument_photo_contexts.face_id` optionally identifies one face of the
+inspection snapshot (or the monument for maintenance), validated before linking or
+uploading. The same asset may have different face labels in different records.
+
+Photo selection and preview are unsaved UI state. Only saving a link changes a context; unlinking a context preserves the monument media link and other contexts. Existing 2026 field photos are associated with their field inspections; NHG visits have no inherited photos.
 
 Maintenance is history, not just a current attribute. That lets reports answer questions such as which markers have not been cleaned recently and which open issues still need work.
 
@@ -301,9 +313,3 @@ Related documentation:
 - [Data Sources](data-sources.html)
 - [Admin Workflows](admin-workflows.html)
 - [ADR 0015: Generalized Ownership Rights](adr/0015-generalized-ownership-rights.md)
-
-Inspection `faces` stores independent face IDs, labels and readings for each visit.
-New visits copy those readings without media IDs; edits retain existing snapshot
-metadata. `monument_photo_contexts.face_id` optionally identifies one face of the
-inspection snapshot (or the monument for maintenance), validated before linking or
-uploading. The same asset may have different face labels in different records.

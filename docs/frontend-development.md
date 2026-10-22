@@ -136,13 +136,22 @@ APP_ENV=test npm run test:e2e
 
 Shared browser fixtures live in `tests/fixtures/cemetery.ts`. The nested-dialog harness and its mounting helper are test-only files. Keep API mocking limited to the boundaries a test needs, and retain API-backed coverage for real record reads and mutations. CI rebuilds TEST and runs lint, build, server, database, and browser checks. Test counts change as coverage grows; use the current run's results rather than a fixed documented count.
 
-## Marker Faces
+## Inspection Faces And Photo Links
 
-In marker Details, Edit opens Faces / Inscriptions. Add a face, give it a direction or custom label, transcribe its text, and select existing marker-linked people and photos. Photos can be assigned to multiple faces. Save and upload new photos before assigning them. Removing a face does not delete its people or photos. Unknown orientations stay Unspecified face.
+`MonumentInspections.tsx` owns the selected visit and its draft. The dropdown defaults to the latest visit; new drafts copy the selected general inscription and face IDs, labels, and readings, without media IDs or photo context links. Each saved visit has an independent face snapshot. `MarkerFaces.tsx` still manages monument face definitions and linked people; visit-specific readings belong in the inspection editor. Keep unknown-face historical readings in the general inscription. See [Inspection History](operator-workflows.md#inspection-history) and [ADR 0069](adr/0069-marker-faces.md) for the original marker-face model.
 
-`MarkerFaces.tsx` shares the marker editor’s draft and save lifecycle. The API returns HTTP 409 for stale face revisions; the editor preserves the draft and asks the user to reload. Face galleries use the existing authenticated photo viewer. See [ADR 0069](adr/0069-marker-faces.md).
+`RecordPhotos.tsx` filters `monument_photo_contexts` for the selected inspection or maintenance action. Face labels use the supplied inspection snapshot, or monument faces for maintenance. Thumbnail selection restores that record's saved face/timing; it is local state until `Save photo link`. Cancel clears selection, preview, face, timing, and form errors without sending a write. Maintenance timing is hidden for inspections. Keep the full monument library independent of record-specific links.
 
-Ordinary markers show a plain Inscription field in Edit, including markers with no previous inscription. Entering text automatically stores an Unspecified face; no face label, person selection, or photo assignment is required. Manage faces opens the optional multi-face editor. Add face starts another draft; Save marker saves all completed faces and ignores empty new drafts. A draft with inscription, notes, people, or photos still requires a label. Back of stone remains independently editable. Photos assigned to faces display only in those face galleries, with the usual photo controls; the general gallery displays unassigned photos.
+Thumbnails use `useNearViewport` and `useMediaUrl`, and gallery cards display filenames. Keep `MediaGallery` mounted while record links refresh after an upload: replacing it with a loading branch discards loaded previews and resets lazy loading. Announce refresh with `aria-busy` and the loading empty message instead.
+
+Focused regression commands:
+
+```bash
+npm run test:inspections:browser
+APP_ENV=test npm run test:inspections:db
+```
+
+The browser command runs `monument-inspections.spec.ts` and `record-photos.spec.ts` against a separate Vite server on port 5199 with mocked API state; it does not change saved DEV records. Coverage includes independent visits and face readings, copy/cancel/save/reload, thumbnail previews and metadata, link/unlink, narrow layouts, and delayed upload-link refreshes. The database command requires a migrated, seeded TEST database and runs the inspection, photo-context, and face regression scripts. Fixtures create temporary records inside rollback transactions using `scripts/lib/inspection-fixtures.mjs`; they do not require Trinity monuments or leave test inspections behind. These checks also run within the broader CI suites.
 
 ## Local Scratch Scripts
 
