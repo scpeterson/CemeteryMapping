@@ -3,7 +3,7 @@
 
 # ADR 0069: Multiple Faces on One Physical Marker
 
-- Status: Accepted
+- Status: Accepted (separate back-description decision superseded by [ADR 0109](0109-back-inscriptions-use-faces.md))
 - Date: 2026-09-21
 
 ## Decision

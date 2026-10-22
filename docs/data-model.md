@@ -184,6 +184,8 @@ metadata. `monument_photo_contexts.face_id` optionally identifies one face of th
 inspection snapshot (or the monument for maintenance), validated before linking or
 uploading. The same asset may have different face labels in different records.
 
+Migration 490 replaces `headstones.back_description` with ordinary Back face inscriptions and converts the sole Unspecified face to Front for affected stones. It updates the matching field inspection only, preserving other visits and photo contexts. The original text is retained under `source_properties.BackFaceMigration490` for provenance; the separate database column and public API field are removed.
+
 Photo selection and preview are unsaved UI state. Only saving a link changes a context; unlinking a context preserves the monument media link and other contexts. Existing 2026 field photos are associated with their field inspections; NHG visits have no inherited photos.
 
 Maintenance is history, not just a current attribute. That lets reports answer questions such as which markers have not been cleaned recently and which open issues still need work.

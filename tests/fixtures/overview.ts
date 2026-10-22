@@ -11,7 +11,7 @@ const person = (id: string, firstName: string, lastName: string) => ({
 });
 export const marker = {
   id: "marker-1", headstoneId: "HS-OVERVIEW", markerType: lookup, markerScope: lookup, material: lookup, condition: lookup,
-  vaseNotes: "", conditionNotes: "", inscription: "Family marker", designNotes: "", backDescription: "", photoUrl: "",
+  vaseNotes: "", conditionNotes: "", inscription: "Family marker", designNotes: "", photoUrl: "",
   reviewNotes: "", sourceConflict: false, nhgInclusion: "not_checked", nhgInclusionRecorded: false,
   provenanceVerificationSource: "field_photo", relationshipType: "primary", relationshipNotes: "",
   associatedGravesiteIds: ["A-TEST", "B-TEST"], burialIds: ["alice", "bob"], northHillsEvidence: [], features: [],

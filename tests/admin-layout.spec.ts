@@ -31,6 +31,11 @@ for (const tab of ["Users", "Records", "Quality", "Deeds", "Readings", "Audit", 
     await admin.getByRole("button", { name: tab, exact: true }).click();
     await expect(admin.locator(".admin-content")).not.toBeEmpty();
     await expect(admin.locator('[role="alert"]')).toHaveCount(0);
+    // A nonempty lazy fallback is not the populated workflow. Wait for the
+    // rows that determine the dialog height before measuring its scroll range.
+    if (tab === "Deeds") await expect(admin.locator(".deed-entry-row")).toHaveCount(1);
+    if (tab === "System") await expect(admin.locator(".system-event-row")).toHaveCount(1);
+    if (tab === "Audit") await expect(admin.locator(".audit-event-row")).toHaveCount(1);
     if (tab === "Readings") {
       await expect(admin.locator(".deed-entry-row")).toHaveCount(1);
       const filters = admin.locator(".reading-review-filter-form");
@@ -60,9 +65,10 @@ for (const tab of ["Users", "Records", "Quality", "Deeds", "Readings", "Audit", 
       });
       if (clippedControls.length) failures.push(`${width}px clipped controls: ${JSON.stringify(clippedControls)}`);
       if (overflow.scroll > overflow.width) failures.push(`${width}px: ${JSON.stringify(overflow)}`);
-      await admin.evaluate(el => { el.scrollTop = el.scrollHeight; });
-      const clearance = await admin.evaluate(el => el.getBoundingClientRect().bottom - el.querySelector(".admin-workspace")!.getBoundingClientRect().bottom);
-      if (clearance < 10) failures.push(`${width}px: bottom clearance ${clearance}`);
+      await expect.poll(async () => {
+        await admin.evaluate(el => { el.scrollTop = el.scrollHeight; });
+        return admin.evaluate(el => el.getBoundingClientRect().bottom - el.querySelector(".admin-workspace")!.getBoundingClientRect().bottom);
+      }, { message: `${width}px: final admin controls must be reachable with bottom clearance` }).toBeGreaterThanOrEqual(10);
     }
     expect(pageErrors).toEqual([]);
     expect(failures).toEqual([]);

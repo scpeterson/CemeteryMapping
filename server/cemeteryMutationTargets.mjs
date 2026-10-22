@@ -56,7 +56,6 @@ export async function selectHeadstoneMutationState(client, id) {
         headstones.faces,
         headstones.faces_revision,
         headstones.design_notes,
-        headstones.back_description,
         headstones.photo_url,
         headstones.last_inspected_at,
         headstones.updated_at

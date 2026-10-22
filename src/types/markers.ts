@@ -89,7 +89,6 @@ export type Headstone = {
   facesRevision?: number;
   facePeople?: { id: string; fullName: string }[];
   designNotes: string;
-  backDescription: string;
   photoUrl: string;
   lastInspectedAt?: string;
   dataConfidence?: DataConfidence;
@@ -229,7 +228,6 @@ export type SaveHeadstoneInput = {
   faces?: MarkerFace[];
   facesRevision?: number;
   designNotes: string;
-  backDescription: string;
   photoUrl: string;
   lastInspectedAt: string;
   dataConfidence: DataConfidence;

@@ -25,6 +25,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0109: Back inscriptions use marker faces](0109-back-inscriptions-use-faces.md)
+
 - [ADR 0073: Private Hosted TEST](0073-private-hosted-test.md)
 
 - [ADR 0001: Use a Vite React TypeScript Frontend](0001-vite-react-typescript-frontend.md)

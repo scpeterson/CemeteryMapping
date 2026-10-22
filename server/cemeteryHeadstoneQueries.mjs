@@ -55,7 +55,6 @@ const headstoneDetailColumnsSql = `
   headstones.faces,
   headstones.faces_revision,
   headstones.design_notes,
-  headstones.back_description,
   headstones.photo_url,
   headstones.last_inspected_at,
   headstones.source_properties
@@ -182,7 +181,6 @@ const headstoneDetailGroupBySql = `
   headstones.faces,
   headstones.faces_revision,
   headstones.design_notes,
-  headstones.back_description,
   headstones.photo_url,
   headstones.last_inspected_at,
   headstones.source_properties

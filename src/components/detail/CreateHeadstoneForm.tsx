@@ -37,7 +37,6 @@ function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lo
     inscription: "",
     inscriptionStatus: "not_recorded",
     designNotes: "",
-    backDescription: "",
     photoUrl: "",
     lastInspectedAt: "",
     dataConfidence: "unknown",

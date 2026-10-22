@@ -179,9 +179,12 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
             material: { id: "55555555-5555-4555-8555-555555555555", code: "granite", label: "Granite" },
             condition: { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
             conditionNotes: "Stable and legible",
-            inscription: "Beloved family marker",
+            inscription: "Front\nBeloved family marker\n\nBack\nBack side lists children",
+            faces: [
+              {id: "front", label: "Front", inscription: "Beloved family marker", notes: "", burialIds: [], mediaAssetIds: []},
+              {id: "back", label: "Back", inscription: "Back side lists children", notes: "", burialIds: [], mediaAssetIds: []},
+            ],
             designNotes: "Carved roses above the name",
-            backDescription: "Back side lists children",
             photoUrl: "",
             lastInspectedAt: "2026-05-28",
             relationshipType: "spans",
@@ -209,7 +212,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
   await expect(page.locator(".detail-panel")).toContainText("Granite");
   await expect(page.locator(".detail-panel")).toContainText("Good");
   await expect(page.locator(".detail-panel")).toContainText("Designs: Carved roses above the name");
-  await expect(page.locator(".detail-panel")).toContainText("Back: Back side lists children");
+  await expect(page.getByRole("region", {name: "Back", exact: true})).toContainText("Back side lists children");
   await expect(page.locator(".marker-relationship")).toContainText("Marker spans multiple gravesites - Shared by adjacent gravesites");
   await expect(page.locator(".marker-relationship")).toHaveAttribute(
     "title",
@@ -241,7 +244,6 @@ test("power users can edit headstone marker details from grave detail", async ({
     conditionNotes: "Stable and legible",
     inscription: "Beloved family marker",
     designNotes: "",
-    backDescription: "",
     photoUrl: "",
     lastInspectedAt: "2026-05-28",
     relationshipType: "primary",
@@ -323,19 +325,18 @@ test("power users can edit headstone marker details from grave detail", async ({
   });
   await page.route("**/api/headstones/33333333-3333-4333-8333-333333333333", async (route) => {
     expect(route.request().method()).toBe("PATCH");
-    const body = route.request().postDataJSON() as { materialId: string; conditionId: string; conditionNotes: string; designNotes: string; backDescription: string };
+    const body = route.request().postDataJSON() as { materialId: string; conditionId: string; conditionNotes: string; designNotes: string };
     expect(body.materialId).toBe("55555555-5555-4555-8555-555555555557");
     expect(body.conditionId).toBe(headstone.condition.id);
     expect(body.conditionNotes).toBe(headstone.conditionNotes);
     expect(body.designNotes).toBe("Etched ivy border");
-    expect(body.backDescription).toBe("Veteran medallion attached on back");
+    expect(body).not.toHaveProperty("backDescription");
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
         ...headstone,
         material: { id: "55555555-5555-4555-8555-555555555557", code: "pink_granite", label: "Pink granite" },
         designNotes: "Etched ivy border",
-        backDescription: "Veteran medallion attached on back",
         auditEventId: "77777777-7777-4777-8777-777777777777",
       }),
     });
@@ -349,14 +350,14 @@ test("power users can edit headstone marker details from grave detail", async ({
   await expect(page.getByRole("combobox", { name: "Condition", exact: true })).toBeDisabled();
   await expect(page.getByRole("textbox", { name: "Condition notes", exact: true })).toBeDisabled();
   await page.getByRole("textbox", { name: "Flourishes or designs" }).fill("Etched ivy border");
-  await page.getByRole("textbox", { name: "Back of stone" }).fill("Veteran medallion attached on back");
+  await expect(page.getByRole("textbox", { name: "Back of stone" })).toHaveCount(0);
   await page.getByRole("button", { name: "Save marker" }).click();
 
   await expect(page.locator(".detail-panel")).toContainText("Pink granite");
   await expect(page.locator(".detail-panel")).toContainText("Good");
   await expect(page.locator(".detail-panel")).toContainText("Stable and legible");
   await expect(page.locator(".detail-panel")).toContainText("Designs: Etched ivy border");
-  await expect(page.locator(".detail-panel")).toContainText("Back: Veteran medallion attached on back");
+
 });
 
 test("section G marker edits are limited to flat markers", async ({ page }) => {
@@ -381,7 +382,6 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
     conditionNotes: "",
     inscription: "",
     designNotes: "",
-    backDescription: "",
     photoUrl: "",
     lastInspectedAt: "2026-05-28",
     relationshipType: "primary",

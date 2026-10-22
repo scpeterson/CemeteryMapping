@@ -80,7 +80,6 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     faces: editableMarkerFaces(headstone),
     facesRevision: headstone.facesRevision ?? 0,
     designNotes: headstone.designNotes ?? "",
-    backDescription: headstone.backDescription ?? "",
     photoUrl: headstone.photoUrl ?? "",
     lastInspectedAt: headstone.lastInspectedAt ?? "",
     dataConfidence: headstone.dataConfidence ?? "unknown",
@@ -271,10 +270,6 @@ export function HeadstoneRecord({
           Flourishes or designs
           <textarea value={form.designNotes} onChange={(event) => setForm((current) => ({ ...current, designNotes: event.target.value }))} rows={3} />
         </label>
-        <label className="headstone-wide-field">
-          Back of stone
-          <textarea value={form.backDescription} onChange={(event) => setForm((current) => ({ ...current, backDescription: event.target.value }))} rows={3} />
-        </label>
         <label>
           Data confidence
           <LookupSelect value={form.dataConfidence} onChange={(event) => setForm((current) => ({ ...current, dataConfidence: event.target.value as SaveHeadstoneInput["dataConfidence"] }))}>
@@ -444,7 +439,6 @@ export function HeadstoneRecord({
       <MarkerFacesView headstone={headstone} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
       </details> : <MarkerFacesView headstone={headstone} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
-      {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
       {headstone.features?.length ? (
         <GraveFeatureList
           features={headstone.features}

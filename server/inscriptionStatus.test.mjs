@@ -37,3 +37,8 @@ test("current legibility and historical transcription validation remain independ
   assert.deepEqual(result.historicalTranscriptions, [{ ...historical[0], sourceDate: "2005-10-11" }]);
   assert.equal(result.currentLegibility, "illegible");
 });
+
+test("retired back field cannot silently discard a client's reading", () => {
+  assert.throws(() => validateHeadstonePayload({...payload,backDescription:"Legacy Back"}), /Back face inscription/);
+  assert.equal(Object.hasOwn(validateHeadstonePayload({...payload,backDescription:""}),"backDescription"),false);
+});

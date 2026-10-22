@@ -106,7 +106,6 @@ export function MarkerBurialPages({ rows }: { rows: Record<string, unknown>[] })
               <DetailItem label="Condition" value={marker.marker_condition} />
               <DetailItem label="Inscription" value={marker.inscription} className="marker-burial-detail--inscription" />
               <DetailItem label="Design" value={marker.design_notes} />
-              <DetailItem label="Back" value={marker.back_description} />
               <DetailItem label="Condition notes" value={marker.condition_notes} />
             </dl>
             {markerFeatures.length ? (

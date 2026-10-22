@@ -338,7 +338,7 @@ Use the normal grave-detail panel or the Markers panel, not the Admin drawer, fo
 3. Users with `reader` access can view marker information but cannot edit it.
 4. `power-user` and `cemetery-admin` users can edit marker details for assigned cemeteries.
 5. `admin` users can edit marker details for any cemetery.
-6. Edit marker type, material, design/flourish notes, or back-side description. Use the inspection controls below for dated condition, condition notes, source, and inscriptions.
+6. Edit marker type, material, or design/flourish notes. Use the inspection controls below for dated condition, condition notes, source, and inscriptions.
 7. For Section G, expect the marker type list to be restricted to flat markers. The API and database also enforce this rule.
 8. Section G gravesites can contain either one casket burial or up to two funeral urn burials. The database enforces this capacity rule when burial rows are created, restored, or updated.
 9. Save the marker and confirm the detail panel reflects the update.
@@ -358,6 +358,8 @@ Cemetery admins for the assigned cemetery and global admins can use `New inspect
 `Cancel inspection` abandons the draft without saving a record. If navigation opens the discard-unsaved-changes prompt, `Cancel` keeps the draft and its edits open; `OK` discards it. Reloading does not preserve an unsaved draft.
 
 Trinity NHG inspections use October 11, 2005. Their conditions and transcriptions remain separate from the 2026 field observations; a missing NHG condition is Unknown. Existing monument photos from the 2026 field work belong to those field inspections. An NHG inspection with no recorded photographs displays `No photos recorded`.
+
+A stone with writing on both sides uses `Front` and `Back` faces. There is no separate Back of stone field. Migration 490 moves existing back descriptions verbatim into Back face inscriptions and labels the former sole Unspecified face Front. The matching field inspection receives these face readings; NHG and other visits retain their own evidence. Existing photo links and face IDs are preserved. For future observations, add or edit the Back face in the selected inspection, then label its photos with `Photo face` as appropriate.
 
 ### Photo Collection
 
