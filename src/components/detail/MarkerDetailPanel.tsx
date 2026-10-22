@@ -28,6 +28,7 @@ export function MarkerDetailPanel({
   headstone,
   markerGraves,
   canUpdateHeadstones,
+  canEditInspections,
   headstoneLookups,
   onSaveHeadstone,
   onSaveHeadstoneRelationship,
@@ -57,6 +58,7 @@ export function MarkerDetailPanel({
   headstone?: Headstone;
   markerGraves: GraveSpaceSummary[];
   canUpdateHeadstones: boolean;
+  canEditInspections: boolean;
   headstoneLookups: HeadstoneLookups;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onSaveHeadstoneRelationship: (headstoneId: string, relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
@@ -71,7 +73,7 @@ export function MarkerDetailPanel({
   onSaveMaintenanceRecord: (record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onUpdateMaintenanceRecord: (id: string, record: SaveMaintenanceRecordInput) => Promise<MaintenanceRecord>;
   onSelectMarkerGrave: (grave: GraveSpaceSummary) => void;
-  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string; inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;
   canDeleteGraveFeatures: boolean;
@@ -140,6 +142,7 @@ export function MarkerDetailPanel({
               headstone={headstone}
               lookups={headstoneLookups}
               canUpdate={canUpdateHeadstones}
+                    canEditInspections={canEditInspections}
               onSave={onSaveHeadstone}
               cemeteryName={summary.cemeteryName}
               sectionName=""
@@ -194,6 +197,7 @@ export function MarkerDetailPanel({
             <h3>Maintenance</h3>
           </div>
           <MaintenanceRecordList
+            onUploadPhoto={onUploadPhoto}
             records={headstone.maintenanceRecords ?? []}
             canUpdate={canUpdateHeadstones}
             lookups={headstoneLookups}

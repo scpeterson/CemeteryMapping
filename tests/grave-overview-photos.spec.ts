@@ -30,9 +30,9 @@ test("individual markers can be identified by burial links when gravesite IDs ar
   expect(graveOverviewImages(grave, [shared, otherGrave])[0].url).toBe(william.fileUrl);
 });
 
-test("an explicit gravesite primary wins over individual marker primaries", () => {
+test("legacy gravesite photos are ignored, including primary flags", () => {
   const own = photo("own", "1900-01-01", true);
-  expect(graveOverviewImages({ ...grave, mediaAssets: [own] }, [individual, shared])[0].url).toBe(own.fileUrl);
+  expect(graveOverviewImages({ ...grave, mediaAssets: [own] }, [individual, shared])[0].url).toBe(nannie.fileUrl);
 });
 
 test("shared marker primary precedes face photos; automatic selection follows burial IDs", () => {
@@ -48,6 +48,7 @@ test("missing face links fall back and empty or legacy photos remain usable", ()
   expect(graveOverviewImages(grave, [{ ...shared, faces: [{ ...shared.faces![0], mediaAssetIds: ["missing"] }] }])[0].url).toBe(william.fileUrl);
   expect(graveOverviewImages(grave, [{ ...individual, mediaAssets: [], photoUrl: "/legacy" }, shared])[0].url).toBe("/legacy");
   expect(graveOverviewImages(grave, [])).toEqual([]);
+  expect(graveOverviewImages({ ...grave, mediaAssets: [nannie] }, [])).toEqual([]);
 });
 
 test("shared primary overrides non-primary direct grave photos without changing their flags", () => {

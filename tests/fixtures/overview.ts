@@ -32,6 +32,7 @@ export const overviewGrave = (id: string) => ({
 
 export async function overviewFixture(page: Page) {
   await fixture(page);
+  await page.route("**/api/headstones/*/photo-contexts", route => route.fulfill({ json: [] }));
   await page.route("**/api/cemetery-map", (route) => route.fulfill({ json: {
     boundaries: [{ type: "Feature", properties: { name: "Test Cemetery" }, geometry }],
     sections: [], lots: [], graves: summaries, headstones: [markerSummary],

@@ -1,3 +1,4 @@
+import { validatePhotoContextTarget, upsertPhotoContext } from './monumentPhotoContexts.mjs';
 import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 import { stageMediaFile } from "./media/uploadStorage.mjs";
 import { randomUUID } from "node:crypto";
@@ -5,42 +6,6 @@ import { setAuditContext } from "./auditContext.mjs";
 import { capturedAtForUpload, cleanMediaText as cleanText, mediaUploadRoot, isAllowedImageType, mediaFileExtension as fileExtension, optionalMediaNumber as optionalNumber, publicMediaFileUrl as publicFileUrl, toMediaAsset } from "./media/mediaMapping.mjs";
 export { mediaUploadRoot } from "./media/mediaMapping.mjs";
 
-
-async function graveForCemeteryId(client, cemeteryId, gravesiteId) {
-  const result = await client.query(
-    `
-      SELECT id::text, cemetery_id::text
-      FROM gravesites
-      WHERE cemetery_id = $1
-        AND gravesite_id = $2
-        AND deleted_at IS NULL
-      LIMIT 1
-    `,
-    [cemeteryId, gravesiteId],
-  );
-  return result.rows[0];
-}
-
-async function headstoneIsLinkedToGrave(client, headstoneId, graveUuid) {
-  const result = await client.query(
-    `
-      SELECT headstones.id::text
-      FROM headstones
-      LEFT JOIN headstone_gravesites
-        ON headstone_gravesites.headstone_uuid = headstones.id
-       AND headstone_gravesites.deleted_at IS NULL
-      WHERE headstones.id = $1
-        AND headstones.deleted_at IS NULL
-        AND (
-          headstones.gravesite_uuid = $2
-          OR headstone_gravesites.gravesite_uuid = $2
-        )
-      LIMIT 1
-    `,
-    [headstoneId, graveUuid],
-  );
-  return Boolean(result.rows[0]);
-}
 
 async function headstoneForId(client, headstoneId) {
   const result = await client.query(
@@ -53,175 +18,11 @@ async function headstoneForId(client, headstoneId) {
       WHERE headstones.id = $1
         AND headstones.deleted_at IS NULL
       LIMIT 1
+      FOR UPDATE OF headstones
     `,
     [headstoneId],
   );
   return result.rows[0];
-}
-
-export async function createGraveSpacePhoto(pool, cemeteryId, gravesiteId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = mediaUploadRoot() } = {}) {
-  if (!isAllowedImageType(file.contentType)) {
-    throw new Error("Unsupported photo type.");
-  }
-  if (!file.bytes?.length) throw new Error("Photo file is required.");
-  if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) return undefined;
-
-  const client = await pool.connect();
-  let stagedFile;
-  let commitAttempted = false;
-  try {
-    await client.query("BEGIN");
-    await setAuditContext(client, { actorUser, reason: "Photo upload" });
-    const grave = await graveForCemeteryId(client, cemeteryId, gravesiteId);
-    if (!grave) {
-      await client.query("ROLLBACK");
-      return undefined;
-    }
-
-    const headstoneId = cleanText(metadata.headstoneId, 100);
-    if (headstoneId && !(await headstoneIsLinkedToGrave(client, headstoneId, grave.id))) {
-      await client.query("ROLLBACK");
-      return undefined;
-    }
-
-    const assetId = randomUUID();
-    const extension = fileExtension(file.contentType, file.originalFilename);
-    const storageKey = `${assetId}${extension}`;
-    stagedFile = await stageMediaFile(uploadRoot, storageKey, file.bytes);
-
-    const assetResult = await client.query(
-      `
-        INSERT INTO media_assets (
-          id,
-          cemetery_id,
-          asset_type,
-          storage_key,
-          file_url,
-          original_filename,
-          content_type,
-          byte_size,
-          captured_at,
-          captured_by_app_user_id,
-          captured_by_external_subject,
-          captured_by_email,
-          latitude,
-          longitude,
-          gps_accuracy,
-          device_make,
-          device_model,
-          notes,
-          source,
-          status
-        )
-        VALUES (
-          $1, $2, 'photo', $3, $4, $5, $6, $7, $8::timestamptz,
-          $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'linked'
-        )
-        RETURNING
-          id::text,
-          cemetery_id::text,
-          asset_type,
-          file_url,
-          thumbnail_url,
-          original_filename,
-          content_type,
-          byte_size,
-          captured_at,
-          uploaded_at,
-          captured_by_email,
-          latitude,
-          longitude,
-          gps_accuracy,
-          device_make,
-          device_model,
-          notes,
-          source,
-          status
-      `,
-      [
-        assetId,
-        cemeteryId,
-        storageKey,
-        publicFileUrl(storageKey),
-        cleanText(file.originalFilename, 255) || null,
-        file.contentType,
-        file.bytes.length,
-        capturedAtForUpload(file, metadata),
-        actorUser?.id ?? null,
-        actorUser?.subject ?? null,
-        actorUser?.email ?? null,
-        optionalNumber(metadata.latitude),
-        optionalNumber(metadata.longitude),
-        optionalNumber(metadata.gpsAccuracy),
-        cleanText(metadata.deviceMake, 100) || null,
-        cleanText(metadata.deviceModel, 100) || null,
-        cleanText(metadata.notes, 4000) || null,
-        cleanText(metadata.source, 50) || "field_upload",
-      ],
-    );
-
-    await client.query(
-      `
-        INSERT INTO gravesite_media_assets (
-          media_asset_id,
-          gravesite_uuid,
-          relationship_type,
-          status,
-          notes,
-          display_order,
-          linked_by_app_user_id,
-          linked_by_external_subject,
-          linked_by_email
-        )
-        VALUES (
-          $1, $2, 'documents', 'linked', $3,
-          (SELECT COALESCE(MAX(display_order), -1) + 1
-           FROM gravesite_media_assets
-           WHERE gravesite_uuid = $2 AND deleted_at IS NULL AND status = 'linked'),
-          $4, $5, $6
-        )
-      `,
-      [assetId, grave.id, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
-    );
-
-    if (headstoneId) {
-      await client.query(
-        `
-          INSERT INTO headstone_media_assets (
-            media_asset_id,
-            headstone_uuid,
-            relationship_type,
-            status,
-            notes,
-            display_order,
-            linked_by_app_user_id,
-            linked_by_external_subject,
-            linked_by_email
-          )
-          VALUES (
-            $1, $2, 'documents', 'linked', $3,
-            (SELECT COALESCE(MAX(display_order), -1) + 1
-             FROM headstone_media_assets
-             WHERE headstone_uuid = $2 AND deleted_at IS NULL AND status = 'linked'),
-            $4, $5, $6
-          )
-        `,
-        [assetId, headstoneId, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
-      );
-    }
-
-    await stagedFile.publish();
-    commitAttempted = true;
-    await client.query("COMMIT");
-    return toMediaAsset(assetResult.rows[0]);
-  } catch (error) {
-    await client.query("ROLLBACK").catch(() => {});
-    // A failed COMMIT response may still mean the transaction committed.
-    if (!commitAttempted) await stagedFile?.discard();
-    throw error;
-  } finally {
-    client.release();
-  }
 }
 
 export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {}, { actorUser, allowedCemeteryIds, uploadRoot = mediaUploadRoot() } = {}) {
@@ -242,6 +43,7 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
       return undefined;
     }
 
+    await validatePhotoContextTarget(client, headstoneId, metadata, actorUser);
     const assetId = randomUUID();
     const extension = fileExtension(file.contentType, file.originalFilename);
     const storageKey = `${assetId}${extension}`;
@@ -342,6 +144,7 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
       [assetId, headstone.id, cleanText(metadata.notes, 4000) || null, actorUser?.id ?? null, actorUser?.subject ?? null, actorUser?.email ?? null],
     );
 
+    if (metadata.inspectionId || metadata.maintenanceRecordId) await upsertPhotoContext(client, headstoneId, assetId, metadata);
     await stagedFile.publish();
     commitAttempted = true;
     await client.query("COMMIT");

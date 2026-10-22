@@ -1,3 +1,4 @@
+import { insertMonumentInspections, updateMonumentInspections, assertInspectionEditor, inspectionFieldsChanged } from "./monumentInspections.mjs";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 import { validateFaceReferences, validateMarkerFaces, validateFacesRevision } from "./markerFaces.mjs";
 import { withAuditContext } from "./auditContext.mjs";
@@ -16,6 +17,15 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(existing.cemetery_id)) {
       return rollback(undefined);
     }
+
+    if (headstone.inspectionChangesOnly || headstone.newInspections?.length || headstone.updatedInspections?.length) assertInspectionEditor(actorUser);
+    if (headstone.inspectionChangesOnly) {
+      await insertMonumentInspections(client, id, headstone.newInspections);
+      await updateMonumentInspections(client, id, headstone.updatedInspections);
+      return toHeadstone(await selectHeadstoneById(client, id));
+    }
+
+    if (actorUser && !["admin", "cemetery-admin"].includes(actorUser.role) && inspectionFieldsChanged(existing, headstone)) assertInspectionEditor(actorUser);
 
     if (headstone.faces === undefined && existing.faces?.length > 1
         && (headstone.inscription || null) !== existing.inscription) {
@@ -75,6 +85,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       reviewedBy,
       headstone.faces === undefined ? null : JSON.stringify(headstone.faces),
       headstone.inscriptionStatus ?? null,
+      headstone.currentLegibility ?? null,
+      headstone.historicalTranscriptions === undefined ? null : JSON.stringify(headstone.historicalTranscriptions),
     );
 
     const updateResult = await client.query(
@@ -92,6 +104,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
             faces = COALESCE($22::jsonb, faces),
             inscription = CASE WHEN $22::jsonb IS NULL THEN $10 ELSE inscription END,
             inscription_status = CASE WHEN $22::jsonb IS NULL THEN COALESCE($23, inscription_status) ELSE inscription_status END,
+            current_legibility = CASE WHEN $22::jsonb IS NULL THEN COALESCE($24, current_legibility) ELSE current_legibility END,
+            historical_transcriptions = COALESCE($25::jsonb, historical_transcriptions),
             design_notes = $11,
             back_description = $12,
             photo_url = $13,
@@ -123,6 +137,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           condition_notes,
           inscription,
           inscription_status,
+          current_legibility,
+          historical_transcriptions,
           faces,
           faces_revision,
           design_notes,
@@ -243,6 +259,8 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       newValues: updatedState,
       reason,
     });
+    await insertMonumentInspections(client, id, headstone.newInspections);
+    await updateMonumentInspections(client, id, headstone.updatedInspections);
     const updated = await selectHeadstoneById(client, id);
 
     return { ...toHeadstone(updated), auditEventId, burialNhgPropagation };
@@ -275,6 +293,8 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           condition_notes,
           inscription,
           inscription_status,
+          current_legibility,
+          historical_transcriptions,
           design_notes,
           back_description,
           photo_url,
@@ -303,6 +323,8 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           NULLIF($8, ''),
           NULLIF($9, ''),
           $22,
+          COALESCE($23, 'unknown'),
+          COALESCE($24::jsonb, '[]'::jsonb),
           NULLIF($10, ''),
           NULLIF($11, ''),
           NULLIF($12, ''),
@@ -347,6 +369,8 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
         headstone.provenanceVerifiedAt || "",
         headstone.markerScopeId,
         headstone.inscriptionStatus ?? null,
+        headstone.currentLegibility ?? null,
+        headstone.historicalTranscriptions === undefined ? null : JSON.stringify(headstone.historicalTranscriptions),
       ],
     );
     const headstoneUuid = insertResult.rows[0].id;
@@ -378,6 +402,8 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
       [headstoneUuid, grave.uuid, headstone.relationshipType || "secondary", headstone.relationshipNotes || ""],
     );
 
+    if (headstone.newInspections?.length || headstone.updatedInspections?.length) assertInspectionEditor(actorUser);
+    await insertMonumentInspections(client, headstoneUuid, headstone.newInspections);
     const created = await selectHeadstoneById(client, headstoneUuid);
 
     return toHeadstone(created);

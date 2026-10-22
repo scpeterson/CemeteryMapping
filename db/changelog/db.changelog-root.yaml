@@ -1431,6 +1431,12 @@ databaseChangeLog:
       file: changes/478-inscription-status.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/479-legibility-and-historical-transcriptions.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/480-preserve-b-0561-nhg-historical-inscription.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/481-standardize-gravesite-display-labels.sql
       relativeToChangelogFile: true
   - include:
@@ -1441,4 +1447,19 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changes/484-restore-page-221-heinrich-weber.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/485-monument-inspections.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/486-editable-monument-inspections.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/487-monument-photo-contexts.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/488-inspection-photo-faces.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/489-preserve-inspection-photo-face-labels.sql
       relativeToChangelogFile: true

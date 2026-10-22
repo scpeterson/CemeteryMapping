@@ -2,4 +2,4 @@ export type InscriptionStatus = "not_recorded" | "transcribed" | "blank" | "ille
 export const inscriptionStatuses: InscriptionStatus[];
 export function inscriptionStatus(status: InscriptionStatus | undefined | null, text: unknown): InscriptionStatus;
 export function inscriptionAllowsText(status: InscriptionStatus): boolean;
-export function inscriptionMissing(status: InscriptionStatus | undefined | null, text: unknown): boolean;
+export function inscriptionMissing(status: InscriptionStatus | undefined | null, text: unknown, legibility?: string): boolean;

@@ -5,7 +5,8 @@ export function inscriptionStatus(status, text) {
 export function inscriptionAllowsText(status) {
   return status !== "blank" && status !== "illegible";
 }
-export function inscriptionMissing(status, text) {
+export function inscriptionMissing(status, text, legibility) {
+  if (["blank", "illegible"].includes(legibility)) return false;
   const resolved = inscriptionStatus(status, text);
   return resolved === "not_recorded" || (resolved === "transcribed" && !String(text ?? "").trim());
 }

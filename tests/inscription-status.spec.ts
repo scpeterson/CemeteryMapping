@@ -3,7 +3,7 @@ import { select } from "./fixtures/cemetery";
 import { marker, overviewFixture } from "./fixtures/overview";
 import type { MarkerFace } from "../src/types";
 
-test("inscription status clears text only after confirmation and locks whole-marker and face text", async ({ page }) => {
+test("current legibility archives text with source history and locks whole-marker and face text", async ({ page }) => {
   await overviewFixture(page);
   let faces: MarkerFace[] = [{ id: "11111111-1111-4111-8111-111111111112", label: "Unspecified face", inscription: "NAME\n[blank] – [illegible]", inscriptionStatus: "transcribed", notes: "", burialIds: [], mediaAssetIds: [] }];
   let revision = 0;
@@ -24,15 +24,21 @@ test("inscription status clears text only after confirmation and locks whole-mar
   await page.getByRole("tabpanel", { name: "Overview", exact: true }).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await page.getByRole("tab", { name: "Details", exact: true }).click();
   await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
-  const status = page.getByRole("combobox", { name: "Inscription status", exact: true });
+  const status = page.getByRole("combobox", { name: "Current legibility", exact: true });
   const text = page.getByRole("textbox", { name: "Inscription", exact: true });
   page.once("dialog", (dialog) => dialog.dismiss());
   await status.selectOption("blank");
   await expect(text).toHaveValue("NAME\n[blank] – [illegible]");
-  await expect(status).toHaveValue("transcribed");
+  await expect(status).toHaveValue("unknown");
   page.once("dialog", (dialog) => dialog.accept());
   await status.selectOption("blank");
   await expect(text).toHaveValue("");
+  await expect(text).toBeDisabled();
+  await expect(page.getByRole("region", { name: "Historical transcriptions", exact: true })).toContainText("NAME");
+  await page.getByRole("textbox", { name: "Historical transcription", exact: true }).fill("Earlier source reading");
+  await page.getByRole("textbox", { name: "Historical source", exact: true }).fill("NHG");
+  await expect(page.getByRole("textbox", { name: "Source year or date", exact: true })).toHaveValue("2005-10-11");
+  await page.getByRole("button", { name: "Add historical transcription", exact: true }).click();
   await expect(text).toBeDisabled();
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   await expect(page.getByRole("region", { name: "Unspecified face", exact: true })).toContainText("Inscription status: Blank");
@@ -41,15 +47,17 @@ test("inscription status clears text only after confirmation and locks whole-mar
   await page.getByRole("button", { name: "Add face", exact: true }).click();
   const second = page.getByRole("group", { name: "Face 2", exact: true });
   await second.getByLabel("Face label", { exact: true }).fill("Back");
-  await second.getByRole("combobox", { name: "Inscription status", exact: true }).selectOption("illegible");
+  await second.getByRole("combobox", { name: "Current legibility", exact: true }).selectOption("illegible");
   await expect(second.getByRole("textbox", { name: "Inscription", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   await expect(page.getByRole("region", { name: "Back", exact: true })).toContainText("Inscription status: Illegible");
   await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
-  await second.getByRole("combobox", { name: "Inscription status", exact: true }).selectOption("transcribed");
+  await second.getByRole("combobox", { name: "Current legibility", exact: true }).selectOption("partially_legible");
   const partial = "  NAME\n[blank] – 1980\n[illegible lines]  ";
   await second.getByRole("textbox", { name: "Inscription", exact: true }).fill(partial);
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   expect(faces[1].inscription).toBe(partial);
   expect(faces[1].inscriptionStatus).toBe("transcribed");
+  expect(faces[0].historicalTranscriptions?.some((entry) => entry.source === "NHG" && entry.sourceDate === "2005-10-11")).toBe(true);
+  expect(faces[0].historicalTranscriptions?.[0].text).toBe("NAME\n[blank] – [illegible]");
 });

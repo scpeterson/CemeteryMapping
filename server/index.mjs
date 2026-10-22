@@ -55,7 +55,7 @@ import {
   updateDeedInvestigationCase,
 } from "./deedInvestigationCaseRepository.mjs";
 import { createLookupRecord, listLookupRecords, updateLookupRecord } from "./lookupAdminRepository.mjs";
-import { createGraveSpacePhoto, createHeadstonePhoto, mediaUploadRoot, moveMediaAssetLink, softDeleteMediaAsset } from "./mediaRepository.mjs";
+import { createHeadstonePhoto, mediaUploadRoot, moveMediaAssetLink, softDeleteMediaAsset } from "./mediaRepository.mjs";
 import {
   deleteNorthHillsOcrEvidenceLink,
   listNorthHillsOcrReview,
@@ -122,8 +122,8 @@ export function createApp(config, pool) {
   });
 
   registerMediaRoutes(app, {
-    assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto, createHeadstonePhoto, express,
-    moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
+    assignedEditableCemeteryIds, canEditCemetery, createHeadstonePhoto, express,
+    moveMediaAssetLink, pool, requireReader, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   });
 
   registerAdminRoutes(app, {

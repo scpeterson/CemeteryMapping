@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { marker } from "./fixtures/overview";
 import { detail, fixture, gravePath, select } from "./fixtures/cemetery";
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jJ1kAAAAASUVORK5CYII=", "base64");
 test("gallery defers protected thumbnails until visible and originals until opened", async ({ page }) => {
@@ -9,7 +10,7 @@ test("gallery defers protected thumbnails until visible and originals until open
     downloads.push(new URL(route.request().url()).pathname);
     await route.fulfill({ contentType: "image/png", body: png });
   });
-  await page.route(gravePath("A-TEST"), (route) => route.fulfill({ json: { ...detail("A-TEST"), mediaAssets: [{ id: "photo", assetType: "photo", fileUrl: "/media/original.png", thumbnailUrl: "/media/thumbnail.png", notes: "Deferred photo" }] } }));
+  await page.route(gravePath("A-TEST"), (route) => route.fulfill({ json: { ...detail("A-TEST"), headstones: [{ ...marker, mediaAssets: [{ id: "photo", assetType: "photo", fileUrl: "/media/original.png", thumbnailUrl: "/media/thumbnail.png", notes: "Deferred photo" }] }] } }));
   await page.goto("/");
   await page.evaluate(async () => {
     const api = await import("/src/api/apiClient.ts");
@@ -25,6 +26,7 @@ test("gallery defers protected thumbnails until visible and originals until open
   });
   await select(page, "A-TEST");
   await page.getByRole("tab", { name: "Monuments and photos" }).click();
+  await page.locator(".all-monument-photos > summary").click();
   await expect(page.locator(".media-gallery-item")).toBeVisible();
   // The overview may load its thumbnail, but no gallery download or original may start.
   const before = downloads.length;

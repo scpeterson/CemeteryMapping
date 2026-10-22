@@ -562,8 +562,84 @@ ORDER BY source_row_number;
 
 Blank and Illegible require empty inscription text, enforced by the editor, API validation, and database trigger. Transcribed can contain partial placeholders such as `[blank]`, `[illegible]`, and `[illegible lines]`. Migration 478 converts only whole-field `[blank]` and `[illegible]` tokens (ignoring case and surrounding whitespace), preserving partial text, line breaks, face IDs, and associations. The missing-inscriptions report flags Not recorded and empty Transcribed entries; it accepts Blank and Illegible without text.
 
+### Current legibility and historical readings
+
+Migration 479 separates `current_legibility` (unknown, legible, partially_legible, blank, illegible) from current transcription and adds `historical_transcriptions`. Faces use `currentLegibility` and `historicalTranscriptions`. Historical readings include an ID, exact text, source, and optional source year/date; an unknown date stays empty. Existing transcriptions do not imply current legibility. Blank/Illegible continue to prohibit current text.
+
+Changing a surface to Blank/Illegible preserves its prior text in history. Database synchronization retains historical readings when older clients omit them or a face is removed. Historical records are append-only: corrections are added as new readings. Face history is also retained at the monument level, with duplicate IDs counted once. Missing-inscription reporting accepts documented current Blank/Illegible conditions and reports historical availability separately; historical text alone does not resolve an unrecorded current inscription.
+
+Migration 480 preserves the existing B-0561 transcription as NHG 2005 evidence based on the cemetery administrator's attribution, marks it currently illegible, and retains its map location and previous inspection date. It deliberately does not use the rejected OCR link to another person's marker or invent an exact reading/observation date.
+
 ## Gravesite display labels and aliases
 
 Migration 481 uses `display_label` for section-plus-grave labels, retaining suffixes and leading zeros. Where that label would collide within a cemetery, the existing lot-qualified label remains. Active display labels are unique per cemetery. `label_aliases` preserves former labels for both API search and local map fallback search; later section, lot, or grave changes retain prior labels automatically.
 
 Grave numbers, imported `gravesite_id` values, UUIDs, geometry, and lot/ownership/burial/marker relationships are unchanged. Lot information remains separately available through location details. The administrator-supplied former label `C-52-0270` is retained as an alias of Trinity `C-0270`, alongside the current DEV lot-qualified label `C-23-0270`.
+
+### Monument inspections
+
+Migration 485 adds `monument_inspections`, a one-to-many observation history per
+monument. Each row groups date (or year when the exact date is unknown), condition,
+condition notes, inscription, source, and optional face/source-entry evidence.
+The marker detail view includes an inspection dropdown, ordered newest first,
+with only the selected condition, inscription, source, and notes displayed.
+Cemetery admins and global admins can add and edit inspections directly there.
+New inspections copy the selected inscription verbatim, including whitespace,
+for review or saving as-is. Inspection saves are independent of marker edits. Existing condition/date/face controls maintain the field
+assessment for that date, while a later date preserves the previous visit.
+
+Existing administrator assessments are retained as field inspections. Missing
+exact dates retain just 2026, as confirmed by the administrator, without inventing
+a day. NHG observations always use October 11, 2005, the agreed shared date for the
+September 26, 2003 and October 11, 2005 surveys. Linked NHG descriptors supply
+conditions independently of field assessments; absent or conflicting conditions
+remain Unknown. Duplicate source batches contribute one NHG inspection per marker.
+NHG inclusion without a confirmed reading still gets an Unknown source observation.
+Confirmed source links and OCR repairs refresh that derived observation. Removing
+all NHG evidence and inclusion removes the derived row, retaining the audit trail.
+
+Historical transcriptions and their face associations remain intact. Existing NHG
+source dates receive a forward correction to `2005-10-11`; previously unknown-source
+readings remain separate evidence rather than being assigned an invented inspection.
+Newer markers without NHG evidence or inclusion receive only field inspections.
+
+Migration 486 protects manually corrected observations from automatic source or
+legacy field refreshes. Inspection updates check their `updated_at` version to
+prevent lost edits, preserve the audit trail, and enforce the cemetery assignment
+and cemetery-admin minimum role on the server as well as in the UI. NHG dates
+remain fixed to October 11, 2005. Existing year-only field observations can be
+edited without inventing a precise date. Face and transcription evidence remains
+available in a collapsed detail section so it does not crowd the inspection view.
+
+
+### Photos documenting inspections and maintenance
+
+Migration 487 introduces `monument_photo_contexts`, connecting existing monument
+media to exactly one inspection or monument maintenance action per link. Multiple
+links can reuse one media asset without copying the file. Optional phases are
+unspecified, before, during, and after. Unlinking soft-deletes only the association,
+with an audit trail; it does not delete the image or other associations.
+
+The administrator attributes every existing monument photo to a 2026 field
+inspection. The migration requires one for every affected monument and backfills
+those associations without changing inspection values or timestamps. When more
+than one 2026 field inspection exists, capture-date matches take precedence,
+followed by nearest known date and a stable date/creation/UUID order. NHG gets no
+photos and newly created inspections receive no copied links.
+
+Database validation requires an active monument photo and a record belonging to
+the same monument. API mutations enforce cemetery edit scope; inspection photo
+changes require cemetery-admin or admin, while maintenance photo changes follow
+maintenance editing permissions. Uploads validate the target before staging files
+and insert the context link in the upload transaction. GET/PUT/DELETE routes under
+`/api/headstones/:id/photo-contexts` support authenticated viewing and audited
+association updates. The legacy media records and capture dates are preserved.
+
+Migrations 488 and 489 add optional observation-specific face labels to photo links
+and preserve unambiguous 2026 face assignments from inspection snapshots. Existing
+inspection dates, readings, and photo files are unchanged. Face readings are saved
+in the existing inspection faces JSON; new inspections never inherit media IDs.
+
+Schema rollback of 485, 487 and 488 removes the new inspection tables, record photo
+links and face labels in dependency order. It does not delete media files. Take a
+backup before a schema rollback; prefer forward corrections for operational data.

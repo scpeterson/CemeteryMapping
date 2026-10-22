@@ -2,27 +2,37 @@ import { expect, test } from "@playwright/test";
 import { overviewFixture } from "./fixtures/overview";
 import { select } from "./fixtures/cemetery";
 
-for (const target of ["marker", "gravesite"] as const) {
-  test(`multiple ${target} photos continue after failure and retry only failed files`, async ({ page }) => {
+for (const target of ["gravesite panel", "monument panel"] as const) {
+  test(`multiple monument photos from ${target} continue after failure and retry only failed files`, async ({ page }) => {
     await overviewFixture(page);
     await page.route("**/api/me", route => route.fulfill({ json: { role: "admin", assignedCemeteryIds: [], permissions: { canManageUsers: true, canOpenAdminPanel: true, canUpdateHeadstones: true, canUpdateGravesites: true } } }));
     const uploaded: string[] = [];
     let fail = true;
-    await page.route("**/api/cemeteries/*/grave-spaces/*/media-assets?**", route => {
+    await page.route("**/api/headstones/marker-1/media-assets?**", route => {
       const params = new URL(route.request().url()).searchParams;
       const name = params.get("filename")!;
       uploaded.push(name);
       expect(params.get("notes")).toBe("Field photos");
       expect(params.get("capturedAt")).toBe("2026-10-15");
-      expect(params.get("headstoneId")).toBe(target === "marker" ? "marker-1" : null);
+      expect(new URL(route.request().url()).pathname).toBe("/api/headstones/marker-1/media-assets");
       if (name === "second.png" && fail) return route.fulfill({ status: 500, json: { error: "Temporary upload failure" } });
       return route.fulfill({ json: { id: name, assetType: "photo", fileUrl: `/media/${name}` } });
     });
     await page.goto("/");
     await select(page, "A-TEST");
-    await page.getByRole("tab", { name: "Monuments and photos" }).click();
-    const forms = page.locator(".photo-upload-form");
-    const form = target === "marker" ? forms.first() : forms.last();
+    if (target === "monument panel") {
+      await page.getByRole("tabpanel", { name: "Overview", exact: true }).getByRole("button", { name: /HS-OVERVIEW/ }).click();
+      await page.getByRole("tab", { name: "Details", exact: true }).click();
+    } else {
+      await page.getByRole("tab", { name: "Monuments and photos" }).click();
+    }
+    await expect(page.getByRole("heading", { name: "Gravesite Photos", exact: true })).toHaveCount(0);
+    await page.locator(".all-monument-photos > summary").click();
+    const forms = page.locator(".all-monument-photos .photo-upload-form");
+    await expect(forms).toHaveCount(1);
+    const form = forms.first();
+    await expect(form).toContainText("Linked monument");
+    await expect(form).not.toContainText("Gravesite overview");
     const fileInput = form.locator('input[type="file"]');
     await expect(fileInput).toHaveAttribute("multiple", "");
     await fileInput.setInputFiles(["first.png", "second.png", "third.png"].map(name => ({ name, mimeType: "image/png", buffer: Buffer.from("photo") })));

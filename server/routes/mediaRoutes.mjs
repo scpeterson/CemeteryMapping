@@ -1,12 +1,25 @@
+import { listPhotoContexts, savePhotoContext, validatePhotoContext } from '../monumentPhotoContexts.mjs';
 import { optionalText, validateUuid } from "../inputValidation.mjs";
-import { BadRequestError, validateCemeteryId, validateGraveSpaceId, validateMutationReason } from "../requestValidation.mjs";
+import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
 import { validateMediaUploadMetadata } from "./mediaRouteValidation.mjs";
 
 export function registerMediaRoutes(app, context) {
   const {
-    assignedEditableCemeteryIds, canEditCemetery, createGraveSpacePhoto, createHeadstonePhoto,
-    express, moveMediaAssetLink, pool, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
+    assignedEditableCemeteryIds, createHeadstonePhoto,
+    express, moveMediaAssetLink, pool, requireReader, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   } = context;
+    app.get('/api/headstones/:id/photo-contexts',requireReader,async(request,response,next)=>{
+      try {response.json(await listPhotoContexts(pool,validateUuid(request.params.id,'Monument')));} catch(error){next(error);}
+    });
+    for(const method of ['put','delete']) app[method]('/api/headstones/:id/photo-contexts/:mediaId',requirePowerUser,async(request,response,next)=>{
+      try {
+        const result=await savePhotoContext(pool,validateUuid(request.params.id,'Monument'),validateUuid(request.params.mediaId,'Photo'),validatePhotoContext(request.body),{
+          actorUser:request.user,allowedCemeteryIds:request.user.role==='admin'?undefined:assignedEditableCemeteryIds(request.user),remove:method==='delete',
+        });
+        if(!result) return response.status(404).json({error:'Monument not found'});
+        response.json(result);
+      }catch(error){next(error);}
+    });
     app.post(
       "/api/headstones/:id/media-assets",
       requirePowerUser,
@@ -45,50 +58,11 @@ export function registerMediaRoutes(app, context) {
       },
     );
   
-    app.post(
-      "/api/cemeteries/:cemeteryId/grave-spaces/:id/media-assets",
-      requirePowerUser,
-      express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"], limit: "25mb" }),
-      async (request, response, next) => {
-        try {
-          const cemeteryId = validateCemeteryId(request.params.cemeteryId);
-          if (!canEditCemetery(request.user, cemeteryId)) {
-            response.status(403).json({ error: "Forbidden" });
-            return;
-          }
-          const id = validateGraveSpaceId(request.params.id);
-          const metadata = validateMediaUploadMetadata(request.query);
-          const created = await createGraveSpacePhoto(
-            pool,
-            cemeteryId,
-            id,
-            {
-              bytes: request.body,
-              contentType: request.headers["content-type"],
-              originalFilename: metadata.originalFilename,
-            },
-            metadata,
-            {
-              uploadRoot,
-              actorUser: request.user,
-              allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
-            },
-          );
-          if (!created) {
-            response.status(404).json({ error: "Grave space or headstone not found" });
-            return;
-          }
-          response.status(201).json(created);
-        } catch (error) {
-          if (error.message === "Unsupported photo type." || error.message === "Photo file is required.") {
-            response.status(400).json({ error: error.message });
-            return;
-          }
-          next(error);
-        }
-      },
-    );
-  
+    // Retired collection endpoint: no files or new gravesite links are created.
+    app.post("/api/cemeteries/:cemeteryId/grave-spaces/:id/media-assets", requirePowerUser, (_request, response) => {
+      response.status(410).json({ error: "Photos must be attached to a monument. Use the monument photo upload form." });
+    });
+
     app.delete("/api/media-assets/:id", requireCemeteryAdmin, async (request, response, next) => {
       try {
         const id = validateUuid(request.params.id, "Media asset id");

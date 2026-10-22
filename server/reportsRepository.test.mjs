@@ -486,3 +486,17 @@ test("missing inscriptions report accepts explicit Blank/Illegible and flags inc
   assert.deepEqual(result.rows.map((row) => row.marker_uuid), ["empty-transcribed", "missing-face"]);
   assert.equal(result.rows[1].missing_faces, "Back (face 2)");
 });
+
+test("inscription report distinguishes currently illegible surfaces from missing data and reports historical availability", async () => {
+  const history = [{ id: "old", text: "Historical text", source: "NHG", sourceDate: "2005" }];
+  const pool = poolForRows([{ includes: "WITH active_cemeteries", rows: [
+    { marker_uuid: "root-documented", faces: [], inscription_status: "not_recorded", current_legibility: "illegible", historical_transcriptions: history },
+    { marker_uuid: "face-documented", faces: [{ inscription: "", inscriptionStatus: "not_recorded", currentLegibility: "illegible", historicalTranscriptions: history }] },
+    { marker_uuid: "unassessed", faces: [], inscription: "", inscription_status: "not_recorded", current_legibility: "unknown", historical_transcriptions: history },
+    { marker_uuid: "partial", faces: [{ inscription: "NAME\n[illegible lines]", inscriptionStatus: "transcribed", currentLegibility: "partially_legible" }] },
+  ] }]);
+  const result = await runReport(pool, "missing-monument-inscriptions", {}, adminUser);
+  assert.deepEqual(result.rows.map((r) => r.marker_uuid), ["unassessed"]);
+  assert.equal(result.rows[0].historical_count, 1);
+  assert.equal(result.rows[0].current_legibility, "Not assessed");
+});

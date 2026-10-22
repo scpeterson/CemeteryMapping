@@ -1,4 +1,5 @@
-import { validateMarkerFaces, validateFacesRevision, validateInscriptionStatus } from "../markerFaces.mjs";
+import { validateNewInspections } from "../monumentInspections.mjs";
+import { validateMarkerFaces, validateFacesRevision, validateInscriptionStatus, validateCurrentLegibility, validateHistoricalTranscriptions } from "../markerFaces.mjs";
 import { optionalCoordinate, optionalText, requiredText, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
 import { optionalBoolean, optionalDate, optionalRecordedDate, validateDataConfidence, validateReviewStatus } from "./routeValidationHelpers.mjs";
@@ -40,12 +41,17 @@ export function validateHeadstonePayload(body) {
 
   return {
     ...(body?.faces === undefined ? {} : { faces: validateMarkerFaces(body.faces), facesRevision: validateFacesRevision(body.facesRevision) }),
+    inspectionChangesOnly: optionalBoolean(body?.inspectionChangesOnly, "Inspection changes only"),
+    ...(body?.updatedInspections === undefined ? {} : { updatedInspections: validateNewInspections(body.updatedInspections, { updating: true }) }),
+    ...(body?.newInspections === undefined ? {} : { newInspections: validateNewInspections(body.newInspections) }),
     markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
     markerScopeId: validateUuid(body?.markerScopeId, "Marker scope"),
     materialId: validateUuid(body?.materialId, "Marker material"),
     conditionId: validateUuid(body?.conditionId, "Condition"),
     conditionNotes: optionalText(body?.conditionNotes, "Condition notes", 4000),
     ...(body?.faces === undefined && body?.inscriptionStatus !== undefined ? { inscriptionStatus: validateInscriptionStatus(body.inscriptionStatus, body.inscription) } : {}),
+    ...(body?.faces === undefined && body?.currentLegibility !== undefined ? { currentLegibility: validateCurrentLegibility(body.currentLegibility, body.inscription) } : {}),
+    ...(body?.historicalTranscriptions === undefined ? {} : { historicalTranscriptions: validateHistoricalTranscriptions(body.historicalTranscriptions) }),
     inscription: body?.faces === undefined ? optionalText(body?.inscription, "Inscription", 20_000) : null,
     designNotes: optionalText(body?.designNotes, "Design notes", 20_000),
     backDescription: optionalText(body?.backDescription, "Back description", 20_000),

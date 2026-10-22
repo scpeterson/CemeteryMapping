@@ -227,7 +227,7 @@ export function CreateHeadstoneForm({
           {isPickingMarkerPoint ? "Click map to place marker" : "Pick point on map"}
         </button>
       </div>
-      <InscriptionFields text={form.inscription} status={form.inscriptionStatus} rows={3} disabled={isSaving}
+      <InscriptionFields text={form.inscription} status={form.inscriptionStatus} currentLegibility={form.currentLegibility} historicalTranscriptions={form.historicalTranscriptions} rows={3} disabled={isSaving}
         onChange={(value) => setForm((current) => ({ ...current, ...value }))} />
       <label className="headstone-wide-field">
         Relationship notes

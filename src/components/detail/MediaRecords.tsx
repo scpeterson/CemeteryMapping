@@ -123,18 +123,16 @@ export function MediaGallery({
 }
 
 export function PhotoUploadForm({
-  headstones,
   fixedHeadstone,
-  gravesiteOnly = false,
+  photoContext,
   onUpload,
 }: {
-  headstones: Headstone[];
-  fixedHeadstone?: Headstone;
-  gravesiteOnly?: boolean;
-  onUpload: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  fixedHeadstone: Headstone;
+  photoContext?: { inspectionId?: string; maintenanceRecordId?: string; faceId?: string };
+  onUpload: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string; inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" }) => Promise<void>;
 }) {
+  const [phase, setPhase] = useState<"unspecified" | "before" | "during" | "after">("unspecified");
   const [files, setFiles] = useState<File[]>([]);
-  const [headstoneId, setHeadstoneId] = useState(fixedHeadstone?.id ?? "");
   const [capturedAt, setCapturedAt] = useState("");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -168,7 +166,7 @@ export function PhotoUploadForm({
         setResults([...nextResults]);
         setMessage(`Uploading ${index + 1} of ${queue.length}…`);
         try {
-          await onUpload({ file, headstoneId: fixedHeadstone?.id ?? (headstoneId || undefined), notes, capturedAt: capturedAt || undefined });
+          await onUpload({ file, ...photoContext, phase, headstoneId: fixedHeadstone.id, notes, capturedAt: capturedAt || undefined });
           nextResults[index] = { name: file.name, status: "Uploaded" };
         } catch (uploadError) {
           failed.push(file);
@@ -183,7 +181,6 @@ export function PhotoUploadForm({
       if (failed.length) {
         setError(`${failed.length} photo${failed.length === 1 ? "" : "s"} failed. Retry uploads only the failed photos.`);
       } else {
-        setHeadstoneId(fixedHeadstone?.id ?? "");
         setCapturedAt("");
         setNotes("");
       }
@@ -199,29 +196,13 @@ export function PhotoUploadForm({
         Photo
         <input ref={fileInput} type="file" accept="image/*" multiple disabled={isSaving} onChange={chooseFile} />
       </label>
-      {fixedHeadstone ? (
-        <div className="photo-upload-linked-marker">
-          <span>Linked marker</span>
-          <strong>{fixedHeadstone.headstoneId}</strong>
-        </div>
-      ) : gravesiteOnly ? (
-        <div className="photo-upload-linked-marker">
-          <span>Linked record</span>
-          <strong>Gravesite overview</strong>
-        </div>
-      ) : (
-        <label>
-          Link marker
-          <select disabled={isSaving} value={headstoneId} onChange={(event) => setHeadstoneId(event.target.value)}>
-            <option value="">Gravesite overview</option>
-            {headstones.map((headstone) => (
-              <option key={headstone.id} value={headstone.id}>
-                {headstone.headstoneId}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+      <div className="photo-upload-linked-marker">
+        <span>Linked monument</span>
+        <strong>{fixedHeadstone.headstoneId}</strong>
+      </div>
+      {photoContext ? <label>Photo phase<select value={phase} disabled={isSaving} onChange={(event) => setPhase(event.target.value as typeof phase)}>
+        <option value="unspecified">Not specified</option><option value="before">Before</option><option value="during">During</option><option value="after">After</option>
+      </select></label> : null}
       <label>
         Date taken
         <input type="date" disabled={isSaving} value={capturedAt} onChange={(event) => setCapturedAt(event.target.value)} />

@@ -1,3 +1,4 @@
+import { validatePhotoContext } from '../monumentPhotoContexts.mjs';
 import { optionalText, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError } from "../requestValidation.mjs";
 
@@ -5,6 +6,7 @@ export function validateMediaUploadMetadata(query) {
   const source = optionalText(query?.source, "Photo source", 50) || "field_upload";
   if (!["iphone", "admin_upload", "field_upload", "import", "other"].includes(source)) throw new BadRequestError("Photo source is invalid.");
   return {
+    ...(query?.inspectionId || query?.maintenanceRecordId ? validatePhotoContext(query) : {}),
     originalFilename: optionalText(query?.filename, "Filename", 255),
     headstoneId: query?.headstoneId ? validateUuid(query.headstoneId, "Headstone id") : "",
     notes: optionalText(query?.notes, "Photo notes", 4000),

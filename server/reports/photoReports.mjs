@@ -90,7 +90,7 @@ export async function runMonumentPhotoExceptions(client, definition, parameters,
     ], rows,
     notes: [
       `${count(exceptions.filter((r) => r.issue_code === "missing-photo"))} monuments have no photo; ${count(exceptions.filter((r) => r.issue_code === "missing-primary"))} have photos but no Primary.`,
-      "Only active linked monument photos count. Gravesite photos, documents, deleted media, and unlinked or review-only media do not count.",
+      "Only active linked monument photos count. Documents, deleted media, and media without an active monument link do not count.",
       "Legacy monument photo URLs count as photos but cannot supply a Primary flag.",
       "Standalone markers use their map location. A marker spanning sections is listed once per section; totals count distinct monuments.",
     ],

@@ -1,4 +1,5 @@
 import { reportMonumentRecord } from "./monumentNavigation.mjs";
+import { legibilityLabels } from "../../shared/inscriptionHistory.mjs";
 import { inscriptionMissing } from "../../shared/inscriptionStatus.mjs";
 import { reportResult, scopedWhere } from "./shared.mjs";
 
@@ -34,7 +35,7 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
       ST_AsGeoJSON(h.geometry)::json geometry,
       (SELECT gravesite_id FROM gravesites WHERE id=min(loc.grave_uuid::text)::uuid) gravesite_id,
       string_agg(DISTINCT loc.grave_label, ', ' ORDER BY loc.grave_label) gravesites,
-      marker_types.label marker_type, marker_scope_types.label marker_scope, h.inscription, h.inscription_status, h.faces,
+      marker_types.label marker_type, marker_scope_types.label marker_scope, h.inscription, h.inscription_status, h.current_legibility, h.historical_transcriptions, h.faces,
       (SELECT string_agg(DISTINCT COALESCE(NULLIF(b.display_name,''),NULLIF(b.full_name,''),concat_ws(' ',b.first_name,b.last_name)), '; ')
        FROM headstone_burials hb JOIN burials b ON b.id=hb.burial_uuid AND b.deleted_at IS NULL
        WHERE hb.headstone_uuid=h.id AND hb.deleted_at IS NULL) names
@@ -49,10 +50,12 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
   const rows = result.rows.flatMap((row) => {
     const faces = Array.isArray(row.faces) ? row.faces : [];
     const missingFaces = faces.map((face, index) => ({ face, index }))
-      .filter(({ face }) => inscriptionMissing(face.inscriptionStatus, face.inscription));
-    if (faces.length ? !missingFaces.length : !inscriptionMissing(row.inscription_status, row.inscription)) return [];
+      .filter(({ face }) => inscriptionMissing(face.inscriptionStatus, face.inscription, face.currentLegibility));
+    if (faces.length ? !missingFaces.length : !inscriptionMissing(row.inscription_status, row.inscription, row.current_legibility)) return [];
     return [{
-      ...row, monumentRecord: reportMonumentRecord(row), gravesites: row.gravesites || "Standalone marker", face_count: faces.length,
+      ...row, monumentRecord: reportMonumentRecord(row), current_legibility: legibilityLabels[row.current_legibility] ?? "Not assessed",
+      historical_count: new Set([...(row.historical_transcriptions ?? []), ...faces.flatMap((face) => face.historicalTranscriptions ?? [])].map((entry) => entry.id)).size,
+      gravesites: row.gravesites || "Standalone marker", face_count: faces.length,
       missing_faces: missingFaces.map(({ face, index }) => `${face.label || "Unnamed face"} (face ${index + 1})`).join("; "),
       issue: faces.length ? "Face inscription missing" : "Monument inscription missing (no faces)",
     }];
@@ -65,13 +68,14 @@ export async function runMissingMonumentInscriptions(client, definition, _parame
       { key: "cemetery", label: "Cemetery" }, { key: "section", label: "Section" },
       { key: "monument", label: "Monument ID" }, { key: "gravesites", label: "Gravesite(s)" },
       { key: "marker_type", label: "Marker type" }, { key: "marker_scope", label: "Marker scope" },
-      { key: "names", label: "Associated names" }, { key: "face_count", label: "Face count" },
+      { key: "names", label: "Associated names" },
+      { key: "current_legibility", label: "Current legibility" }, { key: "historical_count", label: "Historical transcriptions available" }, { key: "face_count", label: "Face count" },
       { key: "missing_faces", label: "Faces needing inscription data" },
       { key: "inscription", label: "Existing monument inscription" }, { key: "issue", label: "Issue" },
     ], rows,
     notes: [
       "Faces are checked individually. Monuments without faces use their monument inscription status.",
-      "Blank and Illegible statuses are valid without text. Not recorded, or Transcribed with empty text, needs data. Partial transcriptions including [blank] and [illegible] remain valid.",
+      "Currently Blank and Illegible surfaces are documented without current text. Historical transcriptions are retained separately and do not imply current readability. Not recorded, or Transcribed with empty text, needs data. Partial transcriptions including [blank] and [illegible] remain valid.",
       "Includes plot markers and standalone markers. Standalone markers use their map location. Deleted records are excluded.",
       "A monument spanning sections is listed once per section; totals count distinct monuments.",
     ],

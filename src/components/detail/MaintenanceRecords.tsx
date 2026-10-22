@@ -1,3 +1,5 @@
+import { RecordPhotos } from "./RecordPhotos";
+import type { ComponentProps } from "react";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useId } from "react";
 import { useDraftState } from "../../hooks/useDraftState";
@@ -47,8 +49,10 @@ export function MaintenanceRecordList({
   fixedHeadstone,
   lookups,
   onUpdate,
+  onUploadPhoto,
 }: {
   records: MaintenanceRecord[];
+  onUploadPhoto?: ComponentProps<typeof RecordPhotos>["onUpload"];
   canUpdate?: boolean;
   grave?: GraveSpace;
   fixedHeadstone?: Headstone;
@@ -61,6 +65,7 @@ export function MaintenanceRecordList({
   return (
     <div className="maintenance-list">
       {records.map((record) => {
+        const monument = fixedHeadstone?.id === record.headstoneUuid ? fixedHeadstone : grave?.headstones.find(marker => marker.id === record.headstoneUuid);
         const title = [record.issueType?.label, record.actionType?.label].filter(Boolean).join(" / ");
         const dateParts = [`Observed ${formatDate(record.observedAt)}`];
         if (record.completedAt) dateParts.push(`Completed ${formatDate(record.completedAt)}`);
@@ -99,6 +104,7 @@ export function MaintenanceRecordList({
             </div>
             {record.performedBy ? <p>By {record.performedBy}</p> : null}
             {record.notes ? <p>{record.notes}</p> : null}
+            {monument ? <RecordPhotos headstone={monument} maintenanceRecordId={record.id} canUpdate={canUpdate} onUpload={onUploadPhoto} /> : null}
           </article>
         );
       })}

@@ -1,3 +1,4 @@
+import { MonumentInspections } from "./MonumentInspections";
 import { editableMarkerFaces, isEmptyNewMarkerFace } from "../../lib/markerFaces";
 import { MarkerFacesEditor, MarkerFacesView } from "./MarkerFaces";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
@@ -63,6 +64,7 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
   const isTrinity = cemeteryName === "Trinity Lutheran Church Cemetery";
 
   return {
+    newInspections: [],
     markerTypeId,
     markerScopeId: headstone.markerScope.id,
     materialId: headstone.material.id,
@@ -73,6 +75,8 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
     vaseNotes: headstone.vaseNotes ?? "",
     conditionNotes: headstone.conditionNotes ?? "",
     inscription: headstone.inscription ?? "",
+    currentLegibility: headstone.currentLegibility,
+    historicalTranscriptions: headstone.historicalTranscriptions,
     faces: editableMarkerFaces(headstone),
     facesRevision: headstone.facesRevision ?? 0,
     designNotes: headstone.designNotes ?? "",
@@ -95,6 +99,7 @@ export function HeadstoneRecord({
   headstone,
   lookups,
   canUpdate,
+  canEditInspections,
   onSave,
   grave,
   cemeteryName,
@@ -112,6 +117,7 @@ export function HeadstoneRecord({
   headstone: Headstone;
   lookups: HeadstoneLookups;
   canUpdate: boolean;
+  canEditInspections: boolean;
   onSave: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   grave?: GraveSpace;
   cemeteryName: string;
@@ -121,7 +127,7 @@ export function HeadstoneRecord({
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;
   canUploadPhotos: boolean;
-  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string }) => Promise<void>;
+  onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string; inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" }) => Promise<void>;
   onUpdateGraveFeature: (id: string, feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
   onDeleteGraveFeature: (id: string, reason?: string) => Promise<void>;
   canDeleteGraveFeatures: boolean;
@@ -205,7 +211,7 @@ export function HeadstoneRecord({
         </label>
         <label>
           Condition
-          <LookupSelect value={form.conditionId} onChange={(event) => setForm((current) => ({ ...current, conditionId: event.target.value }))}>
+          <LookupSelect disabled={!canEditInspections} value={form.conditionId} onChange={(event) => setForm((current) => ({ ...current, conditionId: event.target.value }))}>
             {lookups.conditions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
@@ -246,9 +252,10 @@ export function HeadstoneRecord({
             ))}
           </LookupSelect>
         </label>
+        <MonumentInspections headstone={headstone} />
         <label>
           Last inspected
-          <input type="date" value={form.lastInspectedAt} aria-invalid={error?.startsWith("Last inspected date") || undefined} aria-describedby={error?.startsWith("Last inspected date") ? errorId : undefined} onChange={(event) => setForm((current) => ({ ...current, lastInspectedAt: event.target.value }))} />
+          <input disabled={!canEditInspections} type="date" value={form.lastInspectedAt} aria-invalid={error?.startsWith("Last inspected date") || undefined} aria-describedby={error?.startsWith("Last inspected date") ? errorId : undefined} onChange={(event) => setForm((current) => ({ ...current, lastInspectedAt: event.target.value }))} />
         </label>
         <label className="headstone-wide-field">
           Vase notes
@@ -256,9 +263,9 @@ export function HeadstoneRecord({
         </label>
         <label className="headstone-wide-field">
           Condition notes
-          <textarea value={form.conditionNotes} onChange={(event) => setForm((current) => ({ ...current, conditionNotes: event.target.value }))} rows={3} />
+          <textarea disabled={!canEditInspections} value={form.conditionNotes} onChange={(event) => setForm((current) => ({ ...current, conditionNotes: event.target.value }))} rows={3} />
         </label>
-        <MarkerFacesEditor headstone={headstone} faces={form.faces ?? []} disabled={isSaving}
+        <MarkerFacesEditor headstone={headstone} faces={form.faces ?? []} disabled={isSaving || !canEditInspections}
           onChange={(faces) => setForm((current) => ({ ...current, faces }))} />
         <label className="headstone-wide-field">
           Flourishes or designs
@@ -355,8 +362,6 @@ export function HeadstoneRecord({
     );
   }
 
-  const assignedPhotoIds = new Set((headstone.faces ?? []).flatMap((face) => face.mediaAssetIds));
-  const unassignedPhotos = (headstone.mediaAssets ?? []).filter((asset) => !assignedPhotoIds.has(asset.id));
   const sharedMarker = headstone.spansMultipleGravesites || headstone.relationshipType === "spans";
   const relationshipDetails = headstoneRelationshipDetails(sharedMarker ? "spans" : headstone.relationshipType);
   const relationshipTitle = headstone.relationshipNotes ? `${relationshipDetails.description} Notes: ${headstone.relationshipNotes}` : relationshipDetails.description;
@@ -385,10 +390,10 @@ export function HeadstoneRecord({
           <dt>Material</dt>
           <dd>{headstone.material.label}</dd>
         </div>
-        <div>
+        {!headstone.inspections?.length ? <div>
           <dt>Condition</dt>
           <dd>{headstone.condition.label}</dd>
-        </div>
+        </div> : null}
         {headstone.vaseType ? (
           <div>
             <dt>Vase</dt>
@@ -407,10 +412,10 @@ export function HeadstoneRecord({
             <dd>{headstone.vasePlacement.label}</dd>
           </div>
         ) : null}
-        <div>
+        {!headstone.inspections?.length ? <div>
           <dt>Last inspected</dt>
           <dd>{formatDate(headstone.lastInspectedAt)}</dd>
-        </div>
+        </div> : null}
         <div>
           <dt>NHG inclusion</dt>
           <dd>
@@ -425,10 +430,19 @@ export function HeadstoneRecord({
         </div>
       </dl>
       {headstone.vaseNotes ? <p className="note-box">Vase: {headstone.vaseNotes}</p> : null}
-      {headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
+      {!headstone.inspections?.length && headstone.conditionNotes ? <p className="note-box">{headstone.conditionNotes}</p> : null}
       <ReviewBadgeGroup dataConfidence={headstone.dataConfidence} reviewStatus={headstone.reviewStatus} sourceConflict={headstone.sourceConflict} reviewNotes={headstone.reviewNotes} />
       {provenanceMessage ? <p className="detail-message is-success" role="status">{provenanceMessage}</p> : null}
+      <MonumentInspections headstone={headstone} conditions={lookups.conditions} onUploadPhoto={canEditInspections ? onUploadPhoto : undefined}
+        onSave={canEditInspections ? async (entry, updating) => {
+          const saved = await onSave(headstone.id, { ...blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName),
+            inspectionChangesOnly: true, newInspections: updating ? [] : [entry], updatedInspections: updating ? [entry] : [] });
+          return saved;
+        } : undefined} />
+      {headstone.inspections?.length ? <details>
+        <summary>Faces, photos, and transcription evidence</summary>
       <MarkerFacesView headstone={headstone} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
+      </details> : <MarkerFacesView headstone={headstone} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.backDescription ? <p className="note-box">Back: {headstone.backDescription}</p> : null}
       {headstone.features?.length ? (
@@ -443,10 +457,11 @@ export function HeadstoneRecord({
           onDelete={onDeleteGraveFeature}
         />
       ) : null}
-      {unassignedPhotos.length ? (
-        <MediaGallery assets={unassignedPhotos} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
-      ) : null}
-      {canUploadPhotos ? <PhotoUploadForm headstones={[headstone]} fixedHeadstone={headstone} onUpload={onUploadPhoto} /> : null}
+      <details className="all-monument-photos">
+        <summary>All monument photos ({headstone.mediaAssets?.filter(asset => asset.assetType === "photo").length ?? 0})</summary>
+        <MediaGallery assets={headstone.mediaAssets ?? []} canDelete={canDeletePhotos} onDelete={onDeletePhoto} onMove={canReorderPhotos ? onMovePhoto : undefined} />
+        {canUploadPhotos ? <PhotoUploadForm fixedHeadstone={headstone} onUpload={onUploadPhoto} /> : null}
+      </details>
       {sharedMarker || headstone.relationshipType !== "primary" || headstone.relationshipNotes ? (
         <p className="marker-relationship" title={relationshipTitle} aria-label={relationshipTitle}>
           <Info size={14} aria-hidden="true" />

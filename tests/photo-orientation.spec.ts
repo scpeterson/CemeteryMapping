@@ -33,6 +33,7 @@ for (const width of [1280, 390]) {
     await select(page, "A-TEST");
     await page.setViewportSize({ width, height: 900 });
     await page.getByRole("tab", { name: "Monuments" }).click();
+    await page.locator(".all-monument-photos > summary").click();
     const preview = page.locator(".media-gallery").first();
     await expect(preview.locator(".media-gallery-card")).toHaveCount(4);
     await preview.locator(".media-gallery-card").nth(0).scrollIntoViewIfNeeded();

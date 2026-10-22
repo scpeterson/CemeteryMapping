@@ -42,6 +42,16 @@ const headstoneDetailColumnsSql = `
   headstones.condition_notes,
   headstones.inscription,
   headstones.inscription_status,
+  headstones.current_legibility,
+  headstones.historical_transcriptions,
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id',i.id,'inspectedAt',i.inspected_at,'inspectionYear',i.inspection_year,
+    'sourceType',i.source_type,'source',i.source,'conditionId',i.condition_type_id,
+    'condition',c.label,'conditionNotes',i.condition_notes,'inscription',i.inscription,
+    'faces',i.faces,'sourceEntries',i.source_entries,'updatedAt',i.updated_at
+  ) ORDER BY i.inspection_year DESC,i.inspected_at DESC NULLS LAST,i.created_at DESC),'[]'::jsonb)
+   FROM monument_inspections i JOIN headstone_condition_types c ON c.id=i.condition_type_id
+   WHERE i.headstone_uuid=headstones.id) AS inspections,
   headstones.faces,
   headstones.faces_revision,
   headstones.design_notes,
@@ -167,6 +177,8 @@ const headstoneDetailGroupBySql = `
   headstones.condition_notes,
   headstones.inscription,
   headstones.inscription_status,
+  headstones.current_legibility,
+  headstones.historical_transcriptions,
   headstones.faces,
   headstones.faces_revision,
   headstones.design_notes,
