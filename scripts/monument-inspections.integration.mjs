@@ -1,3 +1,4 @@
+import {createInspectionFixture} from './lib/inspection-fixtures.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import pg from 'pg';
@@ -20,7 +21,9 @@ test('inspection migration separates NHG and field evidence and preserves later 
   const manual=(await c.query("SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='monument_inspections' AND column_name='manually_edited') AS exists")).rows[0].exists;
   if(!manual) await c.query(await readFile(new URL('../db/changelog/changes/486-editable-monument-inspections.sql',import.meta.url),'utf8'));
   assert.equal((await c.query("SELECT count(*)::int AS n FROM monument_inspections WHERE source_type='nhg' AND inspected_at IS DISTINCT FROM DATE '2005-10-11'")).rows[0].n,0);
-  const {rows:[marker]}=await c.query("SELECT h.* FROM headstones h JOIN monument_inspections i ON i.headstone_uuid=h.id WHERE i.source_type='nhg' AND h.deleted_at IS NULL AND jsonb_array_length(h.faces)<=1 LIMIT 1 FOR UPDATE OF h");
+  const fixture=await createInspectionFixture(c);
+  const descriptorFixture=await createInspectionFixture(c);
+  const {rows:[marker]}=await c.query("SELECT h.* FROM headstones h JOIN monument_inspections i ON i.headstone_uuid=h.id WHERE i.source_type='nhg' AND h.deleted_at IS NULL AND jsonb_array_length(h.faces)<=1 AND h.id=$1 LIMIT 1 FOR UPDATE OF h",[fixture.id]);
   assert.ok(marker,'requires a migrated NHG monument');
   const detail=toHeadstone(await selectHeadstoneById(c,marker.id));
   assert.ok(detail.inspections.some(i=>i.sourceType==='nhg' && i.inspectedAt==='2005-10-11'));
@@ -66,7 +69,7 @@ test('inspection migration separates NHG and field evidence and preserves later 
   const added=await updateHeadstone(apiPool,marker.id,inspectionPayload,{actorUser:{role:'cemetery-admin'}});
   assert.equal(added.inspections.find(i=>i.id===newInspection[0].id).inscription,'  Copied\nreading  ');
   assert.deepEqual((await c.query('SELECT inscription,condition_notes,last_inspected_at FROM headstones WHERE id=$1',[marker.id])).rows[0],physicalBefore);
-  const linked=(await c.query("SELECT h.id FROM headstones h JOIN north_hills_ocr_entry_headstone_links l ON l.headstone_uuid=h.id WHERE l.status='linked' AND h.deleted_at IS NULL AND h.id<>$1 LIMIT 1",[marker.id])).rows[0];
+  const linked={id:descriptorFixture.id};
   for(const [descriptor,code] of [['upright, exc cond','excellent'],['flat, good cond','good'],['marble, fair cond','fair'],['poor cond','poor'],['granite','unknown']]) {
    await c.query(`UPDATE north_hills_ocr_entries SET source_entry=jsonb_set(source_entry,'{descriptor}',to_jsonb($2::text))
     WHERE id IN (SELECT entry_id FROM north_hills_ocr_entry_headstone_links WHERE headstone_uuid=$1 AND status='linked')`,[linked.id,descriptor]);

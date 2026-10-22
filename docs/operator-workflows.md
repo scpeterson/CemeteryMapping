@@ -1113,7 +1113,8 @@ uploaded face labels, independent record labels, and maintenance link/unlink.
 
 Run `APP_ENV=dev npm run test:inspections:db` against the migrated development
 database (or set APP_ENV to another prepared fixture database). These tests require
-the Trinity fixture monuments and migrations through 489. All changes are rolled
+migrations through 489 and seeded demo data (or an existing cemetery with a marker).
+They create their own temporary inspection, NHG and photo fixtures. All changes are rolled
 back, including temporary inspections, photo links and audit records; uploaded
 test files are cleaned up. The safety regressions reject removal of a face with
 active photo links and reject a stale editor's save while preserving the newer

@@ -1,3 +1,4 @@
+import {createInspectionFixture} from './lib/inspection-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
@@ -23,7 +24,7 @@ test('photos backfill to 2026 only; independent record links preserve files, ori
   assert.equal((await c.query(`SELECT count(*)::int AS n FROM headstone_media_assets l JOIN media_assets m ON m.id=l.media_asset_id JOIN headstones h ON h.id=l.headstone_uuid
    WHERE l.deleted_at IS NULL AND l.status='linked' AND m.deleted_at IS NULL AND m.status='linked' AND m.asset_type='photo' AND h.deleted_at IS NULL
    AND NOT EXISTS(SELECT 1 FROM monument_photo_contexts x JOIN monument_inspections i ON i.id=x.inspection_id WHERE x.headstone_uuid=h.id AND x.media_asset_id=m.id AND i.inspection_year=2026 AND i.source_type='field_survey' AND x.deleted_at IS NULL)`)).rows[0].n,0);
-  const markerId=(await c.query("SELECT id FROM headstones WHERE headstone_id='TLC-HS-0189' AND deleted_at IS NULL")).rows[0].id;
+  const {id:markerId}=await createInspectionFixture(c);
   const marker=await selectHeadstoneMutationState(c,markerId);
   const originals=(await c.query('SELECT * FROM monument_inspections WHERE headstone_uuid=$1 ORDER BY id',[markerId])).rows;
   const field=originals.find(i=>i.source_type==='field_survey');const nhg=originals.find(i=>i.source_type==='nhg');

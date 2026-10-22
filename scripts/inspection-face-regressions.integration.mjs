@@ -1,3 +1,4 @@
+import {createInspectionFixture} from './lib/inspection-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
@@ -17,7 +18,8 @@ async function withFixture(run){
  try{
   await c.query('BEGIN');
   await setAuditContext(c,{actorUser:{role:'admin'},reason:'Rolled-back inspection face regression'});
-  const marker=(await c.query("SELECT id,condition_type_id FROM headstones WHERE headstone_id='TLC-HS-0098' AND deleted_at IS NULL")).rows[0];
+  const fixture=await createInspectionFixture(c);
+  const marker=(await c.query('SELECT id,condition_type_id FROM headstones WHERE id=$1',[fixture.id])).rows[0];
   assert.ok(marker,'Multi-face fixture monument is available');
   const snapshot=async()=>({
    inspections:(await c.query('SELECT to_jsonb(i) AS row FROM monument_inspections i WHERE headstone_uuid=$1 ORDER BY id',[marker.id])).rows,
