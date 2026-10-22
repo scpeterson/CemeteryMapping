@@ -13,10 +13,10 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
   headstone: Headstone; faces: MarkerFace[]; disabled: boolean; onChange: (faces: MarkerFace[]) => void;
 }) {
   const labelListId = useId();
-  const [manageFaces, setManageFaces] = useState(() => faces.length > 1 || faces.some((face) => face.label !== "Unspecified face"));
+  const [manageFaces, setManageFaces] = useState(() => faces.length > 1 || faces.some((face) => !["Front", "Unspecified face"].includes(face.label)));
   if (!manageFaces) return <div className="headstone-wide-field marker-inscription-editor">
     <InscriptionFields text={faces[0]?.inscription ?? ""} status={faces[0]?.inscriptionStatus ?? headstone.inscriptionStatus} currentLegibility={faces[0]?.currentLegibility ?? headstone.currentLegibility} historicalTranscriptions={faces[0]?.historicalTranscriptions ?? headstone.historicalTranscriptions} disabled={disabled}
-      onChange={(value) => onChange([{ ...(faces[0] ?? { id: crypto.randomUUID(), label: "Unspecified face", notes: "", burialIds: [], mediaAssetIds: [] }), ...value }])} />
+      onChange={(value) => onChange([{ ...(faces[0] ?? { id: crypto.randomUUID(), label: "Front", notes: "", burialIds: [], mediaAssetIds: [] }), ...value }])} />
     <button type="button" className="icon-text-button" disabled={disabled} onClick={() => setManageFaces(true)}>Manage faces</button>
     <p className="muted">For separate inscriptions on multiple sides, use Manage faces.</p>
   </div>;
@@ -59,19 +59,19 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
           <input type="checkbox" checked onChange={() => toggle(face, "mediaAssetIds", id, false)} />Photo no longer linked — uncheck to remove
         </label>)}
       </fieldset>
-      <button type="button" className="secondary-button" onClick={() => {
+      <button type="button" className="secondary-button" disabled={faces.length <= 1} onClick={() => {
         if (window.confirm(`Remove face “${face.label || index + 1}” and its transcription? The people and photos will remain on the marker.`)) onChange(faces.filter((item) => item.id !== face.id));
       }}>Remove face</button>
     </fieldset>)}
     <button type="button" className="secondary-button" disabled={faces.length >= 32} onClick={() => onChange([...faces, {
       id: crypto.randomUUID(), label: "", inscription: "", notes: "", burialIds: [], mediaAssetIds: [],
     }])}>Add face</button>
-    <p className="muted">Add face starts another face. Save marker saves your changes; empty new faces are ignored.</p>
+    <p className="muted">Every monument needs at least one face. Add face starts another face. Save marker saves your changes; empty new faces are ignored.</p>
   </fieldset>;
 }
 
 export function MarkerFacesView({ headstone, ...photoControls }: { headstone: Headstone } & Pick<ComponentProps<typeof MediaGallery>, "canDelete" | "onDelete" | "onMove">) {
-  const faces: MarkerFace[] = headstone.faces ?? (headstone.inscription ? [{ id: "legacy", label: "Unspecified face", inscription: headstone.inscription, notes: "", burialIds: [], mediaAssetIds: [] }] : []);
+  const faces: MarkerFace[] = headstone.faces ?? (headstone.inscription ? [{ id: "legacy", label: "Front", inscription: headstone.inscription, notes: "", burialIds: [], mediaAssetIds: [] }] : []);
   const faceHistoryIds = new Set(faces.flatMap((face) => (face.historicalTranscriptions ?? []).map((entry) => entry.id)));
   const monumentHistory = headstone.historicalTranscriptions?.filter((entry) => !faceHistoryIds.has(entry.id));
   return <section aria-label="Faces / Inscriptions">

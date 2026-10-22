@@ -25,6 +25,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0110: Require at least one monument face](0110-require-monument-face.md)
+
 - [ADR 0109: Back inscriptions use marker faces](0109-back-inscriptions-use-faces.md)
 
 - [ADR 0073: Private Hosted TEST](0073-private-hosted-test.md)

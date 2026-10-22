@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
@@ -8,7 +9,7 @@ const sql=await readFile(new URL('../db/changelog/changes/471-confirm-weitzel-bu
 async function fixture(run){
  const c=new pg.Client(integrationAdminDatabase(loadApiConfig()));await c.connect();
  try{await c.query('BEGIN');
- for(const t of ['gravesites','burials','headstones','headstone_gravesites','headstone_burials'])await c.query(`CREATE TEMP TABLE ${t}(LIKE public.${t} INCLUDING ALL) ON COMMIT DROP`);
+ for(const t of ['gravesites','burials','headstones','headstone_gravesites','headstone_burials'])await createLegacyTableFixture(c, t);
  const {rows:[h]}=await c.query(`INSERT INTO headstones(headstone_id,marker_type_id,material_type_id,condition_type_id,geometry,source_properties)
  VALUES('TLC-HS-0577',gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),ST_SetSRID(ST_MakePoint(-80.08,40.60),4326),
  '{"GravesiteAssignments":{"intermentConfirmed":false}}') RETURNING id`);

@@ -67,7 +67,7 @@ test('each inspection shows its own photos; new visits start without links and t
  await expect(recordPhotos).toContainText('No photos recorded.');
  await expect(recordPhotos.getByRole('link',{name:/Open photo:/})).toHaveCount(0);
  await inspections.getByRole('button',{name:'New inspection',exact:true}).click();
- await expect(inspections.getByRole('textbox',{name:'Inspection inscription',exact:true})).toHaveValue('Historical reading');
+ await expect(inspections.getByRole('textbox',{name:'Face inscription',exact:true})).toHaveValue('Historical reading');
  await inspections.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
  await inspections.getByRole('combobox',{name:'Inspection condition',exact:true}).selectOption(marker.condition.id);
  await inspections.getByRole('button',{name:'Save inspection',exact:true}).click();

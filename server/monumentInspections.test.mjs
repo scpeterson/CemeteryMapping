@@ -48,3 +48,8 @@ test('inspection face readings preserve whitespace, validate identity and discar
  assert.throws(()=>validateNewInspections([{...entry,faces:[{...faces[0],label:''}]}]),/label/);
  assert.throws(()=>validateNewInspections([{...entry,faces:[{...faces[0],id:'wrong'}]}]));
 });
+
+test('explicitly empty inspection faces are rejected; legacy omitted faces use the database default',()=>{
+ assert.throws(()=>validateNewInspections([{...entry,faces:[]}]),/between 1 and 32/);
+ assert.equal(validateNewInspections([entry])[0].faces,undefined);
+});

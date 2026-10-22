@@ -7,6 +7,9 @@ import { formatDate } from "../../lib/format";
 
 const combinedReading = (faces: InspectionFace[]) => faces.length === 1 ? faces[0].inscription : faces.map(f=>`${f.label}\n${f.inscription}`).join("\n\n");
 const isCombined = (inscription: string, faces: InspectionFace[] = []) => faces.length > 0 && inscription === combinedReading(faces);
+const draftFaces = (inscription: string, faces: InspectionFace[] = []): InspectionFace[] => faces.length
+  ? faces.map(({id,label,inscription}) => ({id,label,inscription}))
+  : [{id:crypto.randomUUID(),label:"Front",inscription}];
 const inspectionTypes = { field_survey: "Field inspection", nhg: "NHG", historical: "Historical inspection" };
 const localToday = () => {
   const date = new Date();
@@ -42,13 +45,13 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
       id: selected.id, inspectedAt: selected.inspectedAt ?? "", inspectionYear: selected.inspectionYear,
       sourceType: selected.sourceType, source: selected.source, conditionId: selected.conditionId,
       conditionNotes: selected.conditionNotes, inscription: selected.inscription, expectedUpdatedAt: selected.updatedAt,
-      faces: (selected.faces ?? []).map(({id,label,inscription}) => ({id,label,inscription})),
+      faces: draftFaces(selected.inscription, selected.faces),
     } : {
       id: crypto.randomUUID(), inspectedAt: localToday(), sourceType: "field_survey",
       source: "Cemetery administrator field inspection",
       conditionId: conditions.find((c) => c.code === "unknown")?.id ?? "",
       conditionNotes: "", inscription: selected?.inscription ?? headstone.inscription ?? "",
-      faces: (selected ? selected.faces ?? [] : headstone.faces ?? []).map(({id,label,inscription}) => ({id,label,inscription})),
+      faces: draftFaces(selected?.inscription ?? headstone.inscription ?? "", selected ? selected.faces : headstone.faces),
     });
   };
   const save = async () => {

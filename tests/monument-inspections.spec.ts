@@ -41,7 +41,7 @@ test('new inspection copies the selected inscription exactly and saves independe
  const patches=await setup(page);
  const history=page.getByRole('region',{name:'Inspections',exact:true});
  await history.getByRole('button',{name:'New inspection',exact:true}).click();
- await expect(history.getByRole('textbox',{name:'Inspection inscription',exact:true})).toHaveValue('  Partially visible\nreading  ');
+ await expect(history.getByRole('textbox',{name:'Face inscription',exact:true})).toHaveValue('  Partially visible\nreading  ');
  await history.getByLabel('Inspection date',{exact:true}).fill('2026-10-22');
  await history.getByRole('button',{name:'Save inspection',exact:true}).click();
  await expect(history.getByRole('combobox',{name:'Inspection',exact:true})).not.toHaveValue('field');
@@ -49,7 +49,7 @@ test('new inspection copies the selected inscription exactly and saves independe
  expect((patches[0].newInspections as {inscription:string}[])[0].inscription).toBe('  Partially visible\nreading  ');
  await history.getByRole('combobox',{name:'Inspection',exact:true}).selectOption('nhg');
  await history.getByRole('button',{name:'New inspection',exact:true}).click();
- await expect(history.getByRole('textbox',{name:'Inspection inscription',exact:true})).toHaveValue('Earlier NHG reading');
+ await expect(history.getByRole('textbox',{name:'Face inscription',exact:true})).toHaveValue('Earlier NHG reading');
 });
 
 test('cemetery admin can edit the selected inspection with a version; NHG date stays fixed',async({page})=>{
@@ -59,7 +59,7 @@ test('cemetery admin can edit the selected inspection with a version; NHG date s
  await history.getByRole('button',{name:'Edit inspection',exact:true}).click();
  await expect(history.getByLabel('Inspection date',{exact:true})).toHaveValue('2005-10-11');
  await expect(history.getByLabel('Inspection date',{exact:true})).toBeDisabled();
- await history.getByRole('textbox',{name:'Inspection inscription',exact:true}).fill('Reviewed source reading');
+ await history.getByRole('textbox',{name:'Face inscription',exact:true}).fill('Reviewed source reading');
  await history.getByRole('textbox',{name:'Inspection condition notes',exact:true}).fill('Reviewed condition');
  await history.getByRole('button',{name:'Save inspection',exact:true}).click();
  await expect(history).toContainText('Reviewed source reading');

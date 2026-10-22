@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import pg from "pg";
@@ -14,7 +15,7 @@ test("grave details return one shared marker with only the selected grave's rela
   try {
     await client.query("BEGIN");
     for (const table of ["headstones", "headstone_gravesites", "headstone_burials"]) {
-      await client.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING ALL) ON COMMIT DROP`);
+      await createLegacyTableFixture(client, table);
     }
     await client.query("CREATE TEMP TABLE gravesites (id uuid, deleted_at timestamptz) ON COMMIT DROP");
     await client.query("INSERT INTO gravesites (id) VALUES ($1),($2)", [primaryGrave, sharedGrave]);

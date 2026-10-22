@@ -129,7 +129,7 @@ Editable fields:
 - `condition_notes`
 - `inscription`
 - `design_notes`
-- `faces` (including Front and Back inscriptions; replaces the former `back_description` field)
+- `faces` (at least one per monument; includes Front and Back inscriptions and replaces the former `back_description` field)
 - `last_inspected_at`
 - `photo_url`
 

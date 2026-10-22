@@ -10,7 +10,7 @@ function inspectionTranscription(value) {
 }
 
 export function validateInspectionFaces(value) {
-  if (!Array.isArray(value) || value.length > 32) throw new BadRequestError("An inspection may have up to 32 faces.");
+  if (!Array.isArray(value) || value.length < 1 || value.length > 32) throw new BadRequestError("An inspection must have between 1 and 32 faces.");
   const faces = value.map(face => ({
     id: validateUuid(face?.id, "Inspection face").toLowerCase(),
     label: requiredText(face?.label, "Face label", 100),

@@ -1,3 +1,4 @@
+import {createLegacyTableFixture} from "./lib/legacy-table-fixtures.mjs";
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
@@ -9,7 +10,7 @@ async function fixture(run){
  const c=new pg.Client(integrationAdminDatabase(loadApiConfig()));await c.connect();
  try{
   await c.query('BEGIN');
-  for(const t of ['lots','sections'])await c.query(`CREATE TEMP TABLE ${t}(LIKE public.${t} INCLUDING ALL) ON COMMIT DROP`);
+  for(const t of ['lots','sections'])await createLegacyTableFixture(c, t);
   const cemetery='00000000-0000-0000-0000-000000000001';
   await c.query("INSERT INTO sections(cemetery_id,name,facility_id,geometry) VALUES($1,'D','1',ST_Multi(ST_MakeEnvelope(-80.09,40.60,-80.07,40.61,4326)))",[cemetery]);
   for(const [i,id] of ['27','30','36','49','56','TMP04','TMP05','TMP06'].entries()){
@@ -56,7 +57,7 @@ test('missing imported reference is a no-op',async()=>fixture(async c=>{
 }));
 test('paired-row shift contains the fixed marker and preserves all sixteen lots',async()=>fixture(async c=>{
  await c.query(sql);
- await c.query('CREATE TEMP TABLE headstones(LIKE public.headstones INCLUDING ALL) ON COMMIT DROP');
+ await createLegacyTableFixture(c, 'headstones');
  await c.query(`INSERT INTO headstones(headstone_id,marker_type_id,material_type_id,condition_type_id,geometry)
  SELECT 'TLC-HS-0445',gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),
  ST_SetSRID(ST_MakePoint(ST_XMin(geometry)-0.0000035909,ST_Y(ST_Centroid(geometry))),4326)

@@ -52,7 +52,7 @@ function ids(value, label) {
 }
 export function validateMarkerFaces(value) {
   if (value === undefined) return undefined;
-  if (!Array.isArray(value) || value.length > 32) throw new BadRequestError("A marker may have up to 32 faces.");
+  if (!Array.isArray(value) || value.length < 1 || value.length > 32) throw new BadRequestError("A marker must have between 1 and 32 faces.");
   const faces = value.map((face) => {
     if (!face || typeof face !== "object" || Array.isArray(face)) throw new BadRequestError("Invalid marker face.");
     const label = text(face.label, "Face label", 100).trim();

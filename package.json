@@ -27,7 +27,7 @@
     "test:server": "node --test server/*.test.mjs scripts/*.test.mjs",
     "test:e2e": "playwright test",
     "test:inspections:browser": "playwright test --config playwright.inspection-regressions.config.ts",
-    "test:inspections:db": "node --test scripts/back-faces.integration.mjs scripts/inspection-face-regressions.integration.mjs scripts/monument-inspections.integration.mjs scripts/monument-photo-contexts.integration.mjs",
+    "test:inspections:db": "node --test scripts/default-front-face.integration.mjs scripts/required-faces.integration.mjs scripts/back-faces.integration.mjs scripts/inspection-face-regressions.integration.mjs scripts/monument-inspections.integration.mjs scripts/monument-photo-contexts.integration.mjs",
     "test:db-rules": "node --test scripts/*.integration.mjs",
     "auth0:configure": "node scripts/auth0-configure.mjs",
     "geodatabase:inspect": "node scripts/geodatabase-inspect.mjs",

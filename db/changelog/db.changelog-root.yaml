@@ -1467,3 +1467,9 @@ databaseChangeLog:
   - include:
       file: changes/490-back-descriptions-as-faces.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/491-require-monument-faces.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/492-default-front-face.sql
+      relativeToChangelogFile: true

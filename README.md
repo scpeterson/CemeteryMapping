@@ -70,6 +70,7 @@ If another local PostgreSQL service already uses port `5432`, create `db/env/dev
 - Ownership history timeline
 - Optional non-PROD demo seed data managed by database scripts
 - Spatial import staging and topology-style validation checks
+- At least one persistent face per monument and inspection, retaining unknown, blank and illegible readings
 - Dated monument inspections with independent condition and face inscriptions, plus inspection/maintenance photo links, thumbnail selection, and an All monument photos gallery
 - Esri File Geodatabase inspection, GeoJSON export, staging import, and cemetery/section promotion helpers
 - Excel headstone coordinate import that generates gravesite polygons, headstone points, and linked burials

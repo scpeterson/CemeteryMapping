@@ -6,6 +6,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Use Front for new default monument faces and rename existing single-face monuments and their single-face inspection snapshots, preserving readings, face IDs and photo links (migration 492).
+
+- Require at least one face on every monument and inspection. Backfill missing faces from each record’s own inscription and statuses, preserve historical readings and photo links, and prevent removal of the last face (migration 491, ADR 0110).
+
 - Represent back-of-stone information as ordinary Front/Back face inscriptions, migrate the matching field inspection without changing NHG readings or photo links, and remove the separate back field from forms, API and reports (migration 490, ADR 0109).
 
 - Add dated monument inspection history with independent condition, source, notes, inscriptions, and face readings. New inspections copy the selected readings without photo links; Trinity NHG visits use October 11, 2005 (migrations 479–480 and 485–489, PR #707).
