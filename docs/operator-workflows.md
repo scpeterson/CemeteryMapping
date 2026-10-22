@@ -338,7 +338,7 @@ Use the normal grave-detail panel or the Markers panel, not the Admin drawer, fo
 3. Users with `reader` access can view marker information but cannot edit it.
 4. `power-user` and `cemetery-admin` users can edit marker details for assigned cemeteries.
 5. `admin` users can edit marker details for any cemetery.
-6. Edit marker type, material, condition, condition notes, inscription, design/flourish notes, back-side description, or last inspected date.
+6. Edit marker type, material, design/flourish notes, or back-side description. Use the inspection controls below for dated condition, condition notes, source, and inscriptions.
 7. For Section G, expect the marker type list to be restricted to flat markers. The API and database also enforce this rule.
 8. Section G gravesites can contain either one casket burial or up to two funeral urn burials. The database enforces this capacity rule when burial rows are created, restored, or updated.
 9. Save the marker and confirm the detail panel reflects the update.
@@ -349,6 +349,16 @@ For standalone cemetery markers that are not tied to a gravesite, open the marke
 
 Linked North Hills evidence supports interpretation of a headstone or gravesite, but editing marker condition/material/type does not alter the linked reading evidence.
 
+### Inspection History
+
+In a monument's details, use the `Inspection` dropdown to select a visit by date, type, and source. The latest inspection is selected when the panel first opens or the app reloads. The condition, condition notes, inscription, face inscriptions, and photos below belong to the selected inspection. Switching visits does not change saved records.
+
+Cemetery admins for the assigned cemetery and global admins can use `New inspection` or `Edit inspection`. A new inspection copies the currently selected inscription and all its face inscriptions so they can be corrected or saved as-is. It starts with Unknown condition and empty condition notes; it does not copy photo links. Save the inspection before linking or uploading photos. Editing one inspection, including a single face reading, leaves other inspections unchanged. Keep a reading whose face is unknown in the inspection's general inscription rather than guessing a face.
+
+`Cancel inspection` abandons the draft without saving a record. If navigation opens the discard-unsaved-changes prompt, `Cancel` keeps the draft and its edits open; `OK` discards it. Reloading does not preserve an unsaved draft.
+
+Trinity NHG inspections use October 11, 2005. Their conditions and transcriptions remain separate from the 2026 field observations; a missing NHG condition is Unknown. Existing monument photos from the 2026 field work belong to those field inspections. An NHG inspection with no recorded photographs displays `No photos recorded`.
+
 ### Photo Collection
 
 Use `Make primary` beneath a photo to keep the front of a marker first in its gallery and on Overview. Choose a different photo to replace the primary, or `Remove primary` to restore newest-first sorting. These controls use the existing photo-order editing permissions and are available in the inline gallery and full-history dialog. Each monument has its own choice; when an Overview combines several markers, primary photos come first and the newest primary wins. All remaining photos stay newest first.
@@ -358,12 +368,18 @@ Use `Monuments` in the gravesite detail panel for field photo collection, or `De
 1. On the iPhone, open the application and select the gravesite on the map or from search results.
 2. Open `Monuments`, or `Details` for a monument selected directly. Select the inspection and expand `Add photos to this record`. Maintenance actions have their own equivalent photo controls. Save a new inspection or maintenance action before adding its photos.
 3. Tap the photo file control and select one or more photos. On iPhone this should offer the camera or photo library.
-4. Confirm the selected inspection or maintenance action and linked monument. All selected photos attach to that record and remain in the monument library. Select a Before, During, or After phase when useful.
-5. Add short notes when useful, such as face, angle, inscription detail, or field uncertainty. The link, notes, and optional `Date taken` apply to all selected photos; use separate uploads when those values differ. Leave the date blank to use each photo’s available date metadata.
+4. Confirm the selected inspection or maintenance action and linked monument. All selected photos attach to that record and remain in the monument library. For a maintenance action, select `Before maintenance`, `During maintenance`, or `After maintenance` when known; `Not recorded` means the timing relative to the action is unknown. Inspection photo controls do not ask for maintenance timing.
+5. Select `Photo face` when the side of the monument is known; this selection also applies to uploads below. Leave `Face not specified` when unknown. Add short notes when useful, such as angle, inscription detail, or field uncertainty. The link, notes, and optional `Date taken` apply to all selected photos; use separate uploads when those values differ. Leave the date blank to use each photo’s available date metadata.
 6. Select `Upload photos` (or `Upload photo` for one file). Files upload one at a time, with progress and a result for each file. Confirm successful uploads appear in the photo gallery.
 7. If some files fail, review their errors, correct the cause, and select `Retry failed photos`. Successful uploads remain saved; retry submits only the failed files retained in the form. Choosing a new selection replaces that retry list, so finish retries before selecting more photos.
 
 The inline gallery shows up to four linked photos, ordered newest first by capture date, falling back to upload date when capture date is absent; display order breaks ties. `View all photos (N)` opens the complete history when more are available. Each inspection and maintenance action displays only its own linked photos, or `No photos recorded`. Expand `All monument photos` for the full library. That library also allows uploads without a record association; use the record’s existing-photo selector to associate them later. The read-only gravesite `Overview` chooses from linked monument photos and identifies the monument shown.
+
+To reuse a photo, expand `Add photos to this record`, then `Browse photo thumbnails` under `Choose a monument photo`. Select the image using its thumbnail and filename, or use the `Existing monument photo` dropdown. The selected preview shows the chosen image and filename. Filenames also appear in the photo library so you can identify the same image there.
+
+Selecting a photo already linked to this record restores its saved `Photo face` and, for maintenance, `Maintenance timing`. Face labels identify the side shown, such as Front, Back, or Left; `Not recorded` in a linked photo's Face row means no face was assigned. Selecting a photo or changing these controls does not save anything until you select `Save photo link`. Use `Cancel` beside that button to clear the preview, selected photo, face, and maintenance timing without changing any saved inspection or photo links. Selecting the photo again loads its saved values.
+
+Use `Edit photo link` to load an existing link into these controls. `Unlink from this record` removes only that record association: the photo remains in `All monument photos`, and its links to other inspections or maintenance actions remain intact. The same image can have a different face label on another record.
 
 Readers can view linked photos while authenticated. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
 

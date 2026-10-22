@@ -147,6 +147,8 @@ Every real-data import or source change should update this file and the relevant
 | Known limitations | OCR contains normal scan artifacts such as `lA` for `1A`, punctuation drift, and occasional word/name errors. The importer stages entries for review and candidate matching only. Reviewed links surface as evidence in the detail panel, but they do not overwrite burials, headstones, lots, owners, or deeds. |
 | Related ADR | [ADR 0008](adr/0008-headstone-spreadsheet-import.md) |
 
+Trinity's NHG field data was gathered on September 26, 2003 and October 11, 2005. Because individual monuments cannot be assigned reliably to one of those visits, all Trinity NHG inspection records use October 11, 2005. This is an inspection-date convention, separate from the publication context above. NHG condition abbreviations such as `exc cond`, `good cond`, and `poor cond` map to Excellent, Good, and Poor; missing conditions are Unknown. Preserve NHG readings and conditions independently of the 2026 field inspections.
+
 NHG text may also mention physical relationships such as "See obelisk," common bases, foot markers, plot markers, or gap observations. Reviewed marker-to-marker references can be recorded as marker relationships in the marker detail panel. Plot marker notes should wait until a plot marker is represented as an actual marker record with a location; gap notes should remain source observations rather than operational marker relationships.
 
 NHG pages 233-236 include church records where NHG found no matching tombstones. These people should be reviewed in `Admin -> Source People` and stored as source-only person records until later evidence supports linking them to a real burial, gravesite, or marker.
