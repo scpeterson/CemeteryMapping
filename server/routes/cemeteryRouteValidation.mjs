@@ -30,6 +30,9 @@ export function validateReportQueryPayload(body) {
 }
 
 export function validateHeadstonePayload(body) {
+  if (body?.backDescription != null && body.backDescription !== "") {
+    throw new BadRequestError("Back of stone has been replaced by faces. Enter this reading as a Back face inscription.");
+  }
   const lastInspectedAt = optionalDate(body?.lastInspectedAt, "Last inspected date");
   const nhgInclusion = optionalText(body?.nhgInclusion, "NHG inclusion", 30) || "not_checked";
   if (!["listed", "not_listed", "not_checked", "unclear"].includes(nhgInclusion)) throw new BadRequestError("NHG inclusion is invalid.");
@@ -54,7 +57,6 @@ export function validateHeadstonePayload(body) {
     ...(body?.historicalTranscriptions === undefined ? {} : { historicalTranscriptions: validateHistoricalTranscriptions(body.historicalTranscriptions) }),
     inscription: body?.faces === undefined ? optionalText(body?.inscription, "Inscription", 20_000) : null,
     designNotes: optionalText(body?.designNotes, "Design notes", 20_000),
-    backDescription: optionalText(body?.backDescription, "Back description", 20_000),
     photoUrl: optionalText(body?.photoUrl, "Photo URL", 300),
     lastInspectedAt,
     dataConfidence: validateDataConfidence(body?.dataConfidence),

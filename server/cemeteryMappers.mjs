@@ -230,7 +230,6 @@ export function toHeadstone(row) {
     facesRevision: row.faces_revision ?? 0,
     facePeople: row.face_people ?? [],
     designNotes: row.design_notes ?? "",
-    backDescription: row.back_description ?? "",
     photoUrl: row.photo_url ?? "",
     lastInspectedAt: dateOnly(row.last_inspected_at),
     dataConfidence: row.data_confidence ?? "unknown",

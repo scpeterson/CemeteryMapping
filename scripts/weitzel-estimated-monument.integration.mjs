@@ -10,6 +10,8 @@ async function fixture(run){
   try{
     await c.query('BEGIN');
     for(const table of ['gravesites','headstones']) await c.query(`CREATE TEMP TABLE ${table} (LIKE public.${table} INCLUDING ALL) ON COMMIT DROP`);
+    // Recreate the column that existed when migration 458 was authored.
+    await c.query('ALTER TABLE pg_temp.headstones ADD COLUMN back_description text');
     const {rows:[grave]}=await c.query(`INSERT INTO gravesites(cemetery_id,section_id,grave_id,gravesite_id,status_type_id,geometry)
       VALUES(gen_random_uuid(),'D','0500','TLC-GPS-0500',gen_random_uuid(),ST_Multi(ST_MakeEnvelope(-80.080523,40.60157751,-80.08048699,40.60158849,4326))) RETURNING *`);
     const {rows:[marker]}=await c.query(`INSERT INTO headstones(headstone_id,gravesite_uuid,marker_type_id,material_type_id,condition_type_id,geometry)

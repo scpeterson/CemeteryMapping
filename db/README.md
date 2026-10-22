@@ -643,3 +643,11 @@ in the existing inspection faces JSON; new inspections never inherit media IDs.
 Schema rollback of 485, 487 and 488 removes the new inspection tables, record photo
 links and face labels in dependency order. It does not delete media files. Take a
 backup before a schema rollback; prefer forward corrections for operational data.
+
+### Back descriptions become ordinary faces
+
+Migration 490 converts every nonempty legacy `back_description` into a Back face inscription, preserving the original text exactly. A sole Unspecified face becomes Front; its UUID and metadata remain intact. Existing Back readings are retained, with distinct legacy text appended rather than overwritten. Stones without a front reading receive an empty Front face. Other faces remain in order.
+
+Only field inspections matching the marker's last inspected date receive this structural conversion (year-only legacy observations match `field:2026`). Their conditions, notes, source, identity and photo contexts remain unchanged. NHG, historical and other field visits are untouched. The capture trigger is temporarily disabled inside the migration transaction to prevent unrelated automatic refreshes. The original back text is retained in `source_properties.BackFaceMigration490` before the column is dropped. Deploy the matching API/frontend with this schema; older nonempty `backDescription` requests are rejected with guidance to use a Back face.
+
+The schema rollback restores the retired column and original text, retaining converted faces. Use a reviewed forward correction for operational recovery. `scripts/back-faces.integration.mjs` tests exact readings, face IDs/metadata, matching-visit conversion, untouched historical visits, photo-link preservation, existing Back conflicts, missing fronts and duplicate prevention inside rollback transactions.

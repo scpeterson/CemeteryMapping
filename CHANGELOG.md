@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Represent back-of-stone information as ordinary Front/Back face inscriptions, migrate the matching field inspection without changing NHG readings or photo links, and remove the separate back field from forms, API and reports (migration 490, ADR 0109).
+
 - Add dated monument inspection history with independent condition, source, notes, inscriptions, and face readings. New inspections copy the selected readings without photo links; Trinity NHG visits use October 11, 2005 (migrations 479–480 and 485–489, PR #707).
 - Associate monument photos with inspections or maintenance actions while retaining All monument photos. Existing 2026 field photos belong to their field inspections; gravesite previews use linked monument photos instead of a separate Gravesite Photos section (PR #707).
 - Add thumbnail photo selection, selected-photo previews, explicit face and maintenance timing labels, gallery filenames, and Cancel for unsaved photo link selections (PR #708).

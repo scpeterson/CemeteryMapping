@@ -37,7 +37,6 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
         COALESCE(NULLIF(headstone_condition_types.label, ''), headstone_condition_types.code) AS marker_condition,
         headstones.inscription,
         headstones.design_notes,
-        headstones.back_description,
         headstones.condition_notes,
         COALESCE(marker_photo.file_url, NULLIF(headstones.photo_url, '')) AS photo_url,
         COALESCE(marker_features.features, '[]'::jsonb) AS marker_features,

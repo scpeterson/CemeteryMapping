@@ -108,16 +108,16 @@ test("read-only users can read face inscriptions and photos without edit control
   await expect(page.getByRole("button", { name: "Add face", exact: true })).toHaveCount(0);
 });
 
-test("a marker without an inscription supports ordinary inscription and back text entry", async ({ page }) => {
+test("front and back inscriptions use faces without a separate back field", async ({ page }) => {
   await overviewFixture(page);
-  let current = { ...marker, inscription: "", backDescription: "", faces: [] as MarkerFace[], facesRevision: 0 };
+  let current = { ...marker, inscription: "", faces: [] as MarkerFace[], facesRevision: 0 };
   await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
     markerTypes: [marker.markerType], markerScopes: [marker.markerScope], materials: [marker.material], conditions: [marker.condition],
   } }));
   await page.route("**/api/headstones/marker-1", async (route) => {
     if (route.request().method() === "PATCH") {
       const payload = route.request().postDataJSON();
-      current = { ...current, faces: payload.faces, backDescription: payload.backDescription, facesRevision: current.facesRevision + 1 };
+      current = { ...current, faces: payload.faces, facesRevision: current.facesRevision + 1 };
     }
     await route.fulfill({ json: current });
   });
@@ -132,14 +132,21 @@ test("a marker without an inscription supports ordinary inscription and back tex
   expect(current.faces).toEqual([]);
   await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
   await page.getByRole("textbox", { name: "Inscription", exact: true }).fill("MYRTLE\nDEER");
-  await page.getByRole("textbox", { name: "Back of stone", exact: true }).fill("Family memorial");
+  await expect(page.getByRole("textbox", { name: "Back of stone", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Manage faces", exact: true }).click();
+  await page.getByLabel("Face label", { exact: true }).fill("Front");
+  await page.getByRole("button", { name: "Add face", exact: true }).click();
+  await page.getByLabel("Face label", { exact: true }).nth(1).fill("Back");
+  await page.getByRole("textbox", { name: "Inscription", exact: true }).nth(1).fill("Family memorial");
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
-  expect(current.faces).toHaveLength(1);
-  expect(current.faces[0]).toMatchObject({ label: "Unspecified face", inscription: "MYRTLE\nDEER", burialIds: [], mediaAssetIds: [] });
-  expect(current.backDescription).toBe("Family memorial");
+  expect(current.faces).toHaveLength(2);
+  expect(current.faces[0]).toMatchObject({ label: "Front", inscription: "MYRTLE\nDEER", burialIds: [], mediaAssetIds: [] });
+  expect(current.faces[1]).toMatchObject({ label: "Back", inscription: "Family memorial", burialIds: [], mediaAssetIds: [] });
+  expect(current).not.toHaveProperty("backDescription");
   await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
-  await expect(page.getByRole("textbox", { name: "Inscription", exact: true })).toHaveValue("MYRTLE\nDEER");
-  await expect(page.getByRole("textbox", { name: "Back of stone", exact: true })).toHaveValue("Family memorial");
+  await expect(page.getByRole("textbox", { name: "Inscription", exact: true }).nth(0)).toHaveValue("MYRTLE\nDEER");
+  await expect(page.getByRole("textbox", { name: "Inscription", exact: true }).nth(1)).toHaveValue("Family memorial");
+  await expect(page.getByLabel("Face label", { exact: true }).nth(1)).toHaveValue("Back");
 });
 
 

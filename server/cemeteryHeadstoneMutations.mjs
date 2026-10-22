@@ -44,14 +44,14 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
 
     const reviewReturnSql = recordReviewColumnsSql("headstones");
     const reviewAssignments = `,
-            data_confidence = $17,
-            review_status = $18,
-            review_notes = NULLIF($19, ''),
-            source_conflict = $20::boolean,
-            reviewed_by = CASE WHEN $18 = 'reviewed' THEN NULLIF($21, '') ELSE reviewed_by END,
+            data_confidence = $16,
+            review_status = $17,
+            review_notes = NULLIF($18, ''),
+            source_conflict = $19::boolean,
+            reviewed_by = CASE WHEN $17 = 'reviewed' THEN NULLIF($20, '') ELSE reviewed_by END,
             reviewed_at = CASE
-              WHEN $18 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
-              WHEN $18 = 'reviewed' THEN COALESCE(reviewed_at, now())
+              WHEN $17 = 'reviewed' AND headstones.review_status <> 'reviewed' THEN now()
+              WHEN $17 = 'reviewed' THEN COALESCE(reviewed_at, now())
               ELSE reviewed_at
             END`;
     const updateValues = [
@@ -66,7 +66,6 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       headstone.conditionNotes || null,
       headstone.inscription || null,
       headstone.designNotes || null,
-      headstone.backDescription || null,
       headstone.photoUrl || null,
       headstone.lastInspectedAt || null,
       JSON.stringify({
@@ -93,7 +92,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       `
         UPDATE headstones
         SET marker_type_id = $2::uuid,
-            marker_scope_type_id = $16::uuid,
+            marker_scope_type_id = $15::uuid,
             material_type_id = $3::uuid,
             condition_type_id = $4::uuid,
             vase_type_id = NULLIF($5, '')::uuid,
@@ -101,19 +100,18 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
             vase_placement_type_id = NULLIF($7, '')::uuid,
             vase_notes = $8,
             condition_notes = $9,
-            faces = COALESCE($22::jsonb, faces),
-            inscription = CASE WHEN $22::jsonb IS NULL THEN $10 ELSE inscription END,
-            inscription_status = CASE WHEN $22::jsonb IS NULL THEN COALESCE($23, inscription_status) ELSE inscription_status END,
-            current_legibility = CASE WHEN $22::jsonb IS NULL THEN COALESCE($24, current_legibility) ELSE current_legibility END,
-            historical_transcriptions = COALESCE($25::jsonb, historical_transcriptions),
+            faces = COALESCE($21::jsonb, faces),
+            inscription = CASE WHEN $21::jsonb IS NULL THEN $10 ELSE inscription END,
+            inscription_status = CASE WHEN $21::jsonb IS NULL THEN COALESCE($22, inscription_status) ELSE inscription_status END,
+            current_legibility = CASE WHEN $21::jsonb IS NULL THEN COALESCE($23, current_legibility) ELSE current_legibility END,
+            historical_transcriptions = COALESCE($24::jsonb, historical_transcriptions),
             design_notes = $11,
-            back_description = $12,
-            photo_url = $13,
-            last_inspected_at = $14::date,
+            photo_url = $12,
+            last_inspected_at = $13::date,
             source_properties = COALESCE(source_properties, '{}'::jsonb)
               || jsonb_build_object(
                 'NormalizedProvenance',
-                COALESCE(source_properties->'NormalizedProvenance', '{}'::jsonb) || $15::jsonb
+                COALESCE(source_properties->'NormalizedProvenance', '{}'::jsonb) || $14::jsonb
               )${reviewAssignments}
         WHERE id = $1
         RETURNING
@@ -142,7 +140,6 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
           faces,
           faces_revision,
           design_notes,
-          back_description,
           photo_url,
           last_inspected_at,
           source_properties,
@@ -296,7 +293,6 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           current_legibility,
           historical_transcriptions,
           design_notes,
-          back_description,
           photo_url,
           last_inspected_at,
           data_confidence,
@@ -322,26 +318,25 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           END,
           NULLIF($8, ''),
           NULLIF($9, ''),
-          $22,
-          COALESCE($23, 'unknown'),
-          COALESCE($24::jsonb, '[]'::jsonb),
+          $21,
+          COALESCE($22, 'unknown'),
+          COALESCE($23::jsonb, '[]'::jsonb),
           NULLIF($10, ''),
           NULLIF($11, ''),
-          NULLIF($12, ''),
-          NULLIF($13, '')::date,
+          NULLIF($12, '')::date,
+          $13,
           $14,
-          $15,
-          NULLIF($16, ''),
-          $17::boolean,
+          NULLIF($15, ''),
+          $16::boolean,
           jsonb_build_object(
             'NormalizedProvenance',
             jsonb_build_object(
-              'nhgInclusion', $18,
-              'verificationSourceType', $19,
-              'verifiedAt', NULLIF($20, '')
+              'nhgInclusion', $17,
+              'verificationSourceType', $18,
+              'verifiedAt', NULLIF($19, '')
             )
           ),
-          $21::uuid,
+          $20::uuid,
           now()
         )
         RETURNING id::text
@@ -357,7 +352,6 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
         headstone.conditionNotes || "",
         headstone.inscription || "",
         headstone.designNotes || "",
-        headstone.backDescription || "",
         headstone.photoUrl || "",
         headstone.lastInspectedAt || "",
         headstone.dataConfidence || "unknown",

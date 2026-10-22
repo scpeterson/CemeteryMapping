@@ -100,7 +100,6 @@ function queryRows(sql) {
         condition_notes: "Stable and legible",
         inscription: "In memory",
         design_notes: "Carved laurel flourish above surname",
-        back_description: "Back lists grandchildren",
         photo_url: "",
         last_inspected_at: "2026-05-28",
         relationship_type: "primary",
@@ -1022,7 +1021,6 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
     condition_notes: "Stable and legible",
     inscription: "In memory",
     design_notes: "Carved laurel flourish above surname",
-    back_description: "Back lists grandchildren",
     photo_url: "",
     last_inspected_at: "2026-05-28",
     updated_at: "2026-05-31T12:00:00.000Z",
@@ -1068,7 +1066,6 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
     conditionNotes: "Stable and legible",
     inscription: "In memory",
     designNotes: "Carved laurel flourish above surname",
-    backDescription: "Back lists grandchildren",
     photoUrl: "",
     lastInspectedAt: "2026-05-28",
     nhgInclusion: "not_listed",
@@ -1083,11 +1080,11 @@ test("updateHeadstone mutation state query qualifies joined id columns", async (
   assert.doesNotMatch(mutationStateQuery, /SELECT\s+id::text,/u);
   assert.equal(updated?.id, "33333333-3333-4333-8333-333333333333");
   assert.equal(updated?.designNotes, "Carved laurel flourish above surname");
-  assert.equal(updated?.backDescription, "Back lists grandchildren");
+  assert.equal(Object.hasOwn(updated, "backDescription"), false);
   const updateQuery = queries.find((query) => query.sql.includes("UPDATE headstones"));
   assert.deepEqual(updateQuery?.values.slice(7, 10), ["NHG: vase in ground", "Stable and legible", "In memory"]);
-  assert.deepEqual(updateQuery?.values.slice(10, 12), ["Carved laurel flourish above surname", "Back lists grandchildren"]);
-  assert.deepEqual(JSON.parse(updateQuery?.values[14]), {
+  assert.deepEqual(updateQuery?.values.slice(10, 12), ["Carved laurel flourish above surname", null]);
+  assert.deepEqual(JSON.parse(updateQuery?.values[13]), {
     nhgInclusion: "not_listed",
     verificationSourceType: "field_survey",
     verifiedAt: "2026-05-28",
@@ -1112,7 +1109,6 @@ test("getHeadstone returns standalone marker detail without a gravesite", async 
     condition_notes: "",
     inscription: "F.B.",
     design_notes: "",
-    back_description: "",
     photo_url: "",
     last_inspected_at: null,
     relationship_type: "primary",
