@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Link active monument photos to the sole Front face on single-face monuments, and label existing observation photo links without copying photos into other inspections (migration 493).
+
 - Use Front for new default monument faces and rename existing single-face monuments and their single-face inspection snapshots, preserving readings, face IDs and photo links (migration 492).
 
 - Require at least one face on every monument and inspection. Backfill missing faces from each record’s own inscription and statuses, preserve historical readings and photo links, and prevent removal of the last face (migration 491, ADR 0110).
