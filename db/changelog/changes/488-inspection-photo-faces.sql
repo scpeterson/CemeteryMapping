@@ -20,4 +20,6 @@ END $$;
 CREATE TRIGGER validate_photo_face_context BEFORE INSERT OR UPDATE ON monument_photo_contexts FOR EACH ROW EXECUTE FUNCTION validate_photo_face_context();
 -- Existing face snapshots and transcriptions are retained without guessing which
 -- face an unassigned historical reading or photo belongs to.
---rollback empty
+--rollback DROP TRIGGER IF EXISTS validate_photo_face_context ON monument_photo_contexts;
+--rollback DROP FUNCTION IF EXISTS validate_photo_face_context();
+--rollback ALTER TABLE monument_photo_contexts DROP COLUMN face_id;

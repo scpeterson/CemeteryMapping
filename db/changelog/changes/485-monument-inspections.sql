@@ -102,8 +102,15 @@ BEGIN
 END $$;
 CREATE TRIGGER refresh_linked_nhg_inspection AFTER INSERT OR UPDATE OR DELETE ON north_hills_ocr_entry_headstone_links
  FOR EACH ROW EXECUTE FUNCTION refresh_linked_nhg_inspection();
--- Preserve observations on rollback; use a forward migration for recovery.
---rollback empty
+-- Schema rollback removes inspection history. Back up before rollback; use a forward correction for operational recovery.
+--rollback DROP TRIGGER IF EXISTS capture_monument_inspection ON headstones;
+--rollback DROP TRIGGER IF EXISTS refresh_linked_nhg_inspection ON north_hills_ocr_entry_headstone_links;
+--rollback DROP TRIGGER IF EXISTS refresh_repaired_nhg_inspections ON north_hills_ocr_entries;
+--rollback DROP FUNCTION IF EXISTS refresh_repaired_nhg_inspections();
+--rollback DROP FUNCTION IF EXISTS refresh_linked_nhg_inspection();
+--rollback DROP FUNCTION IF EXISTS capture_monument_inspection();
+--rollback DROP FUNCTION IF EXISTS refresh_nhg_inspection(uuid);
+--rollback DROP TABLE IF EXISTS monument_inspections;
 
 -- Runtime access follows the existing restricted API role, when configured.
 DO $$ BEGIN

@@ -53,4 +53,5 @@ WHERE l.deleted_at IS NULL AND l.status='linked' AND m.deleted_at IS NULL AND m.
 DO $$ BEGIN
  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='cemetery_api') THEN GRANT SELECT,INSERT,UPDATE,DELETE ON monument_photo_contexts TO cemetery_api; END IF;
 END $$;
---rollback empty
+--rollback DROP TABLE IF EXISTS monument_photo_contexts;
+--rollback DROP FUNCTION IF EXISTS validate_monument_photo_context();

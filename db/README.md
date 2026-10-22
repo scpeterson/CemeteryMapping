@@ -639,3 +639,7 @@ Migrations 488 and 489 add optional observation-specific face labels to photo li
 and preserve unambiguous 2026 face assignments from inspection snapshots. Existing
 inspection dates, readings, and photo files are unchanged. Face readings are saved
 in the existing inspection faces JSON; new inspections never inherit media IDs.
+
+Schema rollback of 485, 487 and 488 removes the new inspection tables, record photo
+links and face labels in dependency order. It does not delete media files. Take a
+backup before a schema rollback; prefer forward corrections for operational data.
