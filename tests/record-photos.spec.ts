@@ -41,8 +41,8 @@ async function setup(page:Page,multipleFaces=false,threeFaces=false){
  await page.route('**/api/headstones/marker-1/media-assets?**',route=>{
   const params=new URL(route.request().url()).searchParams;
   const target={inspectionId:params.get('inspectionId'),maintenanceRecordId:params.get('maintenanceRecordId'),phase:params.get('phase'),faceId:params.get('faceId')};uploads.push(target);
-  const photo={...photos[0],id:'uploaded',fileUrl:'/media/uploaded.png',originalFilename:'uploaded.png',notes:'uploaded'};photos.push(photo);
-  links.push({id:'uploaded-link',mediaAssetId:photo.id,inspectionId:target.inspectionId??undefined,maintenanceRecordId:target.maintenanceRecordId??undefined,phase:target.phase??'unspecified',faceId:target.faceId??undefined});
+  const photo={...photos[0],id:uploads.length===1?'uploaded':`uploaded-${uploads.length}`,fileUrl:'/media/uploaded.png',originalFilename:'uploaded.png',notes:'uploaded'};photos.push(photo);
+  links.push({id:`uploaded-link-${uploads.length}`,mediaAssetId:photo.id,inspectionId:target.inspectionId??undefined,maintenanceRecordId:target.maintenanceRecordId??undefined,phase:target.phase??'unspecified',faceId:target.faceId??undefined});
   return route.fulfill({json:photo});
  });
  await openRecord(page);
@@ -69,7 +69,7 @@ test('each inspection shows its own photos; new visits start without links and t
  await inspections.getByRole('button',{name:'New inspection',exact:true}).click();
  await expect(inspections.getByRole('textbox',{name:'Face inscription',exact:true})).toHaveValue('Historical reading');
  await inspections.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
- await inspections.getByRole('combobox',{name:'Inspection condition',exact:true}).selectOption(marker.condition.id);
+ await inspections.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
  await inspections.getByRole('button',{name:'Save inspection',exact:true}).click();
  await expect(recordPhotos).toContainText('No photos recorded.');
  expect(state.getLinks().filter(link=>link.inspectionId!=='field')).toHaveLength(0);
@@ -172,7 +172,7 @@ test('multiple face readings are independent, copy into new visits without photo
  await expect(back.getByRole('textbox',{name:'Face inscription',exact:true})).toHaveValue('nhg back reading');
  await back.getByRole('textbox',{name:'Face inscription',exact:true}).fill('New back reading');
  await inspections.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
- await inspections.getByRole('combobox',{name:'Inspection condition',exact:true}).selectOption(marker.condition.id);
+ await inspections.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
  await inspections.getByRole('button',{name:'Save inspection',exact:true}).click();
  await expect(selected).toContainText('nhg front reading');
  await expect(selected).toContainText('New back reading');
@@ -256,7 +256,7 @@ test('refresh after saving a changed face preserves three independent inspection
  await region.getByRole('button',{name:'New inspection',exact:true}).click();
  await faceInput(page,1).fill('New visit front reading');
  await region.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
- await region.getByRole('combobox',{name:'Inspection condition',exact:true}).selectOption(marker.condition.id);
+ await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
  await region.getByRole('button',{name:'Save inspection',exact:true}).click();
  const added=structuredClone(state.getInspections().at(-1)!);
  await openRecord(page,true);
@@ -419,4 +419,95 @@ test('upload link refresh keeps already-loaded gallery images mounted',async({pa
   await expect(photos.locator('.media-gallery-card img')).toHaveCount(2);
  }finally{release();}
  await showPhotos(photos,3);
+});
+
+const draftPhoto=(name:string)=>({name,mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')});
+
+test('one inspection save uploads and links photos by face, preserving original visits and library links',async({page})=>{
+ const state=await setup(page,true,true);
+ const originals=structuredClone(state.getInspections()),links=structuredClone(state.getLinks());
+ const region=page.getByRole('region',{name:'Inspections',exact:true});
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ await region.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
+ await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
+ const front=region.getByRole('group',{name:'Inspection face 1',exact:true});
+ const back=region.getByRole('group',{name:'Inspection face 2',exact:true});
+ const left=region.getByRole('group',{name:'Inspection face 3',exact:true});
+ await front.getByRole('textbox',{name:'Face inscription',exact:true}).fill('New front reading');
+ await front.getByLabel('Choose photos to upload',{exact:true}).setInputFiles([draftPhoto('front-1.png'),draftPhoto('front-2.png')]);
+ await expect(front.getByRole('img',{name:'Preview of front-1.png'})).toBeVisible();
+ await back.getByLabel('Choose photos to upload',{exact:true}).setInputFiles(draftPhoto('back.png'));
+ await left.getByText('Choose existing monument photos',{exact:true}).click();
+ await left.getByRole('button',{name:`Use photo ${marker.mediaAssets[0].originalFilename}`,exact:true}).click();
+ expect(state.uploads).toHaveLength(0);expect(state.getInspections()).toEqual(originals);expect(state.getLinks()).toEqual(links);
+ await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+ await expect(region.getByRole('group',{name:'New inspection',exact:true})).toHaveCount(0);
+ expect(state.getInspections()).toHaveLength(3);expect(state.getInspections().slice(0,2)).toEqual(originals);
+ const created=state.getInspections()[2];expect(created.faces.map(f=>f.inscription)).toEqual(['New front reading','field back reading','field left reading']);
+ expect(state.uploads.map(p=>p.faceId)).toEqual([created.faces[0].id,created.faces[0].id,created.faces[1].id]);
+ expect(state.uploads.every(p=>p.inspectionId===created.id)).toBe(true);
+ expect(state.getLinks().filter(l=>l.inspectionId===created.id)).toHaveLength(4);
+ expect(state.getLinks().filter(l=>l.inspectionId==='field')).toEqual(links);
+ await openRecord(page,true);
+ await expect(region.getByRole('combobox',{name:'Inspection',exact:true})).toHaveValue(created.id);
+ await showPhotos(region.getByRole('region',{name:'Inspection photos',exact:true}),4);
+});
+
+test('canceling a draft with face photos uploads nothing and leaves records untouched',async({page})=>{
+ const state=await setup(page,true);const original=structuredClone({visits:state.getInspections(),links:state.getLinks(),photos:state.getPhotos()});
+ const region=page.getByRole('region',{name:'Inspections',exact:true});
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ await region.getByRole('group',{name:'Inspection face 1',exact:true}).getByLabel('Choose photos to upload',{exact:true}).setInputFiles(draftPhoto('cancel.png'));
+ page.once('dialog',dialog=>dialog.dismiss());
+ await region.getByRole('button',{name:'Cancel inspection',exact:true}).click();
+ await expect(region.getByRole('img',{name:'Preview of cancel.png'})).toBeVisible();
+ page.once('dialog',dialog=>dialog.accept());
+ await region.getByRole('button',{name:'Cancel inspection',exact:true}).click();
+ expect(state.uploads).toHaveLength(0);expect({visits:state.getInspections(),links:state.getLinks(),photos:state.getPhotos()}).toEqual(original);
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ await expect(region.getByRole('img',{name:'Preview of cancel.png'})).toHaveCount(0);
+});
+
+test('failed photo uploads retry only pending photos and never create a second inspection',async({page})=>{
+ const state=await setup(page,true);const originals=structuredClone(state.getInspections());let attempts=0;
+ await page.route('**/api/headstones/marker-1/media-assets?**',route=>{
+  attempts++;if(attempts===2)return route.fulfill({status:500,json:{error:'Temporary photo failure'}});
+  return route.fallback();
+ });
+ const region=page.getByRole('region',{name:'Inspections',exact:true});
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ await region.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
+ await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
+ await region.getByRole('group',{name:'Inspection face 1',exact:true}).getByLabel('Choose photos to upload',{exact:true}).setInputFiles([draftPhoto('first.png'),draftPhoto('retry.png'),draftPhoto('third.png')]);
+ await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+ await expect(region.getByRole('alert')).toContainText('retry.png: Something went wrong on the server');
+ await expect(region.getByRole('status')).toContainText('first.png: Saved and linked');
+ await expect(region.getByRole('status')).toContainText('retry.png: Pending');
+ expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(2);
+ await region.getByRole('button',{name:'Retry remaining photos',exact:true}).click();
+ await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
+ expect(attempts).toBe(4);expect(state.uploads).toHaveLength(3);expect(state.getInspections()).toHaveLength(3);
+ expect(state.getInspections().slice(0,2)).toEqual(originals);
+});
+
+test('inspection save failure keeps face edits and selected photos without uploading files',async({page})=>{
+ const state=await setup(page,true);const original=structuredClone({visits:state.getInspections(),links:state.getLinks()});let writes=0;
+ await page.route('**/api/headstones/marker-1',route=>{
+  if(route.request().method()==='PATCH'&&++writes===1)return route.fulfill({status:500,json:{error:'Save failed'}});
+  return route.fallback();
+ });
+ const region=page.getByRole('region',{name:'Inspections',exact:true});
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
+ const front=region.getByRole('group',{name:'Inspection face 1',exact:true});
+ await front.getByRole('textbox',{name:'Face inscription',exact:true}).fill('Preserved draft reading');
+ await front.getByLabel('Choose photos to upload',{exact:true}).setInputFiles(draftPhoto('preserved.png'));
+ await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+ await expect(region.getByRole('alert')).toBeVisible();
+ expect(state.uploads).toHaveLength(0);expect({visits:state.getInspections(),links:state.getLinks()}).toEqual(original);
+ await expect(front.getByRole('textbox',{name:'Face inscription',exact:true})).toHaveValue('Preserved draft reading');
+ await expect(front.getByRole('img',{name:'Preview of preserved.png'})).toBeVisible();
+ await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+ await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
+ expect(writes).toBe(2);expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(1);
 });
