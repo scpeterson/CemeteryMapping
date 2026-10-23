@@ -4,7 +4,13 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+### Fixed
+
+- Fix new marker creation failing with a server error by explicitly typing provenance values passed to PostgreSQL JSON construction. Add a real database regression for default and explicitly supplied provenance.
+
 ### Added
+
+- Select and preview photos under each face while creating or editing an inspection. Save uploads and links them to that face; partial failures retain a retry queue without duplicating the saved inspection or completed uploads.
 
 - Link active monument photos to the sole Front face on single-face monuments, and label existing observation photo links without copying photos into other inspections (migration 493).
 

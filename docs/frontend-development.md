@@ -160,3 +160,5 @@ The browser command runs `monument-inspections.spec.ts` and `record-photos.spec.
 ## Local Scratch Scripts
 
 Keep disposable investigations under root `tmp/`, which Git and ESLint ignore. Maintained application, server, test, and script sources remain linted. Move a reusable tool into `scripts/` with tests before committing it. `ApplicationRoot` owns route composition and lazy components so the bootstrap file remains compatible with Fast Refresh linting.
+
+Inspection drafts stage per-face local files and explicit existing-photo selections. Save persists the inspection first, then uploads/links those photos with the inspection snapshot’s face ID. Pending queue entries stay in the draft on failure; completed entries are skipped on retry, and the saved inspection is not submitted again. Cancel before save performs no uploads. Local preview URLs are revoked when their components unmount.

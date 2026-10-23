@@ -493,3 +493,23 @@
 .record-photo-selected { display: flex; align-items: center; gap: 10px; overflow-wrap: anywhere; }
 .record-photo-selected .record-photo-thumbnail { width: 88px; flex-shrink: 0; }
 @media (max-width: 480px) { .record-photo-link { grid-template-columns: 64px minmax(0,1fr); gap: 8px; } }
+
+.monument-inspections .inspection-fields {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.monument-inspections .inspection-fields > fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+}
+.monument-inspections .record-photo-editor > .record-photo-thumbnail {
+  width: 96px;
+  max-width: 100%;
+}
