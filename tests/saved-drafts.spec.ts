@@ -60,7 +60,7 @@ for (const record of ["marker", "burial"] as const) {
     await page.goto("/");
     await select(page, "A-TEST");
     await page.getByRole("tab", { name: record === "marker" ? "Monuments and photos" : "People and ownership" }).click();
-    const edit = page.getByRole("button", { name: record === "marker" ? "Edit marker HS-OVERVIEW" : "Edit burial Alice Example" });
+    const edit = page.getByRole("button", { name: record === "marker" ? "Edit face records" : "Edit burial Alice Example" });
     await edit.click();
     const field = page.getByRole("textbox", { name: record === "marker" ? "Inscription" : "First name", exact: true });
     await field.fill("Saved regression value");

@@ -41,7 +41,9 @@ export function useDraftNavigationGuard() {
     const click = (event: MouseEvent) => {
       if (!(event.target instanceof Element)) return;
       const button = event.target.closest("button");
-      if (!button || button.closest(".ui-confirmation, .media-gallery-modal, .reports-panel")) return;
+      // Resetting inspection display preferences does not discard or replace a draft.
+      if (button?.matches(".inspection-editor .inspection-display-preferences-reset")) return;
+      if (!button || button.closest(".ui-confirmation, .media-gallery-modal, .overview-photo-dialog, .reports-panel")) return;
       const navigation = button.closest(".result-card, .detail-tabs, .admin-nav, [data-discard-draft]") ||
         /^(Cancel|Close|New |Add new|Reset)/i.test(button.getAttribute("aria-label") || button.textContent?.trim() || "");
       if (navigation && !confirmDiscardChanges()) { event.preventDefault(); event.stopImmediatePropagation(); }

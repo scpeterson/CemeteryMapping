@@ -5,6 +5,7 @@ import type { MarkerFace } from "../src/types";
 
 test("edit and reload multiple faces with multiline text, people, photos and conflict recovery", async ({ page }, testInfo) => {
   await overviewFixture(page);
+  await page.route("**/api/headstones/*/photo-contexts",route=>route.fulfill({json:[]}));
   await page.route("**/api/me", (route) => route.fulfill({ json: { role: "admin", assignedCemeteryIds: [], permissions: { canManageUsers: true, canOpenAdminPanel: true, canViewOwnership: true, canUpdateGravesites: true, canDeletePhotos: true } } }));
   let current = { ...marker, mediaAssets: marker.mediaAssets.map((asset) => ({ ...asset, mediaLinkId: asset.id, isPrimary: asset.id === "latest-marker" })), facesRevision: 0, facePeople: [{ id: "alice", fullName: "Alice Example" }, { id: "bob", fullName: "Bob Example" }],
     faces: [{ id: "11111111-1111-4111-8111-111111111112", label: "Unspecified face", inscription: "Family marker", notes: "", burialIds: [], mediaAssetIds: [] }] as MarkerFace[] };
@@ -26,7 +27,7 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   await page.getByRole("tabpanel", { name: "Overview", exact: true }).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await page.getByRole("tab", { name: "Details", exact: true }).click();
   await expect(page.getByRole("region", { name: "Unspecified face", exact: true })).toContainText("Family marker");
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await page.getByRole("button", { name: "Manage faces", exact: true }).click();
   const first = page.getByRole("group", { name: "Face 1", exact: true });
   await first.getByLabel("Face label", { exact: true }).fill("North");
@@ -45,13 +46,13 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   const north = page.getByRole("region", { name: "North", exact: true });
   await expect(north).toContainText("Alice Example");
   await expect(north.locator(".inscription-box")).toHaveText("  ALICE\n1901–1981  ", { useInnerText: false });
-  // Protected galleries download only near the viewport.
-  await north.scrollIntoViewIfNeeded();
-  await expect(north.getByRole("img")).toBeVisible();
-  await expect(page.getByRole("tabpanel", { name: "Details", exact: true }).getByRole("img", { name: "latest-marker", exact: true })).toHaveCount(1);
-  await expect(page.getByRole("region", { name: "Base", exact: true })).toContainText("Last word weathered");
-  await expect(north.getByRole("button", { name: "Delete photo latest-marker.png", exact: true })).toBeVisible();
-  await expect(north.getByRole("button", { name: "Remove primary: latest-marker.png", exact: true })).toBeVisible();
+  await north.getByRole("button",{name:"View North photos in gallery",exact:true}).click();
+  const gallery=page.getByRole("dialog",{name:"Marker photo gallery",exact:true});
+  await gallery.locator(".media-gallery-card").first().scrollIntoViewIfNeeded();
+  await expect(gallery.getByRole("img", {name:"latest-marker",exact:true})).toBeVisible();
+  await expect(gallery.getByRole("button", { name: "Delete photo latest-marker.png", exact: true })).toBeVisible();
+  await expect(gallery.getByRole("button", { name: "Remove primary: latest-marker.png", exact: true })).toBeVisible();
+  await gallery.getByRole("button",{name:"Close gallery",exact:true}).click();
   await expect(north).toContainText("Designs: Etched ivy border");
   await expect(page.getByRole("region", { name: "Base", exact: true })).toContainText("Designs: Carved rose");
   expect(current.faces[0].designNotes).toBe("Etched ivy border");
@@ -59,7 +60,7 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   expect(current.faces[0].inscription).toBe("  ALICE\n1901–1981  ");
   await north.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("marker-faces.png"), fullPage: true });
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await first.scrollIntoViewIfNeeded();
   await expect(first).toBeVisible();
@@ -79,7 +80,7 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   await page.getByRole("tabpanel", { name: "Overview", exact: true }).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await page.getByRole("tab", { name: "Details", exact: true }).click();
   await expect(north).toContainText("Alice Example");
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await expect(first.getByRole("textbox", { name: "Flourishes or designs", exact: true })).toHaveValue("Etched ivy border");
   await expect(second.getByRole("textbox", { name: "Flourishes or designs", exact: true })).toHaveValue("Carved rose");
   await second.getByRole("button", { name: "Remove face" }).click();
@@ -91,6 +92,7 @@ test("edit and reload multiple faces with multiline text, people, photos and con
 
 test("read-only users can read face inscriptions and photos without edit controls", async ({ page }) => {
   await overviewFixture(page);
+  await page.route("**/api/headstones/*/photo-contexts",route=>route.fulfill({json:[]}));
   await page.route("**/api/me", (route) => route.fulfill({ json: { role: "reader", assignedCemeteryIds: [cemeteryId], permissions: {} } }));
   await page.route("**/api/headstones/marker-1", (route) => route.fulfill({ json: { ...marker, facesRevision: 1,
     facePeople: [{ id: "alice", fullName: "Alice Example" }], faces: [{ id: "north", label: "North", inscription: "Alice\nExample", notes: "Weathered",
@@ -101,15 +103,19 @@ test("read-only users can read face inscriptions and photos without edit control
   await page.getByRole("tab", { name: "Details", exact: true }).click();
   const north = page.getByRole("region", { name: "North", exact: true });
   await expect(north).toContainText("Alice Example");
-  await north.scrollIntoViewIfNeeded();
-  await expect(north.getByRole("img")).toBeVisible();
-  await expect(page.getByRole("tabpanel", { name: "Details", exact: true }).getByRole("img", { name: "latest-marker", exact: true })).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "Edit marker HS-OVERVIEW" })).toHaveCount(0);
+  await north.getByRole("button",{name:"View North photos in gallery",exact:true}).click();
+  const gallery=page.getByRole("dialog",{name:"Marker photo gallery",exact:true});
+  await gallery.locator(".media-gallery-card").first().scrollIntoViewIfNeeded();
+  await expect(gallery.getByRole("img", {name:"latest-marker",exact:true})).toBeVisible();
+  await expect(gallery.getByRole("button", {name:"Upload new photos",exact:true})).toHaveCount(0);
+  await gallery.getByRole("button",{name:"Close gallery",exact:true}).click();
+  await expect(page.getByRole("button", { name: "Edit face records" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add face", exact: true })).toHaveCount(0);
 });
 
 test("front and back inscriptions use faces without a separate back field", async ({ page }) => {
   await overviewFixture(page);
+  await page.route("**/api/headstones/*/photo-contexts",route=>route.fulfill({json:[]}));
   let current = { ...marker, inscription: "", faces: [] as MarkerFace[], facesRevision: 0 };
   await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
     markerTypes: [marker.markerType], markerScopes: [marker.markerScope], materials: [marker.material], conditions: [marker.condition],
@@ -125,13 +131,13 @@ test("front and back inscriptions use faces without a separate back field", asyn
   await select(page, "A-TEST");
   await page.getByRole("tabpanel", { name: "Overview", exact: true }).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await page.getByRole("tab", { name: "Details", exact: true }).click();
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await expect(page.getByRole("textbox", { name: "Inscription", exact: true })).toBeVisible();
   await expect(page.getByLabel("Face label", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   expect(current.faces).toHaveLength(1);
   expect(current.faces[0]).toMatchObject({label:"Front",inscription:""});
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await page.getByRole("textbox", { name: "Inscription", exact: true }).fill("MYRTLE\nDEER");
   await expect(page.getByRole("textbox", { name: "Back of stone", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Manage faces", exact: true }).click();
@@ -144,7 +150,7 @@ test("front and back inscriptions use faces without a separate back field", asyn
   expect(current.faces[0]).toMatchObject({ label: "Front", inscription: "MYRTLE\nDEER", burialIds: [], mediaAssetIds: [] });
   expect(current.faces[1]).toMatchObject({ label: "Back", inscription: "Family memorial", burialIds: [], mediaAssetIds: [] });
   expect(current).not.toHaveProperty("backDescription");
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await expect(page.getByRole("textbox", { name: "Inscription", exact: true }).nth(0)).toHaveValue("MYRTLE\nDEER");
   await expect(page.getByRole("textbox", { name: "Inscription", exact: true }).nth(1)).toHaveValue("Family memorial");
   await expect(page.getByLabel("Face label", { exact: true }).nth(1)).toHaveValue("Back");
@@ -153,6 +159,7 @@ test("front and back inscriptions use faces without a separate back field", asyn
 
 test("saving ignores empty new faces but requires labels for faces with content", async ({ page }) => {
   await overviewFixture(page);
+  await page.route("**/api/headstones/*/photo-contexts",route=>route.fulfill({json:[]}));
   let current = { ...marker, facesRevision: 0, faces: [] as MarkerFace[] };
   let saves = 0;
   await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
@@ -169,7 +176,7 @@ test("saving ignores empty new faces but requires labels for faces with content"
   await select(page, "A-TEST");
   await page.getByRole("tabpanel", { name: "Overview", exact: true }).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await page.getByRole("tab", { name: "Details", exact: true }).click();
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await page.getByRole("button", { name: "Manage faces", exact: true }).click();
   await page.getByRole("button", { name: "Add face", exact: true }).click();
   const first = page.getByRole("group", { name: "Face 1", exact: true });
@@ -181,7 +188,7 @@ test("saving ignores empty new faces but requires labels for faces with content"
   await expect(page.getByRole("region", { name: "Front", exact: true })).toContainText("MYRTLE");
   expect(saves).toBe(1);
   expect(current.faces).toHaveLength(1);
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await page.getByRole("button", { name: "Manage faces", exact: true }).click();
   await page.getByRole("button", { name: "Add face", exact: true }).click();
   const second = page.getByRole("group", { name: "Face 2", exact: true });
@@ -198,6 +205,7 @@ test("saving ignores empty new faces but requires labels for faces with content"
 for (const status of ["not_recorded", "blank", "illegible"] as const) {
   test(`a ${status} monument retains one face and cannot remove its last face`, async ({page}) => {
     await overviewFixture(page);
+  await page.route("**/api/headstones/*/photo-contexts",route=>route.fulfill({json:[]}));
     const history = [{id:"history",text:"Earlier reading",source:"Fixture source",sourceDate:"2000"}];
     let current = {...marker,inscription:"",inscriptionStatus:status,currentLegibility:status === "not_recorded" ? "unknown" : status,
       historicalTranscriptions:history,faces:[] as MarkerFace[],facesRevision:0};
@@ -209,7 +217,7 @@ for (const status of ["not_recorded", "blank", "illegible"] as const) {
     await page.goto("/");await select(page,"A-TEST");
     await page.getByRole("tabpanel",{name:"Overview",exact:true}).getByRole("button",{name:/HS-OVERVIEW/}).click();
     await page.getByRole("tab",{name:"Details",exact:true}).click();
-    await page.getByRole("button",{name:"Edit marker HS-OVERVIEW"}).click();
+    await page.getByRole("button",{name:"Edit face records"}).click();
     await page.getByRole("button",{name:"Manage faces",exact:true}).click();
     await expect(page.getByRole("button",{name:"Remove face",exact:true})).toBeDisabled();
     await page.getByRole("button",{name:"Save marker",exact:true}).click();

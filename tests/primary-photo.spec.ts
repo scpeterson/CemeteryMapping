@@ -31,10 +31,11 @@ test("select, replace and remove a primary photo, including after reload", async
   await select(page, "A-TEST");
   const overview = page.getByRole("tabpanel", { name: "Overview", exact: true });
   await page.getByRole("tab", { name: "Monuments" }).click();
-  await page.locator(".all-monument-photos > summary").click();
+  await page.locator(".all-monument-photos > button").click();
   await page.getByRole("button", { name: "Make primary: old-marker.png", exact: true }).click();
   await expect(page.getByRole("button", { name: "Remove primary: old-marker.png", exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("primary-photo-gallery.png"), fullPage: true });
+  await page.getByRole("button", {name:"Close gallery",exact:true}).click();
   await page.getByRole("tab", { name: "Overview", exact: true }).click();
   await expect(overview.getByRole("img", { name: "old-marker", exact: true })).toBeVisible();
   await expect(overview.getByRole("button", { name: "Open primary photo" })).toBeVisible();
@@ -42,20 +43,22 @@ test("select, replace and remove a primary photo, including after reload", async
   await select(page, "A-TEST");
   await expect(overview.getByRole("img", { name: "old-marker", exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Monuments" }).click();
-  await page.locator(".all-monument-photos > summary").click();
+  await page.locator(".all-monument-photos > button").click();
   await page.getByRole("button", { name: "Make primary: latest-marker.png", exact: true }).click();
   await expect(page.getByRole("button", { name: "Make primary: old-marker.png", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Remove primary: latest-marker.png", exact: true }).click();
+  await page.getByRole("button", {name:"Close gallery",exact:true}).click();
   await page.getByRole("tab", { name: "Overview", exact: true }).click();
   await expect(overview.getByRole("button", { name: "Open latest photo" })).toBeVisible();
   await expect(overview.getByRole("img", { name: "latest-marker", exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Monuments" }).click();
-  await page.locator(".all-monument-photos > summary").click();
+  await page.locator(".all-monument-photos > button").click();
   await page.getByRole("button", { name: "Make primary: old-marker.png", exact: true }).click();
   await page.route("**/api/media-assets/old-marker", (route) => route.fulfill({ json: { id: "old-marker" } }));
   page.once("dialog", (dialog) => dialog.accept("Remove incorrect photo"));
   await page.getByRole("button", { name: "Delete photo old-marker.png", exact: true }).click();
   await expect(page.getByRole("button", { name: "Remove primary: old-marker.png", exact: true })).toHaveCount(0);
+  await page.getByRole("button", {name:"Close gallery",exact:true}).click();
   await page.getByRole("tab", { name: "Overview", exact: true }).click();
   await expect(overview.getByRole("img", { name: "latest-marker", exact: true })).toBeVisible();
 

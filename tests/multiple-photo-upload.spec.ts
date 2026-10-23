@@ -27,8 +27,9 @@ for (const target of ["gravesite panel", "monument panel"] as const) {
       await page.getByRole("tab", { name: "Monuments and photos" }).click();
     }
     await expect(page.getByRole("heading", { name: "Gravesite Photos", exact: true })).toHaveCount(0);
-    await page.locator(".all-monument-photos > summary").click();
-    const forms = page.locator(".all-monument-photos .photo-upload-form");
+    await page.locator(".all-monument-photos > button").click();
+    await page.getByRole("button",{name:"Upload new photos",exact:true}).click();
+    const forms = page.locator(".monument-photo-workspace .photo-upload-form");
     await expect(forms).toHaveCount(1);
     const form = forms.first();
     await expect(form).toContainText("Linked monument");

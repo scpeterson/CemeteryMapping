@@ -294,6 +294,8 @@ export function GraveDetailPanel({
                     onUpdateGraveFeature={onUpdateGraveFeature}
                     onDeleteGraveFeature={onDeleteGraveFeature}
                     canDeleteGraveFeatures={canDeleteGraveFeatures}
+                    onSaveMaintenanceRecord={onSaveMaintenanceRecord}
+                    onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
                   />
                 ))}
               </div>

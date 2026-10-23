@@ -218,7 +218,7 @@ test("read-only users do not see owner or deed sections", async ({ page }) => {
     "title",
     "One physical marker or headstone is shared by this gravesite and at least one neighboring gravesite, such as a two-person headstone centered between burial spaces. Notes: Shared by adjacent gravesites",
   );
-  await expect(page.getByLabel("Edit marker HS-1")).toHaveCount(0);
+  await expect(page.getByLabel("Edit marker information HS-1")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Open administration/u })).toHaveCount(0);
 });
 
@@ -345,10 +345,10 @@ test("power users can edit headstone marker details from grave detail", async ({
   await page.goto("/");
   await selectResultGrave(page, "A-TEST");
   await page.getByRole("tab", { name: "Monuments and photos" }).click();
-  await page.getByLabel("Edit marker HS-1").click();
+  await page.getByLabel("Edit marker information HS-1").click();
   await page.getByRole("combobox", { name: "Material", exact: true }).selectOption("55555555-5555-4555-8555-555555555557");
-  await expect(page.getByRole("combobox", { name: "Condition", exact: true })).toBeDisabled();
-  await expect(page.getByRole("textbox", { name: "Condition notes", exact: true })).toBeDisabled();
+  await expect(page.getByRole("combobox", { name: "Condition", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Condition notes", exact: true })).toHaveCount(0);
   await page.getByRole("textbox", { name: "Flourishes or designs" }).fill("Etched ivy border");
   await expect(page.getByRole("textbox", { name: "Back of stone" })).toHaveCount(0);
   await page.getByRole("button", { name: "Save marker" }).click();
@@ -470,7 +470,7 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
   await page.goto("/");
   await selectResultGrave(page, "G-47");
   await page.getByRole("tab", { name: "Monuments and photos" }).click();
-  await page.getByLabel("Edit marker HS-G-47").click();
+  await page.getByLabel("Edit marker information HS-G-47").click();
 
   const markerType = page.getByRole("combobox", { name: "Marker type" });
   await expect(markerType.locator("option")).toHaveCount(1);

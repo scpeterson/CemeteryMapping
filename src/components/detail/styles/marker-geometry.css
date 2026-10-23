@@ -464,7 +464,7 @@
   border-radius: 7px;
   padding: 6px 10px;
 }
-.all-monument-photos > summary,
+.all-monument-photos > button,
 .record-photos > details > summary {
   cursor: pointer;
   font-weight: 700;
@@ -513,3 +513,220 @@
   width: 96px;
   max-width: 100%;
 }
+
+.inspection-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.inspection-steps button {
+  flex: 1 1 140px;
+  padding: 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+}
+.inspection-steps button[aria-current="step"] {
+  background: #e6efe9;
+  border-color: #2f5d50;
+  font-weight: 700;
+}
+.monument-inspections [hidden] { display: none; }
+.inspection-stage { display: grid; min-width: 0; gap: var(--space-2); }
+.inspection-stage > fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+}
+.inspection-stage summary { cursor: pointer; padding: 8px 0; }
+.inspection-review dd { margin: 4px 0 12px; overflow-wrap: anywhere; }
+.monument-inspections .inspection-workflow-actions {
+  padding: 10px 0;
+  border-top: 1px solid #cbd6c7;
+}
+.inspection-review-photos { overflow-wrap: anywhere; }
+
+.marker-section-nav { position: sticky; top: var(--marker-section-nav-top, 44px); z-index: 4; align-self: start; padding: 6px 0 10px; border-bottom: 1px solid #d9e0d5; background: var(--panel); box-shadow: 0 3px 6px #243c2910; }
+.marker-section-nav label { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; }
+.marker-section-nav select { min-width: 0; width: 100%; min-height: 44px; padding: 6px 8px; border: 1px solid #cbd6c7; border-radius: 6px; background: #fff; color: #2f5d50; font-size: 1rem; }
+.marker-workflow-section { display: grid; gap: 12px; min-width: 0; padding: 12px 0 18px; }
+.marker-workflow-section + .marker-workflow-section { border-top: 1px solid #d9e0d5; }
+.marker-workflow-section > h3 { margin: 0; scroll-margin-top: var(--marker-section-scroll-margin, 120px); }
+.marker-workflow-section > .muted { margin: 0; }
+.marker-workflow-section > button { justify-self: start; }
+.marker-workflow-section summary { cursor: pointer; padding: 8px 0; font-weight: 700; }
+.marker-workflow-section > .detail-section { padding: 10px 0; margin: 0; }
+.marker-workflow-section dd { overflow-wrap: anywhere; }
+
+.inspection-face-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.inspection-face-cards button {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  color: var(--text-color, #243c30);
+  background: #fff;
+  border: 1px solid #b8c7bd;
+  border-radius: 8px;
+}
+.inspection-face-cards button[aria-pressed="true"] {
+  background: #eaf3ec;
+  border: 2px solid #356b48;
+  padding: 11px;
+}
+.inspection-face-cards button:focus-visible {
+  outline: 3px solid #356b48;
+  outline-offset: 2px;
+}
+.inspection-face-cards button span { font-size: 0.85rem; }
+
+.monument-inspections .record-photo-editor > .media-gallery-item > a {
+  display: block;
+  width: 96px;
+  max-width: 100%;
+}
+
+.inspection-face-photo-review .inspection-review-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+.inspection-review-photo {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  overflow-wrap: anywhere;
+}
+.inspection-review-photo > .record-photo-thumbnail,
+.inspection-review-photo > .media-gallery-item > a { display: block; width: 96px; max-width: 100%; }
+.inspection-review-photo p { margin: 0; }
+
+.inspection-review-face-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.inspection-review-face-heading h5 { margin: 0; overflow-wrap: anywhere; }
+.inspection-review-face-heading button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+  background: #fff;
+  color: #2f5d50;
+  font: inherit;
+}
+
+.inspection-review-required {
+  padding: 12px;
+  border: 1px solid #b8c7bd;
+  border-radius: 7px;
+  margin-bottom: 12px;
+}
+.inspection-review-required.has-missing { border-color: #a2691b; background: #fff8eb; }
+.inspection-review-required h5 { margin: 0; }
+.inspection-review-required ul { display: grid; gap: 10px; padding-left: 20px; }
+.inspection-review-required li { overflow-wrap: anywhere; }
+.inspection-review-required button { display: block; min-height: 44px; margin-top: 4px; padding: 8px 12px; border: 1px solid #cbd6c7; border-radius: 7px; color: #2f5d50; background: #fff; font: inherit; max-width: 100%; }
+.monument-inspections [aria-invalid="true"] { border-color: #a2691b; }
+
+.inspection-review-required h5 { scroll-margin-top: 88px; }
+
+.inspection-steps button { min-width: 0; overflow-wrap: anywhere; }
+.inspection-step-label { display: block; margin-bottom: 6px; }
+.inspection-step-status {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 6px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.inspection-step-status.has-missing { color: #805013; border-color: #c99752; background: #fff8eb; }
+.inspection-step-status.is-ready { color: #26583b; border-color: #9ab9a5; background: #eaf3ec; }
+
+.inspection-correction-status {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  box-shadow: 0 -3px 12px #243c2920;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #b8c7bd;
+  border-radius: 7px;
+  background: #f4f8f3;
+  overflow-wrap: anywhere;
+}
+.inspection-correction-status p { margin: 0; }
+
+.inspection-required-choices { display: grid; gap: 6px; margin: 8px 0 0; padding-left: 24px; }
+.inspection-required-choices button { width: 100%; min-height: 44px; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.inspection-required-choices button[aria-current="true"] { border-color: #26583b; background: #eaf3ec; color: #26583b; font-weight: 700; }
+
+.inspection-correction-body .inspection-required-choices { max-height: 25dvh; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; padding-bottom: 4px; }
+
+.inspection-correction-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.inspection-correction-actions button { min-width: 0; min-height: 44px; white-space: normal; overflow-wrap: anywhere; }
+.inspection-correction-return { grid-column: 1 / -1; }
+
+.inspection-correction-header { display: grid; grid-template-columns: minmax(0, 1fr) 110px; align-items: center; gap: 8px; }
+.inspection-correction-header > div, .inspection-correction-body { display: grid; min-width: 0; gap: 4px; }
+.inspection-correction-toggle { min-height: 44px; white-space: normal; overflow-wrap: anywhere; }
+
+.inspection-correction-header.is-complete { grid-template-columns: minmax(0, 1fr); }
+
+.inspection-keyboard-hint { display: grid; gap: 2px; margin: 4px 0; padding: 0; list-style: none; font-size: 0.75rem; line-height: 1.4; }
+.inspection-keyboard-hint li { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 8px; }
+.inspection-keyboard-hint kbd { font: inherit; font-weight: 600; }
+
+.inspection-keyboard-help summary { min-height: 44px; align-content: center; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+
+.inspection-correction-actions .inspection-display-preferences-reset { grid-column: 1 / -1; }
+
+.inspection-display-reset-notice { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.inspection-display-reset-notice p { margin: 0; }
+.inspection-display-reset-notice button { min-height: 44px; }
+
+.inspection-display-reset-notice > div { display: contents; }
+.inspection-display-reset-notice button { grid-column: 2; grid-row: 1; }
+.inspection-reset-escape-hint { grid-column: 1 / -1; display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: 0.75rem; line-height: 1.4; }
+.inspection-reset-escape-hint li { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 8px; }
+.inspection-reset-escape-hint kbd { font: inherit; font-weight: 600; }
+
+.inspection-reset-keyboard-help { grid-column: 1 / -1; min-width: 0; }
+.inspection-reset-keyboard-help summary { min-height: 44px; align-content: center; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+
+.inspection-restored-defaults ul { margin: 4px 0 0; padding-left: 16px; font-size: 0.8rem; line-height: 1.4; }
+
+.inspection-restored-defaults { display: contents; }
+.inspection-restored-defaults-list { grid-column: 1 / -1; min-width: 0; }
+.inspection-restored-defaults-list summary { min-height: 44px; align-content: center; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+
+.marker-workflow .inspection-review-required h5 { scroll-margin-top: var(--marker-section-scroll-margin, 120px); }
+
+/* Keep step shortcuts clear of the sticky marker navigation when scrolled into view. */
+.inspection-steps button { scroll-margin-top: var(--marker-section-scroll-margin, 120px); }

@@ -15,7 +15,7 @@ async function expectNaturalRatio(image: Locator, ratio: number) {
 }
 
 for (const width of [1280, 390]) {
-  test(`portrait and landscape marker photos keep their full proportions in both galleries at ${width}px`, async ({ page }) => {
+  test(`portrait and landscape marker photos keep their full proportions in the unified gallery at ${width}px`, async ({ page }) => {
     await overviewFixture(page);
     const photos = Array.from({ length: 5 }, (_, i) => ({
       id: `orientation-${i}`, assetType: "photo", fileUrl: `/media/orientation-${i}.svg`,
@@ -33,15 +33,14 @@ for (const width of [1280, 390]) {
     await select(page, "A-TEST");
     await page.setViewportSize({ width, height: 900 });
     await page.getByRole("tab", { name: "Monuments" }).click();
-    await page.locator(".all-monument-photos > summary").click();
+    await page.locator(".all-monument-photos > button").click();
     const preview = page.locator(".media-gallery").first();
-    await expect(preview.locator(".media-gallery-card")).toHaveCount(4);
+    await expect(preview.locator(".media-gallery-card")).toHaveCount(5);
     await preview.locator(".media-gallery-card").nth(0).scrollIntoViewIfNeeded();
     await expectNaturalRatio(preview.getByRole("img", { name: "Portrait 0", exact: true }), 0.5);
     await preview.locator(".media-gallery-card").nth(1).scrollIntoViewIfNeeded();
     await expectNaturalRatio(preview.getByRole("img", { name: "Landscape 1", exact: true }), 2);
-    await page.getByRole("button", { name: "View all photos (5)" }).click();
-    const expanded = page.getByRole("dialog", { name: "All photos", exact: true });
+    const expanded = page.getByRole("dialog", { name: "Marker photo gallery", exact: true });
     await expect(expanded.locator(".media-gallery-card")).toHaveCount(5);
     await expanded.locator(".media-gallery-card").nth(0).scrollIntoViewIfNeeded();
     await expectNaturalRatio(expanded.getByRole("img", { name: "Portrait 0", exact: true }), 0.5);
