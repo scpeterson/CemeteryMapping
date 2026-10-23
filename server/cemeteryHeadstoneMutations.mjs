@@ -331,8 +331,8 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           jsonb_build_object(
             'NormalizedProvenance',
             jsonb_build_object(
-              'nhgInclusion', $17,
-              'verificationSourceType', $18,
+              'nhgInclusion', $17::text,
+              'verificationSourceType', $18::text,
               'verifiedAt', NULLIF($19, '')
             )
           ),

@@ -8,7 +8,7 @@ import { useNearViewport } from "../../hooks/useNearViewport";
 import type { MediaAsset } from "../../types";
 import { MediaGallery, PhotoUploadForm } from "./MediaRecords";
 
-function PhotoThumbnail({asset}: {asset: MediaAsset}) {
+export function PhotoThumbnail({asset}: {asset: MediaAsset}) {
  const {ref,active}=useNearViewport();
  const {url,failed,retry,reportImageFailure}=useMediaUrl(asset.thumbnailUrl||asset.fileUrl,active);
  return <span className="record-photo-thumbnail" ref={ref}>

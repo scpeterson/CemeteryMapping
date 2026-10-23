@@ -53,3 +53,10 @@ test('explicitly empty inspection faces are rejected; legacy omitted faces use t
  assert.throws(()=>validateNewInspections([{...entry,faces:[]}]),/between 1 and 32/);
  assert.equal(validateNewInspections([entry])[0].faces,undefined);
 });
+
+test('inspection face designs preserve exact text, allow clearing, and reject invalid values',()=>{
+ const face={id:entry.id,label:'Front',inscription:'Reading',designNotes:'  Ivy\nCarved rose  '};
+ assert.deepEqual(validateNewInspections([{...entry,faces:[face]}])[0].faces,[face]);
+ assert.equal(validateNewInspections([{...entry,faces:[{...face,designNotes:''}]}])[0].faces[0].designNotes,'');
+ for(const designNotes of [null,42,'x'.repeat(20001)])assert.throws(()=>validateNewInspections([{...entry,faces:[{...face,designNotes}]}]),/Face design notes/);
+});
