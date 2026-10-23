@@ -60,7 +60,7 @@ test('cemetery admin can edit the selected inspection with a version; NHG date s
  await expect(history.getByLabel('Inspection date',{exact:true})).toHaveValue('2005-10-11');
  await expect(history.getByLabel('Inspection date',{exact:true})).toBeDisabled();
  await history.getByRole('textbox',{name:'Face inscription',exact:true}).fill('Reviewed source reading');
- await history.getByRole('textbox',{name:'Inspection condition notes',exact:true}).fill('Reviewed condition');
+ await history.getByRole('textbox',{name:'Monument condition notes',exact:true}).fill('Reviewed condition');
  await history.getByRole('button',{name:'Save inspection',exact:true}).click();
  await expect(history).toContainText('Reviewed source reading');
  expect(patches[0].newInspections).toEqual([]);
