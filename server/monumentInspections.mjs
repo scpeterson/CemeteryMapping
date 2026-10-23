@@ -9,12 +9,18 @@ function inspectionTranscription(value) {
   return value;
 }
 
+function inspectionDesignNotes(value) {
+  if (typeof value !== "string" || value.length > 20000) throw new BadRequestError("Face design notes must be text of at most 20000 characters.");
+  return value;
+}
+
 export function validateInspectionFaces(value) {
   if (!Array.isArray(value) || value.length < 1 || value.length > 32) throw new BadRequestError("An inspection must have between 1 and 32 faces.");
   const faces = value.map(face => ({
     id: validateUuid(face?.id, "Inspection face").toLowerCase(),
     label: requiredText(face?.label, "Face label", 100),
     inscription: inspectionTranscription(face?.inscription),
+    ...(face?.designNotes === undefined ? {} : {designNotes: inspectionDesignNotes(face.designNotes)}),
   }));
   if (new Set(faces.map(f => f.id)).size !== faces.length || new Set(faces.map(f => f.label.toLowerCase())).size !== faces.length) throw new BadRequestError("Inspection faces need unique ids and labels.");
   if (JSON.stringify(faces).length > 400000) throw new BadRequestError("Combined face inscriptions are too long.");

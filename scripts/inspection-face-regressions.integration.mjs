@@ -75,3 +75,17 @@ test('two editors using the same version cannot overwrite a newer face reading',
   assert.deepEqual(committed.row.faces.slice(1),entry.faces.slice(1));
  });
 });
+
+test('face designs round-trip and clear independently without changing other readings or photos',async()=>{
+ await withFixture(async({c,marker,entry,saved})=>{
+  const faces=entry.faces.map((face,index)=>({...face,designNotes:index?'Border carving':'  Etched ivy\nCarved rose  '}));
+  const [designed]=validateNewInspections([{...entry,faces}]);
+  await c.query('DELETE FROM monument_inspections WHERE id=$1',[entry.id]);
+  await insertMonumentInspections(c,marker.id,[designed]);
+  const before=await saved();assert.deepEqual(before.row.faces,faces);
+  const [cleared]=validateNewInspections([{...designed,expectedUpdatedAt:before.version,faces:faces.map((face,index)=>index?face:{...face,designNotes:''})}],{updating:true});
+  await updateMonumentInspections(c,marker.id,[cleared]);
+  const after=await saved();assert.deepEqual(after.row.faces,[{...faces[0],designNotes:''},...faces.slice(1)]);
+  assert.equal(after.row.inscription,before.row.inscription);
+ });
+});
