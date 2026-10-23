@@ -12,7 +12,7 @@ type InspectionDraft = InspectionInput & { photos?: InspectionPhotoDraft[]; reco
 const combinedReading = (faces: InspectionFace[]) => faces.length === 1 ? faces[0].inscription : faces.map(f=>`${f.label}\n${f.inscription}`).join("\n\n");
 const isCombined = (inscription: string, faces: InspectionFace[] = []) => faces.length > 0 && inscription === combinedReading(faces);
 const draftFaces = (inscription: string, faces: InspectionFace[] = []): InspectionFace[] => faces.length
-  ? faces.map(({id,label,inscription}) => ({id,label,inscription}))
+  ? faces.map(({id,label,inscription,designNotes}) => ({id,label,inscription,...(designNotes===undefined?{}:{designNotes})}))
   : [{id:crypto.randomUUID(),label:"Front",inscription}];
 const inspectionTypes = { field_survey: "Field inspection", nhg: "NHG", historical: "Historical inspection" };
 const localToday = () => {
@@ -109,6 +109,7 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
       {(selected.faces ?? []).map(face => <div key={face.id}>
         <h5>{face.label}</h5>
         {face.inscription ? <p className="note-box inscription-box">{face.inscription}</p> : <p className="muted">No inscription recorded for this face.</p>}
+        {face.designNotes ? <p className="note-box"><strong>Flourishes or designs:</strong> {face.designNotes}</p> : null}
       </div>)}
       {!isCombined(selected.inscription,selected.faces) ? <><h5>{selected.faces?.length ? "Additional / unassigned inscription" : "Inscription"}</h5>
       {selected.inscription ? <p className="note-box inscription-box">{selected.inscription}</p> : <p className="muted">No inscription recorded for this inspection.</p>}</> : null}
@@ -143,6 +144,7 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
         <legend>Face {index+1}</legend>
         <label>Face label<input value={face.label} maxLength={100} onChange={e=>changeFaces(draft.faces!.map(f=>f.id===face.id?{...f,label:e.target.value}:f))} /></label>
         <label>Face inscription<textarea value={face.inscription} maxLength={20000} rows={5} onChange={e=>changeFaces(draft.faces!.map(f=>f.id===face.id?{...f,inscription:e.target.value}:f))} /></label>
+        <label>Flourishes or designs<textarea value={face.designNotes??""} maxLength={20000} rows={3} onChange={e=>changeFaces(draft.faces!.map(f=>f.id===face.id?{...f,designNotes:e.target.value}:f))} /></label>
         {!draft.recordSaved && onUploadPhoto?<InspectionFacePhotos faceId={face.id} photos={draft.photos??[]} assets={(headstone.mediaAssets??[]).filter(a=>a.assetType==="photo")} onChange={photos=>setDraft(current=>current?{...current,photos}:current)} />:null}
       </fieldset>)}
       <button type="button" className="secondary-button" disabled={(draft.faces?.length ?? 0)>=32} onClick={()=>changeFaces([...(draft.faces ?? []),{id:crypto.randomUUID(),label:`Face ${(draft.faces?.length ?? 0)+1}`,inscription:""}])}>Add inspection face</button>

@@ -511,3 +511,27 @@ test('inspection save failure keeps face edits and selected photos without uploa
  await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
  expect(writes).toBe(2);expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(1);
 });
+
+test('face flourishes and designs save, copy, edit and clear independently of other inspections',async({page})=>{
+ const state=await setup(page,true,true);const original=structuredClone(state.getInspections());
+ const region=page.getByRole('region',{name:'Inspections',exact:true});
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
+ const face=(n:number)=>region.getByRole('group',{name:`Inspection face ${n}`,exact:true});
+ for(const [index,text] of ['  Etched ivy\nCarved rose  ','Back border','Left scroll'].entries())await face(index+1).getByRole('textbox',{name:'Flourishes or designs',exact:true}).fill(text);
+ await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+ await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
+ expect(state.getInspections().slice(0,2)).toEqual(original);
+ const created=structuredClone(state.getInspections()[2]);
+ await openRecord(page,true);
+ await expect(region.getByLabel('Selected inspection',{exact:true})).toContainText('Etched ivy');
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ for(const [index,text] of ['  Etched ivy\nCarved rose  ','Back border','Left scroll'].entries())await expect(face(index+1).getByRole('textbox',{name:'Flourishes or designs',exact:true})).toHaveValue(text);
+ page.once('dialog',dialog=>dialog.accept());await region.getByRole('button',{name:'Cancel inspection',exact:true}).click();
+ await region.getByRole('button',{name:'Edit inspection',exact:true}).click();
+ await face(1).getByRole('textbox',{name:'Flourishes or designs',exact:true}).fill('');
+ await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+ await expect(region.getByRole('button',{name:'Edit inspection',exact:true})).toBeVisible();
+ const saved=state.getInspections()[2];expect(saved.faces[0]).toEqual({...created.faces[0],designNotes:''});
+ expect(saved.faces.slice(1)).toEqual(created.faces.slice(1));expect(state.getInspections().slice(0,2)).toEqual(original);
+});
