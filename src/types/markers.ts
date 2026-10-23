@@ -51,7 +51,7 @@ export type MarkerFace = {
   mediaAssetIds: string[];
 };
 
-export type InspectionFace = { id: string; label: string; inscription: string };
+export type InspectionFace = { id: string; label: string; inscription: string; designNotes?: string };
 
 export type MonumentInspection = {
   id: string;
