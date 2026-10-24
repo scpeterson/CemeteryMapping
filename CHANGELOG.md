@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Remove the redundant Flourishes or designs field from marker information; retain face-level editing and existing marker-level notes.
+
 - Restore Flourishes or designs on every inspection face, preserving those notes when copying, saving, editing, and clearing individual face observations.
 
 - Fix new marker creation failing with a server error by explicitly typing provenance values passed to PostgreSQL JSON construction. Add a real database regression for default and explicitly supplied provenance.

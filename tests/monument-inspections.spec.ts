@@ -151,6 +151,7 @@ test('marker information is a small independent form, with face and source editi
  await expect(form.getByLabel('Review status',{exact:true})).toHaveCount(0);
  await form.getByLabel('Vase notes',{exact:true}).fill('Vase beside marker');
  await form.screenshot({path:testInfo.outputPath('marker-information.png')});
+ await expect(form.getByRole('textbox',{name:'Flourishes or designs',exact:true})).toHaveCount(0);
  await form.getByRole('button',{name:'Save marker',exact:true}).click();
  await expect(page.getByRole('button',{name:'Edit marker information HS-OVERVIEW',exact:true})).toBeVisible();
  expect(patches).toHaveLength(1);

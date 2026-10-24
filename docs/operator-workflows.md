@@ -1132,7 +1132,7 @@ reading and all original inspection/photo records.
 
 ### Focused marker and inspection editing
 
-Use **Edit marker information** for type, scope, material, vase information and general designs. **Edit face records** maintains persistent marker faces and associated people/photos. **Edit sources & review** manages NHG inclusion, verification and review concerns. Condition and visit readings belong under **Inspections**.
+Use **Edit marker information** for type, scope, material and vase information. Record flourishes or designs on the relevant face. **Edit face records** maintains persistent marker faces and associated people/photos. **Edit sources & review** manages NHG inclusion, verification and review concerns. Condition and visit readings belong under **Inspections**.
 
 Choose **New inspection** or **Edit inspection**, then work through **Visit & condition → Faces & photos → Review & save**. Next, Back and the numbered step buttons keep your draft intact. In Faces & photos, select a face card to edit one face at a time. Cards show whether the face has a reading. While editing an existing inspection, they show a total photo count with linked and selected counts; new inspections show only draft selections. Linked counts include only photos for that inspection and face. Loading failures offer Retry linked photo counts without losing your draft. Switching faces preserves your work. Add inspection face selects the new face automatically. Expand Flourishes or designs for optional face decorations. Review the readings and selected photo filenames before Save inspection. If a required value is missing, return to the relevant step to complete it.
 

@@ -327,10 +327,6 @@ export function HeadstoneRecord({
           Vase notes
           <textarea value={form.vaseNotes} onChange={(event) => setForm((current) => ({ ...current, vaseNotes: event.target.value }))} rows={2} />
         </label>
-        <label className="headstone-wide-field">
-          Flourishes or designs
-          <textarea value={form.designNotes} onChange={(event) => setForm((current) => ({ ...current, designNotes: event.target.value }))} rows={3} />
-        </label>
         </> : null}
         {editArea === "faces" ? <>
         <p className="muted headstone-wide-field">Maintain marker face records and their people and photo associations. Record visit-specific readings under Inspections.</p>
