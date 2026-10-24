@@ -12,6 +12,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Compact inspection correction actions into one row and move display preferences outside the sticky panel.
+
 - Keep gallery browsing focused on photos with one Add photos action; reveal existing-photo linking only for a selected record.
 
 - Compact the photo gallery toolbar, collapse optional face/timing filters with an active count, and reveal full photo editing controls only when adding or linking photos.
