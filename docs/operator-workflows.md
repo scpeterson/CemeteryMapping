@@ -28,7 +28,7 @@ Search announces progress and the result count. If the remote search fails, the 
 
 Administration, Reports, Control, and full-history photos open as dialogs. Tab and Shift+Tab stay inside the active dialog; Escape closes that dialog and returns focus to its opener. A nested confirmation closes independently of its parent. Use the close button or Escape for the photo viewer; clicking its backdrop does not close it.
 
-Editors using draft protection warn before a guarded record/tab change, cancel/close action, or leaving the page. Choose Cancel in the warning to keep editing; confirming discards the tracked unsaved changes. Successful saves establish a new baseline, while failed saves retain the draft. Drafts are held in memory, not saved automatically or restored after reload. Save work before changing tasks, even when a particular control does not display a warning.
+Editors using draft protection warn before a guarded record/tab change, cancel/close action, or leaving the page. Choose Cancel in the warning to keep editing; confirming discards the tracked unsaved changes. Successful saves establish a new baseline, while failed saves retain the draft. Most drafts are held in memory. Inspection drafts can be resumed on this browser after reload; they are not automatically submitted. Save work before changing tasks, even when a particular control does not display a warning.
 
 ### Feature Overview
 
@@ -60,7 +60,7 @@ Preserve the precision of known dates: a year such as `1929` should remain a yea
 
 ### Recovering from Load and Save Errors
 
-A failed load is not evidence that a record, photo, or report is absent. Read the message and use the relevant retry control. Copy any unsaved values you need before signing out, reloading, or leaving the page; drafts are not saved across browser sessions.
+A failed load is not evidence that a record, photo, or report is absent. Read the message and use the relevant retry control. Copy any unsaved values you need before signing out, reloading, or leaving the page; most drafts are not saved across browser sessions; inspections offer browser-local recovery.
 
 | Situation | Recovery |
 | --- | --- |
@@ -355,7 +355,7 @@ In a monument's details, use the `Inspection` dropdown to select a visit by date
 
 Cemetery admins for the assigned cemetery and global admins can use `New inspection` or `Edit inspection`. A new inspection copies the currently selected inscription and all its face inscriptions so they can be corrected or saved as-is. It starts with Unknown condition and empty condition notes; it does not copy photo links. Within each face, choose photos to upload or select existing monument photos by thumbnail. Enter `Flourishes or designs` for each face (such as carved ivy or a border); these notes copy with the selected face readings and remain specific to each inspection. Review the previews and optionally enter photo notes and dates, then use `Save inspection` to save the readings and link the chosen photos to their faces. Canceling before Save uploads nothing. If a photo fails after the inspection saves, `Retry remaining photos` resumes the pending queue without creating another inspection or repeating successful uploads; `Close saved inspection` keeps the inspection and completed photos. Editing one inspection, including a single face reading, leaves other inspections unchanged. Keep a reading whose face is unknown in the inspection's general inscription rather than guessing a face.
 
-`Cancel inspection` abandons the draft without saving a record. If navigation opens the discard-unsaved-changes prompt, `Cancel` keeps the draft and its edits open; `OK` discards it. Reloading does not preserve an unsaved draft.
+`Cancel inspection` abandons the draft without saving a record. If navigation opens the discard-unsaved-changes prompt, `Cancel` keeps the draft and its edits open; `OK` discards it. After reloading, inspections offer Resume draft on the same marker and browser. Photo files must be reselected before save; their names and notes are retained. Cancel inspection or confirming a discard removes that recovery.
 
 Trinity NHG inspections use October 11, 2005. Their conditions and transcriptions remain separate from the 2026 field observations; a missing NHG condition is Unknown. Existing monument photos from the 2026 field work belong to those field inspections. An NHG inspection with no recorded photographs opens an empty filtered gallery.
 
@@ -1195,10 +1195,14 @@ The sticky correction panel names the current issue and its position among remai
 
 Show remaining items opens the issue list directly, scrolling to and focusing the current unresolved issue or first remaining item. Use Up/Down to browse, Home/End for first/last, Enter/Space to edit, Tab/Shift+Tab between controls, and Escape to hide the list and return to the correction field. Keyboard shortcuts are available in a collapsible hint. Selecting an issue collapses the list; phone correction jumps collapse it automatically while keeping Previous, Next, Return and Reset accessible.
 
-The browser remembers remaining-item visibility, the inspection keyboard hint, the reset-confirmation keyboard hint and the restored-defaults disclosure across inspections/reloads. Automatic phone collapse does not overwrite the remembered list choice. Display settings do not preserve drafts across reloads: the existing unsaved-change protection still applies.
+The browser remembers remaining-item visibility, the inspection keyboard hint, the reset-confirmation keyboard hint and the restored-defaults disclosure across inspections/reloads. Automatic phone collapse does not overwrite the remembered list choice. Display settings are separate from inspection draft recovery. The existing unsaved-change protection still applies.
 
 Reset display preferences restores all defaults: remaining items shown, both keyboard hints hidden, and the restored-defaults list hidden. It keeps your inspection draft and saved records intact. Its confirmation is available in the sticky panel or workflow footer, including Review & save. Restored defaults displays the setting count while collapsed and lists each setting when expanded. The message clears after four seconds; repeated Reset restarts that timer. Dismiss or Escape clears it immediately and returns focus to Reset. A separate collapsible shortcut hint explains confirmation controls.
 
 ### Compact marker section navigation
 
 Use Jump to section beneath the marker ID to reach Inspections, Photos, Maintenance, Marker information or Sources & review. It stays below the detail tabs while scrolling and shows the currently viewed section. Choosing a destination focuses its heading without discarding inspection drafts or photo selections. The menu adapts to wrapped tabs on phones and gravesite views.
+
+### Resume an unfinished inspection
+
+Return to the marker and choose **Resume draft**. Visit details, face readings/designs, the active face, and photo notes return. Reselect each named photo file under its face, or remove that selection before saving. If the inspection was already saved but photos failed, resume the remaining photo queue without creating another inspection. **Discard saved draft** asks for confirmation. Recovery belongs to the current browser and account; it is not a replacement for saving the record. If browser storage is unavailable, the editor reports that recovery is unavailable and remains usable.

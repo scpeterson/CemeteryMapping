@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 
 type AccountSession = {
   identity: string;
+  accountId?: string;
   signOut: () => void;
 };
 

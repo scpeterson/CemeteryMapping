@@ -58,6 +58,7 @@ export function AuthenticatedShell({ children }: Auth0AppProviderProps) {
 
   return (
     <SessionContext.Provider value={{
+      accountId: user?.sub,
       identity: user?.email ?? user?.name ?? "Signed in",
       signOut: () => {
         if (confirmDiscardChanges()) void logout({ logoutParams: { returnTo: window.location.origin } });

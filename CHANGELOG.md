@@ -12,6 +12,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Recover account- and marker-scoped unfinished inspections after reload, retaining visit/face edits and photo metadata with explicit file reselection before save.
+
 - Announce unsaved inspection changes, inspection save progress, pending photo retries, and completion separately.
 
 - Use consistent uncropped photo thumbnails and concise captions, with primary and deletion actions in accessible per-photo menus.

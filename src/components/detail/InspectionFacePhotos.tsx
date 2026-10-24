@@ -22,7 +22,13 @@ export function InspectionFacePhotos({faceId,photos,assets,onChange,linkedPhotos
       const files=Array.from(event.target.files??[]);
       if(files.some(file=>file.size>25*1024*1024)){setError("Each photo must be 25 MB or smaller.");event.target.value="";return;}
       setError(undefined);
-      onChange([...photos,...files.map(file=>({id:crypto.randomUUID(),faceId,file,notes:"",capturedAt:""}))]);
+      const next=[...photos];
+      for(const file of files){
+        const index=next.findIndex(photo=>photo.faceId===faceId&&!photo.saved&&photo.missingFileName===file.name);
+        if(index>=0)next[index]={...next[index],file,missingFileName:undefined};
+        else next.push({id:crypto.randomUUID(),faceId,file,notes:"",capturedAt:""});
+      }
+      onChange(next);
       event.target.value="";
     }} /></label>:null}
     <p className="muted">Photos will be uploaded and linked to this face when you save the inspection.</p>
@@ -36,8 +42,9 @@ export function InspectionFacePhotos({faceId,photos,assets,onChange,linkedPhotos
     {onManageLinked&&linkedOnly.length?<p className="muted">Manage photo link opens the saved-photo gallery. Changes there are saved separately from this inspection draft.</p>:null}
     {own.map(photo=>{
       const asset=assets.find(a=>a.id===photo.mediaAssetId);
-      return <fieldset key={photo.id} className="record-photo-editor" aria-label={`Photo ${photo.file?.name||asset?.originalFilename||"Monument photo"}`}>
-        <legend>{photo.file?.name||asset?.originalFilename||"Monument photo"}</legend>
+      return <fieldset key={photo.id} className="record-photo-editor" aria-label={`Photo ${photo.file?.name||photo.missingFileName||asset?.originalFilename||"Monument photo"}`}>
+        <legend>{photo.file?.name||photo.missingFileName||asset?.originalFilename||"Monument photo"}</legend>
+        {photo.missingFileName&&!photo.file&&!photo.saved?<p role="alert">Reselect {photo.missingFileName} using Choose photos to upload, or remove this selection.</p>:null}
         {photo.file?<FilePreview file={photo.file} />:asset?<MediaPhoto asset={asset}><span>{linkedAssets.some(linked=>linked.id===asset.id)?"Already linked · selected in this draft":"Selected in this draft"}</span></MediaPhoto>:null}
         {photo.file?<>
           <label>Notes<input value={photo.notes} maxLength={4000} disabled={photo.saved} onChange={event=>update(photo.id,{notes:event.target.value})} /></label>
@@ -71,12 +78,12 @@ export function InspectionFacePhotoReview({faceId,faceLabel,photos,assets,linked
     {!entries.length&&!loading&&!unavailable?<p className="muted">No photos for this face.</p>:null}
     <ul className="inspection-review-photos">{entries.map(({id,asset,photo})=>{
       const linked=asset&&linkedAssets.some(link=>link.id===asset.id);
-      const filename=photo?.file?.name||asset?.originalFilename||"Monument photo";
+      const filename=photo?.file?.name||photo?.missingFileName||asset?.originalFilename||"Monument photo";
       const notes=photo?.file?photo.notes:asset?.notes;
       const capturedAt=photo?.file?photo.capturedAt:asset?.capturedAt;
       return <li key={id} className="inspection-review-photo">
         <strong>{filename}</strong>
-        {photo?.file?<FilePreview file={photo.file}/>:asset?<MediaPhoto asset={asset}>{null}</MediaPhoto>:<p className="muted">Preview unavailable.</p>}
+        {photo?.file?<FilePreview file={photo.file}/>:asset?<MediaPhoto asset={asset}>{null}</MediaPhoto>:<p className="muted">{photo?.missingFileName?"Reselect this photo file before saving.":"Preview unavailable."}</p>}
         <span>{linked?(photo?"Already linked · selected in this draft":"Already linked to this inspection and face"):"Selected in this draft"}</span>
         {notes?<p>{notes}</p>:null}
         {capturedAt?<p>Date taken: {formatDate(capturedAt)}</p>:null}

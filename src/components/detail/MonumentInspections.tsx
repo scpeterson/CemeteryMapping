@@ -1,5 +1,7 @@
+import { readInspectionRecovery, storeInspectionRecovery, type InspectionDraft } from "../../lib/inspectionDraftRecovery";
+import { useAccountSession } from "../../auth/sessionContext";
 import { sortedMonumentInspections, inspectionTypeLabels } from "../../lib/monumentInspections";
-import { inspectionFacePhotos, type InspectionPhotoDraft } from "../../lib/inspectionPhotos";
+import { inspectionFacePhotos } from "../../lib/inspectionPhotos";
 import { fetchPhotoContexts, savePhotoContext, type PhotoContext } from "../../api/mediaApi";
 import { PhotoGalleryContext } from "./photoGalleryContext";
 import { RecordPhotos } from "./RecordPhotos";
@@ -39,7 +41,6 @@ const saveDisplayPreference = (key:DisplayPreferenceKey,open:boolean) => {
 };
 const requiredVisitLabels = {date:"Inspection date",source:"Inspection source",condition:"Monument condition"};
 
-type InspectionDraft = InspectionInput & { photos?: InspectionPhotoDraft[]; recordSaved?: boolean };
 
 const combinedReading = (faces: InspectionFace[]) => faces.length === 1 ? faces[0].inscription : faces.map(f=>`${f.label}\n${f.inscription}`).join("\n\n");
 const isCombined = (inscription: string, faces: InspectionFace[] = []) => faces.length > 0 && inscription === combinedReading(faces);
@@ -51,7 +52,7 @@ const localToday = () => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
-export function MonumentInspections({ headstone, conditions = [], onSave, onUploadPhoto, showHeading = true, startNew = false, onStarted }: {
+type MonumentInspectionsProps = {
   onStarted?: () => void;
   startNew?: boolean;
   showHeading?: boolean;
@@ -59,12 +60,24 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
   conditions?: LookupOption[];
   onUploadPhoto?: ComponentProps<typeof RecordPhotos>["onUpload"];
   onSave?: (entry: InspectionInput, updating: boolean) => Promise<Headstone>;
-}) {
+};
+
+export function MonumentInspections(props: MonumentInspectionsProps) {
+  const account = useAccountSession();
+  return <InspectionEditor key={`${account?.accountId ?? account?.identity ?? "local"}/${props.headstone.id}`} {...props} />;
+}
+
+function InspectionEditor({ headstone, conditions = [], onSave, onUploadPhoto, showHeading = true, startNew = false, onStarted }: MonumentInspectionsProps) {
+  const account = useAccountSession();
+  const recoveryKey = `cemetery-mapping:inspection-draft:v1:${encodeURIComponent(account?.accountId ?? account?.identity ?? "local")}:${headstone.id}`;
+  const [recovery,setRecovery] = useState(()=>readInspectionRecovery(recoveryKey));
+  const [recoveryUnavailable,setRecoveryUnavailable] = useState(false);
+  const clearRecovery = () => { try { localStorage.removeItem(recoveryKey); } catch { /* Editing remains available. */ } setRecovery(null); };
   const {open:openPhotoGallery}=useContext(PhotoGalleryContext);
   const inspections = sortedMonumentInspections(headstone.inspections);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = inspections.find((entry) => entry.id === selectedId) ?? inspections[0];
-  const [draft, setDraft] = useDraftState<InspectionDraft | null>(null);
+  const [draft, setDraft] = useDraftState<InspectionDraft | null>(null,clearRecovery);
   const [updating, setUpdating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedNotice,setSavedNotice] = useState(false);
@@ -75,6 +88,13 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
   const [returnToRequiredSummary, setReturnToRequiredSummary] = useState(false);
   const [activeFaceId, setActiveFaceId] = useState<string>();
   const activeFace = draft?.faces?.find(face => face.id === activeFaceId) ?? draft?.faces?.[0];
+  useEffect(()=>{
+    if (!draft) return;
+    try { storeInspectionRecovery(recoveryKey,{draft,updating,step,activeFaceId}); setRecoveryUnavailable(false); }
+    catch { setRecoveryUnavailable(true); }
+  },[recoveryKey,draft,updating,step,activeFaceId]);
+  const missingPhotoFiles = (draft?.photos??[]).filter(photo=>!photo.saved && photo.missingFileName && !photo.file);
+
   const [linkedPhotos, setLinkedPhotos] = useState<{key:string; links?:PhotoContext[]; error?:string}>();
   const [photoCountRetry, setPhotoCountRetry] = useState(0);
   const editInspectionId = updating && draft && !draft.recordSaved ? draft.id : undefined;
@@ -327,13 +347,13 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
       faces: draftFaces(selected?.inscription ?? headstone.inscription ?? "", selected ? selected.faces : headstone.faces),
     });
   };
-  const launchNew = useEffectEvent(()=>begin(false));
+  const launchNew = useEffectEvent(()=>{if(!recovery)begin(false);});
   const launched = useRef(false);
   useEffect(()=>{
     if(startNew && onSave && !launched.current){launched.current=true;launchNew();onStarted?.();}
   },[startNew,onSave,onStarted]);
   const save = async () => {
-    if (!draft || !onSave || missingRequiredCount) return;
+    if (!draft || !onSave || missingRequiredCount || missingPhotoFiles.length) return;
     setSaving(true); setError(undefined);
     try {
       if (!draft.recordSaved) {
@@ -355,12 +375,13 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
           }
           setDraft(current=>current?{...current,photos:current.photos?.map(p=>p.id===photo.id?{...p,saved:true}:p)}:current);
         } catch (cause) {
-          const name=photo.file?.name||headstone.mediaAssets?.find(a=>a.id===photo.mediaAssetId)?.originalFilename||"Photo";
+          const name=photo.file?.name||photo.missingFileName||headstone.mediaAssets?.find(a=>a.id===photo.mediaAssetId)?.originalFilename||"Photo";
           failures.push(`${name}: ${cause instanceof Error?cause.message:"Unable to save photo."}`);
         }
       }
       if(failures.length) throw new Error(failures.join(" "));
       setSelectedId(draft.id);
+      clearRecovery();
       setDraft(null);
       setSavedNotice(true);
     } catch (cause) {
@@ -390,10 +411,17 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
       {selected.inscription ? <p className="note-box inscription-box">{selected.inscription}</p> : <p className="muted">No inscription recorded for this inspection.</p>}</> : null}
     </div> : null}
     {selected && !draft ? <RecordPhotos key={selected.id} headstone={headstone} faces={selected.faces ?? []} inspectionId={selected.id} canUpdate={Boolean(onSave)} onUpload={onUploadPhoto} /> : null}
-    {onSave && !draft ? <div className="headstone-form-actions inspection-actions">
+    {onSave && !draft && recovery ? <section className="inspection-recovery" aria-label="Saved inspection draft">
+      <p><strong>Unfinished inspection available.</strong> Saved on this browser {formatDate(recovery.savedAt)}.</p>
+      <button type="button" onClick={()=>{setUpdating(recovery.updating);setActiveFaceId(recovery.activeFaceId);setDraft(()=>recovery.draft);setStep(recovery.step);setStepFocusRequest(value=>value+1);setRecovery(null);setSavedNotice(false);}}>Resume draft</button>
+      <button type="button" className="secondary-button" onClick={()=>{if(window.confirm("Discard the saved inspection draft?"))clearRecovery();}}>Discard saved draft</button>
+    </section> : null}
+    {onSave && !draft && !recovery ? <div className="headstone-form-actions inspection-actions">
       <button type="button" onClick={() => begin(false)}>New inspection</button>
       {selected ? <button type="button" className="secondary-button" onClick={() => begin(true)}>Edit inspection</button> : null}
     </div> : null}
+    {draft && recoveryUnavailable ? <p role="alert">Browser draft recovery is unavailable. Keep this page open until you save.</p> : null}
+    {draft && missingPhotoFiles.length ? <p className="inspection-recovery" role="alert">Reselect {missingPhotoFiles.length} photo files before saving, or remove them from the draft. Browser recovery retained their names and notes, but not the files.</p> : null}
     {draft || savedNotice ? <p className={`inspection-save-status${draft ? "" : " is-saved"}`} role="status" aria-label="Inspection save status" aria-live="polite" aria-atomic="true">
       {!draft ? "All changes saved." : saving ? (draft.recordSaved ? `Inspection saved — saving photos. ${(draft.photos??[]).filter(photo=>!photo.saved).length} remaining.` : "Saving inspection…")
         : draft.recordSaved ? ((draft.photos??[]).some(photo=>!photo.saved) ? `Inspection saved — ${(draft.photos??[]).filter(photo=>!photo.saved).length} photos need retry. Your inspection is safe.` : "All changes saved.") : "Unsaved changes."}
@@ -406,8 +434,9 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
       {!updating && step === 1 ? <p className="muted">The inscription was copied from {selected ? "the selected inspection" : "the marker"}. Edit it or save it as-is. Photo links are not copied. Add photos under each face; they will be linked when you save.</p> : null}
       {draft.recordSaved?<div role="status">
         <p>Inspection saved. {(draft.photos ?? []).filter(photo => !photo.saved).length} photos need retry. Retry the remaining photos, or close to keep the inspection and photos already saved.</p>
-        <ul>{(draft.photos??[]).map(photo=><li key={photo.id}>{photo.file?.name||headstone.mediaAssets?.find(a=>a.id===photo.mediaAssetId)?.originalFilename||"Monument photo"}: {photo.saved?"Saved and linked":"Pending"}{!photo.saved?<button type="button" className="secondary-button" onClick={()=>setDraft(current=>current?{...current,photos:current.photos?.filter(p=>p.id!==photo.id)}:current)}>Remove pending photo</button>:null}</li>)}</ul>
+        <ul>{(draft.photos??[]).map(photo=><li key={photo.id}>{photo.file?.name||photo.missingFileName||headstone.mediaAssets?.find(a=>a.id===photo.mediaAssetId)?.originalFilename||"Monument photo"}: {photo.saved?"Saved and linked":"Pending"}{!photo.saved?<button type="button" className="secondary-button" onClick={()=>setDraft(current=>current?{...current,photos:current.photos?.filter(p=>p.id!==photo.id)}:current)}>Remove pending photo</button>:null}</li>)}</ul>
       </div>:null}
+      {draft.recordSaved && missingPhotoFiles.length ? <section aria-label="Reselect pending photo files">{missingPhotoFiles.map(photo=><label key={photo.id}>Reselect {photo.missingFileName}<input type="file" accept="image/*" onChange={event=>{const file=event.target.files?.[0];if(!file)return;if(file.size>25*1024*1024){setError("Each photo must be 25 MB or smaller.");return;}setDraft(current=>current?{...current,photos:current.photos?.map(item=>item.id===photo.id?{...item,file,missingFileName:undefined}:item)}:current);}} /></label>)}</section> : null}
       {!draft.recordSaved ? <nav className="inspection-steps" aria-label="Inspection steps">
         {steps.map((label, index) => {
           const missing = [missingVisitFields.length, missingFaces.length, missingRequiredCount][index];
@@ -576,8 +605,8 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
       <div className="headstone-form-actions inspection-actions inspection-workflow-actions">
         {!draft.recordSaved && step > 0 ? <button type="button" className="secondary-button" onClick={() => goToStep(step - 1)}>Back</button> : null}
         {!draft.recordSaved && step < 2 && !correctingRequired ? <button type="button" onClick={advanceStep}>{editingFromReview ? "Return to review" : `Next: ${steps[step + 1]}`}</button> : null}
-        {step === 2 || draft.recordSaved ? <button type="button" disabled={missingRequiredCount>0} onClick={() => void save()}>{saving ? "Saving..." : draft.recordSaved ? (draft.photos?.some(p=>!p.saved) ? "Retry remaining photos" : "Finish inspection") : "Save inspection"}</button> : null}
-        <button type="button" className="secondary-button" onClick={() => { setDraft(null); setError(undefined); }}>{draft.recordSaved ? "Close saved inspection" : "Cancel inspection"}</button>
+        {step === 2 || draft.recordSaved ? <button type="button" disabled={missingRequiredCount>0 || missingPhotoFiles.length>0} onClick={() => void save()}>{saving ? "Saving..." : draft.recordSaved ? (draft.photos?.some(p=>!p.saved) ? "Retry remaining photos" : "Finish inspection") : "Save inspection"}</button> : null}
+        <button type="button" className="secondary-button" onClick={() => { clearRecovery(); setDraft(null); setError(undefined); }}>{draft.recordSaved ? "Close saved inspection" : "Cancel inspection"}</button>
       </div>
       <section className="inspection-display-settings" aria-label="Display preferences">
       <h5>Display preferences</h5>
