@@ -12,6 +12,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Keep gallery browsing focused on photos with one Add photos action; reveal existing-photo linking only for a selected record.
+
 - Compact the photo gallery toolbar, collapse optional face/timing filters with an active count, and reveal full photo editing controls only when adding or linking photos.
 
 - Replace the oversized marker form with focused inspection, marker-information, and source/review editors; organize Details into five sections and add Overview inspection summaries and quick actions.

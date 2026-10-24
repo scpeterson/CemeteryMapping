@@ -70,7 +70,7 @@ async function closeGallery(page:Page){await gallery(page).getByRole('button',{n
 const card=(page:Page,id:string)=>gallery(page).locator('.media-gallery-card').filter({has:page.locator('.media-photo-filename').filter({hasText:id})});
 async function upload(page:Page,name='upload.png'){
  const modal=gallery(page);
- await modal.getByRole('button',{name:'Upload new photos',exact:true}).click();
+ await modal.getByRole('button',{name:'Add photos',exact:true}).click();
  await modal.locator('input[type=file]').setInputFiles({name,mimeType:'image/png',buffer:Buffer.from('photo')});
  await modal.getByRole('button',{name:'Upload photo',exact:true}).click();
  await expect(modal.getByText('Photo uploaded and linked.',{exact:true})).toBeVisible();
@@ -133,7 +133,7 @@ test('existing photos carry independent inspection faces and maintenance timing;
 test('uploads use the same face and timing controls for inspections and maintenance and survive reload',async({page})=>{
  const state=await setup(page,true);
  const modal=await openGallery(page);
- await modal.getByRole('button',{name:'Upload new photos',exact:true}).click();
+ await modal.getByRole('button',{name:'Add photos',exact:true}).click();
  await modal.getByRole('combobox',{name:'Photo face',exact:true}).selectOption('22222222-2222-4222-8222-222222222222');
  await expect(modal.getByRole('combobox',{name:'Maintenance timing',exact:true})).toHaveCount(0);
  await modal.locator('input[type=file]').setInputFiles({name:'inspection.png',mimeType:'image/png',buffer:Buffer.from('photo')});
@@ -141,7 +141,7 @@ test('uploads use the same face and timing controls for inspections and maintena
  await expect(modal.getByText('Photo uploaded and linked.',{exact:true})).toBeVisible();
  expect(state.uploads[0]).toMatchObject({inspectionId:'field',maintenanceRecordId:null,faceId:'22222222-2222-4222-8222-222222222222',phase:'unspecified'});
  await modal.getByRole('combobox',{name:'Photo record',exact:true}).selectOption('maintenance:cleaning');
- await modal.getByRole('button',{name:'Upload new photos',exact:true}).click();
+ await modal.getByRole('button',{name:'Add photos',exact:true}).click();
  await modal.getByRole('combobox',{name:'Photo face',exact:true}).selectOption('11111111-1111-4111-8111-111111111111');
  await modal.getByRole('combobox',{name:'Maintenance timing',exact:true}).selectOption('before');
  await modal.locator('input[type=file]').setInputFiles({name:'before.png',mimeType:'image/png',buffer:Buffer.from('photo')});
@@ -201,7 +201,7 @@ test('gallery protects pending uploads on close and context changes; canceled li
  await modal.getByRole('combobox',{name:'Photo face',exact:true}).selectOption('22222222-2222-4222-8222-222222222222');
  await modal.getByRole('button',{name:'Cancel photo changes',exact:true}).click();
  expect(state.getLinks()).toEqual(original);
- await modal.getByRole('button',{name:'Upload new photos',exact:true}).click();
+ await modal.getByRole('button',{name:'Add photos',exact:true}).click();
  await modal.locator('input[type=file]').setInputFiles({name:'pending.png',mimeType:'image/png',buffer:Buffer.from('photo')});
  page.once('dialog',dialog=>dialog.dismiss());await closeGallery(page);
  await expect(modal).toBeVisible();
@@ -228,6 +228,8 @@ test('one gallery works at phone width with record, face and timing controls',as
  await expect(modal.getByRole('combobox',{name:'Filter by face',exact:true})).toBeHidden();
  await expect(modal.getByRole('combobox',{name:'Filter by maintenance timing',exact:true})).toBeHidden();
  await modal.getByRole('combobox',{name:'Photo record',exact:true}).selectOption('all');
+ await expect(modal.getByRole('button',{name:'Choose existing photos',exact:true})).toHaveCount(0);
+ await expect(modal.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();
  await expect(card(page,'latest-marker.png')).toBeVisible();
  const photoBox=await card(page,'latest-marker.png').boundingBox();
  expect(photoBox!.y).toBeLessThan(500);
@@ -472,7 +474,7 @@ test('association refresh keeps loaded gallery previews mounted during upload',a
  let delay=false;
  await page.route('**/api/headstones/marker-1/photo-contexts',async route=>{if(delay)await held;return route.fallback();});
  await page.route('**/api/headstones/marker-1/media-assets?**',route=>{delay=true;return route.fallback();});
- await modal.getByRole('button',{name:'Upload new photos',exact:true}).click();
+ await modal.getByRole('button',{name:'Add photos',exact:true}).click();
  await modal.locator('input[type=file]').setInputFiles({name:'delayed.png',mimeType:'image/png',buffer:Buffer.from('photo')});
  await modal.getByRole('button',{name:'Upload photo',exact:true}).click();
  try {

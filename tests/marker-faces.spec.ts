@@ -107,7 +107,7 @@ test("read-only users can read face inscriptions and photos without edit control
   const gallery=page.getByRole("dialog",{name:"Marker photo gallery",exact:true});
   await gallery.locator(".media-gallery-card").first().scrollIntoViewIfNeeded();
   await expect(gallery.getByRole("img", {name:"latest-marker",exact:true})).toBeVisible();
-  await expect(gallery.getByRole("button", {name:"Upload new photos",exact:true})).toHaveCount(0);
+  await expect(gallery.getByRole("button", {name:"Add photos",exact:true})).toHaveCount(0);
   await gallery.getByRole("button",{name:"Close gallery",exact:true}).click();
   await expect(page.getByRole("button", { name: "Edit face records" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add face", exact: true })).toHaveCount(0);
