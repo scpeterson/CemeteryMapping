@@ -11,7 +11,7 @@ export function confirmDiscardChanges() {
 }
 
 /** Functional updates edit a draft; a replacement loads or accepts a saved record. */
-export function useDraftState<T>(initial: T | (() => T)): [T, Dispatch<SetStateAction<T>>] {
+export function useDraftState<T>(initial: T | (() => T), onDiscard?: () => void): [T, Dispatch<SetStateAction<T>>] {
   const id = useId();
   const [state, setState] = useState(() => {
     const value = initial instanceof Function ? initial() : initial;
@@ -25,10 +25,10 @@ export function useDraftState<T>(initial: T | (() => T)): [T, Dispatch<SetStateA
   // Update the guard during commit, before saved controls become visible or navigation can occur.
   useLayoutEffect(() => {
     if (JSON.stringify(state.value) !== JSON.stringify(state.baseline)) {
-      drafts.set(id, () => setState((current) => ({ ...current, value: current.baseline })));
+      drafts.set(id, () => { onDiscard?.(); setState((current) => ({ ...current, value: current.baseline })); });
     } else drafts.delete(id);
     return () => { drafts.delete(id); };
-  }, [id, state]);
+  }, [id, state, onDiscard]);
   return [state.value, setDraft];
 }
 

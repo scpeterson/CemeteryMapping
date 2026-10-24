@@ -1824,3 +1824,47 @@ for(const phone of [false,true])for(const invalid of [false,true]){
   await expect(region.getByLabel('Inspection source',{exact:true})).toHaveValue(before);
  });
 }
+
+test('inspection recovery resumes face edits and requires photo reselection before save',async({page})=>{
+ const state=await setup(page,true,true);
+ const region=page.getByRole('region',{name:'Inspections',exact:true});
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ await region.getByLabel('Inspection source',{exact:true}).fill('Recovered field visit');
+ await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
+ await inspectionStep(page,'Faces & photos');
+ await region.getByRole('button',{name:'Select face 2: Back',exact:true}).click();
+ const back=region.getByRole('group',{name:'Inspection face 2',exact:true});
+ await back.getByRole('textbox',{name:'Face inscription',exact:true}).fill('Recovered back reading');
+ await back.getByLabel('Choose photos to upload',{exact:true}).setInputFiles(draftPhoto('recover.png'));
+ await back.getByRole('textbox',{name:'Notes',exact:true}).fill('Retain these photo notes');
+ await expect.poll(()=>page.evaluate(()=>localStorage.getItem('cemetery-mapping:inspection-draft:v1:local:marker-1'))).toContain('Recovered back reading');
+ page.once('dialog',dialog=>dialog.accept());
+ await openRecord(page,true);
+ await region.getByRole('button',{name:'Resume draft',exact:true}).click();
+ await expect(back.getByRole('textbox',{name:'Face inscription',exact:true})).toHaveValue('Recovered back reading');
+ await inspectionStep(page,'Review & save');
+ await expect(region.getByRole('button',{name:'Save inspection',exact:true})).toBeDisabled();
+ await region.getByRole('button',{name:'Edit face 2: Back',exact:true}).click();
+ await back.getByLabel('Choose photos to upload',{exact:true}).setInputFiles(draftPhoto('recover.png'));
+ await expect(back.getByRole('textbox',{name:'Notes',exact:true})).toHaveValue('Retain these photo notes');
+ await region.getByRole('button',{name:'Return to review',exact:true}).click();
+ await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+ await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toHaveText('All changes saved.');
+ expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(1);
+ expect(state.getInspections()[2].source).toBe('Recovered field visit');
+ expect(await page.evaluate(()=>localStorage.getItem('cemetery-mapping:inspection-draft:v1:local:marker-1'))).toBeNull();
+});
+
+test('inspection recovery ignores malformed snapshots and survives unavailable storage',async({page})=>{
+ await page.addInitScript(()=>{
+  localStorage.setItem('cemetery-mapping:inspection-draft:v1:local:marker-1',JSON.stringify({version:1,draft:{id:'invalid'}}));
+  Storage.prototype.setItem=()=>{throw new Error('Storage unavailable');};
+ });
+ await setup(page,true);
+ const region=page.getByRole('region',{name:'Inspections',exact:true});
+ await expect(region.getByRole('button',{name:'Resume draft',exact:true})).toHaveCount(0);
+ await region.getByRole('button',{name:'New inspection',exact:true}).click();
+ await expect(region.getByRole('alert')).toContainText('Browser draft recovery is unavailable');
+ await region.getByLabel('Inspection source',{exact:true}).fill('Still editable');
+ await expect(region.getByLabel('Inspection source',{exact:true})).toHaveValue('Still editable');
+});

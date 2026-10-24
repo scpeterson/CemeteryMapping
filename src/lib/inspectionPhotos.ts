@@ -3,7 +3,7 @@ import type { MediaAsset } from "../types";
 
 export type InspectionPhotoDraft = {
   id: string; faceId: string; file?: File; mediaAssetId?: string;
-  notes: string; capturedAt: string; saved?: boolean;
+  notes: string; capturedAt: string; saved?: boolean; missingFileName?: string;
 };
 
 /** Saved links plus draft assignments, scoped to one face and counted once per asset. */

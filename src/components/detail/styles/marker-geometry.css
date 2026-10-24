@@ -744,3 +744,6 @@
 
 .inspection-save-status { margin: 8px 0; padding: 8px 10px; border-left: 3px solid #b27d25; background: #fff8eb; font-size: 0.85rem; }
 .inspection-save-status.is-saved { border-color: #2f5d50; background: #eef6ef; }
+
+.inspection-recovery { padding: 12px; margin: 8px 0; border: 1px solid #b8c7bd; border-radius: 7px; background: #f4f8f3; }
+.inspection-recovery button { margin: 4px 8px 4px 0; min-height: 44px; }

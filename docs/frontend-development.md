@@ -74,7 +74,7 @@ Do not pass a replacement object from a user-edit handler: that would incorrectl
 
 `App` installs `useDraftNavigationGuard` once. It protects result selection, detail/admin tabs, marked record-selection controls, recognized cancel/close/new/reset buttons, and page exit while tracked drafts exist. Add `data-discard-draft` to a new button that replaces an editor. For map callbacks or keyboard navigation outside those click handlers, call `confirmDiscardChanges()` before changing selection. A confirmed discard resets all registered drafts to their baselines; canceled navigation must not proceed.
 
-This tracking is not universal form middleware. Audit new form state and navigation handlers explicitly. Mounted phone views retain their state while hidden; drafts are not persisted across reloads or browser sessions.
+This tracking is not universal form middleware. Audit new form state and navigation handlers explicitly. Mounted phone views retain their state while hidden; most drafts are not persisted across reloads or browser sessions. Inspection drafts are the explicit exception described below.
 
 Gravesite updates additionally send the detail response's `version` as `expectedVersion`. HTTP 409 preserves the draft and requires an explicit reload/reconciliation. Keep this concurrency check distinct from the local unsaved-edit warning. Async save completion may update the map data, but must not reselect a grave after the user has selected another record.
 
@@ -205,3 +205,7 @@ Reset restores remaining items shown, both keyboard hints hidden and the restore
 ## Marker Section Navigation
 
 `HeadstoneRecord` observes detail tabs, its section menu, panel and marker content to calculate sticky offsets and scroll margins. Keep the menu below wrapping detail tabs and destination headings below the menu. A passive detail-panel scroll listener schedules one animation-frame measurement to update `currentSection` at a reading line below the menu. Scroll tracking must never focus or scroll; explicit selection alone navigates. Scope measurements to the marker article and clean up listeners, observers and pending frames when editors replace it. See ADR 0163–0165.
+
+## Inspection recovery
+
+Inspection editors write versioned snapshots to browser local storage scoped to the authenticated account subject (or local development session) and marker ID. Resume is explicit; a quick action never overwrites a pending recovery. Persist visit details, face readings/designs, active step/face, optimistic concurrency tokens, saved-record state and photo metadata. Files are not serialized: names and metadata become reselection placeholders and block saving until replaced or removed. Successful saves and explicit discards remove recovery. Guarded navigation that confirms discard also clears recovery. Validate snapshots before using them; unavailable storage leaves editing operational and shows a message. Recovery is local to this browser, not server autosave or cross-device sync.
