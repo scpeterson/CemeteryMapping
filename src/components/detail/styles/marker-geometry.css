@@ -732,3 +732,12 @@
 
 /* Keep step shortcuts clear of the sticky marker navigation when scrolled into view. */
 .inspection-steps button { scroll-margin-top: var(--marker-section-scroll-margin, 120px); scroll-margin-bottom: var(--inspection-correction-height, 0px); }
+
+/* Correction actions stay together; display settings live outside the sticky panel. */
+.inspection-correction-status { padding: 8px; }
+.inspection-correction-header > div { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 0.8rem; }
+.inspection-correction-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr); }
+.inspection-correction-actions .inspection-correction-return { grid-column: auto; }
+.inspection-correction-actions .inspection-correction-return:only-child { grid-column: 1 / -1; }
+.inspection-display-settings { margin-top: 16px; padding-top: 12px; border-top: 1px solid #d9e0d5; }
+.inspection-display-settings h5 { margin: 0 0 8px; }

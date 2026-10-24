@@ -1599,17 +1599,18 @@ for(const phone of [false,true]){
   await current.getByRole('button',{name:'Hide remaining items',exact:true}).click();
   const reset=region.getByRole('button',{name:'Reset display preferences',exact:true});
   await expect(reset).toHaveCount(1);
-  const stickyReset=current.getByRole('button',{name:'Reset display preferences',exact:true});
+  const stickyReset=region.getByRole('button',{name:'Reset display preferences',exact:true});
+  await expect(current.getByRole('button',{name:'Reset display preferences',exact:true})).toHaveCount(0);
   const scrollPanel=page.locator('.detail-panel');
   const beforeScroll=await scrollPanel.evaluate(el=>el.scrollTop);
   await scrollPanel.evaluate(el=>{el.scrollTop-=120;});
   await expect.poll(()=>scrollPanel.evaluate(el=>el.scrollTop)).toBeLessThan(beforeScroll-80);
-  await expect(stickyReset).toBeInViewport({ratio:1});
+  await expect(stickyReset).toBeVisible();
   await page.clock.install();
   await reset.focus();await page.keyboard.press('Enter');
   await expect(reset).toBeFocused();await expect(list).toBeVisible();await expect(hint).not.toBeVisible();
-  await expect(current.getByRole('status').filter({hasText:'Display defaults restored:'})).toBeVisible();
-  await expect(stickyReset).toBeInViewport({ratio:1});
+  await expect(region.getByRole('status').filter({hasText:'Display defaults restored:'})).toBeVisible();
+  await expect(stickyReset).toBeVisible();
   const confirmation=region.getByRole('status').filter({hasText:'Display defaults restored:'});
   const restoredList=region.locator('.inspection-restored-defaults-list ul');
   const restoredToggle=region.getByText(/^Restored defaults \(\d+\)$/);
@@ -1813,11 +1814,11 @@ for(const phone of [false,true])for(const invalid of [false,true]){
   await expect(current.getByRole('list',{name:'Remaining required items',exact:true})).toBeVisible();
   await expect(current.locator('.inspection-keyboard-hint')).not.toBeVisible();
   const before=await region.getByLabel('Inspection source',{exact:true}).inputValue();
-  await current.getByRole('button',{name:'Reset display preferences',exact:true}).click();
+  await region.getByRole('button',{name:'Reset display preferences',exact:true}).click();
   await expect(current.getByRole('list',{name:'Remaining required items',exact:true})).toBeVisible();
   await expect(current.locator('.inspection-keyboard-hint')).not.toBeVisible();
-  await expect(current.locator('.inspection-reset-escape-hint')).not.toBeVisible();
-  await expect(current.locator('.inspection-restored-defaults-list ul')).not.toBeVisible();
+  await expect(region.locator('.inspection-reset-escape-hint')).not.toBeVisible();
+  await expect(region.locator('.inspection-restored-defaults-list ul')).not.toBeVisible();
   await expect(region.getByLabel('Inspection source',{exact:true})).toHaveValue(before);
  });
 }
