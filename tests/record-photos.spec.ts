@@ -1868,3 +1868,71 @@ test('inspection recovery ignores malformed snapshots and survives unavailable s
  await region.getByLabel('Inspection source',{exact:true}).fill('Still editable');
  await expect(region.getByLabel('Inspection source',{exact:true})).toHaveValue('Still editable');
 });
+
+test.describe('phone field workflow',()=>{
+ test.use({hasTouch:true,isMobile:true});
+ for(const width of [320,390]){
+  test(`complete inspection with corrections and interrupted photo uploads at ${width}px`,async({page},testInfo)=>{
+   const state=await setup(page,true,true);
+   await page.setViewportSize({width,height:844});
+   const region=page.getByRole('region',{name:'Inspections',exact:true});
+   await region.getByRole('button',{name:'New inspection',exact:true}).click();
+   await region.getByLabel('Inspection source',{exact:true}).fill('');
+   await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
+   await inspectionStep(page,'Faces & photos');
+   const face=(number:number)=>region.getByRole('group',{name:`Inspection face ${number}`,exact:true});
+   await face(1).getByRole('textbox',{name:'Face inscription',exact:true}).fill('Front reading recorded in the field');
+   await face(1).getByLabel('Choose photos to upload',{exact:true}).setInputFiles(draftPhoto('field-front.png'));
+   await region.getByRole('button',{name:'Select face 2: Back',exact:true}).click();
+   await face(2).getByRole('textbox',{name:'Face inscription',exact:true}).fill('Back reading recorded in the field');
+   await face(2).getByLabel('Choose photos to upload',{exact:true}).setInputFiles(draftPhoto('field-back.png'));
+   await face(2).getByRole('textbox',{name:'Face label',exact:true}).fill('');
+   await inspectionStep(page,'Review & save');
+   await expect(region.getByRole('button',{name:'Save inspection',exact:true})).toBeDisabled();
+   await region.getByRole('button',{name:'Add inspection source',exact:true}).click();
+   await region.getByLabel('Inspection source',{exact:true}).fill('Phone field visit');
+   const panel=region.getByRole('region',{name:'Current required item',exact:true});
+   for(const name of ['Previous missing item','Next missing item','Return to review']){
+    const button=panel.getByRole('button',{name,exact:true});
+    await expect(button).toBeInViewport();
+    const box=await button.boundingBox();expect(box!.height).toBeGreaterThanOrEqual(44);
+   }
+   await expect(panel.getByRole('button',{name:'Reset display preferences',exact:true})).toHaveCount(0);
+   await panel.getByRole('button',{name:'Next missing item',exact:true}).click();
+   await expect(face(2).getByRole('textbox',{name:'Face label',exact:true})).toBeFocused();
+   await face(2).getByRole('textbox',{name:'Face label',exact:true}).fill('Back');
+   await panel.screenshot({path:testInfo.outputPath(`corrections-${width}.png`)});
+   await panel.getByRole('button',{name:'Return to review',exact:true}).click();
+   await expect(region.getByRole('button',{name:'Save inspection',exact:true})).toBeEnabled();
+   let attempts=0,release!:()=>void;
+   const held=new Promise<void>(resolve=>{release=resolve;});
+   await page.route('**/api/headstones/marker-1/media-assets?**',async route=>{
+    attempts++;
+    if(attempts===1)return route.fulfill({status:503,json:{error:'Temporary connection interruption'}});
+    if(attempts===2)await held;
+    return route.fallback();
+   });
+   try{
+    await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+    await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toContainText('Inspection saved — saving photos');
+    await region.screenshot({path:testInfo.outputPath(`saving-${width}.png`)});
+   }finally{release();}
+   await expect(region.getByRole('button',{name:'Retry remaining photos',exact:true})).toBeVisible();
+   expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(1);
+   page.once('dialog',dialog=>dialog.accept());await openRecord(page,true);
+   await region.getByRole('button',{name:'Resume draft',exact:true}).click();
+   await expect(region.getByRole('button',{name:'Retry remaining photos',exact:true})).toBeDisabled();
+   await region.getByLabel('Reselect field-front.png',{exact:true}).setInputFiles(draftPhoto('field-front.png'));
+   await region.getByRole('button',{name:'Retry remaining photos',exact:true}).click();
+   await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toHaveText('All changes saved.');
+   expect(attempts).toBe(3);expect(state.uploads).toHaveLength(2);expect(state.getInspections()).toHaveLength(3);
+   await region.getByRole('button',{name:'Open photo gallery',exact:true}).click();
+   const modal=gallery(page);await expect(modal.locator('.media-gallery-card')).toHaveCount(2);
+   await expect(modal.locator('header')).toContainText('2 of 4 photos');
+   await expect(modal.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();
+   expect(await modal.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
+   await modal.screenshot({path:testInfo.outputPath(`saved-gallery-${width}.png`)});
+   await closeGallery(page);
+  });
+ }
+});
