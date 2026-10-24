@@ -67,7 +67,7 @@ export async function updateMonumentInspections(client, markerId, entries = []) 
         COALESCE((SELECT old FROM jsonb_array_elements(faces) old WHERE old->>'id'=f->>'id' LIMIT 1),'{}'::jsonb) || f)
         FROM jsonb_array_elements($11::jsonb) f),'[]'::jsonb) END,
       manually_edited=true,updated_at=clock_timestamp()
-      WHERE id=$1 AND headstone_uuid=$2 AND updated_at=$10::timestamptz
+      WHERE id=$1 AND headstone_uuid=$2 AND deleted_at IS NULL AND updated_at=$10::timestamptz
       AND ($11::jsonb IS NULL OR NOT EXISTS(SELECT 1 FROM monument_photo_contexts c WHERE c.inspection_id=$1 AND c.deleted_at IS NULL AND c.face_id IS NOT NULL
         AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements($11::jsonb) f WHERE f->>'id'=c.face_id::text))) RETURNING id`,
     [entry.id, markerId, entry.inspectedAt || null, entry.inspectionYear, entry.sourceType, entry.source,
@@ -96,4 +96,25 @@ export function inspectionFieldsChanged(existing, incoming) {
     history: face.historicalTranscriptions ?? [],
   }));
   return !isDeepStrictEqual(readings(incoming.faces), readings(existing.faces));
+}
+
+export function validateDeletedInspections(value) {
+  if (!Array.isArray(value) || value.length > 20) throw new BadRequestError("Deleted inspections must be an array of at most 20 entries.");
+  return value.map(entry => {
+    const expectedUpdatedAt = requiredText(entry?.expectedUpdatedAt, "Inspection version", 50);
+    if (!Number.isFinite(Date.parse(expectedUpdatedAt))) throw new BadRequestError("Inspection version is invalid.");
+    return {id: validateUuid(entry?.id, "Inspection"), expectedUpdatedAt};
+  });
+}
+
+export async function deleteMonumentInspections(client, markerId, entries = []) {
+  for (const entry of entries) {
+    const result = await client.query(`UPDATE monument_inspections SET deleted_at=clock_timestamp(),
+      manually_edited=true,updated_at=clock_timestamp()
+      WHERE id=$1 AND headstone_uuid=$2 AND updated_at=$3::timestamptz AND deleted_at IS NULL RETURNING id`,
+      [entry.id, markerId, entry.expectedUpdatedAt]);
+    if (!result.rowCount) throw new ConflictError("This inspection changed or was deleted. Reload the marker before deleting.");
+    await client.query(`UPDATE monument_photo_contexts SET deleted_at=clock_timestamp(),updated_at=clock_timestamp()
+      WHERE inspection_id=$1 AND deleted_at IS NULL`, [entry.id]);
+  }
 }

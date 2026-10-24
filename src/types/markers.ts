@@ -209,6 +209,7 @@ export type InspectionInput = {
 };
 
 export type SaveHeadstoneInput = {
+  deletedInspections?: {id: string; expectedUpdatedAt: string}[];
   inspectionChangesOnly?: boolean;
   updatedInspections?: InspectionInput[];
   newInspections?: InspectionInput[];

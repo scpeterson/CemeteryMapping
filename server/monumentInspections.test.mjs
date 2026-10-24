@@ -60,3 +60,11 @@ test('inspection face designs preserve exact text, allow clearing, and reject in
  assert.equal(validateNewInspections([{...entry,faces:[{...face,designNotes:''}]}])[0].faces[0].designNotes,'');
  for(const designNotes of [null,42,'x'.repeat(20001)])assert.throws(()=>validateNewInspections([{...entry,faces:[{...face,designNotes}]}]),/Face design notes/);
 });
+
+
+test('inspection deletion requires bounded IDs and valid versions',async()=>{
+ const {validateDeletedInspections}=await import('./monumentInspections.mjs');
+ const deletion={id:entry.id,expectedUpdatedAt:'2026-10-24T12:00:00.123456+00:00'};
+ assert.deepEqual(validateDeletedInspections([deletion]),[deletion]);
+ for(const value of [{},Array(21).fill(deletion),[{...deletion,id:'invalid'}],[{id:entry.id}],[{...deletion,expectedUpdatedAt:'invalid'}]]) assert.throws(()=>validateDeletedInspections(value));
+});

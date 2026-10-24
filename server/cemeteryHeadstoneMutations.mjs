@@ -1,4 +1,4 @@
-import { insertMonumentInspections, updateMonumentInspections, assertInspectionEditor, inspectionFieldsChanged } from "./monumentInspections.mjs";
+import { deleteMonumentInspections, insertMonumentInspections, updateMonumentInspections, assertInspectionEditor, inspectionFieldsChanged } from "./monumentInspections.mjs";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 import { validateFaceReferences, validateMarkerFaces, validateFacesRevision } from "./markerFaces.mjs";
 import { withAuditContext } from "./auditContext.mjs";
@@ -18,8 +18,10 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       return rollback(undefined);
     }
 
-    if (headstone.inspectionChangesOnly || headstone.newInspections?.length || headstone.updatedInspections?.length) assertInspectionEditor(actorUser);
+    if (headstone.deletedInspections?.length || headstone.inspectionChangesOnly || headstone.newInspections?.length || headstone.updatedInspections?.length) assertInspectionEditor(actorUser);
+    if (headstone.deletedInspections?.length && !headstone.inspectionChangesOnly) throw new BadRequestError("Delete inspections separately from marker changes.");
     if (headstone.inspectionChangesOnly) {
+      await deleteMonumentInspections(client, id, headstone.deletedInspections);
       await insertMonumentInspections(client, id, headstone.newInspections);
       await updateMonumentInspections(client, id, headstone.updatedInspections);
       return toHeadstone(await selectHeadstoneById(client, id));

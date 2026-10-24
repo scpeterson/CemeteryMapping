@@ -16,6 +16,7 @@ async function setup(page:Page,role='admin',assignedCemeteryIds:string[]=[]){
  await page.route('**/api/headstones/marker-1',async route=>{
   if(route.request().method()==='PATCH'){
    const payload=route.request().postDataJSON();patches.push(payload);
+   for(const deleted of payload.deletedInspections??[]) entries=entries.filter(i=>i.id!==deleted.id);
    for(const added of payload.newInspections??[]) entries.push({...added,condition:'Unknown',inspectionYear:Number(added.inspectedAt.slice(0,4)),updatedAt:'2026-10-22T12:00:00+00:00'});
    for(const edited of payload.updatedInspections??[]) entries=entries.map(i=>i.id===edited.id?{...i,...edited,condition:'Unknown',updatedAt:'2026-10-22T12:00:00+00:00'}:i);
   }
@@ -83,6 +84,7 @@ for(const [role,assignments] of [['reader',[cemeteryId]],['power-user',[cemetery
  test(`${role} ${assignments.length?'assigned':'unassigned'} has read-only inspections`,async({page})=>{
   await setup(page,role,assignments);
   const history=page.getByRole('region',{name:'Inspections',exact:true});
+  await expect(history.getByRole('button',{name:'Delete inspection',exact:true})).toHaveCount(0);
   await expect(history.getByRole('button',{name:'New inspection',exact:true})).toHaveCount(0);
   await expect(history.getByRole('button',{name:'Edit inspection',exact:true})).toHaveCount(0);
   await history.getByRole('combobox',{name:'Inspection',exact:true}).selectOption('nhg');
@@ -181,3 +183,16 @@ test('opening a marker editor protects an inspection draft', async ({page}) => {
  await expect(page.getByRole('combobox',{name:'Material',exact:true})).toBeVisible();
  await expect(history).toHaveCount(0);
 });
+
+for (const role of ['admin','cemetery-admin']) {
+ test(`${role} can confirm deletion while cancellation keeps the inspection`,async({page})=>{
+  const patches=await setup(page,role,[cemeteryId]);
+  const button=page.getByRole('button',{name:'Delete inspection',exact:true});
+  page.once('dialog',dialog=>dialog.dismiss());
+  await button.click(); expect(patches).toHaveLength(0);
+  page.once('dialog',async dialog=>{expect(dialog.message()).toContain('Photos will stay in the marker gallery');await dialog.accept();});
+  await button.click();
+  await expect(page.getByRole('combobox',{name:'Inspection',exact:true})).toHaveValue('nhg');
+  expect(patches[0].deletedInspections).toEqual([{id:'field',expectedUpdatedAt:'2026-10-21T12:00:00+00:00'}]);
+ });
+}

@@ -448,6 +448,10 @@ export function HeadstoneRecord({
         <p className="muted">Dated observations of condition, inscriptions, and supporting photos.</p>
         {!headstone.inspections?.length ? <div className="note-box"><strong>Earlier marker condition:</strong> {headstone.condition.label} · Last inspected: {formatDate(headstone.lastInspectedAt)}{headstone.conditionNotes ? <p>{headstone.conditionNotes}</p> : null}<p className="muted">No dated inspection has been recorded yet.</p></div> : null}
       <Suspense fallback={<p role="status">Loading inspections…</p>}><MonumentInspections key={headstone.id} onStarted={onInitialActionHandled} startNew={initialAction === "new-inspection"} showHeading={false} headstone={headstone} conditions={lookups.conditions} onUploadPhoto={canEditInspections ? onUploadPhoto : undefined}
+        onDelete={canEditInspections ? async (entry) => onSave(headstone.id, {
+          ...blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName),
+          inspectionChangesOnly: true, deletedInspections: [entry], reason: "Deleted inspection",
+        }) : undefined}
         onSave={canEditInspections ? async (entry, updating) => {
           const saved = await onSave(headstone.id, { ...blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName),
             inspectionChangesOnly: true, newInspections: updating ? [] : [entry], updatedInspections: updating ? [entry] : [] });

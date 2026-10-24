@@ -53,6 +53,7 @@ const localToday = () => {
 };
 
 type MonumentInspectionsProps = {
+  onDelete?: (entry: {id: string; expectedUpdatedAt: string}) => Promise<Headstone>;
   onStarted?: () => void;
   startNew?: boolean;
   showHeading?: boolean;
@@ -67,7 +68,7 @@ export function MonumentInspections(props: MonumentInspectionsProps) {
   return <InspectionEditor key={`${account?.accountId ?? account?.identity ?? "local"}/${props.headstone.id}`} {...props} />;
 }
 
-function InspectionEditor({ headstone, conditions = [], onSave, onUploadPhoto, showHeading = true, startNew = false, onStarted }: MonumentInspectionsProps) {
+function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUploadPhoto, showHeading = true, startNew = false, onStarted }: MonumentInspectionsProps) {
   const account = useAccountSession();
   const recoveryKey = `cemetery-mapping:inspection-draft:v1:${encodeURIComponent(account?.accountId ?? account?.identity ?? "local")}:${headstone.id}`;
   const [recovery,setRecovery] = useState(()=>readInspectionRecovery(recoveryKey));
@@ -392,7 +393,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onUploadPhoto, s
   return <section className="headstone-wide-field monument-inspections" aria-label="Inspections">
     {showHeading ? <h4>Inspections</h4> : null}
     {inspections.length ? <label>Inspection
-      <select value={selected?.id ?? ""} disabled={Boolean(draft)} onChange={(event) => setSelectedId(event.target.value)}>
+      <select value={selected?.id ?? ""} disabled={Boolean(draft) || saving} onChange={(event) => setSelectedId(event.target.value)}>
         {inspections.map((entry) => <option key={entry.id} value={entry.id}>
           {entry.inspectedAt ? formatDate(entry.inspectedAt) : `${entry.inspectionYear} (exact date unknown)`} · {inspectionTypeLabels[entry.sourceType]} · {entry.source}
         </option>)}
@@ -416,10 +417,20 @@ function InspectionEditor({ headstone, conditions = [], onSave, onUploadPhoto, s
       <button type="button" onClick={()=>{setUpdating(recovery.updating);setActiveFaceId(recovery.activeFaceId);setDraft(()=>recovery.draft);setStep(recovery.step);setStepFocusRequest(value=>value+1);setRecovery(null);setSavedNotice(false);}}>Resume draft</button>
       <button type="button" className="secondary-button" onClick={()=>{if(window.confirm("Discard the saved inspection draft?"))clearRecovery();}}>Discard saved draft</button>
     </section> : null}
-    {onSave && !draft && !recovery ? <div className="headstone-form-actions inspection-actions">
+    {onSave && !draft && !recovery && !saving ? <div className="headstone-form-actions inspection-actions">
       <button type="button" onClick={() => begin(false)}>New inspection</button>
       {selected ? <button type="button" className="secondary-button" onClick={() => begin(true)}>Edit inspection</button> : null}
     </div> : null}
+    {onDelete && selected?.updatedAt && !draft && !recovery ? <button type="button" className="secondary-button" disabled={saving} onClick={async () => {
+      const expectedUpdatedAt = selected.updatedAt;
+      if (!expectedUpdatedAt) return;
+      if (!window.confirm(`Delete the inspection from ${selected.inspectedAt ? formatDate(selected.inspectedAt) : selected.inspectionYear} by ${selected.source}? Photos will stay in the marker gallery, but their links to this inspection will be removed.`)) return;
+      setSaving(true); setError(undefined);
+      try { await onDelete({id:selected.id,expectedUpdatedAt}); setSelectedId(undefined); }
+      catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to delete inspection."); }
+      finally { setSaving(false); }
+    }}>{saving ? "Deleting inspection…" : "Delete inspection"}</button> : null}
+    {!draft && error ? <p role="alert">{error}</p> : null}
     {draft && recoveryUnavailable ? <p role="alert">Browser draft recovery is unavailable. Keep this page open until you save.</p> : null}
     {draft && missingPhotoFiles.length ? <p className="inspection-recovery" role="alert">Reselect {missingPhotoFiles.length} photo files before saving, or remove them from the draft. Browser recovery retained their names and notes, but not the files.</p> : null}
     {draft || savedNotice ? <p className={`inspection-save-status${draft ? "" : " is-saved"}`} role="status" aria-label="Inspection save status" aria-live="polite" aria-atomic="true">

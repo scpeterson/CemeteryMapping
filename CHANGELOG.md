@@ -16,6 +16,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Allow cemetery and system admins to delete inspections with confirmation and version checks. Keep photos in the marker gallery, unlink inspection photo contexts, and retain audited deletion history without source refreshes recreating the inspection (migration 494).
+
 - Validate the complete touch-phone inspection workflow at 320px and 390px, including slow/failed uploads, required corrections, reload recovery, and nonduplicating retries; clarify filtered gallery photo counts.
 
 - Recover account- and marker-scoped unfinished inspections after reload, retaining visit/face edits and photo metadata with explicit file reselection before save.
