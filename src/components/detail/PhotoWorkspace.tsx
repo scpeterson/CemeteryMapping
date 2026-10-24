@@ -46,7 +46,7 @@ export default function PhotoWorkspace({headstone,initialTarget,canUpdate,canEdi
   }
  },[headstone.id]);
  const invalidateRequests=useCallback(()=>{requestSequence.current++;},[]);
- useEffect(()=>{const controller=new AbortController();void refresh(controller.signal);return()=>{controller.abort();invalidateRequests();};},[refresh,headstone.mediaAssets,invalidateRequests]);
+ useEffect(()=>{const controller=new AbortController();void refresh(controller.signal);return()=>{controller.abort();invalidateRequests();};},[refresh,invalidateRequests]);
  const inspectionId=record.startsWith("inspection:")?record.slice(11):undefined;
  const maintenanceRecordId=record.startsWith("maintenance:")?record.slice(12):undefined;
  const inspection=headstone.inspections?.find(entry=>entry.id===inspectionId);

@@ -671,6 +671,8 @@
 .inspection-correction-status {
   position: sticky;
   bottom: 0;
+  max-height: calc(100dvh - var(--marker-section-scroll-margin, 120px) - 100px);
+  overflow-y: auto;
   z-index: 3;
   box-shadow: 0 -3px 12px #243c2920;
   display: grid;
@@ -729,4 +731,4 @@
 .marker-workflow .inspection-review-required h5 { scroll-margin-top: var(--marker-section-scroll-margin, 120px); }
 
 /* Keep step shortcuts clear of the sticky marker navigation when scrolled into view. */
-.inspection-steps button { scroll-margin-top: var(--marker-section-scroll-margin, 120px); }
+.inspection-steps button { scroll-margin-top: var(--marker-section-scroll-margin, 120px); scroll-margin-bottom: var(--inspection-correction-height, 0px); }

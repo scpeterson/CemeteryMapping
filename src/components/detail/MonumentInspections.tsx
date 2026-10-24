@@ -113,6 +113,17 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
     : currentCorrectionIndex>=0 ? `Correcting: ${correctionLabel}.` : `${correctionLabel} complete.`;
   const correctingRequired = requiredCorrection !== null || Boolean(editingFromReview && missingRequiredCount);
   const showCorrectionPanel = Boolean(draft && !draft.recordSaved && step<2 && correctingRequired);
+  const correctionPanel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const panel = correctionPanel.current;
+    const editor = panel?.closest('fieldset');
+    if (!panel || !editor) return;
+    const measure = () => editor.style.setProperty('--inspection-correction-height', `${panel.getBoundingClientRect().height + 12}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(panel);
+    return () => { observer.disconnect(); editor.style.removeProperty('--inspection-correction-height'); };
+  }, [showCorrectionPanel]);
   const [displayPreferencesReset,setDisplayPreferencesReset] = useState(false);
   const [restoredDefaultsOpen,setRestoredDefaultsOpen] = useState(()=>readDisplayPreference("restoredDefaults"));
   const rememberRestoredDefaults = (open:boolean) => {
@@ -500,7 +511,7 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
         <p role="status">{draft.photos?.length ?? 0} photos ready to save. The inspection is saved first, then its photos are uploaded and linked.</p>
       </div>
       </fieldset>
-      {showCorrectionPanel ? <section className="inspection-correction-status" aria-label="Current required item">
+      {showCorrectionPanel ? <section ref={correctionPanel} className="inspection-correction-status" aria-label="Current required item">
         <div className={`inspection-correction-header${missingRequiredCount ? "" : " is-complete"}`}><div>
         <p id={`${requirementsId}-current`} aria-live="polite" aria-atomic="true"><strong>{correctionStatus}</strong></p>
         <p id={`${requirementsId}-remaining`}>{currentCorrectionIndex>=0 ? `Item ${currentCorrectionIndex+1} of ${missingRequiredCount} remaining.`
