@@ -12,6 +12,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Validate the complete touch-phone inspection workflow at 320px and 390px, including slow/failed uploads, required corrections, reload recovery, and nonduplicating retries; clarify filtered gallery photo counts.
+
 - Recover account- and marker-scoped unfinished inspections after reload, retaining visit/face edits and photo metadata with explicit file reselection before save.
 
 - Announce unsaved inspection changes, inspection save progress, pending photo retries, and completion separately.

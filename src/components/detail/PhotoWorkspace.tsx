@@ -100,7 +100,7 @@ export default function PhotoWorkspace({headstone,initialTarget,canUpdate,canEdi
   finally{setBusy(false);}
  };
  return <Modal className="media-gallery-modal monument-photo-workspace" label="Marker photo gallery" onClose={close}>
-  <header><div><h3>Marker photo gallery</h3><p>{headstone.headstoneId} · {assets.length} photos</p></div><button type="button" disabled={busy||uploadBusy} onClick={close}>Close gallery</button></header>
+  <header><div><h3>Marker photo gallery</h3><p>{headstone.headstoneId} · {visible.length===assets.length?`${assets.length} photos`:`${visible.length} of ${assets.length} photos`}</p></div><button type="button" disabled={busy||uploadBusy} onClick={close}>Close gallery</button></header>
   <fieldset className="photo-gallery-filters" disabled={busy||uploadBusy}>
    <legend className="sr-only">Browse photos</legend>
    <label>Photo record<select value={record} onChange={event=>{
