@@ -17,8 +17,10 @@ export function MediaGallery({
   showAll = false,
   renderDetails,
   renderActions,
+  photoActionMenu = false,
 }: {
   assets: MediaAsset[];
+  photoActionMenu?: boolean;
   showAll?: boolean;
   renderDetails?: (asset: MediaAsset) => ReactNode;
   renderActions?: (asset: MediaAsset) => ReactNode;
@@ -66,6 +68,7 @@ export function MediaGallery({
     }
   };
 
+  const PhotoActions = photoActionMenu ? "details" : "div";
   const gallery = (visibleAssets: MediaAsset[], expanded: boolean) => (
     <div className={`media-gallery${expanded ? " media-gallery-expanded" : ""}`}>
       {visibleAssets.map((asset) => {
@@ -78,6 +81,8 @@ export function MediaGallery({
             {renderDetails?.(asset)}
             {renderActions?.(asset)}
             {asset.isPrimary ? <span className="media-primary-label"><Star size={14} aria-hidden="true" /> Primary photo</span> : null}
+            {(onMove && asset.mediaLinkId || canDelete && onDelete) ? <PhotoActions className={photoActionMenu ? "photo-card-menu" : undefined}>
+            {photoActionMenu ? <summary aria-label={`Photo actions: ${asset.originalFilename || asset.id}`}>Photo actions</summary> : null}
             {onMove && asset.mediaLinkId ? (
               <button type="button" className="media-primary-button"
                 onClick={() => void moveAsset(asset, asset.isPrimary ? "automatic" : "primary")}
@@ -95,9 +100,10 @@ export function MediaGallery({
                 aria-label={`Delete photo ${asset.originalFilename || asset.id}`}
                 title="Delete photo"
               >
-                <Trash2 size={14} aria-hidden="true" />
+                <Trash2 size={14} aria-hidden="true" />{photoActionMenu ? "Delete photo" : null}
               </button>
             ) : null}
+            </PhotoActions> : null}
           </div>
         );
       })}

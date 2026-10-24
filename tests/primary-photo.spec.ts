@@ -32,6 +32,7 @@ test("select, replace and remove a primary photo, including after reload", async
   const overview = page.getByRole("tabpanel", { name: "Overview", exact: true });
   await page.getByRole("tab", { name: "Monuments" }).click();
   await page.locator(".all-monument-photos > button").click();
+  await page.getByLabel("Photo actions: old-marker.png",{exact:true}).click();
   await page.getByRole("button", { name: "Make primary: old-marker.png", exact: true }).click();
   await expect(page.getByRole("button", { name: "Remove primary: old-marker.png", exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("primary-photo-gallery.png"), fullPage: true });
@@ -44,7 +45,9 @@ test("select, replace and remove a primary photo, including after reload", async
   await expect(overview.getByRole("img", { name: "old-marker", exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Monuments" }).click();
   await page.locator(".all-monument-photos > button").click();
+  await page.getByLabel("Photo actions: latest-marker.png",{exact:true}).click();
   await page.getByRole("button", { name: "Make primary: latest-marker.png", exact: true }).click();
+  await page.getByLabel("Photo actions: old-marker.png",{exact:true}).click();
   await expect(page.getByRole("button", { name: "Make primary: old-marker.png", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Remove primary: latest-marker.png", exact: true }).click();
   await page.getByRole("button", {name:"Close gallery",exact:true}).click();
@@ -53,6 +56,7 @@ test("select, replace and remove a primary photo, including after reload", async
   await expect(overview.getByRole("img", { name: "latest-marker", exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Monuments" }).click();
   await page.locator(".all-monument-photos > button").click();
+  await page.getByLabel("Photo actions: old-marker.png",{exact:true}).click();
   await page.getByRole("button", { name: "Make primary: old-marker.png", exact: true }).click();
   await page.route("**/api/media-assets/old-marker", (route) => route.fulfill({ json: { id: "old-marker" } }));
   page.once("dialog", (dialog) => dialog.accept("Remove incorrect photo"));
