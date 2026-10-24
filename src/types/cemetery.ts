@@ -61,6 +61,7 @@ export type CemeterySection = {
 
 export type CemeteryLot = {
   id: string;
+  uuid?: string;
   cemeteryId: string;
   name: string;
   section: string;

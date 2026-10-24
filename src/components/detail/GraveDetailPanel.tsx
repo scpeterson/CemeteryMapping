@@ -114,7 +114,7 @@ export function GraveDetailPanel({
   onSaveOwnershipEvent: (event: SaveOwnershipEventInput) => Promise<void>;
   onUpdateOwner: (partyId: string, eventId: string, owner: UpdateOwnerInput) => Promise<void>;
   onRemoveOwnershipConnection: (rightId: string) => Promise<void>;
-  onUpdateGraveLot: (lotId: string) => Promise<void>;
+  onUpdateGraveLot: (lotId: string, lotUuid?: string) => Promise<void>;
   onUploadPhoto: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string; inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" }) => Promise<void>;
   onDeletePhoto: (assetId: string, reason?: string) => Promise<void>;
   onMovePhoto: (asset: MediaAsset, direction: "earlier" | "later" | "primary" | "automatic") => Promise<void>;

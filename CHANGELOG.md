@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Assign gravesites to the exact selected lot using its UUID, avoiding duplicate lot numbers across sections. Reject ambiguous older requests and return clear burial-restriction messages; keep section/block hierarchy and cached assignments consistent.
+
 - Remove the redundant Flourishes or designs field from marker information; retain face-level editing and existing marker-level notes.
 
 - Restore Flourishes or designs on every inspection face, preserving those notes when copying, saving, editing, and clearing individual face observations.

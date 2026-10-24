@@ -224,6 +224,7 @@ export function validateGraveSpacePayload(body) {
 export function validateGraveLotAssignmentPayload(body) {
   return {
     lotId: optionalText(body?.lotId, "Lot", 100) ?? "",
+    lotUuid: body?.lotUuid == null ? undefined : validateUuid(body.lotUuid, "Lot id"),
     reason: validateMutationReason(body?.reason),
   };
 }

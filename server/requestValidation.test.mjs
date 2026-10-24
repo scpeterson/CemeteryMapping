@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { searchCemetery } from "./cemeterySearch.mjs";
-import { validateBurialPayload, validateOwnershipEventPayload } from "./routes/cemeteryRouteValidation.mjs";
+import { validateBurialPayload, validateOwnershipEventPayload, validateGraveLotAssignmentPayload } from "./routes/cemeteryRouteValidation.mjs";
 import {
   BadRequestError,
   validateCemeteryId,
@@ -371,4 +371,12 @@ test("search returns cemetery name and lot field reasons", async () => {
 
   assert.equal(matches.length, 1);
   assert.deepEqual(matches[0].reasons, ["Cemetery: Trinity Lutheran Church Cemetery", "Lot name: Lot 61", "Lot number: 61"]);
+});
+
+
+test("lot assignments accept an exact lot UUID and reject malformed supplied IDs",()=>{
+  const uuid="89def281-7ebf-46de-9586-a85c53d42e49";
+  assert.equal(validateGraveLotAssignmentPayload({lotId:"8",lotUuid:uuid}).lotUuid,uuid);
+  assert.equal(validateGraveLotAssignmentPayload({lotId:""}).lotUuid,undefined);
+  for(const lotUuid of ["B-8",0,false,""])assert.throws(()=>validateGraveLotAssignmentPayload({lotId:"8",lotUuid}),BadRequestError);
 });

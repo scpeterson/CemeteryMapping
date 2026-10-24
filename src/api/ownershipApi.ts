@@ -18,12 +18,12 @@ export async function fetchDeedRegistrySuggestions(cemeteryId: string, ownerName
   return jsonResponse<DeedRegistrySuggestion[]>(response, "Deed registry suggestion API");
 }
 
-export async function updateGraveLot(cemeteryId: string, graveSpaceId: string, lotId: string): Promise<{ id: string; lotId: string }> {
+export async function updateGraveLot(cemeteryId: string, graveSpaceId: string, lotId: string, lotUuid?: string): Promise<{ id: string; lotId: string; section?: string }> {
   const response = await authorizedFetch(
     `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(graveSpaceId)}/lot`,
-    jsonRequest("PATCH", { lotId, reason: "Manual lot assignment from gravesite detail" }),
+    jsonRequest("PATCH", { lotId, lotUuid, reason: "Manual lot assignment from gravesite detail" }),
   );
-  return jsonResponse<{ id: string; lotId: string }>(response, "Update gravesite lot API");
+  return jsonResponse<{ id: string; lotId: string; section?: string }>(response, "Update gravesite lot API");
 }
 
 export async function updateOwner(partyId: string, eventId: string, owner: UpdateOwnerInput): Promise<{ id: string }> {
