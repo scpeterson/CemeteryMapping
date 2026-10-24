@@ -50,6 +50,7 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   const gallery=page.getByRole("dialog",{name:"Marker photo gallery",exact:true});
   await gallery.locator(".media-gallery-card").first().scrollIntoViewIfNeeded();
   await expect(gallery.getByRole("img", {name:"latest-marker",exact:true})).toBeVisible();
+  await gallery.getByLabel("Photo actions: latest-marker.png",{exact:true}).click();
   await expect(gallery.getByRole("button", { name: "Delete photo latest-marker.png", exact: true })).toBeVisible();
   await expect(gallery.getByRole("button", { name: "Remove primary: latest-marker.png", exact: true })).toBeVisible();
   await gallery.getByRole("button",{name:"Close gallery",exact:true}).click();

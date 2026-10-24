@@ -325,3 +325,12 @@
 .monument-photo-workspace .photo-gallery-editor.is-browsing fieldset { border: 0; padding: 0; margin: 8px 0; }
 .photo-gallery-editor.is-browsing .photo-control-modes { margin: 0; }
 .monument-photo-workspace > header p { margin: 4px 0 0; }
+
+.monument-photo-workspace .media-gallery-item > a { display: block; aspect-ratio: 4 / 3; background: #eef3eb; border-radius: 7px; }
+.monument-photo-workspace .media-gallery-item img { width: 100%; height: 100%; object-fit: contain; }
+.monument-photo-workspace .media-photo-filename { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.monument-photo-workspace .photo-context-labels p { margin: 4px 0; padding: 2px 6px; font-size: 0.75rem; }
+.photo-card-menu { margin-top: 6px; }
+.photo-card-menu summary { min-height: 44px; align-content: center; cursor: pointer; font-size: 0.8rem; color: #2f5d50; }
+.monument-photo-workspace .photo-card-menu .media-delete-button { position: static; width: 100%; height: auto; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.photo-card-menu .media-primary-button { text-align: left; }

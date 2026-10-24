@@ -12,6 +12,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Use consistent uncropped photo thumbnails and concise captions, with primary and deletion actions in accessible per-photo menus.
+
 - Compact inspection correction actions into one row and move display preferences outside the sticky panel.
 
 - Keep gallery browsing focused on photos with one Add photos action; reveal existing-photo linking only for a selected record.
