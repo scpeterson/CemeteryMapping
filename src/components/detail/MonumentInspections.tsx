@@ -67,6 +67,7 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
   const [draft, setDraft] = useDraftState<InspectionDraft | null>(null);
   const [updating, setUpdating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedNotice,setSavedNotice] = useState(false);
   const [step, setStep] = useState(0);
   const [stepFocusRequest, setStepFocusRequest] = useState(0);
   const [editingFromReview, setEditingFromReview] = useState<"face" | "visit" | null>(null);
@@ -305,6 +306,7 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
   };
 
   const begin = (edit: boolean) => {
+    setSavedNotice(false);
     setDisplayPreferencesReset(false);
     setCorrectionCollapsed(!remainingItemsOpen);
     setError(undefined);
@@ -360,6 +362,7 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
       if(failures.length) throw new Error(failures.join(" "));
       setSelectedId(draft.id);
       setDraft(null);
+      setSavedNotice(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to save inspection.");
     } finally { setSaving(false); }
@@ -391,6 +394,10 @@ export function MonumentInspections({ headstone, conditions = [], onSave, onUplo
       <button type="button" onClick={() => begin(false)}>New inspection</button>
       {selected ? <button type="button" className="secondary-button" onClick={() => begin(true)}>Edit inspection</button> : null}
     </div> : null}
+    {draft || savedNotice ? <p className={`inspection-save-status${draft ? "" : " is-saved"}`} role="status" aria-label="Inspection save status" aria-live="polite" aria-atomic="true">
+      {!draft ? "All changes saved." : saving ? (draft.recordSaved ? `Inspection saved — saving photos. ${(draft.photos??[]).filter(photo=>!photo.saved).length} remaining.` : "Saving inspection…")
+        : draft.recordSaved ? ((draft.photos??[]).some(photo=>!photo.saved) ? `Inspection saved — ${(draft.photos??[]).filter(photo=>!photo.saved).length} photos need retry. Your inspection is safe.` : "All changes saved.") : "Unsaved changes."}
+    </p> : null}
     {draft ? <fieldset className="inspection-editor" disabled={saving} onKeyDown={event=>{
       if(event.key!=="Escape" || !displayPreferencesReset || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       event.preventDefault();event.stopPropagation();dismissDisplayReset(true);

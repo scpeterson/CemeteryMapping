@@ -12,6 +12,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Announce unsaved inspection changes, inspection save progress, pending photo retries, and completion separately.
+
 - Use consistent uncropped photo thumbnails and concise captions, with primary and deletion actions in accessible per-photo menus.
 
 - Compact inspection correction actions into one row and move display preferences outside the sticky panel.

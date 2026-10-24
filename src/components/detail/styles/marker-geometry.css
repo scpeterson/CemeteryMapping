@@ -741,3 +741,6 @@
 .inspection-correction-actions .inspection-correction-return:only-child { grid-column: 1 / -1; }
 .inspection-display-settings { margin-top: 16px; padding-top: 12px; border-top: 1px solid #d9e0d5; }
 .inspection-display-settings h5 { margin: 0 0 8px; }
+
+.inspection-save-status { margin: 8px 0; padding: 8px 10px; border-left: 3px solid #b27d25; background: #fff8eb; font-size: 0.85rem; }
+.inspection-save-status.is-saved { border-color: #2f5d50; background: #eef6ef; }
