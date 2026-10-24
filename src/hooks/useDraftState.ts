@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useState, type Dispatch, type SetStateAction } from "react";
 
 const drafts = new Map<string, () => void>();
 
@@ -22,7 +22,8 @@ export function useDraftState<T>(initial: T | (() => T), onDiscard?: () => void)
       ? { ...current, value: next(current.value) }
       : { value: next, baseline: next });
   }, []);
-  useEffect(() => {
+  // Update the guard during commit, before saved controls become visible or navigation can occur.
+  useLayoutEffect(() => {
     if (JSON.stringify(state.value) !== JSON.stringify(state.baseline)) {
       drafts.set(id, () => { onDiscard?.(); setState((current) => ({ ...current, value: current.baseline })); });
     } else drafts.delete(id);
