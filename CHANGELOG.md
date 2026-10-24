@@ -12,6 +12,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Compact the photo gallery toolbar, collapse optional face/timing filters with an active count, and reveal full photo editing controls only when adding or linking photos.
+
 - Replace the oversized marker form with focused inspection, marker-information, and source/review editors; organize Details into five sections and add Overview inspection summaries and quick actions.
 - Unify marker, inspection, and maintenance photo browsing and controls in one gallery, preserving authenticated previews, record/face associations, primary ordering, and upload retry behavior.
 - Guide inspections one face at a time, showing saved and draft photos in face cards, editors, and Review & save, with direct edit/return actions that retain drafts.

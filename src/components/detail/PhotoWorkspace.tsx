@@ -100,9 +100,9 @@ export default function PhotoWorkspace({headstone,initialTarget,canUpdate,canEdi
   finally{setBusy(false);}
  };
  return <Modal className="media-gallery-modal monument-photo-workspace" label="Marker photo gallery" onClose={close}>
-  <header><div><h3>Marker photo gallery</h3><p>{headstone.headstoneId} · {assets.length} photos</p><p className="photo-workspace-target" title={destinationLabel}>{destinationLabel}</p></div><button type="button" disabled={busy||uploadBusy} onClick={close}>Close gallery</button></header>
+  <header><div><h3>Marker photo gallery</h3><p>{headstone.headstoneId} · {assets.length} photos</p></div><button type="button" disabled={busy||uploadBusy} onClick={close}>Close gallery</button></header>
   <fieldset className="photo-gallery-filters" disabled={busy||uploadBusy}>
-   <legend>Browse photos</legend>
+   <legend className="sr-only">Browse photos</legend>
    <label>Photo record<select value={record} onChange={event=>{
     if(!confirmLeave())return;
     setRecord(event.target.value);setUploadPending(false);setMode("browse");setPhotoId("");setFaceId("");setPhase("unspecified");setFaceFilter("");setPhaseFilter("");setError(undefined);setMessage(undefined);
@@ -111,17 +111,22 @@ export default function PhotoWorkspace({headstone,initialTarget,canUpdate,canEdi
     {(headstone.inspections??[]).map(entry=><option key={entry.id} value={`inspection:${entry.id}`}>Inspection: {entry.inspectedAt?formatDate(entry.inspectedAt):entry.inspectionYear} · {entry.source}</option>)}
     {(headstone.maintenanceRecords??[]).map(entry=><option key={entry.id} value={`maintenance:${entry.id}`}>Maintenance: {entry.actionType?.label||entry.issueType?.label||"Work record"} · {formatDate(entry.observedAt)}</option>)}
    </select></label>
+   <details className="photo-gallery-extra-filters" open={initialTarget.faceId || initialTarget.faceLabel ? true : undefined}>
+    <summary>Filters{faceFilter || phaseFilter ? ` (${Number(Boolean(faceFilter)) + Number(Boolean(phaseFilter))})` : ""}</summary>
+    <div className="photo-gallery-filter-fields">
    <label>Filter by face<select value={faceFilter} onChange={event=>setFaceFilter(event.target.value)}><option value="">All faces</option>{initialTarget.faceId?<option value={`face-id:${initialTarget.faceId}`}>{faces.find(face=>face.id===initialTarget.faceId)?.label||"Selected face"} (selected face)</option>:null}{faceOptions.map(label=><option key={label} value={label}>{label}</option>)}</select></label>
    {!inspectionId&&record!=="unlinked"?<label>Filter by maintenance timing<select value={phaseFilter} onChange={event=>setPhaseFilter(event.target.value)}><option value="">All timings</option>{Object.entries(timingLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>:null}
+    </div>
+   </details>
   </fieldset>
   {loadError?<div role="alert"><p>{loadError}</p><button type="button" onClick={()=>void refresh()}>Retry photo associations</button></div>:null}
   {loading?<p role="status">Refreshing photo associations…</p>:null}
   {mode==="existing"&&recordSelected?<p className="muted">Showing all marker photos so you can choose one to link to the selected record.</p>:null}
-  {canEdit?<section ref={editorRef} className="photo-gallery-editor" aria-label="Photo controls">
-   <h4>Add or link photos</h4>
-   <p className="muted">{recordSelected?`Photos will be linked to ${destinationLabel}. ${maintenanceRecordId?"Face and timing":"Face"} below ${maintenanceRecordId?"apply":"applies"} to both uploads and existing photos.`:"Uploads go into the marker gallery. Select an inspection or maintenance record above to link photos to it."}</p>
+  {canEdit?<section ref={editorRef} className={`photo-gallery-editor${mode==="browse"?" is-browsing":""}`} aria-label="Photo controls">
+   {mode!=="browse"?<h4>Add or link photos</h4>:null}
+   {mode!=="browse"?<p className="muted">{recordSelected?`Photos will be linked to ${destinationLabel}. ${maintenanceRecordId?"Face and timing":"Face"} below ${maintenanceRecordId?"apply":"applies"} to both uploads and existing photos.`:"Uploads go into the marker gallery. Select an inspection or maintenance record above to link photos to it."}</p>:null}
    <fieldset disabled={busy||uploadBusy||loading||Boolean(loadError)} className="record-photo-editor">
-    <legend>{recordSelected?"Photo association":"Marker photos"}</legend>
+    <legend className={mode==="browse"?"sr-only":undefined}>{recordSelected?"Photo association":"Marker photos"}</legend>
     <div className="photo-control-modes"><button type="button" aria-pressed={mode==="existing"} disabled={!recordSelected} onClick={()=>{if(confirmLeave()){setMode("existing");setUploadPending(false);choosePhoto("");}}}>Choose existing photos</button><button type="button" aria-pressed={mode==="upload"} onClick={()=>{if(confirmLeave()){setMode("upload");setUploadPending(false);choosePhoto("");}}}>Upload new photos</button></div>
     {mode!=="browse"&&recordSelected?<PhotoContextFields faces={faces} faceId={faceId} onFaceChange={setFaceId} maintenance={Boolean(maintenanceRecordId)} phase={phase} onPhaseChange={setPhase} />:null}
     {mode==="existing"&&recordSelected?<>

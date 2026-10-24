@@ -309,3 +309,19 @@
 .monument-photo-workspace .photo-link-save,
 .monument-photo-workspace .photo-upload-form button[type="submit"] { background: #2f5d50; color: #fff; border-color: #2f5d50; }
 .monument-photo-workspace .photo-gallery-editor { scroll-margin-top: 120px; }
+
+/* Keep browsing controls compact so photos remain the focus. */
+.monument-photo-workspace .photo-gallery-filters {
+  display: flex; flex-wrap: wrap; align-items: end; gap: 8px 12px;
+  border: 0; padding: 0; margin: 10px 0;
+}
+.photo-gallery-filters > label { flex: 1 1 240px; font-size: 0.8rem; }
+.photo-gallery-extra-filters { flex: 0 1 auto; min-width: 0; }
+.photo-gallery-extra-filters[open] { flex-basis: 100%; }
+.photo-gallery-extra-filters summary { cursor: pointer; min-height: 44px; align-content: center; font-weight: 600; font-size: 0.85rem; }
+.photo-gallery-filter-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 8px 12px; }
+.photo-gallery-filter-fields label { font-size: 0.8rem; }
+.monument-photo-workspace .photo-gallery-editor.is-browsing,
+.monument-photo-workspace .photo-gallery-editor.is-browsing fieldset { border: 0; padding: 0; margin: 8px 0; }
+.photo-gallery-editor.is-browsing .photo-control-modes { margin: 0; }
+.monument-photo-workspace > header p { margin: 4px 0 0; }
