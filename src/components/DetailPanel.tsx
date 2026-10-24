@@ -1,3 +1,4 @@
+import { MonumentPhotosProvider } from "./detail/MonumentPhotoGallery";
 import { MapPinned } from "lucide-react";
 import { useMemo } from "react";
 import type {
@@ -97,7 +98,14 @@ function EmptyDetailPanel() {
   );
 }
 
-export function DetailPanel({
+export function DetailPanel(props: DetailPanelProps) {
+ const headstones = props.standaloneHeadstone ? [props.standaloneHeadstone] : props.grave?.headstones ?? [];
+ return <MonumentPhotosProvider key={`${props.standaloneHeadstoneSummary?.id || props.summary?.id}:${props.selectionVersion}`} headstones={headstones} canUpdate={props.canUpdateHeadstones} canEditInspections={props.canEditInspections} canDelete={props.canDeletePhotos} onUpload={props.onUploadPhoto} onDelete={props.onDeletePhoto} onMove={props.canReorderPhotos ? props.onMovePhoto : undefined}>
+  <DetailPanelContents {...props} />
+ </MonumentPhotosProvider>;
+}
+
+function DetailPanelContents({
   selectionVersion,
   onSelectHeadstone,
   owners,

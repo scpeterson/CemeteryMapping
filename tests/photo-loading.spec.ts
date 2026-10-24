@@ -26,7 +26,7 @@ test("gallery defers protected thumbnails until visible and originals until open
   });
   await select(page, "A-TEST");
   await page.getByRole("tab", { name: "Monuments and photos" }).click();
-  await page.locator(".all-monument-photos > summary").click();
+  await page.locator(".all-monument-photos > button").click();
   await expect(page.locator(".media-gallery-item")).toBeVisible();
   // The overview may load its thumbnail, but no gallery download or original may start.
   const before = downloads.length;

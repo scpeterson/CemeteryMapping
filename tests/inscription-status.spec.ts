@@ -23,7 +23,7 @@ test("current legibility archives text with source history and locks whole-marke
   await select(page, "A-TEST");
   await page.getByRole("tabpanel", { name: "Overview", exact: true }).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await page.getByRole("tab", { name: "Details", exact: true }).click();
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   const status = page.getByRole("combobox", { name: "Current legibility", exact: true });
   const text = page.getByRole("textbox", { name: "Inscription", exact: true });
   page.once("dialog", (dialog) => dialog.dismiss());
@@ -42,7 +42,7 @@ test("current legibility archives text with source history and locks whole-marke
   await expect(text).toBeDisabled();
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   await expect(page.getByRole("region", { name: "Unspecified face", exact: true })).toContainText("Inscription status: Blank");
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await page.getByRole("button", { name: "Manage faces", exact: true }).click();
   await page.getByRole("button", { name: "Add face", exact: true }).click();
   const second = page.getByRole("group", { name: "Face 2", exact: true });
@@ -51,7 +51,7 @@ test("current legibility archives text with source history and locks whole-marke
   await expect(second.getByRole("textbox", { name: "Inscription", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
   await expect(page.getByRole("region", { name: "Back", exact: true })).toContainText("Inscription status: Illegible");
-  await page.getByRole("button", { name: "Edit marker HS-OVERVIEW" }).click();
+  await page.getByRole("button", { name: "Edit face records" }).click();
   await second.getByRole("combobox", { name: "Current legibility", exact: true }).selectOption("partially_legible");
   const partial = "  NAME\n[blank] – 1980\n[illegible lines]  ";
   await second.getByRole("textbox", { name: "Inscription", exact: true }).fill(partial);

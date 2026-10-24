@@ -53,10 +53,10 @@ test("marker Overview groups linked people and owners and defaults after reselec
   await expect(panel).toContainText("Owners of linked gravesites");
   await expect(panel.getByRole("img", { name: "latest-marker" })).toBeVisible();
   await expect(panel.locator("input, select, textarea")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Edit marker HS-OVERVIEW" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Edit marker information HS-OVERVIEW" })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath("marker-overview.png"), fullPage: true });
   await page.getByRole("tab", { name: "Details", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Edit marker HS-OVERVIEW" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit marker information HS-OVERVIEW" })).toBeVisible();
   await select(page, "A-TEST");
   await overview(page).getByRole("button", { name: /HS-OVERVIEW/ }).click();
   await expect(page.getByRole("tab", { name: "Overview", exact: true })).toHaveAttribute("aria-selected", "true");

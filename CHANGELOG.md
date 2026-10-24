@@ -12,6 +12,13 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Replace the oversized marker form with focused inspection, marker-information, and source/review editors; organize Details into five sections and add Overview inspection summaries and quick actions.
+- Unify marker, inspection, and maintenance photo browsing and controls in one gallery, preserving authenticated previews, record/face associations, primary ordering, and upload retry behavior.
+- Guide inspections one face at a time, showing saved and draft photos in face cards, editors, and Review & save, with direct edit/return actions that retain drafts.
+- Show missing required information before save and on workflow steps; provide focused corrections, Previous/Next navigation, a selectable keyboard-accessible issue list, and return-to-review focus.
+- Keep correction controls and display reset accessible in a sticky, collapsible phone-friendly panel. Persist four display preferences through a shared settings definition used by controls, startup, saves, reset, confirmation, and counts.
+- Replace the marker section button grid with a compact sticky Jump to section menu that tracks the viewed section while preserving pending edits and photos.
+
 - Select and preview photos under each face while creating or editing an inspection. Save uploads and links them to that face; partial failures retain a retry queue without duplicating the saved inspection or completed uploads.
 
 - Link active monument photos to the sole Front face on single-face monuments, and label existing observation photo links without copying photos into other inspections (migration 493).

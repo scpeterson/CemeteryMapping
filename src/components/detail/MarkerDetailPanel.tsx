@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { EditingOptionsContext } from "./editingOptionsContext";
+import { PhotoGalleryContext } from "./photoGalleryContext";
+import type { MarkerDetailAction } from "./markerWorkflowTypes";
+import { useContext, useState } from "react";
 import { DetailTabs } from "./DetailTabs";
 import { MarkerOverview } from "./MarkerOverview";
-import { Flag, History, Landmark, Link2, MapPinned } from "lucide-react";
+import { Flag, Landmark, Link2, MapPinned } from "lucide-react";
 import type {
   GraveFeature,
   GraveSpaceSummary,
@@ -18,7 +21,6 @@ import type {
 } from "../../types";
 import { GraveFeatureForm } from "./GraveFeatureRecords";
 import { HeadstoneRecord } from "./HeadstoneRecord";
-import { MaintenanceRecordForm, MaintenanceRecordList } from "./MaintenanceRecords";
 import { MarkerGravesiteRelationshipManager } from "./MarkerGravesiteRecords";
 import { MarkerRelationshipForm, MarkerRelationshipList } from "./MarkerRelationshipRecords";
 
@@ -84,7 +86,69 @@ export function MarkerDetailPanel({
   onRetry?: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<"overview" | "details">("overview");
+  const [initialAction,setInitialAction]=useState<MarkerDetailAction>();
+  const {open:openPhotos}=useContext(PhotoGalleryContext);
+  const options=useContext(EditingOptionsContext);
+  const showDetails=(action?:MarkerDetailAction)=>{setInitialAction(action);setActiveTab("details");if(!action)requestAnimationFrame(()=>document.getElementById("marker-detail-tab-details")?.focus());};
+  const selectTab=(tab:"overview"|"details")=>{setInitialAction(undefined);setActiveTab(tab);};
+  const editingUnavailable=options.loading||Boolean(options.error);
+  const inspectionDisabled=editingUnavailable||!headstoneLookups.conditions.length;
+  const informationDisabled=editingUnavailable||!headstoneLookups.markerTypes.length||!headstoneLookups.markerScopes.length||!headstoneLookups.materials.length;
+  const maintenanceDisabled=editingUnavailable||!headstoneLookups.maintenancePriorities.length||(!headstoneLookups.maintenanceIssueTypes.length&&!headstoneLookups.maintenanceActionTypes.length);
+  const missingActionOptions=(canEditInspections&&inspectionDisabled)||(canUpdateHeadstones&&(informationDisabled||maintenanceDisabled));
   const isMonolith = headstone?.markerScope.code === "monolith";
+  const markerInformationContent = <>
+      {!headstone || !canUpdateHeadstones ? null : (
+        <section className="detail-section">
+          <div className="section-title">
+            <Flag size={17} aria-hidden="true" />
+            <h4>Marker features</h4>
+          </div>
+          <GraveFeatureForm headstones={[headstone]} fixedHeadstone={headstone} lookups={headstoneLookups} onSave={onSaveGraveFeature} />
+        </section>
+      )}
+
+      {!headstone || error ? null : (
+        <section className="detail-section">
+          <div className="section-title">
+            <Link2 size={17} aria-hidden="true" />
+            <h4>{isMonolith ? "Regular markers linked to this monolith" : "Related markers"}</h4>
+          </div>
+          <MarkerRelationshipList
+            headstone={headstone}
+            relationships={headstone.relationships ?? []}
+            lookups={headstoneLookups}
+            canUpdate={canUpdateHeadstones}
+            onUpdate={(relationshipId, relationship) => onUpdateHeadstoneRelationship(headstone.id, relationshipId, relationship)}
+            onDelete={(relationshipId, reason) => onDeleteHeadstoneRelationship(headstone.id, relationshipId, reason)}
+          />
+          {canUpdateHeadstones ? (
+            <MarkerRelationshipForm headstone={headstone} lookups={headstoneLookups} onSave={(relationship) => onSaveHeadstoneRelationship(headstone.id, relationship)} />
+          ) : null}
+        </section>
+      )}
+
+      {error ? null : (
+        <section className="detail-section">
+          <div className="section-title">
+            <MapPinned size={17} aria-hidden="true" />
+            <h4>{isMonolith ? "Gravesites associated with this monolith" : "Associated gravesites"}</h4>
+          </div>
+          {headstone ? (
+            <MarkerGravesiteRelationshipManager
+              headstone={headstone}
+              graves={markerGraves}
+              lookups={headstoneLookups}
+              canUpdate={canUpdateHeadstones}
+              onSelectGrave={onSelectMarkerGrave}
+              onSave={(relationship) => onSaveHeadstoneGravesiteRelationship(headstone.id, relationship)}
+              onUpdate={(relationshipId, relationship) => onUpdateHeadstoneGravesiteRelationship(headstone.id, relationshipId, relationship)}
+              onDelete={(relationshipId, reason) => onDeleteHeadstoneGravesiteRelationship(headstone.id, relationshipId, reason)}
+            />
+          ) : null}
+        </section>
+      )}
+              </>;
   return (
     <aside className="detail-panel">
       <div className="grave-title-row">
@@ -126,23 +190,29 @@ export function MarkerDetailPanel({
       ) : null}
 
       {headstone && !error ? <>
-        <DetailTabs prefix="marker-detail" label="Marker details" tabs={[{ id: "overview", label: "Overview" }, { id: "details", label: "Details" }]} active={activeTab} onSelect={setActiveTab} />
+        <DetailTabs prefix="marker-detail" label="Marker details" tabs={[{ id: "overview", label: "Overview" }, { id: "details", label: "Details" }]} active={activeTab} onSelect={selectTab} />
         <div role="tabpanel" id={`marker-detail-panel-${activeTab}`} aria-labelledby={`marker-detail-tab-${activeTab}`} className="detail-tab-panel">
           {activeTab === "overview" ? <MarkerOverview marker={headstone} graves={markerGraves} canViewOwnership={canViewOwnership}
-            onSelectGrave={onSelectMarkerGrave} onShowDetails={() => { setActiveTab("details"); document.getElementById("marker-detail-tab-details")?.focus(); }} /> : null}
+            onSelectGrave={onSelectMarkerGrave} onShowDetails={()=>showDetails()}
+            onShowInspections={()=>showDetails("view-inspections")}
+            onRecordInspection={canEditInspections?()=>showDetails("new-inspection"):undefined}
+            onAddPhotos={canUpdateHeadstones?()=>openPhotos({headstone,mode:"upload"}):undefined}
+            onRecordMaintenance={canUpdateHeadstones?()=>showDetails("new-maintenance"):undefined}
+            onEditMarker={canUpdateHeadstones?()=>showDetails("edit-information"):undefined}
+            inspectionDisabled={inspectionDisabled} informationDisabled={informationDisabled} maintenanceDisabled={maintenanceDisabled}
+            editingNotice={options.loading?"Loading editing options…":options.error?"Editing options are unavailable.":missingActionOptions?"Some actions need additional editing options.":undefined}
+            onRetryOptions={options.error?options.retry:undefined} /> : null}
           {activeTab === "details" ? <>
       {!headstone || error ? null : (
         <section className="detail-section">
-          <div className="section-title">
-            <Landmark size={17} aria-hidden="true" />
-            <h3>{isMonolith ? "Monolith Marker" : "Marker"}</h3>
-          </div>
           <div className="headstone-list">
             <HeadstoneRecord
               headstone={headstone}
+              initialAction={initialAction}
+              onInitialActionHandled={()=>setInitialAction(undefined)}
               lookups={headstoneLookups}
               canUpdate={canUpdateHeadstones}
-                    canEditInspections={canEditInspections}
+              canEditInspections={canEditInspections}
               onSave={onSaveHeadstone}
               cemeteryName={summary.cemeteryName}
               sectionName=""
@@ -155,79 +225,14 @@ export function MarkerDetailPanel({
               onUpdateGraveFeature={onUpdateGraveFeature}
               onDeleteGraveFeature={onDeleteGraveFeature}
               canDeleteGraveFeatures={canDeleteGraveFeatures}
+              onSaveMaintenanceRecord={onSaveMaintenanceRecord}
+              onUpdateMaintenanceRecord={onUpdateMaintenanceRecord}
+              markerInformationContent={markerInformationContent}
             />
           </div>
         </section>
       )}
 
-      {!headstone || error || !canUpdateHeadstones ? null : (
-        <section className="detail-section">
-          <div className="section-title">
-            <Flag size={17} aria-hidden="true" />
-            <h3>Marker Features</h3>
-          </div>
-          <GraveFeatureForm headstones={[headstone]} fixedHeadstone={headstone} lookups={headstoneLookups} onSave={onSaveGraveFeature} />
-        </section>
-      )}
-
-      {!headstone || error ? null : (
-        <section className="detail-section">
-          <div className="section-title">
-            <Link2 size={17} aria-hidden="true" />
-            <h3>{isMonolith ? "Regular Markers Linked to This Monolith" : "Related Markers"}</h3>
-          </div>
-          <MarkerRelationshipList
-            headstone={headstone}
-            relationships={headstone.relationships ?? []}
-            lookups={headstoneLookups}
-            canUpdate={canUpdateHeadstones}
-            onUpdate={(relationshipId, relationship) => onUpdateHeadstoneRelationship(headstone.id, relationshipId, relationship)}
-            onDelete={(relationshipId, reason) => onDeleteHeadstoneRelationship(headstone.id, relationshipId, reason)}
-          />
-          {canUpdateHeadstones ? (
-            <MarkerRelationshipForm headstone={headstone} lookups={headstoneLookups} onSave={(relationship) => onSaveHeadstoneRelationship(headstone.id, relationship)} />
-          ) : null}
-        </section>
-      )}
-
-      {!headstone || error ? null : (
-        <section className="detail-section">
-          <div className="section-title">
-            <History size={17} aria-hidden="true" />
-            <h3>Maintenance</h3>
-          </div>
-          <MaintenanceRecordList
-            onUploadPhoto={onUploadPhoto}
-            records={headstone.maintenanceRecords ?? []}
-            canUpdate={canUpdateHeadstones}
-            lookups={headstoneLookups}
-            fixedHeadstone={headstone}
-            onUpdate={onUpdateMaintenanceRecord}
-          />
-          {canUpdateHeadstones ? <MaintenanceRecordForm fixedHeadstone={headstone} lookups={headstoneLookups} onSave={onSaveMaintenanceRecord} /> : null}
-        </section>
-      )}
-
-      {error ? null : (
-        <section className="detail-section">
-          <div className="section-title">
-            <MapPinned size={17} aria-hidden="true" />
-            <h3>{isMonolith ? "Gravesites Associated with This Monolith" : "Associated Gravesites"}</h3>
-          </div>
-          {headstone ? (
-            <MarkerGravesiteRelationshipManager
-              headstone={headstone}
-              graves={markerGraves}
-              lookups={headstoneLookups}
-              canUpdate={canUpdateHeadstones}
-              onSelectGrave={onSelectMarkerGrave}
-              onSave={(relationship) => onSaveHeadstoneGravesiteRelationship(headstone.id, relationship)}
-              onUpdate={(relationshipId, relationship) => onUpdateHeadstoneGravesiteRelationship(headstone.id, relationshipId, relationship)}
-              onDelete={(relationshipId, reason) => onDeleteHeadstoneGravesiteRelationship(headstone.id, relationshipId, reason)}
-            />
-          ) : null}
-        </section>
-      )}
           </> : null}
         </div>
       </> : null}

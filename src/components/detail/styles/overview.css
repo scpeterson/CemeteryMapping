@@ -16,3 +16,14 @@
 .overview-photo-dialog { padding: var(--space-3); border: 1px solid var(--panel-border); border-radius: var(--radius-md); }
 .overview-photo-dialog img { display: block; max-width: 100%; max-height: 80dvh; margin-top: var(--space-2); object-fit: contain; }
 .overview-related-grave + .overview-related-grave { margin-top: 12px; }
+
+.overview-inspection dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 10px; }
+.overview-inspection dt { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; }
+.overview-inspection dd { margin: 3px 0 0; overflow-wrap: anywhere; }
+.overview-inspection .overview-inspection-note { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; margin: 10px 0; color: var(--text-muted); }
+.overview-action-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.overview-action-grid button { min-height: 44px; padding: 10px; border: 1px solid #cbd6c7; border-radius: 7px; background: #fff; color: #2f5d50; font: inherit; font-weight: 700; }
+.overview-action-grid button:first-child { background: #2f5d50; color: #fff; border-color: #2f5d50; }
+.overview-quick-actions > .muted { margin-top: 10px; }
+.overview-action-grid button { cursor: pointer; }
+.overview-action-grid button:disabled { cursor: not-allowed; opacity: 0.55; }

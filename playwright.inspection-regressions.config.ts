@@ -4,7 +4,7 @@ import {defineConfig,devices} from '@playwright/test';
 // Use a separate web server so the administrator's running app is undisturbed.
 export default defineConfig({
  testDir:'./tests',
- testMatch:['record-photos.spec.ts','monument-inspections.spec.ts'],
+ testMatch:['marker-overview-actions.spec.ts','marker-sections.spec.ts','record-photos.spec.ts','monument-inspections.spec.ts','marker-faces.spec.ts','inscription-status.spec.ts','saved-drafts.spec.ts','overview.spec.ts','multiple-photo-upload.spec.ts','primary-photo.spec.ts','photo-orientation.spec.ts','photo-loading.spec.ts'],
  reporter:'list',
  use:{baseURL:'http://127.0.0.1:5199',trace:'on-first-retry'},
  webServer:{

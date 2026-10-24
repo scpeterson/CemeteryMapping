@@ -25,6 +25,79 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0165: Show the current marker section while scrolling](0165-marker-section-scroll-tracking.md)
+- [ADR 0164: Keep the marker section menu accessible while scrolling](0164-sticky-marker-section-menu.md)
+- [ADR 0163: Compact marker section navigation](0163-compact-marker-section-navigation.md)
+- [ADR 0162: Drive display controls from shared settings](0162-inspection-shared-display-controls.md)
+- [ADR 0161: Save display preferences through shared settings definitions](0161-inspection-shared-preference-saving.md)
+- [ADR 0160: Share startup display defaults with reset definitions](0160-inspection-shared-startup-defaults.md)
+- [ADR 0159: Share display default definitions with reset behavior](0159-inspection-shared-display-default-actions.md)
+- [ADR 0158: Include restored defaults visibility in display reset](0158-inspection-reset-restored-list-default.md)
+- [ADR 0157: Persist restored defaults disclosure visibility](0157-inspection-persistent-restored-defaults.md)
+- [ADR 0156: Remember restored defaults disclosure state](0156-inspection-remember-restored-defaults.md)
+- [ADR 0155: Collapse the restored display defaults list](0155-inspection-collapsible-restored-defaults.md)
+- [ADR 0154: Include reset confirmation help in display defaults](0154-inspection-reset-all-display-defaults.md)
+- [ADR 0153: Persist reset confirmation shortcut visibility](0153-inspection-persistent-reset-shortcuts.md)
+- [ADR 0152: Remember reset confirmation keyboard help](0152-inspection-remember-reset-shortcuts.md)
+- [ADR 0151: Collapse reset confirmation keyboard help](0151-inspection-collapsible-reset-shortcuts.md)
+- [ADR 0150: Dismiss reset confirmation with Escape](0150-inspection-reset-confirmation-escape.md)
+- [ADR 0149: Dismiss display reset confirmation immediately](0149-inspection-dismiss-reset-confirmation.md)
+- [ADR 0148: Dismiss display reset confirmation automatically](0148-inspection-reset-confirmation-timeout.md)
+- [ADR 0147: Reset display preferences from the sticky correction panel](0147-inspection-sticky-display-reset.md)
+- [ADR 0146: Reset inspection display preferences without discarding drafts](0146-inspection-reset-display-preferences.md)
+- [ADR 0145: Persist remaining-items visibility without disabling phone collapse](0145-inspection-persistent-remaining-items.md)
+- [ADR 0144: Persist the keyboard-hint preference in this browser](0144-inspection-persistent-keyboard-hint.md)
+- [ADR 0143: Remember keyboard help across inspection navigation](0143-inspection-remember-keyboard-hint.md)
+- [ADR 0142: Collapse keyboard help beside remaining items](0142-inspection-collapsible-keyboard-hint.md)
+- [ADR 0141: Return to the current correction with Escape](0141-inspection-list-escape.md)
+- [ADR 0140: Browse remaining corrections with arrow keys](0140-inspection-list-keyboard-navigation.md)
+- [ADR 0139: Focus the current issue when revealing remaining items](0139-inspection-current-item-list-focus.md)
+- [ADR 0138: Reveal remaining corrections directly](0138-inspection-direct-remaining-items.md)
+- [ADR 0137: Hide the remaining-items toggle at completion](0137-inspection-complete-panel-toggle.md)
+- [ADR 0136: Return to review from the compact panel](0136-inspection-collapsed-return-review.md)
+- [ADR 0135: Move backward from the compact correction panel](0135-inspection-collapsed-previous-item.md)
+- [ADR 0134: Advance required corrections from the compact panel](0134-inspection-collapsed-next-item.md)
+- [ADR 0133: Automatically compact required corrections on phones](0133-inspection-phone-auto-collapse.md)
+- [ADR 0132: Collapse the sticky correction panel](0132-inspection-collapsible-correction-panel.md)
+- [ADR 0131: Keep all correction actions in the sticky panel](0131-inspection-sticky-correction-actions.md)
+- [ADR 0130: Keep required corrections accessible while scrolling](0130-inspection-sticky-correction-panel.md)
+- [ADR 0129: Select any remaining required item](0129-inspection-select-required-item.md)
+- [ADR 0128: Identify the current required correction](0128-inspection-current-required-item.md)
+
+- [ADR 0127: Navigate required corrections in both directions](0127-inspection-previous-missing-item.md)
+
+- [ADR 0126: Guide corrections with Next missing item](0126-inspection-next-missing-item.md)
+
+- [ADR 0125: Navigate incomplete steps to their first missing item](0125-inspection-step-missing-target.md)
+
+- [ADR 0124: Show required-information status on inspection steps](0124-inspection-step-required-status.md)
+
+- [ADR 0123: Return required corrections to their summary](0123-inspection-required-summary-return.md)
+
+- [ADR 0122: Actionable required-information review](0122-inspection-required-information-review.md)
+
+- [ADR 0121: Correct visit and condition from inspection review](0121-inspection-review-edit-visit.md)
+
+- [ADR 0120: Return to inspection review after a face correction](0120-inspection-return-to-review.md)
+
+- [ADR 0119: Edit a face directly from inspection review](0119-inspection-review-edit-face.md)
+
+- [ADR 0118: Review all inspection face photos](0118-inspection-review-all-face-photos.md)
+
+- [ADR 0117: View and manage photos within inspection faces](0117-inspection-face-photo-controls.md)
+
+- [ADR 0116: Include linked inspection photos in face cards](0116-inspection-face-linked-photo-counts.md)
+
+- [ADR 0115: Focus inspection editing on one face](0115-focused-inspection-faces.md)
+
+- [ADR 0114: Marker Overview inspection summary and quick actions](0114-marker-overview-inspection-and-actions.md)
+
+- [ADR 0113: Marker Details sections](0113-marker-details-sections.md)
+
+- [ADR 0112: Unified marker photo gallery](0112-unified-marker-photo-gallery.md)
+
+- [ADR 0111: Focused marker and inspection editing](0111-focused-marker-and-inspection-editing.md)
+
 - [ADR 0110: Require at least one monument face](0110-require-monument-face.md)
 
 - [ADR 0109: Back inscriptions use marker faces](0109-back-inscriptions-use-faces.md)

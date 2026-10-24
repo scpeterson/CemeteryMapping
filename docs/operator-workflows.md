@@ -357,7 +357,7 @@ Cemetery admins for the assigned cemetery and global admins can use `New inspect
 
 `Cancel inspection` abandons the draft without saving a record. If navigation opens the discard-unsaved-changes prompt, `Cancel` keeps the draft and its edits open; `OK` discards it. Reloading does not preserve an unsaved draft.
 
-Trinity NHG inspections use October 11, 2005. Their conditions and transcriptions remain separate from the 2026 field observations; a missing NHG condition is Unknown. Existing monument photos from the 2026 field work belong to those field inspections. An NHG inspection with no recorded photographs displays `No photos recorded`.
+Trinity NHG inspections use October 11, 2005. Their conditions and transcriptions remain separate from the 2026 field observations; a missing NHG condition is Unknown. Existing monument photos from the 2026 field work belong to those field inspections. An NHG inspection with no recorded photographs opens an empty filtered gallery.
 
 Every monument has at least one face, including monuments whose inscription has not been recorded or is blank or illegible. New monuments default to `Front`, and every existing single-face monument uses `Front`. Multi-face monuments keep their individual labels; a historical reading with an unknown side can remain `Unspecified face`. The face retains the monument’s current inscription, legibility and applicable historical readings; shared condition, material, designs and relationships remain on the monument. Clear or correct a reading on that face rather than removing the final face. `Remove face` is disabled when only one remains. New inspections always begin with at least one face containing the selected visit’s own reading, without photo links.
 
@@ -365,29 +365,19 @@ A stone with writing on both sides uses `Front` and `Back` faces. There is no se
 
 ### Photo Collection
 
-Use `Make primary` beneath a photo to keep the front of a marker first in its gallery and on Overview. Choose a different photo to replace the primary, or `Remove primary` to restore newest-first sorting. These controls use the existing photo-order editing permissions and are available in the inline gallery and full-history dialog. Each monument has its own choice; when an Overview combines several markers, primary photos come first and the newest primary wins. All remaining photos stay newest first.
+Open **Photo gallery (N)** on a marker, or **Open photo gallery** from an inspection or maintenance record. All three open the same marker gallery; a record entry point selects that inspection or maintenance action automatically. Overview remains a read-only preview.
 
-Use `Monuments` in the gravesite detail panel for field photo collection, or `Details` when a marker is selected directly. `Overview` provides a read-only preview. Photos are stored as media evidence and linked to the selected monument.
+1. Choose **Photo record** to see all marker photos, a particular inspection, a maintenance action, or photos without an inspection/maintenance record. Filter by face or maintenance timing when useful. A photo appears once, with labels for every associated record and its own face/timing for that record.
+2. To add existing photos, select the destination record, then **Choose existing photos**. The gallery temporarily shows every marker photo so you can choose **Link to this record**. Choose **Photo face** and, for maintenance, **Maintenance timing**, then **Save photo link**. **Edit photo link** restores that record's saved metadata. **Cancel photo changes** leaves saved links unchanged.
+3. To upload, choose **Upload new photos**, select the face and maintenance timing when applicable, then choose one or more files. On iPhone the file control offers the camera or photo library. **Date taken** and **Notes** apply to the batch; leave the date blank to use each file's available capture metadata. Each file must be 25 MB or smaller.
+4. Select **Upload photos** (or **Upload photo** for one file). Successful uploads appear in this same gallery. If some fail, **Retry failed photos** submits only the remaining files. A failed association refresh has its own **Retry photo associations** action and never resubmits uploaded images.
+5. Choose **Unlink from this record** to remove only that association. The photo stays in the marker gallery and retains its other record links. **Make primary**, **Remove primary**, and photo deletion retain their existing permissions. The primary photo also appears first on Overview.
 
-1. On the iPhone, open the application and select the gravesite on the map or from search results.
-2. Open `Monuments`, or `Details` for a monument selected directly. Select the inspection and expand `Add photos to this record`. Maintenance actions have their own equivalent photo controls. New inspections also allow photo selection under each face before Save. Save a maintenance action before adding its photos.
-3. Tap the photo file control and select one or more photos. On iPhone this should offer the camera or photo library.
-4. Confirm the selected inspection or maintenance action and linked monument. All selected photos attach to that record and remain in the monument library. For a maintenance action, select `Before maintenance`, `During maintenance`, or `After maintenance` when known; `Not recorded` means the timing relative to the action is unknown. Inspection photo controls do not ask for maintenance timing.
-5. Select `Photo face` when the side of the monument is known; this selection also applies to uploads below. Leave `Face not specified` when unknown. Add short notes when useful, such as angle, inscription detail, or field uncertainty. The link, notes, and optional `Date taken` apply to all selected photos; use separate uploads when those values differ. Leave the date blank to use each photo’s available date metadata.
-6. Select `Upload photos` (or `Upload photo` for one file). Files upload one at a time, with progress and a result for each file. Confirm successful uploads appear in the photo gallery.
-7. If some files fail, review their errors, correct the cause, and select `Retry failed photos`. Successful uploads remain saved; retry submits only the failed files retained in the form. Choosing a new selection replaces that retry list, so finish retries before selecting more photos.
+Closing the gallery or changing its record/mode checks for pending uploads or edited photo links. During an upload, association controls and Close gallery are disabled to retain the selected context. A gallery selection is not saved until **Save photo link**. Uploading with **All marker photos** or **Photos without a record** selected stores the photo on the marker without assigning an inspection or maintenance action.
 
-The inline gallery shows up to four linked photos, ordered newest first by capture date, falling back to upload date when capture date is absent; display order breaks ties. `View all photos (N)` opens the complete history when more are available. Each inspection and maintenance action displays only its own linked photos, or `No photos recorded`. Expand `All monument photos` for the full library. That library also allows uploads without a record association; use the record’s existing-photo selector to associate them later. The read-only gravesite `Overview` chooses from linked monument photos and identifies the monument shown.
+New inspection drafts continue to accept files and existing photos under each face before the inspection exists. They use the same thumbnail picker, notes/date labels and file-size limit. Save inspection creates the visit before uploading/linking these queued photos; cancel before save uploads nothing. Save a maintenance record before adding its photos through the shared gallery.
 
-To reuse a photo, expand `Add photos to this record`, then `Browse photo thumbnails` under `Choose a monument photo`. Select the image using its thumbnail and filename, or use the `Existing monument photo` dropdown. The selected preview shows the chosen image and filename. Filenames also appear in the photo library so you can identify the same image there.
-
-Selecting a photo already linked to this record restores its saved `Photo face` and, for maintenance, `Maintenance timing`. Face labels identify the side shown, such as Front, Back, or Left; `Not recorded` in a linked photo's Face row means no face was assigned. Selecting a photo or changing these controls does not save anything until you select `Save photo link`. Use `Cancel` beside that button to clear the preview, selected photo, face, and maintenance timing without changing any saved inspection or photo links. Selecting the photo again loads its saved values.
-
-Use `Edit photo link` to load an existing link into these controls. `Unlink from this record` removes only that record association: the photo remains in `All monument photos`, and its links to other inspections or maintenance actions remain intact. The same image can have a different face label on another record.
-
-Readers can view linked photos while authenticated. Power users, cemetery admins, and admins can upload photos for cemeteries they can edit. The upload workflow does not replace marker condition, inscription, or burial data; it adds reviewable visual evidence that supports later updates.
-
-In local DEV and TEST environments, uploaded image files are written under the repository's `uploads/media` directory unless `MEDIA_UPLOAD_DIR` is set. Postgres stores the generated `/media/<uuid>.<extension>` URL, the original filename, upload metadata, and the monument links, but not the image bytes.
+The gallery uses authenticated thumbnails and loads originals only when opened. Portrait and landscape photos retain their natural proportions. Closing an enlarged image returns to the gallery; closing the gallery returns focus to its opener. Persistent marker-face photo links also lead to this gallery with that face selected, rather than displaying another copy of the gallery.
 
 ### Field media intake and retention
 
@@ -1103,10 +1093,10 @@ Detail tabs wrap so that **Maintenance** and **Location** remain visible. Expand
 ### Inspection and maintenance photo history
 
 Photos are stored once on the monument and may document one or more inspections
-or maintenance actions. Use `Existing monument photo` to associate an existing
+or maintenance actions. Open the shared gallery from that record and choose **Choose existing photos** to associate an existing
 image without uploading another copy. `Save photo link` can also change a link’s
 Before/During/After phase. `Unlink from this record` removes only that association;
-the photo remains in All monument photos and any other associated records.
+the photo remains in the marker gallery and any other associated records.
 Global photo deletion remains a separate cemetery-admin control in the full library.
 
 The initial monument photo collection was attributed to the 2026 field inspections
@@ -1139,3 +1129,76 @@ back, including temporary inspections, photo links and audit records; uploaded
 test files are cleaned up. The safety regressions reject removal of a face with
 active photo links and reject a stale editor's save while preserving the newer
 reading and all original inspection/photo records.
+
+### Focused marker and inspection editing
+
+Use **Edit marker information** for type, scope, material, vase information and general designs. **Edit face records** maintains persistent marker faces and associated people/photos. **Edit sources & review** manages NHG inclusion, verification and review concerns. Condition and visit readings belong under **Inspections**.
+
+Choose **New inspection** or **Edit inspection**, then work through **Visit & condition → Faces & photos → Review & save**. Next, Back and the numbered step buttons keep your draft intact. In Faces & photos, select a face card to edit one face at a time. Cards show whether the face has a reading. While editing an existing inspection, they show a total photo count with linked and selected counts; new inspections show only draft selections. Linked counts include only photos for that inspection and face. Loading failures offer Retry linked photo counts without losing your draft. Switching faces preserves your work. Add inspection face selects the new face automatically. Expand Flourishes or designs for optional face decorations. Review the readings and selected photo filenames before Save inspection. If a required value is missing, return to the relevant step to complete it.
+
+Saving records the inspection first and then uploads/links its selected photos. If some photos fail, the inspection remains saved; use **Retry remaining photos** or **Close saved inspection**. Retrying skips photos already saved. Canceling before save uploads nothing.
+
+### Marker Details sections
+
+A marker opened directly under **Details**, or through a gravesite's **Monuments** tab, uses five sections:
+
+| Section | Use it for |
+| --- | --- |
+| Inspections | Dated condition assessments, visit readings and supporting photo links; earlier undated condition information is labeled separately. |
+| Photos | Open the shared gallery and filter by record, face or maintenance timing. |
+| Maintenance | Read marker work records or expand Add maintenance record. New work stays linked to this marker. |
+| Marker information | Physical attributes, face records, features and relationships. |
+| Sources & review | NHG inclusion/evidence, verification, confidence, source conflicts and review notes. |
+
+Use Jump to section below the marker ID to jump to a heading. Moving between sections keeps inspection edits and pending photos intact. Each section has its own edit action; Save or Cancel returns you to that section. Marker work appears under that marker's Maintenance section; the gravesite Maintenance tab continues to show gravesite work.
+
+### Marker Overview quick actions
+
+Marker **Overview** shows the latest inspection’s condition together with its recorded date, source and type. A year-only inspection keeps its unknown-date label. An Unknown condition stays Unknown even if the marker summary or an older visit has a known condition. With no inspection history, the Overview labels the condition/date as a marker-summary fallback. **View inspection history** opens the inspection section without creating a draft.
+
+Authorized users can launch common tasks directly:
+
+- **Record inspection** opens a new field inspection using the latest visit’s readings. Complete the existing three-stage workflow and Save inspection.
+- **Add photos** opens upload controls in the shared marker gallery. Choose a record there if the images document a particular inspection or maintenance action; uploads otherwise stay in the marker library. Closing the gallery returns to Overview.
+- **Record maintenance** opens the form bound to this marker. Add maintenance saves it.
+- **Edit marker information** opens the physical-information editor. Save or Cancel returns to Marker information in Details.
+
+Opening an action saves nothing by itself. Reader accounts retain the summary and history link; other actions follow existing permissions. If editing options fail to load, **Retry editing options** restores the dependent actions when possible; photos remain available independently.
+
+
+While editing an inspection face, **Photos for this face** shows its already-linked photos beside photos selected for the draft. Open any photo for a full-size view; closing the viewer keeps the draft intact. **Remove selected photo** removes a draft choice. **Manage photo link** opens the shared gallery filtered to the saved inspection and face, where **Edit photo link** reassigns a face and **Unlink from this record** removes only that inspection link. Gallery changes save separately and refresh inline photos/counts when the gallery closes; draft readings, notes and pending files remain intact. New file selections upload only when you save the inspection.
+
+Review & save shows each face’s already-linked photos and current draft selections, with full-size viewing, filenames, notes, dates and linked/selected counts. Photos selected more than once appear once; a draft face reassignment appears under its destination. Use Faces & photos to make corrections. If linked photos cannot load, retry from the review without losing selected files. New inspections continue to start with no copied photo links.
+
+Use **Edit face** beside any face heading in Review & save to open that face in Faces & photos. Focus moves to its label field. Readings, designs, visit information and pending photos remain in the draft. Return to Review & save when corrections are complete; jumping to a face performs no save or upload.
+
+When you open **Edit face** from Review & save, **Return to review** replaces the usual Next action. Use it after correcting the face to return directly to that face in the review, with keyboard focus restored to its Edit face action. Draft data and photos remain intact. Ordinary Faces & photos entry keeps **Next: Review & save**.
+
+Use **Edit visit & condition** above the review’s visit summary to correct the inspection type, date, source, condition or condition notes. **Return to review** jumps directly back and restores focus to that summary’s edit action. Face readings and selected photos stay in the draft. Existing NHG fixed-date rules and required-field validation continue to apply.
+
+At the top of **Review & save**, **Required information** lists each missing item and counts the corrections needed. Use **Add inspection date**, **Add inspection source**, **Choose condition**, or **Label face N** to open and focus the exact field. **Return to review** keeps the draft and updates the list. Save becomes available when all required information is complete. Existing year-only inspections keep their unknown exact date; readings, photos and design/condition notes remain optional.
+
+After using a correction action in **Required information**, **Return to review** scrolls to and focuses that summary so you can see the remaining items. If the last issue is fixed, the same place shows that required information is complete. Regular **Edit visit & condition** and **Edit face** actions still return to their own summary actions.
+
+Each numbered inspection step shows its required-information status throughout editing. **Visit & condition** counts missing visit fields; **Faces & photos** counts missing face labels. **Review & save** shows the combined missing count, or **Ready to review** before opening it and **Ready to save** when it is open and requirements are complete. Badges update as you type. The highlighted current step remains independent of its required-information status; photos and readings remain optional.
+
+Select an incomplete step to jump to its first missing field: Visit & condition checks date, source, then condition; Faces & photos selects the first face needing a label. Clicking the current step again advances focus to its first remaining issue. The incomplete Review & save shortcut checks visit fields before face labels and provides Return to review; Next and Return can still open the full review summary while items remain. Complete steps keep normal heading focus. Draft values and photos stay intact.
+
+During required-information corrections, use **Next missing item** to move directly through outstanding visit fields and face labels. The count updates as you correct them. Unresolved items can be skipped and are revisited after the later issues; with only one remaining, the action focuses that field again. **Return to review** remains available and returns to Required information. When all items are complete, Next missing item disappears and a completion message appears. No save or upload occurs until Save inspection.
+
+Use **Previous missing item** to move backward through outstanding required visit fields and face labels. It skips resolved items and wraps to the last outstanding issue when none remain before the current position. Previous and Next share the remaining count and preserve your draft. With one issue left, either action focuses it; when all are complete, both disappear and Return to review remains.
+
+
+### Inspection correction panel and display preferences
+
+The sticky correction panel names the current issue and its position among remaining items. Previous/Next missing item skip resolved issues and wrap at either end. Return to review focuses the required-information summary. These actions retain draft fields, readings and pending photos; saving is still explicit.
+
+Show remaining items opens the issue list directly, scrolling to and focusing the current unresolved issue or first remaining item. Use Up/Down to browse, Home/End for first/last, Enter/Space to edit, Tab/Shift+Tab between controls, and Escape to hide the list and return to the correction field. Keyboard shortcuts are available in a collapsible hint. Selecting an issue collapses the list; phone correction jumps collapse it automatically while keeping Previous, Next, Return and Reset accessible.
+
+The browser remembers remaining-item visibility, the inspection keyboard hint, the reset-confirmation keyboard hint and the restored-defaults disclosure across inspections/reloads. Automatic phone collapse does not overwrite the remembered list choice. Display settings do not preserve drafts across reloads: the existing unsaved-change protection still applies.
+
+Reset display preferences restores all defaults: remaining items shown, both keyboard hints hidden, and the restored-defaults list hidden. It keeps your inspection draft and saved records intact. Its confirmation is available in the sticky panel or workflow footer, including Review & save. Restored defaults displays the setting count while collapsed and lists each setting when expanded. The message clears after four seconds; repeated Reset restarts that timer. Dismiss or Escape clears it immediately and returns focus to Reset. A separate collapsible shortcut hint explains confirmation controls.
+
+### Compact marker section navigation
+
+Use Jump to section beneath the marker ID to reach Inspections, Photos, Maintenance, Marker information or Sources & review. It stays below the detail tabs while scrolling and shows the currently viewed section. Choosing a destination focuses its heading without discarding inspection drafts or photo selections. The menu adapts to wrapped tabs on phones and gravesite views.

@@ -77,8 +77,8 @@ test("the photo gallery uses authorized fetch and displays a browser object URL"
   });
   await select(page, "A-TEST");
   await page.getByRole("tab", { name: "Monuments and photos" }).click();
-  await page.locator(".all-monument-photos > summary").click();
-  await page.locator(".all-monument-photos .media-gallery-card").scrollIntoViewIfNeeded();
+  await page.locator(".all-monument-photos > button").click();
+  await page.locator(".monument-photo-workspace .media-gallery-card").scrollIntoViewIfNeeded();
   const image = page.getByRole("img", { name: "Protected photo" });
   await expect(image).toHaveAttribute("src", /^blob:/);
   expect(authorization).toBe("Bearer integration-test-token");

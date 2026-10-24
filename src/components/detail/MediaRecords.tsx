@@ -1,6 +1,6 @@
 import { sortedMediaAssets } from "../../lib/media";
 import { Modal } from "../ui/Modal";
-import { type ChangeEvent, type FormEvent, useRef, useState } from "react";
+import { type ChangeEvent, type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { Camera, Star, Trash2, X } from "lucide-react";
 import { MediaPhoto } from "./MediaPhoto";
 import { formatDate } from "../../lib/format";
@@ -14,8 +14,14 @@ export function MediaGallery({
   canDelete = false,
   onDelete,
   onMove,
+  showAll = false,
+  renderDetails,
+  renderActions,
 }: {
   assets: MediaAsset[];
+  showAll?: boolean;
+  renderDetails?: (asset: MediaAsset) => ReactNode;
+  renderActions?: (asset: MediaAsset) => ReactNode;
   emptyMessage?: string;
   canDelete?: boolean;
   onDelete?: (assetId: string, reason?: string) => Promise<void>;
@@ -69,6 +75,8 @@ export function MediaGallery({
               {asset.originalFilename ? <span className="media-photo-filename">{asset.originalFilename}</span> : null}
               <span>{asset.capturedAt ? `Date taken: ${formatDate(asset.capturedAt)}` : `Uploaded: ${formatDate(asset.uploadedAt)}`}</span>
             </MediaPhoto>
+            {renderDetails?.(asset)}
+            {renderActions?.(asset)}
             {asset.isPrimary ? <span className="media-primary-label"><Star size={14} aria-hidden="true" /> Primary photo</span> : null}
             {onMove && asset.mediaLinkId ? (
               <button type="button" className="media-primary-button"
@@ -98,8 +106,8 @@ export function MediaGallery({
 
   return (
     <>
-      {gallery(previewAssets, false)}
-      {sortedAssets.length > galleryPreviewLimit ? (
+      {gallery(showAll ? sortedAssets : previewAssets, showAll)}
+      {!showAll && sortedAssets.length > galleryPreviewLimit ? (
         <button type="button" className="media-gallery-view-all" onClick={() => setIsShowingAll(true)}>
           View all photos ({sortedAssets.length})
         </button>
@@ -126,10 +134,14 @@ export function MediaGallery({
 export function PhotoUploadForm({
   fixedHeadstone,
   photoContext,
+  onPendingChange,
+  onBusyChange,
   onUpload,
 }: {
   fixedHeadstone: Headstone;
-  photoContext?: { inspectionId?: string; maintenanceRecordId?: string; faceId?: string };
+  onPendingChange?: (pending: boolean) => void;
+  onBusyChange?: (busy: boolean) => void;
+  photoContext?: { inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" };
   onUpload: (input: { file: File; headstoneId?: string; notes?: string; capturedAt?: string; inspectionId?: string; maintenanceRecordId?: string; faceId?: string; phase?: "unspecified" | "before" | "during" | "after" }) => Promise<void>;
 }) {
   const [phase, setPhase] = useState<"unspecified" | "before" | "during" | "after">("unspecified");
@@ -142,9 +154,15 @@ export function PhotoUploadForm({
   const [results, setResults] = useState<{ name: string; status: string }[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const uploading = useRef(false);
+  useEffect(()=>{onPendingChange?.(Boolean(files.length||notes||capturedAt));},[files,notes,capturedAt,onPendingChange]);
+  useEffect(()=>{onBusyChange?.(isSaving);},[isSaving,onBusyChange]);
 
   const chooseFile = (event: ChangeEvent<HTMLInputElement>) => {
-    setFiles(Array.from(event.target.files ?? []));
+    const selectedFiles=Array.from(event.target.files ?? []);
+    if(selectedFiles.some(file=>file.size>25*1024*1024)){
+      setError("Each photo must be 25 MB or smaller.");event.target.value="";return;
+    }
+    setFiles(selectedFiles);
     setResults([]);
     setMessage(undefined);
     setError(undefined);
@@ -167,7 +185,7 @@ export function PhotoUploadForm({
         setResults([...nextResults]);
         setMessage(`Uploading ${index + 1} of ${queue.length}…`);
         try {
-          await onUpload({ file, ...photoContext, phase, headstoneId: fixedHeadstone.id, notes, capturedAt: capturedAt || undefined });
+          await onUpload({ file, ...photoContext, phase: photoContext?.phase ?? phase, headstoneId: fixedHeadstone.id, notes, capturedAt: capturedAt || undefined });
           nextResults[index] = { name: file.name, status: "Uploaded" };
         } catch (uploadError) {
           failed.push(file);
@@ -194,14 +212,14 @@ export function PhotoUploadForm({
   return (
     <form className="photo-upload-form" onSubmit={(event) => void submit(event)}>
       <label>
-        Photo
+        Choose photos to upload
         <input ref={fileInput} type="file" accept="image/*" multiple disabled={isSaving} onChange={chooseFile} />
       </label>
       <div className="photo-upload-linked-marker">
         <span>Linked monument</span>
         <strong>{fixedHeadstone.headstoneId}</strong>
       </div>
-      {photoContext?.maintenanceRecordId ? <label>Maintenance timing<select value={phase} disabled={isSaving} onChange={(event) => setPhase(event.target.value as typeof phase)}>
+      {photoContext?.maintenanceRecordId && photoContext.phase === undefined ? <label>Maintenance timing<select value={phase} disabled={isSaving} onChange={(event) => setPhase(event.target.value as typeof phase)}>
         <option value="unspecified">Not recorded</option><option value="before">Before maintenance</option><option value="during">During maintenance</option><option value="after">After maintenance</option>
       </select></label> : null}
       <label>

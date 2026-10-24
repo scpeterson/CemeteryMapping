@@ -1,8 +1,9 @@
+import { PhotoGalleryContext } from "./photoGalleryContext";
 import { HistoricalTranscriptions } from "./HistoricalTranscriptions";
 import { currentLegibility, legibilityLabels } from "../../../shared/inscriptionHistory.mjs";
 import { InscriptionFields } from "./InscriptionFields";
 import { inscriptionStatus } from "../../../shared/inscriptionStatus.mjs";
-import { useId, useState, type ComponentProps } from "react";
+import { useId, useState, type ComponentProps, useContext } from "react";
 import type { Headstone, MarkerFace } from "../../types";
 import { MediaGallery } from "./MediaRecords";
 import { isEmptyNewMarkerFace } from "../../lib/markerFaces";
@@ -70,7 +71,8 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
   </fieldset>;
 }
 
-export function MarkerFacesView({ headstone, ...photoControls }: { headstone: Headstone } & Pick<ComponentProps<typeof MediaGallery>, "canDelete" | "onDelete" | "onMove">) {
+export function MarkerFacesView({ headstone }: { headstone: Headstone } & Pick<ComponentProps<typeof MediaGallery>, "canDelete" | "onDelete" | "onMove">) {
+  const {open} = useContext(PhotoGalleryContext);
   const faces: MarkerFace[] = headstone.faces ?? (headstone.inscription ? [{ id: "legacy", label: "Front", inscription: headstone.inscription, notes: "", burialIds: [], mediaAssetIds: [] }] : []);
   const faceHistoryIds = new Set(faces.flatMap((face) => (face.historicalTranscriptions ?? []).map((entry) => entry.id)));
   const monumentHistory = headstone.historicalTranscriptions?.filter((entry) => !faceHistoryIds.has(entry.id));
@@ -89,7 +91,7 @@ export function MarkerFacesView({ headstone, ...photoControls }: { headstone: He
       {face.designNotes ? <p className="note-box">Designs: {face.designNotes}</p> : null}
       {face.notes ? <p className="note-box">{face.notes}</p> : null}
       {face.burialIds.length ? <p>Associated people: {face.burialIds.map((id) => headstone.facePeople?.find((p) => p.id === id)?.fullName ?? "Person no longer linked").join("; ")}</p> : null}
-      {face.mediaAssetIds.length ? <MediaGallery {...photoControls} assets={headstone.mediaAssets.filter((asset) => face.mediaAssetIds.includes(asset.id))} emptyMessage="These face photos are no longer available." /> : null}
+      {face.mediaAssetIds.length ? <button type="button" onClick={()=>open({headstone,faceLabel:face.label})}>View {face.label} photos in gallery</button> : null}
     </section>)}
     {monumentHistory?.length ? <HistoricalTranscriptions entries={monumentHistory} /> : null}
   </section>;
