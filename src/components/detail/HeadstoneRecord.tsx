@@ -209,12 +209,17 @@ export function HeadstoneRecord({
     }
     if(launched.current)onInitialActionHandled?.();
   },[initialAction,canUpdate,lookups,sectionPrefix,onInitialActionHandled]);
+  const [returnFocus,setReturnFocus] = useState<"information"|"review"|null>(null);
+  useEffect(()=>{
+    if(isEditing || !returnFocus)return;
+    const heading=document.getElementById(`${sectionPrefix}-${returnFocus}`);
+    if(!heading)return;
+    heading.focus({preventScroll:true});heading.scrollIntoView({block:"start"});
+    setReturnFocus(null);
+  },[isEditing,returnFocus,sectionPrefix]);
   const finishEditing = () => {
+    setReturnFocus(editArea === "review" ? "review" : "information");
     setIsEditing(false);
-    requestAnimationFrame(()=>{
-      const heading=document.getElementById(`${sectionPrefix}-${editArea === "review" ? "review" : "information"}`);
-      heading?.focus({preventScroll:true});heading?.scrollIntoView({block:"start"});
-    });
   };
   const [provenanceMessage, setProvenanceMessage] = useState<string>();
 
