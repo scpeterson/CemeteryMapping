@@ -243,7 +243,7 @@ test("power users can edit headstone marker details from grave detail", async ({
     condition: { id: "66666666-6666-4666-8666-666666666666", code: "good", label: "Good" },
     conditionNotes: "Stable and legible",
     inscription: "Beloved family marker",
-    designNotes: "",
+    designNotes: "Etched ivy border",
     photoUrl: "",
     lastInspectedAt: "2026-05-28",
     relationshipType: "primary",
@@ -329,7 +329,7 @@ test("power users can edit headstone marker details from grave detail", async ({
     expect(body.materialId).toBe("55555555-5555-4555-8555-555555555557");
     expect(body.conditionId).toBe(headstone.condition.id);
     expect(body.conditionNotes).toBe(headstone.conditionNotes);
-    expect(body.designNotes).toBe("Etched ivy border");
+    expect(body.designNotes).toBe(headstone.designNotes);
     expect(body).not.toHaveProperty("backDescription");
     await route.fulfill({
       contentType: "application/json",
@@ -349,7 +349,7 @@ test("power users can edit headstone marker details from grave detail", async ({
   await page.getByRole("combobox", { name: "Material", exact: true }).selectOption("55555555-5555-4555-8555-555555555557");
   await expect(page.getByRole("combobox", { name: "Condition", exact: true })).toHaveCount(0);
   await expect(page.getByRole("textbox", { name: "Condition notes", exact: true })).toHaveCount(0);
-  await page.getByRole("textbox", { name: "Flourishes or designs" }).fill("Etched ivy border");
+  await expect(page.getByRole("textbox", { name: "Flourishes or designs", exact: true })).toHaveCount(0);
   await expect(page.getByRole("textbox", { name: "Back of stone" })).toHaveCount(0);
   await page.getByRole("button", { name: "Save marker" }).click();
 
