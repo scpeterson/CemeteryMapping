@@ -330,11 +330,13 @@ test('failed photo uploads retry only pending photos and never create a second i
  await inspectionStep(page, 'Review & save');
  await region.getByRole('button',{name:'Save inspection',exact:true}).click();
  await expect(region.getByRole('alert')).toContainText('retry.png: Something went wrong on the server');
- await expect(region.getByRole('status')).toContainText('first.png: Saved and linked');
- await expect(region.getByRole('status')).toContainText('retry.png: Pending');
+ await expect(region.getByRole('status').filter({hasText:'first.png: Saved and linked'})).toContainText('first.png: Saved and linked');
+ await expect(region.getByRole('status').filter({hasText:'retry.png: Pending'})).toContainText('retry.png: Pending');
+ await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toContainText('photos need retry');
  expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(2);
  await region.getByRole('button',{name:'Retry remaining photos',exact:true}).click();
  await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
+ await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toHaveText('All changes saved.');
  expect(attempts).toBe(4);expect(state.uploads).toHaveLength(3);expect(state.getInspections()).toHaveLength(3);
  expect(state.getInspections().slice(0,2)).toEqual(originals);
 });
