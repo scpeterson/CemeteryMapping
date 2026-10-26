@@ -1,0 +1,67 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {randomUUID} from 'node:crypto';
+import pg from 'pg';
+import {loadApiConfig} from '../server/config.mjs';
+import {integrationAdminDatabase} from './lib/integration-admin.mjs';
+import {createOwnershipEvent} from '../server/cemeteryOwnershipMutations.mjs';
+import {getOwnershipEditor,readOwnershipEditor} from '../server/ownershipEditing.mjs';
+import {validateOwnershipEventPayload} from '../server/routes/cemeteryRouteValidation.mjs';
+
+test('full ownership edits preserve event identity, replace assignments atomically and protect other cemeteries and stale drafts',async()=>{
+ const c=new pg.Client(integrationAdminDatabase(loadApiConfig()));await c.connect();
+ const pool={connect:async()=>({release(){},query:(sql,values)=>c.query(sql.startsWith('BEGIN')?'SAVEPOINT ownership_edit':sql==='COMMIT'?'RELEASE SAVEPOINT ownership_edit':sql==='ROLLBACK'?'ROLLBACK TO SAVEPOINT ownership_edit':sql,values)})};
+ try{
+  await c.query('BEGIN');const suffix=randomUUID().slice(0,8);
+  const geom='MULTIPOLYGON(((0 0,0.001 0,0.001 0.001,0 0.001,0 0)))';
+  const cemetery=(await c.query('INSERT INTO cemeteries(name,facility_id,geometry) VALUES($1,$2,ST_GeomFromText($3,4326)) RETURNING id',[`Ownership regression ${suffix}`,suffix,geom])).rows[0].id;
+  const section=(await c.query("INSERT INTO sections(cemetery_id,name,facility_id,geometry) VALUES($1,'A',$2,ST_GeomFromText($3,4326)) RETURNING section_id",[cemetery,suffix,geom])).rows[0].section_id;
+  const lot=(await c.query("INSERT INTO lots(cemetery_id,section_uuid,facility_id,section_id,lot_id,name,geometry) VALUES($1,$2,$3,'A','1','A-1',ST_GeomFromText($4,4326)) RETURNING id",[cemetery,section,suffix,geom])).rows[0].id;
+  for(const id of ['A','B'])await c.query(`INSERT INTO gravesites(cemetery_id,section_uuid,lot_uuid,facility_id,section_id,grave_id,gravesite_id,status_type_id,geometry)
+   VALUES($1,$2,$3,$4,'A',$5,$5,(SELECT id FROM gravesite_status_types WHERE code='available'),ST_GeomFromText($6,4326))`,[cemetery,section,lot,suffix,id,geom]);
+  const party={firstName:'Jane',lastName:'Example',fullAddress:'123 Test St',municipality:'Test City',state:'PA',zip:'15000',shareNumerator:'1',shareDenominator:'2'};
+  const initial=validateOwnershipEventPayload({owners:[party,{...party,firstName:'John'}],eventType:'deed',targetScope:'selected_lot',effectiveDate:'2001',deedOnFile:true,deedRegisterOnFile:false,documentReference:'Book 1',notes:'Original'});
+  const event=await createOwnershipEvent(pool,cemetery,'A',initial,{actorUser:{role:'admin'}});
+  let editor=await readOwnershipEditor(c,event.id);
+  assert.equal(editor.targetScope,'selected_lot');assert.equal(editor.owners.length,2);assert.equal(editor.effectiveDate,'2001');
+  await c.query("UPDATE ownership_parties SET phone='555-0100',notes='Preserve contact metadata' WHERE id=$1",[editor.owners.find(p=>p.firstName==='Jane').ownershipPartyId]);
+  editor=await readOwnershipEditor(c,event.id);
+  const publicEditor=await getOwnershipEditor(pool,event.id,{allowedCemeteryIds:[cemetery]});
+  assert.equal(publicEditor.rights,undefined);assert.equal(publicEditor.partyRecords,undefined);
+  assert.equal(publicEditor.owners.length,2);
+  const edit={...initial,owners:[{...editor.owners.find(p=>p.firstName==='Jane'),firstName:'Janet'}],eventType:'sale',previousOwners:[party],targetScope:'listed_gravesites',targetGravesiteIds:['A','B'],effectiveDate:'2002-04',documentReference:'Book 2',notes:'Corrected'};
+  const opts={editingEventId:event.id,expectedRevision:editor.expectedRevision,actorUser:{role:'cemetery-admin'},allowedCemeteryIds:[cemetery]};
+  await assert.rejects(createOwnershipEvent(pool,cemetery,'A',edit,{...opts,expectedRevision:undefined}),/Ownership version/);
+  await assert.rejects(createOwnershipEvent(pool,cemetery,'A',{...edit,owners:[{...edit.owners[0],ownershipPartyId:randomUUID()}]},opts),/does not belong/);
+  for(const role of ['reader','power-user'])await assert.rejects(createOwnershipEvent(pool,cemetery,'A',edit,{...opts,actorUser:{role}}),{statusCode:403});
+  assert.equal(await createOwnershipEvent(pool,cemetery,'A',edit,{...opts,allowedCemeteryIds:[]}),undefined);
+  await assert.rejects(createOwnershipEvent(pool,cemetery,'A',{...edit,targetGravesiteIds:['A','missing']},opts),/Unknown gravesite/);
+  assert.equal((await readOwnershipEditor(c,event.id)).expectedRevision,editor.expectedRevision);
+  assert.deepEqual(await createOwnershipEvent(pool,cemetery,'A',edit,opts),event);
+  await assert.rejects(createOwnershipEvent(pool,cemetery,'A',edit,opts),/changed since/);
+  editor=await readOwnershipEditor(c,event.id);
+  assert.equal(editor.owners[0].firstName,'Janet');assert.equal(editor.previousOwners[0].firstName,'Jane');
+  assert.equal(editor.documentReference,'Book 2');assert.equal(editor.effectiveDate,'2002-04');assert.equal(editor.notes,'Corrected');
+  assert.deepEqual(editor.targetGravesiteIds.sort(),['A','B']);
+  const savedParty=(await c.query('SELECT phone,notes FROM ownership_parties WHERE id=$1',[editor.owners[0].ownershipPartyId])).rows[0];
+  assert.deepEqual(savedParty,{phone:'555-0100',notes:'Preserve contact metadata'});
+  const retainedRight=editor.rights.find(r=>r.gravesite_id==='B');
+  await c.query("UPDATE ownership_event_rights SET notes='Keep this assignment note',right_quantity=2 WHERE id=$1",[retainedRight.id]);
+  editor=await readOwnershipEditor(c,event.id);
+  await createOwnershipEvent(pool,cemetery,'A',{...edit,owners:editor.owners,previousOwners:editor.previousOwners,targetGravesiteIds:['B']},{...opts,expectedRevision:editor.expectedRevision});
+  editor=await readOwnershipEditor(c,event.id);assert.deepEqual(editor.targetGravesiteIds,['B']);
+  assert.equal(await readOwnershipEditor(c,event.id,[]),undefined);
+  assert.equal(editor.rights[0].id,retainedRight.id);
+  assert.equal(editor.rights[0].notes,'Keep this assignment note');
+  assert.equal(Number(editor.rights[0].right_quantity),2);
+  const other=await createOwnershipEvent(pool,cemetery,'B',{...initial,owners:[{...party,firstName:'Other'}],targetScope:'selected_gravesite',effectiveDate:'2099'},{actorUser:{role:'admin'}});
+  const otherBefore=await readOwnershipEditor(c,other.id);
+  await assert.rejects(createOwnershipEvent(pool,cemetery,'A',{...edit,targetScope:'selected_lot'},{...opts,expectedRevision:editor.expectedRevision}),/Whole-lot ownership conflicts/);
+  assert.equal((await readOwnershipEditor(c,event.id)).expectedRevision,editor.expectedRevision);
+  assert.deepEqual(await readOwnershipEditor(c,other.id),otherBefore);
+  const previous=editor.expectedRevision;
+  await c.query('UPDATE ownership_event_rights SET deleted_at=clock_timestamp() WHERE ownership_event_uuid=$1 AND deleted_at IS NULL',[event.id]);
+  await assert.rejects(createOwnershipEvent(pool,cemetery,'A',edit,{...opts,expectedRevision:previous}),/changed since/);
+  assert.equal((await c.query('SELECT count(*)::int AS n FROM ownership_events WHERE cemetery_id=$1',[cemetery])).rows[0].n,2);
+ }finally{await c.query('ROLLBACK');await c.end();}
+});

@@ -4,8 +4,8 @@ import { authorizedFetch, jsonRequest, jsonResponse, normalizeBaseUrl } from "./
 
 export async function createOwnershipEvent(cemeteryId: string, graveSpaceId: string, event: SaveOwnershipEventInput): Promise<{ id: string }> {
   const response = await authorizedFetch(
-    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(graveSpaceId)}/ownership-events`,
-    jsonRequest("POST", event),
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(graveSpaceId)}/ownership-events${event.editingEventId ? `/${encodeURIComponent(event.editingEventId.replace(/^ownership-event-/u, ""))}` : ""}`,
+    jsonRequest(event.editingEventId ? "PATCH" : "POST", event),
   );
   return jsonResponse<{ id: string }>(response, "Ownership event API");
 }
@@ -43,3 +43,10 @@ export async function removeGravesiteOwnershipRight(rightId: string): Promise<{ 
   return jsonResponse<{ id: string }>(response, "Remove gravesite ownership connection API");
 }
 
+
+export async function fetchOwnershipEditor(eventId: string): Promise<SaveOwnershipEventInput> {
+  const cleanId=eventId.replace(/^ownership-event-/u, "");
+  const response=await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/ownership-events/${encodeURIComponent(cleanId)}`);
+  const data=await jsonResponse<SaveOwnershipEventInput>(response,"Ownership editor API");
+  return {...data,editingEventId:cleanId};
+}

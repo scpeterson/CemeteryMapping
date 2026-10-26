@@ -48,6 +48,7 @@ export type OwnershipEventType = "deed" | "sale" | "gift" | "church_council_acti
 export type OwnershipTargetScope = "selected_gravesite" | "selected_lot" | "listed_gravesites";
 
 export type OwnershipPartyInput = {
+  ownershipPartyId?: string;
   firstName: string;
   lastName: string;
   fullAddress: string;
@@ -59,6 +60,8 @@ export type OwnershipPartyInput = {
 };
 
 export type SaveOwnershipEventInput = {
+  editingEventId?: string;
+  expectedRevision?: string;
   owners: OwnershipPartyInput[];
   previousOwners: OwnershipPartyInput[];
   eventType: OwnershipEventType;
