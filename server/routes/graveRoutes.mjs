@@ -1,3 +1,4 @@
+import {getOwnershipEditor} from "../ownershipEditing.mjs";
 export function registerGraveRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, createGraveFeature,
@@ -266,6 +267,33 @@ export function registerGraveRoutes(app, context) {
             response.status(400).json({ error: error.message });
             return;
           }
+          next(error);
+        }
+      });
+
+      app.get("/api/ownership-events/:eventId", requireCemeteryAdmin, async (request,response,next)=>{
+        try {
+          const data=await getOwnershipEditor(pool,validateUuid(request.params.eventId,"Ownership event"),{
+            allowedCemeteryIds:request.user.role==="admin"?undefined:assignedEditableCemeteryIds(request.user),
+          });
+          if(!data)return response.status(404).json({error:"Ownership not found"});
+          response.json(data);
+        } catch(error){next(error);}
+      });
+      app.patch("/api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events/:eventId", requireCemeteryAdmin, async(request,response,next)=>{
+        try {
+          const cemeteryId=validateCemeteryId(request.params.cemeteryId);
+          if(!canEditCemetery(request.user,cemeteryId))return response.status(403).json({error:"Forbidden"});
+          const event=validateOwnershipEventPayload(request.body);
+          const saved=await createOwnershipEvent(pool,cemeteryId,validateGraveSpaceId(request.params.id),event,{
+            actorUser:request.user,reason:event.reason,
+            allowedCemeteryIds:request.user.role==="admin"?undefined:assignedEditableCemeteryIds(request.user),
+            editingEventId:validateUuid(request.params.eventId,"Ownership event"),expectedRevision:request.body?.expectedRevision,
+          });
+          if(!saved)return response.status(404).json({error:"Ownership or gravesite not found"});
+          response.json(saved);
+        }catch(error){
+          if(/^(Selected gravesite is not linked|Unknown gravesite ID:|Whole-lot ownership conflicts)/.test(error.message))return response.status(400).json({error:error.message});
           next(error);
         }
       });

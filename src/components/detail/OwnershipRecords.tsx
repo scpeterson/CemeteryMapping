@@ -1,7 +1,7 @@
 import { useDraftState } from "../../hooks/useDraftState";
 import { type FormEvent, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import { fetchDeedRegistrySuggestions } from "../../api/cemeteryApi";
+import { fetchOwnershipEditor, fetchDeedRegistrySuggestions } from "../../api/cemeteryApi";
 import { formatGraveLabel } from "../../lib/format";
 import type {
   DeedRegistrySuggestion,
@@ -109,10 +109,10 @@ function OwnershipPartyFields({
   );
 }
 
-export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: GraveSpace; cemeteryGraves: GraveSpaceSummary[]; onSave: (event: SaveOwnershipEventInput) => Promise<void> }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useDraftState<SaveOwnershipEventInput>(() => blankOwnershipForm(grave));
-  const [selectedGravesiteIds, setSelectedGravesiteIds] = useState<string[]>([]);
+export function OwnershipEventForm({ grave, cemeteryGraves, onSave, initial, onFinished }: { grave: GraveSpace; cemeteryGraves: GraveSpaceSummary[]; onSave: (event: SaveOwnershipEventInput) => Promise<void>; initial?: SaveOwnershipEventInput; onFinished?: () => void }) {
+  const [isEditing, setIsEditing] = useState(Boolean(initial));
+  const [form, setForm] = useDraftState<SaveOwnershipEventInput>(() => initial ? {...initial, previousOwners:initial.previousOwners.length ? initial.previousOwners : [blankOwnershipParty()]} : blankOwnershipForm(grave));
+  const selectedGravesiteIds = form.targetGravesiteIds;
   const [gravesiteFilter, setGravesiteFilter] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
@@ -123,7 +123,6 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: G
 
   const startEditing = () => {
     setForm(blankOwnershipForm(grave));
-    setSelectedGravesiteIds([]);
     setGravesiteFilter("");
     setMessage(undefined);
     setError(undefined);
@@ -173,8 +172,10 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: G
     try {
       const targetGravesiteIds = form.targetScope === "listed_gravesites" ? selectedGravesiteIds : [];
       await onSave({ ...form, targetGravesiteIds });
-      setMessage("Ownership event recorded.");
+      setForm({...form,targetGravesiteIds});
+      setMessage(initial ? "Ownership updated." : "Ownership event recorded.");
       setIsEditing(false);
+      onFinished?.();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to record ownership event.");
     } finally {
@@ -199,11 +200,12 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: G
     .sort((a, b) => formatGraveLabel(a).localeCompare(formatGraveLabel(b), undefined, { numeric: true }))
     .filter((candidate) => !normalizedFilter || `${candidate.id} ${formatGraveLabel(candidate)}`.toLowerCase().includes(normalizedFilter));
   const toggleGravesite = (id: string) => {
-    setSelectedGravesiteIds((current) => (current.includes(id) ? current.filter((candidate) => candidate !== id) : [...current, id]));
+    setForm(current=>({...current,targetGravesiteIds:current.targetGravesiteIds.includes(id) ? current.targetGravesiteIds.filter(candidate=>candidate!==id) : [...current.targetGravesiteIds,id]}));
   };
 
   return (
-    <form className="ownership-form" onSubmit={(event) => void save(event)}>
+    <form aria-label={initial ? "Edit ownership" : "Record ownership"} className="ownership-form" onSubmit={(event) => void save(event)}>
+      {initial ? <p className="ownership-wide-field">Update this ownership’s owners, deed details, and assignments. All gravesites covered by this record are affected. Use a new transfer to record a later change of ownership.</p> : null}
       {["sale", "gift"].includes(form.eventType) ? (
         <OwnershipPartyFields title="Previous owners (from)" parties={form.previousOwners} onChange={(previousOwners) => setForm((current) => ({ ...current, previousOwners }))} />
       ) : null}
@@ -305,11 +307,11 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave }: { grave: G
       </label>
       {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="ownership-form-actions">
-        <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
+        <button type="button" className="secondary-button" onClick={() => {setIsEditing(false);onFinished?.();}} disabled={isSaving}>
           Cancel
         </button>
         <button type="submit" disabled={isSaving || form.owners.some((party) => !party.firstName.trim() && !party.lastName.trim()) || (["sale", "gift"].includes(form.eventType) && form.previousOwners.some((party) => !party.firstName.trim() && !party.lastName.trim())) || (form.targetScope === "listed_gravesites" && selectedGravesiteIds.length === 0)}>
-          {isSaving ? "Recording..." : "Record ownership"}
+          {isSaving ? (initial ? "Saving..." : "Recording...") : initial ? "Save ownership" : "Record ownership"}
         </button>
       </div>
     </form>
@@ -381,4 +383,21 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
       <div className="ownership-form-actions ownership-wide-field"><button type="button" className="secondary-button" onClick={() => setIsEditing(false)}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save owner"}</button></div>
     </form>
   );
+}
+
+
+export function EditOwnershipRecord({eventId,grave,cemeteryGraves,onSave}: {
+ eventId:string;grave:GraveSpace;cemeteryGraves:GraveSpaceSummary[];onSave:(event:SaveOwnershipEventInput)=>Promise<void>;
+}) {
+ const [initial,setInitial]=useState<SaveOwnershipEventInput>();
+ const [loading,setLoading]=useState(false);
+ const [error,setError]=useState<string>();
+ if(initial)return <OwnershipEventForm grave={grave} cemeteryGraves={cemeteryGraves} initial={initial} onSave={onSave} onFinished={()=>setInitial(undefined)} />;
+ return <div className="ownership-action">
+  <button type="button" className="icon-text-button" data-discard-draft disabled={loading} onClick={async()=>{
+   setLoading(true);setError(undefined);
+   try{setInitial(await fetchOwnershipEditor(eventId));}catch(cause){setError(cause instanceof Error?cause.message:"Unable to open ownership.");}finally{setLoading(false);}
+  }}><Pencil size={14} aria-hidden="true" />{loading?"Loading ownership…":"Edit ownership"}</button>
+  {error?<p role="alert">{error}</p>:null}
+ </div>;
 }

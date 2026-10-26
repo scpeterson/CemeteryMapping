@@ -337,6 +337,7 @@ export function validateOwnershipEventPayload(body) {
         throw new BadRequestError(`${label} ${index + 1} share must be a valid fraction.`);
       }
       return {
+        ...(party?.ownershipPartyId ? {ownershipPartyId:validateUuid(party.ownershipPartyId, "Ownership party")} : {}),
         firstName,
         lastName,
         fullAddress: optionalText(party?.fullAddress, `${label} ${index + 1} address`, 250) ?? "",

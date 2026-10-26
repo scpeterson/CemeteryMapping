@@ -1,3 +1,4 @@
+import {BadRequestError} from "./requestValidation.mjs";
 import { compactJoin } from "./cemeteryMappers.mjs";
 
 export function ownershipRightNotes(right) {
@@ -127,13 +128,13 @@ export async function selectOwnershipTargets(client, cemeteryId, selectedGravesi
   if (!selectedGrave) return undefined;
 
   if (targetScope === "selected_lot") {
-    if (!selectedGrave.lot_uuid) throw new Error("Selected gravesite is not linked to a lot.");
+    if (!selectedGrave.lot_uuid) throw new BadRequestError("Selected gravesite is not linked to a lot.");
     return { selectedGrave, rights: [{ targetType: "lot", lotUuid: selectedGrave.lot_uuid, label: "selected lot" }] };
   }
 
   if (targetScope === "listed_gravesites") {
     const ids = [...new Set(targetGravesiteIds.map((id) => String(id ?? "").trim()).filter(Boolean))];
-    if (ids.length === 0) throw new Error("At least one gravesite ID is required.");
+    if (ids.length === 0) throw new BadRequestError("At least one gravesite ID is required.");
     const result = await client.query(
       `SELECT id, gravesite_id FROM gravesites
        WHERE cemetery_id = $1 AND gravesite_id = ANY($2::text[]) AND deleted_at IS NULL
@@ -142,7 +143,7 @@ export async function selectOwnershipTargets(client, cemeteryId, selectedGravesi
     );
     if (result.rows.length !== ids.length) {
       const found = new Set(result.rows.map((row) => row.gravesite_id));
-      throw new Error(`Unknown gravesite ID: ${ids.filter((id) => !found.has(id)).join(", ")}.`);
+      throw new BadRequestError(`Unknown gravesite ID: ${ids.filter((id) => !found.has(id)).join(", ")}.`);
     }
     return {
       selectedGrave,

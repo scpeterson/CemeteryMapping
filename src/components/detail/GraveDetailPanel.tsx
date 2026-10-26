@@ -33,7 +33,7 @@ import { GraveSpaceRecord } from "./GraveSpaceRecord";
 import { HeadstoneRecord } from "./HeadstoneRecord";
 import { MaintenanceRecordForm, MaintenanceRecordList } from "./MaintenanceRecords";
 import { NorthHillsEvidenceList } from "./NorthHillsEvidenceList";
-import { OwnerRecord, OwnershipEventForm } from "./OwnershipRecords";
+import { EditOwnershipRecord, OwnerRecord, OwnershipEventForm } from "./OwnershipRecords";
 import { PickedMarkerPoint } from "./detailTypes";
 
 const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
@@ -206,6 +206,10 @@ export function GraveDetailPanel({
                   <p className="muted">No current ownership is recorded.</p>
                 )}
               </div>
+              {canManageLotAssignment ? [...new Set(grave.currentOwnerIds.flatMap(id => {
+                const eventId=ownersById.get(id)?.ownershipEventId;
+                return eventId ? [eventId] : [];
+              }))].map(eventId=><EditOwnershipRecord key={`${grave.id}:${eventId}`} eventId={eventId} grave={grave} cemeteryGraves={cemeteryGraves} onSave={onSaveOwnershipEvent} />) : null}
               {canUpdateGravesites ? (
                 <OwnershipEventForm grave={grave} cemeteryGraves={cemeteryGraves} onSave={onSaveOwnershipEvent} />
               ) : null}

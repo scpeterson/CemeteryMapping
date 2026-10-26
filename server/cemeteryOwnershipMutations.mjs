@@ -1,3 +1,5 @@
+import {readOwnershipEditor} from "./ownershipEditing.mjs";
+import {BadRequestError, ConflictError} from "./requestValidation.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 import { splitRecordedDate } from "./burialRepository.mjs";
 import { ownershipRightNotes, selectOwnershipTargets } from "./cemeteryOwnershipQueries.mjs";
@@ -7,11 +9,24 @@ export async function createOwnershipEvent(
   cemeteryId,
   selectedGravesiteId,
   { owners, previousOwners = [], eventType, targetScope, targetGravesiteIds = [], effectiveDate, deedOnFile = false, deedRegisterOnFile = false, documentReference, notes },
-  { actorUser, reason, allowedCemeteryIds } = {},
+  { actorUser, reason, allowedCemeteryIds, editingEventId, expectedRevision } = {},
 ) {
   return withAuditContext(pool, { actorUser, reason: reason ?? "Ownership event update" }, async (client, rollback) => {
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
       return rollback(undefined);
+    }
+
+    let editing;
+    if (editingEventId) {
+      if (!actorUser || !["admin", "cemetery-admin"].includes(actorUser.role)) {
+        const error = new Error("A cemetery or system admin is required to edit ownership assignments."); error.statusCode=403; throw error;
+      }
+      if (!/^[a-f0-9]{64}$/.test(expectedRevision || "")) throw new BadRequestError("Ownership version is required. Reopen the ownership editor.");
+      editing=await readOwnershipEditor(client,editingEventId,allowedCemeteryIds,{lock:true});
+      if (!editing || editing.cemeteryId!==cemeteryId) return rollback(undefined);
+      if (editing.expectedRevision!==expectedRevision) throw new ConflictError("This ownership changed since you opened it. Reopen the editor before saving.");
+      await client.query(`UPDATE ownership_event_rights SET deleted_at=clock_timestamp(),deleted_by=$2,delete_reason=$3,updated_at=clock_timestamp()
+        WHERE ownership_event_uuid=$1 AND deleted_at IS NULL`,[editingEventId,actorUser.id??null,reason||"Ownership assignments updated"]);
     }
 
     const targets = await selectOwnershipTargets(client, cemeteryId, selectedGravesiteId, targetScope, targetGravesiteIds);
@@ -42,40 +57,55 @@ export async function createOwnershipEvent(
     }
 
     const recordedEffectiveDate = splitRecordedDate(effectiveDate);
-    const eventResult = await client.query(
-      `
-        INSERT INTO ownership_events (
-          cemetery_id,
-          event_type,
-          effective_date,
-          effective_date_text,
-          deed_on_file,
-          deed_register_on_file,
-          recorded_by,
-          document_reference,
-          notes,
-          source_table
-        )
-        VALUES ($1, $2, $3::date, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), 'manual_ownership_workflow')
-        RETURNING id::text
-      `,
-      [
-        cemeteryId,
-        eventType,
-        recordedEffectiveDate.date,
-        recordedEffectiveDate.text,
-        deedOnFile,
-        deedRegisterOnFile,
-        actorUser?.email ?? "Cemetery database",
-        documentReference ?? "",
-        notes ?? "",
-      ],
-    );
-    const eventId = eventResult.rows[0].id;
+    let eventId;
+    if (editing) {
+      await client.query(`UPDATE ownership_events SET event_type=$2::text,event_type_id=(SELECT id FROM lot_ownership_event_types WHERE code=$2::text),effective_date=$3::date,effective_date_text=$4,
+        deed_on_file=$5,deed_register_on_file=$6,document_reference=NULLIF($7,''),notes=NULLIF($8,''),updated_at=clock_timestamp() WHERE id=$1`,
+        [editingEventId,eventType,recordedEffectiveDate.date,recordedEffectiveDate.text,deedOnFile,deedRegisterOnFile,documentReference||'',notes||'']);
+      await client.query('DELETE FROM ownership_event_parties WHERE ownership_event_uuid=$1',[editingEventId]);
+      eventId=editingEventId;
+    } else {
+      const eventResult = await client.query(
+        `
+          INSERT INTO ownership_events (
+            cemetery_id,
+            event_type,
+            effective_date,
+            effective_date_text,
+            deed_on_file,
+            deed_register_on_file,
+            recorded_by,
+            document_reference,
+            notes,
+            source_table
+          )
+          VALUES ($1, $2, $3::date, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), 'manual_ownership_workflow')
+          RETURNING id::text
+        `,
+        [
+          cemeteryId,
+          eventType,
+          recordedEffectiveDate.date,
+          recordedEffectiveDate.text,
+          deedOnFile,
+          deedRegisterOnFile,
+          actorUser?.email ?? "Cemetery database",
+          documentReference ?? "",
+          notes ?? "",
+        ],
+      );
+      eventId = eventResult.rows[0].id;
+
+    }
 
     const insertParty = async (party, role) => {
       const displayName = [party.firstName, party.lastName].filter(Boolean).join(" ");
-      const partyResult = await client.query(
+      const original=editing && party.ownershipPartyId ? editing.partyRecords.find(p=>p.id===party.ownershipPartyId) : undefined;
+      if (editing && party.ownershipPartyId && !original) throw new BadRequestError("An owner does not belong to this ownership record.");
+      const partyResult = original ? await client.query(`
+        INSERT INTO ownership_parties(display_name,first_name,last_name,full_address,municipality,state,zip,contact_name,phone,email,notes)
+        VALUES($1,NULLIF($2,''),NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),NULLIF($7,''),$8,$9,$10,$11) RETURNING id::text`,
+        [displayName,party.firstName,party.lastName,party.fullAddress,party.municipality,party.state,party.zip,original.contact_name,original.phone,original.email,original.notes]) : await client.query(
         `
           INSERT INTO ownership_parties (display_name, first_name, last_name, full_address, municipality, state, zip)
           VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''))
@@ -99,6 +129,11 @@ export async function createOwnershipEvent(
     for (const party of owners) await insertParty(party, recipientRole);
 
     for (const right of targets.rights) {
+      const previous=editing?.rights.find(old=>old.target_type===right.targetType && (right.targetType==="lot" ? old.lot_uuid===right.lotUuid : old.gravesite_uuid===right.gravesiteUuid));
+      if(previous) {
+        await client.query(`UPDATE ownership_event_rights SET deleted_at=NULL,deleted_by=NULL,delete_reason=NULL,updated_at=clock_timestamp() WHERE id=$1`,[previous.id]);
+        continue;
+      }
       await client.query(
         `
           INSERT INTO ownership_event_rights (
