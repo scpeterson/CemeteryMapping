@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Give the hosted API image’s copied TEST environment file to the Node runtime user so deployments built from a mode-0600 file start successfully without weakening host permissions.
+
 - Accept the verified original migration 485 checksum after its rollback-only revision, allowing inspection deletion migration 494 to run without replaying inspection history.
 
 - Assign gravesites to the exact selected lot using its UUID, avoiding duplicate lot numbers across sections. Reject ambiguous older requests and return clear burial-restriction messages; keep section/block hierarchy and cached assignments consistent.

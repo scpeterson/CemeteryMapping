@@ -296,8 +296,13 @@ from `https://challenges.cloudflare.com` and test it before release.
    module before recreating the service:
 
    ```sh
-   docker compose run --rm --no-deps api node --input-type=module -e "await import('./shared/recordNormalization.mjs')"
+   docker compose run --rm --no-deps api node --input-type=module -e "await import('./shared/recordNormalization.mjs'); const {readFileSync} = await import('node:fs'); readFileSync('./db/env/test.env');"
    ```
+
+   The Dockerfile assigns the copied `db/env/test.env` file to the Node runtime
+   user, so a source file with mode 0600 remains readable inside the image.
+   Preserve the host file's restricted permissions; this ownership change applies
+   only to the image. The read check above must not print the file contents.
 
    A missing-module or permission error must be corrected in the release archive,
    build allowlist, or image ownership before proceeding. Apply only the reviewed,
