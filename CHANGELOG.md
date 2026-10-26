@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Accept the verified original migration 485 checksum after its rollback-only revision, allowing inspection deletion migration 494 to run without replaying inspection history.
+
 - Assign gravesites to the exact selected lot using its UUID, avoiding duplicate lot numbers across sections. Reject ambiguous older requests and return clear burial-restriction messages; keep section/block hierarchy and cached assignments consistent.
 
 - Remove the redundant Flourishes or designs field from marker information; retain face-level editing and existing marker-level notes.
