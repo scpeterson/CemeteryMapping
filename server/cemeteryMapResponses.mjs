@@ -62,6 +62,7 @@ function toSection(section) {
 function toLot(lot) {
   return {
     id: lot.lot_id,
+    uuid: lot.id,
     cemeteryId: lot.cemetery_id,
     name: lot.name,
     section: lot.section_id ?? "",

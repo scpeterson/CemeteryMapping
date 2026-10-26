@@ -36,16 +36,16 @@ export function replaceBurialInGrave(grave: GraveSpace | undefined, saved: Buria
   return { ...grave, burials: grave.burials.map((candidate) => candidate.id === saved.id ? saved : candidate) };
 }
 
-export function assignLotInMapData(data: CemeteryData, selected: GraveSpaceSummary, lotId: string) {
+export function assignLotInMapData(data: CemeteryData, selected: GraveSpaceSummary, lotId: string, section?: string) {
   const selectedKey = graveKey(selected);
   return {
     ...data,
-    graves: data.graves.map((grave) => graveKey(grave) === selectedKey ? { ...grave, lot: lotId } : grave),
+    graves: data.graves.map((grave) => graveKey(grave) === selectedKey ? { ...grave, lot: lotId, ...(section===undefined?{}:{section}) } : grave),
   };
 }
 
-export function assignLotToSelectedGrave(current: GraveSpaceSummary | undefined, selected: GraveSpaceSummary, lotId: string) {
-  return current && graveKey(current) === graveKey(selected) ? { ...current, lot: lotId } : current;
+export function assignLotToSelectedGrave(current: GraveSpaceSummary | undefined, selected: GraveSpaceSummary, lotId: string, section?: string) {
+  return current && graveKey(current) === graveKey(selected) ? { ...current, lot: lotId, ...(section===undefined?{}:{section}) } : current;
 }
 
 export function removeFeatureFromGrave(grave: GraveSpace | undefined, featureId: string) {

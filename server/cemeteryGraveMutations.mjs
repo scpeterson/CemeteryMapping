@@ -1,4 +1,4 @@
-import { ConflictError } from "./requestValidation.mjs";
+import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
 import { selectGraveUpdateState } from "./cemeteryMutationTargets.mjs";
@@ -91,30 +91,33 @@ export async function updateGraveSpaceMutation(
   });
 }
 
-export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lotId, { actorUser, reason, allowedCemeteryIds } = {}) {
-  return withAuditContext(pool, { actorUser, reason: reason ?? "Gravesite lot assignment update" }, async (client, rollback) => {
-    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) {
-      return rollback(undefined);
-    }
-    const lotResult = lotId
-      ? await client.query(`SELECT id, lot_id, section_id FROM lots WHERE cemetery_id=$1 AND lot_id=$2 AND deleted_at IS NULL`, [cemeteryId, lotId])
-      : { rows: [{ id: null, lot_id: null, section_id: null }] };
-    if (!lotResult.rows[0]) {
-      return rollback({ invalid: "lot_not_found" });
-    }
-    const lot = lotResult.rows[0];
-    const result = await client.query(
-      `UPDATE gravesites SET lot_uuid=$3::uuid, lot_id=$4, section_id=COALESCE($5, section_id), updated_at=now()
-       WHERE cemetery_id=$1 AND gravesite_id=$2 AND deleted_at IS NULL RETURNING gravesite_id`,
-      [cemeteryId, gravesiteId, lot.id, lot.lot_id, lot.section_id],
-    );
-    if (!result.rowCount) {
-      return rollback(undefined);
-    }
-
-    return { id: gravesiteId, lotId: lot.lot_id ?? "" };
-
-  });
+export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lotId, { actorUser, reason, allowedCemeteryIds, lotUuid } = {}) {
+  try {
+    return await withAuditContext(pool, { actorUser, reason: reason ?? "Gravesite lot assignment update" }, async (client, rollback) => {
+      if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) return rollback(undefined);
+      const lotResult = lotUuid || lotId
+        ? await client.query(`SELECT id, lot_id, section_id, section_uuid, block_id, block_uuid, burial_use_status FROM lots
+            WHERE cemetery_id=$1 AND ${lotUuid ? "id=$2::uuid" : "lot_id=$2"} AND deleted_at IS NULL`, [cemeteryId, lotUuid || lotId])
+        : { rows: [{ id: null, lot_id: null, section_id: null, section_uuid: null, block_id: null, block_uuid: null }] };
+      if (!lotResult.rows.length) return rollback({ invalid: "lot_not_found" });
+      if (lotResult.rows.length > 1) throw new BadRequestError("This lot number occurs in more than one section. Reload and select the section-specific lot.");
+      const lot = lotResult.rows[0];
+      if (lot.burial_use_status === "non_burial") throw new ConflictError(`Lot ${[lot.section_id,lot.lot_id].filter(Boolean).join("-")} cannot contain gravesites or markers.`);
+      const result = await client.query(
+        `UPDATE gravesites SET lot_uuid=$3::uuid, lot_id=$4, section_id=COALESCE($5::text, section_id),
+           section_uuid=CASE WHEN $3::uuid IS NULL THEN section_uuid ELSE $6::uuid END,
+           block_id=CASE WHEN $3::uuid IS NULL THEN block_id ELSE $7::text END,
+           block_uuid=CASE WHEN $3::uuid IS NULL THEN block_uuid ELSE $8::uuid END, updated_at=now()
+         WHERE cemetery_id=$1 AND gravesite_id=$2 AND deleted_at IS NULL RETURNING gravesite_id, lot_id, section_id`,
+        [cemeteryId, gravesiteId, lot.id, lot.lot_id, lot.section_id, lot.section_uuid, lot.block_id, lot.block_uuid],
+      );
+      if (!result.rowCount) return rollback(undefined);
+      return { id: gravesiteId, lotId: result.rows[0].lot_id ?? "", section: result.rows[0].section_id ?? "" };
+    });
+  } catch (error) {
+    if (error.code === "23514" && error.where?.includes("enforce_lot_burial_use_restrictions")) throw new ConflictError(error.message);
+    throw error;
+  }
 }
 
 export async function softDeleteGraveSpace(pool, cemeteryId, gravesiteId, { actorUser, reason } = {}) {

@@ -20,12 +20,12 @@ export function createOwnershipMutations({ selectedGrave, setSelectedGrave, setD
     refreshDetails();
   };
 
-  const saveGraveLot = async (lotId: string) => {
+  const saveGraveLot = async (lotId: string, lotUuid?: string) => {
     if (!selectedGrave) throw new Error("Select a gravesite before assigning a lot.");
-    const saved = await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId);
-    setData((current) => assignLotInMapData(current, selectedGrave, saved.lotId));
-    setSelectedGrave((current) => assignLotToSelectedGrave(current, selectedGrave, saved.lotId));
-    setSelectedGraveDetails((current) => current?.id === selectedGrave.id ? { ...current, lot: saved.lotId } : current);
+    const saved = await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId, lotUuid);
+    setData((current) => assignLotInMapData(current, selectedGrave, saved.lotId, saved.section));
+    setSelectedGrave((current) => assignLotToSelectedGrave(current, selectedGrave, saved.lotId, saved.section));
+    setSelectedGraveDetails((current) => current?.id === selectedGrave.id ? { ...current, lot: saved.lotId, section: saved.section ?? current.section } : current);
   };
 
   return { saveOwnershipEvent, saveOwner, removeOwnershipConnection, saveGraveLot };

@@ -1,4 +1,4 @@
-import { validateNewInspections } from "../monumentInspections.mjs";
+import { validateNewInspections, validateDeletedInspections } from "../monumentInspections.mjs";
 import { validateMarkerFaces, validateFacesRevision, validateInscriptionStatus, validateCurrentLegibility, validateHistoricalTranscriptions } from "../markerFaces.mjs";
 import { optionalCoordinate, optionalText, requiredText, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
@@ -44,6 +44,7 @@ export function validateHeadstonePayload(body) {
 
   return {
     ...(body?.faces === undefined ? {} : { faces: validateMarkerFaces(body.faces), facesRevision: validateFacesRevision(body.facesRevision) }),
+    ...(body?.deletedInspections === undefined ? {} : { deletedInspections: validateDeletedInspections(body.deletedInspections) }),
     inspectionChangesOnly: optionalBoolean(body?.inspectionChangesOnly, "Inspection changes only"),
     ...(body?.updatedInspections === undefined ? {} : { updatedInspections: validateNewInspections(body.updatedInspections, { updating: true }) }),
     ...(body?.newInspections === undefined ? {} : { newInspections: validateNewInspections(body.newInspections) }),
@@ -224,6 +225,7 @@ export function validateGraveSpacePayload(body) {
 export function validateGraveLotAssignmentPayload(body) {
   return {
     lotId: optionalText(body?.lotId, "Lot", 100) ?? "",
+    lotUuid: body?.lotUuid == null ? undefined : validateUuid(body.lotUuid, "Lot id"),
     reason: validateMutationReason(body?.reason),
   };
 }

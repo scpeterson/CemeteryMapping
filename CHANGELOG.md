@@ -6,6 +6,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Accept the verified original migration 485 checksum after its rollback-only revision, allowing inspection deletion migration 494 to run without replaying inspection history.
+
+- Assign gravesites to the exact selected lot using its UUID, avoiding duplicate lot numbers across sections. Reject ambiguous older requests and return clear burial-restriction messages; keep section/block hierarchy and cached assignments consistent.
+
 - Remove the redundant Flourishes or designs field from marker information; retain face-level editing and existing marker-level notes.
 
 - Restore Flourishes or designs on every inspection face, preserving those notes when copying, saving, editing, and clearing individual face observations.
@@ -13,6 +17,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Fix new marker creation failing with a server error by explicitly typing provenance values passed to PostgreSQL JSON construction. Add a real database regression for default and explicitly supplied provenance.
 
 ### Added
+
+- Allow cemetery and system admins to delete inspections with confirmation and version checks. Keep photos in the marker gallery, unlink inspection photo contexts, and retain audited deletion history without source refreshes recreating the inspection (migration 494).
 
 - Validate the complete touch-phone inspection workflow at 320px and 390px, including slow/failed uploads, required corrections, reload recovery, and nonduplicating retries; clarify filtered gallery photo counts.
 

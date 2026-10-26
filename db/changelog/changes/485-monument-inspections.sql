@@ -1,6 +1,8 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:485-monument-inspections splitStatements:false
+--validCheckSum 9:80e840954817aa20f23a6eea565e034b
+-- Original a61d2f9 has identical forward SQL; only rollback instructions changed.
 CREATE TABLE monument_inspections (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  headstone_uuid uuid NOT NULL REFERENCES headstones(id),

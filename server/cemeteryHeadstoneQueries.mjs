@@ -51,7 +51,7 @@ const headstoneDetailColumnsSql = `
     'faces',i.faces,'sourceEntries',i.source_entries,'updatedAt',i.updated_at
   ) ORDER BY i.inspection_year DESC,i.inspected_at DESC NULLS LAST,i.created_at DESC),'[]'::jsonb)
    FROM monument_inspections i JOIN headstone_condition_types c ON c.id=i.condition_type_id
-   WHERE i.headstone_uuid=headstones.id) AS inspections,
+   WHERE i.headstone_uuid=headstones.id AND i.deleted_at IS NULL) AS inspections,
   headstones.faces,
   headstones.faces_revision,
   headstones.design_notes,

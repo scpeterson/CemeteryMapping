@@ -108,7 +108,7 @@ export function registerGraveRoutes(app, context) {
           const id = validateGraveSpaceId(request.params.id);
           const update = validateGraveLotAssignmentPayload(request.body);
           const result = await updateGraveLotAssignment(pool, cemeteryId, id, update.lotId, {
-            actorUser: request.user, reason: update.reason,
+            actorUser: request.user, reason: update.reason, lotUuid: update.lotUuid,
             allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
           });
           if (result?.invalid === "lot_not_found") return response.status(404).json({ error: "Lot not found." });

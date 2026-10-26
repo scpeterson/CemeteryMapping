@@ -17,7 +17,7 @@ export async function validatePhotoContextTarget(client,markerId,context,actorUs
  if(!context.inspectionId&&!context.maintenanceRecordId) return;
  if(context.inspectionId) assertInspectionEditor(actorUser);
  const result=context.inspectionId
-  ? await client.query('SELECT id,faces FROM monument_inspections WHERE id=$1 AND headstone_uuid=$2 FOR UPDATE',[context.inspectionId,markerId])
+  ? await client.query('SELECT id,faces FROM monument_inspections WHERE id=$1 AND headstone_uuid=$2 AND deleted_at IS NULL FOR UPDATE',[context.inspectionId,markerId])
   : await client.query('SELECT id,(SELECT faces FROM headstones WHERE id=$2) AS faces FROM maintenance_records WHERE id=$1 AND headstone_uuid=$2 AND deleted_at IS NULL FOR UPDATE',[context.maintenanceRecordId,markerId]);
  if(!result.rows.length) throw new BadRequestError('The inspection or maintenance action does not belong to this monument.');
  if(context.faceId && !(result.rows[0].faces??[]).some(face=>face.id===context.faceId)) throw new BadRequestError('The face does not belong to this inspection or monument.');

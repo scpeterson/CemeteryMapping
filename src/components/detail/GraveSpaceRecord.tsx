@@ -13,6 +13,8 @@ import type {
   SaveGraveSpaceInput
 } from "../../types";
 
+const lotKey = (lot: CemeteryLot) => lot.uuid ?? JSON.stringify([lot.section,lot.id]);
+
 const graveStatusOptions: { value: GraveStatus; label: string }[] = [
   { value: "available", label: "Available" },
   { value: "reserved", label: "Reserved" },
@@ -39,14 +41,16 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
   canUpdate: boolean;
   canManageLot: boolean;
   onSave: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
-  onUpdateLot: (lotId: string) => Promise<void>;
+  onUpdateLot: (lotId: string, lotUuid?: string) => Promise<void>;
 }) {
   const [hasConflict, setHasConflict] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useDraftState<SaveGraveSpaceInput>(() => blankGraveSpaceForm(grave));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
-  const [lotValue, setLotValue] = useState(grave.lot);
+  const assignedLot = lots.find(lot=>lot.id===grave.lot && lot.section===grave.section);
+  const assignedLotValue = grave.lot ? (assignedLot ? lotKey(assignedLot) : JSON.stringify([grave.section,grave.lot])) : "";
+  const [lotValue, setLotValue] = useState(assignedLotValue);
   const [isSavingLot, setIsSavingLot] = useState(false);
   const [isConfirmingUnlink, setIsConfirmingUnlink] = useState(false);
 
@@ -89,7 +93,9 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
     setIsSavingLot(true);
     setError(undefined);
     try {
-      await onUpdateLot(nextLotId);
+      const lot=nextLotId ? lots.find(item=>lotKey(item)===nextLotId) : undefined;
+      if(nextLotId && !lot)throw new Error("Reload and select a lot before saving.");
+      await onUpdateLot(lot?.id ?? "",lot?.uuid);
       setLotValue(nextLotId);
       setIsConfirmingUnlink(false);
     } catch (saveError) {
@@ -179,11 +185,11 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
             Assigned lot
             <select value={lotValue} onChange={(event) => setLotValue(event.target.value)}>
               <option value="">No assigned lot</option>
-              {lots.slice().sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })).map((lot) => <option key={lot.id} value={lot.id}>{lot.section ? `${lot.section}-${lot.id}` : lot.id}</option>)}
+              {lots.slice().sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })).map((lot) => <option key={lotKey(lot)} value={lotKey(lot)}>{lot.section ? `${lot.section}-${lot.id}` : lot.id}</option>)}
             </select>
           </label>
-          {inferredLot && !grave.lot ? <button type="button" className="secondary-button" onClick={() => setLotValue(inferredLot.lot.id)}>Use suggested lot</button> : null}
-          <button type="button" disabled={isSavingLot || lotValue === grave.lot} onClick={() => void saveLot(lotValue)}>{isSavingLot ? "Saving..." : "Save lot assignment"}</button>
+          {inferredLot && !grave.lot ? <button type="button" className="secondary-button" onClick={() => setLotValue(lotKey(inferredLot.lot))}>Use suggested lot</button> : null}
+          <button type="button" disabled={isSavingLot || lotValue === assignedLotValue} onClick={() => void saveLot(lotValue)}>{isSavingLot ? "Saving..." : "Save lot assignment"}</button>
           {grave.lot && !isConfirmingUnlink ? (
             <button type="button" className="text-button grave-lot-unlink" disabled={isSavingLot} onClick={() => setIsConfirmingUnlink(true)}>Unlink from lot {grave.lot}</button>
           ) : null}
