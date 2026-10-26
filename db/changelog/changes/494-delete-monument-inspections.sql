@@ -1,6 +1,7 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:494-delete-monument-inspections splitStatements:false
+--validCheckSum 9:d23e64dddeaa1faba3b5081cc513d5d5
 ALTER TABLE monument_inspections ADD COLUMN deleted_at timestamptz;
 -- Deleted source-derived inspections stay manually edited so source refreshes
 -- cannot recreate them. Existing audit triggers retain the actor and old values.
@@ -14,5 +15,7 @@ BEGIN
 END $$;
 CREATE TRIGGER reject_deleted_inspection_photo_context BEFORE INSERT OR UPDATE ON monument_photo_contexts
  FOR EACH ROW EXECUTE FUNCTION reject_deleted_inspection_photo_context();
--- Preserve deletion history; use a forward migration for recovery.
---rollback empty
+-- Schema rollback removes deletion history. Back up before rollback; use a forward correction for operational recovery.
+--rollback DROP TRIGGER IF EXISTS reject_deleted_inspection_photo_context ON monument_photo_contexts;
+--rollback DROP FUNCTION IF EXISTS reject_deleted_inspection_photo_context();
+--rollback ALTER TABLE monument_inspections DROP COLUMN deleted_at;

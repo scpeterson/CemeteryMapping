@@ -10,3 +10,15 @@ test('inspection 485 accepts only its verified original checksum and preserves f
  const forward=sql.split(/\r?\n/).filter(line=>line.trim() && !line.trimStart().startsWith('--')).join('\n');
  assert.equal(createHash('sha256').update(forward).digest('hex'),'270c1db78331535be039d0d96ea5639776e1426660382d5c8f2e8711e154eccd');
 });
+
+
+test('inspection deletion schema rollback cleans up its trigger, function and column in dependency order',async()=>{
+ const sql=await readFile(new URL('../db/changelog/changes/494-delete-monument-inspections.sql',import.meta.url),'utf8');
+ assert.ok(sql.includes('--validCheckSum 9:d23e64dddeaa1faba3b5081cc513d5d5'));
+ const rollback=sql.split('\n').filter(line=>line.startsWith('--rollback '));
+ assert.deepEqual(rollback,[
+  '--rollback DROP TRIGGER IF EXISTS reject_deleted_inspection_photo_context ON monument_photo_contexts;',
+  '--rollback DROP FUNCTION IF EXISTS reject_deleted_inspection_photo_context();',
+  '--rollback ALTER TABLE monument_inspections DROP COLUMN deleted_at;',
+ ]);
+});
