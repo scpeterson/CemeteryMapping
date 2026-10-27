@@ -22,6 +22,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Add `npm run deploy:test` for CI-gated hosted TEST releases with private configuration (preserving file ownership and modes), validated backups, candidate startup/health checks, live verification, and automatic code rollback. Pending schema changes require separate rehearsal.
+
 - Check hosted API Docker startup in CI using a mode-0600 environment file, the default Node user, and a database-backed health request.
 
 - Reopen saved ownership records from People → Current Owner with Edit ownership. Cemetery and system admins can update all owners, deed details, and whole-lot or listed-gravesite assignments in one audited, version-checked transaction; failed saves retain the draft.
