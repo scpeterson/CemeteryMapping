@@ -325,7 +325,8 @@ the selected commit and build time. Candidate failures leave live services alone
 
 After preparation, the command briefly stops API/web, takes a final database
 backup, and checks that media has not changed since its backup. It swaps source
-folders while preserving host environment files and the tunnel token, recreates
+folders while preserving host environment files and the tunnel token (including
+UID/GID ownership and modes), recreates
 API/web, validates Nginx,
 checks release/runtime hashes and account/media preservation, checks anonymous
 private-API denial and the public page over local HTTP and hosted HTTPS, and

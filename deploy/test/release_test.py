@@ -22,6 +22,21 @@ def health(commit=NEW):
 
 
 class ArchiveTests(unittest.TestCase):
+    def test_private_token_copy_preserves_foreign_uid_gid_and_mode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'token-before'
+            target = root / 'token-after'
+            source.write_bytes(b'fixture-token')
+            source.chmod(0o400)
+            metadata = list(source.stat())
+            metadata[4:6] = [65532, 65532]
+            with patch.object(Path, 'stat', return_value=os.stat_result(metadata)), patch.object(release.os, 'chown') as chown:
+                release.copy_protected(source, target)
+            chown.assert_called_once_with(target, 65532, 65532)
+            self.assertEqual(target.read_bytes(), b'fixture-token')
+            self.assertEqual(target.stat().st_mode & 0o777, 0o400)
+
     def test_all_host_environment_overrides_are_preserved_without_dependency_files(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

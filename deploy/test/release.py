@@ -49,6 +49,12 @@ def env_values(path):
     return values
 
 
+def copy_protected(source, target):
+    metadata = source.stat()
+    shutil.copy2(source, target)
+    os.chown(target, metadata.st_uid, metadata.st_gid)
+
+
 def protected_paths(app):
     paths = set(PROTECTED)
     for path in app.rglob('*'):
@@ -230,7 +236,7 @@ class Release:
             if (self.app / name).exists():
                 target = self.source / name
                 target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(self.app / name, target)
+                copy_protected(self.app / name, target)
         (self.source / 'db/env/test.env').chmod(0o600)
         running = self.compose('ps', '-q', 'api', capture=True).decode().strip()
         previous = self.command(['docker', 'inspect', running, '--format', '{{.Image}}'], capture=True).decode().strip()
@@ -313,6 +319,10 @@ for(const [p,h] of Object.entries(JSON.parse(readFileSync(0,'utf8'))))
 '''], input=json.dumps(runtime_files).encode())
         if self.sql(PRESERVE_SQL) != self.preserved_before or self.media_inventory() != self.media_before:
             raise RuntimeError('Account or media preservation check failed.')
+        token = self.app / 'deploy/test/tunnel-token'
+        expected_token = self.backup / 'application-before/deploy/test/tunnel-token'
+        if (token.stat().st_uid, token.stat().st_gid) != (expected_token.stat().st_uid, expected_token.stat().st_gid):
+            raise RuntimeError('Tunnel token ownership changed during deployment.')
         for path, expected in self.protected_hashes.items():
             if path != 'deploy/test/runtime.env' and digest(self.app / path) != expected:
                 raise RuntimeError(f'Protected settings changed: {path}')
