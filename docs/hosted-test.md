@@ -304,6 +304,14 @@ from `https://challenges.cloudflare.com` and test it before release.
    Preserve the host file's restricted permissions; this ownership change applies
    only to the image. The read check above must not print the file contents.
 
+   CI also runs `npm run test:docker-startup` after migrations and restricted API
+   account setup. To repeat locally, start/migrate TEST and run
+   `APP_ENV=test npm run db:configure-api` first. The check builds the committed
+   Dockerfile in an isolated context with a synthetic mode-0600 env file, verifies
+   Node ownership and readability, and checks `/api/health` against the TEST
+   database. Credentials stay in a separate private runtime file; no host port
+   is published. Temporary containers, image tags, and files are cleaned up.
+
    A missing-module or permission error must be corrected in the release archive,
    build allowlist, or image ownership before proceeding. Apply only the reviewed,
    rehearsed migration scope.
