@@ -57,6 +57,9 @@ jobs:
       - name: Check database migration status
         run: npm run db:status
 
+      - name: Check Docker startup with private environment file
+        run: npm run test:docker-startup
+
       - name: Install Playwright browser
         run: npx playwright install chromium
 

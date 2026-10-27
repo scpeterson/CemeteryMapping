@@ -20,6 +20,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Check hosted API Docker startup in CI using a mode-0600 environment file, the default Node user, and a database-backed health request.
+
 - Reopen saved ownership records from People → Current Owner with Edit ownership. Cemetery and system admins can update all owners, deed details, and whole-lot or listed-gravesite assignments in one audited, version-checked transaction; failed saves retain the draft.
 
 - Allow cemetery and system admins to delete inspections with confirmation and version checks. Keep photos in the marker gallery, unlink inspection photo contexts, and retain audited deletion history without source refreshes recreating the inspection (migration 494).
