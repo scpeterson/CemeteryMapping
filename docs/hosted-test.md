@@ -280,7 +280,75 @@ tunnel credentials, and gateway policies. Keep the loopback listeners and
 If a Content Security Policy is introduced, permit the widget's scripts/frames
 from `https://challenges.cloudflare.com` and test it before release.
 
+### Repeatable deployment command
+
+From the repository checkout, run:
+
+```sh
+npm run deploy:test
+```
+
+This is an on-demand release command for the existing hosted TEST host only.
+It fetches `origin/main`, requires the exact commit's **Lint, build, and test**
+check to have passed, and builds that revision from a clean Git archive. Local
+changes, personal media, ignored files and local environment settings are not
+part of the release. It does not deploy a feature branch or configure a schedule.
+
+Prerequisites: Node.js 24/npm, Git, authenticated GitHub CLI (`gh`), Python 3.11+,
+OpenSSH, and the existing TEST SSH key at
+`~/.ssh/nhcemeteries_test_ed25519`. Override the key path with
+`HOSTED_TEST_SSH_KEY`; the TEST target and server paths are fixed in the command.
+The host needs Python 3.11+, Docker/Compose, curl, and the established protected TEST
+settings. No GitHub deployment secrets or changes to Cloudflare are required.
+
+To validate preparation and candidate startup without restarting the live app:
+
+```sh
+npm run deploy:test -- --prepare-only
+```
+
+Both modes build the frontend using the existing hosted public settings, remove
+all environment files from the source archive, verify archive/file hashes after
+transfer, and take validated database and application backups. Media recovery
+archives are shared through hard links only when their inventory matches and
+the retained archive's checksum passes; changed media creates a new snapshot.
+Concurrent host deployments are rejected by a lock. A pending migration stops
+preparation before cutover: rehearse and apply schema changes using the existing
+migration procedure, configure API grants, and rerun the command. This command
+never restores, seeds, or migrates the live database.
+
+The API is rebuilt without cache from the committed Dockerfile. A separate
+candidate runs its default Node user/command with the existing Auth0 and
+restricted database configuration. Checks require ownership/readability of the
+mode-0600 environment file and a database-backed TEST health response matching
+the selected commit and build time. Candidate failures leave live services alone.
+
+After preparation, the command briefly stops API/web, takes a final database
+backup, and checks that media has not changed since its backup. It swaps source
+folders while preserving host environment files and the tunnel token, recreates
+API/web, validates Nginx,
+checks release/runtime hashes and account/media preservation, checks anonymous
+private-API denial and the public page over local HTTP and hosted HTTPS, and
+requires healthy API metadata with zero restarts. Database and tunnel services
+remain running. Failed cutover or verification restores the previous application,
+settings, and image, then checks the old release's health. Database/media writes
+are retained; no database rollback is performed. A failed rollback exits with an
+error and retains the recovery materials for operator recovery.
+
+The command prints the release's protected staging and backup paths beneath
+`/srv/nhcemeteries/{staging,backups}/`. Read `commands.log`, `candidate.log` on
+failure, `preparation.json` after a successful rehearsal, `verification.json`
+after deployment, or `rollback.json` after recovery in the
+staging folder. Prepare-only mode removes temporary environment files after the
+candidate check and requires a fresh command run for deployment. Recovery images,
+backups, media snapshots and staging files are retained; review disk usage and
+remove obsolete releases explicitly rather than pruning recovery data during a
+release. Keep a separate offsite backup as described above.
+
 ### Safe release procedure
+
+The command above implements the routine code release steps below. Retain these
+steps for rehearsed schema changes and manual recovery.
 
 1. Record the selected source revision, frontend build, image digests, and migration
    scope. Back up the existing database and application/settings. Rehearse the
