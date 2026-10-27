@@ -107,6 +107,58 @@ only by the cloudflared container user (UID/GID 65532, mode 0400), with
 `/srv/nhcemeteries` restricted to the host administrator (mode 0700).
 Start it with `docker compose --profile tunnel up -d tunnel`.
 
+## Updating the cloudflared connector
+
+The `nhcemeteries-test` connector runs in Docker on the TEST host. Updating a
+Mac installation does not update this container. Docker updates require pulling
+and recreating the container, as described in
+[Cloudflare's update guide](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/update-cloudflared/).
+The Compose file pins cloudflared 2026.10.3 by digest for the
+[eMudhra certificate security update](https://blog.cloudflare.com/emudhra-certificate-compromise/).
+
+For future upgrades, review and update the pinned image first. On the TEST host,
+from `/srv/nhcemeteries/app/deploy/test`, start a temporary replica with the new
+image and the existing token file. Keep the token owned by UID/GID 65532 with
+mode 0400, including when copying it during application releases. Do not print
+the token or put it in arguments:
+
+```sh
+docker compose --profile tunnel pull tunnel
+docker run -d --name nhcemeteries-test-tunnel-upgrade --restart unless-stopped \
+  --network host -v "$PWD/tunnel-token:/run/secrets/tunnel-token:ro" \
+  cloudflare/cloudflared:2026.10.3@sha256:faa8e0a1475f137c910be6025f43c8e4092fdd35461b31e19fd1390657a1ff39 \
+  tunnel --no-autoupdate --metrics 127.0.0.1:20246 run \
+  --token-file /run/secrets/tunnel-token
+curl -fsS http://127.0.0.1:20246/ready
+```
+
+Wait for four ready connections before replacing the original connector. Both
+replicas reach the same loopback origin and use the existing remotely managed
+routes. With the temporary replica connected:
+
+```sh
+docker compose --profile tunnel up -d --no-deps --force-recreate tunnel
+curl -fsS http://127.0.0.1:20241/ready
+docker compose exec -T tunnel cloudflared --version
+curl -fsS -o /dev/null https://test.nhcemeteries.org/request-access
+docker stop --time 40 nhcemeteries-test-tunnel-upgrade
+docker rm nhcemeteries-test-tunnel-upgrade
+curl -fsS http://127.0.0.1:20241/ready
+```
+
+Remove the temporary replica only after the new primary has four ready
+connections and the public page succeeds. If the primary fails, keep the patched
+replica running while correcting the primary. A replica on the same host covers
+the connector restart; it does not provide host redundancy. Existing long-lived
+connections may need to reconnect when their connector stops.
+
+The primary metrics/readiness listener binds only to `127.0.0.1:20241`. Compose
+allows 40 seconds for shutdown so cloudflared can use its 30-second grace period.
+The current origin is `http://127.0.0.1:8080`, so it has no HTTPS origin certificate
+to replace. If HTTPS origins are introduced, check their certificate chains
+before trust-store upgrades and retain certificate verification. Application
+code releases leave the tunnel service running; connector upgrades are separate.
+
 ## Verification and updates
 
 Install `deploy/test/backup.sh` as `/usr/local/sbin/nhcemeteries-test-backup`

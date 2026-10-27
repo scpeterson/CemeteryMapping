@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Upgrade the hosted TEST tunnel to cloudflared 2026.10.3 for the eMudhra certificate trust-store security fix; pin the image digest, restrict metrics to loopback, and allow graceful shutdown.
+
 - Give the hosted API image’s copied TEST environment file to the Node runtime user so deployments built from a mode-0600 file start successfully without weakening host permissions.
 
 - Accept the verified original migration 485 checksum after its rollback-only revision, allowing inspection deletion migration 494 to run without replaying inspection history.
