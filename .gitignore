@@ -28,3 +28,6 @@ field-media-inbox/
 
 # Local investigation scripts are not maintained application sources.
 /tmp/
+
+# Python deployment validation artifacts.
+__pycache__/

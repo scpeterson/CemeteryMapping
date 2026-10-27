@@ -69,6 +69,9 @@ jobs:
       - name: Run server unit tests
         run: npm run test:server
 
+      - name: Test hosted TEST deployment and rollback
+        run: npm run test:deploy
+
       - name: Run database business rule tests
         run: npm run test:db-rules
 

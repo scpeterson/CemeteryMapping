@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "deploy:test": "node scripts/deploy-hosted-test.mjs",
+    "test:deploy": "node --test scripts/hosted-test-release.test.mjs && python3 -m unittest discover -s deploy/test -p '*_test.py'",
     "api": "node server/index.mjs",
     "dev:web": "vite --mode dev --host 127.0.0.1 --port 5173 --strictPort",
     "dev:web:test": "vite --mode test --host 127.0.0.1 --port 5173 --strictPort",
