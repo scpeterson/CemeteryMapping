@@ -43,7 +43,10 @@ row hashes for unrelated lots, graves, markers, burials, ownership and photo lin
 DEV also retained migration 485 checksum `9:60043b74ad3258d56775dc20560d1e9b`.
 Liquibase 4.33.0 independently reproduces it from committed revision `c2f2ad9`;
 its forward SQL is unchanged. Accept that exact historical checksum alongside
-the existing original checksum, without clearing migration history.
+the existing original checksum, without clearing migration history. Keep historical
+SQL comments unchanged as well: Liquibase includes those comments in its checksum.
+The DEV checksum is accepted through a directive only, preserving the current TEST
+checksum `9:5f3eda7f8138e3651de9fbb84104733b`.
 
 Before applying to DEV, retain a validated private database dump and exact EWKB
 snapshots of the selected lots. Apply through Liquibase, then repeat containment,
