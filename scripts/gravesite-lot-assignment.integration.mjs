@@ -34,6 +34,25 @@ test('lot assignment distinguishes A-8 from B-8, rejects ambiguity, preserves re
   await assert.rejects(updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:lots.B}),error=>error instanceof ConflictError&&error.message.includes('overlaps prohibited lot area'));
   assert.deepEqual(await state(),assigned);
   await c.query('DELETE FROM lot_restricted_areas WHERE id=$1',[restricted]);
+  // Capacity errors keep the target unassigned and expose a useful conflict,
+  // while re-saving a grave already in a full lot must remain valid.
+  const capacityIds=[];
+  for(let i=0;i<4;i+=1){
+   const id=`capacity-${i}-${suffix}`;capacityIds.push(id);
+   await c.query(`INSERT INTO gravesites(cemetery_id,section_uuid,facility_id,section_id,grave_id,gravesite_id,lot_uuid,status_type_id,geometry)
+    VALUES($1,$2,$3,'B',$7,$4,$5,(SELECT id FROM gravesite_status_types WHERE code='available'),ST_GeomFromText($6,4326))`,[cemetery,sections.B,suffix,id,lots.B,geom,`C${i}`]);
+  }
+  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:lots.B}),{id:grave,lotId:'8',section:'B'});
+  const sixth=`sixth-${suffix}`;
+  await c.query(`INSERT INTO gravesites(cemetery_id,section_uuid,facility_id,section_id,grave_id,gravesite_id,status_type_id,geometry)
+   VALUES($1,$2,$3,'B','0006',$4,(SELECT id FROM gravesite_status_types WHERE code='available'),ST_GeomFromText($5,4326))`,[cemetery,sections.B,suffix,sixth,geom]);
+  await assert.rejects(updateGraveLotAssignment(pool,cemetery,sixth,'8',{lotUuid:lots.B}),error=>
+   error instanceof ConflictError && error.message==='Lot B-8 already has the maximum of five active gravesites. Review its existing assignments before adding another.');
+  assert.equal((await c.query('SELECT lot_uuid FROM gravesites WHERE gravesite_id=$1',[sixth])).rows[0].lot_uuid,null);
+  assert.deepEqual(await state(),assigned);
+  assert.equal(Number((await c.query('SELECT count(*) FROM gravesites WHERE lot_uuid=$1 AND deleted_at IS NULL',[lots.B])).rows[0].count),5);
+  await c.query('UPDATE gravesites SET deleted_at=now() WHERE gravesite_id=$1',[capacityIds[0]]);
+  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,sixth,'8',{lotUuid:lots.B}),{id:sixth,lotId:'8',section:'B'});
   const crossSection=(await c.query(`INSERT INTO lots(cemetery_id,section_uuid,facility_id,section_id,lot_id,name,geometry) VALUES($1,$2,$3,'A','42','A-42',ST_GeomFromText($4,4326)) RETURNING id`,[cemetery,sections.A,suffix,geom])).rows[0].id;
   assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'42'),{id:grave,lotId:'42',section:'A'});
   assert.equal((await state()).lot_uuid,crossSection);assert.equal((await state()).section_uuid,sections.A);
