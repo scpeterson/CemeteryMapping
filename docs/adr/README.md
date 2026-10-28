@@ -25,6 +25,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0170: Move eighteen Section A lots north as one group](0170-shift-section-a-eighteen-lots-north.md)
+
 - [ADR 0165: Show the current marker section while scrolling](0165-marker-section-scroll-tracking.md)
 - [ADR 0164: Keep the marker section menu accessible while scrolling](0164-sticky-marker-section-menu.md)
 - [ADR 0163: Compact marker section navigation](0163-compact-marker-section-navigation.md)
