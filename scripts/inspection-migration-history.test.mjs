@@ -7,6 +7,9 @@ test('inspection 485 accepts only its two verified historical checksums and pres
  const sql=await readFile(new URL('../db/changelog/changes/485-monument-inspections.sql',import.meta.url),'utf8');
  // Liquibase 4.33.0 independently reproduced a61d2f9 and c2f2ad9 checksums.
  assert.deepEqual([...sql.matchAll(/^--validCheckSum (.+)$/gm)].map(match=>match[1]),['9:80e840954817aa20f23a6eea565e034b','9:60043b74ad3258d56775dc20560d1e9b']);
+ // Preserve comments too: the independently reproduced current Liquibase checksum is 9:5f3eda7f8138e3651de9fbb84104733b.
+ const historicalText=sql.split(/\r?\n/).filter(line=>!line.startsWith('--validCheckSum ')).join('\n').trimEnd();
+ assert.equal(createHash('sha256').update(historicalText).digest('hex'),'967246c0bff50cfbfb02744786d8a2ec812f37a321987ebbce8d26a95496286b');
  const forward=sql.split(/\r?\n/).filter(line=>line.trim() && !line.trimStart().startsWith('--')).join('\n');
  assert.equal(createHash('sha256').update(forward).digest('hex'),'270c1db78331535be039d0d96ea5639776e1426660382d5c8f2e8711e154eccd');
 });

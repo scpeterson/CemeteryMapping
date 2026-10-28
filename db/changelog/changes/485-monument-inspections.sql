@@ -3,7 +3,6 @@
 --changeset cemeterymapping:485-monument-inspections splitStatements:false
 --validCheckSum 9:80e840954817aa20f23a6eea565e034b
 --validCheckSum 9:60043b74ad3258d56775dc20560d1e9b
--- c2f2ad9 forward SQL is unchanged; its checksum predates the provenance comment below.
 -- Original a61d2f9 has identical forward SQL; only rollback instructions changed.
 CREATE TABLE monument_inspections (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
