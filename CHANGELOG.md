@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Move A-1 through A-9 and A-30 through A-38 together one foot north, placing the fixed TLC-HS-0053 marker strictly inside A-34 while preserving lot dimensions and alignment (migration 495).
+
 - Show a clear lot-capacity conflict when a sixth gravesite is assigned to a full lot, retaining the selected lot and existing assignments instead of displaying a generic server error.
 
 - Upgrade the hosted TEST tunnel to cloudflared 2026.10.3 for the eMudhra certificate trust-store security fix; pin the image digest, restrict metrics to loopback, and allow graceful shutdown.

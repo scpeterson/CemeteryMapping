@@ -1479,3 +1479,6 @@ databaseChangeLog:
   - include:
       file: changes/494-delete-monument-inspections.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/495-shift-section-a-eighteen-lots-north.sql
+      relativeToChangelogFile: true
