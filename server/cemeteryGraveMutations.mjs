@@ -92,6 +92,7 @@ export async function updateGraveSpaceMutation(
 }
 
 export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lotId, { actorUser, reason, allowedCemeteryIds, lotUuid } = {}) {
+  let selectedLotLabel;
   try {
     return await withAuditContext(pool, { actorUser, reason: reason ?? "Gravesite lot assignment update" }, async (client, rollback) => {
       if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) return rollback(undefined);
@@ -102,6 +103,7 @@ export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lo
       if (!lotResult.rows.length) return rollback({ invalid: "lot_not_found" });
       if (lotResult.rows.length > 1) throw new BadRequestError("This lot number occurs in more than one section. Reload and select the section-specific lot.");
       const lot = lotResult.rows[0];
+      selectedLotLabel = [lot.section_id, lot.lot_id].filter(Boolean).join("-");
       if (lot.burial_use_status === "non_burial") throw new ConflictError(`Lot ${[lot.section_id,lot.lot_id].filter(Boolean).join("-")} cannot contain gravesites or markers.`);
       const result = await client.query(
         `UPDATE gravesites SET lot_uuid=$3::uuid, lot_id=$4, section_id=COALESCE($5::text, section_id),
@@ -115,6 +117,9 @@ export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lo
       return { id: gravesiteId, lotId: result.rows[0].lot_id ?? "", section: result.rows[0].section_id ?? "" };
     });
   } catch (error) {
+    if (error.code === "23514" && error.where?.includes("enforce_lot_gravesite_limit")) {
+      throw new ConflictError(`Lot ${selectedLotLabel} already has the maximum of five active gravesites. Review its existing assignments before adding another.`);
+    }
     if (error.code === "23514" && error.where?.includes("enforce_lot_burial_use_restrictions")) throw new ConflictError(error.message);
     throw error;
   }
