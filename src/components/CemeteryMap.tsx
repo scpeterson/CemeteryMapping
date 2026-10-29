@@ -565,11 +565,11 @@ export function CemeteryMap({
           type="button"
           className={selectionMode === "lots" ? "is-active" : ""}
           onClick={() => setSelectionMode("lots")}
-          aria-label="Select lots: clicks open lot details and associated gravesites"
+          aria-label="Select lots and passageways: clicks open area details and associated gravesites"
           aria-pressed={selectionMode === "lots"}
-          title="Select lots: clicks open lot details and associated gravesites."
+          title="Select lots and passageways: clicks open area details and associated gravesites."
         >
-          Lots
+          Lots & passageways
         </button>
         <button
           type="button"
@@ -679,6 +679,7 @@ export function CemeteryMap({
               Lot polygon
             </span>
           )}
+          <span><i className="legend-symbol" style={{ background: "#b8871d", opacity: 0.7 }} />Passageway polygon</span>
           <span>
             <i className="legend-symbol legend-gravesite" />
             Gravesite polygon

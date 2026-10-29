@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "416-access-requests";
+export const requiredSchemaChangeset = "502-passageway-area-type";
 
 export async function assertCurrentSchema(pool) {
   let result;

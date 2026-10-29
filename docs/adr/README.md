@@ -25,6 +25,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0178: Model passageways as typed lot-layer areas](0178-passageways-and-individual-deeds.md)
+
 - [ADR 0177: Deflect the shared D/E corner between fixed markers](0177-deflect-de-shared-corner.md)
 
 - [ADR 0176: Shift the six-lot D-77 row west](0176-shift-d77-row-west.md)

@@ -1206,3 +1206,19 @@ Use Jump to section beneath the marker ID to reach Inspections, Photos, Maintena
 ### Resume an unfinished inspection
 
 Return to the marker and choose **Resume draft**. Visit details, face readings/designs, the active face, and photo notes return. Reselect each named photo file under its face, or remove that selection before saving. If the inspection was already saved but photos failed, resume the remaining photo queue without creating another inspection. **Discard saved draft** asks for confirmation. Recovery belongs to the current browser and account; it is not a replacement for saving the record. If browser storage is unavailable, the editor reports that recovery is unavailable and remains usable.
+
+
+## Passageway gravesites and deeds
+
+Passageways appear alongside lots with an amber outline and fill. Their IDs are
+section-specific, such as D-P03. In gravesite Location and geometry, choose the
+passageway under Assigned lot or passageway and save. In People and ownership,
+record the deed for This gravesite or Listed gravesites. A passageway cannot
+have whole-area ownership. One deed may cover multiple gravesites; it never
+grants the corridor itself. Existing rights are not rewritten by assignment.
+
+Passageway details preserve the original registry wording and cell references
+separately from the modern ID. Estimated geometry and point containment are
+review evidence, not proof of ownership, burial availability or a surveyed
+gravesite boundary. Review the proposed assignment list before linking existing
+gravesites. No gravesite is automatically linked by passageway creation.

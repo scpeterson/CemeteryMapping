@@ -158,7 +158,7 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
           <dd>{grave.section || "Unknown"}</dd>
         </div>
         <div>
-          <dt>Lot</dt>
+          <dt>{assignedLot?.areaType === "passageway" ? "Passageway" : "Lot"}</dt>
           <dd>{grave.lot || "Unknown"}</dd>
         </div>
         <div>
@@ -182,10 +182,10 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
       {canManageLot ? (
         <div className="grave-lot-assignment">
           <label>
-            Assigned lot
+            {lots.some((lot) => lot.areaType === "passageway") ? "Assigned lot or passageway" : "Assigned lot"}
             <select value={lotValue} onChange={(event) => setLotValue(event.target.value)}>
-              <option value="">No assigned lot</option>
-              {lots.slice().sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })).map((lot) => <option key={lotKey(lot)} value={lotKey(lot)}>{lot.section ? `${lot.section}-${lot.id}` : lot.id}</option>)}
+              <option value="">No assigned lot or passageway</option>
+              {lots.slice().sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })).map((lot) => <option key={lotKey(lot)} value={lotKey(lot)}>{lot.section ? `${lot.section}-${lot.id}` : lot.id}{lot.areaType === "passageway" ? " (Passageway)" : ""}</option>)}
             </select>
           </label>
           {inferredLot && !grave.lot ? <button type="button" className="secondary-button" onClick={() => setLotValue(lotKey(inferredLot.lot))}>Use suggested lot</button> : null}

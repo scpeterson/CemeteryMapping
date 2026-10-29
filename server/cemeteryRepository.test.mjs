@@ -1359,3 +1359,8 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
   assert.equal(updated?.recordNotes, "Imported note");
   assert.equal(updated?.sourceUrl, "https://www.findagrave.com/memorial/123/ruth-soergel");
 });
+
+test("whole-area ownership rejects a passageway before writing a right", async () => {
+  const { selectOwnershipTargets } = await import("./cemeteryOwnershipQueries.mjs");
+  await assert.rejects(selectOwnershipTargets({query:async()=>({rows:[{id:"grave",lot_uuid:"passage",lot_area_type:"passageway"}]})},"cemetery","grave","selected_lot",[]),/passageway cannot have whole-area ownership/u);
+});

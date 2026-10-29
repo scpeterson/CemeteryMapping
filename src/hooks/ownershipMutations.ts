@@ -25,7 +25,7 @@ export function createOwnershipMutations({ selectedGrave, setSelectedGrave, setD
     const saved = await updateGraveLot(selectedGrave.cemeteryId, selectedGrave.id, lotId, lotUuid);
     setData((current) => assignLotInMapData(current, selectedGrave, saved.lotId, saved.section));
     setSelectedGrave((current) => assignLotToSelectedGrave(current, selectedGrave, saved.lotId, saved.section));
-    setSelectedGraveDetails((current) => current?.id === selectedGrave.id ? { ...current, lot: saved.lotId, section: saved.section ?? current.section } : current);
+    setSelectedGraveDetails((current) => current?.id === selectedGrave.id ? { ...current, lot: saved.lotId, lotAreaType: saved.areaType ?? "lot", section: saved.section ?? current.section } : current);
   };
 
   return { saveOwnershipEvent, saveOwner, removeOwnershipConnection, saveGraveLot };

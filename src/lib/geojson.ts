@@ -85,6 +85,7 @@ export function lotsFeatureCollection(data: Pick<CemeteryData, "lots">) {
           name: lot.name,
           section: lot.section,
           block: lot.block,
+          areaType: lot.areaType ?? "lot",
           burialUseStatus: lot.burialUseStatus ?? "standard",
           geometryType: lot.geometryType ?? "operational",
           geometryConfidence: lot.geometryConfidence ?? "estimated",

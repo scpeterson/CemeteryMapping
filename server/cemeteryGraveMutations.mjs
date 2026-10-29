@@ -97,7 +97,7 @@ export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lo
     return await withAuditContext(pool, { actorUser, reason: reason ?? "Gravesite lot assignment update" }, async (client, rollback) => {
       if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) return rollback(undefined);
       const lotResult = lotUuid || lotId
-        ? await client.query(`SELECT id, lot_id, section_id, section_uuid, block_id, block_uuid, burial_use_status FROM lots
+        ? await client.query(`SELECT id, lot_id, section_id, section_uuid, block_id, block_uuid, burial_use_status, area_type FROM lots
             WHERE cemetery_id=$1 AND ${lotUuid ? "id=$2::uuid" : "lot_id=$2"} AND deleted_at IS NULL`, [cemeteryId, lotUuid || lotId])
         : { rows: [{ id: null, lot_id: null, section_id: null, section_uuid: null, block_id: null, block_uuid: null }] };
       if (!lotResult.rows.length) return rollback({ invalid: "lot_not_found" });
@@ -114,7 +114,7 @@ export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lo
         [cemeteryId, gravesiteId, lot.id, lot.lot_id, lot.section_id, lot.section_uuid, lot.block_id, lot.block_uuid],
       );
       if (!result.rowCount) return rollback(undefined);
-      return { id: gravesiteId, lotId: result.rows[0].lot_id ?? "", section: result.rows[0].section_id ?? "" };
+      return { id: gravesiteId, lotId: result.rows[0].lot_id ?? "", areaType: lot.area_type ?? "lot", section: result.rows[0].section_id ?? "" };
     });
   } catch (error) {
     if (error.code === "23514" && error.where?.includes("enforce_lot_gravesite_limit")) {

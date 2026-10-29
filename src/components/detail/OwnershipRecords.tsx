@@ -51,7 +51,7 @@ function blankOwnershipForm(grave: GraveSpace): SaveOwnershipEventInput {
     owners: [blankOwnershipParty()],
     previousOwners: [blankOwnershipParty()],
     eventType: "deed",
-    targetScope: grave.lot ? "selected_lot" : "selected_gravesite",
+    targetScope: grave.lot && grave.lotAreaType !== "passageway" ? "selected_lot" : "selected_gravesite",
     targetGravesiteIds: [],
     effectiveDate: new Date().toISOString().slice(0, 10),
     deedOnFile: false,
@@ -210,6 +210,7 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave, initial, onF
         <OwnershipPartyFields title="Previous owners (from)" parties={form.previousOwners} onChange={(previousOwners) => setForm((current) => ({ ...current, previousOwners }))} />
       ) : null}
       <OwnershipPartyFields title={["sale", "gift"].includes(form.eventType) ? "New owners (to)" : "Owners"} parties={form.owners} onChange={(owners) => setForm((current) => ({ ...current, owners }))} />
+      {grave.lotAreaType === "passageway" ? <p className="ownership-event-guidance">This gravesite is in passageway {grave.section}-{grave.lot}. Record the deed for this gravesite or listed gravesites; the passageway itself cannot be owned.</p> : null}
       {form.eventType === "deed" ? (
         <section className="ownership-registry-assist ownership-wide-field">
           <div>
@@ -250,12 +251,13 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave, initial, onF
         Applies to
         <select value={form.targetScope} onChange={(event) => setForm((current) => ({ ...current, targetScope: event.target.value as OwnershipTargetScope }))}>
           {ownershipTargetOptions.map((option) => (
-            <option key={option.value} value={option.value} disabled={option.value === "selected_lot" && !grave.lot}>
+            <option key={option.value} value={option.value} disabled={option.value === "selected_lot" && (!grave.lot || grave.lotAreaType === "passageway")}>
               {option.label}
             </option>
           ))}
         </select>
       </label>
+      {grave.lotAreaType === "passageway" ? <p className="ownership-event-guidance">This gravesite is in passageway {grave.section}-{grave.lot}. Record the deed for this gravesite or listed gravesites; the passageway itself cannot be owned.</p> : null}
       {form.eventType === "deed" ? (
         <p className="ownership-event-guidance">Entering an old deed? Use its original date as the effective date below.</p>
       ) : null}
