@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { chmodSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, renameSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
@@ -38,7 +38,15 @@ try {
   };
   if (Object.values(values).some((value) => /[\r\n]/u.test(value))) throw new Error("Runtime environment values must be single-line.");
   writeFileSync(runtimeEnv, Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(""), { mode: 0o600 });
-  docker(["build", "--file", join(context, "deploy/test/Dockerfile"), "--tag", image, context]);
+  const cache = process.env.DOCKER_STARTUP_CACHE;
+  const build = cache ? ["buildx", "build", "--load",
+    ...(existsSync(join(cache, "index.json")) ? ["--cache-from", `type=local,src=${cache}`] : []),
+    "--cache-to", `type=local,dest=${cache}-new,mode=max`] : ["build"];
+  docker([...build, "--file", join(context, "deploy/test/Dockerfile"), "--tag", image, context]);
+  if (cache) {
+    rmSync(cache, { recursive: true, force: true });
+    renameSync(`${cache}-new`, cache);
+  }
   // Use the image's default USER and CMD, without publishing a host port.
   docker(["run", "--detach", "--name", name, "--network", network, "--env-file", runtimeEnv, image], { quiet: true });
   docker(["exec", name, "node", "--input-type=module", "-e", `

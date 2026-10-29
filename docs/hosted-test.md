@@ -570,3 +570,11 @@ individual gravesite deed support, blocked whole-passageway ownership and the
 C-P03 expansion. Confirm all fixed monuments, existing grave/ownership assignments
 and E/G gravesite-only behavior remain intact. Preserve the hosted deployment
 record separately from the dated DEV evidence.
+
+## CI validation paths
+
+CI runs quick checks, serial database integration tests and four isolated browser
+shards in parallel. Recognized documentation-only PRs build and validate the docs;
+every main push still runs application validation. The required
+`Lint, build, and test` aggregate remains the hosted deployment gate. See
+[ADR 0181](adr/0181-parallel-ci.md) for classification, caches, isolation and recovery.
