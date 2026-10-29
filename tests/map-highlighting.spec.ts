@@ -48,7 +48,7 @@ for (const kind of ["graves", "lots", "markers"] as const) {
       return map?.getLayer(layer) ? map.queryRenderedFeatures({ layers: [layer] }).length : 0;
     }, layer)).toBeGreaterThan(0);
     await expect.poll(() => page.evaluate(() => window.mapHighlightTest.map.isMoving())).toBe(false);
-    await page.getByRole("button", { name: new RegExp(`^Select ${kind === "graves" ? "gravesites" : kind}:`) }).click();
+    await page.getByRole("button", { name: new RegExp(`^Select ${kind === "graves" ? "gravesites" : kind === "lots" ? "lots and passageways" : kind}:`) }).click();
     // Move the fixture feature below the selection toolbar so the real click
     // reaches the canvas rather than an overlaid mode button.
     await page.evaluate(() => window.mapHighlightTest.map.panBy([0, -120], { duration: 0 }));
