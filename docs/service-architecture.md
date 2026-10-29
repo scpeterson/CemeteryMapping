@@ -213,3 +213,11 @@ The lot source includes typed passageways and location evidence. Whole-area
 ownership is prohibited for passageways, while individual gravesite rights use
 the existing event/party/right architecture. See
 [ADR 0178](adr/0178-passageways-and-individual-deeds.md).
+
+
+Search uses the same per-query materialization approach for its current-ownership
+view, sharing it between status derivation and permission-gated owner-name/date
+reasons. Matching, normalization, pagination and privacy gates remain unchanged.
+Representative DEV comparisons fell from 7.9–19.6 seconds to 11–171 milliseconds
+with exact result equality. These are database query timings; see
+[ADR 0180](adr/0180-search-ownership-query.md).

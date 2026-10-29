@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0180: Resolve current ownership once per search query](0180-search-ownership-query.md)
+
 - [ADR 0179: Shift the southern Section C lots and expand C-P03](0179-shift-southern-c-lots.md)
 
 - [ADR 0178: Model passageways as typed lot-layer areas](0178-passageways-and-individual-deeds.md)

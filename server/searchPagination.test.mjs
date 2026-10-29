@@ -46,3 +46,14 @@ test("monument ID matches retain ID reasons and use both active association path
   const matches = await searchCemetery(pool, { query: "TLC-HS-0270", cemeteryId });
   assert.deepEqual(matches[0].reasons, ["Monument ID: TLC-HS-0270"]);
 });
+
+test("search batches ownership resolution once for status and permitted owner reasons", async () => {
+  await searchCemetery({query:async(sql,values)=>{
+    assert.match(sql,/search_current_ownership AS MATERIALIZED/u);
+    assert.equal([...sql.matchAll(/FROM current_ownership_right_owners\b/gu)].length,1);
+    assert.match(sql,/FROM search_current_ownership status_rights/u);
+    assert.equal([...sql.matchAll(/FROM search_current_ownership current_ownership_right_owners/gu)].length,2);
+    assert.deepEqual(values.slice(2,5),[false,[],cemeteryId]);
+    return {rows:[]};
+  }},{query:"Fixture",includeOwnership:false,ownershipCemeteryIds:[],cemeteryId});
+});

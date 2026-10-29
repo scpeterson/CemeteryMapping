@@ -105,7 +105,11 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
       `;
   const result = await pool.query(
     `
-      WITH matching_monuments AS MATERIALIZED (
+      -- Resolve the ownership history once for statuses and authorized match reasons.
+      WITH search_current_ownership AS MATERIALIZED (
+        SELECT target_type, lot_uuid, gravesite_uuid, display_name, effective_date
+        FROM current_ownership_right_owners
+      ), matching_monuments AS MATERIALIZED (
         SELECT h.id, h.headstone_id, h.gravesite_uuid
         FROM headstones h
         WHERE $1 <> '' AND h.deleted_at IS NULL
@@ -135,7 +139,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         LEFT JOIN gravesite_status_types status_type
           ON status_type.id = gravesites.status_type_id
         CROSS JOIN LATERAL (
-          SELECT ${derivedGravesiteStatusSql()} AS status
+          SELECT ${derivedGravesiteStatusSql({ currentOwnershipRelation: "search_current_ownership" })} AS status
         ) derived_status
         LEFT JOIN gravesite_status_types derived_status_type
           ON derived_status_type.code = derived_status.status
@@ -227,7 +231,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
 
         UNION ALL
         SELECT 'Owner', current_ownership_right_owners.display_name
-        FROM current_ownership_right_owners
+        FROM search_current_ownership current_ownership_right_owners
         WHERE $3::boolean
           AND ($4::text[] IS NULL OR base_graves.cemetery_id = ANY($4::text[]))
           AND $1 <> ''
@@ -237,7 +241,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
 
         UNION ALL
         SELECT 'Ownership date', current_ownership_right_owners.effective_date::text
-        FROM current_ownership_right_owners
+        FROM search_current_ownership current_ownership_right_owners
         WHERE $3::boolean
           AND ($4::text[] IS NULL OR base_graves.cemetery_id = ANY($4::text[]))
           AND $1 <> ''
