@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Speed up cemetery search by resolving current ownership once per query for status calculation and authorized owner/date matches, preserving permissions, reasons, filtering and pagination.
+
 - Move the 32 southern Section C lots south together to contain fixed TLC-HS-0330 in C-80 and TLC-HS-0361 in C-82; clip approved non-burial C-85/C-90 to the cemetery boundary and expand C-P03 to the new northern lot edge (migration 504).
 
 - Deflect only the shared southern D/E corner north between fixed TLC-HS-0577 in D and TLC-HS-0554 in E, preserving all other section vertices and the combined footprint (migration 501).

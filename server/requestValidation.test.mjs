@@ -45,7 +45,7 @@ function emptyCemeteryPool() {
       assert.match(sql, /JOIN gravesite_status_types status_type|LEFT JOIN gravesite_status_types status_type/u);
       assert.match(sql, /CROSS JOIN LATERAL/u);
       assert.match(sql, /FROM burials status_burials/u);
-      assert.match(sql, /FROM current_ownership_right_owners status_rights/u);
+      assert.match(sql, /FROM search_current_ownership status_rights/u);
       assert.match(sql, /OR derived_status\.status = ANY\(\$2::text\[\]\)/u);
       assert.match(sql, /SELECT 'Cemetery'/u);
       assert.match(sql, /SELECT 'Cemetery facility ID'/u);

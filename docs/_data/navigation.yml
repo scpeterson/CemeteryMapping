@@ -202,3 +202,5 @@
   url: /adr/0178-passageways-and-individual-deeds.html
 - title: "ADR 0179: Shift the southern Section C lots and expand C-P03"
   url: /adr/0179-shift-southern-c-lots.html
+- title: "ADR 0180: Resolve current ownership once per search query"
+  url: /adr/0180-search-ownership-query.html
