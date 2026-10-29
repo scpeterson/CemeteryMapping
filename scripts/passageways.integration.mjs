@@ -25,8 +25,7 @@ async function fixture(run){
  INSERT INTO cemeteries(facility_id) VALUES('1')`);
  for(const s of outlines)await c.query(`INSERT INTO sections(cemetery_id,name,geometry) SELECT id,$1,ST_SetSRID(ST_GeomFromGeoJSON($2),4326) FROM cemeteries`,[s.name,JSON.stringify(s.geometry)]);
  await c.query(`INSERT INTO lots(cemetery_id,facility_id,section_id,lot_id,geometry) SELECT id,'1','A','FIXED',ST_Multi(ST_MakeEnvelope(-80.08003,40.60118,-80.08002,40.60119,4326)) FROM cemeteries`);
- // CI has already installed the function; replace it only within this rollback fixture.
- await c.query(schema.replace("CREATE FUNCTION enforce_passageway_conversion()", "CREATE OR REPLACE FUNCTION enforce_passageway_conversion()"));
+ await c.query(schema);
  await c.query(`CREATE TRIGGER passageway_fixture_capacity BEFORE INSERT OR UPDATE ON gravesites FOR EACH ROW EXECUTE FUNCTION enforce_lot_gravesite_limit()`);
  await run(c);
  }finally{await c.query('ROLLBACK');await c.end();}

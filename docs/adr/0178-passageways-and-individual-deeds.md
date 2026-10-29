@@ -57,3 +57,8 @@ and repeat those checks afterward. The API startup contract requires migration
 502. Hosted TEST deployment needs separate authorization. Recovery uses the
 backup or a reviewed forward correction; automatic rollback is empty so linked
 gravesites and provenance are not silently removed.
+
+Migration replay uses CREATE OR REPLACE for the conversion helper because
+Liquibase rollback testing may recreate tables while leaving PL/pgSQL helpers.
+Recognize the verified original DEV checksum `9:03aa95b428e7d182f6e2009f9d9b0165`
+without replaying applied data or clearing other migration checksums.

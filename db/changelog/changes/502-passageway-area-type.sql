@@ -1,6 +1,7 @@
 --liquibase formatted sql
 
 --changeset cemeterymapping:502-passageway-area-type splitStatements:false
+--validCheckSum 9:03aa95b428e7d182f6e2009f9d9b0165
 ALTER TABLE lots ADD COLUMN area_type text NOT NULL DEFAULT 'lot'
   CHECK (area_type IN ('lot','passageway'));
 ALTER TABLE lots ADD COLUMN location_references jsonb NOT NULL DEFAULT '[]'::jsonb
@@ -25,7 +26,7 @@ CREATE TRIGGER ownership_rights_no_passageway BEFORE INSERT OR UPDATE ON ownersh
 CREATE TRIGGER legacy_ownership_no_passageway BEFORE INSERT OR UPDATE ON lot_ownership_events
   FOR EACH ROW EXECUTE FUNCTION enforce_passageway_ownership();
 
-CREATE FUNCTION enforce_passageway_conversion()
+CREATE OR REPLACE FUNCTION enforce_passageway_conversion()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.area_type='passageway' AND OLD.area_type IS DISTINCT FROM NEW.area_type
