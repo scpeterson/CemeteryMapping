@@ -53,3 +53,7 @@ In an environment with the real Section C data, confirm `C-0172A` and `C-0172B` 
 ## Update Triggers
 
 Update this ADR if the passageway width is remeasured, the Simpson gravesite geometry changes again, or the shared marker location is verified and adjusted.
+
+## Later changes
+
+Migration 503 later creates C-P03 without automatically assigning existing gravesites. Migration 504 expands its southern edge. See [ADR 0178](0178-passageways-and-individual-deeds.md) and [ADR 0179](0179-shift-southern-c-lots.md); the historical pair remains subject to reviewed assignment.

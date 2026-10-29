@@ -16,6 +16,10 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 - Include exact software versions when the decision depends on a tool, runtime, database, library, or container image.
 - Include rebuild commands and validation steps.
 
+The [passageway review evidence package](supporting/passageway-review-2026-10-29/README.md)
+preserves the Reevaluated passageways documents and maps supporting ADRs 0178–0179.
+Use [the current map guide](../map-layout-and-passageways.md) for later accepted state.
+
 ## Status Values
 
 - `Proposed`: under discussion or not yet implemented.

@@ -118,7 +118,7 @@ bundle --version
 
 ## Validate Database Migrations
 
-Run rollback testing only against disposable TEST data after reviewing pending changesets. Changesets 461–472 have empty rollback actions: this check does not reverse their data changes or validate backup recovery. Rehearse these corrections and their recovery on an isolated database copy; see [Rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
+Run rollback testing only against disposable TEST data after reviewing pending changesets. Changesets 461–472 have empty rollback actions: this check does not reverse their data changes or validate backup recovery. Rehearse these corrections and their recovery on an isolated database copy; see [Rollback and backup recovery](https://github.com/scpeterson/CemeteryMapping/blob/main/db/README.md#rollback-and-backup-recovery).
 
 ```bash
 APP_ENV=test npm run db:validate
@@ -194,3 +194,35 @@ APP_ENV=test npm run db:import:headstones -- "/path/to/TLC Gravesite Registry Ge
 Every PR that changes architecture, schema, import behavior, validation policy, deployment/rebuild behavior, or source data assumptions must add or update an ADR in `docs/adr`.
 
 If a decision is replaced, do not rewrite history. Add a new ADR and mark the old one `Superseded`.
+
+
+## Map and passageway schema through migration 504
+
+The API startup contract requires `502-passageway-area-type`; migrate before
+starting a new API build. Migrations 502–503 add typed passageways, original
+registry location references, individual-rights enforcement and the ten approved
+Trinity polygons. Migration 504 adjusts the southern C rows and C-P03. Real-data
+geometry migrations may skip a database without their source cemetery; do not
+copy Trinity personal records into demo data to force them to run.
+
+On a disposable migrated TEST database, run:
+
+```bash
+APP_ENV=test npm run db:rollback:test
+APP_ENV=test npm run db:migrate
+APP_ENV=test npm run db:configure-api
+APP_ENV=test npm run test:server
+APP_ENV=test npm run test:db-rules
+npm run lint
+npm run build
+APP_ENV=test npm run test:e2e
+```
+
+`db:rollback:test` is a rebuild/replay check, not a recovery procedure for populated
+DEV or hosted TEST. Migrations 502–504 use empty automatic rollback to preserve
+linked data; recover those changes from a validated backup or a reviewed forward
+correction. Migration 502 explicitly recognizes its verified original DEV checksum;
+do not clear unrelated checksums. Geometry rehearsals and post-application checks
+compare protected records and audit counts before release. See
+[the map guide](map-layout-and-passageways.md) and
+[ADR evidence package](adr/supporting/passageway-review-2026-10-29/README.md).

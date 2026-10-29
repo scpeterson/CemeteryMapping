@@ -177,3 +177,23 @@ Update this register when:
 - A source is re-exported, corrected, or superseded.
 - Coordinate accuracy or collection method becomes known.
 - An import command, layer mapping, or field mapping changes.
+
+
+## Passageway review and registry location crosswalk
+
+The [archived 28–29 October review package](adr/supporting/passageway-review-2026-10-29/README.md)
+includes the original A/C registry crosswalk, B/D addendum, Reevaluated passageways
+report, four maps, proposed gravesite assignments and the pre-504 uncovered-marker
+check. Files are copied without alteration and recorded in a SHA-256 manifest.
+The crosswalk preserves all 101 passage-location rows from Trinity Cemetery
+Registry 2022.xlsx: 50 in Original 2017 and 51 in Updated 2022. These references
+are stored in passageway `location_references` with exact cell, wording and
+interpretation notes; they do not create ownership rights.
+
+The reevaluation is a pre-implementation snapshot. Migrations 502–503 implement
+the approved ten typed areas, and 504 later moves the southern C rows and expands
+C-P03. The two formerly uncovered C monument points are covered after 504; the
+remaining E/G points are expected because those sections remain gravesite-only.
+Consult [the current guide](map-layout-and-passageways.md) and ADRs
+[0178](adr/0178-passageways-and-individual-deeds.md) and
+[0179](adr/0179-shift-southern-c-lots.md) before using historical report bounds.

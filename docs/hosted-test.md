@@ -185,7 +185,7 @@ rollback does not undo database migrations; use their reviewed rollback or
 forward-fix procedure. Changesets 461–472 have empty rollback actions and require
 pre-migration backup recovery or a reviewed forward fix; Liquibase rollback alone
 does not restore their data. Rehearse recovery on an isolated copy and account for
-subsequent TEST edits before restoring a backup. See [rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
+subsequent TEST edits before restoring a backup. See [rollback and backup recovery](https://github.com/scpeterson/CemeteryMapping/blob/main/db/README.md#rollback-and-backup-recovery).
 Never use `docker compose down -v` on this host.
 
 ## Tester access and DEV data refreshes
@@ -552,3 +552,21 @@ Read-only audit on October 17, 2026 found no unassigned non-admin accounts in lo
 DEV, local TEST, or hosted TEST. Local databases each contained one active admin;
 hosted TEST contained one active admin and one active, assigned power user. This
 is a dated account-data observation, not confirmation that PR #685 is deployed.
+
+
+## Passageway and recent map changes — release prerequisite
+
+PR #744 merges migrations 502–504 and the passageway UI; preceding merged map
+corrections are summarized in [Map Layout and Passageways](map-layout-and-passageways.md).
+A merge or a successful DEV migration is not evidence of hosted deployment.
+Inspect hosted migration status and apply every pending reviewed migration in
+order, with a backup and environment-specific rehearsal; do not replay DEV
+coordinates manually or mark pending migrations executed. The automated TEST
+release does not apply migrations and refuses a database with pending changes.
+
+The new API requires schema changeset `502-passageway-area-type`. Verify startup
+and health after the separately authorized release, then confirm ten passageways,
+individual gravesite deed support, blocked whole-passageway ownership and the
+C-P03 expansion. Confirm all fixed monuments, existing grave/ownership assignments
+and E/G gravesite-only behavior remain intact. Preserve the hosted deployment
+record separately from the dated DEV evidence.

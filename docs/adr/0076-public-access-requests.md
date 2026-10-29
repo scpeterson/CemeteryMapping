@@ -68,3 +68,7 @@ Validation covers public submission without record reads, global-admin-only
 review, duplicate protection, rate limiting, transactional approval, rejection,
 failed-save rollback, and mobile/desktop request forms. No Trinity data changes
 are part of this feature.
+
+## Later changes
+
+The startup contract subsequently advances to `502-passageway-area-type`; the earlier 416 requirement above records the access-request implementation at that time. See [ADR 0178](0178-passageways-and-individual-deeds.md).

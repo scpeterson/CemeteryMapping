@@ -16,6 +16,8 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
 - [Data Model](data-model.md)
+- [Map Layout and Passageways](map-layout-and-passageways.md)
+- [Passageway Review Evidence](adr/supporting/passageway-review-2026-10-29/README.md)
 - [Synthetic Cemetery Data Coverage Plan](test-data-coverage.md)
 - [Admin Workflow Roadmap](admin-workflows.md)
 - [Operator Workflows](operator-workflows.md)

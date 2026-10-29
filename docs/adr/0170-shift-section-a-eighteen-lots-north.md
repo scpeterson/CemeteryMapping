@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0170: Move eighteen Section A lots north as one group
 
 - Date: 2026-10-28

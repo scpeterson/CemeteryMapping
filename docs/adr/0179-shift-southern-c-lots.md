@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0179: Shift the southern Section C lots and expand C-P03
 
 - Date: 2026-10-29
@@ -35,3 +38,15 @@ Create a validated private DEV backup before `npm run db:migrate`; repeat
 verification after application. Recovery uses that backup or a reviewed forward
 correction; automatic SQL rollback is empty. Hosted TEST is unchanged. Do not
 restart the local API, which the owner explicitly asked to stop.
+
+## Relationship to passageway review evidence
+
+This decision updates the C-P03 geometry described by
+[ADR 0178](0178-passageways-and-individual-deeds.md). The archived
+[Reevaluated passageways report](supporting/passageway-review-2026-10-29/reevaluated-passageways.html)
+and its A/B/C map show the pre-504 southern C rows. The archived
+[monument check](supporting/passageway-review-2026-10-29/monuments-outside-areas.html)
+lists TLC-HS-0330 and TLC-HS-0361 as uncovered before this correction; both are
+contained afterward. Preserve these earlier artifacts as rationale, not current
+boundary instructions. The [current map guide](../map-layout-and-passageways.md)
+records the final layout and the E/G gravesite-only policy.

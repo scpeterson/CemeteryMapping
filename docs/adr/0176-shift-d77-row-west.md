@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0176: Shift the six-lot D-77 row west
 
 - Date: 2026-10-29

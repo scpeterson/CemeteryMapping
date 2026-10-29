@@ -67,13 +67,15 @@ erDiagram
 | `cemeteries` | Top-level cemetery/facility record and boundary geometry. User access and most reporting are scoped from here. |
 | `sections` | Named cemetery sections, including aliases and notes. Sections group lots and gravesites and can carry boundary geometry. |
 | `blocks` | Optional subdivision between section and lot when a cemetery uses blocks. Many cemeteries leave this empty. |
-| `lots` | Deed or purchase units. Lots may contain multiple gravesites and may use diagram geometry when readable lot layout matters more than survey-grade boundaries. |
+| `lots` | Shared mapped areas, distinguished by `area_type` (`lot` or `passageway`). Both accept gravesite assignments; only ordinary lots permit whole-area ownership. `location_references` retains original location evidence. |
 | `gravesites` | Individual interment spaces. This is the central map feature for availability, occupancy, burial association, and many detail-panel workflows. |
 | `gravesite_status_types` | Controlled statuses such as available, occupied, sold, reserved, needs review, and unknown. |
 | `lot_restricted_areas` | Areas within a lot where gravesites and markers are prohibited. These support operational restrictions without pretending the lot does not exist. |
 | `historic_lot_map_gravesite_evidence` | Reviewed evidence connecting historic lot diagrams to gravesite layout decisions. |
 
 Geometry is stored in PostGIS using EPSG:4326. The application also stores geometry metadata such as geometry type, source, confidence, and review notes so users can distinguish GPS evidence, reviewed diagram geometry, and estimated operational geometry.
+
+See [Map Layout and Passageways](map-layout-and-passageways.md) for the ten accepted IDs, individual-deed workflow, ordinary-lot capacity exception, and Trinity E/G gravesite-only policy. A passageway uses the existing `lot_uuid` foreign key; it is not a new ownership target type. Migrations 502–504 preserve existing gravesite and ownership assignments.
 
 ## Burials, People, And Military Service
 

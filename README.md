@@ -92,7 +92,7 @@ npm run db:migrate
 npm run db:configure-api
 ```
 
-The API verifies the current Liquibase changeset before it begins listening and exits with migration guidance when the database schema is out of date.
+At startup, the API checks for Liquibase changeset `502-passageway-area-type` and exits with migration guidance before listening if it is missing.
 
 More database details are in `db/README.md`.
 
@@ -230,3 +230,11 @@ For controlled integration testing behind a trusted local proxy, use `AUTH_MODE=
 - `x-cemetery-user-role` with `reader`, `power-user`, `cemetery-admin`, or `admin`
 
 Do not expose trusted-header mode directly to the public internet.
+
+## Reviewed map layout and passageways
+
+See [Map Layout and Passageways](docs/map-layout-and-passageways.md) for the ten
+accepted areas, individual gravesite deeds, Trinity E/G policy and recent lot
+and boundary corrections. The [Reevaluated passageways evidence package](docs/adr/supporting/passageway-review-2026-10-29/README.md)
+is preserved with [ADR 0178](docs/adr/0178-passageways-and-individual-deeds.md);
+its dated maps precede the final C-P03 adjustment.

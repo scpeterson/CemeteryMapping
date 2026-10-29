@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0175: Resolve ownership once per cemetery map query
 
 - Date: 2026-10-29
