@@ -10,6 +10,10 @@
   url: /rebuild.html
 - title: "Data Sources"
   url: /data-sources.html
+- title: "Map Layout and Passageways"
+  url: /map-layout-and-passageways.html
+- title: "Passageway Review Evidence"
+  url: /adr/supporting/passageway-review-2026-10-29/
 - title: "Data Model"
   url: /data-model.html
 - title: "Synthetic Cemetery Data Coverage Plan"
@@ -178,3 +182,23 @@
   url: /adr/0080-shift-section-b-eight-lots-west-and-north.html
 - title: "ADR 0081: Shift Five Section B Lots One Foot North"
   url: /adr/0081-shift-section-b-five-lots-north.html
+- title: "ADR 0170: Move eighteen Section A lots north as one group"
+  url: /adr/0170-shift-section-a-eighteen-lots-north.html
+- title: "ADR 0171: Retire thirteen defunct Section D temporary lots"
+  url: /adr/0171-retire-defunct-section-d-temporary-lots.html
+- title: "ADR 0172: Align the northern Section D row east"
+  url: /adr/0172-align-section-d-northern-row.html
+- title: "ADR 0173: Number D-78 and shift twelve Section D lots west"
+  url: /adr/0173-number-d78-and-shift-section-d-group-west.html
+- title: "ADR 0174: Shift the ten-lot D-25 group west"
+  url: /adr/0174-shift-d25-group-west.html
+- title: "ADR 0175: Resolve ownership once per cemetery map query"
+  url: /adr/0175-map-ownership-query.html
+- title: "ADR 0176: Shift the six-lot D-77 row west"
+  url: /adr/0176-shift-d77-row-west.html
+- title: "ADR 0177: Deflect the shared D/E corner between fixed markers"
+  url: /adr/0177-deflect-de-shared-corner.html
+- title: "ADR 0178: Model passageways as typed lot-layer areas"
+  url: /adr/0178-passageways-and-individual-deeds.html
+- title: "ADR 0179: Shift the southern Section C lots and expand C-P03"
+  url: /adr/0179-shift-southern-c-lots.html

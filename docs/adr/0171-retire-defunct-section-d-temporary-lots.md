@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0171: Retire thirteen defunct Section D temporary lots
 
 - Date: 2026-10-29
@@ -34,3 +37,7 @@ verify only the retirement fields changed on the thirteen lots. Source history
 and geometry remain available for recovery through a reviewed forward correction;
 automatic SQL rollback is empty, matching earlier owner-directed retirements.
 Hosted TEST receives the change through a separately authorized PR/deployment.
+
+## Later changes
+
+D-TMP01 is later renamed D-78 by migration 498. The passageway review is later implemented by migrations 502–503, with the later C-P03 correction in 504. See [ADR 0173](0173-number-d78-and-shift-section-d-group-west.md), [ADR 0178](0178-passageways-and-individual-deeds.md) and [ADR 0179](0179-shift-southern-c-lots.md).

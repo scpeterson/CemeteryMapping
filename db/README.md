@@ -70,7 +70,7 @@ APP_ENV=stage npm run db:status
 
 ### Rollback and backup recovery
 
-Inspect the selected changesets before using rollback. Recent data corrections 461–472 declare `--rollback empty` and require recovery from a pre-migration backup. Liquibase can remove their execution entries without reversing their data changes; a successful rollback command does not prove that the data was restored. Reapplying those changesets may fail prerequisites or repeat changes.
+Inspect the selected changesets before using rollback. Recent changes, including corrections 461–472 and 496–504, declare `--rollback empty` and require recovery from a pre-migration backup. Liquibase can remove their execution entries without reversing their data changes; a successful rollback command does not prove that the data was restored. Reapplying those changesets may fail prerequisites or repeat changes.
 
 Before applying these corrections to a persistent environment, retain a validated database backup and record the source revision and migration status. Rehearse migrations and recovery on an isolated database copy. Recover using the reviewed backup procedure or a reviewed forward-fix migration, accounting for edits made since the backup. Do not use rollback/reapply as a recovery test on live data.
 
@@ -669,3 +669,25 @@ New monuments that omit faces or submit the legacy sole Unspecified face get Fro
 Migration 493 associates active photos on single-face monuments with their Front face. It also labels existing inspection/maintenance photo links using the record’s own sole Front face, without adding observation links or modifying inspection snapshots. Multi-face monuments and existing explicit face assignments are preserved. Rollback retains these photo associations.
 
 Database regression scripts run sequentially (`--test-concurrency=1`) because migration fixtures temporarily alter shared tables and triggers within rollback transactions. Parallel fixture processes can deadlock while upgrading PostgreSQL table locks.
+
+
+## Passageway schema and reviewed map corrections
+
+The API startup contract requires `502-passageway-area-type`. Apply the current
+root changelog before running a new build; migration 503 creates the approved
+Trinity passageways and 504 adjusts the southern C rows and C-P03. Neither
+creation nor geometry correction automatically reassigns existing gravesites.
+
+`lots.area_type` distinguishes ordinary lots from passageways without changing
+`gravesites.lot_uuid`. `lots.location_references` stores original location evidence.
+Whole-area passageway rights are rejected in current and legacy ownership paths,
+and conversion of an owned lot is guarded. Passageways are exempt from the
+ordinary five-active-gravesite cap; that exemption is not a capacity approval.
+Migration 502 recognizes its exact verified original DEV checksum while making
+helper creation replay-safe. Do not clear unrelated checksums or replay applied
+data migrations to resolve a validation failure.
+
+See [Map Layout and Passageways](../docs/map-layout-and-passageways.md),
+[ADR 0178](../docs/adr/0178-passageways-and-individual-deeds.md),
+[ADR 0179](../docs/adr/0179-shift-southern-c-lots.md) and the
+[preserved review evidence](../docs/adr/supporting/passageway-review-2026-10-29/README.md).

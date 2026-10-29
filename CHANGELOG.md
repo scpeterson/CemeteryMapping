@@ -42,6 +42,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Preserve the Reevaluated passageways reports, maps and source-reference crosswalk as versioned ADR evidence; document current map corrections, passageway ownership and assignment, E/G policy, schema prerequisites and validation workflows.
+
 - Add ten approved passageway polygons alongside lots, with distinct map styling, section-specific gravesite assignment, original registry references, and individual gravesite deed support. Block whole-passageway ownership and retain existing assignments pending review (migrations 502–503).
 
 - Add `npm run deploy:test` for CI-gated hosted TEST releases with private configuration (preserving file ownership and modes), validated backups, candidate startup/health checks, live verification, and automatic code rollback. Pending schema changes require separate rehearsal.

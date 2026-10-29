@@ -274,7 +274,7 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
 
 1. Select the gravesite on the map or from search results.
 2. Confirm you are in the correct cemetery and gravesite.
-3. Open the `Current Owner` section.
+3. Open `People and ownership`, then the `Current Owner` section.
 4. Use `Record deed or transfer`.
 5. Enter each owner or deed holder using separate first-name, last-name, and address fields.
    - Add each owner separately so first name, last name, address, and optional ownership share remain distinct.
@@ -288,7 +288,7 @@ Use the regular grave-detail panel to record new deeds and ownership transfers a
    - `Release` when rights are relinquished.
 7. Choose what the event applies to:
    - `This gravesite` for Section G plots or a single transferred burial right.
-   - `This whole lot` for a lot-level deed or transfer in sections that use lots.
+   - `This whole lot` for an ordinary lot-level deed or transfer. It is unavailable for passageways.
    - `Listed gravesites` when a deed or transfer covers several specific gravesites but not the whole lot.
 8. Enter the effective date from the deed, transfer, council record, or best known source date.
 9. Add a document reference such as a deed book, page, scanned file name, council minutes reference, or source note.
@@ -299,12 +299,12 @@ Whole-lot and individual-gravesite rights can coexist when they describe the sam
 
 To correct an owner linked to the wrong gravesite, open that gravesite and use `Remove` on the direct owner card, then confirm `Remove connection`. This soft-deletes only that gravesite ownership right and preserves the ownership event for its other targets and for audit history. A lot-level owner inherited by the gravesite cannot be removed from an individual gravesite with this control; correct the originating lot event instead.
 
-### Manual Gravesite Lot Assignment
+### Manual Gravesite Lot or Passageway Assignment
 
-Cemetery admins and admins can correct a gravesite's explicit lot assignment from the regular gravesite detail panel when reviewed paper-map or other evidence is more reliable than the approximate map geometry.
+Cemetery admins and admins can correct a gravesite's explicit lot or passageway assignment from the regular gravesite detail panel when reviewed paper-map or other evidence is more reliable than the approximate map geometry.
 
-1. Select the gravesite and locate `Assigned lot`.
-2. Choose the reviewed lot and select `Save lot assignment`.
+1. Select the gravesite, open `Location and geometry`, and locate `Assigned lot or passageway` (`Assigned lot` where there are no passageways).
+2. Choose the section-specific reviewed lot or passageway and select `Save lot assignment`.
 3. To remove an incorrect relationship without choosing another lot, select `Unlink from lot`, review the warning, and confirm.
 4. Recheck the gravesite, marker, neighboring lots, and any source evidence after saving.
 
@@ -627,7 +627,7 @@ Before opening or merging a PR:
    APP_ENV=dev npm run db:configure-api
    ```
 
-3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes. Run the rollback/reapply checks below only on disposable automated TEST data and after reviewing the selected rollback action. Changesets 461–472 have empty rollback actions and use backup recovery; rollback does not undo their data changes. For these changesets, rehearse on an isolated database copy and verify backup recovery or a reviewed forward fix instead of treating rollback/reapply as proof of reversibility. See [Rollback and backup recovery](../db/README.md#rollback-and-backup-recovery).
+3. Run the relevant local checks. Use the full set for schema, authorization, import, map, or detail-panel changes. Run the rollback/reapply checks below only on disposable automated TEST data and after reviewing the selected rollback action. Changesets 461–472 have empty rollback actions and use backup recovery; rollback does not undo their data changes. For these changesets, rehearse on an isolated database copy and verify backup recovery or a reviewed forward fix instead of treating rollback/reapply as proof of reversibility. See [Rollback and backup recovery](https://github.com/scpeterson/CemeteryMapping/blob/main/db/README.md#rollback-and-backup-recovery).
 
    ```bash
    npm run lint
@@ -1222,3 +1222,6 @@ separately from the modern ID. Estimated geometry and point containment are
 review evidence, not proof of ownership, burial availability or a surveyed
 gravesite boundary. Review the proposed assignment list before linking existing
 gravesites. No gravesite is automatically linked by passageway creation.
+
+For the accepted passageway inventory, E/G policy, current C-P03 extent and dated
+review evidence, see [Map Layout and Passageways](map-layout-and-passageways.md).

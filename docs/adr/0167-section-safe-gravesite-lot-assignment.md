@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0167: Identify assigned lots by UUID
 
 - Date: 2026-10-24
@@ -15,3 +18,7 @@ The rollback-only TEST integration fixture creates prohibited A-8 and standard B
 The originally reported gravesite/lot combination was also verified against DEV inside a rolled-back transaction. The existing record was not reassigned by that check.
 
 The capacity regression fills a lot with five active gravesites, permits re-saving an existing member, rejects a sixth without altering its assignment, and admits it after another fixture is soft-deleted. Desktop and phone checks retain the selected full lot and show the capacity explanation.
+
+## Later changes
+
+The same section-safe UUID assignment now supports typed passageways. Responses additionally return `areaType`; the detail cache updates `lotAreaType`. Passageways are exempt from the ordinary five-gravesite lot cap and cannot receive whole-area ownership. See [ADR 0178](0178-passageways-and-individual-deeds.md).

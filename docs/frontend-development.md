@@ -209,3 +209,21 @@ Reset restores remaining items shown, both keyboard hints hidden and the restore
 ## Inspection recovery
 
 Inspection editors write versioned snapshots to browser local storage scoped to the authenticated account subject (or local development session) and marker ID. Resume is explicit; a quick action never overwrites a pending recovery. Persist visit details, face readings/designs, active step/face, optimistic concurrency tokens, saved-record state and photo metadata. Files are not serialized: names and metadata become reselection placeholders and block saving until replaced or removed. Successful saves and explicit discards remove recovery. Guarded navigation that confirms discard also clears recovery. Validate snapshots before using them; unavailable storage leaves editing operational and shows a message. Recovery is local to this browser, not server autosave or cross-device sync.
+
+
+## Typed lot and passageway areas
+
+`CemeteryLot.areaType` distinguishes `lot` and `passageway`; absent values default
+to `lot`. `locationReferences` carries the original workbook/worksheet/cell,
+wording and interpretation note. GeoJSON feature IDs and UUID-based assignment
+remain stable. Passageways share lot visibility, selection, search and detail
+behavior, with amber styling and the Lots & passageways selector.
+
+Detailed graves expose `lotAreaType`. Assignment responses include `areaType`,
+and local detail state must update it when assigning or unlinking an area. A
+passageway defaults ownership to This gravesite, disables This whole lot, and
+permits Listed gravesites. Server/database enforcement is authoritative; do not
+infer corridor ownership from the UI or registry references. See
+[the current map guide](map-layout-and-passageways.md). Regression coverage is in
+`tests/passageways.spec.ts`, `tests/grave-lot-assignment.spec.ts`,
+`tests/edit-ownership.spec.ts` and `tests/map-highlighting.spec.ts`.

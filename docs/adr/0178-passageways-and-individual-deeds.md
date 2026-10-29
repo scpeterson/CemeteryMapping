@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0178: Model passageways as typed lot-layer areas
 
 - Date: 2026-10-29
@@ -62,3 +65,23 @@ Migration replay uses CREATE OR REPLACE for the conversion helper because
 Liquibase rollback testing may recreate tables while leaving PL/pgSQL helpers.
 Recognize the verified original DEV checksum `9:03aa95b428e7d182f6e2009f9d9b0165`
 without replaying applied data or clearing other migration checksums.
+
+## Preserved review documents and later changes
+
+The complete [passageway evidence package](supporting/passageway-review-2026-10-29/README.md)
+is committed with this ADR, including [Reevaluated passageways](supporting/passageway-review-2026-10-29/reevaluated-passageways.html),
+its [A/B/C map](supporting/passageway-review-2026-10-29/revised-a-b-c-passageways.png),
+[D/E map](supporting/passageway-review-2026-10-29/revised-d-e-passageways.png),
+the original [A/C crosswalk](supporting/passageway-review-2026-10-29/passageway-proposal.html),
+[B/D addendum](supporting/passageway-review-2026-10-29/sections-b-d-review.html),
+[proposed assignment list](supporting/passageway-review-2026-10-29/proposed-gravesite-assignments.html)
+and [pre-504 monument check](supporting/passageway-review-2026-10-29/monuments-outside-areas.html).
+A manifest preserves source-file hashes; the package README states each snapshot's
+limitations. No personal contact data or local-machine paths are required to read it.
+
+The owner subsequently confirmed Sections E and G will never have lots or
+passageways; their uncovered monument points are expected. This is operating
+policy, not a new database section-name restriction. Migration 504 and
+[ADR 0179](0179-shift-southern-c-lots.md) then adjust the southern C lots and
+expand C-P03. The archived reevaluation predates that final adjustment. Use
+[the current map guide](../map-layout-and-passageways.md) for accepted state.

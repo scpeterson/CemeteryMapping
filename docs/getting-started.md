@@ -383,3 +383,13 @@ After the local demo works:
 2. Read [Auth0 Test Tenant Setup](auth0-test-tenant.md) if you need real sign-in behavior.
 3. Read [Rebuild Guide](rebuild.md) if you need full validation, rollback testing, or CI-style rebuild confidence.
 4. Read [Data Source Register](data-sources.md) before importing real data.
+
+
+## Passageways and real map layout
+
+Passageways appear alongside lots and support gravesite assignment followed by
+an individual gravesite deed. Whole-passageway ownership is unavailable. See
+[Map Layout and Passageways](map-layout-and-passageways.md) for the accepted IDs,
+Trinity E/G policy, recent corrections and preserved review reports. Always
+migrate before starting the API; its schema contract requires changeset 502.
+The fictional demo inventory is distinct from the real Trinity review snapshots.

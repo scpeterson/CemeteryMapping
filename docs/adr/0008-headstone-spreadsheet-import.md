@@ -119,3 +119,7 @@ Development import results on 2026-05-19:
 ## Update Triggers
 
 Update this ADR when the spreadsheet columns change, source workbook changes, import ID strategy changes, generated lot or grave dimensions change, condition defaults change, or the importer stops replacing generated burial rows.
+
+## Later changes
+
+Migration 502 later adds typed passageways to the lot layer. The five-active-gravesite limit applies to ordinary lots; passageways are exempt and permit only individual gravesite rights. See [ADR 0178](0178-passageways-and-individual-deeds.md).

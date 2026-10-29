@@ -191,10 +191,25 @@ flowchart LR
 
 - [Hosted TEST](hosted-test.md) and [ADR 0073](adr/0073-private-hosted-test.md): hosting and environment isolation.
 - [Auth0 Test Tenant](auth0-test-tenant.md) and [Auth0 Production Checklist](auth0-production-checklist.md): identity setup.
-- [`deploy/test/compose.yaml`](../deploy/test/compose.yaml) and [`nginx.conf`](../deploy/test/nginx.conf): server components and routing.
-- [`server/auth.mjs`](../server/auth.mjs) and [`auth0Management.mjs`](../server/auth0Management.mjs): token validation and identity provisioning.
-- [`server/placeSearchService.mjs`](../server/placeSearchService.mjs): GeoNames requests.
-- [`src/components/cemeteryMapLayers.ts`](../src/components/cemeteryMapLayers.ts): external imagery and parcel requests.
-- [CI workflow](../.github/workflows/ci.yml) and [documentation layout](../docs/_layouts/default.html): development checks and Mermaid loading.
+- [`deploy/test/compose.yaml`](https://github.com/scpeterson/CemeteryMapping/blob/main/deploy/test/compose.yaml) and [`nginx.conf`](https://github.com/scpeterson/CemeteryMapping/blob/main/deploy/test/nginx.conf): server components and routing.
+- [`server/auth.mjs`](https://github.com/scpeterson/CemeteryMapping/blob/main/server/auth.mjs) and [`auth0Management.mjs`](https://github.com/scpeterson/CemeteryMapping/blob/main/server/auth0Management.mjs): token validation and identity provisioning.
+- [`server/placeSearchService.mjs`](https://github.com/scpeterson/CemeteryMapping/blob/main/server/placeSearchService.mjs): GeoNames requests.
+- [`src/components/cemeteryMapLayers.ts`](https://github.com/scpeterson/CemeteryMapping/blob/main/src/components/cemeteryMapLayers.ts): external imagery and parcel requests.
+- [CI workflow](https://github.com/scpeterson/CemeteryMapping/blob/main/.github/workflows/ci.yml) and [documentation layout](https://github.com/scpeterson/CemeteryMapping/blob/main/docs/_layouts/default.html): development checks and Mermaid loading.
 
 Update this overview when a service, hosting arrangement, or integration changes.
+
+
+## Map query ownership resolution
+
+The map gravesite query materializes the current ownership view once per query
+and passes that relation into the shared derived-status SQL. It preserves fresh
+ownership data and status precedence without a cross-request cache. DEV's
+785-record query fell from about 6.3 seconds to 11–31 milliseconds; those are
+database timings, not total browser loading times. See
+[ADR 0175](adr/0175-map-ownership-query.md).
+
+The lot source includes typed passageways and location evidence. Whole-area
+ownership is prohibited for passageways, while individual gravesite rights use
+the existing event/party/right architecture. See
+[ADR 0178](adr/0178-passageways-and-individual-deeds.md).

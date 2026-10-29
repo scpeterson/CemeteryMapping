@@ -1,0 +1,50 @@
+{
+  "description": "Unmodified source review artifacts copied into ADR evidence; see README.md for snapshot status and later decisions.",
+  "files": [
+    {
+      "file": "monuments-outside-areas.html",
+      "sha256": "676d9898529d26c93e8ab2bdd839173a6e83ba6dcd2c7843e582eed31fa36cfa",
+      "bytes": 4896
+    },
+    {
+      "file": "passageway-proposal.html",
+      "sha256": "3d9d516bd14795abeb73eb15c0dd720bddd060f0a8a9bb7aa636c34517bf4902",
+      "bytes": 20160
+    },
+    {
+      "file": "proposed-b-d-passageways.png",
+      "sha256": "39ed739c2b802decc0916a8bfbc78e23db102988fa5d45ed5c5be36881589c5b",
+      "bytes": 49264
+    },
+    {
+      "file": "proposed-gravesite-assignments.html",
+      "sha256": "72dcb739c61bfc6f7746e11c2c87a263cf8b8dd31f28f9cb927eb8669848c17c",
+      "bytes": 9036
+    },
+    {
+      "file": "proposed-passageways.png",
+      "sha256": "a686341363915aea7a46d1743a41d72e4de7fbea71cbcce794f141ce08a03b9d",
+      "bytes": 54519
+    },
+    {
+      "file": "reevaluated-passageways.html",
+      "sha256": "38714a10ba057b9e02a29df887d05aab5b7d8582741668e6aab677e98724b647",
+      "bytes": 6448
+    },
+    {
+      "file": "revised-a-b-c-passageways.png",
+      "sha256": "257664af30eefffe25c74a9a4fbefa8c02c68170372c86566bd96b992fa571d5",
+      "bytes": 81188
+    },
+    {
+      "file": "revised-d-e-passageways.png",
+      "sha256": "fe890a83e444c6ad259ffb5780689934905850f3f53888d4f90175a41df594cf",
+      "bytes": 47897
+    },
+    {
+      "file": "sections-b-d-review.html",
+      "sha256": "ee5e8237635d83a85a795b8ee415694fb9b4042892291664fd01f1854dd49baa",
+      "bytes": 7240
+    }
+  ]
+}

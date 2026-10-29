@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0177: Deflect the shared D/E corner between fixed markers
 
 - Date: 2026-10-29
@@ -31,3 +34,7 @@ and roll back; compare every other vertex and protected-table hashes. Back up
 DEV before `npm run db:migrate` and verify two audit events and both marker
 containments afterward. Recovery uses that backup or a reviewed forward
 correction; automatic SQL rollback is empty. Hosted TEST is separately deployed.
+
+## Later changes
+
+The corrected D/E boundary is used to clip D passageways in migration 503, including the D-P03 western extension around TLC-HS-0577. See [ADR 0178](0178-passageways-and-individual-deeds.md) and its preserved reevaluation evidence.

@@ -57,3 +57,7 @@ In an environment with the real Section C Soergel gravesites, confirm lot `C-70`
 ## Update Triggers
 
 Update this ADR if Section C lot `70` geometry changes, if additional reviewed historic lots are promoted, if lot labels change, or if lot geometry becomes survey-derived rather than gravesite-derived.
+
+## Later changes
+
+Migration 504 later translates the southern C lot group, including C-70, while keeping existing gravesite and marker geometry fixed. The original union-based construction remains historical rationale; see [ADR 0179](0179-shift-southern-c-lots.md).

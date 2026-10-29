@@ -147,3 +147,21 @@ This plan is based on the current DEV database and checked-in seed, not an audit
 of hosted TEST or a certification that Trinity is ready for production. Its
 purpose is to make the synthetic cemeteries useful for development, demonstration,
 and regression testing without depending on real Trinity records.
+
+
+## Implemented passageway regression coverage — 29 October 2026
+
+The earlier assessment remains historical. `scripts/passageways.integration.mjs`
+now covers ten typed polygons and 101 location references, preserved assignments,
+both whole-area ownership guards, conversion protection, ordinary lot capacity,
+more than five passageway gravesites, and real assignment/deed API calls using
+rollback-only fictional records. `scripts/southern-c-lots.integration.mjs` covers
+32 translated lots, approved clipping, C-P03 expansion and guarded failures.
+`scripts/map-status-regression.integration.mjs` checks map ownership-derived
+statuses in both cost modes. Browser coverage includes passageway assignment
+and individual deeds at desktop and phone widths, existing ownership editing,
+section-safe lot selection and map highlighting.
+
+These regression fixtures do not establish burial capacity or automatically
+assign Trinity gravesites. See [the current guide](map-layout-and-passageways.md)
+and [ADR 0178](adr/0178-passageways-and-individual-deeds.md).
