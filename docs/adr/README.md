@@ -25,6 +25,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0176: Shift the six-lot D-77 row west](0176-shift-d77-row-west.md)
+
 - [ADR 0175: Resolve ownership once per cemetery map query](0175-map-ownership-query.md)
 
 - [ADR 0174: Shift the ten-lot D-25 group west](0174-shift-d25-group-west.md)
