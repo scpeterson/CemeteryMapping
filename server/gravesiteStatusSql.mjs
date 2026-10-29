@@ -1,4 +1,4 @@
-export function derivedGravesiteStatusSql({ gravesiteAlias = "gravesites", statusTypeAlias = "status_type" } = {}) {
+export function derivedGravesiteStatusSql({ gravesiteAlias = "gravesites", statusTypeAlias = "status_type", currentOwnershipRelation = "current_ownership_right_owners" } = {}) {
   return `
     CASE
       WHEN ${statusTypeAlias}.code = 'needs_review' THEN ${statusTypeAlias}.code
@@ -21,7 +21,7 @@ export function derivedGravesiteStatusSql({ gravesiteAlias = "gravesites", statu
       )
       OR EXISTS (
         SELECT 1
-        FROM current_ownership_right_owners status_rights
+        FROM ${currentOwnershipRelation} status_rights
         WHERE (
             status_rights.target_type = 'gravesite'
             AND status_rights.gravesite_uuid = ${gravesiteAlias}.id
@@ -48,7 +48,7 @@ export function derivedGravesiteStatusSql({ gravesiteAlias = "gravesites", statu
       )
       AND NOT EXISTS (
         SELECT 1
-        FROM current_ownership_right_owners status_rights
+        FROM ${currentOwnershipRelation} status_rights
         WHERE (
             status_rights.target_type = 'gravesite'
             AND status_rights.gravesite_uuid = ${gravesiteAlias}.id
