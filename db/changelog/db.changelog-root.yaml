@@ -1497,3 +1497,6 @@ databaseChangeLog:
   - include:
       file: changes/500-shift-d77-row-west.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/501-deflect-de-shared-corner.sql
+      relativeToChangelogFile: true
