@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Speed up cemetery map loading by resolving current ownership once per map query, preserving all gravesite statuses and fresh ownership data.
+
 - Shift ten Section D lots west together so fixed TLC-HS-0447 lies strictly inside D-25, preserving lot dimensions, restrictions and other records (migration 499).
 
 - Rename D-TMP01 to standard lot D-78 and move the confirmed twelve-lot group west to contain fixed TLC-HS-0496; retain D-TMP02 restrictions and retired D-TMP03 unchanged (migration 498).
