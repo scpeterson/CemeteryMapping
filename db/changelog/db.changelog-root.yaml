@@ -1488,3 +1488,6 @@ databaseChangeLog:
   - include:
       file: changes/497-align-section-d-northern-row.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/498-number-d78-and-shift-section-d-group-west.sql
+      relativeToChangelogFile: true

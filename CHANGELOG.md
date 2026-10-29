@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Rename D-TMP01 to standard lot D-78 and move the confirmed twelve-lot group west to contain fixed TLC-HS-0496; retain D-TMP02 restrictions and retired D-TMP03 unchanged (migration 498).
+
 - Align the five-lot northern Section D row with the row below; clip D-33, D-TMP14 and D-TMP13 to the cemetery boundary and prohibit gravesites and monuments in both lots (migration 497).
 
 - Remove thirteen owner-confirmed defunct Section D temporary lots from the active map, preserving their outlines and history without changing gravesites or monuments (migration 496).
