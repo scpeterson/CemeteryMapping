@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Move the six-lot D-77/67/68/58/47/38 row west together to contain fixed TLC-HS-0500 in D-77 and TLC-HS-0463 in D-38, preserving lot dimensions and alignment (migration 500).
+
 - Speed up cemetery map loading by resolving current ownership once per map query, preserving all gravesite statuses and fresh ownership data.
 
 - Shift ten Section D lots west together so fixed TLC-HS-0447 lies strictly inside D-25, preserving lot dimensions, restrictions and other records (migration 499).
