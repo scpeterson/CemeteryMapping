@@ -26,7 +26,7 @@ test('lot assignment distinguishes A-8 from B-8, rejects ambiguity, preserves re
   await assert.rejects(updateGraveLotAssignment(pool,cemetery,grave,'8'),BadRequestError);
   assert.deepEqual(await state(),before);
   assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:randomUUID()}),{invalid:'lot_not_found'});
-  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:lots.B}),{id:grave,lotId:'8',section:'B'});
+  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:lots.B}),{id:grave,lotId:'8',areaType:'lot',section:'B'});
   const assigned=await state();assert.equal(assigned.lot_uuid,lots.B);assert.equal(assigned.section_uuid,sections.B);
   await assert.rejects(updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:lots.A}),error=>error instanceof ConflictError&&error.message.includes('A-8'));
   assert.deepEqual(await state(),assigned);
@@ -42,7 +42,7 @@ test('lot assignment distinguishes A-8 from B-8, rejects ambiguity, preserves re
    await c.query(`INSERT INTO gravesites(cemetery_id,section_uuid,facility_id,section_id,grave_id,gravesite_id,lot_uuid,status_type_id,geometry)
     VALUES($1,$2,$3,'B',$7,$4,$5,(SELECT id FROM gravesite_status_types WHERE code='available'),ST_GeomFromText($6,4326))`,[cemetery,sections.B,suffix,id,lots.B,geom,`C${i}`]);
   }
-  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:lots.B}),{id:grave,lotId:'8',section:'B'});
+  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:lots.B}),{id:grave,lotId:'8',areaType:'lot',section:'B'});
   const sixth=`sixth-${suffix}`;
   await c.query(`INSERT INTO gravesites(cemetery_id,section_uuid,facility_id,section_id,grave_id,gravesite_id,status_type_id,geometry)
    VALUES($1,$2,$3,'B','0006',$4,(SELECT id FROM gravesite_status_types WHERE code='available'),ST_GeomFromText($5,4326))`,[cemetery,sections.B,suffix,sixth,geom]);
@@ -52,12 +52,12 @@ test('lot assignment distinguishes A-8 from B-8, rejects ambiguity, preserves re
   assert.deepEqual(await state(),assigned);
   assert.equal(Number((await c.query('SELECT count(*) FROM gravesites WHERE lot_uuid=$1 AND deleted_at IS NULL',[lots.B])).rows[0].count),5);
   await c.query('UPDATE gravesites SET deleted_at=now() WHERE gravesite_id=$1',[capacityIds[0]]);
-  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,sixth,'8',{lotUuid:lots.B}),{id:sixth,lotId:'8',section:'B'});
+  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,sixth,'8',{lotUuid:lots.B}),{id:sixth,lotId:'8',areaType:'lot',section:'B'});
   const crossSection=(await c.query(`INSERT INTO lots(cemetery_id,section_uuid,facility_id,section_id,lot_id,name,geometry) VALUES($1,$2,$3,'A','42','A-42',ST_GeomFromText($4,4326)) RETURNING id`,[cemetery,sections.A,suffix,geom])).rows[0].id;
-  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'42'),{id:grave,lotId:'42',section:'A'});
+  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,'42'),{id:grave,lotId:'42',areaType:'lot',section:'A'});
   assert.equal((await state()).lot_uuid,crossSection);assert.equal((await state()).section_uuid,sections.A);
   await updateGraveLotAssignment(pool,cemetery,grave,'8',{lotUuid:lots.B});
-  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,''),{id:grave,lotId:'',section:'B'});
+  assert.deepEqual(await updateGraveLotAssignment(pool,cemetery,grave,''),{id:grave,lotId:'',areaType:'lot',section:'B'});
   assert.deepEqual(await state(),before);
  }finally{await c.query('ROLLBACK');await c.end();}
 });
