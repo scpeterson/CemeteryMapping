@@ -28,6 +28,7 @@ export type GraveSpace = GraveSpaceSummary & {
   version: string;
   name: string;
   cost?: number;
+  lotAreaType?: "lot" | "passageway";
   lotGeometryType?: GeometryType;
   lotGeometrySource?: string;
   lotGeometryConfidence?: GeometryConfidence;
@@ -59,7 +60,11 @@ export type CemeterySection = {
   geometry: AreaGeometry;
 };
 
+export type LocationReference = { source: string; worksheet: string; cell: string; interpretationNote?: string; originalText: string };
+
 export type CemeteryLot = {
+  areaType?: "lot" | "passageway";
+  locationReferences?: LocationReference[];
   id: string;
   uuid?: string;
   cemeteryId: string;

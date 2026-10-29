@@ -1500,3 +1500,12 @@ databaseChangeLog:
   - include:
       file: changes/501-deflect-de-shared-corner.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/502-passageway-area-type.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/503-create-reviewed-passageways.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/504-shift-southern-c-lots.sql
+      relativeToChangelogFile: true

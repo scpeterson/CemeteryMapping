@@ -232,6 +232,7 @@ export function addLotLayers(map: Map, data: CemeteryData) {
     paint: {
       "fill-color": [
         "case",
+        ["==", ["get", "areaType"], "passageway"], "#b8871d",
         ["==", ["get", "burialUseStatus"], "non_burial"],
         "#64748b",
         ["==", ["get", "burialUseStatus"], "partially_restricted"],
@@ -242,6 +243,7 @@ export function addLotLayers(map: Map, data: CemeteryData) {
       ],
       "fill-opacity": [
         "case",
+        ["==", ["get", "areaType"], "passageway"], 0.16,
         ["==", ["get", "burialUseStatus"], "non_burial"],
         0.2,
         ["==", ["get", "burialUseStatus"], "partially_restricted"],
@@ -271,6 +273,7 @@ export function addLotLayers(map: Map, data: CemeteryData) {
         "case",
         ["boolean", ["feature-state", "selected"], false],
         "#ff1493",
+        ["==", ["get", "areaType"], "passageway"], "#b8871d",
         ["==", ["get", "burialUseStatus"], "non_burial"],
         "#475569",
         ["==", ["get", "burialUseStatus"], "partially_restricted"],
@@ -533,6 +536,7 @@ export function applyMapViewMode(map: Map, mode: MapViewMode) {
       mode === "diagram"
         ? [
             "case",
+            ["==", ["get", "areaType"], "passageway"], 0.18,
             ["==", ["get", "burialUseStatus"], "non_burial"],
             0.3,
             ["==", ["get", "burialUseStatus"], "partially_restricted"],
@@ -543,6 +547,7 @@ export function applyMapViewMode(map: Map, mode: MapViewMode) {
           ]
         : [
             "case",
+            ["==", ["get", "areaType"], "passageway"], 0.18,
             ["==", ["get", "burialUseStatus"], "non_burial"],
             0.2,
             ["==", ["get", "burialUseStatus"], "partially_restricted"],

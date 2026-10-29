@@ -67,6 +67,8 @@ function toLot(lot) {
     name: lot.name,
     section: lot.section_id ?? "",
     block: lot.block_id ?? undefined,
+    areaType: lot.area_type ?? "lot",
+    locationReferences: lot.location_references ?? [],
     burialUseStatus: lot.burial_use_status ?? "standard",
     burialUseNotes: lot.burial_use_notes ?? undefined,
     geometryType: lot.geometry_type ?? "operational",

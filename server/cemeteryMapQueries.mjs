@@ -31,7 +31,7 @@ export async function selectLotsForCemeteries(client, cemeteryIds) {
   const result = await client.query(
     `
       SELECT lots.id::text, lots.cemetery_id::text, lot_id, section_id, block_id, COALESCE(name, lot_id) AS name,
-        geometry_type, geometry_source, geometry_confidence, geometry_notes, burial_use_status, burial_use_notes,
+        geometry_type, geometry_source, geometry_confidence, geometry_notes, burial_use_status, burial_use_notes, area_type, location_references,
         ST_AsGeoJSON(geometry)::json AS geometry
       FROM lots
       WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL

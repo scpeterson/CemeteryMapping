@@ -118,7 +118,8 @@ export async function selectOwnersForGrave(client, graveUuid) {
 
 export async function selectOwnershipTargets(client, cemeteryId, selectedGravesiteId, targetScope, targetGravesiteIds) {
   const selectedResult = await client.query(
-    `SELECT id, cemetery_id::text, gravesite_id, lot_uuid
+    `SELECT id, cemetery_id::text, gravesite_id, lot_uuid,
+       (SELECT area_type FROM lots WHERE lots.id=gravesites.lot_uuid) AS lot_area_type
      FROM gravesites
      WHERE cemetery_id = $1 AND gravesite_id = $2 AND deleted_at IS NULL
      LIMIT 1`,
@@ -128,6 +129,7 @@ export async function selectOwnershipTargets(client, cemeteryId, selectedGravesi
   if (!selectedGrave) return undefined;
 
   if (targetScope === "selected_lot") {
+    if (selectedGrave.lot_area_type === "passageway") throw new BadRequestError("A passageway cannot have whole-area ownership. Assign the deed to this gravesite or listed gravesites in the passageway.");
     if (!selectedGrave.lot_uuid) throw new BadRequestError("Selected gravesite is not linked to a lot.");
     return { selectedGrave, rights: [{ targetType: "lot", lotUuid: selectedGrave.lot_uuid, label: "selected lot" }] };
   }

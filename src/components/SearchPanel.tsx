@@ -133,7 +133,7 @@ export function SearchPanel({
                 className={`result-card ${selectedLotKey === key ? "is-selected" : ""}`}
                 onClick={() => onSelectMatch(match)}
               >
-                <span className="result-title">Lot {match.lot.name || match.lot.id}</span>
+                <span className="result-title">{match.lot.areaType === "passageway" ? "Passageway" : "Lot"} {match.lot.name || match.lot.id}</span>
                 <span className="result-cemetery">Section {match.lot.section}{match.lot.block ? `, Block ${match.lot.block}` : ""}</span>
                 <span className="result-meta">Lot</span>
                 {match.reasons.length ? <span className="result-reason">{match.reasons.slice(0, 2).join(" | ")}</span> : null}
