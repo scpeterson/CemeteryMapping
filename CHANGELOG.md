@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Move the 32 southern Section C lots south together to contain fixed TLC-HS-0330 in C-80 and TLC-HS-0361 in C-82; clip approved non-burial C-85/C-90 to the cemetery boundary and expand C-P03 to the new northern lot edge (migration 504).
+
 - Deflect only the shared southern D/E corner north between fixed TLC-HS-0577 in D and TLC-HS-0554 in E, preserving all other section vertices and the combined footprint (migration 501).
 
 - Move the six-lot D-77/67/68/58/47/38 row west together to contain fixed TLC-HS-0500 in D-77 and TLC-HS-0463 in D-38, preserving lot dimensions and alignment (migration 500).
