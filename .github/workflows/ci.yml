@@ -9,81 +9,152 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  APP_ENV: test
+
 jobs:
-  test:
-    name: Lint, build, and test
+  changes:
+    name: Classify changes
     runs-on: ubuntu-latest
-    env:
-      APP_ENV: test
-
+    outputs:
+      application: ${{ steps.paths.outputs.application }}
+      documentation: ${{ steps.paths.outputs.documentation }}
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - id: paths
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/ci-changes.mjs
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+  quick:
+    name: Lint, unit tests, and builds
+    needs: changes
+    if: needs.changes.outputs.application == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:server
+      - run: npm run test:deploy
+      - run: python3 -m unittest discover -s scripts -p 'check_docs_test.py'
+      - run: npm run build:test
+      - run: npm run build:prod
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Start PostGIS database
-        run: |
-          for attempt in 1 2 3; do
-            npm run db:up && exit 0
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep 10
-          done
-
-      - name: Validate database changelog
-        run: npm run db:validate
-
-      - name: Test database rollback scripts
-        run: npm run db:rollback:test
-
-      - name: Apply database migrations
-        run: npm run db:migrate
-
-      - name: Load demo seed data
-        run: npm run db:seed:demo
-
-      - name: Configure restricted API database account
-        run: npm run db:configure-api
-
-      - name: Check database migration status
-        run: npm run db:status
-
+  database:
+    name: Database and Docker startup
+    needs: changes
+    if: needs.changes.outputs.application == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: ./.github/actions/test-database
+        with:
+          validate: 'true'
+      - run: npm run db:status
+      - uses: docker/setup-buildx-action@v4
+      - uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/docker-startup-cache
+          key: ${{ runner.os }}-startup-v1-${{ hashFiles('package-lock.json', 'deploy/test/Dockerfile*') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-startup-v1-${{ hashFiles('package-lock.json', 'deploy/test/Dockerfile*') }}-
+            ${{ runner.os }}-startup-v1-
       - name: Check Docker startup with private environment file
+        env:
+          DOCKER_STARTUP_CACHE: ${{ runner.temp }}/docker-startup-cache
         run: npm run test:docker-startup
-
-      - name: Install Playwright browser
-        run: npx playwright install chromium
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Run server unit tests
-        run: npm run test:server
-
-      - name: Test hosted TEST deployment and rollback
-        run: npm run test:deploy
-
-      - name: Run database business rule tests
-        run: npm run test:db-rules
-
-      - name: Build
-        run: npm run build:test
-
-      - name: Enforce production bundle budgets
-        run: npm run build:prod
-
-      - name: Run end-to-end tests
-        run: npm run test:e2e
-
-      - name: Stop database
-        if: always()
+      # These tests share schema fixtures and must remain serial.
+      - run: npm run test:db-rules
+      - if: always()
         run: npm run db:down
+
+  browser:
+    name: Browser tests (${{ matrix.shard }}/4)
+    needs: changes
+    if: needs.changes.outputs.application == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: ./.github/actions/test-database
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-chromium-${{ hashFiles('package-lock.json') }}
+      - name: Install Chromium and operating system dependencies
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: browser-failures-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+      - if: always()
+        run: npm run db:down
+
+  documentation:
+    name: Documentation build and validation
+    needs: changes
+    if: needs.changes.outputs.documentation == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler: '2.6.2'
+          bundler-cache: true
+          working-directory: docs
+      - name: Build documentation
+        env:
+          BUNDLE_GEMFILE: docs/Gemfile
+        run: bundle exec jekyll build --source docs --destination /tmp/cemetery-docs-site
+      - name: Validate changed documentation links and archived report hashes
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python3 scripts/check-docs.py /tmp/cemetery-docs-site "$CI_BASE_SHA"
+
+  test:
+    name: Lint, build, and test
+    needs: [changes, quick, database, browser, documentation]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Require all applicable checks to pass
+        env:
+          CI_RESULTS: ${{ toJSON(needs) }}
+        run: node --input-type=module -e 'import { assertCiResults } from "./scripts/lib/ci-policy.mjs"; assertCiResults(JSON.parse(process.env.CI_RESULTS));'

@@ -6,6 +6,7 @@ const mode = appEnv === "dev" ? "dev" : appEnv;
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
+  workers: process.env.CI ? 2 : undefined,
   reporter: "list",
   use: {
     baseURL: "http://127.0.0.1:5173",

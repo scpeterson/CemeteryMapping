@@ -226,3 +226,11 @@ do not clear unrelated checksums. Geometry rehearsals and post-application check
 compare protected records and audit counts before release. See
 [the map guide](map-layout-and-passageways.md) and
 [ADR evidence package](adr/supporting/passageway-review-2026-10-29/README.md).
+
+## CI validation paths
+
+CI runs quick checks, serial database integration tests and four isolated browser
+shards in parallel. Recognized documentation-only PRs build and validate the docs;
+every main push still runs application validation. The required
+`Lint, build, and test` aggregate remains the hosted deployment gate. See
+[ADR 0181](adr/0181-parallel-ci.md) for classification, caches, isolation and recovery.
