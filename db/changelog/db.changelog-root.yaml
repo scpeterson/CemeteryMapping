@@ -1482,3 +1482,6 @@ databaseChangeLog:
   - include:
       file: changes/495-shift-section-a-eighteen-lots-north.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/496-retire-defunct-section-d-temporary-lots.sql
+      relativeToChangelogFile: true
