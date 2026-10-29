@@ -25,6 +25,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0174: Shift the ten-lot D-25 group west](0174-shift-d25-group-west.md)
+
 - [ADR 0173: Number D-78 and shift twelve Section D lots west](0173-number-d78-and-shift-section-d-group-west.md)
 
 - [ADR 0172: Align the northern Section D row east](0172-align-section-d-northern-row.md)
