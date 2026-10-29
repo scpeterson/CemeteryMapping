@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Align the five-lot northern Section D row with the row below; clip D-33, D-TMP14 and D-TMP13 to the cemetery boundary and prohibit gravesites and monuments in both lots (migration 497).
+
 - Remove thirteen owner-confirmed defunct Section D temporary lots from the active map, preserving their outlines and history without changing gravesites or monuments (migration 496).
 
 - Move A-1 through A-9 and A-30 through A-38 together one foot north, placing the fixed TLC-HS-0053 marker strictly inside A-34 while preserving lot dimensions and alignment (migration 495).

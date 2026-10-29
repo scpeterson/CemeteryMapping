@@ -25,6 +25,8 @@ This directory is the decision log for Cemetery Mapping. ADRs explain what was d
 
 ## Index
 
+- [ADR 0172: Align the northern Section D row east](0172-align-section-d-northern-row.md)
+
 - [ADR 0171: Retire thirteen defunct Section D temporary lots](0171-retire-defunct-section-d-temporary-lots.md)
 
 - [ADR 0170: Move eighteen Section A lots north as one group](0170-shift-section-a-eighteen-lots-north.md)
