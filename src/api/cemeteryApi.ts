@@ -1,3 +1,4 @@
+import { retryTransient } from "./retry";
 import { apiBaseUrl } from "../config/environment";
 import type {
   AppVersion,
@@ -30,23 +31,12 @@ import { authorizedFetch, jsonRequest, jsonResponse, normalizeBaseUrl } from "./
 
 export { setAccessTokenProvider } from "./apiClient";
 
-const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
-
-export async function fetchCemeteryData(attempts = 5): Promise<CemeteryData> {
+export async function fetchCemeteryData(attempts = 5, signal?: AbortSignal): Promise<CemeteryData> {
   const url = `${normalizeBaseUrl(apiBaseUrl)}/cemetery-map`;
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      const response = await authorizedFetch(url);
-      return await jsonResponse<CemeteryData>(response, "Cemetery API");
-    } catch (error) {
-      lastError = error;
-      if (attempt < attempts) await wait(200 * attempt);
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error("Unable to load cemetery data");
+  return retryTransient(async () => {
+    const response = await authorizedFetch(url, { signal });
+    return jsonResponse<CemeteryData>(response, "Cemetery API");
+  }, { attempts, signal });
 }
 
 export async function fetchAppVersion(): Promise<AppVersion> {
