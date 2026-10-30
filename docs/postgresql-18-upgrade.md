@@ -39,6 +39,36 @@ workflows before scheduling the actual cutover. Retain the source commit, old
 volume name, database dump, media backup and pre-upgrade counts. Do not run
 `docker compose down -v` or remove the old volume as part of the upgrade.
 
+## Inventory the whole cluster
+
+Before taking the final backup, list every non-template database, including
+historical snapshots and the administrative `postgres` database:
+
+```sql
+SELECT datname FROM pg_database WHERE NOT datistemplate ORDER BY datname;
+```
+
+The single-database example below is sufficient only when the application database
+is the only database containing data to preserve. Otherwise, create a separate
+custom-format archive for each database and restore each into the new cluster.
+Record database owners, connection limits, locale, comments, database and role
+settings, and grants before temporarily disabling writes. Inspect templates for
+local customizations as well.
+
+For custom ownership and permissions, also save `pg_dumpall --globals-only` in the
+protected backup directory and retain ownership and ACLs in each database archive
+(omit `--no-owner --no-acl` from both dump and restore). Review the globals before
+restoring: the destination image already creates its initial administrator role.
+Restore the remaining roles before database objects. Globals can contain password
+hashes and must remain private. Reapply database-level settings and grants
+explicitly; a database archive restored without `--create` does not recreate all
+of that database's metadata.
+
+Preserve multi-schema `search_path` settings as a list of identifiers. For example,
+`SET search_path TO "$user", public, topology, tiger` differs from assigning the
+entire comma-separated list as one quoted schema name. Validate the resulting
+setting before checking views or starting the API.
+
 ## DEV example: dump, restore, and retain the old volume
 
 The commands below use DEV and the standard container/user/database environment.
@@ -114,6 +144,56 @@ keep them stopped until validation is complete. Do not seed an upgraded database
    3.6, and restart the API with its existing authentication settings after the
    checks pass. API-role grants must be refreshed after restore; the configuration
    command preserves the existing environment's API password.
+
+## Verify preserved data and application behavior
+
+Compare the source and restored databases while writes remain stopped. For each
+database, retain table counts and deterministic row fingerprints, sequence values,
+large-object data, custom ownership and grants, and extension configuration data.
+Compare stored geometry values as part of the row fingerprints. Keep verification
+manifests private alongside the archives. Count all stored graves separately from
+map-visible graves: soft-deleted records are preserved but excluded from the map.
+
+Record spatial validation findings before upgrading. New PostGIS, GEOS and PROJ
+versions can change calculated area text slightly even when stored geometries are
+identical. Investigate differences by issue identity, severity, and reviewed
+exception status; unchanged counts alone do not prove equivalent findings. Report
+pre-existing errors explicitly rather than describing a failing spatial validation
+command as passing.
+
+Exercise the map, search, grave and headstone details, report catalog, and photo
+retrieval against restored data. A temporary loopback-only API with read-only
+database sessions can verify these workflows without changing the normal API's
+authentication settings. Compare media file hashes with the backup manifest.
+Restart the normal API with its original environment and confirm health and
+unauthenticated access rejection when authentication is enabled.
+
+### Local DEV and TEST validation record, 2026-10-30
+
+The local DEV and TEST clusters were migrated from PostgreSQL 17.5 to 18.6 with
+PostGIS 3.6 using separate destination volumes. Both clusters retained all 808
+stored graves per application database, including soft-deleted records; 785 active
+graves per environment were visible through the map API. TEST's three historical
+snapshot databases and both administrative databases were also preserved.
+
+Table fingerprints, sequence values, large-object data, extension configuration
+data, custom object ownership and grants matched after restoration and cutover.
+All 714 media files matched their original SHA-256 hashes. Schema migrations were
+already current, runtime API grants were refreshed, and both containers were
+healthy. Read-only API and browser checks covered map rendering, search, grave
+selection, headstone details, report catalog and photo retrieval. DEV's normal API
+was restarted with Auth0 enabled and verified to reject unauthenticated access.
+
+Spatial validation remained failing on pre-existing data: 158 unreviewed errors
+in DEV and 135 in TEST. Issue identities, severities and unreviewed error counts
+were unchanged. Calculated area text changed for 26 DEV findings and 23 TEST
+findings, by at most 0.000006 square meters. Stored data fingerprints matched.
+
+Original PostgreSQL 17 volumes, protected archives, media backup, integrity
+manifests and the detailed migration report were retained locally. The ignored
+Compose override selects the new volumes for subsequent local database commands.
+Machine-specific settings, credentials and private records are not published in
+this validation record. The hosted TEST stack was not migrated.
 
 ## Recovery
 
