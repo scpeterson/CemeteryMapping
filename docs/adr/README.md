@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0187: Preserve unchanged scoped map collections](0187-stable-scoped-collections.md)
+
 - [ADR 0186: Centralize search result orchestration](0186-search-results-hook.md)
 
 - [ADR 0185: Filter map statuses without replacing geometry](0185-map-status-layer-filters.md)
