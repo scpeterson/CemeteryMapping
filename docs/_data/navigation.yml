@@ -8,6 +8,8 @@
   url: /frontend-development.html
 - title: "Rebuild Guide"
   url: /rebuild.html
+- title: "Database Upgrades and Review Tools"
+  url: /postgresql-18-upgrade.html
 - title: "Data Sources"
   url: /data-sources.html
 - title: "Map Layout and Passageways"

@@ -4,7 +4,7 @@ render_with_liquid: false
 
 # PostgreSQL 18 volume layout and upgrades
 
-[Documentation Home](index.md) · [Rebuild Guide](rebuild.md) · [ADR 0193](adr/0193-postgresql18-volume-layout.md)
+[Documentation Home](index.md) · [Rebuild Guide](rebuild.md) · [ADR 0193](adr/0193-postgresql18-volume-layout.md) · [ADR 0194](adr/0194-local-database-review-tools.md)
 
 The root `docker-compose.yml` now runs `postgis/postgis:18-3.6`. PostgreSQL 18
 stores its cluster at `/var/lib/postgresql/18/docker`; its named volume must mount
@@ -131,8 +131,14 @@ keep them stopped until validation is complete. Do not seed an upgraded database
    APP_ENV=dev npm run db:migrate
    APP_ENV=dev npm run db:configure-api
    APP_ENV=dev npm run db:status
+   npm run db:benchmark -- --env dev --refresh-statistics
    APP_ENV=dev npm run db:validate:spatial
    ```
+
+   Refresh planner statistics after restoring and applying pending migrations, before
+   judging query performance. The benchmark command explicitly runs `ANALYZE`,
+   records before/after timings and plans, and checks spatial record fingerprints.
+   Use `--env test` for local TEST. See [benchmark details](#planner-statistics-and-query-benchmarks).
 
    The restore cleanup flags remove the PostGIS image’s precreated extension
    schemas (including `tiger`) before recreating them from the archive on 18.
@@ -226,6 +232,39 @@ neither the running API nor database defaults. The local PostgreSQL 18 benchmark
 found broad searches dominated by JIT compilation, so inspect that plan detail
 before choosing a narrowly scoped application optimization.
 
+### Local benchmark observations, 2026-10-30
+
+These are measurements from the restored local PostgreSQL 18.6/PostGIS 3.6.4
+application databases, not hosted TEST or production. `ANALYZE` reduced populated
+tables with no recorded manual/automatic analysis from 50 to zero in DEV and
+53 to zero in TEST. Spatial record fingerprints were unchanged.
+
+The table shows rounded median repository-call times in milliseconds. DEV used
+nine measured repetitions and TEST five, each after two warmups. Separate
+post-refresh `--jit-off` runs used five repetitions per environment. Timings
+exclude HTTP, authentication and browser work. Cache state, local CPU contention
+and different run lengths limit direct comparisons.
+
+| Workload | DEV before → after ANALYZE | TEST before → after ANALYZE | DEV / TEST with JIT off |
+| --- | ---: | ---: | ---: |
+| Map | 10.4 → 11.1 | 10.3 → 11.3 | 13.0 / 9.8 |
+| Grave details | 8.4 → 7.2 | 7.9 → 7.1 | 7.2 / 7.5 |
+| Headstone details | 5.8 → 5.5 | 6.6 → 5.5 | 5.5 / 5.5 |
+| Exact grave search | 50.5 → 165.1 | 39.9 → 40.9 | 50.5 / 38.4 |
+| Broad search (`a`) | 2177.4 → 2291.8 | 2240.1 → 2226.4 | 64.5 / 48.1 |
+| No-match search | 49.7 → 187.1 | 39.3 → 39.1 | 52.7 / 38.9 |
+| Spatial inventory | 4.1 → 5.0 | 4.0 → 4.3 | 4.0 / 4.3 |
+| Available inventory | 6.0 → 6.8 | 28.3 → 4.5 | 5.9 / 4.8 |
+| Spatial validation | 33.8 → 35.6 | 28.7 → 28.3 | 34.8 / 29.1 |
+
+`EXPLAIN` showed broad-search execution dominated by JIT compilation. In DEV,
+updated estimates also crossed the JIT threshold for exact/no-match searches,
+accounting for their regression. Accurate statistics do not guarantee lower
+latency for every query. The JIT-off comparison affected benchmark sessions only;
+no API configuration, role defaults or database-wide JIT settings were changed.
+Any application optimization remains a separate measured change. Full plans and
+parameters remain in ignored local backups; this table contains no private records.
+
 ## Reversible spatial repair previews
 
 The preview tool generates candidates and a local comparison viewer. It has no
@@ -281,6 +320,34 @@ Run the explicit read-only worker regression after building the image:
 ```bash
 APP_ENV=dev node --test scripts/spatial-preview/coverage-worker.integration.mjs
 ```
+
+### Local preview observations, 2026-10-30
+
+Twelve review layers were generated: active graves in sections A–E in each local
+environment, plus Section C lots in both. All source spatial record fingerprints
+matched the pre-maintenance baseline. No proposed geometry was applied and no
+marker was moved. The following Section C outcomes were the same in DEV and TEST:
+
+| Layer | Input polygons | Changed candidates | Maximum Hausdorff distance | Linked marker coverage losses |
+| --- | ---: | ---: | ---: | ---: |
+| Lots | 111 | 1 | about 0.00000012 m | 0 |
+| Graves | 361 | 212 | about 2.915 m | 38 |
+
+The lot change was a numerical sliver (about 0.00000015 m²). Grave candidates
+removed all 346 within-scope intersection pairs measured by the preview, including
+previously reviewed overlaps, but displaced 147 records by more than 10 cm.
+The 38 coverage losses mean fixed, linked markers that were covered by their
+original grave polygon would be excluded by its candidate boundary. The marker
+coordinates themselves are unchanged. A topologically clean coverage therefore
+cannot be treated as an approved spatial correction.
+
+The local validation baseline still has 158 unreviewed errors in DEV and 135 in
+TEST. Generating preview files does not resolve those errors or approve an
+exception. Review lot assignments, field evidence, fixed markers and existing
+exceptions before proposing narrowly scoped corrections. Original EWKB, candidate
+layers, detailed manifests and the local review dashboard remain private under
+ignored backups. The CLI generates a per-run viewer; the aggregate dashboard was
+assembled for this review and is not a separate maintained CLI feature.
 
 ## Recovery
 

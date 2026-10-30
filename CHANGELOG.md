@@ -46,6 +46,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Added
 
+- Add local DEV/TEST query benchmarks with explicit planner-statistics refresh and session-only JIT comparisons, plus read-only spatial repair previews with an isolated GEOS worker, exact original geometry, separate candidate layers and an offline comparison viewer. Existing geometry and marker positions are preserved; candidates require review and have no apply command. See [the database review guide](docs/postgresql-18-upgrade.md#planner-statistics-and-query-benchmarks) and [ADR 0194](docs/adr/0194-local-database-review-tools.md).
+
 - Preserve the Reevaluated passageways reports, maps and source-reference crosswalk as versioned ADR evidence; document current map corrections, passageway ownership and assignment, E/G policy, schema prerequisites and validation workflows.
 
 - Add ten approved passageway polygons alongside lots, with distinct map styling, section-specific gravesite assignment, original registry references, and individual gravesite deed support. Block whole-passageway ownership and retain existing assignments pending review (migrations 502–503).
