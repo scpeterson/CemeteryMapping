@@ -28,5 +28,14 @@ test('batched search preserves ownership visibility, status, reasons, scoping an
  const all=await searchCemetery(c,{cemeteryId:cemetery,query:'Fixture',includeOwnership:false});assert.equal(all.length,4);
  const page=await searchCemetery(c,{cemeteryId:cemetery,query:'Fixture',includeOwnership:false,limit:1,offset:1});assert.deepEqual(page,all.slice(1,3));
  assert.ok(all.every(m=>m.grave.cemeteryId===cemetery));
+ // Every page retains the exact geometry/reasons/order of the complete result,
+ // including the extra lookahead grave used by the route's continuation header.
+ const expectedGeometry={type:'MultiPolygon',coordinates:[[[[0,0],[0,1],[1,1],[1,0],[0,0]]]]};
+ for(const match of all)assert.deepEqual(match.grave.geometry,expectedGeometry);
+ for(const offset of [0,1,3,4,10]){
+  const bounded=await searchCemetery(c,{cemeteryId:cemetery,query:'Fixture',includeOwnership:false,limit:1,offset});
+  assert.deepEqual(bounded,all.slice(offset,offset+2));
+ }
+ assert.deepEqual(await searchCemetery(c,{cemeteryId:cemetery,query:'no-such-search-term',includeOwnership:false}),[]);
  }finally{await c.query('ROLLBACK');await c.end();}
 });
