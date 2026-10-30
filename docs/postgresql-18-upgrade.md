@@ -1,4 +1,5 @@
 ---
+render_with_liquid: false
 ---
 
 # PostgreSQL 18 volume layout and upgrades
