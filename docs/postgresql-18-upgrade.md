@@ -195,6 +195,93 @@ Compose override selects the new volumes for subsequent local database commands.
 Machine-specific settings, credentials and private records are not published in
 this validation record. The hosted TEST stack was not migrated.
 
+## Planner statistics and query benchmarks
+
+After a logical restore, refresh planner statistics and measure the application's
+repository queries using the runtime API role:
+
+```bash
+npm run db:benchmark -- --env dev --refresh-statistics
+npm run db:benchmark -- --env test --refresh-statistics
+```
+
+The explicit refresh flag runs `ANALYZE` as the configured database administrator.
+All benchmark queries use read-only sessions. The tool supports local DEV and TEST
+only and records warm-cache map, grave/headstone detail, exact/broad/no-match
+search, inventory report and spatial-validation timings before and after refresh.
+The default is nine measured repetitions after two warmups. Use `--runs 5` to
+shorten a run. Query plans include `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`.
+Timings include repository result mapping and database round trips, and exclude
+HTTP, authentication and browser rendering. They are observations, not performance
+thresholds; local CPU contention and cache state affect them.
+
+Private results are written to a unique directory under
+`db/backups/query-benchmarks/`. Plans can contain private parameter values. Spatial
+record fingerprints are compared before and after the operation. Concurrent
+application edits can cause that check to fail; investigate rather than overwrite
+the new records.
+
+Use `--jit-off` for a session-only comparison of JIT compilation costs. It changes
+neither the running API nor database defaults. The local PostgreSQL 18 benchmark
+found broad searches dominated by JIT compilation, so inspect that plan detail
+before choosing a narrowly scoped application optimization.
+
+## Reversible spatial repair previews
+
+The preview tool generates candidates and a local comparison viewer. It has no
+apply command and never updates database geometry. It requires an explicit
+cemetery UUID, section, table and appropriate WGS84 UTM SRID; tolerances are meters.
+For example, use EPSG 32617 for the local Trinity data.
+
+Build the isolated worker using only its small source directory as build context:
+
+```bash
+docker build --platform linux/amd64 -t cemetery-spatial-preview:geos314 scripts/spatial-preview
+npm run db:preview:spatial-repair -- --env dev --table gravesites --cemetery CEMETERY_UUID --section C --srid 32617
+```
+
+Repeat with `--env test`, or use `--table lots` to preview lot boundaries. Find the
+cemetery UUID in the application's map response or the `cemeteries` table. Deleted
+records are excluded from candidate generation and remain untouched.
+
+The worker calls GEOS 3.14+ coverage cleaning on projected polygon copies. It runs
+without network, database credentials or mounted database volumes. This also
+avoids a known image limitation: some PostGIS 3.6 binaries expose
+`ST_CoverageClean` but were compiled against GEOS 3.13 and cannot execute it, even
+when a newer runtime GEOS library is present. The worker records its image ID and
+actual GEOS version for reproducibility.
+
+Snapping and gap filling default to zero. Optional `--snap-meters` and
+`--gap-meters` accept values up to 0.1 meters. **These tolerances do not cap boundary
+movement caused by resolving overlaps.** The algorithm chooses overlap ownership
+geometrically, without knowledge of surveyed boundaries, burials or deeds.
+Originals, including every input UUID, are preserved even when a candidate
+collapses to an empty geometry. Do not automatically apply the candidates.
+
+Each unique, private `db/backups/spatial-preview/` directory contains:
+
+- `preview.html`: an offline viewer with original/proposed overlays, fixed marker
+  context, record selection and change metrics.
+- `original.geojson` and `proposed.geojson`: separate review layers.
+- `preview.json`: exact original and candidate EWKB, SHA-256 hashes, source
+  fingerprints, projection/tolerance settings, algorithm version and per-record
+  metrics. Exact original EWKB reconstruction is verified; GeoJSON is for review.
+
+Review displacement, changed area, parent containment, empty/invalid outputs,
+changes to non-estimated geometry and linked markers losing polygon coverage.
+Overlap counts cover all selected polygon pairs with positive intersection area
+above 0.00000001 square meters, including previously reviewed overlaps; they are
+not the unreviewed validation-error count. Pairs outside the selected scope are
+not assessed. A clean candidate coverage does not establish correct placement.
+Preserve marker positions and approved boundaries. Any later application needs a
+separate reviewed correction plan, a fresh source-hash check and retained originals.
+
+Run the explicit read-only worker regression after building the image:
+
+```bash
+APP_ENV=dev node --test scripts/spatial-preview/coverage-worker.integration.mjs
+```
+
 ## Recovery
 
 Before reopening writes on 18, recovery is to stop the new database, restore the
