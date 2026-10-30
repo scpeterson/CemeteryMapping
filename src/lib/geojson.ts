@@ -61,6 +61,7 @@ export function sectionsFeatureCollection(data: Pick<CemeteryData, "sections">) 
       type: "Feature",
       properties: {
         id: section.id,
+        cemeteryId: section.cemeteryId,
         name: section.name,
         alternateNames: section.alternateNames,
       },

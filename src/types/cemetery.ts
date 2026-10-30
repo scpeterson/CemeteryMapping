@@ -55,6 +55,7 @@ export type SaveGraveSpaceInput = {
 
 export type CemeterySection = {
   id: string;
+  cemeteryId: string;
   name: string;
   alternateNames: string[];
   geometry: AreaGeometry;

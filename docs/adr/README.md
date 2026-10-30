@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0192: Scope section geometry and labels by cemetery identity](0192-scope-section-geometry.md)
+
 - [ADR 0191: Load named map query results with bounded concurrency](0191-bounded-named-map-queries.md)
 
 - [ADR 0190: Share active protected photo downloads within an authentication session](0190-shared-protected-media.md)
