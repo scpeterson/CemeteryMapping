@@ -7,6 +7,7 @@ import type {
   GeographicPlaceCandidate,
   GraveFeature,
   GraveSpace,
+  GraveOverviewSummary,
   GraveStatus,
   Headstone,
   HeadstoneGravesiteRelationship,
@@ -158,6 +159,11 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
     headstones: lookups.headstones ?? [],
     gravesites: lookups.gravesites ?? [],
   };
+}
+
+export async function fetchHeadstoneOverview(id: string, signal?: AbortSignal): Promise<GraveOverviewSummary[]> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(id)}/overview`, { signal });
+  return jsonResponse<GraveOverviewSummary[]>(response, "Marker overview API");
 }
 
 export async function fetchHeadstone(id: string, signal?: AbortSignal): Promise<Headstone> {
