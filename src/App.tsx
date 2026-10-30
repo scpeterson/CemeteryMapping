@@ -37,10 +37,6 @@ type PickedMarkerPoint = {
   pickedAt: number;
 };
 
-function includesAllStatuses(statuses: Set<GraveStatus>) {
-  return allStatuses.every((status) => statuses.has(status));
-}
-
 export default function App() {
   useDraftNavigationGuard();
   const [mobileView, setMobileView] = useState<"search" | "map" | "details">("map");
@@ -78,10 +74,6 @@ export default function App() {
   const monumentMatches = useMemo(() => searchMonuments(mapData, query, selectedStatuses, gravesBySearchKey), [mapData, query, selectedStatuses, gravesBySearchKey]);
   const lotMatches = useMemo(() => searchLots(mapData, query), [mapData, query]);
   const matches = useMemo<CemeterySearchMatch[]>(() => [...monumentMatches, ...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("headstone" in match ? match.headstone.cemeteryId : "lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, monumentMatches, remoteMatches, cemeteryScope]);
-  const visibleGraves = useMemo(() => {
-    if (cemeteryScope === "" && selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
-    return data.graves.filter((grave) => selectedStatuses.has(grave.status) && (cemeteryScope === "" || grave.cemeteryId === cemeteryScope));
-  }, [data.graves, selectedStatuses, cemeteryScope]);
   const isInitialMapFitReady = Boolean(currentUser) && cemeteryScope !== null && !isLoading;
   const initialMapFitCemeteryIds =
     cemeteryScope ? [cemeteryScope] : undefined;
@@ -291,7 +283,7 @@ export default function App() {
               selectedGrave={selectedGrave}
               selectedLot={selectedLot}
               selectedHeadstone={selectedHeadstone}
-              visibleGraves={visibleGraves}
+              selectedStatuses={selectedStatuses}
               searchResultIds={searchResultIds}
               initialFitCemeteryIds={initialMapFitCemeteryIds}
               cemeteryScope={cemeteryScope ?? ""}
