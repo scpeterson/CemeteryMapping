@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0188: Load marker overview people and owners in one request](0188-marker-overview-summary.md)
+
 - [ADR 0187: Preserve unchanged scoped map collections](0187-stable-scoped-collections.md)
 
 - [ADR 0186: Centralize search result orchestration](0186-search-results-hook.md)

@@ -117,3 +117,11 @@ export type MonumentSearchMatch = {
 };
 
 export type CemeterySearchMatch = SearchMatch | LotSearchMatch | MonumentSearchMatch;
+
+export type GraveOverviewSummary = {
+  id: string;
+  cemeteryId: string;
+  burials: Pick<Burial, "id" | "person">[];
+  owners: Pick<Owner, "id" | "displayName" | "firstName" | "lastName">[];
+  currentOwnerIds: string[];
+};
