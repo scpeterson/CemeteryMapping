@@ -3,7 +3,7 @@ import { ConfirmationProvider } from "./components/ui/ConfirmationProvider";
 import { confirmDiscardChanges, useDraftNavigationGuard } from "./hooks/useDraftState";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { ApplicationHeader } from "./components/ApplicationHeader";
-import { useCemeterySearch } from "./hooks/useCemeterySearch";
+import { useCemeterySearchResults } from "./hooks/useCemeterySearchResults";
 import { useApplicationData } from "./hooks/useApplicationData";
 import { useCemeteryScope } from "./hooks/useCemeteryScope";
 import { selectionPermissions } from "./lib/selectionPermissions";
@@ -12,7 +12,6 @@ import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { graveSelectionKey, lotSelectionKey } from "./lib/format";
-import { indexSearchGraves, searchGraves, searchLots, searchMonuments } from "./lib/search";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import { useRecordMutations } from "./hooks/useRecordMutations";
 import type {
@@ -21,7 +20,6 @@ import type {
   GraveSpaceSummary,
   GraveStatus,
   HeadstoneSummary,
-  SearchMatch,
 } from "./types";
 
 const AdminPanel = lazy(() => import("./components/AdminPanel").then((module) => ({ default: module.AdminPanel })));
@@ -65,22 +63,11 @@ export default function App() {
   } = useSelectedRecordDetails({ selectedGrave, selectedHeadstone });
 
   const { cemeteryScope, cemeteries, mapData, cemeteryScopeLabel } = useCemeteryScope(data, currentUser, adminCemeteryScope);
-  const { remoteMatches, searchError, isSearching, hasMore, loadMore, retry } = useCemeterySearch(query, selectedStatuses, cemeteryScope);
-  const localMatches = useMemo(
-    () => remoteMatches === undefined ? searchGraves(mapData, query, selectedStatuses) : [],
-    [mapData, query, selectedStatuses, remoteMatches],
-  );
-  const gravesBySearchKey = useMemo(() => indexSearchGraves(mapData.graves), [mapData.graves]);
-  const monumentMatches = useMemo(() => searchMonuments(mapData, query, selectedStatuses, gravesBySearchKey), [mapData, query, selectedStatuses, gravesBySearchKey]);
-  const lotMatches = useMemo(() => searchLots(mapData, query), [mapData, query]);
-  const matches = useMemo<CemeterySearchMatch[]>(() => [...monumentMatches, ...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("headstone" in match ? match.headstone.cemeteryId : "lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, monumentMatches, remoteMatches, cemeteryScope]);
+  const { matches, searchResultIds, searchError, isSearching, hasMore, loadMore, retry } =
+    useCemeterySearchResults(mapData, query, selectedStatuses, cemeteryScope);
   const isInitialMapFitReady = Boolean(currentUser) && cemeteryScope !== null && !isLoading;
   const initialMapFitCemeteryIds =
     cemeteryScope ? [cemeteryScope] : undefined;
-  const searchResultIds = useMemo(() => {
-    if (!query.trim()) return new Set<string>();
-    return new Set(matches.filter((match): match is SearchMatch => "grave" in match).map((match) => graveSelectionKey(match.grave)));
-  }, [matches, query]);
   const selectedLotGraves = useMemo(() => {
     if (!selectedLot) return [];
     return data.graves.filter(
