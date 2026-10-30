@@ -11,6 +11,27 @@ into a separate volume before starting the upgraded environment. Follow the
 alone does not upgrade database files. The separate hosted TEST stack stays on
 its pinned PostgreSQL 17 configuration.
 
+## Local database maintenance and spatial review
+
+The [planner statistics and benchmark workflow](../docs/postgresql-18-upgrade.md#planner-statistics-and-query-benchmarks)
+measures actual repository queries, with optional explicit `ANALYZE` after a
+restore. The [spatial repair preview workflow](../docs/postgresql-18-upgrade.md#reversible-spatial-repair-previews)
+produces original/candidate review layers without updating geometry. Both tools
+support local DEV and TEST only; they do not target the separately hosted TEST
+stack. Private results remain under ignored `db/backups/` directories.
+
+After restoring data and applying pending migrations, run:
+
+```bash
+npm run db:benchmark -- --env dev --refresh-statistics
+```
+
+Repeat with `--env test` for local TEST. Benchmark reads use the restricted API
+role and require its existing `CEMETERY_API_PASSWORD`; statistics refresh uses the
+configured administrator. `--jit-off` affects benchmark sessions only. Previews
+require the offline worker build and explicit cemetery/section scope documented
+in the guide; there is no apply command. See [ADR 0194](../docs/adr/0194-local-database-review-tools.md).
+
 ## Local database
 
 Database commands default to `DEV`. Use `APP_ENV=dev|test|stage|prod` to target a specific environment.

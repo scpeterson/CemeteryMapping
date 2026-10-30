@@ -130,6 +130,21 @@ APP_ENV=test npm run db:configure-api
 APP_ENV=test npm run db:status
 ```
 
+## Refresh Planner Statistics After a Restore
+
+For a persistent local DEV/TEST database restored from a logical backup, complete
+schema migration and runtime-role configuration, then explicitly refresh planner
+statistics before judging performance:
+
+```bash
+npm run db:benchmark -- --env test --refresh-statistics
+```
+
+Use `--env dev` for DEV. This runs `ANALYZE` and benchmarks read-only application
+queries; it does not seed or change application records. Retain the private
+output and compare spatial fingerprints. See [benchmark methodology and dated results](postgresql-18-upgrade.md#planner-statistics-and-query-benchmarks).
+This local command does not maintain the separately hosted TEST stack.
+
 ## Validate Spatial Data
 
 ```bash
@@ -137,6 +152,11 @@ APP_ENV=test npm run db:validate:spatial
 ```
 
 Spatial validation can report warnings for known review items. It should exit successfully when there are zero blocking errors.
+For existing local data, compare findings with the recorded baseline rather than
+assuming a clean rebuild fixture represents the restored database. Use the
+[read-only spatial repair previews](postgresql-18-upgrade.md#reversible-spatial-repair-previews)
+to investigate candidate changes while preserving stored geometry. Preview
+generation does not resolve validation errors.
 
 ## Import Real Cemetery and Section Geometry
 

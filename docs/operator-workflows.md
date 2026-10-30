@@ -18,6 +18,32 @@ For a brand-new cemetery, start with the one-time onboarding workflows, verify t
 
 ## Ongoing Maintenance Workflows
 
+### Local Database Performance and Spatial Review
+
+Use the [database review tools](postgresql-18-upgrade.md#planner-statistics-and-query-benchmarks)
+when investigating local DEV/TEST performance after imports or restores. Confirm
+the environment and configured port first. Refresh statistics explicitly after
+restoring and migrating data, then compare the private query plans and timings:
+
+```bash
+npm run db:benchmark -- --env dev --refresh-statistics
+npm run db:benchmark -- --env test --refresh-statistics
+```
+
+For a read-only timing run, omit `--refresh-statistics`. Use `--jit-off` for a
+session-only comparison; it does not configure the running API or change server
+defaults. The [dated benchmark observations](postgresql-18-upgrade.md#local-benchmark-observations-2026-10-30)
+show why accurate statistics and measured query plans both matter.
+
+For geometry review, follow the [spatial repair preview workflow](postgresql-18-upgrade.md#reversible-spatial-repair-previews).
+Build the offline worker, select one cemetery/section and inspect the original
+and proposed layers, displacement, parent containment and fixed marker coverage.
+Keep originals and private review artifacts. The [local preview observations](postgresql-18-upgrade.md#local-preview-observations-2026-10-30)
+show that removing overlaps can exclude linked markers from their grave polygons.
+Do not treat a clean coverage as an approved correction or attempt to apply the
+preview files through import/promotion commands. Application of any later
+correction requires a separate reviewed, reversible plan.
+
 ### Navigation, Search, and Editing
 
 On desktop, search, map, and record details share the workspace. At widths of 760 pixels or less, use the `Search`, `Map`, and `Details` buttons at the top. The initial phone view is Map. Selecting a record opens Details; switching views keeps mounted editors and their drafts available. Picking a new marker location switches to Map and returns to Details after the point is chosen. This navigation is available now; the dedicated Field Collection concept described later remains future work.
