@@ -3,7 +3,7 @@ import { ConfirmationProvider } from "./components/ui/ConfirmationProvider";
 import { confirmDiscardChanges, useDraftNavigationGuard } from "./hooks/useDraftState";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { ApplicationHeader } from "./components/ApplicationHeader";
-import { useCemeterySearch } from "./hooks/useCemeterySearch";
+import { useCemeterySearchResults } from "./hooks/useCemeterySearchResults";
 import { useApplicationData } from "./hooks/useApplicationData";
 import { useCemeteryScope } from "./hooks/useCemeteryScope";
 import { selectionPermissions } from "./lib/selectionPermissions";
@@ -12,7 +12,6 @@ import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { graveSelectionKey, lotSelectionKey } from "./lib/format";
-import { searchGraves, searchLots, searchMonuments } from "./lib/search";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import { useRecordMutations } from "./hooks/useRecordMutations";
 import type {
@@ -21,7 +20,6 @@ import type {
   GraveSpaceSummary,
   GraveStatus,
   HeadstoneSummary,
-  SearchMatch,
 } from "./types";
 
 const AdminPanel = lazy(() => import("./components/AdminPanel").then((module) => ({ default: module.AdminPanel })));
@@ -36,10 +34,6 @@ type PickedMarkerPoint = {
   longitude: number;
   pickedAt: number;
 };
-
-function includesAllStatuses(statuses: Set<GraveStatus>) {
-  return allStatuses.every((status) => statuses.has(status));
-}
 
 export default function App() {
   useDraftNavigationGuard();
@@ -69,22 +63,11 @@ export default function App() {
   } = useSelectedRecordDetails({ selectedGrave, selectedHeadstone });
 
   const { cemeteryScope, cemeteries, mapData, cemeteryScopeLabel } = useCemeteryScope(data, currentUser, adminCemeteryScope);
-  const { remoteMatches, searchError, isSearching, hasMore, loadMore, retry } = useCemeterySearch(query, selectedStatuses, cemeteryScope);
-  const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
-  const monumentMatches = useMemo(() => searchMonuments(data, query, selectedStatuses), [data, query, selectedStatuses]);
-  const lotMatches = useMemo(() => searchLots(data, query), [data, query]);
-  const matches = useMemo<CemeterySearchMatch[]>(() => [...monumentMatches, ...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("headstone" in match ? match.headstone.cemeteryId : "lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, monumentMatches, remoteMatches, cemeteryScope]);
-  const visibleGraves = useMemo(() => {
-    if (cemeteryScope === "" && selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
-    return data.graves.filter((grave) => selectedStatuses.has(grave.status) && (cemeteryScope === "" || grave.cemeteryId === cemeteryScope));
-  }, [data.graves, selectedStatuses, cemeteryScope]);
+  const { matches, searchResultIds, searchError, isSearching, hasMore, loadMore, retry } =
+    useCemeterySearchResults(mapData, query, selectedStatuses, cemeteryScope);
   const isInitialMapFitReady = Boolean(currentUser) && cemeteryScope !== null && !isLoading;
   const initialMapFitCemeteryIds =
     cemeteryScope ? [cemeteryScope] : undefined;
-  const searchResultIds = useMemo(() => {
-    if (!query.trim()) return new Set<string>();
-    return new Set(matches.filter((match): match is SearchMatch => "grave" in match).map((match) => graveSelectionKey(match.grave)));
-  }, [matches, query]);
   const selectedLotGraves = useMemo(() => {
     if (!selectedLot) return [];
     return data.graves.filter(
@@ -287,7 +270,7 @@ export default function App() {
               selectedGrave={selectedGrave}
               selectedLot={selectedLot}
               selectedHeadstone={selectedHeadstone}
-              visibleGraves={visibleGraves}
+              selectedStatuses={selectedStatuses}
               searchResultIds={searchResultIds}
               initialFitCemeteryIds={initialMapFitCemeteryIds}
               cemeteryScope={cemeteryScope ?? ""}
