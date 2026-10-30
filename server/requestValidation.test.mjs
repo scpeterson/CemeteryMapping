@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { searchCemetery } from "./cemeterySearch.mjs";
+import { selectSearchMatches as searchCemetery } from "./cemeterySearch.mjs";
 import { validateBurialPayload, validateOwnershipEventPayload, validateGraveLotAssignmentPayload } from "./routes/cemeteryRouteValidation.mjs";
 import {
   BadRequestError,

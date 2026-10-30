@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { validateSearchPage, validateSearchQuery, validateStatuses } from "./requestValidation.mjs";
-import { searchCemetery } from "./cemeterySearch.mjs";
+import { selectSearchMatches as searchCemetery } from "./cemeterySearch.mjs";
 import { registerReportRoutes } from "./routes/reportRoutes.mjs";
 const cemeteryId = "11111111-1111-4111-8111-111111111111";
 test("search pagination validates defaults, bounds and UUID scope", () => {

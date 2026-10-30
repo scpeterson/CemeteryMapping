@@ -265,6 +265,50 @@ no API configuration, role defaults or database-wide JIT settings were changed.
 Any application optimization remains a separate measured change. Full plans and
 parameters remain in ignored local backups; this table contains no private records.
 
+### Search-specific JIT fix
+
+Application search now uses a checked-out connection and a read-only transaction
+with `SET LOCAL jit = off` before planning the search SELECT. Commit or rollback
+restores the connection's prior setting; a connection whose rollback fails is
+discarded. Database-wide, role and general API pool settings remain unchanged.
+Unrelated requests and reports retain their existing JIT policy. See [ADR 0195](adr/0195-search-transaction-local-jit.md).
+
+The benchmark command measures this request-facing behavior by default. To compare
+it with the unchanged SELECT under the session's normal JIT policy, run:
+
+```bash
+npm run db:benchmark -- --env dev --runs 5 --baseline-search
+npm run db:benchmark -- --env dev --runs 5
+```
+
+Repeat with `--env test`. The baseline flag is diagnostic only and does not change
+the running API. Search plans are captured under the same policy as the timed
+queries. `--jit-off` still disables JIT for the entire benchmark session when a
+broader diagnostic comparison is needed; it is not required for the search fix.
+
+### Scoped search benchmark observations, 2026-10-30
+
+With statistics already refreshed, the unchanged SELECT baseline and the scoped
+search transaction were measured sequentially using five repetitions after two
+warmups per environment. Rounded medians are milliseconds and include connection
+checkout, transaction round trips and repository mapping; they exclude HTTP and
+browser work. Neither trial used the session-wide `--jit-off` flag.
+
+| Workload | DEV baseline → scoped search | TEST baseline → scoped search |
+| --- | ---: | ---: |
+| Exact grave search | 173.0 → 51.8 | 38.7 → 39.9 |
+| Broad search (`a`) | 2231.1 → 63.8 | 2192.5 → 49.5 |
+| No-match search | 173.8 → 50.0 | 39.0 → 39.8 |
+
+Scoped search EXPLAIN plans had no JIT compilation. New connections still reported
+`jit=on`, and same-backend regressions verified restoration after success, SQL
+errors and queued unrelated queries. Complete results matched the baseline across
+ownership visibility, status filters, cemetery scope, pagination and SQL-like text.
+Spatial record fingerprints were unchanged in both environments. Ordinary TEST
+exact/no-match search did not trigger JIT in the baseline, so its small differences
+reflect transaction overhead and local timing variation rather than a speedup.
+Detailed plans and parameters remain private in ignored backups.
+
 ## Reversible spatial repair previews
 
 The preview tool generates candidates and a local comparison viewer. It has no

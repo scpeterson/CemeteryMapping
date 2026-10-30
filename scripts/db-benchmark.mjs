@@ -3,11 +3,13 @@ import { performance } from "node:perf_hooks";
 import { parseArgs } from "node:util";
 import pg from "pg";
 import { getCemeteryData, getGraveSpace, getHeadstone } from "../server/cemeteryRepository.mjs";
-import { searchCemetery } from "../server/cemeterySearch.mjs";
+import { searchCemetery, selectSearchMatches } from "../server/cemeterySearch.mjs";
 import { runReport } from "../server/reportsRepository.mjs";
+import { withSearchTransaction } from "../server/searchTransaction.mjs";
 import { artifactDirectory, localConfig, readOnlyClient, spatialFingerprint, writePrivate } from "./lib/local-db-review.mjs";
 
 const { values } = parseArgs({ options: { env: { type: "string" }, runs: { type: "string", default: "9" },
+  "baseline-search": { type: "boolean", default: false },
   "jit-off": { type: "boolean", default: false },
   "refresh-statistics": { type: "boolean", default: false } } });
 const environment = values.env ?? process.env.APP_ENV ?? "dev";
@@ -17,7 +19,7 @@ const inspector = await readOnlyClient(environment);
 const pool = new pg.Pool({ ...localConfig(environment, { runtime: true }), max: 4,
   options: `-c default_transaction_read_only=on${values["jit-off"] ? " -c jit=off" : ""}` });
 const output = artifactDirectory("query-benchmarks", environment);
-const report = { environment, runs, jitOff: values["jit-off"], warmups: 2, timing: "Warm-cache repository calls, including database round trips and result mapping; excludes HTTP/browser.",
+const report = { environment, runs, baselineSearch: values["baseline-search"], jitOff: values["jit-off"], warmups: 2, timing: "Warm-cache repository calls, including database round trips and result mapping; excludes HTTP/browser.",
   startedAt: new Date().toISOString(), spatialBefore: await spatialFingerprint(inspector) };
 const statistics = async () => (await inspector.query(`SELECT count(*)::int AS tables,
   count(*) FILTER (WHERE n_live_tup>0 AND last_analyze IS NULL AND last_autoanalyze IS NULL)::int AS "populatedNeverAnalyzed"
@@ -26,13 +28,14 @@ try {
   const map = await getCemeteryData(pool);
   const grave = map.graves[0], headstone = map.headstones[0];
   assert.ok(grave && headstone, "Benchmark needs at least one active grave and mapped headstone.");
+  const search = values["baseline-search"] ? selectSearchMatches : searchCemetery;
   const workloads = {
     map: p => getCemeteryData(p),
     graveDetail: p => getGraveSpace(p, grave.cemeteryId, grave.id),
     headstoneDetail: p => getHeadstone(p, headstone.id),
-    searchGrave: p => searchCemetery(p, { query: grave.id }),
-    searchBroad: p => searchCemetery(p, { query: "a", limit: 50 }),
-    searchNoMatch: p => searchCemetery(p, { query: "benchmarknomatch938172" }),
+    searchGrave: p => search(p, { query: grave.id }),
+    searchBroad: p => search(p, { query: "a", limit: 50 }),
+    searchNoMatch: p => search(p, { query: "benchmarknomatch938172" }),
     spatialInventory: p => runReport(p, "spatial-inventory-counts", {}, { role: "admin" }),
     availableInventory: p => runReport(p, "available-inventory", {}, { role: "admin" }),
     spatialValidation: p => p.query("SELECT severity,issue_code,count(*) FROM spatial_validation_issues GROUP BY severity,issue_code ORDER BY 1,2"),
@@ -42,13 +45,13 @@ try {
     for (const [name, run] of Object.entries(workloads)) {
       const queries = new Map();
       const query = async (text, params) => {
-        queries.set(JSON.stringify([text, params]), { text, params });
+        if (!/^\s*(BEGIN|COMMIT|ROLLBACK|SET)\b/iu.test(text)) queries.set(JSON.stringify([text, params]), { text, params });
         return pool.query(text, params);
       };
       // Reports use a checked-out client. Preserve their execution behavior.
       const target = { query, connect: async () => {
         const client = await pool.connect();
-        return { query: (text, params) => { queries.set(JSON.stringify([text, params]), { text, params }); return client.query(text, params); }, release: () => client.release() };
+        return { query: (text, params) => { if (!/^\s*(BEGIN|COMMIT|ROLLBACK|SET)\b/iu.test(text)) queries.set(JSON.stringify([text, params]), { text, params }); return client.query(text, params); }, release: error => client.release(error) };
       } };
       for (let i = 0; i < 2; i++) await run(target);
       const samples = [];
@@ -56,9 +59,12 @@ try {
         const start = performance.now(); await run(target); samples.push(performance.now() - start);
       }
       const sorted = [...samples].sort((a, b) => a - b);
+      assert.ok(queries.size > 0, `No explainable SQL captured for ${name}.`);
       const plans = [];
       for (const { text, params } of queries.values()) {
-        const plan = await pool.query(`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${text}`, params);
+        const explain = client => client.query(`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${text}`, params);
+        const plan = name.startsWith("search") && !values["baseline-search"]
+          ? await withSearchTransaction(pool, explain) : await explain(pool);
         plans.push({ sql: text, parameters: params, plan: plan.rows[0]["QUERY PLAN"] });
       }
       results[name] = { medianMs: sorted[Math.floor(sorted.length / 2)], p95Ms: sorted[Math.ceil(sorted.length * 0.95) - 1], samplesMs: samples, plans };
