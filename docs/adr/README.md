@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0185: Filter map statuses without replacing geometry](0185-map-status-layer-filters.md)
+
 - [ADR 0184: Cancel abandoned detail requests](0184-abort-detail-requests.md)
 
 - [ADR 0183: Scope local search before matching](0183-scope-local-search.md)
