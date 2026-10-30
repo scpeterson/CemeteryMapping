@@ -70,10 +70,13 @@ export default function App() {
 
   const { cemeteryScope, cemeteries, mapData, cemeteryScopeLabel } = useCemeteryScope(data, currentUser, adminCemeteryScope);
   const { remoteMatches, searchError, isSearching, hasMore, loadMore, retry } = useCemeterySearch(query, selectedStatuses, cemeteryScope);
-  const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
-  const gravesBySearchKey = useMemo(() => indexSearchGraves(data.graves), [data.graves]);
-  const monumentMatches = useMemo(() => searchMonuments(data, query, selectedStatuses, gravesBySearchKey), [data, query, selectedStatuses, gravesBySearchKey]);
-  const lotMatches = useMemo(() => searchLots(data, query), [data, query]);
+  const localMatches = useMemo(
+    () => remoteMatches === undefined ? searchGraves(mapData, query, selectedStatuses) : [],
+    [mapData, query, selectedStatuses, remoteMatches],
+  );
+  const gravesBySearchKey = useMemo(() => indexSearchGraves(mapData.graves), [mapData.graves]);
+  const monumentMatches = useMemo(() => searchMonuments(mapData, query, selectedStatuses, gravesBySearchKey), [mapData, query, selectedStatuses, gravesBySearchKey]);
+  const lotMatches = useMemo(() => searchLots(mapData, query), [mapData, query]);
   const matches = useMemo<CemeterySearchMatch[]>(() => [...monumentMatches, ...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("headstone" in match ? match.headstone.cemeteryId : "lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, monumentMatches, remoteMatches, cemeteryScope]);
   const visibleGraves = useMemo(() => {
     if (cemeteryScope === "" && selectedStatuses.size === allStatuses.length && includesAllStatuses(selectedStatuses)) return data.graves;
