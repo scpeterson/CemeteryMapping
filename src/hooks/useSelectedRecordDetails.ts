@@ -33,24 +33,24 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
     setDetailError(undefined);
 
     if (selectedHeadstone) {
-      let isCurrent = true;
+      const controller = new AbortController();
       setIsDetailLoading(true);
 
-      fetchHeadstone(selectedHeadstone.id)
+      fetchHeadstone(selectedHeadstone.id, controller.signal)
         .then((detail) => {
-          if (!isCurrent) return;
+          if (controller.signal.aborted) return;
           setSelectedHeadstoneDetails(detail);
         })
         .catch((error: unknown) => {
-          if (!isCurrent) return;
+          if (controller.signal.aborted) return;
           setDetailError(error instanceof Error ? error.message : "Unable to load marker details");
         })
         .finally(() => {
-          if (isCurrent) setIsDetailLoading(false);
+          if (!controller.signal.aborted) setIsDetailLoading(false);
         });
 
       return () => {
-        isCurrent = false;
+        controller.abort();
       };
     }
 
@@ -59,25 +59,25 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
       return;
     }
 
-    let isCurrent = true;
+    const controller = new AbortController();
     setIsDetailLoading(true);
 
-    fetchGraveSpace(selectedGrave.cemeteryId, selectedGrave.id)
+    fetchGraveSpace(selectedGrave.cemeteryId, selectedGrave.id, controller.signal)
       .then((detail) => {
-        if (!isCurrent) return;
+        if (controller.signal.aborted) return;
         setSelectedGraveDetails(detail);
         setSelectedGraveOwners(detail.owners);
       })
       .catch((error: unknown) => {
-        if (!isCurrent) return;
+        if (controller.signal.aborted) return;
         setDetailError(error instanceof Error ? error.message : "Unable to load grave details");
       })
       .finally(() => {
-        if (isCurrent) setIsDetailLoading(false);
+        if (!controller.signal.aborted) setIsDetailLoading(false);
       });
 
     return () => {
-      isCurrent = false;
+      controller.abort();
     };
   }, [selectedGrave, selectedHeadstone, selectionKey, detailRequest]);
 
