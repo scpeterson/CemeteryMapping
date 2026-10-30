@@ -1,11 +1,22 @@
 type AccessTokenProvider = () => Promise<string | undefined>;
 
 let accessTokenProvider: AccessTokenProvider | undefined;
+let authSessionVersion = 0;
+const sessionListeners = new Set<() => void>();
+
+export const getAuthSessionVersion = () => authSessionVersion;
+export function subscribeAuthSession(listener: () => void) {
+  sessionListeners.add(listener);
+  return () => { sessionListeners.delete(listener); };
+}
 
 export const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/$/u, "");
 
 export function setAccessTokenProvider(provider: AccessTokenProvider | undefined) {
+  if (accessTokenProvider === provider) return;
   accessTokenProvider = provider;
+  authSessionVersion++;
+  for (const listener of sessionListeners) listener();
 }
 
 export async function authorizedFetch(url: string, init?: RequestInit) {
