@@ -4,7 +4,7 @@ import test from 'node:test';
 import pg from 'pg';
 import {loadApiConfig} from '../server/config.mjs';
 import {integrationAdminDatabase} from './lib/integration-admin.mjs';
-import {searchCemetery} from '../server/cemeterySearch.mjs';
+import {selectSearchMatches as searchCemetery} from '../server/cemeterySearch.mjs';
 
 test('batched search preserves ownership visibility, status, reasons, scoping and pagination',async()=>{
  const cfg=loadApiConfig();assert.equal(cfg.appEnv,'test');const c=new pg.Client(integrationAdminDatabase(cfg));await c.connect();

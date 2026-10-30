@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0195: Disable JIT only within application search transactions](0195-search-transaction-local-jit.md)
+
 - [ADR 0194: Keep local database benchmarks explicit and spatial repair previews read-only](0194-local-database-review-tools.md)
 
 - [ADR 0193: Use the PostgreSQL 18 volume root and preserve legacy clusters](0193-postgresql18-volume-layout.md)

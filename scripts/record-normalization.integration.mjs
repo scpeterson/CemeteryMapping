@@ -4,7 +4,7 @@ import pg from "pg";
 import { loadApiConfig } from "../server/config.mjs";
 import { normalizedSearchSql, veteranSql } from "../server/searchNormalizationSql.mjs";
 import { normalizeSearchText, isVeteran } from "../shared/recordNormalization.mjs";
-import { searchCemetery } from "../server/cemeterySearch.mjs";
+import { selectSearchMatches as searchCemetery } from "../server/cemeterySearch.mjs";
 import { selectGravesForCemeteries } from "../server/cemeteryMapQueries.mjs";
 
 test("PostgreSQL normalization agrees with JavaScript for accents and veteran values", async () => {

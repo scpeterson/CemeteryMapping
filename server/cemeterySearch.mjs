@@ -1,3 +1,4 @@
+import { withSearchTransaction } from "./searchTransaction.mjs";
 import { normalizeSearchText } from "../shared/recordNormalization.mjs";
 import { normalizedSearchSql, veteranSql } from "./searchNormalizationSql.mjs";
 import { derivedGravesiteStatusSql } from "./gravesiteStatusSql.mjs";
@@ -53,7 +54,13 @@ function groupSearchRows(rows, cleanedQuery) {
   return [...matchesByGrave.values()];
 }
 
-export async function searchCemetery(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds, cemeteryId, limit = 50, offset = 0 } = {}) {
+export function searchCemetery(pool, options) {
+  return withSearchTransaction(pool, client => selectSearchMatches(client, options));
+}
+
+// Query-level entry point for caller-owned transaction fixtures and benchmark baselines.
+// Request handlers must use searchCemetery so JIT is disabled before planning.
+export async function selectSearchMatches(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds, cemeteryId, limit = 50, offset = 0 } = {}) {
   const cleanedQuery = normalizeSearchText(query);
   const scopedOwnershipCemeteryIds = ownershipCemeteryIds?.map((id) => String(id));
   const birthDateSearchValue = "COALESCE(burials.birth_date_text, burials.birth_date::text)";

@@ -6,6 +6,8 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ### Fixed
 
+- Remove search JIT compilation overhead with a read-only, transaction-local `jit=off` setting on one checked-out connection. Restore prior settings before pool reuse, preserving search behavior and leaving database-wide, role and unrelated-query settings unchanged. See [ADR 0195](docs/adr/0195-search-transaction-local-jit.md).
+
 - Shorten CI with parallel application checks, four isolated browser shards, documentation-only PR validation, superseded-run cancellation, and browser/Docker caches while retaining the required deployment check.
 
 - Speed up cemetery search by resolving current ownership once per query for status calculation and authorized owner/date matches, preserving permissions, reasons, filtering and pagination.
