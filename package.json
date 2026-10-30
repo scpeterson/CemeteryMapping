@@ -68,7 +68,9 @@
     "db:purge:audit": "node scripts/db-purge-audit-events.mjs",
     "db:purge:system-events": "node scripts/db-purge-system-events.mjs",
     "db:validate:spatial": "node scripts/db-validate-spatial.mjs",
-    "db:tag": "node scripts/db-tag.mjs"
+    "db:tag": "node scripts/db-tag.mjs",
+    "db:benchmark": "node scripts/db-benchmark.mjs",
+    "db:preview:spatial-repair": "node scripts/db-preview-spatial-repair.mjs"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.29.0",
