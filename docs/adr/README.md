@@ -29,6 +29,10 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0182: Serialize search geometry after pagination](0182-search-page-geometry.md)
+
+- [ADR 0181: Parallel CI with a documentation-only PR path](0181-parallel-ci.md)
+
 - [ADR 0181: Index graves for local monument search](0181-index-monument-search.md)
 
 - [ADR 0180: Resolve current ownership once per search query](0180-search-ownership-query.md)
