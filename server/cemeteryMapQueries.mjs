@@ -17,7 +17,7 @@ export async function selectSectionsForCemeteries(client, cemeteryIds) {
   const alternateNamesSelect = sectionAlternateNamesSelect();
   const result = await client.query(
     `
-      SELECT section_id::text AS uuid, name AS section_id, name, ${alternateNamesSelect}, ST_AsGeoJSON(geometry)::json AS geometry
+      SELECT section_id::text AS uuid, cemetery_id::text, name AS section_id, name, ${alternateNamesSelect}, ST_AsGeoJSON(geometry)::json AS geometry
       FROM sections
       WHERE cemetery_id = ANY($1::uuid[]) AND deleted_at IS NULL AND geometry IS NOT NULL
       ORDER BY name, section_id

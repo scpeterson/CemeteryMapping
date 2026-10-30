@@ -1,3 +1,4 @@
+import { getHeadstoneOverview } from "./markerOverviewRepository.mjs";
 import express from "express";
 import { registerAccessRequestRoutes } from "./routes/accessRequestRoutes.mjs";
 import pg from "pg";
@@ -112,7 +113,7 @@ export function createApp(config, pool) {
   registerCemeteryRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
     createGraveFeature, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, createMaintenanceRecord,
-    createOwnershipEvent, findDeedRegistrySuggestions, getCemeteryData, getGraveSpace, getHeadstone, listHeadstoneLookupOptions, removeGravesiteOwnershipRight,
+    createOwnershipEvent, findDeedRegistrySuggestions, getCemeteryData, getGraveSpace, getHeadstone, getHeadstoneOverview, listHeadstoneLookupOptions, removeGravesiteOwnershipRight,
     importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     listReportsForUser, matchReportQuery, pool, requireAdmin, requireCemeteryAdmin, requirePowerUser,
     requireReader, restoreGraveSpace, runReport, safelyRecordSystemEvent, searchCemetery,
