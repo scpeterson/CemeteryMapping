@@ -29,6 +29,32 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0192: Scope section geometry and labels by cemetery identity](0192-scope-section-geometry.md)
+
+- [ADR 0191: Load named map query results with bounded concurrency](0191-bounded-named-map-queries.md)
+
+- [ADR 0190: Share active protected photo downloads within an authentication session](0190-shared-protected-media.md)
+
+- [ADR 0189: Retry only transient startup failures and cancel abandoned loads](0189-cancellable-startup-retries.md)
+
+- [ADR 0188: Load marker overview people and owners in one request](0188-marker-overview-summary.md)
+
+- [ADR 0187: Preserve unchanged scoped map collections](0187-stable-scoped-collections.md)
+
+- [ADR 0186: Centralize search result orchestration](0186-search-results-hook.md)
+
+- [ADR 0185: Filter map statuses without replacing geometry](0185-map-status-layer-filters.md)
+
+- [ADR 0184: Cancel abandoned detail requests](0184-abort-detail-requests.md)
+
+- [ADR 0183: Scope local search before matching](0183-scope-local-search.md)
+
+- [ADR 0182: Serialize search geometry after pagination](0182-search-page-geometry.md)
+
+- [ADR 0181: Parallel CI with a documentation-only PR path](0181-parallel-ci.md)
+
+- [ADR 0181: Index graves for local monument search](0181-index-monument-search.md)
+
 - [ADR 0180: Resolve current ownership once per search query](0180-search-ownership-query.md)
 
 - [ADR 0179: Shift the southern Section C lots and expand C-P03](0179-shift-southern-c-lots.md)

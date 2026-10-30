@@ -37,6 +37,10 @@ export async function overviewFixture(page: Page) {
     boundaries: [{ type: "Feature", properties: { name: "Test Cemetery" }, geometry }],
     sections: [], lots: [], graves: summaries, headstones: [markerSummary],
   } }));
+  await page.route("**/api/headstones/marker-1/overview", (route) => route.fulfill({ json: ["A-TEST", "B-TEST"].map((id) => {
+    const grave = overviewGrave(id);
+    return { id, cemeteryId, burials: grave.burials, owners: grave.owners, currentOwnerIds: grave.currentOwnerIds };
+  }) }));
   await page.route("**/api/headstones/marker-1", (route) => route.fulfill({ json: marker }));
   for (const grave of summaries) await page.route(gravePath(grave.id), (route) => route.fulfill({ json: overviewGrave(grave.id) }));
   await page.route("**/media/*.png", (route) => route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=", "base64") }));

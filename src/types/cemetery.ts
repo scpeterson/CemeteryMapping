@@ -55,6 +55,7 @@ export type SaveGraveSpaceInput = {
 
 export type CemeterySection = {
   id: string;
+  cemeteryId: string;
   name: string;
   alternateNames: string[];
   geometry: AreaGeometry;
@@ -117,3 +118,11 @@ export type MonumentSearchMatch = {
 };
 
 export type CemeterySearchMatch = SearchMatch | LotSearchMatch | MonumentSearchMatch;
+
+export type GraveOverviewSummary = {
+  id: string;
+  cemeteryId: string;
+  burials: Pick<Burial, "id" | "person">[];
+  owners: Pick<Owner, "id" | "displayName" | "firstName" | "lastName">[];
+  currentOwnerIds: string[];
+};
