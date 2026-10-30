@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0193: Use the PostgreSQL 18 volume root and preserve legacy clusters](0193-postgresql18-volume-layout.md)
+
 - [ADR 0192: Scope section geometry and labels by cemetery identity](0192-scope-section-geometry.md)
 
 - [ADR 0191: Load named map query results with bounded concurrency](0191-bounded-named-map-queries.md)
@@ -270,7 +272,7 @@ Core versions in the merged source as of 2026-09-25 (running deployments may lag
 | Lucide React | 1.46.0 | `package-lock.json` |
 | Node.js type definitions | 26.6.2 | `package-lock.json` |
 | ExcelJS | 4.4.0 | `package-lock.json` |
-| PostgreSQL/PostGIS image | `postgis/postgis:17-3.5` | `docker-compose.yml` |
+| PostgreSQL/PostGIS image (upgraded 2026-10-30) | `postgis/postgis:18-3.6` | `docker-compose.yml`; see ADR 0193 |
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
 | Playwright | 1.63.0 | `package-lock.json` |
 | ESLint | 10.8.0 | `package-lock.json` |
