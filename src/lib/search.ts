@@ -1,4 +1,4 @@
-import type { CemeteryData, GraveStatus, MonumentSearchMatch, LotSearchMatch, SearchMatch } from "../types";
+import type { CemeteryData, GraveSpaceSummary, GraveStatus, MonumentSearchMatch, LotSearchMatch, SearchMatch } from "../types";
 import { formatGraveLabel, graveSelectionKey, lotSelectionKey, normalize, statusLabels } from "./format";
 
 const addReason = (reasons: string[], label: string, value: string | undefined, query: string) => {
@@ -47,12 +47,22 @@ export function searchLots(data: CemeteryData, query: string): LotSearchMatch[] 
     .sort((a, b) => lotSelectionKey(a.lot).localeCompare(lotSelectionKey(b.lot)));
 }
 
-export function searchMonuments(data: CemeteryData, query: string, statuses: Set<GraveStatus>): MonumentSearchMatch[] {
+export function indexSearchGraves(graves: GraveSpaceSummary[]) {
+  return new Map(graves.map((grave) => [graveSelectionKey(grave), grave]));
+}
+
+export function searchMonuments(
+  data: CemeteryData, query: string, statuses: Set<GraveStatus>,
+  gravesByKey?: ReadonlyMap<string, GraveSpaceSummary>,
+): MonumentSearchMatch[] {
   const cleaned = normalize(query);
   if (!cleaned) return [];
+  const index = gravesByKey ?? indexSearchGraves(data.graves);
   return data.headstones.filter((headstone) => {
-    const grave = data.graves.find((grave) => grave.cemeteryId === headstone.cemeteryId && grave.id === headstone.gravesiteId);
-    return statuses.has(grave?.status ?? "unknown") && normalize(headstone.headstoneId).includes(cleaned);
+    if (!normalize(headstone.headstoneId).includes(cleaned)) return false;
+    const grave = headstone.gravesiteId === null ? undefined
+      : index.get(graveSelectionKey({ cemeteryId: headstone.cemeteryId, id: headstone.gravesiteId }));
+    return statuses.has(grave?.status ?? "unknown");
   }).map((headstone) => ({ headstone, reasons: [`Monument ID: ${headstone.headstoneId}`] }))
     .sort((a, b) => a.headstone.headstoneId.localeCompare(b.headstone.headstoneId));
 }

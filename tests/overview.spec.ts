@@ -91,7 +91,7 @@ test("missing photos and people have explicit empty states on phones", async ({ 
 test("failed linked records can retry without showing stale people after selection", async ({ page }) => {
   await overviewFixture(page);
   let fail = true;
-  await page.route(gravePath("B-TEST"), (route) => fail ? route.fulfill({ status: 503, json: { error: "Unavailable" } }) : route.fulfill({ json: overviewGrave("B-TEST") }));
+  await page.route("**/api/headstones/marker-1/overview", (route) => fail ? route.fulfill({ status: 503, json: { error: "Unavailable" } }) : route.fulfill({ json: [overviewGrave("A-TEST"), overviewGrave("B-TEST")] }));
   await page.goto("/");
   await select(page, "A-TEST");
   await overview(page).getByRole("button", { name: /HS-OVERVIEW/ }).click();
@@ -114,12 +114,12 @@ test("legacy marker photo is used when there are no linked photo assets", async 
   await expect(overview(page).getByRole("img", { name: "Marker HS-OVERVIEW" })).toBeVisible();
 });
 
-test("leaving a marker overview aborts its pending linked-grave request", async ({ page }) => {
+test("leaving a marker overview aborts its pending summary request", async ({ page }) => {
   await overviewFixture(page);
   await page.addInitScript(() => {
     const originalFetch = window.fetch.bind(window);
     window.fetch = (input, options) => {
-      if (String(input).includes("/grave-spaces/B-TEST") && options?.signal) {
+      if (String(input).endsWith("/headstones/marker-1/overview") && options?.signal) {
         document.documentElement.dataset.overviewPending = "true";
         return new Promise<Response>((_resolve, reject) => {
           options.signal!.addEventListener("abort", () => {

@@ -81,7 +81,8 @@ export function useApplicationData(setSelectedGrave: Dispatch<SetStateAction<Gra
   useEffect(() => {
     let isCurrent = true;
 
-    fetchCemeteryData()
+    const controller = new AbortController();
+    fetchCemeteryData(5, controller.signal)
       .then((nextData) => {
         if (!isCurrent) return;
         setData(nextData);
@@ -100,6 +101,7 @@ export function useApplicationData(setSelectedGrave: Dispatch<SetStateAction<Gra
 
     return () => {
       isCurrent = false;
+      controller.abort();
     };
   }, [setSelectedGrave]);
 

@@ -1,6 +1,6 @@
 export function registerHeadstoneRoutes(app, context) {
   const {
-    assignedEditableCemeteryIds, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, getHeadstone,
+    assignedEditableCemeteryIds, canViewOwnershipForCemetery, getHeadstoneOverview, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, getHeadstone,
     listHeadstoneLookupOptions, pool, requireAdmin, requirePowerUser, requireReader, restoreGraveSpace,
     softDeleteGraveSpace, softDeleteHeadstoneRelationship, softDeleteHeadstoneGravesiteRelationship, updateHeadstone, updateHeadstoneRelationship, updateHeadstoneGravesiteRelationship,
     validateCemeteryId, validateCreateHeadstonePayload, validateGraveSpaceId,
@@ -19,6 +19,17 @@ export function registerHeadstoneRoutes(app, context) {
         }
       });
     
+      app.get("/api/headstones/:id/overview", requireReader, async (request, response, next) => {
+        try {
+          const id = validateUuid(request.params.id, "Headstone id");
+          const overview = await getHeadstoneOverview(pool, id, {
+            canViewOwnership: (cemeteryId) => canViewOwnershipForCemetery(request.user, cemeteryId),
+          });
+          if (!overview) return response.status(404).json({ error: "Headstone not found" });
+          response.json(overview);
+        } catch (error) { next(error); }
+      });
+
       app.get("/api/headstones/:id", requireReader, async (request, response, next) => {
         try {
           const id = validateUuid(request.params.id, "Headstone id");
