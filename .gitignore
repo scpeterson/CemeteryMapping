@@ -31,3 +31,6 @@ field-media-inbox/
 
 # Python deployment validation artifacts.
 __pycache__/
+
+# Local database-volume cutover and other machine-specific Compose overrides.
+/docker-compose.override.yml

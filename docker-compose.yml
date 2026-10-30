@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgis/postgis:17-3.5
+    image: postgis/postgis:18-3.6
     platform: linux/amd64
     container_name: cemetery-mapping-db-${APP_ENV:-dev}
     restart: unless-stopped
@@ -11,7 +11,8 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - cemetery-postgres-data-${APP_ENV:-dev}:/var/lib/postgresql/data
+      # PostgreSQL 18 stores its cluster in 18/docker below this volume root.
+      - cemetery-postgres-data-${APP_ENV:-dev}:/var/lib/postgresql
       - ./db/seed:/seed:ro
       - ./db/validation:/validation:ro
     healthcheck:

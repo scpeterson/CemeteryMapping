@@ -9,6 +9,8 @@ This guide describes how to rebuild the Cemetery Mapping system from a clean che
 
 If this is your first time setting up the project, start with [Getting Started](getting-started.md). That guide explains what to install on Mac and Windows, how to check each tool, and how to run the local demo. This rebuild guide is a more technical validation checklist.
 
+Existing PostgreSQL 17 environments must follow the [PostgreSQL 18 upgrade guide](postgresql-18-upgrade.md) before restarting the root Compose database. Fresh databases use the normal setup below. Hosted TEST has a separate pinned database configuration.
+
 ## Prerequisites
 
 Install:
@@ -22,7 +24,7 @@ Install:
 
 The application containers provide:
 
-- PostgreSQL/PostGIS: `postgis/postgis:17-3.5`
+- PostgreSQL/PostGIS: `postgis/postgis:18-3.6`
 - Liquibase: `liquibase/liquibase:4.33.0`
 
 ## Clean Checkout Setup
