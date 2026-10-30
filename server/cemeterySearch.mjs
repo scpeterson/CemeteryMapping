@@ -128,8 +128,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           gravesites.label_aliases,
           gravesites.gravesite_id,
           derived_status.status,
-          COALESCE(derived_status_type.label, 'Unknown') AS status_label,
-          ST_AsGeoJSON(gravesites.geometry)::json AS geometry
+          COALESCE(derived_status_type.label, 'Unknown') AS status_label
         FROM gravesites
         JOIN cemeteries
           ON cemeteries.id = gravesites.cemetery_id
@@ -152,6 +151,7 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
           )
       ), matched_rows AS MATERIALIZED (
       SELECT
+        base_graves.grave_uuid,
         base_graves.cemetery_id,
         base_graves.cemetery_name,
         base_graves.section_id,
@@ -161,7 +161,6 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         base_graves.label_aliases,
         base_graves.gravesite_id,
         base_graves.status,
-        base_graves.geometry,
         reasons.reason_label,
         reasons.reason_value
       FROM base_graves
@@ -308,14 +307,18 @@ export async function searchCemetery(pool, { query = "", statuses = [], includeO
         ${militaryServiceSearchSql}
       ) reasons ON reasons.reason_value IS NOT NULL
       ), page_graves AS (
-        SELECT DISTINCT cemetery_id, cemetery_name, section_id, lot_id, grave_id, gravesite_id, display_label, label_aliases
+        SELECT DISTINCT grave_uuid, cemetery_id, cemetery_name, section_id, lot_id, grave_id, gravesite_id, display_label, label_aliases
         FROM matched_rows
         ORDER BY cemetery_name, section_id, lot_id, grave_id, gravesite_id, cemetery_id
         LIMIT $6::integer OFFSET $7::integer
+      ), page_geometry AS MATERIALIZED (
+        SELECT page_graves.*, ST_AsGeoJSON(gravesites.geometry)::json AS geometry
+        FROM page_graves
+        JOIN gravesites ON gravesites.id = page_graves.grave_uuid
       )
-      SELECT matched_rows.*
-      FROM page_graves
-      JOIN matched_rows USING (cemetery_id, gravesite_id)
+      SELECT matched_rows.*, page_graves.geometry
+      FROM page_geometry page_graves
+      JOIN matched_rows USING (grave_uuid)
       ORDER BY page_graves.cemetery_name, page_graves.section_id, page_graves.lot_id,
         page_graves.grave_id, page_graves.display_label, page_graves.label_aliases, page_graves.gravesite_id, page_graves.cemetery_id,
         matched_rows.reason_label, matched_rows.reason_value
