@@ -13,13 +13,14 @@ for (const detailed of [false, true]) {
       if (sql.includes("FROM cemeteries")) return { rows: [{ id: "cemetery", name: "Test", geometry: "{}" }] };
       maximum = Math.max(maximum, ++active);
       await flush(); active--;
-      if (sql.includes("FROM sections")) return { rows: [{ section_id: "A", name: "Section A", geometry: "{}" }] };
+      if (sql.includes("FROM sections")) return { rows: [{ section_id: "A", cemetery_id: "cemetery", name: "Section A", geometry: "{}" }] };
       if (sql.includes("FROM lots")) return { rows: [{ lot_id: "1", name: "Lot 1", cemetery_id: "cemetery", geometry: "{}" }] };
       return { rows: [] };
     } };
     const data = detailed ? await getDetailedCemeteryData(pool, { includeOwnership: false }) : await getCemeteryData(pool);
     assert.equal(maximum, 3); assert.equal(active, 0);
-    assert.equal(data.sections[0].name, "Section A"); assert.equal(data.lots[0].name, "Lot 1");
+    assert.equal(data.sections[0].name, "Section A");
+    assert.equal(data.sections[0].cemeteryId, "cemetery"); assert.equal(data.lots[0].name, "Lot 1");
     assert.equal(queries.filter((sql) => sql.includes("ST_AsGeoJSON(headstones.geometry)")).length, detailed ? 0 : 1);
     assert.ok(!queries.some((sql) => sql.includes("FROM owners\n")), "do not issue an unused ownership detail query");
   });

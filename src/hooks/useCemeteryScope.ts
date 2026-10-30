@@ -30,7 +30,8 @@ export function useCemeteryScope(data: CemeteryData, currentUser: CurrentUser | 
     : data.headstones.filter((marker) => marker.cemeteryId === cemeteryScope), [data.headstones, cemeteryScope]);
   const lotRestrictedAreas = useMemo(() => cemeteryScope === "" ? data.lotRestrictedAreas
     : data.lotRestrictedAreas?.filter((area) => area.cemeteryId === cemeteryScope), [data.lotRestrictedAreas, cemeteryScope]);
-  const sections = useMemo(() => cemeteryScope === null ? [] : data.sections, [data.sections, cemeteryScope]);
+  const sections = useMemo(() => cemeteryScope === "" ? data.sections
+    : data.sections.filter((section) => section.cemeteryId === cemeteryScope), [data.sections, cemeteryScope]);
   const mapData = useMemo<CemeteryData>(() => cemeteryScope === "" ? data : {
     ...data, boundary: boundaries[0], boundaries, graves, lots, headstones, lotRestrictedAreas, sections,
   }, [data, cemeteryScope, boundaries, graves, lots, headstones, lotRestrictedAreas, sections]);

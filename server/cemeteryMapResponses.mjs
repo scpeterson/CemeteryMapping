@@ -54,6 +54,7 @@ function toBoundaryFeature(cemetery) {
 function toSection(section) {
   return {
     id: section.section_id,
+    cemeteryId: section.cemetery_id,
     name: section.name,
     alternateNames: section.alternate_names ?? [],
     geometry: parseGeometry(section.geometry),
