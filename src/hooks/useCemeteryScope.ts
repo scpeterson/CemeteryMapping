@@ -6,30 +6,34 @@ export function useCemeteryScope(data: CemeteryData, currentUser: CurrentUser | 
     ? adminCemeteryScope
     : currentUser?.assignedCemeteryIds.length === 1 ? currentUser.assignedCemeteryIds[0] : null;
 
+  const availableBoundaries = useMemo(() => data.boundaries ?? (data.boundary ? [data.boundary] : []), [data.boundaries, data.boundary]);
   const cemeteries = useMemo(() => {
     const names = new Map<string, string>();
-    for (const boundary of data.boundaries ?? (data.boundary ? [data.boundary] : [])) {
+    for (const boundary of availableBoundaries) {
       if (boundary.properties.id) names.set(boundary.properties.id, boundary.properties.name);
     }
     for (const grave of data.graves) names.set(grave.cemeteryId, grave.cemeteryName);
     return [...names].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [data]);
-  const mapData = useMemo<CemeteryData>(() => {
-    if (cemeteryScope === "") return data;
-    if (cemeteryScope === null) return { boundaries: [], sections: [], lots: [], graves: [], headstones: [], lotRestrictedAreas: [] };
-    const name = cemeteries.find((cemetery) => cemetery.id === cemeteryScope)?.name;
-    const boundaries = (data.boundaries ?? (data.boundary ? [data.boundary] : [])).filter((boundary) =>
-      boundary.properties.id ? boundary.properties.id === cemeteryScope : boundary.properties.name === name);
-    return {
-      ...data,
-      boundary: boundaries[0],
-      boundaries,
-      graves: data.graves.filter((grave) => grave.cemeteryId === cemeteryScope),
-      lots: data.lots.filter((lot) => lot.cemeteryId === cemeteryScope),
-      headstones: data.headstones.filter((marker) => marker.cemeteryId === cemeteryScope),
-      lotRestrictedAreas: data.lotRestrictedAreas?.filter((area) => area.cemeteryId === cemeteryScope),
-    };
-  }, [data, cemeteryScope, cemeteries]);
+  }, [availableBoundaries, data.graves]);
+  const scopeName = cemeteries.find((cemetery) => cemetery.id === cemeteryScope)?.name;
+  const boundaries = useMemo(() => {
+    if (cemeteryScope === "") return availableBoundaries;
+    if (cemeteryScope === null) return [];
+    return availableBoundaries.filter((boundary) => boundary.properties.id
+      ? boundary.properties.id === cemeteryScope : boundary.properties.name === scopeName);
+  }, [availableBoundaries, cemeteryScope, scopeName]);
+  const graves = useMemo(() => cemeteryScope === "" ? data.graves
+    : data.graves.filter((grave) => grave.cemeteryId === cemeteryScope), [data.graves, cemeteryScope]);
+  const lots = useMemo(() => cemeteryScope === "" ? data.lots
+    : data.lots.filter((lot) => lot.cemeteryId === cemeteryScope), [data.lots, cemeteryScope]);
+  const headstones = useMemo(() => cemeteryScope === "" ? data.headstones
+    : data.headstones.filter((marker) => marker.cemeteryId === cemeteryScope), [data.headstones, cemeteryScope]);
+  const lotRestrictedAreas = useMemo(() => cemeteryScope === "" ? data.lotRestrictedAreas
+    : data.lotRestrictedAreas?.filter((area) => area.cemeteryId === cemeteryScope), [data.lotRestrictedAreas, cemeteryScope]);
+  const sections = useMemo(() => cemeteryScope === null ? [] : data.sections, [data.sections, cemeteryScope]);
+  const mapData = useMemo<CemeteryData>(() => cemeteryScope === "" ? data : {
+    ...data, boundary: boundaries[0], boundaries, graves, lots, headstones, lotRestrictedAreas, sections,
+  }, [data, cemeteryScope, boundaries, graves, lots, headstones, lotRestrictedAreas, sections]);
   const cemeteryScopeLabel = useMemo(() => {
     if (!currentUser) return "Loading cemetery…";
     if (currentUser.role !== "admin") {
