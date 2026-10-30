@@ -6,6 +6,10 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
+The [October 30, 2026 deployment record](#october-30-2026-main-release-and-migration-verification)
+records the latest completed hosted TEST release documented here. Earlier dated
+sections describe historical releases and their verification scope.
+
 ## Availability and cost
 
 The accepted setup keeps hosted TEST available independently of the developer's
@@ -564,12 +568,127 @@ order, with a backup and environment-specific rehearsal; do not replay DEV
 coordinates manually or mark pending migrations executed. The automated TEST
 release does not apply migrations and refuses a database with pending changes.
 
+Migrations 496–504 were subsequently rehearsed and applied to hosted TEST on
+October 30; see [the dated verification record](#october-30-2026-main-release-and-migration-verification).
+The procedure above remains required for future pending migrations.
+
 The new API requires schema changeset `502-passageway-area-type`. Verify startup
 and health after the separately authorized release, then confirm ten passageways,
 individual gravesite deed support, blocked whole-passageway ownership and the
 C-P03 expansion. Confirm all fixed monuments, existing grave/ownership assignments
 and E/G gravesite-only behavior remain intact. Preserve the hosted deployment
 record separately from the dated DEV evidence.
+
+## October 30, 2026 main release and migration verification
+
+Hosted TEST was deployed from `main` commit
+`f6f01107e1c17e694bcdcb5dcd31f523b7766968`
+([PR #770](https://github.com/scpeterson/CemeteryMapping/pull/770)), replacing
+`2ddcb62faa8f3390d93ad99fc733c66caf3ed7a0`. The frontend/API build metadata is
+`2026-10-30T23:20:28Z`. The exact commit's required CI gate passed before release.
+This deployment supersedes earlier code-release metadata in this runbook.
+
+Hosted PostgreSQL remains **17.5 / PostGIS 3.5.2** on its existing pinned image and
+volume. The local DEV/TEST PostgreSQL 18 migration did not upgrade this host.
+Existing hosted Auth0, restricted API credentials, frontend settings and tunnel
+configuration were retained. The deployment did not copy local DEV/TEST data to
+the host or apply any spatial-repair preview candidates.
+
+### Pending migration rehearsal and application
+
+The first `npm run deploy:test` attempt stopped before code cutover because the
+hosted database was at migration 495. It left live services unchanged. Following
+the release prerequisite above, a validated hosted database dump was restored to
+an isolated container using the same PostgreSQL/PostGIS image, with no published
+ports or access to the live volume. The full committed changelog applied the nine
+pending migrations in order; none was skipped, manually replayed or marked run.
+
+| Migrations | Reviewed scope |
+| --- | --- |
+| 496 | Retire thirteen defunct Section D temporary lots while retaining their outlines/history. |
+| 497–500 | Align the northern D row, number D-78 and shift the reviewed D lot groups around fixed markers. |
+| 501 | Deflect the shared D/E corner while preserving the combined footprint. |
+| 502 | Add passageway types, location references and individual-gravesite ownership constraints. |
+| 503 | Create ten reviewed passageways. |
+| 504 | Shift the 32 southern C lots and expand C-P03 to their new northern edge. |
+
+Rehearsal compared every non-extension public application table before and after.
+Only `lots`, `sections`, `audit_events` and `databasechangelog` changed. All 808
+graves and all existing lot UUIDs were preserved; total stored lots increased from
+219 to 229. All other application table fingerprints matched. Existing spatial
+findings remained present; migration success was not treated as a clean spatial
+validation result.
+
+Before live application, the application/settings and media were backed up. During
+a brief API/web pause, a final database dump was validated and the live lots,
+sections, cemetery, grave and headstone fingerprints were checked against the
+rehearsed input. Migrations 496–504 then ran successfully. The same preservation
+checks passed on the live database, with ten active passageways and no pending
+changesets. Runtime API grants were refreshed using the existing password.
+The previous code release was checked healthy before rerunning the normal release
+command. PostgreSQL and the tunnel remained running during this maintenance.
+
+### Code release verification
+
+The subsequent `npm run deploy:test` completed its normal candidate/cutover
+workflow. Verification confirmed:
+
+- Candidate startup with Auth0 enabled, restricted database configuration and the
+  default Node runtime user; the protected environment file was readable with
+  mode `0600`.
+- Database-backed TEST health matched the selected full commit and build time.
+- All 167 deployed `server/` and `shared/` runtime files matched their release
+  hashes; the API had zero restarts after cutover.
+- Nginx configuration, local public frontend content and the hosted HTTPS public
+  page passed. Anonymous `/api/me` and `/api/search` access returned 401.
+- Account/access-request and media preservation checks passed. Protected settings
+  were unchanged apart from release metadata; tunnel-token ownership was retained.
+
+The deployed API image is
+`sha256:46b0a518cbde3e2f3e8c6ac732c9aa2b090b8014dd4dd61f628722951db411f6`.
+
+### Search and map smoke verification
+
+A read-only smoke test ran the deployed repository code inside the API container,
+using its existing `cemetery_api` credentials. It confirmed 808 stored graves,
+785 map-visible active graves, ten passageways, exact search and grave-detail
+reads. This was a backend smoke test, not an authenticated browser session.
+
+Broad search (`a`) had a median of **220 ms** across five measured calls after two
+warmups (observed range 218–226 ms). This is repository execution including
+connection/transaction overhead; it excludes HTTP, Auth0 validation and browser
+rendering. No comparable pre-release hosted baseline was collected, so these
+numbers are not a hosted speedup claim or directly comparable with local timings.
+The single checked-out backend reported `jit=on` again after search, confirming
+that [the transaction-local JIT policy](adr/0195-search-transaction-local-jit.md)
+did not change its subsequent session setting.
+
+Fresh interactive TEST Auth0 sign-in, invitation delivery, Turnstile replay and
+browser editing of passageways were not exercised by this release verification.
+Existing validation gaps in older dated records are not implicitly closed by
+these backend checks. Whole-passageway ownership rejection and E/G gravesite-only
+behavior have automated coverage; no synthetic ownership or access records were
+written to live TEST for this deployment.
+
+### Retained recovery and evidence
+
+Protected migration backups and before/after manifests are retained on the host
+under `/srv/nhcemeteries/backups/20261030T231322Z-f6f01107e1c1-d296380c-schema`.
+They include `rehearsal-report.json`, `live-migration-report.json`, rehearsal and pre-migration
+database dumps, application/settings recovery material and the media snapshot.
+The disposable rehearsal container and its own volume were removed after checks;
+the live volume was retained.
+
+The code-release recovery directory is
+`/srv/nhcemeteries/backups/20261030T232028Z-f6f01107e1c1-96c502f8`;
+its staging directory under `/srv/nhcemeteries/staging/` has the same release ID
+and contains `verification.json` and protected command logs. Detailed plans,
+credentials, raw records and backup contents are not published in this runbook.
+
+Code rollback does not undo these data migrations, whose rollback actions are
+empty. Use a reviewed forward correction or pre-migration backup recovery that
+accounts for subsequent hosted edits. Retain both migration and code-release
+recovery materials; do not use Liquibase rollback/reapply to infer data recovery.
 
 ## CI validation paths
 
