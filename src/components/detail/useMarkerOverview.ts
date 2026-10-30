@@ -1,36 +1,32 @@
 import { useEffect, useState } from "react";
-import { fetchGraveSpace } from "../../api/cemeteryApi";
-import type { GraveSpace, GraveSpaceSummary } from "../../types";
+import { fetchHeadstoneOverview } from "../../api/cemeteryApi";
+import { graveSelectionKey } from "../../lib/format";
+import type { GraveOverviewSummary, GraveSpaceSummary } from "../../types";
 
-type LinkedGrave = { summary: GraveSpaceSummary; detail?: GraveSpace; failed?: boolean };
+type LinkedGrave = { summary: GraveSpaceSummary; detail?: GraveOverviewSummary; failed?: boolean };
 
-export function useMarkerOverview(graves: GraveSpaceSummary[]) {
-  const [result, setResult] = useState<{ source: GraveSpaceSummary[]; records: LinkedGrave[] }>();
+export function useMarkerOverview(markerId: string, graves: GraveSpaceSummary[]) {
+  const [result, setResult] = useState<{ markerId: string; source: GraveSpaceSummary[]; records: LinkedGrave[] }>();
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    let next = 0;
-    const records: LinkedGrave[] = new Array(graves.length);
-    const worker = async () => {
-      while (!controller.signal.aborted && next < graves.length) {
-        const index = next++;
-        const summary = graves[index];
-        try {
-          records[index] = { summary, detail: await fetchGraveSpace(summary.cemeteryId, summary.id, controller.signal) };
-        } catch {
-          if (controller.signal.aborted) return;
-          records[index] = { summary, failed: true };
-        }
-      }
-    };
-    void Promise.all(Array.from({ length: Math.min(4, graves.length) }, worker)).then(() => {
-      if (!controller.signal.aborted) setResult({ source: graves, records });
+    if (!graves.length) return () => controller.abort();
+    void fetchHeadstoneOverview(markerId, controller.signal).then((details) => {
+      if (controller.signal.aborted) return;
+      const byKey = new Map(details.map((detail) => [graveSelectionKey(detail), detail]));
+      setResult({ markerId, source: graves, records: graves.map((summary) => {
+        const detail = byKey.get(graveSelectionKey(summary));
+        return { summary, detail, failed: !detail };
+      }) });
+    }).catch(() => {
+      if (!controller.signal.aborted) setResult({ markerId, source: graves, records: graves.map((summary) => ({ summary, failed: true })) });
     });
     return () => controller.abort();
-  }, [graves, attempt]);
+  }, [markerId, graves, attempt]);
+  const current = result?.markerId === markerId && result.source === graves;
   return {
-    records: result?.source === graves ? result.records : [],
-    loading: result?.source !== graves,
+    records: current ? result.records : [],
+    loading: graves.length > 0 && !current,
     retry: () => { setResult(undefined); setAttempt((value) => value + 1); },
   };
 }

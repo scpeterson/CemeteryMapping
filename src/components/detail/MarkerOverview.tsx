@@ -24,7 +24,7 @@ export function MarkerOverview({ marker, graves, canViewOwnership, onSelectGrave
   onSelectGrave: (grave: GraveSpaceSummary) => void;
   onShowDetails: () => void;
 }) {
-  const { records, loading, retry } = useMarkerOverview(graves);
+  const { records, loading, retry } = useMarkerOverview(marker.id, graves);
   const images = overviewImages(marker.mediaAssets ?? [], [marker]).map((image) => ({ ...image, linkedMarker: undefined }));
   const burialIds = new Set(marker.burialIds ?? []);
   const associated = records.flatMap(({ detail }) => detail?.burials.filter((burial) => !burialIds.size || burialIds.has(burial.id)) ?? []);

@@ -21,7 +21,7 @@ export function AuthenticatedShell({ children }: Auth0AppProviderProps) {
 
     setAccessTokenProvider(() => getAccessTokenSilently());
     return () => setAccessTokenProvider(undefined);
-  }, [getAccessTokenSilently, isAuthenticated]);
+  }, [getAccessTokenSilently, isAuthenticated, user?.sub]);
 
   if (isLoading) {
     return (

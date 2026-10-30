@@ -57,3 +57,15 @@ test("search batches ownership resolution once for status and permitted owner re
     return {rows:[]};
   }},{query:"Fixture",includeOwnership:false,ownershipCemeteryIds:[],cemeteryId});
 });
+
+
+test("search serializes geometry only for the bounded page and keeps it out of reason materialization", async () => {
+  await searchCemetery({ async query(sql) {
+    const beforePage = sql.slice(0, sql.indexOf("page_graves AS"));
+    assert.doesNotMatch(beforePage, /ST_AsGeoJSON|base_graves\.geometry/u);
+    assert.match(sql, /LIMIT \$6::integer OFFSET \$7::integer[\s\S]*page_geometry AS MATERIALIZED/u);
+    assert.match(sql, /JOIN gravesites ON gravesites.id = page_graves.grave_uuid/u);
+    assert.equal([...sql.matchAll(/ST_AsGeoJSON/gu)].length, 1);
+    return { rows: [] };
+  } }, { query: "Fixture", limit: 2, offset: 1 });
+});

@@ -4,7 +4,7 @@ import { StatusBadge } from "../ui/Feedback";
 import { OverviewPhoto } from "./OverviewPhoto";
 import { graveOverviewImages } from "./overviewImages";
 
-export function OverviewPeople({ burials, emptyMessage }: { burials: Burial[]; emptyMessage: string }) {
+export function OverviewPeople({ burials, emptyMessage }: { burials: Pick<Burial, "id" | "person">[]; emptyMessage: string }) {
   return burials.length ? <ul className="overview-list">
     {burials.map((burial) => <li key={burial.id}>
       <strong>{fullName(burial.person) || "Name not recorded"}</strong>
@@ -16,7 +16,7 @@ export function OverviewPeople({ burials, emptyMessage }: { burials: Burial[]; e
   </ul> : <p className="muted">{emptyMessage}</p>;
 }
 
-export function OverviewOwners({ owners }: { owners: Owner[] }) {
+export function OverviewOwners({ owners }: { owners: Pick<Owner, "id" | "displayName" | "firstName" | "lastName">[] }) {
   return owners.length ? <ul className="overview-list">
     {owners.map((owner) => <li key={owner.id}>{owner.displayName || [owner.firstName, owner.lastName].filter(Boolean).join(" ") || "Name not recorded"}</li>)}
   </ul> : <p className="muted">No current ownership is recorded.</p>;
