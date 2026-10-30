@@ -160,8 +160,8 @@ export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
   };
 }
 
-export async function fetchHeadstone(id: string): Promise<Headstone> {
-  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(id)}`);
+export async function fetchHeadstone(id: string, signal?: AbortSignal): Promise<Headstone> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstones/${encodeURIComponent(id)}`, { signal });
   return jsonResponse<Headstone>(response, "Headstone API");
 }
 

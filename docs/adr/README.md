@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0184: Cancel abandoned detail requests](0184-abort-detail-requests.md)
+
 - [ADR 0183: Scope local search before matching](0183-scope-local-search.md)
 
 - [ADR 0182: Serialize search geometry after pagination](0182-search-page-geometry.md)
