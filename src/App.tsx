@@ -12,7 +12,7 @@ import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { graveSelectionKey, lotSelectionKey } from "./lib/format";
-import { searchGraves, searchLots, searchMonuments } from "./lib/search";
+import { indexSearchGraves, searchGraves, searchLots, searchMonuments } from "./lib/search";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import { useRecordMutations } from "./hooks/useRecordMutations";
 import type {
@@ -71,7 +71,8 @@ export default function App() {
   const { cemeteryScope, cemeteries, mapData, cemeteryScopeLabel } = useCemeteryScope(data, currentUser, adminCemeteryScope);
   const { remoteMatches, searchError, isSearching, hasMore, loadMore, retry } = useCemeterySearch(query, selectedStatuses, cemeteryScope);
   const localMatches = useMemo(() => searchGraves(data, query, selectedStatuses), [data, query, selectedStatuses]);
-  const monumentMatches = useMemo(() => searchMonuments(data, query, selectedStatuses), [data, query, selectedStatuses]);
+  const gravesBySearchKey = useMemo(() => indexSearchGraves(data.graves), [data.graves]);
+  const monumentMatches = useMemo(() => searchMonuments(data, query, selectedStatuses, gravesBySearchKey), [data, query, selectedStatuses, gravesBySearchKey]);
   const lotMatches = useMemo(() => searchLots(data, query), [data, query]);
   const matches = useMemo<CemeterySearchMatch[]>(() => [...monumentMatches, ...lotMatches, ...(remoteMatches ?? localMatches)].filter((match) => cemeteryScope === "" || ("headstone" in match ? match.headstone.cemeteryId : "lot" in match ? match.lot.cemeteryId : match.grave.cemeteryId) === cemeteryScope), [localMatches, lotMatches, monumentMatches, remoteMatches, cemeteryScope]);
   const visibleGraves = useMemo(() => {
