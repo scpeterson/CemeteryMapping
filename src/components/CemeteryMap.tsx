@@ -42,6 +42,7 @@ type CemeteryMapProps = {
   onSelectLot: (lot: CemeteryLot) => void;
   onSelectHeadstone: (headstone: HeadstoneSummary) => void;
   isPickingMarkerPoint?: boolean;
+  isPickingGravesiteMonument?: boolean;
   onPickMarkerPoint?: (point: { latitude: number; longitude: number }) => void;
 };
 
@@ -150,6 +151,7 @@ export function CemeteryMap({
   onSelectLot,
   onSelectHeadstone,
   isPickingMarkerPoint = false,
+  isPickingGravesiteMonument = false,
   onPickMarkerPoint,
 }: CemeteryMapProps) {
   const [failedLayers, setFailedLayers] = useState<ExternalMapLayer[]>([]);
@@ -166,6 +168,7 @@ export function CemeteryMap({
   const selectionModeRef = useRef<SelectionMode>("gravesites");
   const isMeasuringRef = useRef(false);
   const isPickingMarkerPointRef = useRef(false);
+  const isPickingGravesiteMonumentRef = useRef(false);
   const cemeteryMarkersRef = useRef<maplibregl.Marker[]>([]);
   const { boundary, boundaries, sections, lots, lotRestrictedAreas, headstones } = data;
   const highlightStateRef = useRef(createMapHighlightState());
@@ -203,8 +206,9 @@ export function CemeteryMap({
     onSelectLotRef.current = onSelectLot;
     onSelectHeadstoneRef.current = onSelectHeadstone;
     isPickingMarkerPointRef.current = isPickingMarkerPoint;
+    isPickingGravesiteMonumentRef.current = isPickingGravesiteMonument;
     onPickMarkerPointRef.current = onPickMarkerPoint;
-  }, [data, cemeteryScope, initialFitCemeteryIds, isInitialFitReady, isPickingMarkerPoint, onPickMarkerPoint, onSelectGrave, onSelectHeadstone, onSelectLot, searchResultIds, selectedGrave, selectedHeadstone, selectedLot, selectedStatuses]);
+  }, [data, cemeteryScope, initialFitCemeteryIds, isInitialFitReady, isPickingMarkerPoint, isPickingGravesiteMonument, onPickMarkerPoint, onSelectGrave, onSelectHeadstone, onSelectLot, searchResultIds, selectedGrave, selectedHeadstone, selectedLot, selectedStatuses]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -310,12 +314,20 @@ export function CemeteryMap({
         didFitInitialScopeRef.current = true;
       }
 
-      registerSelectableLayerHandlers(map, selectableGraveLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current);
-      registerSelectableLayerHandlers(map, selectableLotLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current);
-      registerSelectableLayerHandlers(map, selectableHeadstoneLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current);
+      registerSelectableLayerHandlers(map, selectableGraveLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current || isPickingGravesiteMonumentRef.current);
+      registerSelectableLayerHandlers(map, selectableLotLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current || isPickingGravesiteMonumentRef.current);
+      registerSelectableLayerHandlers(map, selectableHeadstoneLayers, () => isMeasuringRef.current || isPickingMarkerPointRef.current || isPickingGravesiteMonumentRef.current);
       map.on("click", (event) => {
         if (isPickingMarkerPointRef.current) {
           onPickMarkerPointRef.current?.({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
+          return;
+        }
+
+        if (isPickingGravesiteMonumentRef.current) {
+          const feature = map.queryRenderedFeatures(event.point, { layers: existingLayers(map, selectableHeadstoneLayers) })[0];
+          const id = feature?.properties?.id;
+          const headstone = typeof id === "string" ? headstonesByIdRef.current.get(id) : undefined;
+          if (headstone) onSelectHeadstoneRef.current(headstone);
           return;
         }
 

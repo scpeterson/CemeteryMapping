@@ -3,7 +3,7 @@ import {
   validateCemeteryId, validateGraveSpaceId, validateMutationReason, validateSearchQuery, validateStatuses,
 } from "../requestValidation.mjs";
 import {
-  validateBurialPayload, validateCreateHeadstonePayload, validateGraveFeaturePayload,
+  validateBurialPayload, validateCreateGraveSpacePayload, validateCreateHeadstonePayload, validateGraveFeaturePayload,
   validateGraveLotAssignmentPayload, validateGraveSpacePayload, validateHeadstoneGravesiteRelationshipPayload, validateHeadstonePayload, validateHeadstoneRelationshipPayload,
   validateMaintenanceRecordPayload, validateOwnerUpdatePayload, validateOwnershipEventPayload, validateReportParameters,
   validateReportQueryPayload, validateReportRunPayload,
@@ -18,6 +18,7 @@ export function registerCemeteryRoutes(app, context) {
     ...context,
     validateBurialPayload,
     validateCemeteryId,
+    validateCreateGraveSpacePayload,
     validateCreateHeadstonePayload,
     validateGraveFeaturePayload,
     validateGraveSpaceId,

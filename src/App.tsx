@@ -13,6 +13,8 @@ import { SearchPanel } from "./components/SearchPanel";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { graveSelectionKey, lotSelectionKey } from "./lib/format";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
+import { createGraveSpace, createHeadstoneGravesiteRelationship } from "./api/cemeteryApi";
+import { CreateGraveSpaceForm } from "./components/CreateGraveSpaceForm";
 import { useRecordMutations } from "./hooks/useRecordMutations";
 import type {
   CemeterySearchMatch,
@@ -20,6 +22,7 @@ import type {
   GraveSpaceSummary,
   GraveStatus,
   HeadstoneSummary,
+  SaveHeadstoneCreateInput,
 } from "./types";
 
 const AdminPanel = lazy(() => import("./components/AdminPanel").then((module) => ({ default: module.AdminPanel })));
@@ -51,6 +54,10 @@ export default function App() {
   const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
   const [isPickingMarkerPoint, setIsPickingMarkerPoint] = useState(false);
   const [pickedMarkerPoint, setPickedMarkerPoint] = useState<PickedMarkerPoint>();
+  const [isCreatingGravesite, setIsCreatingGravesite] = useState(false);
+  const [createGravesiteCemeteryId, setCreateGravesiteCemeteryId] = useState("");
+  const [isPickingGravesiteMonument, setIsPickingGravesiteMonument] = useState(false);
+  const [pickedGravesiteMonumentId, setPickedGravesiteMonumentId] = useState("");
   const {
     selectedGraveDetails,
     setSelectedGraveDetails,
@@ -154,6 +161,13 @@ export default function App() {
   };
 
   const selectHeadstone = (headstone: HeadstoneSummary) => {
+    if (isCreatingGravesite && isPickingGravesiteMonument) {
+      setPickedGravesiteMonumentId(headstone.id);
+      setCreateGravesiteCemeteryId(headstone.cemeteryId);
+      setIsPickingGravesiteMonument(false);
+      setMobileView("details");
+      return true;
+    }
     if (!confirmDiscardChanges()) return false;
     setMobileView("details");
     setSelectionVersion((version) => version + 1);
@@ -225,6 +239,14 @@ export default function App() {
           onOpenReports={() => setIsReportsPanelOpen(true)}
           onOpenControl={() => setIsControlPointCollectorOpen(true)}
           onOpenAdmin={() => setIsAdminPanelOpen(true)}
+          onOpenCreateGravesite={() => {
+            const isSystemAdmin = currentUser?.role === "admin";
+            setCreateGravesiteCemeteryId(isSystemAdmin ? "" : (cemeteryScope ?? ""));
+            setPickedGravesiteMonumentId("");
+            setIsPickingGravesiteMonument(false);
+            setIsCreatingGravesite(true);
+            setMobileView("details");
+          }}
         />
         <main className="app-shell" data-mobile-view={mobileView}>
           <nav className="mobile-workspace-nav" aria-label="Workspace views">
@@ -276,6 +298,7 @@ export default function App() {
               cemeteryScope={cemeteryScope ?? ""}
               isInitialFitReady={isInitialMapFitReady}
               isPickingMarkerPoint={isPickingMarkerPoint}
+              isPickingGravesiteMonument={isPickingGravesiteMonument}
               onSelectGrave={selectGrave}
               onSelectLot={selectLot}
               onSelectHeadstone={selectHeadstone}
@@ -343,6 +366,25 @@ export default function App() {
           </EditingOptionsContext.Provider>
         </main>
         <Suspense fallback={null}>
+          {isCreatingGravesite && (currentUser?.role === "admin" || currentUser?.role === "cemetery-admin") ? <CreateGraveSpaceForm cemeteryId={createGravesiteCemeteryId} cemeteries={cemeteries} monuments={data.headstones.filter((monument) => monument.cemeteryId === createGravesiteCemeteryId && (monument.id === pickedGravesiteMonumentId || ["A", "B", "C", "D"].includes(data.graves.find((grave) => grave.id === monument.gravesiteId)?.section?.toUpperCase() ?? "")))} selectedMonumentId={pickedGravesiteMonumentId} isPickingMonument={isPickingGravesiteMonument} canChooseCemetery={currentUser.role === "admin"} onCemeteryChange={(id) => { setCreateGravesiteCemeteryId(id); setPickedMarkerPoint(undefined); }} onPickMonument={() => { setIsPickingGravesiteMonument(true); setMobileView("map"); }} point={pickedMarkerPoint} onPickPoint={() => { setMobileView("map"); setIsPickingMarkerPoint(true); }} onCancel={() => { setIsCreatingGravesite(false); setIsPickingGravesiteMonument(false); setPickedMarkerPoint(undefined); }} onSave={createGraveSpace} onSaved={async (grave, monumentChoice, coordinates) => {
+            setData((current) => ({ ...current, graves: [...current.graves, grave] }));
+            if (monumentChoice && monumentChoice !== "__new__") {
+              await createHeadstoneGravesiteRelationship(monumentChoice, { gravesiteId: grave.uuid ?? grave.id, relationshipType: "primary", notes: "Associated during gravesite creation." });
+            }
+            if (monumentChoice === "__new__") {
+              const option = (code: string, values: { code: string; id: string }[]) => values.find((value) => value.code === code)?.id ?? values[0]?.id ?? "";
+              const createdMonument: SaveHeadstoneCreateInput = {
+                headstoneId: `TLC-HS-${grave.id.replace(/^TLC-GPS-/u, "")}`,
+                graveSpaceId: grave.id,
+                relationshipType: "primary",
+                relationshipNotes: "Created during gravesite creation.",
+                markerTypeId: option("upright", headstoneLookups.markerTypes), markerScopeId: option("unknown", headstoneLookups.markerScopes), materialId: option("unknown", headstoneLookups.materials), conditionId: option("unknown", headstoneLookups.conditions),
+                vaseTypeId: "", vaseMaterialId: "", vasePlacementId: "", vaseNotes: "", conditionNotes: "", inscription: "", inscriptionStatus: "not_recorded", designNotes: "", photoUrl: "", lastInspectedAt: "", dataConfidence: "unknown", reviewStatus: "needs_review", reviewNotes: "", sourceConflict: false, nhgInclusion: "not_checked", provenanceVerificationSource: "manual_review", provenanceVerifiedAt: "", applyNhgInclusionToBurials: false, latitude: coordinates.latitude.toString(), longitude: coordinates.longitude.toString(), reason: "Create monument with gravesite",
+              };
+              await createHeadstoneForGrave(grave, createdMonument);
+            }
+            setSelectedGrave(grave); setIsCreatingGravesite(false); setPickedMarkerPoint(undefined);
+          }} /> : null}
           {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onOpenMonument={(monument) => {
             if (selectHeadstone(monument)) setIsReportsPanelOpen(false);
           }} onClose={() => setIsReportsPanelOpen(false)} /> : null}

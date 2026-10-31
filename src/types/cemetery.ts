@@ -25,6 +25,7 @@ export type GraveSpaceSummary = {
 };
 
 export type GraveSpace = GraveSpaceSummary & {
+  uuid?: string;
   version: string;
   name: string;
   cost?: number;
@@ -50,6 +51,16 @@ export type SaveGraveSpaceInput = {
   name: string;
   status: GraveStatus;
   cost: string;
+  reason?: string;
+};
+
+export type CreateGraveSpaceInput = {
+  status: GraveStatus;
+  cost: string;
+  latitude: number;
+  longitude: number;
+  anchorMode?: "gravesite" | "monument";
+  monumentId?: string;
   reason?: string;
 };
 

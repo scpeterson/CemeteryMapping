@@ -106,6 +106,23 @@ export function validateCreateHeadstonePayload(body, graveSpaceId) {
   };
 }
 
+export function validateCreateGraveSpacePayload(body) {
+  const monumentId = optionalText(body?.monumentId, "Monument", 100);
+  const latitude = optionalCoordinate(body?.latitude, "Latitude", { min: -90, max: 90 });
+  const longitude = optionalCoordinate(body?.longitude, "Longitude", { min: -180, max: 180 });
+  if (!monumentId && (latitude === null || longitude === null)) throw new BadRequestError("Latitude and longitude are required when no existing monument is selected.");
+  if (monumentId && !/^[0-9a-f-]{36}$/iu.test(monumentId)) throw new BadRequestError("Monument is invalid.");
+  const anchorMode = optionalText(body?.anchorMode, "Placement anchor", 20) || "gravesite";
+  if (!["gravesite", "monument"].includes(anchorMode)) throw new BadRequestError("Placement anchor is invalid.");
+  const status = optionalText(body?.status, "Status", 30) || "unknown";
+  if (!["available", "reserved", "occupied", "sold", "needs_review", "unknown"].includes(status)) throw new BadRequestError("Status is invalid.");
+  return {
+    status,
+    cost: optionalText(body?.cost, "Cost", 40), latitude, longitude, anchorMode, monumentId: monumentId || undefined,
+    reason: validateMutationReason(body?.reason),
+  };
+}
+
 export function validateHeadstoneRelationshipPayload(body) {
   const relationshipType = optionalText(body?.relationshipType, "Relationship type", 50) || "related_marker";
   if (!["family_obelisk", "references_marker", "common_base", "foot_marker", "related_marker"].includes(relationshipType)) {

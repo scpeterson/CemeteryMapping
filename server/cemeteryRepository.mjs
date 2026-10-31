@@ -1,4 +1,4 @@
-import { updateGraveSpaceMutation } from "./cemeteryGraveMutations.mjs";
+import { createGraveSpaceMutation, updateGraveSpaceMutation } from "./cemeteryGraveMutations.mjs";
 import { loadDetailedGrave } from "./cemeteryGraveQueries.mjs";
 import { selectHeadstoneById } from "./cemeteryHeadstoneQueries.mjs";
 import { toHeadstone } from "./cemeteryMappers.mjs";
@@ -37,6 +37,10 @@ export async function getGraveSpace(pool, cemeteryId, gravesiteId, { includeOwne
 
 export async function updateGraveSpace(pool, cemeteryId, gravesiteId, graveSpace, options = {}) {
   return await updateGraveSpaceMutation(pool, cemeteryId, gravesiteId, graveSpace, options, loadDetailedGrave);
+}
+
+export async function createGraveSpace(pool, cemeteryId, graveSpace, options = {}) {
+  return await createGraveSpaceMutation(pool, cemeteryId, graveSpace, options, loadDetailedGrave);
 }
 
 export async function getHeadstone(pool, id) {

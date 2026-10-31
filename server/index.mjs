@@ -18,6 +18,7 @@ import { listCemeteryAdminRecords, updateCemeteryText, updateLotText, updateSect
 import { listDataQualityDashboard } from "./dataQualityRepository.mjs";
 import {
   createGraveFeature,
+  createGraveSpace,
   createHeadstoneForGrave,
   createHeadstoneGravesiteRelationship,
   createHeadstoneRelationship,
@@ -112,7 +113,7 @@ export function createApp(config, pool) {
   app.use(express.json());
   registerCemeteryRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
-    createGraveFeature, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, createMaintenanceRecord,
+    createGraveFeature, createGraveSpace, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, createMaintenanceRecord,
     createOwnershipEvent, findDeedRegistrySuggestions, getCemeteryData, getGraveSpace, getHeadstone, getHeadstoneOverview, listHeadstoneLookupOptions, removeGravesiteOwnershipRight,
     importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     listReportsForUser, matchReportQuery, pool, requireAdmin, requireCemeteryAdmin, requirePowerUser,

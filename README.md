@@ -141,6 +141,7 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/health` for API, database, and version health metadata
 - `GET /api/cemeteries/:cemeteryId/grave-spaces/:id` for full grave details fetched when a grave is selected
 - `PATCH /api/cemeteries/:cemeteryId/grave-spaces/:id` for gravesite detail edits; requires `expectedVersion` from the detail response and returns HTTP 409 on a stale edit
+- `POST /api/cemeteries/:cemeteryId/grave-spaces` for power users to add a manually placed gravesite; accepts an identifier, section/lot/space, status, map coordinates, and dimensions
 - `GET /media/:storageKey` for reader-authenticated downloads of undeleted media assets; protected images must be fetched with authentication
 - `GET /api/search?q=Garcia&status=occupied,reserved` for grave, burial, owner, and date search; results return summary grave records for the map and result list
 - `GET /api/reports` for the role-filtered approved report catalog

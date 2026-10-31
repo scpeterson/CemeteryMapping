@@ -91,6 +91,87 @@ export async function updateGraveSpaceMutation(
   });
 }
 
+export async function createGraveSpaceMutation(pool, cemeteryId, graveSpace, { actorUser, reason, allowedCemeteryIds } = {}, loadDetailedGrave) {
+  return withAuditContext(pool, { actorUser, reason }, async (client) => {
+    if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) return undefined;
+    if (graveSpace.monumentId) {
+      const monumentResult = await client.query(
+        `SELECT ST_X(headstones.geometry) AS longitude, ST_Y(headstones.geometry) AS latitude
+         FROM headstones WHERE headstones.id = $1 AND headstones.cemetery_id = $2 AND headstones.deleted_at IS NULL`,
+        [graveSpace.monumentId, cemeteryId],
+      );
+      if (!monumentResult.rowCount) return { invalid: "monument_not_found" };
+      graveSpace = { ...graveSpace, longitude: Number(monumentResult.rows[0].longitude), latitude: Number(monumentResult.rows[0].latitude), anchorMode: "monument" };
+    }
+    const sectionResult = await client.query(
+      `SELECT section_id, name FROM sections WHERE cemetery_id = $1 AND deleted_at IS NULL
+       AND ST_Covers(geometry, ST_SetSRID(ST_MakePoint($2, $3), 4326))
+       ORDER BY ST_Area(geometry::geography) LIMIT 1`,
+      [cemeteryId, graveSpace.longitude, graveSpace.latitude],
+    );
+    if (!sectionResult.rowCount) return { invalid: "no_section" };
+    const section = String(sectionResult.rows[0].name ?? sectionResult.rows[0].section_id ?? "").trim().toUpperCase();
+    if (["E", "F", "G"].includes(section)) return { invalid: "section_not_allowed", section };
+    const lotResult = await client.query(
+      `SELECT 1 FROM lots WHERE cemetery_id = $1 AND deleted_at IS NULL AND burial_use_status <> 'non_burial'
+       AND ST_Covers(geometry, ST_SetSRID(ST_MakePoint($2, $3), 4326)) LIMIT 1`,
+      [cemeteryId, graveSpace.longitude, graveSpace.latitude],
+    );
+    if (!lotResult.rowCount) return { invalid: "no_burial_lot" };
+    const result = await client.query(
+      `
+        WITH next_number AS (
+          SELECT COALESCE(MAX(NULLIF((regexp_match(grave_id, '^[0-9]+'))[1], '')::integer), 0) + 1 AS number
+          FROM gravesites
+          WHERE cemetery_id = $1 AND section_id = $2 AND deleted_at IS NULL
+        ), selected_section AS (
+          SELECT section_id
+          FROM sections
+          WHERE cemetery_id = $1 AND (name = $2 OR section_id = $2) AND deleted_at IS NULL
+          ORDER BY section_id
+          LIMIT 1
+        ), selected_lot AS (
+          SELECT lots.id, lots.lot_id
+          FROM lots
+          WHERE lots.cemetery_id = $1 AND lots.deleted_at IS NULL
+            AND lots.burial_use_status <> 'non_burial'
+            AND ST_Covers(lots.geometry, ST_SetSRID(ST_MakePoint($6, $7), 4326))
+          ORDER BY ST_Area(lots.geometry::geography)
+          LIMIT 1
+        )
+        INSERT INTO gravesites (
+          cemetery_id, section_uuid, section_id, lot_uuid, lot_id, grave_id, gravesite_id, name,
+          status_type_id, cost, width_feet, length_feet, geometry,
+          geometry_type, geometry_source, geometry_confidence, geometry_notes
+        )
+        VALUES (
+          $1, (SELECT section_id FROM selected_section), $2, (SELECT id FROM selected_lot), (SELECT lot_id FROM selected_lot),
+          LPAD((SELECT number::text FROM next_number), 4, '0'),
+          'TLC-GPS-' || LPAD((SELECT number::text FROM next_number), 4, '0'), NULLIF($3, ''),
+          (SELECT id FROM gravesite_status_types WHERE code = $4), $5::numeric,
+          4, 10,
+          ST_SetSRID(ST_MakeEnvelope(
+            CASE WHEN $8 = 'monument' THEN $6 ELSE $6 - ((10 * 0.3048) / (2 * 111320 * GREATEST(ABS(COS(RADIANS($7))), 0.01))) END,
+            $7 - ((4 * 0.3048) / 2 / 111320),
+            CASE WHEN $8 = 'monument' THEN $6 + ((10 * 0.3048) / (111320 * GREATEST(ABS(COS(RADIANS($7))), 0.01))) ELSE $6 + ((10 * 0.3048) / (2 * 111320 * GREATEST(ABS(COS(RADIANS($7))), 0.01))) END,
+            $7 + ((4 * 0.3048) / 2 / 111320)
+          ), 4326),
+          'operational', 'manual', 'draft', 'Created from map placement'
+        )
+        RETURNING id::text AS uuid, cemetery_id::text, gravesite_id, updated_at
+      `,
+      [cemeteryId, section, null, graveSpace.status, graveSpace.cost || null, graveSpace.longitude, graveSpace.latitude, graveSpace.anchorMode || "gravesite"],
+    );
+    const created = result.rows[0];
+    await auditEventIdForMutation(client, {
+      actorUser, action: "create", targetTable: "gravesites", targetRecordId: created.uuid,
+      previousValues: null, newValues: created, reason,
+    });
+    const detailedGrave = await loadDetailedGrave(client, cemeteryId, created.gravesite_id);
+    return { ...detailedGrave, uuid: created.uuid };
+  });
+}
+
 export async function updateGraveLotAssignment(pool, cemeteryId, gravesiteId, lotId, { actorUser, reason, allowedCemeteryIds, lotUuid } = {}) {
   let selectedLotLabel;
   try {
