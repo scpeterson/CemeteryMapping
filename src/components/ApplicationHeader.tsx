@@ -12,10 +12,11 @@ type ApplicationHeaderProps = {
   onOpenReports: () => void;
   onOpenControl: () => void;
   onOpenAdmin: () => void;
+  onOpenCreateGravesite: () => void;
 };
 
 export function ApplicationHeader({
-  cemeteryScopeLabel, cemeteries, cemeteryScope, onCemeteryScopeChange, currentUser, onOpenReports, onOpenControl, onOpenAdmin,
+  cemeteryScopeLabel, cemeteries, cemeteryScope, onCemeteryScopeChange, currentUser, onOpenReports, onOpenControl, onOpenAdmin, onOpenCreateGravesite,
 }: ApplicationHeaderProps) {
   const session = useAccountSession();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,6 +53,7 @@ export function ApplicationHeader({
           <Menu size={18} aria-hidden="true" /> Menu
         </button>
         <nav id="application-actions" className="application-actions" aria-label="Application actions" data-open={menuOpen}>
+          {(currentUser.role === "admin" || currentUser.role === "cemetery-admin") && currentUser.permissions.canUpdateGravesites ? <button type="button" onClick={onOpenCreateGravesite}>Add gravesite</button> : null}
           <button type="button" onClick={onOpenReports}
             aria-label="Open reports: run saved cemetery reports and guided queries"
             title="Open reports: run saved cemetery reports and guided queries.">

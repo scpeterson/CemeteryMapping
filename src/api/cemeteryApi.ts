@@ -19,6 +19,7 @@ import type {
   SaveBurialInput,
   SaveGraveFeatureInput,
   SaveGraveSpaceInput,
+  CreateGraveSpaceInput,
   SaveHeadstoneCreateInput,
   SaveHeadstoneGravesiteRelationshipInput,
   SaveHeadstoneInput,
@@ -58,6 +59,14 @@ export async function updateGraveSpace(cemeteryId: string, id: string, graveSpac
     jsonRequest("PATCH", graveSpace),
   );
   return jsonResponse<GraveSpace>(response, "Update grave space API");
+}
+
+export async function createGraveSpace(cemeteryId: string, graveSpace: CreateGraveSpaceInput): Promise<GraveSpace> {
+  const response = await authorizedFetch(
+    `${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces`,
+    jsonRequest("POST", graveSpace),
+  );
+  return jsonResponse<GraveSpace>(response, "Create gravesite API");
 }
 
 export async function updateBurial(id: string, burial: SaveBurialInput): Promise<Burial> {

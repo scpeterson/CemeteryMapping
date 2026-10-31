@@ -1,12 +1,12 @@
 import {getOwnershipEditor} from "../ownershipEditing.mjs";
 export function registerGraveRoutes(app, context) {
   const {
-    assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, createGraveFeature,
+    assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, createGraveFeature, createGraveSpace,
     createMaintenanceRecord, createOwnershipEvent, findDeedRegistrySuggestions, getCemeteryData, getGraveSpace, pool, removeGravesiteOwnershipRight,
     config, importGeoNamesPlace, PlaceSearchUnavailableError, searchGeoNames,
     requireCemeteryAdmin, requirePowerUser, requireReader, softDeleteGraveFeature, updateBurial,
     updateGraveFeature, updateGraveSpace, updateGraveLotAssignment, updateMaintenanceRecord, updateOwnershipParty, validateBurialPayload,
-    validateCemeteryId, validateGraveFeaturePayload, validateGraveLotAssignmentPayload, validateGraveSpaceId, validateGraveSpacePayload,
+    validateCemeteryId, validateCreateGraveSpacePayload, validateGraveFeaturePayload, validateGraveLotAssignmentPayload, validateGraveSpaceId, validateGraveSpacePayload,
     validateMaintenanceRecordPayload, validateMutationReason, validateOwnerUpdatePayload, validateOwnershipEventPayload, validateUuid,
   } = context;
       app.get("/api/places/search", requirePowerUser, async (request, response, next) => {
@@ -71,6 +71,25 @@ export function registerGraveRoutes(app, context) {
         } catch (error) {
           next(error);
         }
+      });
+
+      app.post("/api/cemeteries/:cemeteryId/grave-spaces", requirePowerUser, async (request, response, next) => {
+        try {
+          const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+          if (!['admin', 'cemetery-admin'].includes(request.user.role)) return response.status(403).json({ error: "Only system and cemetery administrators may add gravesites." });
+          const graveSpace = validateCreateGraveSpacePayload(request.body);
+          const created = await createGraveSpace(pool, cemeteryId, graveSpace, {
+            actorUser: request.user,
+            reason: graveSpace.reason,
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          });
+          if (created?.invalid === "no_section") return response.status(409).json({ error: "The selected location is not inside a cemetery section." });
+          if (created?.invalid === "section_not_allowed") return response.status(409).json({ error: `New gravesites cannot be added to Section ${created.section}.` });
+          if (created?.invalid === "monument_not_found") return response.status(404).json({ error: "The selected monument was not found in this cemetery." });
+          if (created?.invalid === "no_burial_lot") return response.status(409).json({ error: "The selected location is not inside an eligible burial lot." });
+          if (!created) return response.status(403).json({ error: "Forbidden" });
+          response.status(201).json(created);
+        } catch (error) { next(error); }
       });
 
       app.get("/api/cemeteries/:cemeteryId/deed-registry-suggestions", requireCemeteryAdmin, async (request, response, next) => {

@@ -2,23 +2,24 @@ import { confirmDiscardChanges } from "../../hooks/useDraftState";
 import { useEffect, useRef, type ReactNode } from "react";
 
 /** Native modal dialogs provide focus containment and make background content inert. */
-export function Modal({ children, className = "", label, onClose, protectDrafts = false }: {
+export function Modal({ children, className = "", label, onClose, protectDrafts = false, open = true }: {
   children: ReactNode;
   protectDrafts?: boolean;
   className?: string;
   label: string;
   onClose: () => void;
+  open?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current!;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog.showModal();
+    if (open) dialog.showModal();
     return () => {
-      dialog.close();
+      if (dialog.open) dialog.close();
       if (opener?.isConnected) opener.focus();
     };
-  }, []);
+  }, [open]);
   return <dialog ref={ref} className={`ui-modal ${className}`} aria-label={label}
     onKeyDown={(event) => {
       if (event.key !== "Tab") return;
