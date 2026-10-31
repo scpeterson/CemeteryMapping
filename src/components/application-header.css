@@ -71,12 +71,7 @@
 
 .auth-session button { flex: 0 0 auto; min-height: 40px; }
 
-@media (min-width: 761px) and (max-width: 800px) {
-  .application-actions { gap: 4px; }
-  .application-actions button { padding-inline: 7px; font-size: .72rem; }
-}
-
-@media (max-width: 760px) {
+@media (max-width: 800px) {
   .application-workspace { height: 100dvh; min-height: 0; }
   .application-header { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); padding: 8px; }
   .application-brand h1 { font-size: 1.125rem; }
@@ -90,6 +85,6 @@
 
 .cemetery-scope { display: block; margin-top: 6px; }
 .cemetery-scope select { width: 100%; max-width: 300px; min-height: 36px; padding: 6px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: white; color: inherit; }
-@media (max-width: 760px) {
+@media (max-width: 800px) {
   .cemetery-scope select { min-height: 44px; }
 }
