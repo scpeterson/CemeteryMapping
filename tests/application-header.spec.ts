@@ -12,7 +12,7 @@ for (const width of [320, 390, 760, 768, 1280, 1920]) {
     await expect(header).toContainText("1 cemetery");
     await expect(header.locator("#application-actions")).toBeAttached();
     const menu = header.getByRole("button", { name: "Menu", exact: true });
-    if (width <= 800) {
+    if (width <= 760) {
       await expect(menu).toHaveAttribute("aria-expanded", "false");
       await expect(header.getByRole("navigation", { name: "Application actions" })).toBeHidden();
     } else await expect(menu).toBeHidden();
@@ -32,7 +32,7 @@ for (const width of [320, 390, 760, 768, 1280, 1920]) {
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.screenshot({ path: testInfo.outputPath(`header-${width}.png`), fullPage: true });
-    if (width <= 800) {
+    if (width <= 760) {
       await header.getByRole("button", { name: /^Open reports:/ }).focus();
       await page.keyboard.press("Escape");
       await expect(menu).toBeFocused();
