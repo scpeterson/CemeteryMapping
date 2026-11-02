@@ -46,6 +46,48 @@ return to the application's sign-in page.
    email allowlist, add them there too. Application approval does not change
    Cloudflare Access policy.
 
+### Add an approved user to the hosted TEST Cloudflare allowlist
+
+Hosted TEST uses Cloudflare Access as a gateway in front of the application.
+The request form is publicly reachable, but an approved user must also be on
+the Cloudflare Access allowlist before they can use the protected application.
+
+1. Sign in to the Cloudflare dashboard with an account that can manage the
+   hosted TEST Access application.
+2. Open **Zero Trust → Access controls → Applications**.
+3. Select the self-hosted application for `test.nhcemeteries.org`.
+4. Open its **Policies** and choose **Configure** on the existing **Allow**
+   policy.
+5. Add an **Include** rule with selector **Emails** and enter the user's exact
+   email address. Use **Emails**, not **Emails ending in**, for an individual
+   user.
+6. Save the policy. Check the policy order for any higher-priority Block or
+   Exclude rule that could override the new allowance.
+7. Use the Cloudflare policy tester, when available, to test the user's exact
+   email before asking them to sign in.
+
+Cloudflare Access and the application account are separate controls. Adding an
+email to Cloudflare allows the user through the gateway; it does not approve
+the application request or create an application account. See Cloudflare's
+[Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/)
+and [policy management](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/policy-management/)
+documentation for the current dashboard terminology and policy tester.
+
+### New-user sign-in and email verification
+
+After an administrator approves the request and saves the new active user, the
+application provisions or finds the user's identity in the environment's Auth0
+tenant. A new user is prompted to create their account or set up a password,
+then must use the verification or password-setup link sent to their email
+address. They should complete that email step before returning to the hosted
+TEST sign-in page.
+
+The administrator should confirm that the setup email was delivered. If the
+application found an existing Auth0 identity, it does not automatically resend
+an invitation; arrange a password-reset or verification email when needed. The
+user still needs both a verified Auth0 identity and an active application user
+record with the required cemetery assignment.
+
 The queue shows pending/hourly counts and warns at 80% of capacity. Check this regularly during onboarding.
 The queue shows the oldest 200 pending requests; refresh after reviewing them to
 load more. Reviewed requests remain stored for accountability. A repeat public
