@@ -24,4 +24,4 @@ WHERE deleted_at IS NULL
       AND hg.relationship_type = 'primary'
   );
 
---rollback UPDATE headstones SET source_properties = source_properties - 'MonumentOrientation', updated_at = now() WHERE source_properties ? 'MonumentOrientation';
+--rollback UPDATE headstones SET source_properties = source_properties - 'MonumentOrientation', updated_at = now() WHERE jsonb_exists(source_properties, 'MonumentOrientation');
