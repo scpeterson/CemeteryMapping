@@ -7,7 +7,7 @@ export type MapViewMode = "geographic" | "diagram";
 
 export const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels", "veteran-grave-symbols"];
 export const selectableLotLayers = ["lots-fill", "lots-line", "lots-label"];
-export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo", "headstones-monolith-symbol", "headstones-veteran-star"];
+export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo", "headstones-plot-symbol", "headstones-monolith-symbol", "headstones-veteran-star"];
 
 const mapLayerOrder = [
   "pasda-imagery-2017",
@@ -25,6 +25,7 @@ const mapLayerOrder = [
   "lot-restricted-areas-line",
   "headstones-halo",
   "headstones-circle",
+  "headstones-plot-symbol",
   "headstones-monolith-symbol",
   "headstones-veteran-star",
   "sections-label",
@@ -441,6 +442,8 @@ export function addHeadstoneLayers(
         7,
         ["==", ["get", "markerTypeCode"], "other"],
         6,
+        ["==", ["get", "markerScopeCode"], "plot_marker"],
+        0,
         4,
       ],
       "circle-color": "#fbfcf7",
@@ -463,6 +466,8 @@ export function addHeadstoneLayers(
         5.4,
         ["==", ["get", "markerTypeCode"], "other"],
         4.6,
+        ["==", ["get", "markerScopeCode"], "plot_marker"],
+        0,
         3.2,
       ],
       "circle-color": [
@@ -479,6 +484,25 @@ export function addHeadstoneLayers(
       ],
       "circle-stroke-color": ["case", ["==", ["get", "markerScopeCode"], "monolith"], "#33216b", ["==", ["get", "markerTypeCode"], "other"], "#5f2d08", "#10211c"],
       "circle-stroke-width": ["case", ["==", ["get", "markerScopeCode"], "monolith"], 1.5, ["==", ["get", "markerTypeCode"], "other"], 1.2, 0.7],
+    },
+  });
+
+  map.addLayer({
+    id: "headstones-plot-symbol",
+    type: "symbol",
+    source: "headstones",
+    filter: ["==", ["get", "markerScopeCode"], "plot_marker"],
+    layout: {
+      "text-field": "■",
+      "text-size": 13,
+      "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: {
+      "text-color": "#ffffff",
+      "text-halo-color": "#000000",
+      "text-halo-width": 1.4,
     },
   });
 
