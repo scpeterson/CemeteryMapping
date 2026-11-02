@@ -71,6 +71,7 @@ const alleghenyParcelsDynamicLayers = encodeURIComponent(
 );
 const alleghenyParcelsTileUrl = `${alleghenyParcelsExportUrl}?f=image&format=png32&transparent=true&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&dynamicLayers=${alleghenyParcelsDynamicLayers}`;
 const prohibitedLotPatternId = "prohibited-lot-hatch";
+const plotMarkerSymbolId = "plot-marker-square";
 
 function ensureProhibitedLotPattern(map: Map) {
   if (map.hasImage(prohibitedLotPatternId)) return;
@@ -95,6 +96,25 @@ function ensureProhibitedLotPattern(map: Map) {
   context.stroke();
 
   map.addImage(prohibitedLotPatternId, context.getImageData(0, 0, size, size), { pixelRatio: 1 });
+}
+
+function ensurePlotMarkerSymbol(map: Map) {
+  if (map.hasImage(plotMarkerSymbolId)) return;
+
+  const size = 24;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+
+  context.clearRect(0, 0, size, size);
+  context.fillStyle = "#ff69b4";
+  context.fillRect(3, 3, size - 6, size - 6);
+  context.strokeStyle = "#000000";
+  context.lineWidth = 3;
+  context.strokeRect(3, 3, size - 6, size - 6);
+  map.addImage(plotMarkerSymbolId, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
 }
 
 function clampWebMercatorLatitude(latitude: number) {
@@ -421,6 +441,7 @@ export function addHeadstoneLayers(
   headstones: HeadstoneSummary[],
   veteranGraveKeys: Set<string> = new Set(),
 ) {
+  ensurePlotMarkerSymbol(map);
   map.addSource("headstones", {
     type: "geojson",
     promoteId: "id",
@@ -493,16 +514,10 @@ export function addHeadstoneLayers(
     source: "headstones",
     filter: ["==", ["get", "markerScopeCode"], "plot_marker"],
     layout: {
-      "text-field": "■",
-      "text-size": 13,
-      "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-      "text-allow-overlap": true,
-      "text-ignore-placement": true,
-    },
-    paint: {
-      "text-color": "#ffffff",
-      "text-halo-color": "#000000",
-      "text-halo-width": 1.4,
+      "icon-image": plotMarkerSymbolId,
+      "icon-size": 0.85,
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
     },
   });
 

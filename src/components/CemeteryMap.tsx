@@ -712,6 +712,10 @@ export function CemeteryMap({
             Headstone marker
           </span>
           <span>
+            <i className="legend-symbol legend-plot-marker" />
+            Plot marker
+          </span>
+          <span>
             <i className="legend-symbol legend-monolith-marker" />
             Monolith marker
           </span>
