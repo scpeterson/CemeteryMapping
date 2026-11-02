@@ -102,6 +102,8 @@ export type Headstone = {
   provenanceVerificationSource: "field_photo" | "field_survey" | "documentary_record" | "manual_review" | "import";
   provenanceVerifiedAt?: string;
   orientationBearingDegrees?: number;
+  orientationBearingSource?: string;
+  orientationBearingInferred?: boolean;
   relationshipType: string;
   spansMultipleGravesites?: boolean;
   relationshipNotes: string;
