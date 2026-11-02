@@ -165,6 +165,12 @@
   text-transform: none;
 }
 
+/* Keep neighboring fields aligned to their own content when one field has
+   helper text (for example, the monument bearing field). */
+.headstone-form > label {
+  align-self: start;
+}
+
 .headstone-form .headstone-checkbox-field {
   display: flex;
   align-items: center;
