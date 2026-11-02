@@ -210,6 +210,7 @@ export function toHeadstoneRelationship(row) {
 export function toHeadstone(row) {
   const normalizedProvenance = row.source_properties?.NormalizedProvenance ?? {};
   const orientationBearingDegrees = row.source_properties?.MonumentOrientation?.bearingDegrees;
+  const orientation = row.source_properties?.MonumentOrientation ?? {};
   return {
     id: row.id,
     headstoneId: row.headstone_id,
@@ -244,6 +245,8 @@ export function toHeadstone(row) {
     provenanceVerificationSource: normalizedProvenance.verificationSourceType ?? normalizedProvenance.markerGeometrySourceType ?? "manual_review",
     provenanceVerifiedAt: normalizedProvenance.verifiedAt,
     ...(orientationBearingDegrees === null || orientationBearingDegrees === undefined ? {} : { orientationBearingDegrees: Number(orientationBearingDegrees) }),
+    ...(orientation.source ? { orientationBearingSource: orientation.source } : {}),
+    ...(orientation.inferred === true ? { orientationBearingInferred: true } : {}),
     relationshipType: row.relationship_type ?? "primary",
     spansMultipleGravesites: Boolean(row.spans_multiple_gravesites) || row.relationship_type === "spans",
     relationshipNotes: row.relationship_notes ?? "",

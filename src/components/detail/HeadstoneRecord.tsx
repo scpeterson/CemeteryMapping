@@ -391,6 +391,7 @@ export function HeadstoneRecord({
           Gravesite bearing (true degrees)
           <input type="number" min="0" max="359.999" step="0.1" placeholder="Unknown" value={form.orientationBearingDegrees ?? ""} onChange={(event) => setForm((current) => ({ ...current, orientationBearingDegrees: event.target.value }))} />
           <small className="muted">Direction of the grave’s long axis from north, clockwise. Used when placing a new gravesite from this monument.</small>
+          {headstone.orientationBearingInferred ? <small className="muted">Candidate inferred from {headstone.orientationBearingSource?.toLowerCase() ?? "associated geometry"}; review before relying on it.</small> : null}
         </label>
         <label>
           Source information verified on

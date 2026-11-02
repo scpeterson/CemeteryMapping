@@ -1512,3 +1512,6 @@ databaseChangeLog:
   - include:
       file: changes/505-store-monument-orientation-bearing.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/506-infer-monument-bearings-from-gravesites.sql
+      relativeToChangelogFile: true
