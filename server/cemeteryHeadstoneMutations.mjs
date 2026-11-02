@@ -118,7 +118,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
               )
               || jsonb_build_object(
                 'MonumentOrientation',
-                jsonb_build_object('bearingDegrees', $26::numeric, 'source', 'manual review')
+                jsonb_build_object('bearingDegrees', $25::numeric, 'source', 'manual review')
               )${reviewAssignments}
         WHERE id = $1
         RETURNING
