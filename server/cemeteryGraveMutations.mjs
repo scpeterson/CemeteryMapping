@@ -96,12 +96,13 @@ export async function createGraveSpaceMutation(pool, cemeteryId, graveSpace, { a
     if (Array.isArray(allowedCemeteryIds) && !allowedCemeteryIds.includes(cemeteryId)) return undefined;
     if (graveSpace.monumentId) {
       const monumentResult = await client.query(
-        `SELECT ST_X(headstones.geometry) AS longitude, ST_Y(headstones.geometry) AS latitude
+        `SELECT ST_X(headstones.geometry) AS longitude, ST_Y(headstones.geometry) AS latitude,
+                NULLIF(headstones.source_properties->'MonumentOrientation'->>'bearingDegrees', '')::double precision AS bearing_degrees
          FROM headstones WHERE headstones.id = $1 AND headstones.cemetery_id = $2 AND headstones.deleted_at IS NULL`,
         [graveSpace.monumentId, cemeteryId],
       );
       if (!monumentResult.rowCount) return { invalid: "monument_not_found" };
-      graveSpace = { ...graveSpace, longitude: Number(monumentResult.rows[0].longitude), latitude: Number(monumentResult.rows[0].latitude), anchorMode: "monument" };
+      graveSpace = { ...graveSpace, longitude: Number(monumentResult.rows[0].longitude), latitude: Number(monumentResult.rows[0].latitude), bearingDegrees: monumentResult.rows[0].bearing_degrees, anchorMode: "monument" };
     }
     const sectionResult = await client.query(
       `SELECT section_id, name FROM sections WHERE cemetery_id = $1 AND deleted_at IS NULL
@@ -150,17 +151,25 @@ export async function createGraveSpaceMutation(pool, cemeteryId, graveSpace, { a
           'TLC-GPS-' || LPAD((SELECT number::text FROM next_number), 4, '0'), NULLIF($3, ''),
           (SELECT id FROM gravesite_status_types WHERE code = $4), $5::numeric,
           4, 10,
-          ST_SetSRID(ST_MakeEnvelope(
+          CASE WHEN $8 = 'monument' AND $9 IS NOT NULL THEN
+            ST_MakePolygon(ST_MakeLine(ARRAY[
+              ST_Project(ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, (4 * 0.3048) / 2, radians($9 - 90))::geometry,
+              ST_Project(ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, (4 * 0.3048) / 2, radians($9 - 90) + radians(180))::geometry,
+              ST_Project(ST_Project(ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, (4 * 0.3048) / 2, radians($9 - 90) + radians(180)), 10 * 0.3048, radians($9))::geometry,
+              ST_Project(ST_Project(ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, (4 * 0.3048) / 2, radians($9 - 90)), 10 * 0.3048, radians($9))::geometry,
+              ST_Project(ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, (4 * 0.3048) / 2, radians($9 - 90))::geometry
+            ]))
+          ELSE ST_SetSRID(ST_MakeEnvelope(
             CASE WHEN $8 = 'monument' THEN $6 ELSE $6 - ((10 * 0.3048) / (2 * 111320 * GREATEST(ABS(COS(RADIANS($7))), 0.01))) END,
             $7 - ((4 * 0.3048) / 2 / 111320),
             CASE WHEN $8 = 'monument' THEN $6 + ((10 * 0.3048) / (111320 * GREATEST(ABS(COS(RADIANS($7))), 0.01))) ELSE $6 + ((10 * 0.3048) / (2 * 111320 * GREATEST(ABS(COS(RADIANS($7))), 0.01))) END,
             $7 + ((4 * 0.3048) / 2 / 111320)
-          ), 4326),
+          ), 4326) END,
           'operational', 'manual', 'draft', 'Created from map placement'
         )
         RETURNING id::text AS uuid, cemetery_id::text, gravesite_id, updated_at
       `,
-      [cemeteryId, section, null, graveSpace.status, graveSpace.cost || null, graveSpace.longitude, graveSpace.latitude, graveSpace.anchorMode || "gravesite"],
+      [cemeteryId, section, null, graveSpace.status, graveSpace.cost || null, graveSpace.longitude, graveSpace.latitude, graveSpace.anchorMode || "gravesite", graveSpace.bearingDegrees ?? null],
     );
     const created = result.rows[0];
     await auditEventIdForMutation(client, {

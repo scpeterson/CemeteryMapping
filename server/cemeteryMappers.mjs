@@ -209,6 +209,7 @@ export function toHeadstoneRelationship(row) {
 
 export function toHeadstone(row) {
   const normalizedProvenance = row.source_properties?.NormalizedProvenance ?? {};
+  const orientationBearingDegrees = row.source_properties?.MonumentOrientation?.bearingDegrees;
   return {
     id: row.id,
     headstoneId: row.headstone_id,
@@ -242,6 +243,7 @@ export function toHeadstone(row) {
     nhgInclusionRecorded: Object.prototype.hasOwnProperty.call(normalizedProvenance, "nhgInclusion"),
     provenanceVerificationSource: normalizedProvenance.verificationSourceType ?? normalizedProvenance.markerGeometrySourceType ?? "manual_review",
     provenanceVerifiedAt: normalizedProvenance.verifiedAt,
+    ...(orientationBearingDegrees === null || orientationBearingDegrees === undefined ? {} : { orientationBearingDegrees: Number(orientationBearingDegrees) }),
     relationshipType: row.relationship_type ?? "primary",
     spansMultipleGravesites: Boolean(row.spans_multiple_gravesites) || row.relationship_type === "spans",
     relationshipNotes: row.relationship_notes ?? "",

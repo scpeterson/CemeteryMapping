@@ -88,6 +88,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       headstone.inscriptionStatus ?? null,
       headstone.currentLegibility ?? null,
       headstone.historicalTranscriptions === undefined ? null : JSON.stringify(headstone.historicalTranscriptions),
+      headstone.orientationBearingDegrees === undefined || headstone.orientationBearingDegrees === "" ? null : Number(headstone.orientationBearingDegrees),
     );
 
     const updateResult = await client.query(
@@ -114,6 +115,10 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
               || jsonb_build_object(
                 'NormalizedProvenance',
                 COALESCE(source_properties->'NormalizedProvenance', '{}'::jsonb) || $14::jsonb
+              )
+              || jsonb_build_object(
+                'MonumentOrientation',
+                jsonb_build_object('bearingDegrees', $26::numeric, 'source', 'manual review')
               )${reviewAssignments}
         WHERE id = $1
         RETURNING

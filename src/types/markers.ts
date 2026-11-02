@@ -101,6 +101,7 @@ export type Headstone = {
   nhgInclusionRecorded: boolean;
   provenanceVerificationSource: "field_photo" | "field_survey" | "documentary_record" | "manual_review" | "import";
   provenanceVerifiedAt?: string;
+  orientationBearingDegrees?: number;
   relationshipType: string;
   spansMultipleGravesites?: boolean;
   relationshipNotes: string;
@@ -238,6 +239,7 @@ export type SaveHeadstoneInput = {
   nhgInclusion: "listed" | "not_listed" | "not_checked" | "unclear";
   provenanceVerificationSource: "field_photo" | "field_survey" | "documentary_record" | "manual_review" | "import";
   provenanceVerifiedAt: string;
+  orientationBearingDegrees?: number | string;
   applyNhgInclusionToBurials: boolean;
   reason?: string;
 };
