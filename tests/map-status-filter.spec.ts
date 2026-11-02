@@ -26,10 +26,9 @@ test("status toggles hide graves and veteran stars without resubmitting geometry
   await expect.poll(renderedGraves).toBe(0);
   const hiddenFilters = await page.evaluate(() => {
     const map = window.mapHighlightTest.map;
-    return ["graves-fill", "graves-line", "grave-labels", "veteran-grave-symbols", "headstones-veteran-star"].map((layer) => map.getFilter(layer));
+    return ["graves-fill", "graves-line", "grave-labels", "veteran-grave-symbols"].map((layer) => map.getFilter(layer));
   });
   for (const filter of hiddenFilters.slice(0, 4)) expect(JSON.stringify(filter)).not.toContain('"available"');
-  expect(hiddenFilters[4]).toEqual(["all", ["==", ["get", "hasVeteran"], true], ["in", ["get", "graveKey"], ["literal", []]]]);
   // Markers remain selectable even when their associated grave's status is hidden.
   await expect.poll(() => page.evaluate(() => window.mapHighlightTest.map.queryRenderedFeatures({ layers: ["headstones-circle"] }).length)).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Available", exact: true }).click();
@@ -38,5 +37,4 @@ test("status toggles hide graves and veteran stars without resubmitting geometry
   const after = await page.evaluate(() => ({ ...window.mapHighlightTest.calls }));
   console.log("Status-toggle source submissions:", { graves: (after.graves ?? 0) - (before.graves ?? 0), headstones: (after.headstones ?? 0) - (before.headstones ?? 0) });
   expect(after).toEqual(before);
-  expect(await page.evaluate(() => window.mapHighlightTest.map.getFilter("headstones-veteran-star"))).toEqual(["all", ["==", ["get", "hasVeteran"], true], ["in", ["get", "graveKey"], ["literal", [key]]]]);
 });

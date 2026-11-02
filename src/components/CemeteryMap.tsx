@@ -270,7 +270,7 @@ export function CemeteryMap({
         dataRef.current.headstones ?? [],
         veteranGraveKeySet(dataRef.current.graves),
       );
-      applyGraveStatusFilters(map, selectedStatusesRef.current, veteranGraveKeySet(dataRef.current.graves, selectedStatusesRef.current));
+      applyGraveStatusFilters(map, selectedStatusesRef.current);
       addSectionLabelLayer(map);
 
       enforceMapLayerOrder(map);
@@ -446,7 +446,7 @@ export function CemeteryMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map && mapLoaded) applyGraveStatusFilters(map, selectedStatuses, veteranGraveKeySet(data.graves, selectedStatuses));
+    if (map && mapLoaded) applyGraveStatusFilters(map, selectedStatuses);
   }, [data.graves, selectedStatuses, mapLoaded]);
 
   useEffect(() => {

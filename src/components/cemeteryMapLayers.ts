@@ -7,7 +7,7 @@ export type MapViewMode = "geographic" | "diagram";
 
 export const selectableGraveLayers = ["graves-fill", "graves-line", "grave-labels", "veteran-grave-symbols"];
 export const selectableLotLayers = ["lots-fill", "lots-line", "lots-label"];
-export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo", "headstones-plot-symbol", "headstones-monolith-symbol", "headstones-veteran-star"];
+export const selectableHeadstoneLayers = ["headstones-circle", "headstones-halo", "headstones-plot-symbol", "headstones-monolith-symbol"];
 
 const mapLayerOrder = [
   "pasda-imagery-2017",
@@ -27,7 +27,6 @@ const mapLayerOrder = [
   "headstones-circle",
   "headstones-plot-symbol",
   "headstones-monolith-symbol",
-  "headstones-veteran-star",
   "sections-label",
   "grave-labels",
   "veteran-grave-symbols",
@@ -538,24 +537,6 @@ export function addHeadstoneLayers(
     },
   });
 
-  map.addLayer({
-    id: "headstones-veteran-star",
-    type: "symbol",
-    source: "headstones",
-    filter: ["==", ["get", "hasVeteran"], true],
-    layout: {
-      "text-field": "★",
-      "text-size": 13,
-      "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-      "text-allow-overlap": true,
-      "text-ignore-placement": true,
-    },
-    paint: {
-      "text-color": "#f2b705",
-      "text-halo-color": "#17201d",
-      "text-halo-width": 1,
-    },
-  });
 }
 
 export function enforceMapLayerOrder(map: Map) {
