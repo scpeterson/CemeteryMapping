@@ -109,7 +109,7 @@ function ensurePlotMarkerSymbol(map: Map) {
   if (!context) return;
 
   context.clearRect(0, 0, size, size);
-  context.fillStyle = "#ffffff";
+  context.fillStyle = "#ff69b4";
   context.fillRect(3, 3, size - 6, size - 6);
   context.strokeStyle = "#000000";
   context.lineWidth = 3;

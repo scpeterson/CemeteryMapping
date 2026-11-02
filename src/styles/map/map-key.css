@@ -202,6 +202,14 @@
   box-shadow: 0 0 0 2px #fbfcf7;
 }
 
+.legend-plot-marker {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #000;
+  background: #ff69b4;
+  box-shadow: 0 0 0 2px #fbfcf7;
+}
+
 .legend-monolith-marker {
   position: relative;
   display: inline-grid;
