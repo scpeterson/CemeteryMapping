@@ -19,6 +19,7 @@ import type {
   LotTextRecord,
   NorthHillsOcrReview,
   NorthHillsOcrReviewFilters,
+  NorthHillsOcrEvidenceLink,
   SaveNorthHillsOcrEntryInput,
   NorthHillsSourceFact,
   PromoteNorthHillsSourceFactInput,
@@ -236,9 +237,9 @@ export async function updateNorthHillsOcrEntry(entryId: string, entry: SaveNorth
   await jsonResponse<unknown>(response, "Update North Hills reading API");
 }
 
-export async function saveNorthHillsOcrEvidence(entryId: string, evidence: SaveNorthHillsOcrEvidenceInput): Promise<void> {
+export async function saveNorthHillsOcrEvidence(entryId: string, evidence: SaveNorthHillsOcrEvidenceInput): Promise<NorthHillsOcrEvidenceLink> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/north-hills-ocr-review/${encodeURIComponent(entryId)}/evidence`, jsonRequest("POST", evidence));
-  await jsonResponse<unknown>(response, "North Hills evidence API");
+  return jsonResponse<NorthHillsOcrEvidenceLink>(response, "North Hills evidence API");
 }
 
 export async function deleteNorthHillsOcrEvidence(entryId: string, evidence: Pick<SaveNorthHillsOcrEvidenceInput, "targetType" | "targetId">): Promise<void> {

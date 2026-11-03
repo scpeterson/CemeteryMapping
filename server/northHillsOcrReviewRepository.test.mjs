@@ -24,6 +24,11 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
         };
       }
 
+      if (sql.includes("SELECT count(*) FILTER (WHERE EXISTS")) {
+        assert.deepEqual(values, ["batch-1"]);
+        return { rows: [{ matched_count: "2" }] };
+      }
+
       if (sql.includes("SELECT entry.parse_confidence, entry.status")) {
         assert.deepEqual(values, ["batch-1"]);
         return { rows: [{ parse_confidence: "high", status: "staged", count: "2" }] };
@@ -121,6 +126,11 @@ test("listNorthHillsOcrReview can sort staged readings by printed page order", a
         };
       }
 
+      if (sql.includes("SELECT count(*) FILTER (WHERE EXISTS")) {
+        assert.deepEqual(values, ["batch-1"]);
+        return { rows: [{ matched_count: "2" }] };
+      }
+
       if (sql.includes("SELECT entry.parse_confidence, entry.status")) {
         return { rows: [] };
       }
@@ -155,6 +165,11 @@ test("listNorthHillsOcrReview search matches printed page numbers", async () => 
             },
           ],
         };
+      }
+
+      if (sql.includes("SELECT count(*) FILTER (WHERE EXISTS")) {
+        assert.deepEqual(values, ["batch-1"]);
+        return { rows: [{ matched_count: "2" }] };
       }
 
       if (sql.includes("SELECT entry.parse_confidence, entry.status")) {

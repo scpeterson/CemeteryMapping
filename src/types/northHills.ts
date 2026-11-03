@@ -39,6 +39,9 @@ export type NorthHillsObservationStatus = "staged" | "reviewed" | "rejected";
 
 export type NorthHillsOcrEvidenceLink = {
   id: string;
+  entryId?: string;
+  targetType?: "headstone" | "gravesite";
+  targetId?: string;
   status: NorthHillsOcrEvidenceStatus;
   confidence: string;
   notes: string;
