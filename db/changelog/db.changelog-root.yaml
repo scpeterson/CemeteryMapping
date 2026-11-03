@@ -1515,3 +1515,6 @@ databaseChangeLog:
   - include:
       file: changes/506-infer-monument-bearings-from-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/507-retire-e0504-plot-marker-placeholder.sql
+      relativeToChangelogFile: true
