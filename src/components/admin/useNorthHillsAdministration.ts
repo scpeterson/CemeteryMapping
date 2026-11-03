@@ -234,6 +234,26 @@ export function useNorthHillsAdministration({ setError, setActiveTab, setMessage
     );
   };
 
+  const reviewNorthHillsObservation = async (entry: NorthHillsOcrReviewEntry, observationId: string, status: "reviewed" | "rejected") => {
+    setSavingEvidenceKey(`${observationId}:${status}`);
+    setError(undefined);
+    try {
+      const form = northHillsEditFormFromEntry(entry);
+      const payload = northHillsEditPayload(form);
+      await updateNorthHillsOcrEntry(entry.id, {
+        ...payload,
+        observations: payload.observations.map((observation) => observation.id === observationId ? { ...observation, status } : observation),
+        reason: `Mark North Hills observation ${status}`,
+      });
+      setMessage(`Observation marked ${status}.`);
+      await loadNorthHillsOcrReview(northHillsReviewFilters);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to review observation.");
+    } finally {
+      setSavingEvidenceKey(undefined);
+    }
+  };
+
   const saveNorthHillsEntryEdit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingNorthHillsEntryId || !northHillsEntryForm) return;
@@ -380,6 +400,7 @@ export function useNorthHillsAdministration({ setError, setActiveTab, setMessage
     updateNorthHillsSourceFactForm,
     updateNorthHillsObservationForm,
     saveNorthHillsEntryEdit,
+    reviewNorthHillsObservation,
     saveNorthHillsEvidence,
     unlinkNorthHillsEvidence,
     saveNorthHillsSourceFactReview,

@@ -156,6 +156,7 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
     updateNorthHillsSourceFactForm,
     updateNorthHillsObservationForm,
     saveNorthHillsEntryEdit,
+    reviewNorthHillsObservation,
     saveNorthHillsEvidence,
     unlinkNorthHillsEvidence,
     saveNorthHillsSourceFactReview,
@@ -509,6 +510,7 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
               editingNorthHillsEntryId={editingNorthHillsEntryId}
               northHillsEntryForm={northHillsEntryForm}
               saveNorthHillsEntryEdit={saveNorthHillsEntryEdit}
+              reviewNorthHillsObservation={reviewNorthHillsObservation}
               updateNorthHillsEntryForm={updateNorthHillsEntryForm}
               updateNorthHillsSourceFactForm={updateNorthHillsSourceFactForm}
               updateNorthHillsObservationForm={updateNorthHillsObservationForm}
