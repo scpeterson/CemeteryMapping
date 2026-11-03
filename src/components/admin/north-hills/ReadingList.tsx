@@ -11,7 +11,7 @@ import { ReadingMatches } from "./ReadingMatches";
 import { ReadingSourceFacts } from "./ReadingSourceFacts";
 import { Props } from "./shared";
 
-export function ReadingList({ northHillsOcrReview, isLoadingNorthHillsReview, canEditNorthHillsEntries, selectedNorthHillsEntryIds, focusedNorthHillsEntryId, toggleNorthHillsEntrySelection, startNorthHillsEntryEdit, savingEvidenceKey, editingNorthHillsEntryId, northHillsEntryForm, saveNorthHillsEntryEdit, updateNorthHillsEntryForm, updateNorthHillsSourceFactForm, updateNorthHillsObservationForm, cancelNorthHillsEntryEdit, saveNorthHillsSourceFactReview, promoteNorthHillsDeathDate, saveNorthHillsEvidence, canUnlinkNorthHillsEvidence, unlinkNorthHillsEvidence }: Pick<Props, "northHillsOcrReview" | "isLoadingNorthHillsReview" | "canEditNorthHillsEntries" | "selectedNorthHillsEntryIds" | "focusedNorthHillsEntryId" | "toggleNorthHillsEntrySelection" | "startNorthHillsEntryEdit" | "savingEvidenceKey" | "editingNorthHillsEntryId" | "northHillsEntryForm" | "saveNorthHillsEntryEdit" | "updateNorthHillsEntryForm" | "updateNorthHillsSourceFactForm" | "updateNorthHillsObservationForm" | "cancelNorthHillsEntryEdit" | "saveNorthHillsSourceFactReview" | "promoteNorthHillsDeathDate" | "saveNorthHillsEvidence" | "canUnlinkNorthHillsEvidence" | "unlinkNorthHillsEvidence">) {
+export function ReadingList({ northHillsOcrReview, isLoadingNorthHillsReview, canEditNorthHillsEntries, selectedNorthHillsEntryIds, focusedNorthHillsEntryId, toggleNorthHillsEntrySelection, startNorthHillsEntryEdit, savingEvidenceKey, editingNorthHillsEntryId, northHillsEntryForm, saveNorthHillsEntryEdit, reviewNorthHillsObservation, updateNorthHillsEntryForm, updateNorthHillsSourceFactForm, updateNorthHillsObservationForm, cancelNorthHillsEntryEdit, saveNorthHillsSourceFactReview, promoteNorthHillsDeathDate, saveNorthHillsEvidence, canUnlinkNorthHillsEvidence, unlinkNorthHillsEvidence }: Pick<Props, "northHillsOcrReview" | "isLoadingNorthHillsReview" | "canEditNorthHillsEntries" | "selectedNorthHillsEntryIds" | "focusedNorthHillsEntryId" | "toggleNorthHillsEntrySelection" | "startNorthHillsEntryEdit" | "savingEvidenceKey" | "editingNorthHillsEntryId" | "northHillsEntryForm" | "saveNorthHillsEntryEdit" | "reviewNorthHillsObservation" | "updateNorthHillsEntryForm" | "updateNorthHillsSourceFactForm" | "updateNorthHillsObservationForm" | "cancelNorthHillsEntryEdit" | "saveNorthHillsSourceFactReview" | "promoteNorthHillsDeathDate" | "saveNorthHillsEvidence" | "canUnlinkNorthHillsEvidence" | "unlinkNorthHillsEvidence">) {
   return (<div className="deed-entry-list" role="table" aria-label="Staged North Hills readings">
           {northHillsOcrReview.entries.length === 0 && !isLoadingNorthHillsReview ? <p className="record-editor-empty">No North Hills readings match these filters.</p> : null}
           {northHillsOcrReview.entries.map((entry) => {
@@ -113,6 +113,21 @@ export function ReadingList({ northHillsOcrReview, isLoadingNorthHillsReview, ca
                           <strong>{observationTypeLabels[observation.observationType]}:</strong> {observation.observationText}
                         </p>
                         <small>{observationStatusLabels[observation.status]}</small>
+                        {canEditNorthHillsEntries ? (
+                          <div className="reading-match-actions">
+                            {(["reviewed", "rejected"] as const).map((status) => (
+                              <button
+                                key={status}
+                                type="button"
+                                className="secondary-button"
+                                disabled={Boolean(savingEvidenceKey) || observation.status === status}
+                                onClick={() => void reviewNorthHillsObservation(entry, observation.id, status)}
+                              >
+                                {savingEvidenceKey === `${observation.id}:${status}` ? "Saving..." : observationStatusLabels[status]}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
                       </article>
                     ))}
                   </section>
