@@ -35,13 +35,23 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
       batch.created_at,
       count(entry.id) AS entry_count,
       count(entry.id) FILTER (WHERE entry.parse_confidence = 'review') AS review_count,
-      count(entry.id) FILTER (WHERE entry.parse_confidence = 'low') AS low_confidence_count,
-      count(entry.id) FILTER (WHERE matched.candidate_count > 0) AS matched_count
+      count(entry.id) FILTER (WHERE entry.parse_confidence = 'low') AS low_confidence_count
     FROM north_hills_ocr_import_batches batch
     LEFT JOIN cemeteries cemetery ON cemetery.id = batch.cemetery_id
     LEFT JOIN north_hills_ocr_entries entry ON entry.batch_id = batch.id
-    LEFT JOIN LATERAL (
-      SELECT count(*) AS candidate_count
+    GROUP BY batch.id, cemetery.name
+    ORDER BY batch.created_at DESC, batch.id
+  `);
+
+  const batches = batchResult.rows.map(toBatch);
+  const selectedBatchId = compact(filters.batchId) ?? batches[0]?.id;
+  if (!selectedBatchId) return { batches, selectedBatchId: "", summary: [], entries: [] };
+
+  // Candidate counts are only needed for the selected batch. Computing them in
+  // the all-batches query made every filter request rescan every imported row.
+  const matchedResult = await pool.query(`
+    SELECT count(*) FILTER (WHERE EXISTS (
+      SELECT 1
       FROM burials burial
       JOIN gravesites gravesite ON gravesite.id = burial.gravesite_uuid
       WHERE gravesite.cemetery_id = entry.cemetery_id
@@ -56,15 +66,12 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
             WHERE lower(coalesce(burial.full_name, burial.last_name, '')) LIKE '%' || lower(surname.value) || '%'
           )
         )
-      LIMIT 1
-    ) matched ON true
-    GROUP BY batch.id, cemetery.name
-    ORDER BY batch.created_at DESC, batch.id
-  `);
-
-  const batches = batchResult.rows.map(toBatch);
-  const selectedBatchId = compact(filters.batchId) ?? batches[0]?.id;
-  if (!selectedBatchId) return { batches, selectedBatchId: "", summary: [], entries: [] };
+    )) AS matched_count
+    FROM north_hills_ocr_entries entry
+    WHERE entry.batch_id = $1
+  `, [selectedBatchId]);
+  const selectedBatch = batches.find((batch) => batch.id === selectedBatchId);
+  if (selectedBatch) selectedBatch.matchedCount = Number(matchedResult.rows[0]?.matched_count ?? 0);
 
   const where = ["entry.batch_id = $1"];
   const values = [selectedBatchId];
@@ -142,6 +149,13 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
 
   const entriesResult = await pool.query(
     `
+      WITH filtered_entries AS MATERIALIZED (
+        SELECT entry.*
+        FROM north_hills_ocr_entries entry
+        WHERE ${where.join("\n          AND ")}
+        ORDER BY ${orderBy}
+        LIMIT ${limitPlaceholder}
+      )
       SELECT
         entry.id::text,
         entry.batch_id::text,
@@ -168,7 +182,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
         COALESCE(matches.candidate_matches, '[]'::jsonb) AS candidate_matches,
         COALESCE(source_facts.facts, '[]'::jsonb) AS source_facts,
         COALESCE(observations.observations, '[]'::jsonb) AS observations
-      FROM north_hills_ocr_entries entry
+      FROM filtered_entries entry
       LEFT JOIN LATERAL (
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -347,9 +361,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
           ORDER BY score DESC, burial.full_name
         ) candidate
       ) matches ON true
-      WHERE ${where.join("\n        AND ")}
       ORDER BY ${orderBy}
-      LIMIT ${limitPlaceholder}
     `,
     values,
   );

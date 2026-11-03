@@ -14,6 +14,7 @@ import type {
   NorthHillsOcrEvidenceStatus,
   NorthHillsOcrReview,
   NorthHillsOcrReviewEntry,
+  NorthHillsOcrEvidenceLink,
   NorthHillsOcrReviewFilters,
   NorthHillsSourceFact,
   NorthHillsSourceFactStatus,
@@ -38,6 +39,55 @@ type Context = {
   setMessage: React.Dispatch<React.SetStateAction<string | undefined>>;
   scrollAdminItemIntoView: (elementId: string) => void
 };
+
+function updateNorthHillsEntryEvidence(entry: NorthHillsOcrReviewEntry, savedEvidence: NorthHillsOcrEvidenceLink): NorthHillsOcrReviewEntry {
+  const replaceEvidence = (links: NorthHillsOcrEvidenceLink[]) => [
+    ...links.filter((link) => link.id !== savedEvidence.id && link.targetId !== savedEvidence.targetId),
+    savedEvidence,
+  ];
+  const updateMatches = (matches: NorthHillsOcrReviewEntry["candidateMatches"]) => matches.map((match) => ({
+    ...match,
+    gravesiteEvidence: savedEvidence.targetType === "gravesite" && match.gravesiteUuid === savedEvidence.targetId
+      ? replaceEvidence(match.gravesiteEvidence)
+      : match.gravesiteEvidence,
+    headstoneCandidates: match.headstoneCandidates.map((headstone) => ({
+      ...headstone,
+      evidence: savedEvidence.targetType === "headstone" && headstone.id === savedEvidence.targetId
+        ? replaceEvidence(headstone.evidence)
+        : headstone.evidence,
+    })),
+  }));
+  const allMatches = updateMatches([...entry.candidateMatches, ...(entry.additionalCandidateMatches ?? [])]);
+  const originalMatches = allMatches.slice(0, 5);
+  const extraMatches = allMatches.slice(5);
+  const candidateMatches = [...originalMatches, ...extraMatches.filter((match) => match.gravesiteEvidence.length > 0)];
+  const summaryMatches = [...originalMatches, ...extraMatches
+    .filter((match) => match.gravesiteEvidence.length > 0)
+    .map((match) => ({ ...match, headstoneCandidates: match.headstoneCandidates.filter((headstone) => headstone.evidence.length > 0) }))];
+  const headstones = summaryMatches.flatMap((match) => match.headstoneCandidates);
+  const totalCount = entry.sourceFacts.length + entry.observations.length + summaryMatches.length + headstones.length;
+  const pendingCount = entry.sourceFacts.filter((fact) => fact.status === "staged").length
+    + entry.observations.filter((observation) => observation.status === "staged").length
+    + summaryMatches.filter((match) => match.gravesiteEvidence.length === 0).length
+    + headstones.filter((headstone) => headstone.evidence.length === 0).length;
+  return {
+    ...entry,
+    candidateMatches,
+    candidateMatchCount: candidateMatches.length,
+    additionalCandidateMatches: extraMatches.filter((match) => match.gravesiteEvidence.length === 0),
+    processingSummary: {
+      isProcessed: totalCount > 0 && pendingCount === 0,
+      totalCount,
+      pendingCount,
+      label: !totalCount ? "No review items" : pendingCount === 0 ? "Processed" : `${pendingCount} pending`,
+      detail: !totalCount
+        ? "No candidate matches, source facts, or observations are available for this reading yet."
+        : pendingCount === 0
+          ? "All review matches, source facts, and observations have been linked, rejected, reviewed, promoted, or flagged."
+          : `${pendingCount} of ${totalCount} review item${totalCount === 1 ? "" : "s"} still need a link, rejection, review, promotion, or field-check decision.`,
+    },
+  };
+}
 
 export function useNorthHillsAdministration({ setError, setActiveTab, setMessage, scrollAdminItemIntoView }: Context) {
   const confirm = useConfirmation();
@@ -218,7 +268,7 @@ export function useNorthHillsAdministration({ setError, setActiveTab, setMessage
     setError(undefined);
 
     try {
-      await saveNorthHillsOcrEvidence(entryId, {
+      const savedEvidence = await saveNorthHillsOcrEvidence(entryId, {
         targetType,
         targetId,
         status,
@@ -226,7 +276,10 @@ export function useNorthHillsAdministration({ setError, setActiveTab, setMessage
         notes,
       });
       setMessage(`${label} marked ${evidenceStatusLabels[status].toLowerCase()}.`);
-      await loadNorthHillsOcrReview(northHillsReviewFilters);
+      setNorthHillsOcrReview((current) => ({
+        ...current,
+        entries: current.entries.map((entry) => entry.id === entryId ? updateNorthHillsEntryEvidence(entry, savedEvidence) : entry),
+      }));
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save North Hills evidence review.");
     } finally {
