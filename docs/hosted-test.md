@@ -58,6 +58,33 @@ Create `.env` containing distinct, fresh `POSTGRES_PASSWORD` and
 to the host administrator. Optional Auth0 Management API credentials must be
 scoped to the TEST tenant. Never copy a DEV database password to the host.
 
+### GeoNames location search
+
+Birth and death location searches require the backend's GeoNames configuration.
+Add this setting to the host's protected `deploy/test/runtime.env`:
+
+```env
+GEONAMES_USERNAME=cemetery_app_geoname
+```
+
+The account must have its email confirmed and **Free Web Services** enabled on
+the [GeoNames account page](https://www.geonames.org/manageaccount). Registration
+alone is insufficient. See [account setup and troubleshooting](https://github.com/scpeterson/CemeteryMapping/blob/main/README.md#birth-and-death-location-setup-geonames).
+
+After editing the file, run the following from the host's `deploy/test` directory
+to load the changed container environment:
+
+```bash
+docker compose up -d --no-deps --force-recreate api
+```
+
+A plain container restart does not load changes to `runtime.env`. No frontend
+rebuild is needed. Ensure outbound HTTPS to `secure.geonames.org` is available,
+then verify a `Pittsburgh` search in the burial editor with a power-user or admin
+account. Select a result and save the burial to verify the complete workflow.
+
+### Hosted frontend configuration
+
 Keep the hosted SPA's `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`,
 `VITE_AUTH0_AUDIENCE`, and `VITE_AUTH0_SCOPE` in ignored
 `deploy/test/frontend.env`. Build in a subshell with
