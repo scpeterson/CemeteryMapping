@@ -6,7 +6,7 @@ import { ApplicationHeader } from "./components/ApplicationHeader";
 import { useCemeterySearchResults } from "./hooks/useCemeterySearchResults";
 import { useApplicationData } from "./hooks/useApplicationData";
 import { useCemeteryScope } from "./hooks/useCemeteryScope";
-import { selectionPermissions } from "./lib/selectionPermissions";
+import { roleForCemetery, selectionPermissions } from "./lib/selectionPermissions";
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
@@ -25,6 +25,7 @@ import type {
   SaveHeadstoneCreateInput,
 } from "./types";
 
+const UserProfilePanel = lazy(() => import("./components/UserProfilePanel").then(module => ({ default: module.UserProfilePanel })));
 const AdminPanel = lazy(() => import("./components/AdminPanel").then((module) => ({ default: module.AdminPanel })));
 const ControlPointCollector = lazy(() =>
   import("./components/ControlPointCollector").then((module) => ({ default: module.ControlPointCollector })),
@@ -42,13 +43,13 @@ export default function App() {
   useDraftNavigationGuard();
   const [mobileView, setMobileView] = useState<"search" | "map" | "details">("map");
   const [selectionVersion, setSelectionVersion] = useState(0);
-  const [adminCemeteryScope, setAdminCemeteryScope] = useState("");
+  const [adminCemeteryScope, setAdminCemeteryScope] = useState("__default");
   const [query, setQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<GraveStatus>>(() => new Set(allStatuses));
   const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
   const [selectedLot, setSelectedLot] = useState<CemeteryLot | undefined>();
   const [selectedHeadstone, setSelectedHeadstone] = useState<HeadstoneSummary | undefined>();
-  const { data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading, retryLookups } = useApplicationData(setSelectedGrave);
+  const { refreshCurrentUser, data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading, retryLookups } = useApplicationData(setSelectedGrave);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isReportsPanelOpen, setIsReportsPanelOpen] = useState(false);
   const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
@@ -104,8 +105,10 @@ export default function App() {
   }, [data.graves, selectedHeadstone, selectedHeadstoneDetails]);
   const { canViewSelectedOwnership, canUpdateSelectedHeadstones, canUpdateSelectedGravesites, canManageSelectedGraveLot, canUpdateSelectedBurials } = selectionPermissions(currentUser, selectedGrave?.cemeteryId, selectedHeadstone?.cemeteryId);
 
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   const changeCemeteryScope = (id: string) => {
-    if (currentUser?.role !== "admin" || !confirmDiscardChanges()) return;
+    if (!currentUser || (currentUser.role !== "admin" && !currentUser.assignedCemeteryIds.includes(id)) || !confirmDiscardChanges()) return;
     setAdminCemeteryScope(id);
     setSelectedGrave(undefined);
     setSelectedLot(undefined);
@@ -236,6 +239,7 @@ export default function App() {
           cemeteryScope={cemeteryScope ?? ""}
           onCemeteryScopeChange={changeCemeteryScope}
           currentUser={currentUser}
+          onOpenProfile={() => setIsProfileOpen(true)}
           onOpenReports={() => setIsReportsPanelOpen(true)}
           onOpenControl={() => setIsControlPointCollectorOpen(true)}
           onOpenAdmin={() => setIsAdminPanelOpen(true)}
@@ -326,7 +330,7 @@ export default function App() {
             canManageLotAssignment={canManageSelectedGraveLot}
             canUpdateBurials={canUpdateSelectedBurials}
             canUpdateHeadstones={canUpdateSelectedHeadstones}
-            canEditInspections={canUpdateSelectedHeadstones && (currentUser?.role === "admin" || currentUser?.role === "cemetery-admin")}
+            canEditInspections={canUpdateSelectedHeadstones && ["admin", "cemetery-admin"].includes(roleForCemetery(currentUser, selectedHeadstone?.cemeteryId))}
             headstoneLookups={headstoneLookups}
             pickedMarkerPoint={pickedMarkerPoint}
             isPickingMarkerPoint={isPickingMarkerPoint}
@@ -356,8 +360,8 @@ export default function App() {
             onMovePhoto={movePhoto}
             onStartMarkerPointPick={startMarkerPointPick}
             onCancelMarkerPointPick={cancelMarkerPointPick}
-            canDeleteGraveFeatures={currentUser?.permissions.canDeleteGraveFeatures ?? false}
-            canDeletePhotos={currentUser?.permissions.canDeletePhotos ?? false}
+            canDeleteGraveFeatures={["admin", "cemetery-admin"].includes(roleForCemetery(currentUser, selectedGrave?.cemeteryId ?? selectedHeadstone?.cemeteryId))}
+            canDeletePhotos={["admin", "cemetery-admin"].includes(roleForCemetery(currentUser, selectedHeadstone?.cemeteryId ?? selectedGrave?.cemeteryId))}
             canReorderPhotos={canUpdateSelectedHeadstones}
             isLoading={isDetailLoading}
             error={detailError}
@@ -388,6 +392,7 @@ export default function App() {
           {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onOpenMonument={(monument) => {
             if (selectHeadstone(monument)) setIsReportsPanelOpen(false);
           }} onClose={() => setIsReportsPanelOpen(false)} /> : null}
+          {isProfileOpen && currentUser ? <UserProfilePanel user={currentUser} cemeteries={cemeteries} onClose={() => setIsProfileOpen(false)} onSaved={refreshCurrentUser} /> : null}
           {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onLookupsChanged={retryLookups} onClose={() => setIsAdminPanelOpen(false)} /> : null}
           {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
             <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />

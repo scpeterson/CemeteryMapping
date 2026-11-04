@@ -11,6 +11,7 @@ const blankUser: UserFormState = {
   displayName: "",
   role: "reader",
   assignedCemeteryIds: [],
+  cemeteryMemberships: [],
   isActive: true,
 };
 
@@ -22,6 +23,7 @@ function userFormFromUser(user: AppUser): UserFormState {
     displayName: user.displayName,
     role: user.role,
     assignedCemeteryIds: user.assignedCemeteryIds,
+    cemeteryMemberships: user.cemeteryMemberships,
     isActive: user.isActive,
   };
 }
@@ -129,6 +131,7 @@ export function useUserAdministration() {
         displayName: user.displayName,
         role: user.role,
         assignedCemeteryIds: user.assignedCemeteryIds,
+        cemeteryMemberships: user.cemeteryMemberships,
         isActive: !user.isActive,
       });
       replaceUser(saved);

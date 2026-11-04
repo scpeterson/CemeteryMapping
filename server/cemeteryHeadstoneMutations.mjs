@@ -18,7 +18,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       return rollback(undefined);
     }
 
-    if (headstone.deletedInspections?.length || headstone.inspectionChangesOnly || headstone.newInspections?.length || headstone.updatedInspections?.length) assertInspectionEditor(actorUser);
+    if (headstone.deletedInspections?.length || headstone.inspectionChangesOnly || headstone.newInspections?.length || headstone.updatedInspections?.length) assertInspectionEditor(actorUser, existing.cemetery_id);
     if (headstone.deletedInspections?.length && !headstone.inspectionChangesOnly) throw new BadRequestError("Delete inspections separately from marker changes.");
     if (headstone.inspectionChangesOnly) {
       await deleteMonumentInspections(client, id, headstone.deletedInspections);
@@ -27,7 +27,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       return toHeadstone(await selectHeadstoneById(client, id));
     }
 
-    if (actorUser && !["admin", "cemetery-admin"].includes(actorUser.role) && inspectionFieldsChanged(existing, headstone)) assertInspectionEditor(actorUser);
+    if (actorUser && inspectionFieldsChanged(existing, headstone)) assertInspectionEditor(actorUser, existing.cemetery_id);
 
     if (headstone.faces === undefined && existing.faces?.length > 1
         && (headstone.inscription || null) !== existing.inscription) {
@@ -403,7 +403,7 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
       [headstoneUuid, grave.uuid, headstone.relationshipType || "secondary", headstone.relationshipNotes || ""],
     );
 
-    if (headstone.newInspections?.length || headstone.updatedInspections?.length) assertInspectionEditor(actorUser);
+    if (headstone.newInspections?.length || headstone.updatedInspections?.length) assertInspectionEditor(actorUser, cemeteryId);
     await insertMonumentInspections(client, headstoneUuid, headstone.newInspections);
     const created = await selectHeadstoneById(client, headstoneUuid);
 

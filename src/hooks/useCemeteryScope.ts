@@ -3,8 +3,10 @@ import type { CemeteryData, CurrentUser } from "../types";
 
 export function useCemeteryScope(data: CemeteryData, currentUser: CurrentUser | undefined, adminCemeteryScope: string) {
   const cemeteryScope = currentUser?.role === "admin"
-    ? adminCemeteryScope
-    : currentUser?.assignedCemeteryIds.length === 1 ? currentUser.assignedCemeteryIds[0] : null;
+    ? (adminCemeteryScope === "__default" ? currentUser.preferredCemeteryId ?? "" : adminCemeteryScope)
+    : currentUser?.assignedCemeteryIds.includes(adminCemeteryScope) ? (adminCemeteryScope === "__default" ? currentUser.preferredCemeteryId ?? "" : adminCemeteryScope)
+      : currentUser?.preferredCemeteryId && currentUser.assignedCemeteryIds.includes(currentUser.preferredCemeteryId) ? currentUser.preferredCemeteryId
+      : currentUser?.assignedCemeteryIds[0] ?? null;
 
   const availableBoundaries = useMemo(() => data.boundaries ?? (data.boundary ? [data.boundary] : []), [data.boundaries, data.boundary]);
   const cemeteries = useMemo(() => {
@@ -38,7 +40,7 @@ export function useCemeteryScope(data: CemeteryData, currentUser: CurrentUser | 
   const cemeteryScopeLabel = useMemo(() => {
     if (!currentUser) return "Loading cemetery…";
     if (currentUser.role !== "admin") {
-      if (cemeteryScope === null) return "Contact your administrator to register one cemetery.";
+      if (cemeteryScope === null) return "Contact your administrator to assign a cemetery.";
       return cemeteries.find((cemetery) => cemetery.id === cemeteryScope)?.name ?? "Your registered cemetery";
     }
     const cemeteryNames = [...new Set((data.boundaries ?? (data.boundary ? [data.boundary] : [])).map((boundary) => boundary.properties.name))];
@@ -47,5 +49,5 @@ export function useCemeteryScope(data: CemeteryData, currentUser: CurrentUser | 
     return `${cemeteryNames.length} cemeteries`;
   }, [data.boundaries, data.boundary, currentUser, cemeteryScope, cemeteries]);
 
-  return { cemeteryScope, cemeteries, mapData, cemeteryScopeLabel };
+  return { cemeteryScope, cemeteries: currentUser?.role === "admin" ? cemeteries : cemeteries.filter(cemetery => currentUser?.assignedCemeteryIds.includes(cemetery.id)), mapData, cemeteryScopeLabel };
 }

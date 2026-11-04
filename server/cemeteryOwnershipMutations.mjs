@@ -1,3 +1,4 @@
+import { cemeteryRole } from "./auth.mjs";
 import {readOwnershipEditor} from "./ownershipEditing.mjs";
 import {BadRequestError, ConflictError} from "./requestValidation.mjs";
 import { withAuditContext } from "./auditContext.mjs";
@@ -18,7 +19,7 @@ export async function createOwnershipEvent(
 
     let editing;
     if (editingEventId) {
-      if (!actorUser || !["admin", "cemetery-admin"].includes(actorUser.role)) {
+      if (!actorUser || !["admin", "cemetery-admin"].includes(cemeteryRole(actorUser, cemeteryId))) {
         const error = new Error("A cemetery or system admin is required to edit ownership assignments."); error.statusCode=403; throw error;
       }
       if (!/^[a-f0-9]{64}$/.test(expectedRevision || "")) throw new BadRequestError("Ownership version is required. Reopen the ownership editor.");

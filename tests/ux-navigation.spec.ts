@@ -124,7 +124,7 @@ test("a missing registration does not fall back to all cemeteries", async ({ pag
   await fixture(page);
   await page.route("**/api/me", (route) => route.fulfill({ json: { role: "reader", assignedCemeteryIds: [], permissions: {} } }));
   await page.goto("/tests/auth.html");
-  await expect(page.getByRole("banner")).toContainText("Contact your administrator to register one cemetery.");
+  await expect(page.getByRole("banner")).toContainText("Contact your administrator to assign a cemetery.");
   await expect(page.getByLabel("Cemetery", { exact: true })).toHaveCount(0);
   await expect(page.locator(".result-card")).toHaveCount(0);
   await expect(page.locator(".cemetery-map-marker")).toHaveCount(0);

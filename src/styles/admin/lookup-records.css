@@ -212,7 +212,7 @@
 }
 
 .admin-user-row {
-  grid-template-columns: minmax(0, 1fr) 126px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .role-row {

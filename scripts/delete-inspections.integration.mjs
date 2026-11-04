@@ -15,14 +15,15 @@ test('inspection deletion enforces roles, cemetery scope and versions, preserves
   await c.query('BEGIN');
   if (!(await c.query("SELECT 1 FROM information_schema.columns WHERE table_name='monument_inspections' AND column_name='deleted_at'")).rowCount) await c.query(await readFile(new URL('../db/changelog/changes/494-delete-monument-inspections.sql',import.meta.url),'utf8'));
   const {id}=await createInspectionFixture(c);
+  const cemeteryId=(await c.query('SELECT g.cemetery_id::text FROM headstones h JOIN gravesites g ON g.id=h.gravesite_uuid WHERE h.id=$1',[id])).rows[0].cemetery_id;
   const pool={connect:async()=>({release(){},query:(sql,params)=>c.query(sql==='BEGIN'?'SAVEPOINT deletion':sql==='COMMIT'?'RELEASE SAVEPOINT deletion':sql==='ROLLBACK'?'ROLLBACK TO SAVEPOINT deletion':sql,params)})};
   const inspections=(await c.query('SELECT id,updated_at::text AS version FROM monument_inspections WHERE headstone_uuid=$1',[id])).rows;
   for(const inspection of inspections) {
    const payload={inspectionChangesOnly:true,deletedInspections:validateDeletedInspections([{id:inspection.id,expectedUpdatedAt:inspection.version}])};
    for(const role of ['reader','power-user']) await assert.rejects(updateHeadstone(pool,id,payload,{actorUser:{role}}),{statusCode:403});
-   assert.equal(await updateHeadstone(pool,id,payload,{actorUser:{role:'cemetery-admin'},allowedCemeteryIds:[]}),undefined);
+   assert.equal(await updateHeadstone(pool,id,payload,{actorUser:{role:'cemetery-admin',cemeteryAccess:[{cemeteryId,role:'cemetery-admin',canEdit:true}]},allowedCemeteryIds:[]}),undefined);
    await assert.rejects(updateHeadstone(pool,id,{...payload,deletedInspections:[{id:inspection.id,expectedUpdatedAt:'2000-01-01'}]},{actorUser:{role:'admin'}}),/changed or was deleted/);
-   const result=await updateHeadstone(pool,id,payload,{actorUser:{role:'cemetery-admin'}});
+   const result=await updateHeadstone(pool,id,payload,{actorUser:{role:'cemetery-admin',cemeteryAccess:[{cemeteryId,role:'cemetery-admin',canEdit:true}]}});
    assert.ok(!result.inspections.some(i=>i.id===inspection.id));
    await assert.rejects(updateHeadstone(pool,id,payload,{actorUser:{role:'admin'}}),/changed or was deleted/);
   }

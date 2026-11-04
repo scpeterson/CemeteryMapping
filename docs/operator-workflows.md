@@ -154,21 +154,26 @@ An occupied or marked gravesite can still appear in this report because burial a
 
 Use `Admin -> Users` when adding, editing, deactivating, or reactivating application users.
 
-1. Open `Admin -> Users`.
-2. To add a user, enter the user's email address and choose the local application role.
-3. If Auth0 Management API settings are configured, use the Auth0 lookup/create flow to find or create the Auth0 database user before saving the local app user.
-4. Confirm the Auth0 user ID field is populated from Auth0. Do not invent this value manually unless you are copying the exact Auth0 `user_id`.
-5. Select the role:
-   - `reader` can view map, burial, gravesite, and marker information, but cannot see deed/owner sections.
-   - `power-user` can do reader tasks and can view/edit deed-owner data and existing cemetery records for assigned cemeteries.
-   - `cemetery-admin` can administer assigned cemeteries and has read-only access elsewhere.
-   - `admin` can manage the whole system, including users, lookups, audit review, structural records, and deletes.
-6. Assign a cemetery for every non-admin user, including `reader`. Creating or saving a non-admin account requires an assignment; system admins are exempt because they have system-wide access. The database supports multiple assignments, but the current UI manages one assignment per user.
-7. Save the user and have them sign out and back in so any Auth0 token and local role changes are reflected.
-8. Use `Deactivate` when access should be blocked without deleting the Auth0 account or local history.
-9. Use `Reactivate` only after confirming the user's role and cemetery assignment are still correct.
+1. Open `Admin -> Users` as a system administrator.
+2. Enter the person's email and display name. Use the Auth0 lookup/create flow when configured; the Auth0 user ID must match the real identity provider account.
+3. Choose **Cemetery member**, then **Add cemetery** for each membership. Assign **Read-only**, **Power user**, or **Cemetery admin** separately for each cemetery. A user can administer one cemetery and be a reader in another. At least one cemetery is required for a non-admin account.
+4. Choose **System administrator** only for people who need system-wide administration, including user management. This role applies across all cemeteries.
+5. Save the user. Access is checked against database memberships on authenticated requests; refresh the app to update visible permissions.
+6. Search the directory by name, email, organization, or cemetery; filter by account status or cemetery. Each entry shows memberships, optional contact details, creation date, and last active time.
+7. Use **View activity** to inspect the person's latest 50 changes still retained in the audit log. Last active means authenticated API use and is updated at most once every five minutes; it does not represent a complete login/session history. Activity before this feature was enabled may be absent.
+8. Use **Deactivate** to block access without deleting the Auth0 identity, profile, or attribution history. Review memberships before reactivating an account.
 
-Local application roles are the authorization source for the app. Auth0 authenticates identity and may issue API permissions, but the local `app_users` row controls what the app shows and allows after login.
+Auth0 authenticates the person. Local cemetery membership roles authorize edits, ownership access, and administrative actions. The `app_users.role_name` value remains a summary for compatibility; explicit membership roles control cemetery access. System admins remain globally privileged. Existing general record read endpoints retain their previous visibility rules; this feature does not introduce private tenant boundaries between cemeteries.
+
+### My Profile
+
+Open **My profile** from the application menu to edit your display name, optional phone and organization, and preferred cemetery. The preferred cemetery must be one of your memberships (system administrators may choose any active cemetery). It becomes the default map scope when opening the app; the header lets you switch cemeteries during a session. The profile lists your assigned roles for reference. Sign-in email, account status, and memberships are managed by system administrators. Profile changes are attributed to your account in the audit log. Unsaved changes prompt before leaving the editor.
+
+### Profile and Membership Deployment
+
+Apply Liquibase migration `509-user-profiles-and-cemetery-memberships` before starting the updated API, then refresh the restricted API role grants using `db:configure-api` locally or the hosted runbook's role configuration script. API startup requires this changeset. The migration copies existing editable assignments to the user's current cemetery role and preserves read-only assignments as readers. System administrator access remains global. New profile fields start empty; last-activity tracking starts with subsequent authenticated API requests.
+
+For verification, use an account with a cemetery-admin membership in one cemetery and a reader membership in another. Confirm it can switch maps, edit only the first cemetery, cannot delete photos or edit inspections in the reader cemetery, and cannot access the system user directory. Save a profile and check its attributed change in **View activity**. Before deployment, run the PostgreSQL integration check with `APP_ENV=test node --test scripts/user-profiles.integration.mjs`; its fixtures and migration rehearsal are rolled back.
 
 ### Cemetery Records
 
@@ -1107,9 +1112,9 @@ Do not load OCR readings directly into production burial or headstone fields. Th
 
 ### Cemetery scope and navigation
 
-System admins initially open the map fitted to all cemetery boundaries. Non-admin users automatically open the map at their one registered cemetery, with search and map records scoped to that cemetery. Only system admins see the cemetery selector in the application header and can change cemetery scope. System admins use it to focus the map and narrow search results to one cemetery. Choose **All cemeteries** to return to the full view. Changing cemetery clears the selected record and checks for unsaved edits. The map's fit button fits the chosen cemetery while a scope is active. Initial fitting waits for the account and map data to load. A non-admin account with zero or multiple assignments shows an empty scope and a message to contact an administrator; it never falls back to all cemeteries.
+System administrators open all cemeteries by default, or their preferred cemetery if one is configured. Non-admin users open their preferred assigned cemetery, falling back to an assigned cemetery when no preference is recorded. Accounts with several memberships can switch cemeteries in the header. System administrators can also choose **All cemeteries**. Switching checks unsaved changes and clears the selected record; the fit button fits the selected cemetery. An account with no memberships shows an empty scope and a message to contact an administrator.
 
-Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. This validation does not backfill existing accounts or add a database constraint. Correct legacy assignments in Admin before reactivation or other account updates. See the [assignment audit](hosted-test.md#cemetery-assignment-audit).
+Every non-admin account requires at least one membership. Admin users can add several cemeteries and assign an independent role in each. Existing general record visibility remains governed by the application's existing read endpoints; map scoping is a navigation preference rather than a tenant isolation boundary.
 
 Search accepts names, owners (when permitted), dates, gravesites, and lots. Use the status chips for a combination of statuses, **Show one status** for a single status, and **Reset filters** to restore all statuses. Resetting status filters preserves the search text and cemetery selection.
 

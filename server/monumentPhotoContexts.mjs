@@ -15,7 +15,12 @@ export function validatePhotoContext(value) {
 
 export async function validatePhotoContextTarget(client,markerId,context,actorUser) {
  if(!context.inspectionId&&!context.maintenanceRecordId) return;
- if(context.inspectionId) assertInspectionEditor(actorUser);
+ if(context.inspectionId && actorUser?.role !== "admin") {
+  assertInspectionEditor(actorUser);
+  const marker = await selectHeadstoneMutationState(client,markerId);
+  if(!marker) throw new BadRequestError('Monument not found.');
+  assertInspectionEditor(actorUser, marker.cemetery_id);
+ }
  const result=context.inspectionId
   ? await client.query('SELECT id,faces FROM monument_inspections WHERE id=$1 AND headstone_uuid=$2 AND deleted_at IS NULL FOR UPDATE',[context.inspectionId,markerId])
   : await client.query('SELECT id,(SELECT faces FROM headstones WHERE id=$2) AS faces FROM maintenance_records WHERE id=$1 AND headstone_uuid=$2 AND deleted_at IS NULL FOR UPDATE',[context.maintenanceRecordId,markerId]);

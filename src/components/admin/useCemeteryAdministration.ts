@@ -1,3 +1,4 @@
+import { roleForCemetery } from "../../lib/selectionPermissions";
 import type * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -66,7 +67,7 @@ export function useCemeteryAdministration({ currentUser, setError, canManageUser
     [lotsForSelectedSection, selectedLotId],
   );
 
-  const canEditSelectedCemetery = currentUser.role === "admin" || (selectedCemeteryId ? currentUser.assignedCemeteryIds.includes(selectedCemeteryId) : false);
+  const canEditSelectedCemetery = ["admin", "cemetery-admin", "power-user"].includes(roleForCemetery(currentUser, selectedCemeteryId));
 
   useEffect(() => {
     let isCurrent = true;

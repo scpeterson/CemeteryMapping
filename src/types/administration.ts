@@ -1,6 +1,11 @@
 import type { AppRoleName } from "./common";
 
+export type CemeteryMembership = { cemeteryId: string; role: Exclude<AppRoleName, "admin"> };
+export type UserProfile = { displayName: string; phone: string; organization: string; preferredCemeteryId: string; email: string; createdAt: string };
+export type UserActivity = { id: string; tableName: string; operation: string; changedAt: string; reason: string };
+
 export type CurrentUser = {
+  preferredCemeteryId?: string;
   subject: string;
   email?: string;
   displayName?: string;
@@ -19,6 +24,7 @@ export type CurrentUser = {
     canDeletePhotos: boolean;
   };
   assignedCemeteryIds: string[];
+  cemeteryMemberships?: CemeteryMembership[];
 };
 
 export type AppRole = {
@@ -34,7 +40,12 @@ export type AppUser = {
   displayName: string;
   role: AppRoleName;
   assignedCemeteryIds: string[];
+  cemeteryMemberships?: CemeteryMembership[];
   isActive: boolean;
+  phone?: string;
+  organization?: string;
+  preferredCemeteryId?: string;
+  lastActiveAt?: string;
   lastAuthenticatedAt?: string;
   createdAt: string;
   updatedAt: string;

@@ -149,6 +149,8 @@ The backend reads the Liquibase-managed Postgres/PostGIS schema and exposes a su
 - `GET /api/reports` for the role-filtered approved report catalog
 - `POST /api/reports/run` to run an approved report with validated parameters and cemetery scoping
 - `POST /api/reports/query` to match a natural-language cemetery question to an approved report and run it when all required parameters are available
+- `GET /api/me/profile` and `PUT /api/me/profile` for the signed-in user's contact details and preferred cemetery
+- `GET /api/admin/users/:id/activity` for system admins to inspect a user's latest 50 retained audit changes
 - `GET /api/admin/cemetery-records` for admin-only cemetery, section, and lot text records
 - `PUT /api/admin/cemetery-records/cemeteries/:id`, `/sections/:id`, and `/lots/:id` for admin-only text updates
 - `GET /api/admin/deed-registry-review` for staged deed registry evidence review
@@ -223,7 +225,7 @@ AUTH0_AUDIENCE=<api-identifier>
 
 In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, `cemetery-admin`, and `admin` checks.
 
-Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. Non-admin maps default to their assigned cemetery; system-admin maps initially fit all cemeteries. See [user management](docs/operator-workflows.md#admin-user-management) and [cemetery scope](docs/operator-workflows.md#cemetery-scope-and-navigation).
+Each person has one application account with one or more cemetery memberships. Each membership assigns `reader`, `power-user`, or `cemetery-admin` independently; `admin` remains a system-wide role. Non-admin users need at least one membership and can switch between assigned cemeteries in the map header. Users edit contact details and choose a preferred cemetery under **My profile**. System admins can search users, inspect memberships and recent activity, and deactivate accounts under **Admin → Users**. See [user management](docs/operator-workflows.md#admin-user-management) and [cemetery scope](docs/operator-workflows.md#cemetery-scope-and-navigation).
 
 The Auth0 API must include `read:cemetery`, `write:cemetery`, `read:deeds`, and `write:deeds`; assign the deed permissions to `power-user`, `cemetery-admin`, and `admin`, then have affected users sign out and back in so their access tokens are refreshed. These permissions and role assignments can be applied with the configuration script below after the Auth0 tenant, API, applications, and Management API client have been created.
 

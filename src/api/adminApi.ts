@@ -50,7 +50,7 @@ export async function fetchAdminUsers(): Promise<AppUser[]> {
   return jsonResponse<AppUser[]>(response, "Users API");
 }
 
-export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "assignedCemeteryIds" | "isActive"> & { accessRequestId?: string };
+export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "assignedCemeteryIds" | "isActive"> & { accessRequestId?: string; cemeteryMemberships?: AppUser["cemeteryMemberships"] };
 
 export type ResolveAuth0UserInput = Pick<AppUser, "email" | "displayName">;
 

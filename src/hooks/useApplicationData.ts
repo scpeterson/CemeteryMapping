@@ -39,6 +39,7 @@ export function useApplicationData(setSelectedGrave: Dispatch<SetStateAction<Gra
   const [lookupLoading, setLookupLoading] = useState(true);
   const [lookupAttempt, setLookupAttempt] = useState(0);
   const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
+  const [userAttempt, setUserAttempt] = useState(0);
   const [userError, setUserError] = useState<string>();
   useEffect(() => {
     let isCurrent = true;
@@ -57,7 +58,7 @@ export function useApplicationData(setSelectedGrave: Dispatch<SetStateAction<Gra
     return () => {
       isCurrent = false;
     };
-  }, []);
+  }, [userAttempt]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -105,6 +106,6 @@ export function useApplicationData(setSelectedGrave: Dispatch<SetStateAction<Gra
     };
   }, [setSelectedGrave]);
 
-  return { data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading,
+  return { refreshCurrentUser: () => setUserAttempt(value => value + 1), data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading,
     retryLookups: () => setLookupAttempt((value) => value + 1) };
 }

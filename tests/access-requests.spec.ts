@@ -95,8 +95,11 @@ test("admin reviews a request through user setup defaulting to reader", async ({
   const admin = page.getByRole("dialog", { name: "Admin management" });
   await admin.getByRole("button", { name: "Users", exact: true }).click();
   await admin.getByRole("button", { name: "Set up user" }).click();
-  await expect(admin.getByRole("combobox", { name: "Role", exact: true })).toHaveValue("reader");
-  const cemetery = admin.getByRole("combobox", { name: "Assigned cemetery", exact: true });
+  await expect(admin.getByRole("combobox", { name: "System access", exact: true })).toHaveValue("member");
+  await admin.getByRole("button", { name: "Add cemetery", exact: true }).click();
+  const memberships = admin.getByRole("group", { name: "Cemetery memberships" });
+  await expect(memberships.getByRole("combobox", { name: "Cemetery role", exact: true })).toHaveValue("reader");
+  const cemetery = memberships.getByRole("combobox", { name: "Cemetery", exact: true });
   await expect(cemetery).toHaveAttribute("required", "");
   await admin.getByRole("button", { name: "Save user", exact: true }).click();
   expect(approved).toBe(false);

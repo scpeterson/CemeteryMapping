@@ -36,6 +36,11 @@ function toUser(row) {
     displayName: row.display_name ?? "",
     role: row.role_name,
     assignedCemeteryIds: row.assigned_cemetery_ids ?? [],
+    cemeteryMemberships: row.cemetery_memberships ?? [],
+    phone: row.phone ?? "",
+    organization: row.organization ?? "",
+    preferredCemeteryId: row.preferred_cemetery_id ?? "",
+    lastActiveAt: row.last_active_at?.toISOString?.() ?? row.last_active_at ?? undefined,
     isActive: row.is_active,
     lastAuthenticatedAt: row.last_authenticated_at?.toISOString?.() ?? row.last_authenticated_at ?? undefined,
     createdAt: row.created_at?.toISOString?.() ?? row.created_at,
@@ -62,10 +67,14 @@ export async function listRoles(pool) {
     SELECT
       app_roles.role_name,
       app_roles.description,
-      count(app_users.id)::int AS user_count
+      count(DISTINCT role_users.app_user_id)::int AS user_count
     FROM app_roles
-    LEFT JOIN app_users
-      ON app_users.role_name = app_roles.role_name
+    LEFT JOIN (
+      SELECT id AS app_user_id, role_name FROM app_users WHERE role_name = 'admin'
+      UNION
+      SELECT a.app_user_id, a.role_name FROM app_user_cemetery_access a
+      JOIN app_users u ON u.id = a.app_user_id WHERE u.role_name <> 'admin'
+    ) role_users ON role_users.role_name = app_roles.role_name
     GROUP BY app_roles.role_name, app_roles.description
     ORDER BY
       CASE app_roles.role_name
@@ -90,6 +99,10 @@ export async function listUsers(pool) {
       app_users.display_name,
       app_users.role_name,
       app_users.is_active,
+      app_users.phone, app_users.organization, app_users.preferred_cemetery_id,
+      (SELECT last_active_at FROM app_user_activity WHERE app_user_id = app_users.id) AS last_active_at,
+      COALESCE((SELECT jsonb_agg(jsonb_build_object('cemeteryId', a.cemetery_id::text, 'role', a.role_name) ORDER BY a.cemetery_id)
+        FROM app_user_cemetery_access a WHERE a.app_user_id = app_users.id), '[]'::jsonb) AS cemetery_memberships,
       app_users.last_authenticated_at,
       app_users.created_at,
       app_users.updated_at,
@@ -105,18 +118,20 @@ export async function listUsers(pool) {
   return result.rows.map(toUser);
 }
 
-async function replaceCemeteryAssignments(client, userId, assignedCemeteryIds) {
+async function replaceCemeteryAssignments(client, userId, assignedCemeteryIds, memberships, role) {
   await client.query("DELETE FROM app_user_cemetery_access WHERE app_user_id = $1", [userId]);
   const cemeteryIds = [...new Set((assignedCemeteryIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean))];
   for (const cemeteryId of cemeteryIds) {
+    const membershipRole = memberships?.find(entry => entry.cemeteryId === cemeteryId)?.role ?? (role === "admin" ? "reader" : role);
     await client.query(
-      `
-        INSERT INTO app_user_cemetery_access (app_user_id, cemetery_id, can_edit)
-        VALUES ($1, $2, true)
-      `,
-      [userId, cemeteryId],
+      `INSERT INTO app_user_cemetery_access (app_user_id, cemetery_id, can_edit, role_name)
+       VALUES ($1, $2, $3, $4)`,
+      [userId, cemeteryId, membershipRole !== "reader", membershipRole],
     );
   }
+  await client.query(`UPDATE app_users SET preferred_cemetery_id = NULL
+    WHERE id = $1 AND role_name <> 'admin' AND preferred_cemetery_id IS NOT NULL
+    AND NOT EXISTS (SELECT 1 FROM app_user_cemetery_access a WHERE a.app_user_id = app_users.id AND a.cemetery_id = app_users.preferred_cemetery_id)`, [userId]);
 }
 
 async function selectUserById(client, id) {
@@ -129,7 +144,11 @@ async function selectUserById(client, id) {
         app_users.display_name,
         app_users.role_name,
         app_users.is_active,
-        app_users.last_authenticated_at,
+        app_users.phone, app_users.organization, app_users.preferred_cemetery_id,
+      (SELECT last_active_at FROM app_user_activity WHERE app_user_id = app_users.id) AS last_active_at,
+      COALESCE((SELECT jsonb_agg(jsonb_build_object('cemeteryId', a.cemetery_id::text, 'role', a.role_name) ORDER BY a.cemetery_id)
+        FROM app_user_cemetery_access a WHERE a.app_user_id = app_users.id), '[]'::jsonb) AS cemetery_memberships,
+      app_users.last_authenticated_at,
         app_users.created_at,
         app_users.updated_at,
         COALESCE(array_remove(array_agg(app_user_cemetery_access.cemetery_id::text ORDER BY cemeteries.name, app_user_cemetery_access.cemetery_id::text), NULL), '{}'::text[]) AS assigned_cemetery_ids
@@ -157,7 +176,7 @@ export async function createUser(pool, user) {
       `,
       [user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
     );
-    await replaceCemeteryAssignments(client, result.rows[0].id, user.assignedCemeteryIds);
+    await replaceCemeteryAssignments(client, result.rows[0].id, user.assignedCemeteryIds, user.cemeteryMemberships, user.role);
     await finishAccessRequest(client, user, result.rows[0].id);
     return selectUserById(client, result.rows[0].id);
   });
@@ -180,7 +199,7 @@ export async function updateUser(pool, id, user) {
       [id, user.externalSubject, user.email, user.displayName || null, user.role, user.isActive],
     );
     if (!result.rows[0]) return undefined;
-    await replaceCemeteryAssignments(client, id, user.assignedCemeteryIds);
+    await replaceCemeteryAssignments(client, id, user.assignedCemeteryIds, user.cemeteryMemberships, user.role);
     await finishAccessRequest(client, user, id);
     return selectUserById(client, id);
   });

@@ -1,5 +1,6 @@
+import { roleForCemetery } from "../lib/selectionPermissions";
 import { useRef, useState } from "react";
-import { BarChart3, MapPinned, Menu, ShieldCheck } from "lucide-react";
+import { BarChart3, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react";
 import { useAccountSession } from "../auth/sessionContext";
 import type { CurrentUser } from "../types";
 
@@ -9,6 +10,7 @@ type ApplicationHeaderProps = {
   cemeteries?: { id: string; name: string }[];
   cemeteryScope?: string;
   onCemeteryScopeChange?: (id: string) => void;
+  onOpenProfile: () => void;
   onOpenReports: () => void;
   onOpenControl: () => void;
   onOpenAdmin: () => void;
@@ -16,7 +18,7 @@ type ApplicationHeaderProps = {
 };
 
 export function ApplicationHeader({
-  cemeteryScopeLabel, cemeteries, cemeteryScope, onCemeteryScopeChange, currentUser, onOpenReports, onOpenControl, onOpenAdmin, onOpenCreateGravesite,
+  cemeteryScopeLabel, cemeteries, cemeteryScope, onCemeteryScopeChange, currentUser, onOpenProfile, onOpenReports, onOpenControl, onOpenAdmin, onOpenCreateGravesite,
 }: ApplicationHeaderProps) {
   const session = useAccountSession();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,10 +35,10 @@ export function ApplicationHeader({
       <div className="application-brand">
         <h1>Cemetery Map</h1>
         <p>{cemeteryScopeLabel}</p>
-        {currentUser?.role === "admin" && cemeteries?.length ? <label className="cemetery-scope" htmlFor="cemetery-scope">
+        {currentUser && (currentUser.role === "admin" || (cemeteries?.length ?? 0) > 1) && cemeteries?.length ? <label className="cemetery-scope" htmlFor="cemetery-scope">
           <span className="sr-only">Cemetery</span>
           <select id="cemetery-scope" aria-label="Cemetery" value={cemeteryScope} onChange={(event) => onCemeteryScopeChange?.(event.target.value)}>
-            <option value="">All cemeteries</option>
+            {currentUser.role === "admin" ? <option value="">All cemeteries</option> : null}
             {cemeteries.map((cemetery) => <option key={cemetery.id} value={cemetery.id}>{cemetery.name}</option>)}
           </select>
         </label> : null}
@@ -53,7 +55,8 @@ export function ApplicationHeader({
           <Menu size={18} aria-hidden="true" /> Menu
         </button>
         <nav id="application-actions" className="application-actions" aria-label="Application actions" data-open={menuOpen}>
-          {(currentUser.role === "admin" || currentUser.role === "cemetery-admin") && currentUser.permissions.canUpdateGravesites ? <button type="button" onClick={onOpenCreateGravesite}>Add gravesite</button> : null}
+          {["admin", "cemetery-admin"].includes(roleForCemetery(currentUser, cemeteryScope)) && currentUser.permissions.canUpdateGravesites ? <button type="button" onClick={onOpenCreateGravesite}>Add gravesite</button> : null}
+          <button type="button" onClick={onOpenProfile} title="Edit your contact details and preferred cemetery."><UserRound size={16} aria-hidden="true" /> My profile</button>
           <button type="button" onClick={onOpenReports}
             aria-label="Open reports: run saved cemetery reports and guided queries"
             title="Open reports: run saved cemetery reports and guided queries.">
