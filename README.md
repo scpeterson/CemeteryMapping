@@ -4,6 +4,8 @@ A WebStorm-friendly Vite, React, TypeScript, and MapLibre GL JS prototype for ma
 
 ## Run locally
 
+New to **using** the app? Read [Start Here: Power Users](docs/power-user-start-here.md) for access, navigation, and everyday workflows.
+
 For a beginner-friendly setup guide with Mac and Windows notes, see `docs/getting-started.md`.
 
 ```bash

@@ -3,13 +3,16 @@
 
 # Cemetery Mapping Documentation
 
-This site contains the operational and architectural documentation for rebuilding, maintaining, and extending the Cemetery Mapping application.
+This site explains how to use, maintain, rebuild, and extend the Cemetery Mapping application.
+
+**New to using the app? Start with [Start Here: Power Users](power-user-start-here.md)** for account setup, a first tour, everyday tasks, and guidance on when to ask an administrator for help.
 
 The site is configured for GitHub Pages using Jekyll, a custom documentation layout, sidebar navigation, and previous/next page links.
 
 ## Start Here
 
-- [Getting Started](getting-started.md)
+- [Start Here: Power Users](power-user-start-here.md)
+- [Getting Started: Developer Setup](getting-started.md)
 - [Rebuild Guide](rebuild.md)
 - [PostgreSQL upgrades, query benchmarks and spatial repair previews](postgresql-18-upgrade.md)
 - [Application and Third-Party Services](service-architecture.md)
