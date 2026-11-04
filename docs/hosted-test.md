@@ -69,7 +69,7 @@ GEONAMES_USERNAME=cemetery_app_geoname
 
 The account must have its email confirmed and **Free Web Services** enabled on
 the [GeoNames account page](https://www.geonames.org/manageaccount). Registration
-alone is insufficient. See [account setup and troubleshooting](../README.md#birth-and-death-location-setup-geonames).
+alone is insufficient. See [account setup and troubleshooting](https://github.com/scpeterson/CemeteryMapping/blob/main/README.md#birth-and-death-location-setup-geonames).
 
 After editing the file, run the following from the host's `deploy/test` directory
 to load the changed container environment:
