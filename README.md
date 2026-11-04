@@ -181,7 +181,33 @@ CI performs this step before running application tests. Tests that create migrat
 schemas use administrative fixture connections, while application queries use the
 restricted account. Local automated tests retain their explicit disabled-auth mode.
 
-Verified death-location search uses GeoNames. Set `GEONAMES_USERNAME` in the environment's ignored `db/env/<environment>.local.env` file to enable it. `GEONAMES_BASE_URL` and `GEONAMES_TIMEOUT_MS` are optional. If GeoNames is unconfigured or unavailable, the burial editor continues to offer locally stored verified places and all other burial fields remain editable.
+### Birth and death location setup (GeoNames)
+
+Birth and death location searches require a GeoNames account with **Free Web Services enabled** and a configured API username in each environment. Account registration alone does not enable searches. Without this setup, the burial editor can only select previously stored verified places; all other burial fields remain editable.
+
+1. Register at [GeoNames](https://www.geonames.org/login) and confirm the account email.
+2. Sign in to [Manage account](https://www.geonames.org/manageaccount) and enable **Free Web Services**. Verify that the account is enabled before testing the application.
+3. Configure the backend with the GeoNames username (no GeoNames password is needed). The application's configured account is `cemetery_app_geoname`:
+
+   ```env
+   GEONAMES_USERNAME=cemetery_app_geoname
+   ```
+
+   For local development and test, add this line to the appropriate ignored `db/env/dev.local.env` or `db/env/test.local.env` file. For stage and production, use `db/env/<environment>.local.env` or inject `GEONAMES_USERNAME` into the API process environment. Process environment values take precedence over the file. For hosted test, set it in the server's protected `deploy/test/runtime.env`; see [hosted configuration](docs/hosted-test.md#geonames-location-search).
+4. Restart the API after changing configuration (restart `npm run dev` or `npm run dev:test` when using the combined local launcher). The backend reads this setting at startup.
+5. As a power user or admin with edit access, open a burial record, enter `Pittsburgh` under Birth or Death location, and click **Search geographic registry**. Confirm that results appear, choose **Use …**, then save the burial. Selecting a search result imports the verified place; saving the burial associates it with the record.
+
+The database must include migrations `239` (verified places and death location) and `434` (birth location). For an installation with pending migrations, run `APP_ENV=<environment> npm run db:migrate`, then `APP_ENV=<environment> npm run db:configure-api` to refresh the restricted API account's grants.
+
+`GEONAMES_BASE_URL` (default `https://secure.geonames.org`) and `GEONAMES_TIMEOUT_MS` (default `5000`) are optional backend settings. The API server needs outbound HTTPS access to GeoNames for both search and place verification.
+
+If search is unavailable:
+
+- **Geographic search is not configured:** check the active `APP_ENV`, the corresponding local environment file or process environment, and restart the API.
+- **Geographic search is temporarily unavailable:** confirm the username matches the GeoNames account, the email is confirmed, and **Free Web Services** is enabled. Also check service availability, account request limits, and outbound network access. Provider errors are displayed as this generic message.
+- Search/import returns **403:** use a power-user or admin account. Saving also requires edit access to the cemetery.
+
+Search currently returns populated places such as cities and towns, rather than hospitals, street addresses, or standalone state/country records. Previously imported places remain selectable when GeoNames is unavailable.
 
 ### API Security
 
