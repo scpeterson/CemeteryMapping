@@ -1,6 +1,8 @@
 - title: "Home"
   url: /
-- title: "Getting Started"
+- title: "Start Here: Power Users"
+  url: /power-user-start-here.html
+- title: "Getting Started: Developer Setup"
   url: /getting-started.html
 - title: "Application and Third-Party Services"
   url: /service-architecture.html
