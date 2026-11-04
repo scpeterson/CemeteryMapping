@@ -1,6 +1,10 @@
+import { EmptyState, Notice } from "../ui/Feedback";
+import { useState } from "react";
+import { fetchUserActivity } from "../../api/profileApi";
+import type { UserActivity, CemeteryMembership } from "../../types/administration";
 import { AccessRequestsPanel } from "./AccessRequestsPanel";
 import { confirmDiscardChanges } from "../../hooks/useDraftState";
-import { ShieldCheck, UserCheck, UserCog, UserPlus, UserX } from "lucide-react";
+import { History, ShieldCheck, UserCheck, UserCog, UserPlus, UserX } from "lucide-react";
 import type { AppRole, AppRoleName, AppUser, CemeteryAdminRecords } from "../../types";
 import { useUserAdministration, type UserFormState } from "./useUserAdministration";
 
@@ -31,6 +35,7 @@ function userFormFromUser(user: AppUser): UserFormState {
     displayName: user.displayName,
     role: user.role,
     assignedCemeteryIds: user.assignedCemeteryIds,
+    cemeteryMemberships: user.cemeteryMemberships,
     isActive: user.isActive,
   };
 }
@@ -41,7 +46,6 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
     form,
     setForm,
     roles,
-    roleOptions,
     users,
     isSaving,
     isResolvingAuth0User,
@@ -54,17 +58,30 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
     message,
     error
   } = useUserAdministration();
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [cemeteryFilter, setCemeteryFilter] = useState("");
+  const [activity, setActivity] = useState<UserActivity[]>([]);
+  const [activityUser, setActivityUser] = useState("");
+  const [activityError, setActivityError] = useState("");
+  const [activityLoading, setActivityLoading] = useState(false);
+  const memberships = form.cemeteryMemberships ?? form.assignedCemeteryIds.map(cemeteryId => ({ cemeteryId, role: form.role === "admin" ? "reader" as const : form.role }));
+  const setMemberships = (entries: CemeteryMembership[]) => setForm(current => ({ ...current, cemeteryMemberships: entries, assignedCemeteryIds: entries.map(entry => entry.cemeteryId) }));
+  const visibleUsers = users.filter(user =>
+    `${user.displayName} ${user.email} ${user.organization ?? ""} ${user.cemeteryMemberships?.map(entry => cemeteryRecords.cemeteries.find(cemetery => cemetery.id === entry.cemeteryId)?.name).join(" ") ?? ""}`.toLowerCase().includes(query.toLowerCase())
+    && (status === "all" || user.isActive === (status === "active"))
+    && (!cemeteryFilter || user.assignedCemeteryIds.includes(cemeteryFilter)));
   return (
     <>
-      {isLoading ? <p className="admin-message" role="status">Loading users…</p> : null}
-      {error ? <p className="admin-message is-error" role="alert">{error}</p> : null}
-      {message ? <p className="admin-message" role="status">{message}</p> : null}
+      {isLoading ? <Notice>Loading users…</Notice> : null}
+      {error ? <Notice tone="error">{error}</Notice> : null}
+      {message ? <Notice tone="success">{message}</Notice> : null}
       <AccessRequestsPanel refreshKey={requestRefreshKey} onReview={(request) => {
         if (!confirmDiscardChanges()) return;
         const existing = users.find((user) => user.email.toLowerCase() === request.email.toLowerCase());
         setForm(existing ? { ...userFormFromUser(existing), isActive: true, accessRequestId: request.id } : {
           email: request.email, displayName: request.displayName, externalSubject: "", role: "reader",
-          assignedCemeteryIds: [], isActive: true, accessRequestId: request.id,
+          assignedCemeteryIds: [], cemeteryMemberships: [], isActive: true, accessRequestId: request.id,
         });
         document.getElementById("user-setup-form")?.scrollIntoView({ behavior: "smooth" });
       }} />
@@ -115,50 +132,25 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
               </button>
             </span>
           </label>
-          <label>
-            Role
-            <select
-              value={form.role}
-              onChange={(event) => {
-                const role = event.target.value as AppRoleName;
-                setForm((current) => ({
-                  ...current,
-                  role,
-                  assignedCemeteryIds: role !== "admin" ? current.assignedCemeteryIds : [],
-                }));
-              }}
-              title={roleDescriptions[form.role]}
-            >
-              {roleOptions.map((role) => (
-                <option key={role} value={role} title={roleDescriptions[role]}>
-                  {roleLabel(role)}
-                </option>
-              ))}
+          <label>System access
+            <select value={form.role === "admin" ? "admin" : "member"} onChange={event => setForm(current => ({ ...current, role: event.target.value === "admin" ? "admin" : "reader" }))}>
+              <option value="member">Cemetery member</option><option value="admin">System administrator (all cemeteries)</option>
             </select>
           </label>
-          {form.role !== "admin" ? (
-            <label>
-              Assigned cemetery
-              <select
-                value={form.assignedCemeteryIds[0] ?? ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    assignedCemeteryIds: event.target.value ? [event.target.value] : [],
-                  }))
-                }
-                required
-                title="The cemetery shown by default when this user opens the map. Editing depends on their role."
-              >
-                <option value="">Select cemetery</option>
-                {cemeteryRecords.cemeteries.map((cemetery) => (
-                  <option key={cemetery.id} value={cemetery.id}>
-                    {cemetery.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+          {form.role !== "admin" ? <fieldset className="user-memberships"><legend>Cemetery memberships</legend>
+            <p>Assign a role separately for each cemetery.</p>
+            {memberships.map((membership, index) => <div key={index} className="user-membership-row">
+              <label>Cemetery<select required value={membership.cemeteryId} onChange={event => setMemberships(memberships.map((entry, i) => i === index ? { ...entry, cemeteryId: event.target.value } : entry))}>
+                <option value="">Choose cemetery</option>
+                {cemeteryRecords.cemeteries.filter(cemetery => cemetery.id === membership.cemeteryId || !memberships.some(entry => entry.cemeteryId === cemetery.id)).map(cemetery => <option key={cemetery.id} value={cemetery.id}>{cemetery.name}</option>)}
+              </select></label>
+              <label>Cemetery role<select value={membership.role} onChange={event => setMemberships(memberships.map((entry, i) => i === index ? { ...entry, role: event.target.value as CemeteryMembership["role"] } : entry))}>
+                <option value="reader">Read-only</option><option value="power-user">Power user</option><option value="cemetery-admin">Cemetery admin</option>
+              </select></label>
+              <div className="admin-form-actions"><button type="button" className="secondary-button danger-button" onClick={() => setMemberships(memberships.filter((_, i) => i !== index))}>Remove membership</button></div>
+            </div>)}
+            <div className="admin-form-actions"><button type="button" className="secondary-button" disabled={memberships.length >= cemeteryRecords.cemeteries.length} onClick={() => setMemberships([...memberships, { cemeteryId: "", role: "reader" }])}>Add cemetery</button></div>
+          </fieldset> : null}
           <label className="checkbox-row" title="Inactive users are kept in the database but cannot access the application.">
             <input
               type="checkbox"
@@ -184,15 +176,24 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
           <UserCog size={17} aria-hidden="true" />
           <h3>Users</h3>
         </div>
-        <div className="admin-table" role="table" aria-label="Application users">
-          {users.map((user) => (
+        <div className="admin-form">
+          <label>Search users<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Name, email, organization, cemetery" /></label>
+          <label>Status<select value={status} onChange={event => setStatus(event.target.value)}><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+          <label>Cemetery filter<select value={cemeteryFilter} onChange={event => setCemeteryFilter(event.target.value)}><option value="">All cemeteries</option>{cemeteryRecords.cemeteries.map(cemetery => <option key={cemetery.id} value={cemetery.id}>{cemetery.name}</option>)}</select></label>
+        </div>
+        <p>{visibleUsers.length} {visibleUsers.length === 1 ? "user" : "users"}</p>
+        <div className="admin-table" aria-label="Application users">
+          {visibleUsers.map((user) => (
             <article key={user.id} className="admin-user-row" title={userTitle(user)}>
               <button type="button" className="admin-user-edit" data-discard-draft onClick={() => setForm(userFormFromUser(user))} title={userTitle(user)}>
                 <span>
                   <strong>{user.displayName || user.email}</strong>
                   <small>{user.email}</small>
                 </span>
-                <span title={roleDescriptions[user.role]}>{roleLabel(user.role)}</span>
+                <span>{user.role === "admin" ? "System administrator" : "Cemetery member"}</span>
+                <span>{user.cemeteryMemberships?.map(entry => `${cemeteryRecords.cemeteries.find(cemetery => cemetery.id === entry.cemeteryId)?.name ?? "Cemetery"}: ${roleLabel(entry.role)}`).join("; ")}</span>
+                <small>{[user.organization, user.phone].filter(Boolean).join(" · ")}</small>
+                <small>Created {new Date(user.createdAt).toLocaleDateString()} · Last active {user.lastActiveAt ? new Date(user.lastActiveAt).toLocaleString() : "Not recorded"}</small>
                 <small>{user.assignedCemeteryIds.length ? `${user.assignedCemeteryIds.length} assigned cemeter${user.assignedCemeteryIds.length === 1 ? "y" : "ies"}` : "No cemetery assignment"}</small>
                 <span
                   className={user.isActive ? "status-active" : "status-inactive"}
@@ -201,6 +202,12 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
                   {user.isActive ? "Active" : "Inactive"}
                 </span>
               </button>
+              <button type="button" className="user-status-action" disabled={activityLoading} onClick={async () => {
+                setActivityUser(user.displayName || user.email); setActivity([]); setActivityError(""); setActivityLoading(true);
+                try { setActivity(await fetchUserActivity(user.id)); }
+                catch (error) { setActivityError(error instanceof Error ? error.message : "Unable to load activity."); }
+                finally { setActivityLoading(false); }
+              }}><History size={15} aria-hidden="true" /><span>View activity</span></button>
               <button
                 type="button"
                 className={`user-status-action ${user.isActive ? "is-deactivate" : "is-reactivate"}`}
@@ -221,6 +228,15 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
         </div>
       </section>
 
+      {activityUser ? <section className="admin-section" aria-label="User activity">
+        <div className="section-title"><History size={17} aria-hidden="true" /><h3>Recent changes by {activityUser}</h3></div>
+        <div className="admin-form-actions"><button type="button" className="secondary-button" onClick={() => setActivityUser("")}>Close activity</button></div>
+        {activityLoading ? <Notice>Loading activity…</Notice> : null}
+        {activityError ? <Notice tone="error">{activityError}</Notice> : null}
+        {!activityLoading && !activityError && !activity.length ? <EmptyState title="No recorded changes" /> : null}
+        <div className="role-list">{activity.map(event => <article className="role-row user-activity-row" key={event.id}><strong>{event.tableName.replaceAll("_", " ")}</strong><p>{event.reason || event.operation}</p><small>{new Date(event.changedAt).toLocaleString()}</small></article>)}</div>
+        <p className="profile-help">Latest 50 changes retained in the audit log. Last active records authenticated API use, updated at most every five minutes.</p>
+      </section> : null}
       <section className="admin-section">
         <div className="section-title">
           <ShieldCheck size={17} aria-hidden="true" />
@@ -231,7 +247,7 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
             <article key={role.name} className="role-row" title={roleTitle(role)}>
               <strong title={roleDescriptions[role.name]}>{roleLabel(role.name)}</strong>
               <p>{role.description}</p>
-              <small title={`There ${role.userCount === 1 ? "is" : "are"} ${role.userCount} active or inactive local user record${role.userCount === 1 ? "" : "s"} assigned to this role.`}>
+              <small title={`There ${role.userCount === 1 ? "is" : "are"} ${role.userCount} active or inactive account${role.userCount === 1 ? "" : "s"} with this role in at least one cemetery (or system-wide for Admin).`}>
                 {role.userCount} user{role.userCount === 1 ? "" : "s"}
               </small>
             </article>

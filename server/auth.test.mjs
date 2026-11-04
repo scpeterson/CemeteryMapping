@@ -67,6 +67,7 @@ function auth0ConfigForError(error) {
 function poolForUser(user) {
   return {
     async query(sql, values) {
+      if (sql.includes("INSERT INTO app_user_activity")) return { rows: [] };
       assert.match(sql, /app_users\.id::text/);
       assert.match(sql, /app_users\.external_subject = \$1/);
       assert.doesNotMatch(sql, /SELECT\s+id::text/);
@@ -278,4 +279,25 @@ test("auth0 mode allows active admin users to access reader routes", async () =>
     role: "admin",
     cemeteryAccess: [],
   });
+});
+
+test('mixed cemetery roles do not grant admin actions in lower-role cemeteries', async () => {
+  const user = {
+    id: 'app-user-1', external_subject: 'auth0|user-1', email: 'mixed@example.test',
+    role_name: 'reader', is_active: true,
+    cemetery_access: [
+      { cemeteryId: 'A', role: 'cemetery-admin', canEdit: true },
+      { cemeteryId: 'B', role: 'power-user', canEdit: true },
+      { cemeteryId: 'C', role: 'reader', canEdit: false },
+    ],
+  };
+  const admin = await runMiddleware(requireRole(auth0ConfigForPayload({ sub: 'auth0|user-1' }), poolForUser(user), 'cemetery-admin'));
+  assert.equal(admin.nextCalled, true);
+  assert.deepEqual(assignedEditableCemeteryIds(admin.request.user), ['A']);
+  assert.equal(canEditCemetery(admin.request.user, 'B'), false);
+  const editor = await runMiddleware(requireRole(auth0ConfigForPayload({ sub: 'auth0|user-1' }), poolForUser(user), 'power-user'));
+  assert.deepEqual(assignedEditableCemeteryIds(editor.request.user), ['A', 'B']);
+  assert.equal(canEditCemetery(editor.request.user, 'C'), false);
+  const system = await runMiddleware(requireRole(auth0ConfigForPayload({ sub: 'auth0|user-1' }), poolForUser(user), 'admin'));
+  assert.equal(system.response.statusCode, 403);
 });

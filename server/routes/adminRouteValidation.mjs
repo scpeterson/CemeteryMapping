@@ -5,7 +5,14 @@ import { optionalDate, optionalRecordedDate } from "./routeValidationHelpers.mjs
 export function validateAdminUserPayload(body, roles) {
   const role = requiredText(body?.role, "Role", 50);
   if (!roles.includes(role)) throw new BadRequestError(`Unsupported role: ${role}.`);
-  const assignedCemeteryIds = Array.isArray(body?.assignedCemeteryIds)
+  if (body?.cemeteryMemberships !== undefined && !Array.isArray(body.cemeteryMemberships)) throw new BadRequestError("Cemetery memberships must be a list.");
+  const cemeteryMemberships = Array.isArray(body?.cemeteryMemberships) ? body.cemeteryMemberships.map((entry) => {
+    const cemeteryId = validateUuid(entry?.cemeteryId, "Membership cemetery");
+    if (!["reader", "power-user", "cemetery-admin"].includes(entry?.role)) throw new BadRequestError("Invalid cemetery role.");
+    return { cemeteryId, role: entry.role };
+  }) : undefined;
+  if (cemeteryMemberships && new Set(cemeteryMemberships.map(entry => entry.cemeteryId)).size !== cemeteryMemberships.length) throw new BadRequestError("Each cemetery can only be assigned once.");
+  const assignedCemeteryIds = cemeteryMemberships ? cemeteryMemberships.map(entry => entry.cemeteryId) : Array.isArray(body?.assignedCemeteryIds)
     ? [...new Set(body.assignedCemeteryIds.map((id, index) => validateUuid(id, `Assigned cemetery ${index + 1}`)))]
     : [];
   if (role !== "admin" && assignedCemeteryIds.length === 0) {
@@ -17,8 +24,9 @@ export function validateAdminUserPayload(body, roles) {
     externalSubject: requiredText(body?.externalSubject, "Auth0 user ID", 300),
     email: requiredText(body?.email, "Email", 320),
     displayName: optionalText(body?.displayName, "Display name", 250),
-    role,
+    role: role === "admin" || !cemeteryMemberships ? role : cemeteryMemberships.some(entry => entry.role === "cemetery-admin") ? "cemetery-admin" : cemeteryMemberships.some(entry => entry.role === "power-user") ? "power-user" : "reader",
     assignedCemeteryIds,
+    ...(cemeteryMemberships ? { cemeteryMemberships } : {}),
     isActive: body?.isActive !== false,
   };
 }

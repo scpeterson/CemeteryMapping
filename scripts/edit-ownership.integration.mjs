@@ -30,7 +30,7 @@ test('full ownership edits preserve event identity, replace assignments atomical
   assert.equal(publicEditor.rights,undefined);assert.equal(publicEditor.partyRecords,undefined);
   assert.equal(publicEditor.owners.length,2);
   const edit={...initial,owners:[{...editor.owners.find(p=>p.firstName==='Jane'),firstName:'Janet'}],eventType:'sale',previousOwners:[party],targetScope:'listed_gravesites',targetGravesiteIds:['A','B'],effectiveDate:'2002-04',documentReference:'Book 2',notes:'Corrected'};
-  const opts={editingEventId:event.id,expectedRevision:editor.expectedRevision,actorUser:{role:'cemetery-admin'},allowedCemeteryIds:[cemetery]};
+  const opts={editingEventId:event.id,expectedRevision:editor.expectedRevision,actorUser:{role:'cemetery-admin',cemeteryAccess:[{cemeteryId:cemetery,role:'cemetery-admin',canEdit:true}]},allowedCemeteryIds:[cemetery]};
   await assert.rejects(createOwnershipEvent(pool,cemetery,'A',edit,{...opts,expectedRevision:undefined}),/Ownership version/);
   await assert.rejects(createOwnershipEvent(pool,cemetery,'A',{...edit,owners:[{...edit.owners[0],ownershipPartyId:randomUUID()}]},opts),/does not belong/);
   for(const role of ['reader','power-user'])await assert.rejects(createOwnershipEvent(pool,cemetery,'A',edit,{...opts,actorUser:{role}}),{statusCode:403});

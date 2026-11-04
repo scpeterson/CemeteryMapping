@@ -33,9 +33,15 @@ function cemeteryAssignments(user) {
   return Array.isArray(user?.cemeteryAccess) ? user.cemeteryAccess : [];
 }
 
+export function cemeteryRole(user, cemeteryId) {
+  if (user?.role === "admin") return "admin";
+  const assignment = cemeteryAssignments(user).find((entry) => entry.cemeteryId === String(cemeteryId));
+  return assignment?.role ?? (assignment && assignment.canEdit !== false ? user?.role : "reader");
+}
+
 export function assignedEditableCemeteryIds(user) {
   return cemeteryAssignments(user)
-    .filter((assignment) => assignment.canEdit)
+    .filter((assignment) => assignment.canEdit && hasRequiredRole(cemeteryRole(user, assignment.cemeteryId), ["power-user"]))
     .map((assignment) => assignment.cemeteryId);
 }
 
@@ -125,12 +131,14 @@ async function loadApplicationUser(pool, subject) {
         app_users.external_subject,
         app_users.email,
         app_users.display_name,
+        app_users.preferred_cemetery_id,
         app_users.role_name,
         app_users.is_active,
         COALESCE(
           jsonb_agg(
             jsonb_build_object(
               'cemeteryId', app_user_cemetery_access.cemetery_id::text,
+              'role', app_user_cemetery_access.role_name,
               'canEdit', app_user_cemetery_access.can_edit
             )
           ) FILTER (WHERE app_user_cemetery_access.id IS NOT NULL),
@@ -154,7 +162,9 @@ function toRequestUser(appUser, tokenUser) {
     subject: appUser.external_subject,
     email: appUser.email ?? tokenUser.email,
     displayName: appUser.display_name,
-    role: normalizeRole(appUser.role_name),
+    ...(appUser.preferred_cemetery_id ? { preferredCemeteryId: appUser.preferred_cemetery_id } : {}),
+    role: appUser.role_name === "admin" ? "admin" : (appUser.cemetery_access ?? []).reduce(
+      (role, membership) => (roleRank.get(membership.role) ?? 0) > (roleRank.get(role) ?? 0) ? membership.role : role, "reader"),
     cemeteryAccess: appUser.cemetery_access ?? [],
   };
 }
@@ -243,7 +253,16 @@ export function requireRole(authConfig, poolOrRole, ...restRequiredRoles) {
       return;
     }
 
+    // Restrict downstream mutation scopes to memberships meeting this route's role.
+    // A cemetery admin in A must not gain admin actions in their reader/power-user cemetery B.
+    requestUser.cemeteryAccess = requestUser.cemeteryAccess.map((membership) => ({
+      ...membership,
+      canEdit: membership.canEdit && hasRequiredRole(membership.role ?? requestUser.role, normalizedRequiredRoles),
+    }));
     request.user = requestUser;
+    await pool.query(`INSERT INTO app_user_activity(app_user_id, last_active_at) VALUES ($1, now())
+      ON CONFLICT (app_user_id) DO UPDATE SET last_active_at = EXCLUDED.last_active_at
+      WHERE app_user_activity.last_active_at < now() - interval '5 minutes'`, [requestUser.id]);
     next();
   };
 }

@@ -24,3 +24,14 @@ test("cemetery admins assign lots only to selected graves in their cemetery", ()
 test("global admin permissions cover all cemeteries", () => {
   assert.ok(Object.values(selectionPermissions(user("admin", []), "other")).every(Boolean));
 });
+
+test('mixed memberships use the selected cemetery role rather than the account summary', () => {
+  const identity = { role: 'cemetery-admin', assignedCemeteryIds: ['A','B','C'], cemeteryMemberships: [
+    { cemeteryId: 'A', role: 'cemetery-admin' }, { cemeteryId: 'B', role: 'power-user' }, { cemeteryId: 'C', role: 'reader' },
+  ] };
+  assert.equal(selectionPermissions(identity, 'A').canManageSelectedGraveLot, true);
+  assert.equal(selectionPermissions(identity, 'B').canUpdateSelectedBurials, true);
+  assert.equal(selectionPermissions(identity, 'B').canManageSelectedGraveLot, false);
+  assert.equal(selectionPermissions(identity, 'C').canViewSelectedOwnership, false);
+  assert.equal(selectionPermissions(identity, 'A', 'C').canUpdateSelectedHeadstones, false);
+});

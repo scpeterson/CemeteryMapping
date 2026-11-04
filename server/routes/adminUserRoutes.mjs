@@ -1,3 +1,5 @@
+import { listUserActivity } from "../profileRepository.mjs";
+
 export function registerAdminUserRoutes(app, context) {
   const {
     Auth0ProvisioningNotConfiguredError, auth0ManagementClient, createUser, listAssignableRoles,
@@ -20,6 +22,9 @@ export function registerAdminUserRoutes(app, context) {
         }
       });
     
+      app.get("/api/admin/users/:id/activity", requireAdmin, async (request, response, next) => {
+        try { response.json(await listUserActivity(pool, validateUuid(request.params.id, "User id"))); } catch (error) { next(error); }
+      });
       app.post("/api/admin/auth0-users/resolve", requireAdmin, async (request, response, next) => {
         try {
           const user = validateAuth0UserResolutionPayload(request.body);

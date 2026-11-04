@@ -23,7 +23,7 @@ test('inspection migration separates NHG and field evidence and preserves later 
   assert.equal((await c.query("SELECT count(*)::int AS n FROM monument_inspections WHERE source_type='nhg' AND inspected_at IS DISTINCT FROM DATE '2005-10-11'")).rows[0].n,0);
   const fixture=await createInspectionFixture(c);
   const descriptorFixture=await createInspectionFixture(c);
-  const {rows:[marker]}=await c.query("SELECT h.* FROM headstones h JOIN monument_inspections i ON i.headstone_uuid=h.id WHERE i.source_type='nhg' AND h.deleted_at IS NULL AND jsonb_array_length(h.faces)<=1 AND h.id=$1 LIMIT 1 FOR UPDATE OF h",[fixture.id]);
+  const {rows:[marker]}=await c.query("SELECT h.*,g.cemetery_id::text FROM headstones h JOIN gravesites g ON g.id=h.gravesite_uuid JOIN monument_inspections i ON i.headstone_uuid=h.id WHERE i.source_type='nhg' AND h.deleted_at IS NULL AND jsonb_array_length(h.faces)<=1 AND h.id=$1 LIMIT 1 FOR UPDATE OF h",[fixture.id]);
   assert.ok(marker,'requires a migrated NHG monument');
   const detail=toHeadstone(await selectHeadstoneById(c,marker.id));
   assert.ok(detail.inspections.some(i=>i.sourceType==='nhg' && i.inspectedAt==='2005-10-11'));
@@ -64,9 +64,9 @@ test('inspection migration separates NHG and field evidence and preserves later 
   const newInspection=validateNewInspections([{id:randomUUID(),inspectedAt:'2026-10-22',sourceType:'field_survey',source:'Test inspector',conditionId:marker.condition_type_id,conditionNotes:'New inspection notes',inscription:'  Copied\nreading  '}]);
   const inspectionPayload={inspectionChangesOnly:true,newInspections:newInspection};
   await assert.rejects(updateHeadstone(apiPool,marker.id,inspectionPayload,{actorUser:{role:'power-user'}}),{statusCode:403});
-  assert.equal(await updateHeadstone(apiPool,marker.id,inspectionPayload,{actorUser:{role:'cemetery-admin'},allowedCemeteryIds:[]}),undefined);
+  assert.equal(await updateHeadstone(apiPool,marker.id,inspectionPayload,{actorUser:{role:'cemetery-admin',cemeteryAccess:[{cemeteryId:marker.cemetery_id,role:'cemetery-admin',canEdit:true}]},allowedCemeteryIds:[]}),undefined);
   const physicalBefore=(await c.query('SELECT inscription,condition_notes,last_inspected_at FROM headstones WHERE id=$1',[marker.id])).rows[0];
-  const added=await updateHeadstone(apiPool,marker.id,inspectionPayload,{actorUser:{role:'cemetery-admin'}});
+  const added=await updateHeadstone(apiPool,marker.id,inspectionPayload,{actorUser:{role:'cemetery-admin',cemeteryAccess:[{cemeteryId:marker.cemetery_id,role:'cemetery-admin',canEdit:true}]}});
   assert.equal(added.inspections.find(i=>i.id===newInspection[0].id).inscription,'  Copied\nreading  ');
   assert.deepEqual((await c.query('SELECT inscription,condition_notes,last_inspected_at FROM headstones WHERE id=$1',[marker.id])).rows[0],physicalBefore);
   const linked={id:descriptorFixture.id};

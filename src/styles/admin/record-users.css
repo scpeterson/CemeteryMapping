@@ -120,9 +120,9 @@
 
 .admin-user-edit {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(96px, 0.6fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
   border: 0;
   background: transparent;
@@ -209,4 +209,69 @@
   max-width: 30rem;
   color: var(--text-muted);
   line-height: 1.5;
+}
+
+/* Account screens share admin form controls, cards, and spacing tokens. */
+.profile-panel .admin-form label {
+  align-content: start;
+  min-width: 0;
+}
+
+.admin-user-edit span,
+.admin-user-edit small {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.user-memberships {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+}
+
+.user-memberships legend {
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-small);
+  font-weight: 760;
+}
+
+.user-memberships p,
+.profile-help {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+}
+
+.user-membership-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.user-membership-row .admin-form-actions,
+.profile-form-actions {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+}
+
+.user-activity-row > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .admin-user-row,
+  .user-membership-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

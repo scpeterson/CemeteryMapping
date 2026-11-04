@@ -1,3 +1,4 @@
+import { cemeteryRole } from "./auth.mjs";
 import { isDeepStrictEqual } from "node:util";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 import { optionalText, requiredText, validateUuid } from "./inputValidation.mjs";
@@ -52,8 +53,8 @@ export async function insertMonumentInspections(client, markerId, entries = []) 
   }
 }
 
-export function assertInspectionEditor(actorUser) {
-  if (actorUser && !["admin", "cemetery-admin"].includes(actorUser.role)) {
+export function assertInspectionEditor(actorUser, cemeteryId) {
+  if (actorUser && !["admin", "cemetery-admin"].includes(cemeteryId ? cemeteryRole(actorUser, cemeteryId) : actorUser.role)) {
     const error = new Error("A cemetery admin or higher is required to edit inspections.");
     error.statusCode = 403;
     throw error;

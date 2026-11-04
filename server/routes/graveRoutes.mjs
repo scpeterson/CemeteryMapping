@@ -73,7 +73,7 @@ export function registerGraveRoutes(app, context) {
         }
       });
 
-      app.post("/api/cemeteries/:cemeteryId/grave-spaces", requirePowerUser, async (request, response, next) => {
+      app.post("/api/cemeteries/:cemeteryId/grave-spaces", requireCemeteryAdmin, async (request, response, next) => {
         try {
           const cemeteryId = validateCemeteryId(request.params.cemeteryId);
           if (!['admin', 'cemetery-admin'].includes(request.user.role)) return response.status(403).json({ error: "Only system and cemetery administrators may add gravesites." });

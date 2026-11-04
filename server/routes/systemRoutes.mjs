@@ -1,3 +1,5 @@
+import { getProfile, updateProfile, validateProfile } from "../profileRepository.mjs";
+
 export function registerSystemRoutes(app, context) {
   const { assignedEditableCemeteryIds, canManageUsers, config, pool, requireReader, safelyRecordSystemEvent, versionMetadata } = context;
       app.get("/api/health", async (_request, response, next) => {
@@ -35,6 +37,12 @@ export function registerSystemRoutes(app, context) {
         response.json(versionMetadata);
       });
     
+      app.get("/api/me/profile", requireReader, async (request, response, next) => {
+        try { response.json(await getProfile(pool, request.user)); } catch (error) { next(error); }
+      });
+      app.put("/api/me/profile", requireReader, async (request, response, next) => {
+        try { response.json(await updateProfile(pool, request.user, validateProfile(request.body))); } catch (error) { next(error); }
+      });
       app.get("/api/me", requireReader, async (request, response) => {
         const role = request.user.role;
         const assignedCemeteryIds = assignedEditableCemeteryIds(request.user);
@@ -44,6 +52,8 @@ export function registerSystemRoutes(app, context) {
           email: request.user.email,
           displayName: request.user.displayName,
           role,
+          preferredCemeteryId: request.user.preferredCemeteryId,
+          cemeteryMemberships: (request.user.cemeteryAccess ?? []).map(entry => ({ cemeteryId: entry.cemeteryId, role: entry.role ?? role })),
           assignedCemeteryIds: [...new Set((request.user.cemeteryAccess ?? []).map((assignment) => assignment.cemeteryId))],
           permissions: {
             canViewOwnership: role === "admin" || hasScopedEditAccess,

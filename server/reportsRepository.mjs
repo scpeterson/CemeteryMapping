@@ -1,4 +1,5 @@
 import { canRun, definitionById, reportDefinitions, toDefinition } from "./reports/definitions.mjs";
+import { cemeteryRole } from "./auth.mjs";
 import { selectedReportCemeteryIds } from "./reports/shared.mjs";
 import { runBurialDateExtremes, runMarkerBurialPages, runVeteranServiceSummary } from "./reports/burialReports.mjs";
 import { runAvailableInventory, runMarkerTypeInventory, runSpatialInventoryCounts } from "./reports/inventoryReports.mjs";
@@ -44,7 +45,7 @@ export async function runReport(pool, reportId, parameters = {}, user) {
     error.code = "REPORT_FORBIDDEN";
     throw error;
   }
-  const cemeteryIds = selectedReportCemeteryIds(user, parameters);
+  const cemeteryIds = selectedReportCemeteryIds(user, parameters)?.filter(id => canRun(cemeteryRole(user, id), definition.requiredRole));
 
   const client = await pool.connect();
   try {
