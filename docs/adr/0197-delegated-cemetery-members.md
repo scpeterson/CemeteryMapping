@@ -34,6 +34,11 @@ remains in Users. There is no permission cache.
 
 ## Validation
 
+CI also runs when a PR targets a `codex/` feature branch. This supports the seven
+separately reviewable, dependent feature PRs without losing their normal checks.
+The branch filter does not change deployment: hosted releases still require a
+passing exact main revision.
+
 HTTP tests reject anonymous, reader, power-user and other-cemetery administrator
 requests without querying member data. Database regressions preserve identities,
 unrelated memberships, audit history and last-admin/version guards. Browser tests

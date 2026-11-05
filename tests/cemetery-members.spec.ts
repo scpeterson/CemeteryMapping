@@ -38,6 +38,7 @@ test("cemetery administrators manage only their cemetery members with existing f
   expect(saved?.expectedVersion).toBe("15");expect(saved?.email).toBeUndefined();
   await page.setViewportSize({width:320,height:900});
   expect(await admin.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  expect(await admin.locator(".admin-nav button span").evaluateAll(labels=>labels.every(label=>label.scrollWidth<=label.clientWidth))).toBe(true);
   await admin.getByRole("button",{name:"Save membership",exact:true}).scrollIntoViewIfNeeded();
   await page.screenshot({path:testInfo.outputPath("members-phone.png")});
 });
