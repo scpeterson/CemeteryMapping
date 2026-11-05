@@ -48,7 +48,7 @@ Only system administrators can create a new cemetery.
 
 ## Deployment and validation
 
-Apply migration 514 and refresh restricted API-role grants before publishing the
+API startup requires migration 514. Apply it and refresh restricted API-role grants before publishing the
 API/UI. Retain import source records with the resulting live data and backups.
 Rollback application code first; dropping the batch table destroys source/review
 provenance and is appropriate only before its imports have been accepted.
