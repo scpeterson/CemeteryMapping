@@ -37,3 +37,9 @@ test("separate export entry has a fixed cap while every shared chunk stays in th
  assert.ok(checkBundleAssets([...baseline(),{filename:'ExportRecordsPage-a.js',gzipBytes:6*1024}]).failures.some(f=>f.includes('export entry')));
  assert.deepEqual(checkBundleAssets([...baseline(),{filename:'ExportRecordsPage-a.js',gzipBytes:4*1024}]).failures,[]);
 });
+
+test('the standalone task page has a fixed budget and shared reminders remain in core',()=>{
+ assert.ok(checkBundleAssets([...baseline(),{filename:'MaintenanceTasksPage-a.js',gzipBytes:7*1024}]).failures.some(f=>f.includes('tasks entry')));
+ assert.deepEqual(checkBundleAssets([...baseline(),{filename:'MaintenanceTasksPage-a.js',gzipBytes:5*1024}]).failures,[]);
+ assert.ok(checkBundleAssets([...baseline(),{filename:'TaskReminderLink-a.js',gzipBytes:701*1024}]).failures.some(f=>f.includes('core JavaScript')));
+});

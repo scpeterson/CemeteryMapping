@@ -29,6 +29,7 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0203: Assigned maintenance work and personal reminders](0203-assigned-maintenance-tasks.md)
 - [ADR 0202: Permission-scoped CSV and GeoJSON exports](0202-scoped-record-exports.md)
 - [ADR 0201: Record recovery and reviewed person merges](0201-record-recovery-and-reviewed-person-merges.md)
 - [ADR 0200: Guided cemetery setup and reviewed imports](0200-guided-cemetery-onboarding.md)

@@ -263,7 +263,9 @@ export function registerGraveRoutes(app, context) {
       app.patch("/api/maintenance-records/:id", requirePowerUser, async (request, response, next) => {
         try {
           const id = validateUuid(request.params.id, "Maintenance record");
+          const expectedVersion = validateExpectedVersion(request.body?.expectedVersion);
           const record = validateMaintenanceRecordPayload(request.body, { requireTarget: false });
+          record.expectedVersion = expectedVersion;
           const updated = await updateMaintenanceRecord(pool, id, record, {
             actorUser: request.user,
             reason: record.reason,

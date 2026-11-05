@@ -49,6 +49,7 @@ export function registerSystemRoutes(app, context) {
         const assignedCemeteryIds = assignedEditableCemeteryIds(request.user);
         const hasScopedEditAccess = (role === "power-user" || role === "cemetery-admin") && assignedCemeteryIds.length > 0;
         response.json({
+          id:request.user.id,
           subject: request.user.subject,
           email: request.user.email,
           displayName: request.user.displayName,

@@ -1,3 +1,6 @@
+import {fetchMaintenanceRecord} from "../../api/cemeteryApi";
+import {isRecordConflict} from "../../api/apiClient";
+import {ConflictRecovery} from "../ui/ConflictRecovery";
 import { RecordPhotos } from "./RecordPhotos";
 import type { ComponentProps } from "react";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
@@ -26,6 +29,7 @@ const maintenanceSourceLabels: Record<SaveMaintenanceRecordInput["sourceType"], 
 
 function maintenanceFormFromRecord(record: MaintenanceRecord, grave?: GraveSpace, fixedHeadstone?: Headstone): SaveMaintenanceRecordInput {
   return {
+    expectedVersion:record.version,
     targetType: record.headstoneUuid ? "headstone" : "gravesite",
     graveSpaceId: record.gravesiteUuid && grave ? grave.id : "",
     headstoneId: record.headstoneUuid ?? fixedHeadstone?.id ?? "",
@@ -68,6 +72,8 @@ export function MaintenanceRecordList({
         const monument = fixedHeadstone?.id === record.headstoneUuid ? fixedHeadstone : grave?.headstones.find(marker => marker.id === record.headstoneUuid);
         const title = [record.issueType?.label, record.actionType?.label].filter(Boolean).join(" / ");
         const dateParts = [`Observed ${formatDate(record.observedAt)}`];
+        if(record.dueDate)dateParts.push(`Due ${formatDate(record.dueDate)}`);
+        if(record.assignedToName)dateParts.push(`Assigned to ${record.assignedToName}`);
         if (record.completedAt) dateParts.push(`Completed ${formatDate(record.completedAt)}`);
         if (editingId === record.id && lookups && onUpdate) {
           return (
@@ -154,10 +160,12 @@ export function MaintenanceRecordForm({
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
   const errorId = useId();
+  const [conflict,setConflict]=useState(false);
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
     setIsSaving(true);
+    setConflict(false);
     setError(undefined);
     setMessage(undefined);
     try {
@@ -177,6 +185,7 @@ export function MaintenanceRecordForm({
         });
       }
     } catch (saveError) {
+      setConflict(isRecordConflict(saveError));
       setError(saveError instanceof Error ? saveError.message : "Unable to save maintenance record.");
     } finally {
       setIsSaving(false);
@@ -257,6 +266,7 @@ export function MaintenanceRecordForm({
       </label>
       {message ? <p className="detail-message is-success">{message}</p> : null}
       {error ? <p id={errorId} className="detail-message is-error" role="alert">{error}</p> : null}
+      {conflict&&initialRecord&&<ConflictRecovery disabled={isSaving} reload={async()=>{const latest=await fetchMaintenanceRecord(initialRecord.id);setForm(maintenanceFormFromRecord(latest,grave,fixedHeadstone));setConflict(false);setError(undefined);}}/>}
       <div className="headstone-form-actions">
         {onCancel ? (
           <button type="button" className="secondary-button" onClick={onCancel} disabled={isSaving}>

@@ -5,6 +5,7 @@ export type UserProfile = { version?: string; displayName: string; phone: string
 export type UserActivity = { id: string; tableName: string; operation: string; changedAt: string; reason: string };
 
 export type CurrentUser = {
+  id?: string;
   preferredCemeteryId?: string;
   subject: string;
   email?: string;
