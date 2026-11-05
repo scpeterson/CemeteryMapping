@@ -9,3 +9,14 @@
 @import "./admin/ocr-readings.css";
 @import "./admin/events.css";
 @import "./admin/record-users.css";
+
+.onboarding-workflow .admin-form > h4,
+.onboarding-workflow .admin-form > p { grid-column: 1 / -1; }
+.import-source-hash { overflow-wrap: anywhere; }
+.import-review-list { max-height: 28rem; overflow: auto; padding: 8px; border: 1px solid #d9e0d5; border-radius: var(--radius-md); }
+.import-review-list article { padding: 8px 0; border-bottom: 1px solid #d9e0d5; }
+.import-ack { display: flex; align-items: center; gap: 8px; }
+.onboarding-workflow { min-width: 0; overflow-wrap: anywhere; }
+.onboarding-workflow .admin-form { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.onboarding-workflow input, .onboarding-workflow select, .onboarding-workflow textarea { min-width: 0; max-width: 100%; }
+.onboarding-workflow .admin-form-actions { flex-wrap: wrap; grid-column: 1 / -1; }

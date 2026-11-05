@@ -1320,3 +1320,32 @@ checking its unsynchronized action count. Current server permissions always appl
 
 For deployment, receipt retention, storage limits and rollback considerations, see
 [ADR 0199](adr/0199-offline-field-collection.md).
+
+## Guided cemetery onboarding and imports
+
+Open **Administration → Onboarding**. A system administrator can create a cemetery
+with its name, municipality and reviewed WGS84 GeoJSON boundary. Close and reopen
+administration to load it in existing pickers, then use **Members** to assign its
+cemetery administrators. Use Records for existing section/lot text; optional
+import section names must already exist.
+
+Select the import cemetery. Stage gravesites as a GeoJSON FeatureCollection with
+`gravesiteId`, `graveId`, optional `section` and `name` properties. Each feature
+must be a Polygon/MultiPolygon inside the boundary. Stage people as CSV with
+`gravesiteId,firstName,lastName,birthDate,deathDate,burialDate,notes` columns;
+`gravesiteId` and `lastName` headers are required. Dates retain the application's
+recorded-date rules. Names, notes and quoted CSV evidence are preserved. Use
+batches of 1–500 records, up to 2 MB. Import gravesites before their people.
+
+Staging validates without creating live records. Review every source record,
+confirm the cemetery and checksum, record a reason and acknowledge the review
+before approving. Duplicate names/IDs, deleted-record collisions, invalid geometry,
+boundary crossings and overlaps require correction. No geometry repair or merge
+is inferred. Approval validates again and commits the whole batch. A 409 retains
+your review reason; reload current batches and review the latest state. Reject
+invalid batches and stage corrected files. Original source downloads, review
+history and created record IDs remain with the batch after approval/rejection.
+
+See [ADR 0200](adr/0200-guided-cemetery-onboarding.md) for deployment and source
+retention. Specialized headstone spreadsheet, deed registry and OCR sources still
+use their existing documented evidence workflows.
