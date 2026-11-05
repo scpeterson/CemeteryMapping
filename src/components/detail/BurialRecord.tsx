@@ -35,6 +35,7 @@ function blankBurialForm(burial: Burial): SaveBurialInput {
     funeralHome: burial.funeralHome ?? "",
     sourceUrl: burial.sourceUrl ?? "",
     veteran: burial.veteran ?? false,
+    militaryUnit: burial.militaryUnit ?? "",
     militaryBranchCode: burial.militaryBranchCode ?? "",
     militaryRankCode: burial.militaryRankCode ?? "",
     militaryWarServiceCode: burial.militaryWarServiceCode ?? "",
@@ -107,6 +108,7 @@ export function BurialRecord({
     setForm((current) => ({
       ...current,
       veteran: isVeteran,
+      militaryUnit: isVeteran ? current.militaryUnit : "",
       militaryBranchCode: isVeteran ? current.militaryBranchCode : "",
       militaryRankCode: isVeteran ? current.militaryRankCode : "",
       militaryWarServiceCode: isVeteran ? current.militaryWarServiceCode : "",
@@ -208,6 +210,16 @@ export function BurialRecord({
               </option>
             ))}
           </LookupSelect>
+        </label>
+        <label className="burial-wide-field">
+          Military unit / organization
+          <input
+            value={form.militaryUnit ?? ""}
+            maxLength={500}
+            disabled={!form.veteran}
+            placeholder="e.g., Company E, 136th Pennsylvania Infantry Regiment"
+            onChange={(event) => { const militaryUnit = event.target.value; setForm((current) => ({ ...current, militaryUnit })); }}
+          />
         </label>
         <label>
           Rank
@@ -387,7 +399,7 @@ export function BurialRecord({
           <a href={burial.sourceUrl} target="_blank" rel="noreferrer">View information source</a>
         </p>
       ) : null}
-      {burial.veteran || serviceText || burial.militaryDecorations?.length ? (
+      {burial.veteran || serviceText || burial.militaryUnit || burial.militaryDecorations?.length ? (
         <p className="burial-service">
           {burial.veteran ? <span className="burial-veteran-badge">Veteran</span> : null}
           {(burial.militaryDecorations ?? []).map((decoration) => (
@@ -396,6 +408,7 @@ export function BurialRecord({
             </span>
           ))}
           {serviceText ? <span>{serviceText}</span> : null}
+          {burial.militaryUnit ? <span>Military unit / organization: {burial.militaryUnit}</span> : null}
           {burial.militaryEnlistedDate ? <span>Enlisted {formatDate(burial.militaryEnlistedDate)}</span> : null}
           {burial.militaryDischargedDate ? <span>Discharged {formatDate(burial.militaryDischargedDate)}</span> : null}
         </p>

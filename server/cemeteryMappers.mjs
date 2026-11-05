@@ -98,6 +98,7 @@ export function toBurial(burial) {
     funeralHome: burial.funeral_home ?? "",
     sourceUrl: burial.source_url ?? "",
     veteran: isVeteran,
+    militaryUnit: burial.military_unit ?? "",
     militaryBranchCode: burial.military_branch_code ?? "",
     militaryBranch: burial.military_branch ?? "",
     militaryRankCode: burial.military_rank_code ?? "",

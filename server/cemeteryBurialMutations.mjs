@@ -202,6 +202,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     updateValues.push(burial.displayName === undefined ? existing.display_name ?? null : burial.displayName || null);
     const namePrefixParameter = updateValues.length + 1;
     updateValues.push(burial.namePrefix || null);
+    const militaryUnitParameter = updateValues.length + 1;
+    updateValues.push(burial.veteran ? (burial.militaryUnit === undefined ? existing.military_unit ?? null : burial.militaryUnit || null) : null);
     const updateResult = await client.query(
       `
         UPDATE burials
@@ -222,7 +224,8 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
             ${militaryServiceSetSql}${recordedDateAssignments}${reviewAssignments},
             birth_place_uuid = $${birthPlaceParameter}::uuid,
             death_place_uuid = $${deathPlaceParameter}::uuid,
-            source_url = $${sourceUrlParameter}
+            source_url = $${sourceUrlParameter},
+            military_unit = $${militaryUnitParameter}
         WHERE id = $1
         RETURNING
           id::text,
@@ -245,6 +248,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
           ${recordStatusReturnSql},
           funeral_home,
           source_url,
+          military_unit,
           veteran,
           ${militaryServiceReturnSql},
           notes,

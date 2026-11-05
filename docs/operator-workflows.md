@@ -175,6 +175,12 @@ Apply Liquibase migration `509-user-profiles-and-cemetery-memberships` before st
 
 For verification, use an account with a cemetery-admin membership in one cemetery and a reader membership in another. Confirm it can switch maps, edit only the first cemetery, cannot delete photos or edit inspections in the reader cemetery, and cannot access the system user directory. Save a profile and check its attributed change in **View activity**. Before deployment, run the PostgreSQL integration check with `APP_ENV=test node --test scripts/user-profiles.integration.mjs`; its fixtures and migration rehearsal are rolled back.
 
+### Burial Military Unit / Organization
+
+In the burial editor, select **Veteran** and enter **Military unit / organization** as free text (up to 500 characters). Use the recorded company, regiment, battalion, ship, or other organization, for example `Company E, 136th Pennsylvania Infantry Regiment`. Keep **Military branch** and **War service** as separate selections. Save the burial to display the unit alongside its military service details. Clear the field to remove it; clearing Veteran also clears the unit along with the other military service fields. Changing the branch does not discard the unit text. Existing records start blank, and no regiment identification is inferred automatically.
+
+Deployments require migration `510-burial-military-unit` before restarting the updated API. Refresh restricted API grants after migrating.
+
 ### Cemetery Records
 
 Use `Admin -> Cemetery Records` for text-only cemetery hierarchy maintenance. This workflow does not edit map geometry.

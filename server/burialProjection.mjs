@@ -31,6 +31,7 @@ export function burialProjectionSql() {
       ${recordStatusSql.select},
       burials.funeral_home,
       burials.source_url,
+      burials.military_unit,
       ${militaryServiceSql.select},
       COALESCE((SELECT jsonb_agg(jsonb_build_object('id', military_decoration_types.id::text, 'code', military_decoration_types.code, 'label', military_decoration_types.label) ORDER BY lower(military_decoration_types.label), military_decoration_types.code) FROM burial_military_decorations JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id WHERE burial_military_decorations.burial_uuid = burials.id), '[]'::jsonb) AS military_decorations,
       burials.notes,

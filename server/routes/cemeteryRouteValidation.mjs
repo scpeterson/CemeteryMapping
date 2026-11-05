@@ -311,6 +311,7 @@ export function validateBurialPayload(body) {
     funeralHome: optionalText(body?.funeralHome, "Funeral home", 255) ?? "",
     sourceUrl,
     veteran: optionalBoolean(body?.veteran, "Veteran"),
+    militaryUnit: body?.militaryUnit === undefined ? undefined : optionalText(body.militaryUnit, "Military unit / organization", 500),
     militaryBranchCode: optionalText(body?.militaryBranchCode, "Military branch", 50) ?? "",
     militaryRankCode: optionalText(body?.militaryRankCode, "Military rank", 50) ?? "",
     militaryWarServiceCode: optionalText(body?.militaryWarServiceCode, "War service", 50) ?? "",

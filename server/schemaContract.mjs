@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "509-user-profiles-and-cemetery-memberships";
+export const requiredSchemaChangeset = "510-burial-military-unit";
 
 export async function assertCurrentSchema(pool) {
   let result;
