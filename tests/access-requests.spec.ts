@@ -82,7 +82,7 @@ test("admin reviews a request through user setup defaulting to reader", async ({
   await page.route("**/api/admin/access-requests", (route) => route.fulfill({ json: approved ? [] : [request] }));
   await page.route("**/api/admin/roles", (route) => route.fulfill({ json: [{ name: "reader", description: "Read-only", userCount: 0 }, { name: "admin", description: "Admin", userCount: 1 }] }));
   await page.route("**/api/admin/auth0-users/resolve", (route) => route.fulfill({ json: { externalSubject: "auth0|visitor", email: request.email, displayName: request.displayName, created: true, invitationSent: true } }));
-  await page.route("**/api/admin/users", (route) => {
+  await page.route("**/api/admin/users*", (route) => {
     if (route.request().method() === "GET") return route.fulfill({ json: [] });
     const body = route.request().postDataJSON();
     expect(body.role).toBe("reader"); expect(body.accessRequestId).toBe(request.id);
