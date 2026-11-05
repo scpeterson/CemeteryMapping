@@ -32,3 +32,8 @@ test("separate offline entry has a fixed allowance without expanding the map bud
  const assets=budgets.map(b=>({filename: b.label==="application entry"?"index-a.js": b.label==="map application"?"App-a.js": b.label==="admin shell"?"AdminPanel-a.js":b.label==="React vendor"?"vendor-react-a.js":b.label==="authentication vendor"?"vendor-auth-a.js":"vendor-map-a.js",gzipBytes:1024}));
  assert.ok(checkBundleAssets([...assets,{filename:"FieldCollectionPage-a.js",gzipBytes:16*1024}]).failures.some(f=>f.includes("offline field")));
 });
+
+test("separate export entry has a fixed cap while every shared chunk stays in the core budget",()=>{
+ assert.ok(checkBundleAssets([...baseline(),{filename:'ExportRecordsPage-a.js',gzipBytes:6*1024}]).failures.some(f=>f.includes('export entry')));
+ assert.deepEqual(checkBundleAssets([...baseline(),{filename:'ExportRecordsPage-a.js',gzipBytes:4*1024}]).failures,[]);
+});
