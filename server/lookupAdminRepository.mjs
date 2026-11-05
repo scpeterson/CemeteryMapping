@@ -206,12 +206,13 @@ export async function listLookupRecords(pool) {
           is_active,
           created_at,
           updated_at,
-          (
-            SELECT count(*)
-            FROM ${definition.usageTable} usage_records
-            WHERE usage_records.${definition.usageColumn} = ${definition.table}.id${usageWhere}
-          ) AS usage_count${sourceFields}
+          COALESCE(usage_counts.usage_count, 0) AS usage_count${sourceFields}
         FROM ${definition.table}
+        LEFT JOIN (
+          SELECT usage_records.${definition.usageColumn} AS lookup_id, count(*) AS usage_count
+          FROM ${definition.usageTable} usage_records WHERE true${usageWhere}
+          GROUP BY usage_records.${definition.usageColumn}
+        ) usage_counts ON usage_counts.lookup_id=${definition.table}.id
         ORDER BY lower(label), label, code
       `);
       lookups[table.table] = result.rows.map((row) => toLookupRow(row, definition));

@@ -70,7 +70,8 @@
     "db:validate:spatial": "node scripts/db-validate-spatial.mjs",
     "db:tag": "node scripts/db-tag.mjs",
     "db:benchmark": "node scripts/db-benchmark.mjs",
-    "db:preview:spatial-repair": "node scripts/db-preview-spatial-repair.mjs"
+    "db:preview:spatial-repair": "node scripts/db-preview-spatial-repair.mjs",
+    "db:query-stats": "node scripts/db-query-stats.mjs"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.29.0",

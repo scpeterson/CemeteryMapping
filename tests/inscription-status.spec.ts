@@ -7,7 +7,7 @@ test("current legibility archives text with source history and locks whole-marke
   await overviewFixture(page);
   let faces: MarkerFace[] = [{ id: "11111111-1111-4111-8111-111111111112", label: "Unspecified face", inscription: "NAME\n[blank] – [illegible]", inscriptionStatus: "transcribed", notes: "", burialIds: [], mediaAssetIds: [] }];
   let revision = 0;
-  await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
+  await page.route("**/api/headstone-lookups*", (route) => route.fulfill({ json: {
     markerTypes: [marker.markerType], markerScopes: [marker.markerScope], materials: [marker.material], conditions: [marker.condition],
   } }));
   await page.route("**/api/headstones/marker-1", async (route) => {

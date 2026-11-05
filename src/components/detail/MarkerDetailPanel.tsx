@@ -1,7 +1,7 @@
 import { EditingOptionsContext } from "./editingOptionsContext";
 import { PhotoGalleryContext } from "./photoGalleryContext";
 import type { MarkerDetailAction } from "./markerWorkflowTypes";
-import { useContext, useState } from "react";
+import { lazy, Suspense, useContext, useState } from "react";
 import { DetailTabs } from "./DetailTabs";
 import { MarkerOverview } from "./MarkerOverview";
 import { Flag, Landmark, Link2, MapPinned } from "lucide-react";
@@ -21,7 +21,7 @@ import type {
 } from "../../types";
 import { GraveFeatureForm } from "./GraveFeatureRecords";
 import { HeadstoneRecord } from "./HeadstoneRecord";
-import { MarkerGravesiteRelationshipManager } from "./MarkerGravesiteRecords";
+const MarkerGravesiteRelationshipManager = lazy(() => import("./MarkerGravesiteRecords").then(module => ({ default: module.MarkerGravesiteRelationshipManager })));
 import { MarkerRelationshipForm, MarkerRelationshipList } from "./MarkerRelationshipRecords";
 
 export function MarkerDetailPanel({
@@ -135,7 +135,7 @@ export function MarkerDetailPanel({
             <h4>{isMonolith ? "Gravesites associated with this monolith" : "Associated gravesites"}</h4>
           </div>
           {headstone ? (
-            <MarkerGravesiteRelationshipManager
+            <Suspense fallback={<p className="muted">Loading gravesite links…</p>}><MarkerGravesiteRelationshipManager
               headstone={headstone}
               graves={markerGraves}
               lookups={headstoneLookups}
@@ -144,7 +144,7 @@ export function MarkerDetailPanel({
               onSave={(relationship) => onSaveHeadstoneGravesiteRelationship(headstone.id, relationship)}
               onUpdate={(relationshipId, relationship) => onUpdateHeadstoneGravesiteRelationship(headstone.id, relationshipId, relationship)}
               onDelete={(relationshipId, reason) => onDeleteHeadstoneGravesiteRelationship(headstone.id, relationshipId, reason)}
-            />
+            /></Suspense>
           ) : null}
         </section>
       )}

@@ -28,7 +28,8 @@ export async function updateProfile(pool, user, profile) {
         [profile.preferredCemeteryId, user.role === "admin", user.id]);
       if (!result.rows.length) throw new BadRequestError("Choose one of your assigned cemeteries.");
     }
-    await client.query(`UPDATE app_users SET display_name=$2, phone=$3, organization=$4, preferred_cemetery_id=$5 WHERE id=$1`,
+    await client.query(`UPDATE app_users SET display_name=$2, phone=$3, organization=$4, preferred_cemetery_id=$5 WHERE id=$1
+      AND (display_name,phone,organization,preferred_cemetery_id) IS DISTINCT FROM ($2,$3,$4,$5)`,
       [user.id, profile.displayName, profile.phone, profile.organization, profile.preferredCemeteryId]);
     return getProfile(client, user);
   });

@@ -8,7 +8,7 @@ for (const width of [1280, 390]) test(`military rank administration creates, edi
   const row={id:"22222222-2222-4222-8222-222222222222",code:"tec4",label:"Technician Fourth Grade",description:"Historical Army rank",militaryBranchId:branchId,abbreviation:"Tec 4",payGrade:"4th Grade",rankGroup:"enlisted",isActive:true,usageCount:1,usageLabel:"burials",createdAt:"",updatedAt:""};
   let rows=[row];
   let lookupRequests=0;
-  await page.route("**/api/headstone-lookups",route=>{lookupRequests++;return route.fulfill({json:{}});});
+  await page.route("**/api/headstone-lookups*",route=>{lookupRequests++;return route.fulfill({json:{}});});
   await page.route("**/api/admin/lookups",route=>route.fulfill({json:{
     tables:[{table:"military_rank_types",label:"Military ranks",hasSourceFields:false,hasRankFields:true}],
     lookups:{military_rank_types:rows,military_branch_types:[{...row,id:branchId,label:"Army",code:"army"}]},

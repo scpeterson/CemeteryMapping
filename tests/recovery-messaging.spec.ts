@@ -5,7 +5,7 @@ import { overviewFixture } from "./fixtures/overview";
 test("failed editing options disable saves and dropdowns until retry succeeds", async ({ page }) => {
   await overviewFixture(page);
   let available = false;
-  await page.route("**/api/headstone-lookups", (route) => available ? route.fulfill({ json: {} }) : route.fulfill({ status: 503, json: {} }));
+  await page.route("**/api/headstone-lookups*", (route) => available ? route.fulfill({ json: {} }) : route.fulfill({ status: 503, json: {} }));
   await page.goto("/"); await select(page, "A-TEST");
   await page.getByRole("tab", { name: "People and ownership" }).click();
   await page.getByRole("button", { name: "Edit burial Alice Example" }).click();

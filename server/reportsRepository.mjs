@@ -1,3 +1,4 @@
+import { withReadOnlyTransaction } from "./readOnlyTransaction.mjs";
 import { canRun, definitionById, reportDefinitions, toDefinition } from "./reports/definitions.mjs";
 import { cemeteryRole } from "./auth.mjs";
 import { selectedReportCemeteryIds } from "./reports/shared.mjs";
@@ -47,10 +48,10 @@ export async function runReport(pool, reportId, parameters = {}, user) {
   }
   const cemeteryIds = selectedReportCemeteryIds(user, parameters)?.filter(id => canRun(cemeteryRole(user, id), definition.requiredRole));
 
-  const client = await pool.connect();
-  try {
-    return await runner(client, definition, parameters, cemeteryIds);
-  } finally {
-    client.release();
+  if (["marker-burial-pages", "missing-nhg-links", "unowned-gravesites"].includes(reportId)) {
+    return withReadOnlyTransaction(pool, client => runner(client, definition, parameters, cemeteryIds));
   }
+  const client = await pool.connect();
+  try { return await runner(client, definition, parameters, cemeteryIds); }
+  finally { client.release(); }
 }

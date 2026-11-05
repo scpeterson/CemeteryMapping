@@ -110,7 +110,17 @@ export async function runUnownedGravesites(client, definition, parameters, cemet
 
   const result = await client.query(
     `
-      WITH unowned AS (
+      WITH marker_graves AS (
+        SELECT h.gravesite_uuid AS grave_id, h.headstone_id FROM headstones h
+        WHERE h.deleted_at IS NULL AND h.gravesite_uuid IS NOT NULL
+        UNION
+        SELECT hg.gravesite_uuid, h.headstone_id FROM headstone_gravesites hg
+        JOIN headstones h ON h.id=hg.headstone_uuid AND h.deleted_at IS NULL
+        WHERE hg.deleted_at IS NULL
+      ), marker_labels AS (
+        SELECT grave_id, string_agg(DISTINCT headstone_id, ', ' ORDER BY headstone_id) AS markers
+        FROM marker_graves GROUP BY grave_id
+      ), unowned AS (
         SELECT
           cemeteries.name AS cemetery,
           gravesites.section_id AS section,
@@ -136,21 +146,10 @@ export async function runUnownedGravesites(client, definition, parameters, cemet
             ) burial_names
             WHERE burial_names.name IS NOT NULL
           ) AS burials,
-          (
-            SELECT string_agg(marker_ids.marker_id, ', ' ORDER BY marker_ids.marker_id)
-            FROM (
-              SELECT DISTINCT headstones.headstone_id AS marker_id
-              FROM headstones
-              LEFT JOIN headstone_gravesites
-                ON headstone_gravesites.headstone_uuid = headstones.id
-               AND headstone_gravesites.deleted_at IS NULL
-              WHERE headstones.deleted_at IS NULL
-                AND (headstones.gravesite_uuid = gravesites.id OR headstone_gravesites.gravesite_uuid = gravesites.id)
-            ) marker_ids
-            WHERE marker_ids.marker_id IS NOT NULL
-          ) AS markers,
+          marker_labels.markers AS markers,
           gravesites.geometry_notes AS remarks
         FROM gravesites
+        LEFT JOIN marker_labels ON marker_labels.grave_id=gravesites.id
         JOIN cemeteries
           ON cemeteries.id = gravesites.cemetery_id
         LEFT JOIN lots

@@ -51,7 +51,7 @@ test("PostGIS 18 uses the configured mount, preserves data across restart, and s
     const name = `${prefix}-${suffix}`; containers.push(name);
     docker(["run", "--detach", "--platform", "linux/amd64", "--name", name, "--label", "cemetery.test=pr748",
       "-e", "POSTGRES_PASSWORD", "-e", "POSTGRES_DB=upgrade_test", "-e", "POSTGRES_USER=upgrade_test",
-      "--mount", `type=volume,source=${source},target=${target}`, image], { timeout: 120_000 });
+      "--mount", `type=volume,source=${source},target=${target}`, image, ...(suffix === "new18" ? config.services.db.command : [])], { timeout: 120_000 });
     return name;
   };
   try {
@@ -63,9 +63,12 @@ test("PostGIS 18 uses the configured mount, preserves data across restart, and s
 
     const destination = start("new18", image, volume("new-data"), mount.target);
     await ready(destination);
-    assert.match(sql(destination, "SHOW server_version"), /^18\./u);
-    assert.match(sql(destination, "SELECT PostGIS_Version()"), /^3\.6/u);
+    assert.match(sql(destination, "SHOW server_version"), /^18\.6(?: |$)/u);
+    assert.equal(sql(destination, "SELECT PostGIS_Lib_Version()"), "3.6.4");
     assert.equal(docker(["exec", destination, "printenv", "PGDATA"]).stdout.trim(), "/var/lib/postgresql/18/docker");
+    sql(destination, "CREATE SCHEMA diagnostics; REVOKE ALL ON SCHEMA diagnostics FROM PUBLIC; CREATE EXTENSION pg_stat_statements WITH SCHEMA diagnostics; CREATE ROLE diagnostic_reader");
+    assert.equal(sql(destination, "SELECT has_schema_privilege('diagnostic_reader','diagnostics','USAGE')"), "f");
+    assert.ok(Number(sql(destination, "SELECT count(*) FROM diagnostics.pg_stat_statements")) > 0);
     t.diagnostic("Fresh startup succeeded with the Compose-configured PostgreSQL 18 mount.");
 
     const oldVolume = volume("old-data");

@@ -7,7 +7,7 @@ const section=(page:Page,id:string)=>page.locator(`[data-marker-section="${id}"]
 async function setup(page:Page,standalone=true,role='admin'){
  await overviewFixture(page);
  await page.route('**/api/me',route=>route.fulfill({json:{role,assignedCemeteryIds:role==='admin'?[]:[cemeteryId],permissions:{}}}));
- await page.route('**/api/headstone-lookups',route=>route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[{...marker.condition,code:'unknown'}],maintenanceIssueTypes:[{id:'weathering',code:'weathering',label:'Weathering'}],maintenanceActionTypes:[{id:'cleaning',code:'cleaning',label:'Cleaning'}],maintenancePriorities:[{id:'normal',code:'normal',label:'Normal'}]}}));
+ await page.route('**/api/headstone-lookups*',route=>route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[{...marker.condition,code:'unknown'}],maintenanceIssueTypes:[{id:'weathering',code:'weathering',label:'Weathering'}],maintenanceActionTypes:[{id:'cleaning',code:'cleaning',label:'Cleaning'}],maintenancePriorities:[{id:'normal',code:'normal',label:'Normal'}]}}));
  const entry={...marker,sourceConflict:true,reviewNotes:'Check source date',dataConfidence:'low',reviewStatus:'needs_review',provenanceVerifiedAt:'2026-10-20'};
  await page.route('**/api/headstones/marker-1',route=>route.fulfill({json:entry}));
  await page.route(gravePath('A-TEST'),route=>route.fulfill({json:{...overviewGrave('A-TEST'),headstones:[entry]}}));
@@ -129,3 +129,31 @@ for(const standalone of [true,false])for(const phone of [false,true]){
   if(phone)await page.screenshot({path:testInfo.outputPath('marker-sticky-section-menu-phone.png')});
  });
 }
+
+test('marker and gravesite link selectors search bounded pages and retain the selected record', async ({page},testInfo)=>{
+ await setup(page);
+ const markerOptions=Array.from({length:55},(_,i)=>({id:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,code:`HS-${i+1}`,label:`HS-${i+1}`}));
+ await page.route('**/api/record-options**',async route=>{
+  const url=new URL(route.request().url());
+  expect(url.searchParams.get('limit')).toBe('51');
+  if(url.searchParams.get('kind')==='headstones'){
+   const offset=Number(url.searchParams.get('offset'));
+   await route.fulfill({json:markerOptions.slice(offset,offset+51)});
+  }else await route.fulfill({json:[{id:cemeteryId,code:'A-0001',label:'A-0001'}]});
+ });
+ const information=section(page,'information');
+ await information.getByLabel('Search markers',{exact:true}).fill('HS');
+ const related=information.getByRole('combobox',{name:'Related marker',exact:true});
+ await expect(related.locator('option')).toHaveCount(51);
+ await related.selectOption(markerOptions[0].id);
+ const markerForm=related.locator('xpath=ancestor::form');
+ await markerForm.getByRole('button',{name:'Next options',exact:true}).click();
+ await expect(markerForm).toContainText('Page 2');
+ await expect(related).toHaveValue(markerOptions[0].id);
+ await expect(related.locator('option')).toHaveCount(7);
+ await information.getByLabel('Search gravesites',{exact:true}).fill('A');
+ await expect(information.getByRole('combobox',{name:'Add gravesite',exact:true}).locator('option')).toHaveCount(2);
+ await page.setViewportSize({width:390,height:900});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await information.screenshot({path:testInfo.outputPath('record-options-mobile.png')});
+});

@@ -50,7 +50,7 @@ test('admin manages independent cemetery roles and filters user activity', async
     else if (path.endsWith('/roles')) json = ['reader','power-user','cemetery-admin','admin'].map(name => ({ name, description: name, userCount: 0 }));
     else if (path.endsWith('/cemetery-records')) json = { cemeteries, sections: [], lots: [] };
     else if (path.endsWith('/activity')) json = [{ id: 'activity-1', tableName: 'burials', operation: 'UPDATE', changedAt: '2026-11-04T13:00:00Z', reason: 'Corrected birth location' }];
-    else if (path === '/api/admin/users') json = [user];
+    else if (path === '/api/admin/users') { const q = new URL(route.request().url()).searchParams.get('q')?.toLowerCase() ?? ''; json = `${user.displayName} ${user.email}`.toLowerCase().includes(q) ? [user] : []; }
     else if (path === `/api/admin/users/${cemeteryId}`) { saved = route.request().postDataJSON(); json = { ...user, ...saved }; }
     await route.fulfill({ json });
   });
@@ -87,4 +87,36 @@ test('members with several cemeteries can change cemetery scope', async ({ page 
   await select.selectOption(otherId);
   await expect(select).toHaveValue(otherId);
   await expect(page.getByRole('banner')).toContainText('Second Cemetery');
+});
+
+
+test('user directory pages and searches on the server without overflowing mobile controls', async ({ page }, testInfo) => {
+  await fixture(page);
+  const users = Array.from({ length: 105 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12,'0')}`, externalSubject: `auth0|directory-${i}`, displayName: `Directory User ${String(i + 1).padStart(3,'0')}`, email: `directory-${i}@example.test`, role: 'reader', assignedCemeteryIds: [cemeteryId], cemeteryMemberships: [{ cemeteryId, role: 'reader' }], isActive: true, createdAt: '2026-11-04T12:00:00Z', updatedAt: '2026-11-04T12:00:00Z' }));
+  await page.route('**/api/admin/**', async route => {
+    const url = new URL(route.request().url()); let json: unknown = [];
+    if (url.pathname.endsWith('/access-request-stats')) json = { pending: 0, lastHour: 0, limits: { pending: 100, hourly: 100 } };
+    else if (url.pathname.endsWith('/roles')) json = [{ name: 'reader', description: 'Reader', userCount: 105 }];
+    else if (url.pathname.endsWith('/cemetery-records')) json = { cemeteries, sections: [], lots: [] };
+    else if (url.pathname === '/api/admin/users') {
+      const q = (url.searchParams.get('q') ?? '').toLowerCase();
+      const offset = Number(url.searchParams.get('offset') ?? 0), limit = Number(url.searchParams.get('limit') ?? 101);
+      json = users.filter(user => user.displayName.toLowerCase().includes(q)).slice(offset, offset + limit);
+    }
+    await route.fulfill({ json });
+  });
+  await page.goto('/'); await showApplicationActions(page);
+  await page.getByRole('button', { name: /^Open administration:/ }).click();
+  const panel = page.getByRole('dialog', { name: 'Admin management' });
+  await expect(panel.locator('.admin-user-row')).toHaveCount(100);
+  await panel.getByRole('button', { name: 'Next users', exact: true }).click();
+  await expect(panel.locator('.admin-user-row')).toHaveCount(5);
+  await expect(panel.getByRole('button', { name: 'Next users' })).toBeDisabled();
+  await expect(panel).toContainText('Directory User 105');
+  await panel.getByLabel('Search users').fill('Directory User 002');
+  await expect(panel.locator('.admin-user-row')).toHaveCount(1);
+  await expect(panel).toContainText('Page 1');
+  await page.setViewportSize({ width: 390, height: 900 });
+  expect(await panel.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('user-directory-paging-mobile.png') });
 });

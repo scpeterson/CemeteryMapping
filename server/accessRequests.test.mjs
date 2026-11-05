@@ -73,7 +73,7 @@ test("real application keeps record, media and admin routes private alongside th
   await new Promise((resolve) => server.once("listening", resolve));
   t.after(() => new Promise((resolve) => server.close(resolve)));
   const base = `http://127.0.0.1:${server.address().port}`;
-  for (const path of ["/api/cemetery-map", "/api/search?q=smith", "/api/headstone-lookups", "/api/admin/users", "/api/admin/access-requests", "/api/admin/access-request-stats", "/media/photo.jpg"]) {
+  for (const path of ["/api/cemetery-map", "/api/search?q=smith", "/api/headstone-lookups", "/api/record-options?kind=headstones", "/api/admin/users", "/api/admin/access-requests", "/api/admin/access-request-stats", "/media/photo.jpg"]) {
     assert.equal((await fetch(`${base}${path}`)).status, 401, path);
   }
 });

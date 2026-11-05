@@ -1,3 +1,5 @@
+import { listRecordOptions } from "../recordOptions.mjs";
+import { BadRequestError, validateSearchQuery, validateSearchPage } from "../requestValidation.mjs";
 export function registerHeadstoneRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canViewOwnershipForCemetery, getHeadstoneOverview, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, getHeadstone,
@@ -9,8 +11,10 @@ export function registerHeadstoneRoutes(app, context) {
   } = context;
       app.get("/api/headstone-lookups", requireReader, async (request, response, next) => {
         try {
+          if (request.query.includeEntities !== undefined && !["true", "false"].includes(request.query.includeEntities)) throw new BadRequestError("Invalid lookup entity option.");
           response.json(
             await listHeadstoneLookupOptions(pool, {
+              includeEntities: request.query.includeEntities !== "false",
               allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
             }),
           );
@@ -19,6 +23,17 @@ export function registerHeadstoneRoutes(app, context) {
         }
       });
     
+      app.get("/api/record-options", requireReader, async (request,response,next) => {
+        try {
+          const { limit,offset } = validateSearchPage(request.query);
+          response.json(await listRecordOptions(pool,request.query.kind,{
+            query: validateSearchQuery(request.query.q),limit,offset,
+            excludeId: request.query.excludeId === undefined ? undefined : validateUuid(request.query.excludeId,"Excluded record"),
+            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+          }));
+        } catch (error) { next(error); }
+      });
+
       app.get("/api/headstones/:id/overview", requireReader, async (request, response, next) => {
         try {
           const id = validateUuid(request.params.id, "Headstone id");

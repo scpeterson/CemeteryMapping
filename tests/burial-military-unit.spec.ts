@@ -4,7 +4,7 @@ import {overviewFixture,overviewGrave} from './fixtures/overview';
 const unit='Company E, 136th Pennsylvania Infantry Regiment';
 for(const width of [1280,390]) test(`burial military unit saves, displays, and clears at ${width}px`,async({page},testInfo)=>{
  await page.setViewportSize({width,height:1000});await overviewFixture(page);
- await page.route('**/api/headstone-lookups',route=>route.fulfill({json:{militaryBranches:[{id:'army',code:'army',label:'U.S. Army'},{id:'navy',code:'navy',label:'U.S. Navy'}]}}));
+ await page.route('**/api/headstone-lookups*',route=>route.fulfill({json:{militaryBranches:[{id:'army',code:'army',label:'U.S. Army'},{id:'navy',code:'navy',label:'U.S. Navy'}]}}));
  await page.route('**/api/burials/alice',async route=>{
   const input=route.request().postDataJSON();expect(input.militaryUnit).toBe(input.veteran?unit:'');
   return route.fulfill({json:{...overviewGrave('A-TEST').burials[0],veteran:input.veteran,militaryUnit:input.militaryUnit,militaryBranchCode:input.militaryBranchCode}});

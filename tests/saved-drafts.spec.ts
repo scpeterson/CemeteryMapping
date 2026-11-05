@@ -5,7 +5,7 @@ import { marker, overviewFixture, overviewGrave } from "./fixtures/overview";
 test("adding a grave feature resets its draft only after a successful save", async ({ page }) => {
   await overviewFixture(page);
   const featureType = { id: "flag", code: "flag_holder", label: "Flag holder" };
-  await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
+  await page.route("**/api/headstone-lookups*", (route) => route.fulfill({ json: {
     graveFeatureTypes: [featureType],
   } }));
   let failSave = true;
@@ -43,7 +43,7 @@ test("adding a grave feature resets its draft only after a successful save", asy
 for (const record of ["marker", "burial"] as const) {
   test(`${record} save clears its draft, while a failed save preserves it`, async ({ page }) => {
     await overviewFixture(page);
-    await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
+    await page.route("**/api/headstone-lookups*", (route) => route.fulfill({ json: {
       markerTypes: [marker.markerType], markerScopes: [marker.markerScope],
       materials: [marker.material], conditions: [marker.condition],
     } }));

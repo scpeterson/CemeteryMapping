@@ -19,8 +19,24 @@ an empty new cluster. Do not copy files, rewrite PG_VERSION or delete volumes.
 Existing clusters require a rehearsed logical dump/restore into a separate volume.
 The local Compose override selects the new volume explicitly and is ignored by
 Git. The upgrade guide documents backup, role grants, validation and recovery.
-The separately pinned hosted TEST image and mount remain PostgreSQL 17; no live
-environment is upgraded by this change.
+The initial October 30 change left hosted TEST on PostgreSQL 17.
+
+### November 5, 2026 amendment: align every environment
+
+Pin root Compose and hosted TEST to the same verified PostgreSQL 18.6/PostGIS
+3.6.4 image digest. Hosted TEST requires its own rehearsed logical cluster restore;
+upgrading local TEST does not upgrade that host. Restore every non-template
+database, including historical snapshots and `postgres`, and retain roles,
+ownership, grants, settings, sequences, large objects, application records and
+media. Refresh planner statistics after restore. Compare stored-data fingerprints
+and spatial issue identities/effective severities before allowing writes.
+
+Hosted TEST uses a distinct `database_pg18` volume named
+`nhcemeteries-test-postgresql18` at `/var/lib/postgresql`; retain the original
+PostgreSQL 17 volume. STAGE/PROD are not provisioned but use the same pinned image
+when created. The Compose regression checks image parity and the 18 mount layout.
+Before new writes, recovery restores the old Compose definition and source volume.
+After new writes, preserve or reconcile those edits before any rollback.
 
 ## Validation and recovery
 

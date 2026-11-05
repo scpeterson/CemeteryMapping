@@ -14,7 +14,7 @@ async function setup(page:Page,{entries=visits,role='admin',optionsFail=false}:{
  await overviewFixture(page);
  await page.route('**/api/me',route=>route.fulfill({json:{role,assignedCemeteryIds:role==='admin'?[]:[cemeteryId],permissions:{}}}));
  let failing=optionsFail;
- await page.route('**/api/headstone-lookups',route=>failing?route.fulfill({status:500,json:{error:'Test editing options failure'}}):route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions,maintenanceIssueTypes:[{id:'weathering',code:'weathering',label:'Weathering'}],maintenanceActionTypes:[{id:'cleaning',code:'cleaning',label:'Cleaning'}],maintenancePriorities:[{id:'normal',code:'normal',label:'Normal'}]}}));
+ await page.route('**/api/headstone-lookups*',route=>failing?route.fulfill({status:500,json:{error:'Test editing options failure'}}):route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions,maintenanceIssueTypes:[{id:'weathering',code:'weathering',label:'Weathering'}],maintenanceActionTypes:[{id:'cleaning',code:'cleaning',label:'Cleaning'}],maintenancePriorities:[{id:'normal',code:'normal',label:'Normal'}]}}));
  let inspections=structuredClone(entries);
  const photos=[...marker.mediaAssets];
  const maintenance:Record<string,unknown>[]=[];

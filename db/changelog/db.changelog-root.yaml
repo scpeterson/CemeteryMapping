@@ -1527,3 +1527,9 @@ databaseChangeLog:
   - include:
       file: changes/510-burial-military-unit.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/511-sql-query-efficiency.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/512-query-observability.sql
+      relativeToChangelogFile: true

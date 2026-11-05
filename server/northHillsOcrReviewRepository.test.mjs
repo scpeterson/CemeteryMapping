@@ -24,7 +24,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
         };
       }
 
-      if (sql.includes("SELECT count(*) FILTER (WHERE EXISTS")) {
+      if (sql.includes("SELECT count(DISTINCT entry_id) AS matched_count")) {
         assert.deepEqual(values, ["batch-1"]);
         return { rows: [{ matched_count: "2" }] };
       }
@@ -35,7 +35,7 @@ test("listNorthHillsOcrReview returns batches, summaries, staged readings, and c
       }
 
       assert.match(sql, /CASE entry\.parse_confidence/u);
-      assert.match(sql, /SELECT DISTINCT candidate_headstone\.id/u);
+      assert.match(sql, /candidate_match_count/u);
       assert.deepEqual(values, ["batch-1", "high", "A", "%burgess%", 50]);
       return {
         rows: [
@@ -126,7 +126,7 @@ test("listNorthHillsOcrReview can sort staged readings by printed page order", a
         };
       }
 
-      if (sql.includes("SELECT count(*) FILTER (WHERE EXISTS")) {
+      if (sql.includes("SELECT count(DISTINCT entry_id) AS matched_count")) {
         assert.deepEqual(values, ["batch-1"]);
         return { rows: [{ matched_count: "2" }] };
       }
@@ -167,7 +167,7 @@ test("listNorthHillsOcrReview search matches printed page numbers", async () => 
         };
       }
 
-      if (sql.includes("SELECT count(*) FILTER (WHERE EXISTS")) {
+      if (sql.includes("SELECT count(DISTINCT entry_id) AS matched_count")) {
         assert.deepEqual(values, ["batch-1"]);
         return { rows: [{ matched_count: "2" }] };
       }

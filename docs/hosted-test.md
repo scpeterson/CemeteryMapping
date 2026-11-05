@@ -6,9 +6,11 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
-The [October 30, 2026 deployment record](#october-30-2026-main-release-and-migration-verification)
-records the latest completed hosted TEST release documented here. Earlier dated
-sections describe historical releases and their verification scope.
+The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
+PostGIS 3.6.4 cluster upgrade**, recorded in the
+[upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
+Dated sections below describe historical code releases and their verification
+scope. Check `/api/health` for the running application release.
 
 ## Availability and cost
 
@@ -615,8 +617,10 @@ Hosted TEST was deployed from `main` commit
 `2026-10-30T23:20:28Z`. The exact commit's required CI gate passed before release.
 This deployment supersedes earlier code-release metadata in this runbook.
 
-Hosted PostgreSQL remains **17.5 / PostGIS 3.5.2** on its existing pinned image and
-volume. The local DEV/TEST PostgreSQL 18 migration did not upgrade this host.
+At this October 30 release, hosted PostgreSQL remained **17.5 / PostGIS 3.5.2**
+on its original image and volume. This historical state is superseded by the
+November 5 hosted cluster upgrade documented in the
+[PostgreSQL upgrade guide](postgresql-18-upgrade.md).
 Existing hosted Auth0, restricted API credentials, frontend settings and tunnel
 configuration were retained. The deployment did not copy local DEV/TEST data to
 the host or apply any spatial-repair preview candidates.

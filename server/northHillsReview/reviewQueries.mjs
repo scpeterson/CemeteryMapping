@@ -1,28 +1,6 @@
 import { compact, normalizeLimit, validConfidence, validStatuses, validSorts } from "./normalization.mjs";
+import { candidateMatchCtes } from "./candidateSql.mjs";
 import { toBatch, toSummary, toEntry } from "./reviewMapping.mjs";
-
-// Illegible readings cannot match a surname. Spreadsheet page references can
-// fall on the neighboring page when a surveyed row spans a printed page break.
-const unknownRowCandidate = `
-  upper(trim(coalesce(entry.name_text, ''))) = 'UNKNOWN'
-  AND entry.parsed_section_name IS NOT NULL
-  AND entry.parsed_row_number IS NOT NULL
-  AND entry.source_page_number IS NOT NULL
-  AND EXISTS (
-    SELECT 1 FROM headstones row_marker
-    LEFT JOIN headstone_gravesites row_link
-      ON row_link.headstone_uuid = row_marker.id AND row_link.deleted_at IS NULL
-    WHERE row_marker.deleted_at IS NULL
-      AND (row_marker.gravesite_uuid = gravesite.id OR row_link.gravesite_uuid = gravesite.id)
-      AND upper(row_marker.source_properties->>'NhgSection') = upper(entry.parsed_section_name)
-      AND row_marker.source_properties->>'NhgRow' = entry.parsed_row_number::text
-      AND row_marker.source_properties->>'NhgPage' IN (
-        (entry.source_page_number - 1)::text,
-        entry.source_page_number::text,
-        (entry.source_page_number + 1)::text
-      )
-  )
-`;
 
 export async function listNorthHillsOcrReview(pool, filters = {}) {
   const batchResult = await pool.query(`
@@ -50,25 +28,11 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
   // Candidate counts are only needed for the selected batch. Computing them in
   // the all-batches query made every filter request rescan every imported row.
   const matchedResult = await pool.query(`
-    SELECT count(*) FILTER (WHERE EXISTS (
-      SELECT 1
-      FROM burials burial
-      JOIN gravesites gravesite ON gravesite.id = burial.gravesite_uuid
-      WHERE gravesite.cemetery_id = entry.cemetery_id
-        AND burial.deleted_at IS NULL
-        AND gravesite.deleted_at IS NULL
-        AND (
-          (entry.source_page_number IS NOT NULL AND burial.notes ILIKE ('%' || 'North Hills Genealogists page: ' || entry.source_page_number::text || '%'))
-          OR (${unknownRowCandidate})
-          OR EXISTS (
-            SELECT 1
-            FROM unnest(entry.surnames) AS surname(value)
-            WHERE lower(coalesce(burial.full_name, burial.last_name, '')) LIKE '%' || lower(surname.value) || '%'
-          )
-        )
-    )) AS matched_count
-    FROM north_hills_ocr_entries entry
-    WHERE entry.batch_id = $1
+    WITH batch_entries AS (SELECT id, cemetery_id, surnames, source_page_number,
+      name_text, parsed_section_name, parsed_row_number
+      FROM north_hills_ocr_entries WHERE batch_id=$1),
+    ${candidateMatchCtes("batch_entries")}
+    SELECT count(DISTINCT entry_id) AS matched_count FROM matching_burials
   `, [selectedBatchId]);
   const selectedBatch = batches.find((batch) => batch.id === selectedBatchId);
   if (selectedBatch) selectedBatch.matchedCount = Number(matchedResult.rows[0]?.matched_count ?? 0);
@@ -155,7 +119,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
         WHERE ${where.join("\n          AND ")}
         ORDER BY ${orderBy}
         LIMIT ${limitPlaceholder}
-      )
+      ), ${candidateMatchCtes("filtered_entries")}
       SELECT
         entry.id::text,
         entry.batch_id::text,
@@ -247,7 +211,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
                    'gravesiteEvidence', candidate.gravesite_evidence,
                    'headstoneCandidates', candidate.headstone_candidates
                  )
-                 ORDER BY candidate.score DESC, candidate.full_name
+                 ORDER BY candidate.score DESC, candidate.full_name, candidate.burial_id
                ) AS candidate_matches
         FROM (
           SELECT
@@ -286,7 +250,8 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
                 THEN 2 ELSE 0
               END
             ) AS score
-          FROM burials burial
+          FROM matching_burials matched
+          JOIN burials burial ON burial.id=matched.burial_id
           JOIN gravesites gravesite ON gravesite.id = burial.gravesite_uuid
           LEFT JOIN LATERAL (
             SELECT jsonb_agg(
@@ -314,20 +279,16 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
               ORDER BY candidate_headstone.headstone_id, candidate_headstone.id
             ) AS candidates
             FROM (
-              SELECT DISTINCT candidate_headstone.id, candidate_headstone.headstone_id
-              FROM headstones candidate_headstone
-              LEFT JOIN headstone_gravesites candidate_headstone_grave
-                ON candidate_headstone_grave.headstone_uuid = candidate_headstone.id
-               AND candidate_headstone_grave.deleted_at IS NULL
-              LEFT JOIN headstone_burials candidate_headstone_burial
-                ON candidate_headstone_burial.headstone_uuid = candidate_headstone.id
-               AND candidate_headstone_burial.deleted_at IS NULL
-              WHERE candidate_headstone.deleted_at IS NULL
-                AND (
-                  candidate_headstone.gravesite_uuid = gravesite.id
-                  OR candidate_headstone_grave.gravesite_uuid = gravesite.id
-                  OR candidate_headstone_burial.burial_uuid = burial.id
-                )
+              SELECT h.id, h.headstone_id FROM headstones h
+              WHERE h.gravesite_uuid=gravesite.id AND h.deleted_at IS NULL
+              UNION
+              SELECT h.id, h.headstone_id FROM headstone_gravesites hg
+              JOIN headstones h ON h.id=hg.headstone_uuid AND h.deleted_at IS NULL
+              WHERE hg.gravesite_uuid=gravesite.id AND hg.deleted_at IS NULL
+              UNION
+              SELECT h.id, h.headstone_id FROM headstone_burials hb
+              JOIN headstones h ON h.id=hb.headstone_uuid AND h.deleted_at IS NULL
+              WHERE hb.burial_uuid=burial.id AND hb.deleted_at IS NULL
             ) candidate_headstone
             LEFT JOIN LATERAL (
               SELECT jsonb_agg(
@@ -346,19 +307,8 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
                 AND headstone_link.headstone_uuid = candidate_headstone.id
             ) headstone_evidence ON true
           ) headstone_candidates ON true
-          WHERE gravesite.cemetery_id = entry.cemetery_id
-            AND burial.deleted_at IS NULL
-            AND gravesite.deleted_at IS NULL
-            AND (
-              (entry.source_page_number IS NOT NULL AND burial.notes ILIKE ('%' || 'North Hills Genealogists page: ' || entry.source_page_number::text || '%'))
-              OR (${unknownRowCandidate})
-              OR EXISTS (
-                SELECT 1
-                FROM unnest(entry.surnames) AS surname(value)
-                WHERE lower(coalesce(burial.full_name, burial.last_name, '')) LIKE '%' || lower(surname.value) || '%'
-              )
-            )
-          ORDER BY score DESC, burial.full_name
+          WHERE matched.entry_id=entry.id
+          ORDER BY score DESC, burial.full_name, burial.id
         ) candidate
       ) matches ON true
       ORDER BY ${orderBy}

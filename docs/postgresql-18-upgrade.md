@@ -6,7 +6,10 @@ render_with_liquid: false
 
 [Documentation Home](index.md) · [Rebuild Guide](rebuild.md) · [ADR 0193](adr/0193-postgresql18-volume-layout.md) · [ADR 0194](adr/0194-local-database-review-tools.md)
 
-The root `docker-compose.yml` now runs `postgis/postgis:18-3.6`. PostgreSQL 18
+All environment definitions use the same verified **PostgreSQL 18.6 / PostGIS
+3.6.4** image, pinned to
+`postgis/postgis:18-3.6@sha256:4a43e3c3e5d55b9208240fc71db543b79c638766280c625a425bd0a2390989c4`.
+This applies to root Compose DEV/TEST/STAGE/PROD and hosted TEST. PostgreSQL 18
 stores its cluster at `/var/lib/postgresql/18/docker`; its named volume must mount
 at `/var/lib/postgresql`. The old `/var/lib/postgresql/data` mount is rejected even
 when empty. See the [upstream image documentation](https://github.com/docker-library/docs/blob/master/postgres/README.md#pgdata)
@@ -19,10 +22,11 @@ The entrypoint detects the old cluster and refuses startup rather than silently
 initializing a replacement database. Existing named volume identities are retained
 in the base Compose file so this detection remains effective.
 
-This change applies to root Compose environments (DEV/TEST/STAGE/PROD). The
-separate hosted TEST stack in `deploy/test/compose.yaml` remains pinned to its
-reviewed PostgreSQL 17 image and volume layout. This PR does not migrate or restart
-that deployment. Historical ADR version tables describe their original decisions.
+Hosted TEST uses the separate `database_pg18` volume, explicitly named
+`nhcemeteries-test-postgresql18`, mounted at `/var/lib/postgresql`. The original
+`database` volume is retained for recovery and must never be mounted on PostgreSQL
+18. STAGE/PROD are not yet provisioned; their definitions select the same image.
+Historical ADR version tables describe their original decisions.
 
 ## Rehearse before changing a persistent environment
 
@@ -200,6 +204,177 @@ manifests and the detailed migration report were retained locally. The ignored
 Compose override selects the new volumes for subsequent local database commands.
 Machine-specific settings, credentials and private records are not published in
 this validation record. The hosted TEST stack was not migrated.
+
+## Hosted TEST cluster procedure
+
+Local TEST and hosted TEST are independent clusters. A local upgrade does not
+change the hosted image or its databases. Use the same pinned image in
+`deploy/test/compose.yaml`, but migrate the hosted cluster separately:
+
+1. Acquire the hosted deployment lock. Inventory every database, role, membership,
+   database/role setting, template customization, volume and image. Check free
+   space for a separate cluster and protected backups.
+2. Back up all non-template databases with ownership/ACLs and database creation
+   metadata, plus cluster globals, deployment secrets and matching media. Validate
+   each archive. Record deterministic application-table/geometry hashes, extension
+   configuration rows, sequence values and `is_called`, large objects, ownership,
+   grants and normalized spatial findings. Keep password-bearing globals private.
+3. Restore into a separate PostgreSQL 18 volume using an isolated container on a
+   temporary loopback port. Restore roles before database objects; preserve the
+   existing API credential. Use an independent maintenance database when restoring
+   `postgres`. Run `ANALYZE` in every restored database.
+4. Verify all preserved data and metadata. Compare logical extension configuration
+   data separately from extension-supplied objects; PostGIS can change its internal
+   index names. Keep application-index ownership/grant checks intact. Preserve
+   `search_path` as a schema list, not one quoted string containing commas.
+5. Compare spatial issue identities and effective severities. Review calculated
+   area-text differences separately from stored geometry. Exercise map, search,
+   details, lookups, profiles and reports using the restricted API role against the
+   restored copy. Do not enable normal writes on the rehearsal endpoint.
+6. Stop API/web for the final consistent backup and restore. Repeat preservation
+   checks; remove the temporary maintenance database. Stop the rehearsal container
+   and old database, install the PostgreSQL 18 Compose definition, and start `db`
+   on the verified destination volume. Check exact versions and fingerprints again
+   before starting API/web with their existing authentication and secrets.
+7. Verify health, anonymous-access rejection, public page/media delivery, runtime
+   role restrictions, GeoNames and application reads. Record evidence and retain
+   the original PostgreSQL 17 volume, archives and prior Compose definition.
+
+Before accepting new writes, recovery can restore the original Compose definition
+and retained volume. Once new writes have resumed, preserve/reconcile those edits
+before falling back; the old cluster is a pre-upgrade snapshot. Never use
+`docker compose down -v` as an upgrade or recovery step. Ordinary code releases
+must retain the PostgreSQL 18 image and destination volume.
+
+## Hosted TEST validation record, 2026-11-05
+
+Hosted TEST was migrated from PostgreSQL 17.5/PostGIS 3.5.2 to **18.6/3.6.4** using
+the same pinned image as local DEV/TEST. The application database, both historical
+snapshot databases, and `postgres` were restored into the separate destination
+volume after an isolated rehearsal. Source templates contained no application
+tables. All restored spatial databases also have topology and Tiger geocoder
+extensions at 3.6.4. Database collation versions match the installed libc version.
+
+Final backups were taken with API/web stopped. Application-table fingerprints,
+stored geometries, extension configuration rows, sequence values/`is_called`,
+large objects, roles/passwords, ownership, grants and database/role settings
+matched. All 705 hosted media files matched their manifests. Planner statistics were
+refreshed in every restored database. The temporary restore database was removed.
+The original PostgreSQL 17 volume, validated archives, media snapshot, settings,
+verification manifests and prior Compose definition were retained. A private
+copy of database archives and recovery metadata was also retained off-host.
+
+Spatial validation retained 795 findings and 135 pre-existing unreviewed errors;
+issue identities and effective severities matched. Area text changed in 23
+findings by at most 0.000006 square meters. Stored geometry was unchanged. The
+comparison excluded extension-internal index naming changes, while retaining
+application-index metadata checks and extension configuration-data checks.
+
+TEST health returned after 229 seconds of maintenance, with the previous
+application build unchanged. API/web restarted with existing Auth0 and restricted
+database credentials; API restart count was zero, anonymous private access was
+rejected, and the public access-request page returned HTTPS 200. The tunnel was
+not restarted. Interactive Auth0 sign-in and authenticated saves remain user smoke
+checks; no SQL optimizations were applied during this database upgrade.
+
+### Regenerated SQL priorities on PostgreSQL 18.6/PostGIS 3.6.4
+
+Read-only repository measurements against the hosted restored database used the
+restricted API role, five measured repetitions after a warmup, and
+`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`. Alternating original/candidate runs
+verified result equality. These exclude HTTP, authentication, browser rendering
+and network latency; they are not a hardware-controlled comparison with PostgreSQL
+17 or with local DEV/TEST. Some initial measurements overlapped verification
+work; final live checks confirmed the principal slow paths after cutover.
+
+| Priority | Work | Evidence and intended gain |
+| --- | --- | --- |
+| 1 | Refactor NHG review candidate matching | Approximately 15 seconds hosted. Repeated entry/burial/monument matching dominates. Compute candidate relations in sets and share matching work for counts and detail, preserving source-page evidence, unknown-name handling, scoring and cemetery scope. JIT off alone still takes about 12 seconds. |
+| 2 | Transaction-local JIT control for interactive reports | Marker burial pages measured 5,239 → 579 ms with identical SQL results, about 89% lower latency. Unowned gravesites measured 653 → 349 ms; missing NHG links 1,259 → 1,001 ms. Use a connection-owned read-only transaction; preserve cleanup and pooled-connection isolation. |
+| 3 | Group report relationships/evidence once | Missing NHG links still takes about one second without JIT. Replace repeated per-monument/per-grave relationship scans with grouped joins; resolve marker/grave source-entry IDs before OCR aggregation, deduplicate shared evidence and retain ordering and summary totals. Structural rewrite gains remain unmeasured. |
+| 4 | Scope-aware search optimization and matching index expressions | Filtering matching ownership names/dates once improved representative ordinary text searches by about 15–20%; broad `a` improved about 6%. Reader/no-ownership and narrow cemetery cases showed little benefit or small regressions. Keep those fast paths; retain the complete rights relation for status derivation and all visibility checks. Align accent-normalized expressions with indexes before adding search indexes. |
+| 5 | Avoid unnecessary account and inspection writes | Skip activity UPSERTs while the timestamp is fresh; keep authorization reads current and retain the conditional UPSERT for races. Avoid unchanged role updates, membership delete/reinsert, and unchanged inspection refresh/upsert writes. Preserve manual edits and auditing. Scaling benefit is not yet measured. |
+| 6 | Prepare multi-cemetery reads and imports for growth | Batch stable lookups (currently 23 queries), paginate/filter entity selectors and the account directory, push cemetery scope early, group lookup usage counts, and stage larger imports for set-based promotion. Current small data does not establish a large latency gain. |
+| 7 | Selective index cleanup | Five nonunique indexes duplicate retained unique indexes, totaling 232 KiB locally. Check dependencies and remove only redundant nonunique indexes through a new migration. Evaluate audit `occurred_at/id` ordering and text-expression indexes using actual workload evidence. |
+| 8 | Query observability and evidence-led tuning | Enable `pg_stat_statements` during planned maintenance with restricted diagnostic access. Measure real query frequency/total cost and application p95 before global JIT, memory, parallelism, partitioning or additional index changes. PostgreSQL 18 worker AIO is already active. |
+
+Private detailed plans, parameter values, timings, result comparisons and recovery
+records are retained in protected diagnostic/backup locations rather than Git.
+
+### SQL efficiency implementation, 2026-11-05
+
+The eight priorities above are implemented in the working application and
+migrations 511–512. **These SQL changes have not been deployed to local or hosted
+environments.** The completed PostgreSQL upgrade is separate. See
+[ADR 0196](adr/0196-measured-sql-efficiency.md) for implementation decisions.
+
+NHG candidates now share set-based surname, page and unknown-marker matches.
+Reports aggregate relationships and evidence once, with transaction-local JIT
+disabled for the three measured report paths. Search shares ownership matching
+only on the broad ownership-enabled path. Account, membership and inspection
+updates avoid unchanged writes while authorization remains current.
+
+The SPA's reference lookup uses one database query and loads record choices via
+scoped search/paging; the legacy full lookup remains available. Account listings
+have server-side filters and paging. Lookup usage counts are grouped once. GeoJSON,
+deed and NHG staging inserts use bounded parameterized batches inside the existing
+transactions; domain promotion rules remain intact. No permission cache was added.
+
+Five repetitions after warmup, alternating baseline/new repository calls against
+an isolated local TEST clone, produced these representative medians:
+
+| Workload | Baseline | Implemented |
+| --- | ---: | ---: |
+| NHG review | 3,317 ms | 199 ms |
+| Marker burial pages | 1,109 ms | 27 ms |
+| Missing NHG links | 258 ms | 14 ms |
+| Unowned gravesites | 142 ms | 15 ms |
+| Legacy full lookup | 14.38 ms / 23 queries | 9.86 ms / 3 queries |
+| SPA reference-only lookup | — | 2.83 ms / 1 query |
+
+These are repository timings, excluding HTTP and browser rendering. Small-fixture
+lookup administration (8.76 → 10.38 ms) and directory listing (0.625 → 0.744 ms)
+did not improve; grouping and bounded reads target growth rather than a measured
+latency win on that dataset. Thirteen search cases retained their results.
+
+Separate SELECT-only checks against hosted TEST compared current code with the
+new NHG queries: default review 12.80 → 0.85 seconds, unknown-name review
+30.09 → 0.46 seconds, and a 250-entry page 16.37 → 1.77 seconds. Entries,
+summaries, candidate membership and first-five/additional-candidate processing
+matched. Comparisons disregard order only within candidate arrays whose old
+score/name ties were unspecified; the new final UUID tie breaker is deterministic.
+These checks changed no hosted code, data or persistent settings. Timings vary
+with workload, cache state and hardware.
+
+Migration 511 removes only five redundant nonunique indexes, retains unique
+constraints, adds matching normalized search/email indexes, and guards inspection
+refresh functions. Migration 512 installs private query diagnostics. Both forward
+and rollback/reapplication paths were rehearsed on the clone; spatial records and
+marker data remained unchanged. Existing geometry review findings are unaffected.
+
+#### Rollout and monitoring
+
+Use the normal reviewed release procedure with a fresh backup and migration
+rehearsal. Apply 511–512 and configure API-role grants before application cutover.
+The Compose database command now includes `shared_preload_libraries=pg_stat_statements`
+and `compute_query_id=auto`; a planned database restart/recreation is required to
+activate it. Verify the pinned PostgreSQL image and existing volume selection
+before restarting. Do not treat an application-only restart as sufficient.
+Verify readiness, diagnostics permissions, API health and the new UI after release.
+
+For local owner/DBA diagnostics after that rollout:
+
+```bash
+npm run db:query-stats -- --env dev
+npm run db:query-stats -- --env test --limit 20
+```
+
+The CLI reads statements for `cemetery_api` in the current database and reports
+query IDs, calls, total/mean execution time and buffer/temp-block counters. It
+does not reset statistics. Query text is omitted unless explicitly requested with
+`--include-query-text`; keep such output private. The diagnostics schema, views
+and functions are unavailable to the runtime API role. Aggregate database means
+do not measure HTTP p95; gather request latency separately before further tuning.
 
 ## Planner statistics and query benchmarks
 

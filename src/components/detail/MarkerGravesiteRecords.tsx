@@ -1,8 +1,10 @@
+import { useRecordOptions } from "../../hooks/useRecordOptions";
+import { RecordOptionSearch } from "./RecordOptionSearch";
 import { useDraftState } from "../../hooks/useDraftState";
-import { useId, useState, type CSSProperties, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { Trash2 } from "lucide-react";
 import type { GraveSpaceSummary, Headstone, HeadstoneGravesiteRelationship, HeadstoneLookups, SaveHeadstoneGravesiteRelationshipInput } from "../../types";
-import { formatGraveLabel, statusColors, statusLabels } from "../../lib/format";
+import { formatGraveLabel } from "../../lib/format";
 
 const relationshipTypes: Array<{ value: SaveHeadstoneGravesiteRelationshipInput["relationshipType"]; label: string; description: string }> = [
   { value: "primary", label: "Primary / main marker", description: "The main marker or memorial for this gravesite." },
@@ -44,8 +46,9 @@ export function MarkerGravesiteRelationshipManager({ headstone, graves, lookups,
   const relationships = headstone.gravesiteRelationships ?? [];
   const gravesById = new Map(graves.map((grave) => [grave.id, grave]));
   const linkedIds = new Set(relationships.map((relationship) => relationship.gravesiteUuid));
-  const availableGravesites = lookups.gravesites.filter((grave) => !linkedIds.has(grave.id));
   const [form, setForm] = useDraftState<SaveHeadstoneGravesiteRelationshipInput>({ gravesiteId: "", relationshipType: "secondary", notes: "" });
+  const records = useRecordOptions("gravesites",lookups.gravesites,canUpdate);
+  const availableGravesites = records.options.filter(grave => !linkedIds.has(grave.id));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -86,17 +89,13 @@ export function MarkerGravesiteRelationshipManager({ headstone, graves, lookups,
       </div> : <span title={relationshipTypes.find((option) => option.value === relationship.relationshipType)?.description}>{relationshipOptions(isMonolith, relationship.relationshipType).find((option) => option.value === relationship.relationshipType)?.label ?? relationship.relationshipType}</span>}
     </div>)}
     {!relationships.length ? <p className="muted">No gravesites are associated with this marker.</p> : null}
-    {canUpdate && availableGravesites.length ? <form className="headstone-form marker-gravesite-form" onSubmit={submit}>
-      <label className="headstone-wide-field">Add gravesite<select title={form.gravesiteId ? `${availableGravesites.find((grave) => grave.id === form.gravesiteId)?.label ?? "Selected gravesite"}. Add a link between this marker and this gravesite.` : "Select the gravesite to associate with this marker. Gravesites already linked are excluded."} required value={form.gravesiteId} onChange={(event) => setForm((current) => ({ ...current, gravesiteId: event.target.value }))}><option value="">Select a gravesite</option>{availableGravesites.map((grave) => <option key={grave.id} value={grave.id} title={grave.label}>{grave.label}</option>)}</select></label>
+    {canUpdate ? <form className="headstone-form marker-gravesite-form" onSubmit={submit}>
+      <RecordOptionSearch records={records} label="Search gravesites" />
+      <label className="headstone-wide-field">Add gravesite<select title={form.gravesiteId ? `${availableGravesites.find((grave) => grave.id === form.gravesiteId)?.label ?? "Selected gravesite"}. Add a link between this marker and this gravesite.` : "Select the gravesite to associate with this marker. Gravesites already linked are excluded."} required value={form.gravesiteId} onChange={(event) => { records.remember(event.target.value); setForm((current) => ({ ...current, gravesiteId: event.target.value })); }}><option value="">Select a gravesite</option>{availableGravesites.map((grave) => <option key={grave.id} value={grave.id} title={grave.label}>{grave.label}</option>)}</select></label>
       <label className="headstone-wide-field">Relationship<select aria-describedby={relationshipHelpId} title={relationshipTooltip(isMonolith, form.relationshipType)} value={form.relationshipType} onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneGravesiteRelationshipInput["relationshipType"] }))}>{options.map((option) => <option key={option.value} value={option.value} title={option.description}>{option.label}</option>)}</select><small id={relationshipHelpId} className="marker-gravesite-help">{options.find((option) => option.value === form.relationshipType)?.description}</small></label>
       <label className="headstone-wide-field">Notes<textarea rows={3} value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label>
       <div className="headstone-form-actions"><button type="submit" disabled={busy || !form.gravesiteId}>{busy ? "Saving…" : "Add gravesite link"}</button></div>
     </form> : null}
     {message ? <p className="form-error" role="alert">{message}</p> : null}
   </div>;
-}
-
-export function AssociatedGravesiteList({ graves, emptyMessage, onSelectGrave }: { graves: GraveSpaceSummary[]; emptyMessage: string; onSelectGrave: (grave: GraveSpaceSummary) => void }) {
-  if (!graves.length) return <p className="muted">{emptyMessage}</p>;
-  return <div className="associated-gravesite-list">{graves.map((grave) => <button key={`${grave.cemeteryId}:${grave.id}`} type="button" className="associated-gravesite-row" onClick={() => onSelectGrave(grave)}><strong>{formatGraveLabel(grave)}</strong><span className="associated-gravesite-status" style={{ "--status-color": statusColors[grave.status] } as CSSProperties}>{statusLabels[grave.status]}</span></button>)}</div>;
 }

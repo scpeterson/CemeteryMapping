@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { insertValueRows } from "./lib/insert-value-rows.mjs";
 import { existsSync, statSync } from "node:fs";
 import { basename } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -335,10 +337,7 @@ async function insertBatch(client, cemeteryId, { sourceName, sourcePath, workshe
   return result.rows[0].id;
 }
 
-async function insertEntry(client, batchId, cemeteryId, row, parsed) {
-  const result = await client.query(
-    `
-      INSERT INTO deed_registry_entries (
+const entryInsertSql = `INSERT INTO deed_registry_entries (id,
         batch_id,
         cemetery_id,
         source_row_number,
@@ -366,15 +365,8 @@ async function insertEntry(client, batchId, cemeteryId, row, parsed) {
         parse_notes,
         modern_section,
         source_row
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15, $16, $17, $18, $19,
-        $20, $21, $22, $23, $24, $25, $26, $27::jsonb
-      )
-      RETURNING id
-    `,
-    [
+      )`;
+function entryValues(batchId, cemeteryId, row, parsed) { return [
       batchId,
       cemeteryId,
       row.rowNumber,
@@ -402,15 +394,8 @@ async function insertEntry(client, batchId, cemeteryId, row, parsed) {
       parsed.parseNotes,
       row.modernSection,
       JSON.stringify(row),
-    ],
-  );
-  return result.rows[0].id;
-}
-
-async function insertAllocation(client, entryId, allocation) {
-  await client.query(
-    `
-      INSERT INTO deed_registry_entry_allocations (
+  ]; }
+const allocationInsertSql = `INSERT INTO deed_registry_entry_allocations (
         entry_id,
         allocation_type,
         section_name,
@@ -422,10 +407,8 @@ async function insertAllocation(client, entryId, allocation) {
         raw_text,
         parse_confidence,
         parse_notes
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    `,
-    [
+      )`;
+function allocationValues(entryId, allocation) { return [
       entryId,
       allocation.allocationType,
       allocation.sectionName ?? null,
@@ -437,8 +420,17 @@ async function insertAllocation(client, entryId, allocation) {
       allocation.rawText ?? null,
       allocation.parseConfidence,
       allocation.parseNotes ?? [],
-    ],
-  );
+  ]; }
+
+export async function insertRegistryEntries(client, batchId, cemeteryId, parsedRows) {
+  const entryIds = parsedRows.map(() => randomUUID());
+  await insertValueRows(client, entryInsertSql, parsedRows.map(({ row, parsed }, i) =>
+    [entryIds[i], ...entryValues(batchId, cemeteryId, row, parsed)]));
+  const allocations = parsedRows.flatMap(({ parsed }, i) => parsed.allocations.map(a => allocationValues(entryIds[i], a)));
+  await insertValueRows(client, allocationInsertSql, allocations);
+  const allocationCount = allocations.length;
+
+  return allocationCount;
 }
 
 async function importWorksheet(client, cemetery, workbookPath, worksheetName, options) {
@@ -457,14 +449,7 @@ async function importWorksheet(client, cemetery, workbookPath, worksheetName, op
     notes: batchNotes || null,
   });
 
-  let allocationCount = 0;
-  for (const { row, parsed } of parsedRows) {
-    const entryId = await insertEntry(client, batchId, cemetery.id, row, parsed);
-    for (const allocation of parsed.allocations) {
-      await insertAllocation(client, entryId, allocation);
-      allocationCount += 1;
-    }
-  }
+  const allocationCount = await insertRegistryEntries(client, batchId, cemetery.id, parsedRows);
 
   const reviewCount = parsedRows.filter(({ parsed }) => parsed.parseConfidence === "review" || parsed.parseConfidence === "low").length;
   const sectionGCount = parsedRows.filter(({ parsed }) => parsed.ownershipScope === "section_g_gravesite").length;

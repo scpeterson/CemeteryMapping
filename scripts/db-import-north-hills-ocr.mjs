@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { insertValueRows } from "./lib/insert-value-rows.mjs";
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
@@ -388,7 +390,7 @@ async function findCemetery(client, options) {
   return result.rows[0];
 }
 
-async function importEntries(client, cemetery, sourcePath, options, entries) {
+export async function importEntries(client, cemetery, sourcePath, options, entries) {
   const batchResult = await client.query(
     `
       INSERT INTO north_hills_ocr_import_batches (cemetery_id, source_name, source_path, imported_by, notes)
@@ -399,10 +401,8 @@ async function importEntries(client, cemetery, sourcePath, options, entries) {
   );
   const batchId = batchResult.rows[0].id;
 
-  for (const entry of entries) {
-    const entryResult = await client.query(
-      `
-        INSERT INTO north_hills_ocr_entries (
+  const entryIds = entries.map(() => randomUUID());
+  await insertValueRows(client, `INSERT INTO north_hills_ocr_entries (id,
           batch_id,
           cemetery_id,
           source_page_index,
@@ -424,13 +424,7 @@ async function importEntries(client, cemetery, sourcePath, options, entries) {
           parse_confidence,
           parse_notes,
           source_entry
-        )
-        VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9::text[], $10, $11, $12, $13, $14, $15, $16, $17, $18::integer[], $19, $20::text[], $21::jsonb
-        )
-        RETURNING id::text
-      `,
-      [
+        )`, entries.map((entry, i) => [entryIds[i],
         batchId,
         cemetery.id,
         entry.sourcePageIndex,
@@ -452,14 +446,18 @@ async function importEntries(client, cemetery, sourcePath, options, entries) {
         entry.parseConfidence,
         entry.parseNotes,
         JSON.stringify(entry.sourceEntry),
-      ],
-    );
-
-    const sourceFacts = parseNorthHillsSourceFacts(entry.rawText);
-    for (const fact of sourceFacts) {
-      await client.query(
-        `
-          INSERT INTO north_hills_ocr_source_facts (
+  ]));
+  const facts = entries.flatMap((entry, i) => parseNorthHillsSourceFacts(entry.rawText).map(fact => [
+          entryIds[i],
+          fact.sourceCode,
+          fact.sourceLabel,
+          fact.factType,
+          fact.factValue,
+          fact.factDate ?? null,
+          fact.rawText,
+          fact.confidence,
+  ]));
+  await insertValueRows(client, `INSERT INTO north_hills_ocr_source_facts (
             entry_id,
             source_code,
             source_label,
@@ -468,23 +466,7 @@ async function importEntries(client, cemetery, sourcePath, options, entries) {
             fact_date,
             raw_text,
             confidence
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          ON CONFLICT (entry_id, source_code, fact_type, fact_value) DO NOTHING
-        `,
-        [
-          entryResult.rows[0].id,
-          fact.sourceCode,
-          fact.sourceLabel,
-          fact.factType,
-          fact.factValue,
-          fact.factDate ?? null,
-          fact.rawText,
-          fact.confidence,
-        ],
-      );
-    }
-  }
+          )`, facts, { suffix: "ON CONFLICT (entry_id, source_code, fact_type, fact_value) DO NOTHING" });
 
   return batchId;
 }

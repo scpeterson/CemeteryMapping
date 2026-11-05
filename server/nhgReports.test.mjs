@@ -10,7 +10,7 @@ function fixture(rows = []) {
   return {
     queries,
     async connect() {
-      return { async query(sql, values) { queries.push({ sql, values }); return { rows }; }, release() {} };
+      return { async query(sql, values) { if (/^(BEGIN|SET LOCAL|COMMIT|ROLLBACK)/u.test(sql)) return { rows: [] }; queries.push({ sql, values }); return { rows }; }, release() {} };
     },
   };
 }
