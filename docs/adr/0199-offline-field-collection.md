@@ -54,7 +54,7 @@ Keep two asset generations; refresh preparation while connected after an upgrade
 The 700 KiB gzip core JavaScript budget stays fixed; the separately loaded field
 entry has a 15 KiB gzip cap. Its measured initial implementation is about 12 KiB.
 
-Require HTTPS (localhost is supported for development). Deploy migration first,
+API startup requires migration 513. Require HTTPS (localhost is supported for development). Deploy migration first,
 then rerun the restricted API-role grant setup, restart the API and publish web
 assets together. Development Vite pages report that shell preparation needs a
 built deployment; they can still exercise device storage. Browser clearing,
