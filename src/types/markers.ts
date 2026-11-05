@@ -69,6 +69,7 @@ export type MonumentInspection = {
 };
 
 export type Headstone = {
+  version?: string;
   inspections?: MonumentInspection[];
   id: string;
   headstoneId: string;
@@ -212,6 +213,7 @@ export type InspectionInput = {
 };
 
 export type SaveHeadstoneInput = {
+  expectedVersion?: string;
   deletedInspections?: {id: string; expectedUpdatedAt: string}[];
   inspectionChangesOnly?: boolean;
   updatedInspections?: InspectionInput[];

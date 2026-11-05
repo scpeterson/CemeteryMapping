@@ -1,4 +1,5 @@
 export type Owner = {
+  version?: string;
   id: string;
   ownershipEventId?: string;
   ownershipEventRightId?: string;
@@ -17,6 +18,7 @@ export type Owner = {
 };
 
 export type UpdateOwnerInput = {
+  expectedVersion?: string;
   firstName: string;
   lastName: string;
   fullAddress: string;

@@ -1,3 +1,6 @@
+import { isRecordConflict } from "../../api/apiClient";
+import { ConflictRecovery } from "../ui/ConflictRecovery";
+import { fetchHeadstone } from "../../api/cemeteryApi";
 import type { MarkerDetailAction } from "./markerWorkflowTypes";
 import { editableMarkerFaces, isEmptyNewMarkerFace } from "../../lib/markerFaces";
 import { MarkerFacesEditor, MarkerFacesView } from "./MarkerFaces";
@@ -68,6 +71,7 @@ function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOpti
   const isTrinity = cemeteryName === "Trinity Lutheran Church Cemetery";
 
   return {
+    expectedVersion:headstone.version,
     newInspections: [],
     markerTypeId,
     markerScopeId: headstone.markerScope.id,
@@ -148,9 +152,11 @@ export function HeadstoneRecord({
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isEditing, setIsEditing] = useState(initialAction === "edit-information" && canUpdate);
   const [editArea, setEditArea] = useState<"information" | "faces" | "review">("information");
+  const [editingBaseline,setEditingBaseline]=useState(headstone);
   const [form, setForm] = useDraftState<SaveHeadstoneInput>(() => blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const [conflict,setConflict]=useState(false);
   const errorId = useId();
   const sectionPrefix = useId();
   const sectionNavRef = useRef<HTMLElement>(null);
@@ -226,9 +232,11 @@ export function HeadstoneRecord({
 
   const startEditing = (area: "information" | "faces" | "review" = "information") => {
     setEditArea(area);
+    setEditingBaseline(headstone);
     setForm(blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName));
     setError(undefined);
     setProvenanceMessage(undefined);
+    setConflict(false);
     setIsEditing(true);
     requestAnimationFrame(()=>{editorRef.current?.scrollIntoView({block:"start"});editorRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus({preventScroll:true});});
   };
@@ -236,11 +244,12 @@ export function HeadstoneRecord({
   const save = async (event: FormEvent) => {
     event.preventDefault();
     setIsSaving(true);
+    setConflict(false);
     setError(undefined);
     try {
       const saved = await onSave(headstone.id, {
         ...form,
-        faces: form.faces?.filter((face) => !isEmptyNewMarkerFace(face, headstone)),
+        faces: form.faces?.filter((face) => !isEmptyNewMarkerFace(face, editingBaseline)),
       });
       setForm(blankHeadstoneForm(saved, markerTypeOptions, cemeteryName));
       if (saved.burialNhgPropagation) {
@@ -251,6 +260,7 @@ export function HeadstoneRecord({
       }
       finishEditing();
     } catch (saveError) {
+      setConflict(isRecordConflict(saveError));
       setError(saveError instanceof Error ? saveError.message : "Unable to save headstone.");
     } finally {
       setIsSaving(false);
@@ -421,6 +431,7 @@ export function HeadstoneRecord({
           <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
         </label>
         </> : null}
+        {conflict&&<ConflictRecovery disabled={isSaving} reload={async()=>{const latest=await fetchHeadstone(headstone.id);setEditingBaseline(latest);setForm(blankHeadstoneForm(latest,markerTypeOptions,cemeteryName));setError(undefined);setConflict(false);}}/>}
         {error ? <p id={errorId} className="detail-message is-error" role="alert">{error}</p> : null}
         <div className="headstone-form-actions">
           <button type="button" className="secondary-button" onClick={finishEditing} disabled={isSaving}>

@@ -1,4 +1,7 @@
 import {getOwnershipEditor} from "../ownershipEditing.mjs";
+import { validateExpectedVersion } from "../recordVersions.mjs";
+import { readOwnerEdit } from "../ownerEditVersion.mjs";
+import { getBurial } from "../cemeteryBurialMutations.mjs";
 export function registerGraveRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, createGraveFeature, createGraveSpace,
@@ -137,10 +140,24 @@ export function registerGraveRoutes(app, context) {
         } catch (error) { next(error); }
       });
     
+      app.get("/api/burials/:id",requireReader,async(request,response,next)=>{
+        try{const record=await getBurial(pool,validateUuid(request.params.id,"Burial"));
+          if(!record)return response.status(404).json({error:"Burial not found."});
+          response.json(record);
+        }catch(error){next(error);}
+      });
+      app.get("/api/ownership-parties/:partyId/events/:eventId",requirePowerUser,async(request,response,next)=>{
+        try{const record=await readOwnerEdit(pool,validateUuid(request.params.partyId,"Owner"),validateUuid(request.params.eventId,"Ownership event"),
+          request.user.role==="admin"?undefined:assignedEditableCemeteryIds(request.user));
+          if(!record)return response.status(404).json({error:"Owner not found."});
+          response.json(record);
+        }catch(error){next(error);}
+      });
       app.patch("/api/burials/:id", requirePowerUser, async (request, response, next) => {
         try {
           const id = validateUuid(request.params.id, "Burial id");
           const burial = validateBurialPayload(request.body);
+          burial.expectedVersion=validateExpectedVersion(request.body?.expectedVersion);
           const updated = await updateBurial(pool, id, burial, {
             actorUser: request.user,
             reason: burial.reason,
@@ -322,6 +339,7 @@ export function registerGraveRoutes(app, context) {
           const partyId = validateUuid(request.params.partyId, "Owner id");
           const eventId = validateUuid(request.params.eventId, "Ownership event id");
           const update = validateOwnerUpdatePayload(request.body);
+          update.expectedVersion=validateExpectedVersion(request.body?.expectedVersion);
           const updated = await updateOwnershipParty(pool, partyId, eventId, update, {
             actorUser: request.user,
             reason: update.reason,

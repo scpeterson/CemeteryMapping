@@ -12,6 +12,7 @@ export function burialProjectionSql() {
   const reviewColumnsSql = recordReviewColumnsSql("burials");
   return {
     select: `burials.id::text,
+      burials.xmin::text AS version,
       burials.gravesite_uuid::text,
       burials.first_name,
       burials.last_name,

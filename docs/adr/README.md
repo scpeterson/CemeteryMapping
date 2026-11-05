@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0198: Protect record editors against concurrent changes](0198-complete-record-edit-conflicts.md)
+
 - [ADR 0197: Delegate cemetery membership administration](0197-delegated-cemetery-members.md)
 
 - [ADR 0196: Reduce repeated SQL work and bound growing reads](0196-measured-sql-efficiency.md)

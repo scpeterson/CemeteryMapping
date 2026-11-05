@@ -1,4 +1,5 @@
 import { listRecordOptions } from "../recordOptions.mjs";
+import { validateExpectedVersion } from "../recordVersions.mjs";
 import { BadRequestError, validateSearchQuery, validateSearchPage } from "../requestValidation.mjs";
 export function registerHeadstoneRoutes(app, context) {
   const {
@@ -91,6 +92,7 @@ export function registerHeadstoneRoutes(app, context) {
         try {
           const id = validateUuid(request.params.id, "Headstone id");
           const headstone = validateHeadstonePayload(request.body);
+          if (!headstone.inspectionChangesOnly) headstone.expectedVersion=validateExpectedVersion(request.body?.expectedVersion);
           await validateHeadstoneBusinessRules(pool, id, headstone);
           const updated = await updateHeadstone(pool, id, headstone, {
             actorUser: request.user,
