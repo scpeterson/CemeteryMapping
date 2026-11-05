@@ -15,13 +15,13 @@ test('assigned task lifecycle, safe creation retry, current membership checks, p
   await client.query('BEGIN');const pool=fieldTransactionPool(client),grave=(await client.query('SELECT g.id,g.gravesite_id,g.cemetery_id FROM gravesites g JOIN cemeteries c ON c.id=g.cemetery_id AND c.deleted_at IS NULL WHERE g.deleted_at IS NULL LIMIT 1')).rows[0];
   const actorId=randomUUID(),otherId=randomUUID(),readerId=randomUUID();
   for(const [id,role]of [[actorId,'power-user'],[otherId,'power-user'],[readerId,'reader']]){
-   await client.query('INSERT INTO app_users(id,external_subject,email,display_name,role_name) VALUES($1,$2,$3,$4,$5)',[id,`fixture|${id}`,`${id}@example.test`,`Task ${role}`,role]);
+   await client.query('INSERT INTO app_users(id,external_subject,email,display_name,role_name) VALUES($1,$2,$3,$4,$5)',[id,`fixture|${id}`,`${id}@example.test`,`Task ${role}`,'reader']);
    await client.query('INSERT INTO app_user_cemetery_access(app_user_id,cemetery_id,role_name,can_edit) VALUES($1,$2,$3,$4)',[id,grave.cemetery_id,role,role!=='reader']);
   }
   const actor={id:actorId,subject:`fixture|${actorId}`,role:'power-user',cemeteryAccess:[{cemeteryId:grave.cemetery_id,role:'power-user',canEdit:true}]},other={...actor,id:otherId,subject:`fixture|${otherId}`};
   const choices=(await client.query('SELECT(SELECT id FROM maintenance_issue_types WHERE is_active LIMIT 1) AS issue,(SELECT id FROM maintenance_priority_types WHERE is_active LIMIT 1) AS priority')).rows[0];
   const notes=`Task fixture ${randomUUID()}`,record=validateMaintenanceRecordPayload({targetType:'gravesite',graveSpaceId:grave.gravesite_id,issueTypeId:choices.issue,priorityTypeId:choices.priority,observedAt:'2026-11-01',notes,reason:'Create reviewed task'}),schedule={assignedToId:actorId,dueDate:'2026-11-04',remindOn:'2026-11-03'},operationId=randomUUID();
-  const first=await createMaintenanceTask(pool,grave.cemetery_id,record,schedule,actor,{operationId});assert.ok(first.id);assert.equal((await createMaintenanceTask(pool,grave.cemetery_id,record,schedule,actor,{operationId})).id,first.id);
+  const first=await createMaintenanceTask(pool,grave.cemetery_id,record,schedule,actor,{operationId});assert.ok(first.id);assert.equal(first.assigneeActive,true);assert.equal((await createMaintenanceTask(pool,grave.cemetery_id,record,schedule,actor,{operationId})).id,first.id);
   await assert.rejects(()=>createMaintenanceTask(pool,grave.cemetery_id,{...record,notes:'Changed retry'},schedule,actor,{operationId}),{name:'ConflictError'});
   const listed=await listMaintenanceTasks(pool,actor,{...validateTaskFilters({today:'2026-11-05'}),query:notes});assert.equal(listed.summary.total,1);assert.equal(listed.rows[0].overdue,true);assert.equal(listed.rows[0].reminderDue,true);
   const assignees=await listTaskAssignees(pool,grave.cemetery_id,actor);assert.ok(assignees.some(u=>u.id===actorId));assert.ok(!assignees.some(u=>u.id===readerId));

@@ -13,7 +13,8 @@ Extend existing maintenance records with a global account assignee, due date,
 optional reminder date and personal reminder dismissal. Keep observations, actions,
 priority, source, completion details and photo evidence in the existing record.
 One account can be assigned work across multiple cemeteries according to its
-current cemetery roles. New assignments require an active editor in that cemetery;
+current cemetery roles. New assignments require an active editor in that cemetery, including accounts
+whose legacy global role is reader but whose cemetery role grants editing;
 a system administrator can also assign themselves. Do not create accounts or
 change memberships through task management. Historical assignments remain visible
 when an account loses access; editors can preserve that attribution or reassign
