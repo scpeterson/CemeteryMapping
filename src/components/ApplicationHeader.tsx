@@ -1,6 +1,6 @@
 import { roleForCemetery } from "../lib/selectionPermissions";
 import { confirmDiscardChanges } from "../hooks/useDraftState";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Download, BarChart3, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react";
 import { useAccountSession } from "../auth/sessionContext";
 import type { CurrentUser } from "../types";
@@ -24,6 +24,14 @@ export function ApplicationHeader({
   const session = useAccountSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  useEffect(()=>{
+    if(!menuOpen)return;
+    const close=(event:MouseEvent)=>{
+      if(event.target instanceof Element&&!event.target.closest('.application-header, [role="dialog"]'))setMenuOpen(false);
+    };
+    document.addEventListener('click',close);
+    return()=>document.removeEventListener('click',close);
+  },[menuOpen]);
 
   return (
     <header className="application-header" onKeyDown={(event) => {
