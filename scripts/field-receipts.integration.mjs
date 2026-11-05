@@ -69,3 +69,17 @@ test('field snapshots and actual marker synchronization preserve scope, versions
     assert.equal((await client.query('SELECT count(*)::int AS n FROM field_operations WHERE operation_id=$1',[operation.id])).rows[0].n,1);
   }finally{await client.query('ROLLBACK');await client.end();}
 });
+
+test('nested borrowed transaction failures roll back the enclosing receipt without shadowing savepoints',async()=>{
+ const {withAuditContext}=await import('../server/auditContext.mjs');const {fieldTransactionPool}=await import('../server/fieldOperationReceipts.mjs');
+ const client=new pg.Client(integrationAdminDatabase(loadApiConfig()));await client.connect();
+ try{
+  await client.query('BEGIN');const actor={role:'admin',subject:'fixture|nested-rollback'},id=randomUUID(),pool=fieldTransactionPool(client);
+  await assert.rejects(()=>withAuditContext(pool,{actorUser:actor},async outer=>{
+   await beginFieldOperation(outer,actor,id,fieldRequestHash({kind:'nested-fixture'}));
+   await withAuditContext(fieldTransactionPool(outer),{actorUser:actor},async()=>{throw new Error('Nested work failed');});
+  }),/Nested work failed/);
+  assert.equal((await client.query('SELECT count(*)::int AS n FROM field_operations WHERE operation_id=$1',[id])).rows[0].n,0);
+  assert.equal((await client.query('SELECT 1 AS still_usable')).rows[0].still_usable,1);
+ }finally{await client.query('ROLLBACK');await client.end();}
+});

@@ -43,7 +43,9 @@ Return the caller's own optional account ID from `/api/me` to support that ident
 
 Public task creation carries a stable request UUID. Use the existing transactional
 receipt mechanism to prevent duplicate tasks after an uncertain response, bind its
-normalized content and retain drafts on errors. Parent/lookup/assignee validation
+normalized content and retain drafts on errors. Borrowed nested transactions use
+distinct savepoints and release failed scopes so an inner failure cannot leave
+an outer receipt pending. Parent/lookup/assignee validation
 and assignment creation commit atomically. Recheck current cemetery authorization
 for every query and mutation. Show only eligible assignees; search is bounded and
 retains the selected account without enumerating unrelated accounts.

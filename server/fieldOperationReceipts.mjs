@@ -25,12 +25,18 @@ export async function completeFieldOperation(client, actorUser, operationId, res
 }
 
 // Borrow one connection without committing the receipt's outer transaction.
+let transactionPoolSequence=0;
 export function fieldTransactionPool(client) {
+  const poolSequence=++transactionPoolSequence;
   let sequence=0;
   return {query:client.query.bind(client),connect:async()=>{
-    const savepoint=`field_mutation_${++sequence}`;
-    return {release(){},query(sql,values){
-      return client.query(sql==="BEGIN"?`SAVEPOINT ${savepoint}`:sql==="COMMIT"?`RELEASE SAVEPOINT ${savepoint}`:sql==="ROLLBACK"?`ROLLBACK TO SAVEPOINT ${savepoint}`:sql,values);
+    const savepoint=`field_mutation_${poolSequence}_${++sequence}`;
+    return {release(){},async query(sql,values){
+      if(sql==="ROLLBACK"){
+        await client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+        return client.query(`RELEASE SAVEPOINT ${savepoint}`);
+      }
+      return client.query(sql==="BEGIN"?`SAVEPOINT ${savepoint}`:sql==="COMMIT"?`RELEASE SAVEPOINT ${savepoint}`:sql,values);
     }};
   }};
 }
