@@ -2,6 +2,7 @@ import { getHeadstoneOverview } from "./markerOverviewRepository.mjs";
 import express from "express";
 import { registerAccessRequestRoutes } from "./routes/accessRequestRoutes.mjs";
 import { registerCemeteryMembershipRoutes } from "./routes/cemeteryMembershipRoutes.mjs";
+import { registerFieldCollectionRoutes } from "./routes/fieldCollectionRoutes.mjs";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
@@ -111,6 +112,7 @@ export function createApp(config, pool) {
   const requireCemeteryAdmin = requireRole(config.auth, pool, "cemetery-admin");
   const requireAdmin = requireRole(config.auth, pool, "admin");
   registerAccessRequestRoutes(app, { pool, requireAdmin, protection: config.accessRequests });
+  registerFieldCollectionRoutes(app, { pool, requirePowerUser, express });
   app.use(express.json());
   registerCemeteryMembershipRoutes(app, { pool, requireCemeteryAdmin, auth0ManagementClient });
   registerCemeteryRoutes(app, {

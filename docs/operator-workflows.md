@@ -1294,3 +1294,29 @@ gravesites. No gravesite is automatically linked by passageway creation.
 
 For the accepted passageway inventory, E/G policy, current C-P03 extent and dated
 review evidence, see [Map Layout and Passageways](map-layout-and-passageways.md).
+
+## Offline field collection
+
+Editors can open **Field** from the application header. While connected, verify
+your account, choose a cemetery, create an offline passphrase, download the markers
+you will visit, and choose **Prepare offline page loading**. Bookmark `/field/`
+and test reopening it before leaving connectivity. Shell preparation requires a
+built HTTPS deployment; the development server supports drafts but not offline
+page refresh.
+
+Each form's **Save … on this device** action encrypts its draft or original photo
+file locally. This does not update the server. Keep your offline passphrase;
+workspace recovery requires it. Lock the workspace before sharing the device.
+Use the same browser and account when returning. Browser data clearing or a lost
+passphrase cannot be repaired by resetting your application password.
+
+Reconnect the original account and choose **Synchronize saved work**. Pending,
+retry, review-required and synchronized statuses distinguish outcomes. Interrupted
+requests can safely retry. Review changed records against latest values before
+replacing a conflicted proposal. Stopping retries keeps device history and does
+not undo a server change. Save a photo copy before removing device work, and keep
+original files until synchronization is confirmed. Delete a workspace only after
+checking its unsynchronized action count. Current server permissions always apply.
+
+For deployment, receipt retention, storage limits and rollback considerations, see
+[ADR 0199](adr/0199-offline-field-collection.md).

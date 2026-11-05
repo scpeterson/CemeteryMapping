@@ -1,3 +1,4 @@
+import { burialEditPayload as blankBurialForm } from "../../lib/recordEditPayloads";
 import { isRecordConflict } from "../../api/apiClient";
 import { ConflictRecovery } from "../ui/ConflictRecovery";
 import { fetchBurial } from "../../api/cemeteryApi";
@@ -18,42 +19,6 @@ import { ReviewBadgeGroup } from "./RecordReview";
 import { dataConfidenceOptions, reviewStatusOptions } from "./reviewOptions";
 
 import BurialNameFields from "./BurialNameFields";
-
-function blankBurialForm(burial: Burial): SaveBurialInput {
-  return {
-    expectedVersion: burial.version,
-    firstName: burial.person.firstName,
-    givenNameStatus: burial.person.givenNameStatus ?? (burial.person.firstName.trim() ? "recorded" : "unknown"),
-    displayName: burial.person.displayName ?? "",
-    lastName: burial.person.lastName === "Unknown" ? "" : burial.person.lastName,
-    maidenName: burial.person.maidenName ?? "",
-    namePrefix: burial.person.namePrefix ?? "",
-    nameSuffix: burial.person.nameSuffix ?? "",
-    birthDate: burial.person.birthDate ?? "",
-    deathDate: burial.person.deathDate ?? "",
-    birthPlaceId: burial.birthPlace?.id ?? "",
-    deathPlaceId: burial.deathPlace?.id ?? "",
-    burialDate: burial.burialDate ?? "",
-    intermentType: burial.intermentType ?? "unknown",
-    recordStatusCode: burial.recordStatusCode ?? "interred",
-    funeralHome: burial.funeralHome ?? "",
-    sourceUrl: burial.sourceUrl ?? "",
-    veteran: burial.veteran ?? false,
-    militaryUnit: burial.militaryUnit ?? "",
-    militaryBranchCode: burial.militaryBranchCode ?? "",
-    militaryRankCode: burial.militaryRankCode ?? "",
-    militaryWarServiceCode: burial.militaryWarServiceCode ?? "",
-    militaryDecorationCodes: (burial.militaryDecorations ?? []).map((decoration) => decoration.code),
-    militaryEnlistedDate: burial.militaryEnlistedDate ?? "",
-    militaryDischargedDate: burial.militaryDischargedDate ?? "",
-    notes: burial.recordNotes ?? "",
-    dataConfidence: burial.dataConfidence ?? "unknown",
-    reviewStatus: burial.reviewStatus ?? "unreviewed",
-    reviewNotes: burial.reviewNotes ?? "",
-    sourceConflict: burial.sourceConflict ?? false,
-    reason: "Burial detail update",
-  };
-}
 
 function militaryServiceText(burial: Burial) {
   const rankLabel =
