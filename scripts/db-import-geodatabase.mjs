@@ -1,3 +1,4 @@
+import { insertValueRows } from "./lib/insert-value-rows.mjs";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -169,53 +170,20 @@ async function main() {
       exportLayer(geodatabasePath, mapping.layerName, outputPath);
       const features = readExportedFeatures(outputPath);
 
-      for (const feature of features) {
+      await insertValueRows(client, `INSERT INTO spatial_import_features (
+        batch_id, feature_type, source_feature_id, facility_id, section_id, block_id,
+        lot_id, grave_id, gravesite_id, source_properties, geometry)`, features.map(feature => {
         const properties = feature.properties ?? {};
-        await client.query(
-          `
-            INSERT INTO spatial_import_features (
-              batch_id,
-              feature_type,
-              source_feature_id,
-              facility_id,
-              section_id,
-              block_id,
-              lot_id,
-              grave_id,
-              gravesite_id,
-              source_properties,
-              geometry
-            )
-            VALUES (
-              $1,
-              $2,
-              $3,
-              $4,
-              $5,
-              $6,
-              $7,
-              $8,
-              $9,
-              $10::jsonb,
-              ST_SetSRID(ST_GeomFromGeoJSON($11), 4326)
-            )
-          `,
-          [
-            batchId,
-            mapping.featureType,
-            sourceFeatureId(feature),
-            mapping.fields.facility_id ? propertyValue(properties, mapping.fields.facility_id) : null,
-            mapping.fields.section_id ? propertyValue(properties, mapping.fields.section_id) : null,
-            mapping.fields.block_id ? propertyValue(properties, mapping.fields.block_id) : null,
-            mapping.fields.lot_id ? propertyValue(properties, mapping.fields.lot_id) : null,
-            mapping.fields.grave_id ? propertyValue(properties, mapping.fields.grave_id) : null,
-            mapping.fields.gravesite_id ? propertyValue(properties, mapping.fields.gravesite_id) : null,
-            JSON.stringify(properties),
-            JSON.stringify(feature.geometry),
-          ],
-        );
-        importedCount += 1;
-      }
+        return [batchId, mapping.featureType, sourceFeatureId(feature),
+          mapping.fields.facility_id ? propertyValue(properties, mapping.fields.facility_id) : null,
+          mapping.fields.section_id ? propertyValue(properties, mapping.fields.section_id) : null,
+          mapping.fields.block_id ? propertyValue(properties, mapping.fields.block_id) : null,
+          mapping.fields.lot_id ? propertyValue(properties, mapping.fields.lot_id) : null,
+          mapping.fields.grave_id ? propertyValue(properties, mapping.fields.grave_id) : null,
+          mapping.fields.gravesite_id ? propertyValue(properties, mapping.fields.gravesite_id) : null,
+          JSON.stringify(properties), JSON.stringify(feature.geometry)];
+      }), { valueSql: p => `(${p.slice(0,10).join(",")},ST_SetSRID(ST_GeomFromGeoJSON(${p[10]}::text),4326))` });
+      importedCount += features.length;
 
       console.log(`${mapping.layerName}: imported ${features.length} feature${features.length === 1 ? "" : "s"}.`);
     }

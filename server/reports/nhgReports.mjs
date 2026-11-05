@@ -23,21 +23,27 @@ export async function runMissingNhgLinks(client, definition, _parameters, cemete
       WHERE hg.deleted_at IS NULL
     ), relations AS (
       SELECT r.* FROM all_relations r JOIN g ON g.id = r.gid
+    ), location_labels AS MATERIALIZED (
+      SELECT r.hid, min(g.cemetery_id::text) AS cemetery_id, min(cem.name) AS cemetery,
+        min(g.gravesite_id) AS gravesite_id,
+        string_agg(DISTINCT g.section, ', ' ORDER BY g.section) AS section,
+        string_agg(DISTINCT g.display_label, ', ' ORDER BY g.display_label) AS gravesites
+      FROM relations r JOIN g ON g.id=r.gid JOIN cem ON cem.id=g.cemetery_id
+      GROUP BY r.hid
     ), hlinks AS (
       SELECT DISTINCT l.headstone_uuid id
       FROM north_hills_ocr_entry_headstone_links l
       JOIN north_hills_ocr_entries e ON e.id = l.entry_id WHERE l.status = 'linked'
     ), h AS (
       SELECT h.*, COALESCE(
-        (SELECT string_agg(DISTINCT g.section, ', ' ORDER BY g.section)
-         FROM relations r JOIN g ON g.id = r.gid WHERE r.hid = h.id),
+        labels.section,
         (SELECT s.name FROM sections s JOIN cem ON cem.id = s.cemetery_id
          WHERE s.deleted_at IS NULL AND ST_Covers(s.geometry, h.geometry)
          ORDER BY s.name LIMIT 1), 'Unsectioned'
       ) section
-      FROM headstones h
+      FROM headstones h LEFT JOIN location_labels labels ON labels.hid=h.id
       WHERE h.deleted_at IS NULL AND (
-        EXISTS(SELECT 1 FROM relations r WHERE r.hid = h.id)
+        labels.hid IS NOT NULL
         OR (
           NOT EXISTS(SELECT 1 FROM all_relations r WHERE r.hid = h.id)
           AND EXISTS(SELECT 1 FROM cem WHERE ST_Covers(cem.geometry, h.geometry))
@@ -46,23 +52,21 @@ export async function runMissingNhgLinks(client, definition, _parameters, cemete
     )
     SELECT h.id::text uuid,
       COALESCE(
-        (SELECT g.cemetery_id::text FROM relations r JOIN g ON g.id = r.gid WHERE r.hid = h.id ORDER BY g.cemetery_id LIMIT 1),
+        labels.cemetery_id,
         (SELECT id::text FROM cem WHERE ST_Covers(cem.geometry, h.geometry) ORDER BY name LIMIT 1)
       ) cemetery_id,
-      (SELECT g.gravesite_id FROM relations r JOIN g ON g.id = r.gid WHERE r.hid = h.id ORDER BY g.gravesite_id LIMIT 1) gravesite_id,
+      labels.gravesite_id gravesite_id,
       ST_AsGeoJSON(h.geometry)::json geometry,
       COALESCE(
-        (SELECT cem.name FROM cem JOIN g ON g.cemetery_id = cem.id
-         JOIN relations r ON r.gid = g.id WHERE r.hid = h.id ORDER BY cem.name LIMIT 1),
+        labels.cemetery,
         (SELECT name FROM cem WHERE ST_Covers(cem.geometry, h.geometry) ORDER BY name LIMIT 1)
       ) cemetery, h.headstone_id monument, h.section,
-      (SELECT string_agg(DISTINCT g.display_label, ', ' ORDER BY g.display_label)
-       FROM relations r JOIN g ON g.id = r.gid WHERE r.hid = h.id) gravesites,
+      labels.gravesites gravesites,
       EXISTS(SELECT 1 FROM hlinks WHERE id = h.id) direct_link,
       COALESCE(h.source_properties #>> '{NormalizedProvenance,nhgInclusion}', 'not_checked') nhg_inclusion,
       (SELECT label FROM marker_types WHERE id = h.marker_type_id) marker_type,
       (SELECT label FROM marker_scope_types WHERE id = h.marker_scope_type_id) marker_scope
-    FROM h ORDER BY cemetery, section, monument
+    FROM h LEFT JOIN location_labels labels ON labels.hid=h.id ORDER BY cemetery, section, monument
   `, values);
   const eligible = result.rows.filter((row) => row.nhg_inclusion !== "not_listed");
   const missing = eligible.filter((row) => !row.direct_link);

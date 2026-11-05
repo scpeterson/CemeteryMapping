@@ -125,20 +125,14 @@ export async function runMarkerBurialPages(client, definition, parameters, cemet
           concat_ws(' ', CASE WHEN entries.source_page_number IS NOT NULL THEN 'Page ' || entries.source_page_number || ':' END, entries.raw_text),
           E'\n\n' ORDER BY entries.source_page_number NULLS LAST, entries.source_line_start, entries.id
         ) AS nhg_text
-        FROM north_hills_ocr_entries entries
-        WHERE EXISTS (
-          SELECT 1
-          FROM north_hills_ocr_entry_headstone_links links
-          WHERE links.entry_id = entries.id
-            AND links.headstone_uuid = headstones.id
-            AND links.status = 'linked'
-        ) OR EXISTS (
-          SELECT 1
-          FROM north_hills_ocr_entry_gravesite_links links
-          WHERE links.entry_id = entries.id
-            AND links.gravesite_uuid = gravesites.id
-            AND links.status = 'linked'
-        )
+        FROM (
+          SELECT entry_id FROM north_hills_ocr_entry_headstone_links
+          WHERE headstone_uuid=headstones.id AND status='linked'
+          UNION
+          SELECT entry_id FROM north_hills_ocr_entry_gravesite_links
+          WHERE gravesite_uuid=gravesites.id AND status='linked'
+        ) source_ids
+        JOIN north_hills_ocr_entries entries ON entries.id=source_ids.entry_id
       ) nhg_evidence ON true
       WHERE headstones.deleted_at IS NULL
         ${scope}

@@ -19,6 +19,7 @@ function poolForRows(rowsByQuery) {
     async connect() {
       return {
         async query(sql, values = []) {
+          if (/^(BEGIN|SET LOCAL|COMMIT|ROLLBACK)/u.test(sql)) return { rows: [] };
           queries.push({ sql, values });
           const entry = rowsByQuery.find((candidate) => sql.includes(candidate.includes));
           if (!entry) throw new Error(`Unexpected query: ${sql}`);
@@ -133,7 +134,7 @@ test("owner holdings report retains the cemetery column for multiple cemeteries"
 });
 
 test("unowned gravesites report excludes direct, legacy, and inherited whole-lot ownership", async () => {
-  const pool = poolForRows([{ includes: "WITH unowned AS", rows: [{
+  const pool = poolForRows([{ includes: "unowned AS", rows: [{
     cemetery: "Trinity",
     section: "C",
     gravesite: "C-0177",

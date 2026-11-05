@@ -131,7 +131,7 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
 }
 
 export async function fetchHeadstoneLookups(): Promise<HeadstoneLookups> {
-  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstone-lookups`);
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/headstone-lookups?includeEntities=false`);
   const lookups = await jsonResponse<Partial<HeadstoneLookups>>(response, "Headstone lookup API");
   return {
     markerTypes: lookups.markerTypes ?? [],

@@ -10,7 +10,7 @@ test("edit and reload multiple faces with multiline text, people, photos and con
   let current = { ...marker, mediaAssets: marker.mediaAssets.map((asset) => ({ ...asset, mediaLinkId: asset.id, isPrimary: asset.id === "latest-marker" })), facesRevision: 0, facePeople: [{ id: "alice", fullName: "Alice Example" }, { id: "bob", fullName: "Bob Example" }],
     faces: [{ id: "11111111-1111-4111-8111-111111111112", label: "Unspecified face", inscription: "Family marker", notes: "", burialIds: [], mediaAssetIds: [] }] as MarkerFace[] };
   let conflict = false;
-  await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
+  await page.route("**/api/headstone-lookups*", (route) => route.fulfill({ json: {
     markerTypes: [marker.markerType], markerScopes: [marker.markerScope], materials: [marker.material], conditions: [marker.condition],
   } }));
   await page.route("**/api/headstones/marker-1", async (route) => {
@@ -118,7 +118,7 @@ test("front and back inscriptions use faces without a separate back field", asyn
   await overviewFixture(page);
   await page.route("**/api/headstones/*/photo-contexts",route=>route.fulfill({json:[]}));
   let current = { ...marker, inscription: "", faces: [] as MarkerFace[], facesRevision: 0 };
-  await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
+  await page.route("**/api/headstone-lookups*", (route) => route.fulfill({ json: {
     markerTypes: [marker.markerType], markerScopes: [marker.markerScope], materials: [marker.material], conditions: [marker.condition],
   } }));
   await page.route("**/api/headstones/marker-1", async (route) => {
@@ -163,7 +163,7 @@ test("saving ignores empty new faces but requires labels for faces with content"
   await page.route("**/api/headstones/*/photo-contexts",route=>route.fulfill({json:[]}));
   let current = { ...marker, facesRevision: 0, faces: [] as MarkerFace[] };
   let saves = 0;
-  await page.route("**/api/headstone-lookups", (route) => route.fulfill({ json: {
+  await page.route("**/api/headstone-lookups*", (route) => route.fulfill({ json: {
     markerTypes: [marker.markerType], markerScopes: [marker.markerScope], materials: [marker.material], conditions: [marker.condition],
   } }));
   await page.route("**/api/headstones/marker-1", async (route) => {
@@ -210,7 +210,7 @@ for (const status of ["not_recorded", "blank", "illegible"] as const) {
     const history = [{id:"history",text:"Earlier reading",source:"Fixture source",sourceDate:"2000"}];
     let current = {...marker,inscription:"",inscriptionStatus:status,currentLegibility:status === "not_recorded" ? "unknown" : status,
       historicalTranscriptions:history,faces:[] as MarkerFace[],facesRevision:0};
-    await page.route("**/api/headstone-lookups", route => route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[marker.condition]}}));
+    await page.route("**/api/headstone-lookups*", route => route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[marker.condition]}}));
     await page.route("**/api/headstones/marker-1", route => {
       if(route.request().method()==="PATCH") current={...current,faces:route.request().postDataJSON().faces,facesRevision:current.facesRevision+1};
       return route.fulfill({json:current});

@@ -47,20 +47,20 @@ test("listLookupRecords reads source fields only for marker lookup tables", asyn
   assert.equal(result.tables.length, 17);
   for (const sql of queries) assert.match(sql, /ORDER BY lower\(label\), label, code/u);
   assert.match(queries[0], /source_notes, source_url/u);
-  assert.match(queries[0], /usage_records\.marker_type_id = marker_types\.id/u);
-  assert.match(queries[1], /usage_records\.marker_scope_type_id = marker_scope_types\.id/u);
+  assert.match(queries[0], /usage_counts\.lookup_id=marker_types\.id/u);
+  assert.match(queries[1], /usage_counts\.lookup_id=marker_scope_types\.id/u);
   assert.doesNotMatch(queries[3], /source_notes, source_url/u);
-  assert.match(queries[4], /usage_records\.vase_type_id = headstone_vase_types\.id/u);
-  assert.match(queries[5], /usage_records\.vase_material_type_id = headstone_vase_material_types\.id/u);
-  assert.match(queries[6], /usage_records\.vase_placement_type_id = headstone_vase_placement_types\.id/u);
-  assert.match(queries[7], /usage_records\.status_type_id = gravesite_status_types\.id/u);
-  assert.match(queries[8], /usage_records\.interment_type_id = burial_interment_types\.id/u);
-  assert.match(queries[9], /usage_records\.burial_record_status_type_id = burial_record_status_types\.id/u);
-  assert.match(queries[11], /usage_records\.military_branch_type_id = military_branch_types\.id/u);
-  assert.match(queries[12], /usage_records\.military_war_service_type_id = military_war_service_types\.id/u);
-  assert.match(queries[13], /usage_records\.issue_type_id = maintenance_issue_types\.id/u);
-  assert.match(queries[14], /usage_records\.action_type_id = maintenance_action_types\.id/u);
-  assert.match(queries[15], /usage_records\.priority_type_id = maintenance_priority_types\.id/u);
+  assert.match(queries[4], /usage_counts\.lookup_id=headstone_vase_types\.id/u);
+  assert.match(queries[5], /usage_counts\.lookup_id=headstone_vase_material_types\.id/u);
+  assert.match(queries[6], /usage_counts\.lookup_id=headstone_vase_placement_types\.id/u);
+  assert.match(queries[7], /usage_counts\.lookup_id=gravesite_status_types\.id/u);
+  assert.match(queries[8], /usage_counts\.lookup_id=burial_interment_types\.id/u);
+  assert.match(queries[9], /usage_counts\.lookup_id=burial_record_status_types\.id/u);
+  assert.match(queries[11], /usage_counts\.lookup_id=military_branch_types\.id/u);
+  assert.match(queries[12], /usage_counts\.lookup_id=military_war_service_types\.id/u);
+  assert.match(queries[13], /usage_counts\.lookup_id=maintenance_issue_types\.id/u);
+  assert.match(queries[14], /usage_counts\.lookup_id=maintenance_action_types\.id/u);
+  assert.match(queries[15], /usage_counts\.lookup_id=maintenance_priority_types\.id/u);
 });
 
 test("updateLookupRecord uses an allowlisted table and audit transaction", async () => {

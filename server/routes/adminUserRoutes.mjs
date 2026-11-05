@@ -14,9 +14,9 @@ export function registerAdminUserRoutes(app, context) {
         }
       });
     
-      app.get("/api/admin/users", requireAdmin, async (_request, response, next) => {
+      app.get("/api/admin/users", requireAdmin, async (request, response, next) => {
         try {
-          response.json(await listUsers(pool));
+          response.json(await listUsers(pool, request.query));
         } catch (error) {
           next(error);
         }

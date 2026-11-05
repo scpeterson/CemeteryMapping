@@ -42,6 +42,8 @@ function userFormFromUser(user: AppUser): UserFormState {
 
 export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAdminRecords }) {
   const {
+    query, setQuery, status, setStatus, cemeteryFilter, setCemeteryFilter,
+    offset, pageSize, hasMore, setOffset, prepareAccessRequest,
     requestRefreshKey,
     form,
     setForm,
@@ -58,32 +60,21 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
     message,
     error
   } = useUserAdministration();
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [cemeteryFilter, setCemeteryFilter] = useState("");
   const [activity, setActivity] = useState<UserActivity[]>([]);
   const [activityUser, setActivityUser] = useState("");
   const [activityError, setActivityError] = useState("");
   const [activityLoading, setActivityLoading] = useState(false);
   const memberships = form.cemeteryMemberships ?? form.assignedCemeteryIds.map(cemeteryId => ({ cemeteryId, role: form.role === "admin" ? "reader" as const : form.role }));
   const setMemberships = (entries: CemeteryMembership[]) => setForm(current => ({ ...current, cemeteryMemberships: entries, assignedCemeteryIds: entries.map(entry => entry.cemeteryId) }));
-  const visibleUsers = users.filter(user =>
-    `${user.displayName} ${user.email} ${user.organization ?? ""} ${user.cemeteryMemberships?.map(entry => cemeteryRecords.cemeteries.find(cemetery => cemetery.id === entry.cemeteryId)?.name).join(" ") ?? ""}`.toLowerCase().includes(query.toLowerCase())
-    && (status === "all" || user.isActive === (status === "active"))
-    && (!cemeteryFilter || user.assignedCemeteryIds.includes(cemeteryFilter)));
+  const visibleUsers = users;
   return (
     <>
       {isLoading ? <Notice>Loading users…</Notice> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       {message ? <Notice tone="success">{message}</Notice> : null}
-      <AccessRequestsPanel refreshKey={requestRefreshKey} onReview={(request) => {
+      <AccessRequestsPanel refreshKey={requestRefreshKey} onReview={async (request) => {
         if (!confirmDiscardChanges()) return;
-        const existing = users.find((user) => user.email.toLowerCase() === request.email.toLowerCase());
-        setForm(existing ? { ...userFormFromUser(existing), isActive: true, accessRequestId: request.id } : {
-          email: request.email, displayName: request.displayName, externalSubject: "", role: "reader",
-          assignedCemeteryIds: [], cemeteryMemberships: [], isActive: true, accessRequestId: request.id,
-        });
-        document.getElementById("user-setup-form")?.scrollIntoView({ behavior: "smooth" });
+        if (await prepareAccessRequest(request)) document.getElementById("user-setup-form")?.scrollIntoView({ behavior: "smooth" });
       }} />
       <section className="admin-section">
         <div className="section-title">
@@ -182,6 +173,11 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
           <label>Cemetery filter<select value={cemeteryFilter} onChange={event => setCemeteryFilter(event.target.value)}><option value="">All cemeteries</option>{cemeteryRecords.cemeteries.map(cemetery => <option key={cemetery.id} value={cemetery.id}>{cemetery.name}</option>)}</select></label>
         </div>
         <p>{visibleUsers.length} {visibleUsers.length === 1 ? "user" : "users"}</p>
+        <div className="admin-form-actions" aria-label="User pages">
+          <button type="button" className="secondary-button" disabled={isLoading || offset === 0} onClick={() => setOffset(Math.max(0, offset - pageSize))}>Previous users</button>
+          <span>Page {Math.floor(offset / pageSize) + 1}</span>
+          <button type="button" className="secondary-button" disabled={isLoading || !hasMore} onClick={() => setOffset(offset + pageSize)}>Next users</button>
+        </div>
         <div className="admin-table" aria-label="Application users">
           {visibleUsers.map((user) => (
             <article key={user.id} className="admin-user-row" title={userTitle(user)}>

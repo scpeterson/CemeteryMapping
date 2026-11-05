@@ -15,6 +15,7 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 - [Getting Started: Developer Setup](getting-started.md)
 - [Rebuild Guide](rebuild.md)
 - [PostgreSQL upgrades, query benchmarks and spatial repair previews](postgresql-18-upgrade.md)
+- [Measured SQL efficiency changes](adr/0196-measured-sql-efficiency.md)
 - [Application and Third-Party Services](service-architecture.md)
 - [Frontend Development](frontend-development.md)
 - [Architecture Decision Records](adr/)

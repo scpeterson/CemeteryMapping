@@ -45,8 +45,10 @@ export async function fetchAdminRoles(): Promise<AppRole[]> {
   return jsonResponse<AppRole[]>(response, "Roles API");
 }
 
-export async function fetchAdminUsers(): Promise<AppUser[]> {
-  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users`);
+export async function fetchAdminUsers(filters: { q?: string; email?: string; status?: string; cemeteryId?: string; limit?: number; offset?: number } = {}): Promise<AppUser[]> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) if (value !== undefined && value !== "") params.set(key, String(value));
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users${params.size ? `?${params}` : ""}`);
   return jsonResponse<AppUser[]>(response, "Users API");
 }
 

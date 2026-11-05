@@ -68,7 +68,7 @@ for (const width of [390, 768, 1280]) {
 test("switching administration users cannot silently replace a draft", async ({ page }) => {
   await fixture(page);
   const users = ["First", "Second"].map((displayName, index) => ({ id: String(index + 1), displayName, email: `${displayName.toLowerCase()}@example.test`, externalSubject: `test|${index}`, role: "admin", assignedCemeteryIds: [], isActive: true }));
-  await page.route("**/api/admin/users", (route) => route.fulfill({ json: users }));
+  await page.route("**/api/admin/users*", (route) => route.fulfill({ json: users }));
   await page.route("**/api/admin/roles", (route) => route.fulfill({ json: [{ name: "admin", description: "Administrator", userCount: 2 }] }));
   await page.goto("/");
   await page.getByRole("button", { name: /^Open administration:/ }).click();

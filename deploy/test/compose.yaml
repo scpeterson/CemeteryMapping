@@ -2,7 +2,9 @@
 name: nhcemeteries-test
 services:
   db:
-    image: postgis/postgis:17-3.5@sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6
+    # PostgreSQL 18.6 / PostGIS 3.6.4, identical to root Compose environments.
+    image: postgis/postgis:18-3.6@sha256:4a43e3c3e5d55b9208240fc71db543b79c638766280c625a425bd0a2390989c4
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "compute_query_id=auto"]
     restart: unless-stopped
     environment:
       POSTGRES_DB: cemetery_mapping_test
@@ -12,7 +14,8 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - database:/var/lib/postgresql/data
+      # Logical restore into a separate volume; retain the original 17 cluster.
+      - database_pg18:/var/lib/postgresql
       - ./configure-api-role.sh:/usr/local/bin/configure-api-role.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cemetery_app -d cemetery_mapping_test"]
@@ -66,4 +69,7 @@ services:
     profiles: [tunnel]
     depends_on: [web]
 volumes:
+  # Retained for recovery of the pre-upgrade cluster; never mount it on 18.
   database:
+  database_pg18:
+    name: nhcemeteries-test-postgresql18

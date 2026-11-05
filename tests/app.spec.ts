@@ -271,7 +271,7 @@ test("power users can edit headstone marker details from grave detail", async ({
       }),
     });
   });
-  await page.route("**/api/headstone-lookups", async (route) => {
+  await page.route("**/api/headstone-lookups*", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -409,7 +409,7 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
       }),
     });
   });
-  await page.route("**/api/headstone-lookups", async (route) => {
+  await page.route("**/api/headstone-lookups*", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({

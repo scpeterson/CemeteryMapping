@@ -5,7 +5,7 @@ import type {
   LotRestrictedArea
 } from "../../types";
 import { GeometryMetadataList } from "./DetailGeometry";
-import { AssociatedGravesiteList } from "./MarkerGravesiteRecords";
+import { AssociatedGravesiteList } from "./AssociatedGravesiteList";
 
 const lotBurialUseLabels = {
   standard: "Standard lot",

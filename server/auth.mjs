@@ -134,6 +134,8 @@ async function loadApplicationUser(pool, subject) {
         app_users.preferred_cemetery_id,
         app_users.role_name,
         app_users.is_active,
+        NOT EXISTS (SELECT 1 FROM app_user_activity a WHERE a.app_user_id=app_users.id
+          AND a.last_active_at >= now() - interval '5 minutes') AS activity_due,
         COALESCE(
           jsonb_agg(
             jsonb_build_object(
@@ -260,7 +262,7 @@ export function requireRole(authConfig, poolOrRole, ...restRequiredRoles) {
       canEdit: membership.canEdit && hasRequiredRole(membership.role ?? requestUser.role, normalizedRequiredRoles),
     }));
     request.user = requestUser;
-    await pool.query(`INSERT INTO app_user_activity(app_user_id, last_active_at) VALUES ($1, now())
+    if (appUser.activity_due !== false) await pool.query(`INSERT INTO app_user_activity(app_user_id, last_active_at) VALUES ($1, now())
       ON CONFLICT (app_user_id) DO UPDATE SET last_active_at = EXCLUDED.last_active_at
       WHERE app_user_activity.last_active_at < now() - interval '5 minutes'`, [requestUser.id]);
     next();

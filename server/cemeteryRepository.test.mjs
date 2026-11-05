@@ -341,6 +341,12 @@ test("lookup options include active military service lookups", async () => {
     async connect() {
       return {
         async query(sql) {
+          if (sql.includes(" AS reference_lists")) {
+            const reference_lists = {};
+            for (const match of sql.matchAll(/q(\d+) AS MATERIALIZED \(([\s\S]*?)\)(?=,\nq\d+ AS MATERIALIZED| SELECT jsonb_build_object)/gu)) reference_lists[`q${match[1]}`] = (await this.query(match[2])).rows;
+            return { rows: [{ reference_lists }] };
+          }
+
           if (sql.includes("FROM marker_types")) return { rows: [] };
           if (sql.includes("FROM marker_scope_types")) {
             return { rows: [{ id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", code: "monolith", label: "Monolith" }] };

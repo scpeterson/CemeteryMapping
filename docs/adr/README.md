@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0196: Reduce repeated SQL work and bound growing reads](0196-measured-sql-efficiency.md)
+
 - [ADR 0195: Disable JIT only within application search transactions](0195-search-transaction-local-jit.md)
 
 - [ADR 0194: Keep local database benchmarks explicit and spatial repair previews read-only](0194-local-database-review-tools.md)

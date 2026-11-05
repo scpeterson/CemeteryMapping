@@ -23,7 +23,7 @@ async function setup(page:Page,multipleFaces=false,threeFaces=false){
  const photos=[...marker.mediaAssets];
  let links=photos.map((p,i)=>({id:`link-${i}`,mediaAssetId:p.id,inspectionId:'field' as string|undefined,maintenanceRecordId:undefined as string|undefined,phase:'unspecified',faceId:undefined as string|undefined}));
  const record=()=>({...marker,faces:multipleFaces?readings[0].faces.map(face=>({...face,notes:"",burialIds:[]})):[],inspections:readings,mediaAssets:photos,maintenanceRecords:[{id:'cleaning',headstoneUuid:marker.id,actionType:{id:'clean',code:'clean',label:'Cleaning'},priority:{id:'normal',code:'normal',label:'Normal'},status:'completed',observedAt:'2026-10-22',performedBy:'Inspector',sourceType:'manual',notes:'Cleaned stone'}]});
- await page.route('**/api/headstone-lookups',route=>route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[marker.condition]}}));
+ await page.route('**/api/headstone-lookups*',route=>route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[marker.condition]}}));
  await page.route('**/api/headstones/marker-1',async route=>{
   if(route.request().method()==='PATCH'){
    for(const entry of route.request().postDataJSON().newInspections??[])readings.push({...entry,inspectionYear:2027,condition:'Unknown',updatedAt:'2026-10-22T13:00:00Z'});

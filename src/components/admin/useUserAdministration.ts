@@ -2,6 +2,7 @@ import { useDraftState } from "../../hooks/useDraftState";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { SaveUserInput } from "../../api/cemeteryApi";
 import { createAdminUser, fetchAdminRoles, fetchAdminUsers, resolveAuth0User, updateAdminUser } from "../../api/cemeteryApi";
+import type { AccessRequest } from "../../api/accessRequestsApi";
 import type { AppRole, AppUser } from "../../types";
 export type UserFormState = SaveUserInput & { id?: string };
 
@@ -32,6 +33,17 @@ export function useUserAdministration() {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [requestRefreshKey, setRequestRefreshKey] = useState(0);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [query, changeQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [status, changeStatus] = useState("all");
+  const [cemeteryFilter, changeCemeteryFilter] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const pageSize = 100;
+  const setQuery = (value: string) => { changeQuery(value); setOffset(0); };
+  const setStatus = (value: string) => { changeStatus(value); setOffset(0); };
+  const setCemeteryFilter = (value: string) => { changeCemeteryFilter(value); setOffset(0); };
+  useEffect(() => { const timer = setTimeout(() => setDebouncedQuery(query), 200); return () => clearTimeout(timer); }, [query]);
   const [form, setForm] = useDraftState<UserFormState>(blankUser);
   const [isSaving, setIsSaving] = useState(false);
   const [isResolvingAuth0User, setIsResolvingAuth0User] = useState(false);
@@ -42,12 +54,34 @@ export function useUserAdministration() {
   const [error, setError] = useState<string>();
   useEffect(() => {
     let current = true;
-    Promise.all([fetchAdminRoles(), fetchAdminUsers()])
-      .then(([roles, users]) => { if (current) { setRoles(roles); setUsers(users); } })
+    fetchAdminRoles().then(roles => { if (current) setRoles(roles); })
+      .catch((error: unknown) => { if (current) setError(error instanceof Error ? error.message : "Unable to load roles."); });
+    return () => { current = false; };
+  }, [requestRefreshKey]);
+  useEffect(() => {
+    let current = true;
+    setIsLoading(true);
+    fetchAdminUsers({ q: debouncedQuery, status, cemeteryId: cemeteryFilter, offset, limit: pageSize + 1 })
+      .then(users => { if (current) { setUsers(users.slice(0, pageSize)); setHasMore(users.length > pageSize); } })
       .catch((error: unknown) => { if (current) setError(error instanceof Error ? error.message : "Unable to load users."); })
       .finally(() => { if (current) setIsLoading(false); });
     return () => { current = false; };
-  }, []);
+  }, [debouncedQuery, status, cemeteryFilter, offset, requestRefreshKey]);
+
+  const prepareAccessRequest = async (request: AccessRequest) => {
+    try {
+      // An existing account can be outside the current directory page/filter.
+      const matches = await fetchAdminUsers({ email: request.email, status: "all" });
+      const existing = matches.find(user => user.email.toLowerCase() === request.email.toLowerCase());
+      setForm(existing ? { ...userFormFromUser(existing), isActive: true, accessRequestId: request.id } : {
+        ...blankUser, email: request.email, displayName: request.displayName, accessRequestId: request.id,
+      });
+      return true;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Unable to load the requested account.");
+      return false;
+    }
+  };
 
   const resetForm = () => {
     setForm(blankUser);
@@ -135,6 +169,7 @@ export function useUserAdministration() {
         isActive: !user.isActive,
       });
       replaceUser(saved);
+      setRequestRefreshKey(value => value + 1);
       setMessage(`${saved.email} ${saved.isActive ? "reactivated" : "deactivated"}.`);
     } catch (toggleError) {
       setError(toggleError instanceof Error ? toggleError.message : "Unable to update user status.");
@@ -148,6 +183,8 @@ export function useUserAdministration() {
   };
 
   return {
+    query, setQuery, status, setStatus, cemeteryFilter, setCemeteryFilter,
+    offset, pageSize, hasMore, setOffset, prepareAccessRequest,
     requestRefreshKey,
     form,
     setForm,

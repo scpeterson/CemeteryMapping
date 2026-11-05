@@ -63,6 +63,15 @@ export function searchCemetery(pool, options) {
 export async function selectSearchMatches(pool, { query = "", statuses = [], includeOwnership = true, ownershipCemeteryIds, cemeteryId, limit = 50, offset = 0 } = {}) {
   const cleanedQuery = normalizeSearchText(query);
   const scopedOwnershipCemeteryIds = ownershipCemeteryIds?.map((id) => String(id));
+  // Avoid extra materialization for empty, reader-only and narrowly scoped searches.
+  const prefilterOwnership = includeOwnership && cleanedQuery !== "" && !cemeteryId && scopedOwnershipCemeteryIds?.length !== 0;
+  const ownershipMatchCtes = prefilterOwnership ? `matching_owner_names AS MATERIALIZED (
+    SELECT * FROM search_current_ownership rights WHERE rights.target_type='gravesite'
+      AND ${normalizedSearchSql("rights.display_name")} LIKE '%' || $1 || '%'
+  ), matching_owner_dates AS MATERIALIZED (
+    SELECT * FROM search_current_ownership WHERE target_type='gravesite'
+      AND effective_date::text LIKE '%' || $1 || '%'
+  ),` : "";
   const birthDateSearchValue = "COALESCE(burials.birth_date_text, burials.birth_date::text)";
   const deathDateSearchValue = "COALESCE(burials.death_date_text, burials.death_date::text)";
   const maidenNameSearchValue = "burials.maiden_name";
@@ -116,7 +125,7 @@ export async function selectSearchMatches(pool, { query = "", statuses = [], inc
       WITH search_current_ownership AS MATERIALIZED (
         SELECT target_type, lot_uuid, gravesite_uuid, display_name, effective_date
         FROM current_ownership_right_owners
-      ), matching_monuments AS MATERIALIZED (
+      ), ${ownershipMatchCtes} matching_monuments AS MATERIALIZED (
         SELECT h.id, h.headstone_id, h.gravesite_uuid
         FROM headstones h
         WHERE $1 <> '' AND h.deleted_at IS NULL
@@ -237,7 +246,7 @@ export async function selectSearchMatches(pool, { query = "", statuses = [], inc
 
         UNION ALL
         SELECT 'Owner', current_ownership_right_owners.display_name
-        FROM search_current_ownership current_ownership_right_owners
+        FROM ${prefilterOwnership ? "matching_owner_names" : "search_current_ownership"} current_ownership_right_owners
         WHERE $3::boolean
           AND ($4::text[] IS NULL OR base_graves.cemetery_id = ANY($4::text[]))
           AND $1 <> ''
@@ -247,7 +256,7 @@ export async function selectSearchMatches(pool, { query = "", statuses = [], inc
 
         UNION ALL
         SELECT 'Ownership date', current_ownership_right_owners.effective_date::text
-        FROM search_current_ownership current_ownership_right_owners
+        FROM ${prefilterOwnership ? "matching_owner_dates" : "search_current_ownership"} current_ownership_right_owners
         WHERE $3::boolean
           AND ($4::text[] IS NULL OR base_graves.cemetery_id = ANY($4::text[]))
           AND $1 <> ''

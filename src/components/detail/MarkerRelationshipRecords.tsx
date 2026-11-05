@@ -1,3 +1,5 @@
+import { useRecordOptions } from "../../hooks/useRecordOptions";
+import { RecordOptionSearch } from "./RecordOptionSearch";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useDraftState } from "../../hooks/useDraftState";
 import { FormEvent, useState } from "react";
@@ -73,12 +75,12 @@ export function MarkerRelationshipForm({
   onCancel?: () => void;
   onSave: (relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
 }) {
-  const headstoneOptions = (lookups.headstones ?? []).filter((option) => option.id !== headstone.id);
+  const legacyOptions = (lookups.headstones ?? []).filter((option) => option.id !== headstone.id);
   const [form, setForm] = useDraftState<SaveHeadstoneRelationshipInput>(() =>
     initialRelationship
       ? markerRelationshipFormFromRecord(initialRelationship)
       : {
-          relatedHeadstoneId: headstoneOptions[0]?.id ?? "",
+          relatedHeadstoneId: legacyOptions[0]?.id ?? "",
           relationshipType: "references_marker",
           sourceType: "nhg",
           sourceText: "",
@@ -88,6 +90,10 @@ export function MarkerRelationshipForm({
           reason: "Add marker relationship",
         },
   );
+  const records = useRecordOptions("headstones",legacyOptions,true,initialRelationship
+    ? {id:initialRelationship.relatedHeadstoneUuid,code:initialRelationship.relatedHeadstoneId,label:initialRelationship.relatedHeadstoneId}
+    : legacyOptions[0],headstone.id);
+  const headstoneOptions = records.options.filter(option=>option.id!==headstone.id);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
@@ -113,13 +119,14 @@ export function MarkerRelationshipForm({
     }
   };
 
-  if (!headstoneOptions.length) return <p className="muted">No other markers are available to link.</p>;
 
   return (
     <LookupForm className="headstone-record headstone-form" onSubmit={(event) => void save(event)}>
+      <RecordOptionSearch records={records} label="Search markers" />
       <label>
         Related marker
-        <LookupSelect title={`${headstoneOptions.find((option) => option.id === form.relatedHeadstoneId)?.label ?? "Related marker"}: Select the other physical marker to link to this marker.`} value={form.relatedHeadstoneId} onChange={(event) => setForm((current) => ({ ...current, relatedHeadstoneId: event.target.value }))}>
+        <LookupSelect title={`${headstoneOptions.find((option) => option.id === form.relatedHeadstoneId)?.label ?? "Related marker"}: Select the other physical marker to link to this marker.`} value={form.relatedHeadstoneId} onChange={(event) => { records.remember(event.target.value); setForm((current) => ({ ...current, relatedHeadstoneId: event.target.value })); }}>
+          <option value="">Select a marker</option>
           {headstoneOptions.map((option) => (
             <option key={option.id} value={option.id} title={option.label}>
               {option.label}

@@ -301,3 +301,22 @@ test('mixed cemetery roles do not grant admin actions in lower-role cemeteries',
   const system = await runMiddleware(requireRole(auth0ConfigForPayload({ sub: 'auth0|user-1' }), poolForUser(user), 'admin'));
   assert.equal(system.response.statusCode, 403);
 });
+
+test("fresh activity skips writes while deactivation and roles are still checked on every request", async () => {
+  const user = { id: "user-1", external_subject: "auth0|user-1", email: "member@example.test", role_name: "admin", is_active: true, cemetery_access: [], activity_due: false };
+  let reads = 0, writes = 0;
+  const pool = { async query(sql) {
+    if (sql.includes("INSERT INTO app_user_activity")) { writes++; return { rows: [] }; }
+    reads++; return { rows: [user] };
+  } };
+  const middleware = requireRole(auth0ConfigForPayload({ sub: "auth0|user-1" }), pool, "reader");
+  assert.equal((await runMiddleware(middleware)).nextCalled, true);
+  assert.equal((await runMiddleware(middleware)).nextCalled, true);
+  assert.equal(reads, 2); assert.equal(writes, 0);
+  user.is_active = false;
+  assert.equal((await runMiddleware(middleware)).response.statusCode, 403);
+  assert.equal(reads, 3); assert.equal(writes, 0);
+  user.is_active = true; user.activity_due = true;
+  assert.equal((await runMiddleware(middleware)).nextCalled, true);
+  assert.equal(writes, 1);
+});

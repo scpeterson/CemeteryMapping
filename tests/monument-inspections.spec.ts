@@ -10,7 +10,7 @@ const inspections = () => [
 async function setup(page:Page,role='admin',assignedCemeteryIds:string[]=[]){
  await overviewFixture(page);
  await page.route('**/api/me',route=>route.fulfill({json:{role,assignedCemeteryIds,permissions:{canOpenAdminPanel:true,canViewOwnership:true}}}));
- await page.route('**/api/headstone-lookups',route=>route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[condition]}}));
+ await page.route('**/api/headstone-lookups*',route=>route.fulfill({json:{markerTypes:[marker.markerType],markerScopes:[marker.markerScope],materials:[marker.material],conditions:[condition]}}));
  let entries=inspections();
  const patches:Record<string,unknown>[]=[];
  await page.route('**/api/headstones/marker-1',async route=>{
