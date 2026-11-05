@@ -66,3 +66,5 @@
 
 .field-workspace .admin-form { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
 .field-workspace > header { min-width: 0; overflow-wrap: anywhere; }
+
+.field-change input[type=checkbox] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; }

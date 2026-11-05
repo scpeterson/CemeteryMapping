@@ -14,6 +14,9 @@ const parserErrors = new Map([
 export function createApiErrorHandler(pool, config, versionMetadata) {
   return async (error, request, response, next) => {
     if (response.headersSent) return next(error);
+    if(error.code==='23514'&&error.constraint==='active_burial_reference'){
+      response.status(409).json({error:'This person was merged or deleted. Reload the current record before linking evidence.'});return;
+    }
     if (error instanceof ConflictError) {
       response.status(409).json({ error: error.message });
       return;
