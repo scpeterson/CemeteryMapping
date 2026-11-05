@@ -165,6 +165,21 @@ Use `Admin -> Users` when adding, editing, deactivating, or reactivating applica
 
 Auth0 authenticates the person. Local cemetery membership roles authorize edits, ownership access, and administrative actions. The `app_users.role_name` value remains a summary for compatibility; explicit membership roles control cemetery access. System admins remain globally privileged. Existing general record read endpoints retain their previous visibility rules; this feature does not introduce private tenant boundaries between cemeteries.
 
+### Cemetery Member Administration
+
+System administrators and cemetery administrators can open **Admin → Members**,
+choose an administered cemetery, and search its member list. To add a person,
+enter their email, optional display name, cemetery role and reason. Existing
+accounts are reused; a new account requires configured Auth0 provisioning. The
+success message says when an invitation email was actually sent.
+
+Select a member to change their cemetery role or remove their membership, with
+a reason. Account identity, activation and other cemetery memberships are
+managed separately. Inactive accounts require a system administrator. Assign
+another active cemetery administrator before stepping down as the last one.
+If a membership changed while editing, retain your notes, reload the member list
+and reopen the member before reapplying the change. See [ADR 0197](adr/0197-delegated-cemetery-members.md).
+
 ### My Profile
 
 Open **My profile** from the application menu to edit your display name, optional phone and organization, and preferred cemetery. The preferred cemetery must be one of your memberships (system administrators may choose any active cemetery). It becomes the default map scope when opening the app; the header lets you switch cemeteries during a session. The profile lists your assigned roles for reference. Sign-in email, account status, and memberships are managed by system administrators. Profile changes are attributed to your account in the audit log. Unsaved changes prompt before leaving the editor.

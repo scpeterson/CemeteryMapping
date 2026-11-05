@@ -269,6 +269,15 @@
   overflow-wrap: anywhere;
 }
 
+.cemetery-members .admin-form-actions {
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+
+.cemetery-members h4 {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 760px) {
   .admin-user-row,
   .user-membership-row {
