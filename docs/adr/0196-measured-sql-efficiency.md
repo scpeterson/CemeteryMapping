@@ -3,7 +3,7 @@
 
 # ADR 0196: Reduce repeated SQL work and bound growing reads
 
-- Status: Accepted; deployment pending
+- Status: Accepted; deployed to local DEV and hosted TEST on 2026-11-05
 - Date: 2026-11-05
 - Owners: Project maintainers
 - Related: [ADR 0195](0195-search-transaction-local-jit.md), [PostgreSQL upgrade and measurement record](../postgresql-18-upgrade.md#sql-efficiency-implementation-2026-11-05)

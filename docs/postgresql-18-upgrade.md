@@ -304,8 +304,10 @@ records are retained in protected diagnostic/backup locations rather than Git.
 ### SQL efficiency implementation, 2026-11-05
 
 The eight priorities above are implemented in the working application and
-migrations 511–512. **These SQL changes have not been deployed to local or hosted
-environments.** The completed PostgreSQL upgrade is separate. See
+migrations 511–512. **Deployed to local DEV and hosted TEST on 2026-11-05**
+from merged revision `ee0df929f92e8c50ff4c28078fb730278ea0d022` (PR #787).
+Local TEST is also migrated through 512. The completed PostgreSQL upgrade is
+separate. See
 [ADR 0196](adr/0196-measured-sql-efficiency.md) for implementation decisions.
 
 NHG candidates now share set-based surname, page and unknown-marker matches.
@@ -351,6 +353,23 @@ constraints, adds matching normalized search/email indexes, and guards inspectio
 refresh functions. Migration 512 installs private query diagnostics. Both forward
 and rollback/reapplication paths were rehearsed on the clone; spatial records and
 marker data remained unchanged. Existing geometry review findings are unaffected.
+
+#### Completed deployment verification
+
+Both local databases and hosted TEST applied 511–512 after backups and now preload
+query monitoring on the retained PostgreSQL 18 volumes. A fresh hosted restore
+passed update, rollback and reapplication with unchanged application table
+fingerprints. The live migrations also preserved those fingerprints. Runtime
+API access to diagnostics is denied in all three databases.
+
+PR and merged-revision CI passed, including database/Docker startup and all browser
+shards; an independent full local browser run passed 296 tests. The deployed hosted
+API/web passed candidate startup, source integrity, Auth0/runtime preservation,
+account/media preservation, public HTTPS and private API checks, with zero API
+restarts. Read-only smoke checks using the deployed runtime role exercised
+references, both selectors, NHG review, all three optimized reports and search;
+JIT returned to its prior setting and diagnostic access remained denied. The
+hosted NHG default review smoke took 862 ms. No spatial corrections were applied.
 
 #### Rollout and monitoring
 

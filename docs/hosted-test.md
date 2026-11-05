@@ -740,3 +740,20 @@ shards in parallel. Recognized documentation-only PRs build and validate the doc
 every main push still runs application validation. The required
 `Lint, build, and test` aggregate remains the hosted deployment gate. See
 [ADR 0181](adr/0181-parallel-ci.md) for classification, caches, isolation and recovery.
+
+
+## SQL efficiency release, November 5, 2026
+
+Hosted TEST now runs merged revision `ee0df929f92e8c50ff4c28078fb730278ea0d022`
+(PR #787), with migrations 511–512 and private query monitoring active. PostgreSQL
+18.6/PostGIS 3.6.4 and the existing volume remain in use. A fresh database-copy
+rehearsal verified migration, rollback and reapplication; live application table
+fingerprints were unchanged by migration. API/web were rebuilt and restarted
+through the standard candidate/backup/recovery workflow after exact-revision CI.
+
+Health/source integrity, Auth0/runtime settings, account/media preservation and
+HTTPS passed, with zero API restarts. The deployed restricted role passed read-only
+NHG review, report, search and selector checks; diagnostic access is denied and JIT
+settings are restored after scoped queries. See the [implementation and monitoring
+record](postgresql-18-upgrade.md#sql-efficiency-implementation-2026-11-05) and
+[ADR 0196](adr/0196-measured-sql-efficiency.md). No spatial correction was included.
