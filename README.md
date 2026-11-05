@@ -211,6 +211,10 @@ If search is unavailable:
 
 Search currently returns populated places such as cities and towns, rather than hospitals, street addresses, or standalone state/country records. Previously imported places remain selectable when GeoNames is unavailable.
 
+### Military units and organizations
+
+Burial records have an optional **Military unit / organization** field for recorded companies, regiments, battalions, ships, or other units (up to 500 characters). For example, enter `Company E, 136th Pennsylvania Infantry Regiment` while keeping **Military branch** and **War service** as separate selections. The field is enabled for veterans and displayed after saving. See [operator instructions](docs/operator-workflows.md#burial-military-unit--organization). Migration `510-burial-military-unit` must be applied before starting the current API.
+
 ### API Security
 
 Read endpoints are protected by API authorization middleware. Auth0 is the selected production identity provider. Local development and automated tests default to `AUTH_MODE=disabled` so contributors can run the application without Auth0 tenant credentials. Stage and production fail closed: they require an explicit `AUTH_MODE=auth0` plus the Auth0 domain and audience, and refuse to start with disabled or trusted-header authentication.

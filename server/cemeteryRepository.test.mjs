@@ -1345,6 +1345,7 @@ test("updateBurial updates person and date fields with cemetery scope", async ()
     "recorded",
     null,
     "Rev.",
+    null,
   ]);
   assert.equal(updated?.person.firstName, "Ruth M.");
   assert.equal(updated?.person.lastName, "Soergel");

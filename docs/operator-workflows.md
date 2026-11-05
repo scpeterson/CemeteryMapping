@@ -171,9 +171,21 @@ Open **My profile** from the application menu to edit your display name, optiona
 
 ### Profile and Membership Deployment
 
-Apply Liquibase migration `509-user-profiles-and-cemetery-memberships` before starting the updated API, then refresh the restricted API role grants using `db:configure-api` locally or the hosted runbook's role configuration script. API startup requires this changeset. The migration copies existing editable assignments to the user's current cemetery role and preserves read-only assignments as readers. System administrator access remains global. New profile fields start empty; last-activity tracking starts with subsequent authenticated API requests.
+Apply Liquibase migration `509-user-profiles-and-cemetery-memberships` before starting the updated API, then refresh the restricted API role grants using `db:configure-api` locally or the hosted runbook's role configuration script. The current API requires the latest schema contract (`510-burial-military-unit`), so apply all pending migrations in order. Migration 509 copies existing editable assignments to the user's current cemetery role and preserves read-only assignments as readers. System administrator access remains global. New profile fields start empty; last-activity tracking starts with subsequent authenticated API requests.
 
 For verification, use an account with a cemetery-admin membership in one cemetery and a reader membership in another. Confirm it can switch maps, edit only the first cemetery, cannot delete photos or edit inspections in the reader cemetery, and cannot access the system user directory. Save a profile and check its attributed change in **View activity**. Before deployment, run the PostgreSQL integration check with `APP_ENV=test node --test scripts/user-profiles.integration.mjs`; its fixtures and migration rehearsal are rolled back.
+
+### Burial Military Unit / Organization
+
+In the burial editor, select **Veteran** and enter **Military unit / organization** as free text (up to 500 characters). Use the recorded company, regiment, battalion, ship, or other organization, for example `Company E, 136th Pennsylvania Infantry Regiment`. Keep **Military branch** and **War service** as separate selections. Save the burial to display the unit alongside its military service details. Clear the field to remove it; clearing Veteran also clears the unit along with the other military service fields. Changing the branch does not discard the unit text. Existing records start blank, and no regiment identification is inferred automatically.
+
+Deployments require migration `510-burial-military-unit` before restarting the updated API. Refresh restricted API grants after migrating. Updates from older clients that omit the unit field preserve its existing value on veteran records. Run `APP_ENV=test node --test scripts/burial-military-unit.integration.mjs` to verify saving, clearing, legacy-client preservation, and cemetery edit scoping; fixtures roll back.
+
+### Birth and Death Location Verification
+
+Both fields use GeoNames to find and import verified cities and towns. A GeoNames account needs email confirmation **and Free Web Services enabled**; registration alone is insufficient. Configure `GEONAMES_USERNAME` in the backend environment, restart the local API, or recreate the hosted API container when changing its environment file. See [account setup](https://github.com/scpeterson/CemeteryMapping/blob/main/README.md#birth-and-death-location-setup-geonames) and [hosted setup](hosted-test.md#geonames-location-search).
+
+As an authorized editor, search for a city, select **Use …**, then save the burial. Importing a candidate alone does not associate it with a burial. Previously imported verified places remain available during a provider outage. The current search returns populated places rather than hospitals, street addresses, or standalone state/country records.
 
 ### Cemetery Records
 

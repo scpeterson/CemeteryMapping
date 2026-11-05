@@ -717,6 +717,18 @@ empty. Use a reviewed forward correction or pre-migration backup recovery that
 accounts for subsequent hosted edits. Retain both migration and code-release
 recovery materials; do not use Liquibase rollback/reapply to infer data recovery.
 
+## November 4, 2026 GeoNames configuration verification
+
+GeoNames username configuration was added to the existing protected backend runtime environment, and only the API container was recreated to load it. The previous runtime environment was retained as a protected backup. API health passed, and search plus authority-record verification for Pittsburgh succeeded from inside the running TEST API container using `cemetery_app_geoname`.
+
+This was a configuration-only change: it did not deploy the profile/membership feature (migration 509) or military-unit field (migration 510), refresh cemetery data, or verify a fresh interactive Auth0 login. The observed API revision was `5587072dd8581ff3ec1fe86569e5381f0d9a5838`, with build time `2026-11-04T13:53:46Z`. These observations supplement the older dated release records; check live migration status before the next feature release.
+
+### Next profile and military-unit feature release
+
+Migration 509 adds self-service profiles, account activity, and explicit cemetery membership roles. Migration 510 adds burial military units. They were applied and verified in local DEV on November 4 and November 5 respectively; that does not establish hosted TEST deployment. Use the normal reviewed migration rehearsal and release process, refresh the restricted API grants, and deploy the frontend and API together. Preserve TEST identities, memberships, contact/preference data, activity timestamps, access requests, audit history, and tester changes.
+
+After deployment, verify **My profile**, **Admin → Users**, a mixed-role account across two cemeteries, and saving/displaying/clearing a **Military unit / organization**. Also repeat a GeoNames search and verification from the API container, and record health version metadata and the actual migration state. General record-read visibility retains its prior rules; cemetery roles do not introduce private tenant boundaries.
+
 ## CI validation paths
 
 CI runs quick checks, serial database integration tests and four isolated browser

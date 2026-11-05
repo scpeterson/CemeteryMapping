@@ -65,7 +65,7 @@ test('admin manages independent cemetery roles and filters user activity', async
   await expect(memberships.getByRole('button', { name: 'Remove membership' }).first()).toHaveCSS('min-height', '38px');
   await memberships.getByRole('combobox', { name: 'Cemetery role', exact: true }).nth(1).selectOption('power-user');
   await panel.getByRole('button', { name: 'Save user', exact: true }).click();
-  await expect(panel.getByRole('status')).toContainText('saved');
+  await expect(panel.getByRole('status').filter({ hasText: 'member@example.test saved.' })).toBeVisible();
   expect(saved?.cemeteryMemberships).toEqual([{ cemeteryId, role: 'cemetery-admin' }, { cemeteryId: otherId, role: 'power-user' }]);
   await panel.getByLabel('Search users').fill('does not exist');
   await expect(panel.getByRole('button', { name: 'View activity' })).toHaveCount(0);
