@@ -28,8 +28,16 @@ test('encrypted device drafts and original photos survive reload; retries keep s
 });
 
 
-test('prepared built field page reloads completely offline without caching private URLs',async({page,context})=>{
+test('prepared built field page reloads completely offline without caching private URLs',async({page,context,request})=>{
   test.skip(process.env.FIELD_BUILD!=="1","Requires built immutable assets and service worker manifest");
+  const manifestResponse=await request.get('/field-assets.json');
+  expect(manifestResponse.ok()).toBe(true);
+  const manifest=await manifestResponse.json() as {files:string[]};
+  for(const path of manifest.files){
+    const asset=await request.get(path);
+    expect(asset.status(),`Offline asset ${path} must exist`).toBe(200);
+    expect(asset.headers()['content-type']).not.toContain('text/html');
+  }
   await page.goto('/field/');
   await page.evaluate(async()=>{
     const registration=await navigator.serviceWorker.register('/field-sw.js',{scope:'/field'});
