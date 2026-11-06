@@ -1,3 +1,4 @@
+import { assertRecordVersion } from "./recordVersions.mjs";
 import { burialProjectionSql } from "./burialProjection.mjs";
 import { BadRequestError } from "./requestValidation.mjs";
 import { withAuditContext } from "./auditContext.mjs";
@@ -71,6 +72,7 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
       return rollback(undefined);
     }
 
+    assertRecordVersion(existing.version, burial.expectedVersion);
     const fullName = [burial.namePrefix, burial.firstName, burial.lastName, burial.nameSuffix].filter(Boolean).join(" ") || null;
     const effectiveIntermentType = burial.intermentType || "unknown";
     if (!(await activeIntermentTypeExists(client, effectiveIntermentType))) {
@@ -290,4 +292,12 @@ export async function updateBurial(pool, id, burial, { actorUser, reason, allowe
     return { ...toBurial(updated), auditEventId };
 
   });
+}
+
+export async function getBurial(pool,id) {
+  const projection=burialProjectionSql();
+  const {rows}=await pool.query(`SELECT ${projection.select},burials.source_properties FROM burials ${projection.joins}
+    JOIN gravesites g ON g.id=burials.gravesite_uuid AND g.deleted_at IS NULL
+    WHERE burials.id=$1 AND burials.deleted_at IS NULL`,[id]);
+  return rows[0]?toBurial(rows[0]):undefined;
 }

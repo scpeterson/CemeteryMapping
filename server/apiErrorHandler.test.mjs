@@ -55,3 +55,9 @@ test("oversized photos report the upload limit without logging a server failure"
   assert.equal(status, 413);
   assert.equal(body.error, "This photo exceeds the 25 MB upload limit. Choose a smaller file.");
 });
+
+test("a concurrent person merge reference guard returns a recoverable conflict",async()=>{
+ let status,body;const response={status(code){status=code;return this;},json(value){body=value;}};
+ await createApiErrorHandler({}, {}, {})({code:'23514',constraint:'active_burial_reference'}, {},response);
+ assert.equal(status,409);assert.match(body.error,/merged or deleted/);
+});

@@ -220,3 +220,11 @@ export * from "./adminApi";
 export * from "./mediaApi";
 export * from "./ownershipApi";
 export * from "./reportsApi";
+
+export async function fetchBurial(id:string): Promise<Burial> {
+  return jsonResponse(await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/burials/${encodeURIComponent(id)}`),"Burial API");
+}
+
+export async function fetchMaintenanceRecord(id:string):Promise<MaintenanceRecord>{
+ return jsonResponse<MaintenanceRecord>(await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/maintenance-records/${encodeURIComponent(id)}`),'Maintenance record API');
+}

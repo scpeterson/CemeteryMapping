@@ -23,6 +23,9 @@ const BulkAdminTab = lazy(() => import("./admin/BulkAdminTab").then((module) => 
 const NorthHillsAdminTab = lazy(() => import("./admin/NorthHillsAdminTab").then((module) => ({ default: module.NorthHillsAdminTab })));
 const SourcePeopleAdminTab = lazy(() => import("./admin/SourcePeopleAdminTab").then((module) => ({ default: module.SourcePeopleAdminTab })));
 const LookupAdminTab = lazy(() => import("./admin/LookupAdminTab").then((module) => ({ default: module.LookupAdminTab })));
+const CemeteryMembersAdminTab = lazy(() => import("./admin/CemeteryMembersAdminTab").then((module) => ({ default: module.CemeteryMembersAdminTab })));
+const RecordRecoveryAdminTab = lazy(() => import("./admin/RecordRecoveryAdminTab").then(module => ({default:module.RecordRecoveryAdminTab})));
+const OnboardingAdminTab = lazy(() => import("./admin/OnboardingAdminTab").then(module => ({default:module.OnboardingAdminTab})));
 export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>(currentUser.permissions.canManageUsers ? "users" : "records");
   const [auditSeedFilters, setAuditSeedFilters] = useState<AuditEventFilters>();
@@ -259,6 +262,9 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
 
       <div className="admin-workspace">
         <nav className="admin-nav" aria-label="Admin sections">
+          {canUseBulkTools ? <button type="button" aria-current={activeTab === "recovery" ? "page" : undefined} className={activeTab === "recovery" ? "is-active" : undefined} onClick={() => setActiveTab("recovery")}><History size={16} aria-hidden="true"/><span>Recovery</span></button> : null}
+          {canUseBulkTools ? <button type="button" aria-current={activeTab === "onboarding" ? "page" : undefined} className={activeTab === "onboarding" ? "is-active" : undefined} onClick={() => setActiveTab("onboarding")}><Landmark size={16} aria-hidden="true"/><span>Onboarding</span></button> : null}
+          {canUseBulkTools ? <button type="button" aria-current={activeTab === "members" ? "page" : undefined} className={activeTab === "members" ? "is-active" : undefined} onClick={() => setActiveTab("members")}><UserCog size={16} aria-hidden="true" /><span>Members</span></button> : null}
           {canManageUsers ? <button
             type="button"
             aria-current={activeTab === "users" ? "page" : undefined}
@@ -365,6 +371,12 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
           <Suspense fallback={<p className="admin-message">Loading admin workflow…</p>}>
             {activeTab === "users" && canManageUsers ? (
               <UsersAdminTab cemeteryRecords={cemeteryRecords} />
+            ) : activeTab === "recovery" && canUseBulkTools ? (
+              <RecordRecoveryAdminTab currentUser={currentUser} cemeteryRecords={cemeteryRecords}/>
+            ) : activeTab === "onboarding" && canUseBulkTools ? (
+              <OnboardingAdminTab currentUser={currentUser} cemeteryRecords={cemeteryRecords}/>
+            ) : activeTab === "members" && canUseBulkTools ? (
+              <CemeteryMembersAdminTab currentUser={currentUser} cemeteryRecords={cemeteryRecords} />
             ) : activeTab === "records" ? (
               <RecordsAdminTab
                 cemeteryRecords={cemeteryRecords}

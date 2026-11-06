@@ -1,4 +1,6 @@
 import { listUserActivity } from "../profileRepository.mjs";
+import { selectUserById } from "../adminRepository.mjs";
+import { validateExpectedVersion } from "../recordVersions.mjs";
 
 export function registerAdminUserRoutes(app, context) {
   const {
@@ -48,11 +50,19 @@ export function registerAdminUserRoutes(app, context) {
         }
       });
     
+      app.get("/api/admin/users/:id",requireAdmin,async(request,response,next)=>{
+        try{const record=await selectUserById(pool,validateUuid(request.params.id,"User"));
+          if(!record)return response.status(404).json({error:"User not found."});
+          response.json(record);
+        }catch(error){next(error);}
+      });
       app.put("/api/admin/users/:id", requireAdmin, async (request, response, next) => {
         try {
           const id = validateUuid(request.params.id, "User id");
+          const expectedVersion=validateExpectedVersion(request.body?.expectedVersion);
           const roles = await listAssignableRoles(pool);
           const user = validateAdminUserPayload(request.body, roles);
+          user.expectedVersion=expectedVersion;
           const updated = await updateUser(pool, id, { ...user, actorUser: request.user });
           if (!updated) {
             response.status(404).json({ error: "User not found" });

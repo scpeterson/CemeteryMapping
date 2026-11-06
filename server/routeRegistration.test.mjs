@@ -31,11 +31,11 @@ function registeredRoutes(register) {
 
 const cases = [
   ["system", registerSystemRoutes, 5, ["GET /api/health", "GET /api/me"]],
-  ["grave", registerGraveRoutes, 19, ["GET /api/cemetery-map", "GET /api/places/search", "POST /api/places/import", "GET /api/cemeteries/:cemeteryId/deed-registry-suggestions", "POST /api/cemeteries/:cemeteryId/grave-spaces", "PATCH /api/burials/:id", "PATCH /api/cemeteries/:cemeteryId/grave-spaces/:id/lot", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events", "PATCH /api/ownership-parties/:partyId/events/:eventId", "DELETE /api/ownership-event-rights/:rightId"]],
+  ["grave", registerGraveRoutes, 21, ["GET /api/cemetery-map", "GET /api/places/search", "POST /api/places/import", "GET /api/cemeteries/:cemeteryId/deed-registry-suggestions", "POST /api/cemeteries/:cemeteryId/grave-spaces", "PATCH /api/burials/:id", "PATCH /api/cemeteries/:cemeteryId/grave-spaces/:id/lot", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/ownership-events", "PATCH /api/ownership-parties/:partyId/events/:eventId", "DELETE /api/ownership-event-rights/:rightId"]],
   ["report", registerReportRoutes, 4, ["GET /api/search", "POST /api/reports/query"]],
   ["headstone", registerHeadstoneRoutes, 14, ["GET /api/headstone-lookups", "GET /api/record-options", "POST /api/headstones/:id/relationships", "POST /api/headstones/:id/gravesites", "DELETE /api/headstone-gravesite-relationships/:id", "POST /api/cemeteries/:cemeteryId/grave-spaces/:id/restore"]],
   ["media", registerMediaRoutes, 7, ["POST /api/headstones/:id/media-assets", "PATCH /api/media-assets/:id/order"]],
-  ["admin user", registerAdminUserRoutes, 6, ["GET /api/admin/users", "POST /api/admin/auth0-users/resolve"]],
+  ["admin user", registerAdminUserRoutes, 7, ["GET /api/admin/users", "POST /api/admin/auth0-users/resolve"]],
   ["admin governance", registerAdminGovernanceRoutes, 16, ["GET /api/admin/data-quality-dashboard", "POST /api/admin/bulk/headstones", "PUT /api/admin/cemetery-records/lots/:id"]],
   ["admin operations", registerAdminOperationsRoutes, 8, ["GET /api/admin/audit-events", "POST /api/admin/system-event-retention-purge"]],
   ["admin review", registerAdminReviewRoutes, 14, ["GET /api/admin/deed-registry-review", "PUT /api/admin/deed-registry-review/:entryId", "PUT /api/admin/north-hills-ocr-review/:entryId"]],

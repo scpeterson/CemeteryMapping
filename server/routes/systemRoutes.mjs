@@ -1,3 +1,4 @@
+import { validateExpectedVersion } from "../recordVersions.mjs";
 import { getProfile, updateProfile, validateProfile } from "../profileRepository.mjs";
 
 export function registerSystemRoutes(app, context) {
@@ -41,13 +42,14 @@ export function registerSystemRoutes(app, context) {
         try { response.json(await getProfile(pool, request.user)); } catch (error) { next(error); }
       });
       app.put("/api/me/profile", requireReader, async (request, response, next) => {
-        try { response.json(await updateProfile(pool, request.user, validateProfile(request.body))); } catch (error) { next(error); }
+        try { response.json(await updateProfile(pool, request.user, { ...validateProfile(request.body), expectedVersion:validateExpectedVersion(request.body?.expectedVersion) })); } catch (error) { next(error); }
       });
       app.get("/api/me", requireReader, async (request, response) => {
         const role = request.user.role;
         const assignedCemeteryIds = assignedEditableCemeteryIds(request.user);
         const hasScopedEditAccess = (role === "power-user" || role === "cemetery-admin") && assignedCemeteryIds.length > 0;
         response.json({
+          id:request.user.id,
           subject: request.user.subject,
           email: request.user.email,
           displayName: request.user.displayName,
