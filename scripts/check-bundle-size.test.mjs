@@ -43,3 +43,18 @@ test('the standalone task page has a fixed budget and shared reminders remain in
  assert.deepEqual(checkBundleAssets([...baseline(),{filename:'MaintenanceTasksPage-a.js',gzipBytes:5*1024}]).failures,[]);
  assert.ok(checkBundleAssets([...baseline(),{filename:'TaskReminderLink-a.js',gzipBytes:701*1024}]).failures.some(f=>f.includes('core JavaScript')));
 });
+
+
+test("MapLibre growth allowance covers only bounded vendor and worker bytes",()=>{
+ const assets=baseline();
+ assets.find(a=>a.filename.startsWith('vendor-map-')).gzipBytes=281*1024;
+ assets.push({filename:'maplibre-gl-worker-fixture.js',gzipBytes:145*1024});
+ const otherBytes=assets.filter(a=>!a.filename.startsWith('vendor-map-')&&!a.filename.startsWith('maplibre-gl-worker-')).reduce((n,a)=>n+a.gzipBytes,0);
+ assets.push({filename:'shared-fixture.js',gzipBytes:(700-415)*1024-otherBytes});
+ assert.deepEqual(checkBundleAssets(assets).failures,[]);
+ assets.at(-1).gzipBytes++;
+ assert.ok(checkBundleAssets(assets).failures.some(f=>f.includes('core JavaScript')));
+ assets.at(-1).gzipBytes--;
+ assets.find(a=>a.filename.startsWith('maplibre-gl-worker-')).gzipBytes=147*1024;
+ assert.ok(checkBundleAssets(assets).failures.some(f=>f.includes('map vendor and worker')));
+});
