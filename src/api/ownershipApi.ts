@@ -50,3 +50,8 @@ export async function fetchOwnershipEditor(eventId: string): Promise<SaveOwnersh
   const data=await jsonResponse<SaveOwnershipEventInput>(response,"Ownership editor API");
   return {...data,editingEventId:cleanId};
 }
+
+export async function fetchOwnerEdit(partyId:string,eventId:string): Promise<UpdateOwnerInput & {version:string}> {
+  const cleanId=(id:string)=>id.replace(/^ownership-(?:party|event)-/u, "");
+  return jsonResponse(await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/ownership-parties/${encodeURIComponent(cleanId(partyId))}/events/${encodeURIComponent(cleanId(eventId))}`),"Owner API");
+}

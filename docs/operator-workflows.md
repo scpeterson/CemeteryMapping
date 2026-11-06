@@ -116,6 +116,17 @@ Gravesite detail saves detect when another edit has changed the record since it 
 
 This protection applies to the gravesite detail edit, not every mutation in the application. If you select another record while a save is in progress, its completion does not switch the visible selection back to the original grave.
 
+### Recovering Other Conflicting Edits
+
+Burial, marker-detail, quick owner, profile and account saves also detect concurrent
+changes. A conflict keeps your draft. Copy any values you want to retain, then
+choose **Reload latest values (discard edits)**. Confirming loads current values;
+canceling or a failed reload retains the draft. Reapply only the changes still
+needed and save. System account checks also detect changes to cemetery memberships.
+Inspection edits and the full ownership editor retain their existing revision
+checks. See [ADR 0198](adr/0198-complete-record-edit-conflicts.md) for API version
+requirements and recovery behavior.
+
 ### Marker Burial Pages Report
 
 Use `Reports -> Marker burial pages` when you need a printable record for every burial linked to one or more markers. The report is available to readers and higher roles and remains scoped to the cemeteries the signed-in user may access.
@@ -164,6 +175,21 @@ Use `Admin -> Users` when adding, editing, deactivating, or reactivating applica
 8. Use **Deactivate** to block access without deleting the Auth0 identity, profile, or attribution history. Review memberships before reactivating an account.
 
 Auth0 authenticates the person. Local cemetery membership roles authorize edits, ownership access, and administrative actions. The `app_users.role_name` value remains a summary for compatibility; explicit membership roles control cemetery access. System admins remain globally privileged. Existing general record read endpoints retain their previous visibility rules; this feature does not introduce private tenant boundaries between cemeteries.
+
+### Cemetery Member Administration
+
+System administrators and cemetery administrators can open **Admin → Members**,
+choose an administered cemetery, and search its member list. To add a person,
+enter their email, optional display name, cemetery role and reason. Existing
+accounts are reused; a new account requires configured Auth0 provisioning. The
+success message says when an invitation email was actually sent.
+
+Select a member to change their cemetery role or remove their membership, with
+a reason. Account identity, activation and other cemetery memberships are
+managed separately. Inactive accounts require a system administrator. Assign
+another active cemetery administrator before stepping down as the last one.
+If a membership changed while editing, retain your notes, reload the member list
+and reopen the member before reapplying the change. See [ADR 0197](adr/0197-delegated-cemetery-members.md).
 
 ### My Profile
 
@@ -1268,3 +1294,141 @@ gravesites. No gravesite is automatically linked by passageway creation.
 
 For the accepted passageway inventory, E/G policy, current C-P03 extent and dated
 review evidence, see [Map Layout and Passageways](map-layout-and-passageways.md).
+
+## Offline field collection
+
+Editors can open **Field** from the application header. While connected, verify
+your account, choose a cemetery, create an offline passphrase, download the markers
+you will visit, and choose **Prepare offline page loading**. Bookmark `/field/`
+and test reopening it before leaving connectivity. Shell preparation requires a
+built HTTPS deployment; the development server supports drafts but not offline
+page refresh.
+
+Each form's **Save … on this device** action encrypts its draft or original photo
+file locally. This does not update the server. Keep your offline passphrase;
+workspace recovery requires it. Lock the workspace before sharing the device.
+Use the same browser and account when returning. Browser data clearing or a lost
+passphrase cannot be repaired by resetting your application password.
+
+Reconnect the original account and choose **Synchronize saved work**. Pending,
+retry, review-required and synchronized statuses distinguish outcomes. Interrupted
+requests can safely retry. Review changed records against latest values before
+replacing a conflicted proposal. Stopping retries keeps device history and does
+not undo a server change. Save a photo copy before removing device work, and keep
+original files until synchronization is confirmed. Delete a workspace only after
+checking its unsynchronized action count. Current server permissions always apply.
+
+For deployment, receipt retention, storage limits and rollback considerations, see
+[ADR 0199](adr/0199-offline-field-collection.md).
+
+## Guided cemetery onboarding and imports
+
+Open **Administration → Onboarding**. A system administrator can create a cemetery
+with its name, municipality and reviewed WGS84 GeoJSON boundary. Close and reopen
+administration to load it in existing pickers, then use **Members** to assign its
+cemetery administrators. Use Records for existing section/lot text; optional
+import section names must already exist.
+
+Select the import cemetery. Stage gravesites as a GeoJSON FeatureCollection with
+`gravesiteId`, `graveId`, optional `section` and `name` properties. Each feature
+must be a Polygon/MultiPolygon inside the boundary. Stage people as CSV with
+`gravesiteId,firstName,lastName,birthDate,deathDate,burialDate,notes` columns;
+`gravesiteId` and `lastName` headers are required. Dates retain the application's
+recorded-date rules. Names, notes and quoted CSV evidence are preserved. Use
+batches of 1–500 records, up to 2 MB. Import gravesites before their people.
+
+Staging validates without creating live records. Review every source record,
+confirm the cemetery and checksum, record a reason and acknowledge the review
+before approving. Duplicate names/IDs, deleted-record collisions, invalid geometry,
+boundary crossings and overlaps require correction. No geometry repair or merge
+is inferred. Approval validates again and commits the whole batch. A 409 retains
+your review reason; reload current batches and review the latest state. Reject
+invalid batches and stage corrected files. Original source downloads, review
+history and created record IDs remain with the batch after approval/rejection.
+
+See [ADR 0200](adr/0200-guided-cemetery-onboarding.md) for deployment and source
+retention. Specialized headstone spreadsheet, deed registry and OCR sources still
+use their existing documented evidence workflows.
+
+## Deleted-record recovery and person duplicates
+
+Cemetery administrators can open **Administration → Recovery**, select an
+administered cemetery and record type, and search deleted records. Select a row,
+review its deletion reason, enter a restoration reason and confirm. Restore parents
+first. Restore a photo asset only after its original file is available; restore
+its library/observation links separately. Restoring an inspection retains its
+source, face identities/readings and manually-edited state. Other deleted children
+stay deleted. Existing rejected/review statuses are not promoted by restoration.
+A conflict retains your reason; reload current records and review again. Close
+administration to refresh the map and selected record.
+
+For person duplicates, search names/gravesite IDs, choose the duplicate to archive
+and the surviving person, then **Preview person merge**. Both must be active on the
+same gravesite. Confirm they describe the same person and that the survivor's
+profile is the one to keep. Correct the survivor's profile first if necessary,
+then obtain a new preview. Approval preserves donor details and original evidence
+in the archive, transfers supported source/memorial/place relationships and face
+person assignments, and retains original readings/photos. Changed evidence or
+relationship collisions require another review; no silent overwrite is applied.
+
+Merged donors appear as merged in deleted people and cannot be restored normally.
+**Download merge evidence** retrieves the original record and relationship snapshots.
+Undo requires a separately reviewed correction, not a donor restore. Marker and
+gravesite geometry duplicates need survey/source review outside this person merge.
+For supported records, transaction safeguards and deployment/retention, see
+[ADR 0201](adr/0201-record-recovery-and-reviewed-person-merges.md).
+
+## Export cemetery records
+
+Choose **Export** in the application header. Select an assigned cemetery, record
+set and CSV or GeoJSON format. GeoJSON supports gravesites and markers in WGS84.
+Use the search field to narrow the selected records and set a maximum of 1–5000.
+If more rows match or output exceeds 10 MB, narrow the search; a partial file is
+not downloaded. Deleted records and inactive parents are excluded.
+
+General exports omit ownership contacts and original source files. Current editors
+can export maintenance records; users with ownership-view access can explicitly
+select **Ownership names and contacts (private)** and confirm that download.
+Ownership CSV contains historical event/party pairs and does not certify current
+rights. Access is checked again at download time. Store private downloads with
+the same care as application records.
+
+CSV quotes commas, quotes and newlines and neutralizes spreadsheet formulas with
+an apostrophe prefix. Import identifier/date columns as text in spreadsheets to
+preserve their display. GeoJSON preserves literal values and actual stored geometry.
+These downloads are selected record extracts, not full database backups or a
+replacement for source import review. See [ADR 0202](adr/0202-scoped-record-exports.md).
+
+## Assigned maintenance tasks and reminders
+
+Use **Tasks** in the application header. Registered editors start with **My tasks**
+across cemeteries they can currently edit. Choose all cemetery or unassigned work
+for team planning, and filter overdue, due-soon, reminder and completed work.
+Task dates follow your device's calendar date. Reminders appear in the queue and
+as a personal attention count on Tasks while the application is in use.
+
+Choose a cemetery before **New maintenance task**. Search its active target,
+choose an issue/action and priority, optionally assign an active cemetery editor,
+and enter due/reminder dates, notes and a creation reason. Reminder date must be
+on or before the due date. Save retries retain their original request identity;
+if a response is uncertain, retry the unchanged form or reload the queue to confirm
+its outcome before starting another task. **Reload maintenance choices** refreshes
+retired lookup choices without discarding the rest of the form.
+
+Edit a task to assign/reschedule work or record status, completion date, performed-by
+text, notes and reason. A conflict retains your draft; explicitly reload current
+values after copying anything to keep. The existing maintenance detail form uses
+the same version guard and keeps task schedules intact. Assignment/due dates appear
+there, and maintenance CSV exports include scheduling fields. Review completed
+work through the Completed filter; reopening it reactivates scheduled reminders.
+
+Only the assigned person can **Dismiss my reminder**. Overdue work remains visible
+until completed, marked not needed or rescheduled. Changing assignment/dates or
+reopening work resets dismissal. Inactive/former assignees remain as history;
+reassign their unfinished work as needed. No email or push notification is sent,
+and closed applications do not deliver background reminders. Local disabled-auth
+sessions use the cemetery queue; personal work needs a registered account.
+
+Apply migration 516 and refresh runtime grants before the new API/web release.
+See [ADR 0203](adr/0203-assigned-maintenance-tasks.md) for indexes, record-version
+compatibility, validation and rollback.

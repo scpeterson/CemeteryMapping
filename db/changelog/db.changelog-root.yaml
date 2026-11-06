@@ -1533,3 +1533,15 @@ databaseChangeLog:
   - include:
       file: changes/512-query-observability.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/513-offline-field-operations.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/514-guided-imports.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/515-reviewed-burial-merges.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/516-maintenance-task-scheduling.sql
+      relativeToChangelogFile: true

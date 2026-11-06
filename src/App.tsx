@@ -49,7 +49,7 @@ export default function App() {
   const [selectedGrave, setSelectedGrave] = useState<GraveSpaceSummary | undefined>();
   const [selectedLot, setSelectedLot] = useState<CemeteryLot | undefined>();
   const [selectedHeadstone, setSelectedHeadstone] = useState<HeadstoneSummary | undefined>();
-  const { refreshCurrentUser, data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading, retryLookups } = useApplicationData(setSelectedGrave);
+  const { refreshCemeteryData, refreshCurrentUser, data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading, retryLookups } = useApplicationData(setSelectedGrave);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isReportsPanelOpen, setIsReportsPanelOpen] = useState(false);
   const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
@@ -393,7 +393,7 @@ export default function App() {
             if (selectHeadstone(monument)) setIsReportsPanelOpen(false);
           }} onClose={() => setIsReportsPanelOpen(false)} /> : null}
           {isProfileOpen && currentUser ? <UserProfilePanel user={currentUser} cemeteries={cemeteries} onClose={() => setIsProfileOpen(false)} onSaved={refreshCurrentUser} /> : null}
-          {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onLookupsChanged={retryLookups} onClose={() => setIsAdminPanelOpen(false)} /> : null}
+          {isAdminPanelOpen && currentUser ? <AdminPanel currentUser={currentUser} onLookupsChanged={retryLookups} onClose={() => {setIsAdminPanelOpen(false);refreshCemeteryData();refreshDetails();}} /> : null}
           {isControlPointCollectorOpen && currentUser?.permissions.canOpenAdminPanel ? (
             <ControlPointCollector data={data} onClose={() => setIsControlPointCollectorOpen(false)} />
           ) : null}

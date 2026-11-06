@@ -1,10 +1,11 @@
 import type { AppRoleName } from "./common";
 
 export type CemeteryMembership = { cemeteryId: string; role: Exclude<AppRoleName, "admin"> };
-export type UserProfile = { displayName: string; phone: string; organization: string; preferredCemeteryId: string; email: string; createdAt: string };
+export type UserProfile = { version?: string; displayName: string; phone: string; organization: string; preferredCemeteryId: string; email: string; createdAt: string };
 export type UserActivity = { id: string; tableName: string; operation: string; changedAt: string; reason: string };
 
 export type CurrentUser = {
+  id?: string;
   preferredCemeteryId?: string;
   subject: string;
   email?: string;
@@ -34,6 +35,7 @@ export type AppRole = {
 };
 
 export type AppUser = {
+  version?: string;
   id: string;
   externalSubject: string;
   email: string;

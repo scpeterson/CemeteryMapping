@@ -1,6 +1,12 @@
 import { getHeadstoneOverview } from "./markerOverviewRepository.mjs";
 import express from "express";
 import { registerAccessRequestRoutes } from "./routes/accessRequestRoutes.mjs";
+import { registerCemeteryMembershipRoutes } from "./routes/cemeteryMembershipRoutes.mjs";
+import { registerMaintenanceTaskRoutes } from "./routes/maintenanceTaskRoutes.mjs";
+import { registerRecordExportRoutes } from "./routes/recordExportRoutes.mjs";
+import { registerRecordRecoveryRoutes } from "./routes/recordRecoveryRoutes.mjs";
+import { registerCemeteryOnboardingRoutes } from "./routes/cemeteryOnboardingRoutes.mjs";
+import { registerFieldCollectionRoutes } from "./routes/fieldCollectionRoutes.mjs";
 import pg from "pg";
 import { pathToFileURL } from "node:url";
 import { createUser, listAssignableRoles, listRoles, listUsers, updateUser } from "./adminRepository.mjs";
@@ -110,7 +116,13 @@ export function createApp(config, pool) {
   const requireCemeteryAdmin = requireRole(config.auth, pool, "cemetery-admin");
   const requireAdmin = requireRole(config.auth, pool, "admin");
   registerAccessRequestRoutes(app, { pool, requireAdmin, protection: config.accessRequests });
+  registerCemeteryOnboardingRoutes(app, { pool, requireAdmin, requireCemeteryAdmin, express });
+  registerFieldCollectionRoutes(app, { pool, requirePowerUser, express });
   app.use(express.json());
+  registerMaintenanceTaskRoutes(app, { pool, requirePowerUser });
+  registerRecordExportRoutes(app, { pool, requireReader });
+  registerRecordRecoveryRoutes(app, { pool, requireCemeteryAdmin });
+  registerCemeteryMembershipRoutes(app, { pool, requireCemeteryAdmin, auth0ManagementClient });
   registerCemeteryRoutes(app, {
     assignedEditableCemeteryIds, canEditCemetery, canManageUsers, canViewOwnershipForCemetery, config,
     createGraveFeature, createGraveSpace, createHeadstoneForGrave, createHeadstoneRelationship, createHeadstoneGravesiteRelationship, createMaintenanceRecord,
