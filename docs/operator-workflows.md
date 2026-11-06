@@ -1398,3 +1398,37 @@ an apostrophe prefix. Import identifier/date columns as text in spreadsheets to
 preserve their display. GeoJSON preserves literal values and actual stored geometry.
 These downloads are selected record extracts, not full database backups or a
 replacement for source import review. See [ADR 0202](adr/0202-scoped-record-exports.md).
+
+## Assigned maintenance tasks and reminders
+
+Use **Tasks** in the application header. Registered editors start with **My tasks**
+across cemeteries they can currently edit. Choose all cemetery or unassigned work
+for team planning, and filter overdue, due-soon, reminder and completed work.
+Task dates follow your device's calendar date. Reminders appear in the queue and
+as a personal attention count on Tasks while the application is in use.
+
+Choose a cemetery before **New maintenance task**. Search its active target,
+choose an issue/action and priority, optionally assign an active cemetery editor,
+and enter due/reminder dates, notes and a creation reason. Reminder date must be
+on or before the due date. Save retries retain their original request identity;
+if a response is uncertain, retry the unchanged form or reload the queue to confirm
+its outcome before starting another task. **Reload maintenance choices** refreshes
+retired lookup choices without discarding the rest of the form.
+
+Edit a task to assign/reschedule work or record status, completion date, performed-by
+text, notes and reason. A conflict retains your draft; explicitly reload current
+values after copying anything to keep. The existing maintenance detail form uses
+the same version guard and keeps task schedules intact. Assignment/due dates appear
+there, and maintenance CSV exports include scheduling fields. Review completed
+work through the Completed filter; reopening it reactivates scheduled reminders.
+
+Only the assigned person can **Dismiss my reminder**. Overdue work remains visible
+until completed, marked not needed or rescheduled. Changing assignment/dates or
+reopening work resets dismissal. Inactive/former assignees remain as history;
+reassign their unfinished work as needed. No email or push notification is sent,
+and closed applications do not deliver background reminders. Local disabled-auth
+sessions use the cemetery queue; personal work needs a registered account.
+
+Apply migration 516 and refresh runtime grants before the new API/web release.
+See [ADR 0203](adr/0203-assigned-maintenance-tasks.md) for indexes, record-version
+compatibility, validation and rollback.

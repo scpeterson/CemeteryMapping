@@ -3,7 +3,7 @@ import { apiBaseUrl } from "../config/environment";
 import { authorizedFetch, jsonResponse, normalizeBaseUrl } from "../api/apiClient";
 import type { LookupOption } from "../types";
 
-export function useRecordOptions(kind: "headstones" | "gravesites" | "field-markers", legacy: LookupOption[], enabled: boolean, initial?: LookupOption, excludeId?: string, cemeteryId?:string) {
+export function useRecordOptions(kind: "headstones" | "gravesites" | "field-markers" | "task-gravesites", legacy: LookupOption[], enabled: boolean, initial?: LookupOption, excludeId?: string, cemeteryId?:string) {
   const useLegacy = legacy.length > 0;
   const [query, changeQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -22,7 +22,7 @@ export function useRecordOptions(kind: "headstones" | "gravesites" | "field-mark
     if (excludeId) params.set("excludeId",excludeId);
     if (cemeteryId) params.set("cemeteryId",cemeteryId);
     setLoading(true);setError("");
-    authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/${kind==="field-markers"?"field-markers":"record-options"}?${params}`,{signal:controller.signal})
+    authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/${(kind==="field-markers"||kind==="task-gravesites")?kind:"record-options"}?${params}`,{signal:controller.signal})
       .then(r => jsonResponse<LookupOption[]>(r,"Record options API"))
       .then(items => { if (!controller.signal.aborted) { setRows(items.slice(0,pageSize));setHasMore(items.length>pageSize); } })
       .catch(error => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Unable to load record options."); })

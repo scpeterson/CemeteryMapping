@@ -174,6 +174,8 @@ export function toGraveFeature(row) {
 
 export function toMaintenanceRecord(row) {
   return {
+    ...(row.version?{version:row.version}:{}),
+    ...(Object.hasOwn(row,'due_date')?{assignedToId:row.assigned_to_app_user_id??'',assignedToName:row.assigned_to_name??'',dueDate:dateOnly(row.due_date)??'',remindOn:dateOnly(row.remind_on)??''}:{}),
     id: row.id,
     cemeteryId: row.cemetery_id,
     targetType: row.headstone_uuid ? "headstone" : "gravesite",

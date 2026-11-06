@@ -1,3 +1,4 @@
+import { assertRecordVersion } from "./recordVersions.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 import { maintenanceRecordJoinSql, maintenanceRecordSelectSql } from "./cemeteryMaintenanceQueries.mjs";
 import { toMaintenanceRecord } from "./cemeteryMappers.mjs";
@@ -82,7 +83,7 @@ export async function updateMaintenanceRecord(pool, id, record, { actorUser, rea
   return withAuditContext(pool, { actorUser, reason }, async (client, rollback) => {
     const existing = await client.query(
       `
-        SELECT id::text, cemetery_id::text
+        SELECT id::text, cemetery_id::text, xmin::text AS version
         FROM maintenance_records
         WHERE id = $1
           AND deleted_at IS NULL
@@ -95,6 +96,7 @@ export async function updateMaintenanceRecord(pool, id, record, { actorUser, rea
       return rollback(undefined);
     }
 
+    assertRecordVersion(existingRecord.version,record.expectedVersion);
     await client.query(
       `
         UPDATE maintenance_records

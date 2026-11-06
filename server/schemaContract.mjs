@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "515-reviewed-burial-merges";
+export const requiredSchemaChangeset = "516-maintenance-task-scheduling";
 
 export async function assertCurrentSchema(pool) {
   let result;

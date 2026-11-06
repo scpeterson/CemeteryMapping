@@ -68,3 +68,6 @@
 .field-workspace > header { min-width: 0; overflow-wrap: anywhere; }
 
 .field-change input[type=checkbox] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; }
+.task-workspace .field-change { margin: 12px 0; }
+.task-workspace .field-change p { white-space: pre-wrap; }
+.task-workspace .admin-form > .conflict-recovery { grid-column: 1 / -1; }

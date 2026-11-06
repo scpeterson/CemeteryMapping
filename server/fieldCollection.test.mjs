@@ -17,7 +17,8 @@ test('field operations require versions and separate new observations from metad
 test('borrowed mutation transactions cannot commit the enclosing receipt',async()=>{
   const statements=[];const pool=fieldTransactionPool({query:async(sql)=>{statements.push(sql);return {rows:[]};}});
   const client=await pool.connect();await client.query('BEGIN');await client.query('UPDATE fixture');await client.query('COMMIT');client.release();
-  assert.deepEqual(statements,['SAVEPOINT field_mutation_1','UPDATE fixture','RELEASE SAVEPOINT field_mutation_1']);
+  const savepoint=statements[0].slice('SAVEPOINT '.length);assert.match(savepoint,/^field_mutation_\d+_\d+$/u);
+  assert.deepEqual(statements,[`SAVEPOINT ${savepoint}`,'UPDATE fixture',`RELEASE SAVEPOINT ${savepoint}`]);
 });
 
 test('field endpoints reject unassigned editors before loading snapshots or receipts',async t=>{
