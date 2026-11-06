@@ -1,7 +1,7 @@
 import { roleForCemetery } from "../lib/selectionPermissions";
 import { confirmDiscardChanges } from "../hooks/useDraftState";
-import { useRef, useState } from "react";
-import { BarChart3, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, BarChart3, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react";
 import { useAccountSession } from "../auth/sessionContext";
 import type { CurrentUser } from "../types";
 
@@ -24,6 +24,14 @@ export function ApplicationHeader({
   const session = useAccountSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  useEffect(()=>{
+    if(!menuOpen)return;
+    const close=(event:MouseEvent)=>{
+      if(event.target instanceof Element&&!event.target.closest('.application-header, [role="dialog"]'))setMenuOpen(false);
+    };
+    document.addEventListener('click',close);
+    return()=>document.removeEventListener('click',close);
+  },[menuOpen]);
 
   return (
     <header className="application-header" onKeyDown={(event) => {
@@ -63,6 +71,7 @@ export function ApplicationHeader({
             title="Open reports: run saved cemetery reports and guided queries.">
             <BarChart3 size={16} aria-hidden="true" /> Reports
           </button>
+          <button type="button" aria-label="Export cemetery records" title="Download scoped CSV and GeoJSON records." onClick={()=>{if(confirmDiscardChanges())window.location.assign("/exports/");}}><Download size={16} aria-hidden="true"/><span>Export</span></button>
           {currentUser.role!=="reader"?<button type="button" aria-label="Open field collection: prepare records and save work offline" title="Prepare records and collect field observations and photos." onClick={()=>{if(confirmDiscardChanges())window.location.assign("/field/");}}><MapPinned size={16} aria-hidden="true"/><span>Field</span></button>:null}
           {currentUser.permissions.canOpenAdminPanel ? <>
             <button type="button" onClick={onOpenControl}

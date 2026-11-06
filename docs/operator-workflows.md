@@ -1377,3 +1377,24 @@ Undo requires a separately reviewed correction, not a donor restore. Marker and
 gravesite geometry duplicates need survey/source review outside this person merge.
 For supported records, transaction safeguards and deployment/retention, see
 [ADR 0201](adr/0201-record-recovery-and-reviewed-person-merges.md).
+
+## Export cemetery records
+
+Choose **Export** in the application header. Select an assigned cemetery, record
+set and CSV or GeoJSON format. GeoJSON supports gravesites and markers in WGS84.
+Use the search field to narrow the selected records and set a maximum of 1–5000.
+If more rows match or output exceeds 10 MB, narrow the search; a partial file is
+not downloaded. Deleted records and inactive parents are excluded.
+
+General exports omit ownership contacts and original source files. Current editors
+can export maintenance records; users with ownership-view access can explicitly
+select **Ownership names and contacts (private)** and confirm that download.
+Ownership CSV contains historical event/party pairs and does not certify current
+rights. Access is checked again at download time. Store private downloads with
+the same care as application records.
+
+CSV quotes commas, quotes and newlines and neutralizes spreadsheet formulas with
+an apostrophe prefix. Import identifier/date columns as text in spreadsheets to
+preserve their display. GeoJSON preserves literal values and actual stored geometry.
+These downloads are selected record extracts, not full database backups or a
+replacement for source import review. See [ADR 0202](adr/0202-scoped-record-exports.md).

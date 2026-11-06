@@ -1,0 +1,22 @@
+import {useEffect,useState} from 'react';
+import {fetchExportCemeteries,downloadRecords,type ExportCemetery,type ExportDataset} from '../api/recordExportApi';
+import {Notice} from './ui/Feedback';
+export function ExportRecordsPage(){
+ const [query,setQuery]=useState(''),[cemeteries,setCemeteries]=useState<ExportCemetery[]>([]),[chosen,setChosen]=useState<ExportCemetery>();
+ const [dataset,setDataset]=useState<ExportDataset>('gravesites'),[format,setFormat]=useState<'csv'|'geojson'>('csv'),[filter,setFilter]=useState(''),[limit,setLimit]=useState(5000),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[loading,setLoading]=useState(false);
+ useEffect(()=>{let active=true;setLoading(true);const timer=setTimeout(()=>void fetchExportCemeteries(query).then(rows=>{if(active){setCemeteries(rows);setChosen(c=>c??rows[0]);}}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);}),200);return()=>{active=false;clearTimeout(timer);};},[query]);
+ const options=chosen&&!cemeteries.some(c=>c.id===chosen.id)?[chosen,...cemeteries]:cemeteries;
+ const canDownload=chosen&&(dataset!=='ownership'||chosen.canExportOwnership)&&(dataset!=='maintenance'||chosen.canExportMaintenance);
+ return <main className="field-workspace"><header><h1>Export cemetery records</h1><p>Download selected records as CSV or mapped features as GeoJSON.</p><a href="/">Return to cemetery map</a></header>
+ <section className="field-card admin-section">{error&&<Notice tone="error">{error}</Notice>}{message&&<Notice tone="success">{message}</Notice>}
+ <form className="admin-form" onSubmit={event=>{event.preventDefault();if(!chosen||busy)return;if(dataset==='ownership'&&!window.confirm('Download private ownership names and contact details for this cemetery? Store the export with the same care as the application records.'))return;setBusy(true);setError('');setMessage('');void downloadRecords(chosen.id,dataset,format,filter,limit).then(count=>setMessage(`Downloaded ${count} records from ${chosen.name}.`)).catch(e=>setError(e instanceof Error?e.message:'Export failed.')).finally(()=>setBusy(false));}}>
+ <label>Find export cemetery<input type="search" disabled={busy} maxLength={120} value={query} onChange={e=>setQuery(e.target.value)}/></label><label>Export cemetery<select required disabled={busy||loading} value={chosen?.id??''} onChange={e=>{setChosen(options.find(c=>c.id===e.target.value));setDataset('gravesites');setMessage('');}}><option value="">Choose cemetery</option>{options.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+ <label>Records to export<select disabled={busy} value={dataset} onChange={e=>{const value=e.target.value as ExportDataset;setDataset(value);if(!['gravesites','markers'].includes(value))setFormat('csv');setMessage('');}}><option value="gravesites">Gravesites</option><option value="people">People</option><option value="markers">Markers</option>{chosen?.canExportMaintenance&&<option value="maintenance">Maintenance actions</option>}{chosen?.canExportOwnership&&<option value="ownership">Ownership names and contacts (private)</option>}</select></label>
+ <label>File format<select disabled={busy} value={format} onChange={e=>setFormat(e.target.value as 'csv'|'geojson')}><option value="csv">CSV spreadsheet</option>{['gravesites','markers'].includes(dataset)&&<option value="geojson">GeoJSON (WGS84)</option>}</select></label>
+ <label>Search within records<input type="search" disabled={busy} maxLength={120} value={filter} onChange={e=>setFilter(e.target.value)}/></label><label>Maximum records<input type="number" required min={1} max={5000} disabled={busy} value={limit} onChange={e=>setLimit(Number(e.target.value))}/></label>
+ <p className="field-wide">Only active records in the selected cemetery are exported. If more records match than the limit, narrow your search; a partial file is not downloaded. General exports omit ownership contacts and source files.</p>
+ {dataset==='ownership'&&<Notice>Private export: historical ownership events, party names and contact details. Each event/party pair is one row. This is not a current ownership certification.</Notice>}
+ <div className="admin-form-actions"><button type="submit" disabled={busy||loading||!canDownload}>{busy?'Preparing download…':'Download records'}</button></div>
+ </form>{!loading&&!options.length&&<Notice>No assigned cemeteries are available for export. Ask a cemetery administrator to review your membership.</Notice>}
+ </section></main>;
+}
