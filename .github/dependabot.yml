@@ -6,6 +6,10 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     ignore:
+      # Stay on TypeScript 6 until typescript-eslint supports TypeScript 7.
+      - dependency-name: "typescript"
+        versions:
+          - ">=7.0.0 <8.0.0"
       # @vitejs/plugin-react 6.x requires Vite 8.x; upgrade them together intentionally.
       - dependency-name: "@vitejs/plugin-react"
         versions:
