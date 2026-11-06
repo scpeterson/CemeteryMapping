@@ -1,5 +1,11 @@
 export const maintenanceRecordSelectSql = `
   maintenance_records.id::text,
+  maintenance_records.xmin::text AS version,
+  maintenance_records.assigned_to_app_user_id::text,
+  (SELECT coalesce(nullif(display_name,''),'Assigned member') FROM app_users WHERE id=maintenance_records.assigned_to_app_user_id) AS assigned_to_name,
+  maintenance_records.due_date,
+  maintenance_records.remind_on,
+  maintenance_records.reminder_dismissed_at,
   maintenance_records.cemetery_id::text,
   maintenance_records.gravesite_uuid::text,
   maintenance_records.headstone_uuid::text,

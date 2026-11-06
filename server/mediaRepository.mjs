@@ -1,6 +1,8 @@
 import { validatePhotoContextTarget, upsertPhotoContext } from './monumentPhotoContexts.mjs';
 import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 import { stageMediaFile } from "./media/uploadStorage.mjs";
+import { createHash } from "node:crypto";
+import { beginFieldOperation, completeFieldOperation, fieldRequestHash } from "./fieldOperationReceipts.mjs";
 import { randomUUID } from "node:crypto";
 import { setAuditContext } from "./auditContext.mjs";
 import { capturedAtForUpload, cleanMediaText as cleanText, mediaUploadRoot, isAllowedImageType, mediaFileExtension as fileExtension, optionalMediaNumber as optionalNumber, publicMediaFileUrl as publicFileUrl, toMediaAsset } from "./media/mediaMapping.mjs";
@@ -44,6 +46,12 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
     }
 
     await validatePhotoContextTarget(client, headstoneId, metadata, actorUser);
+    if(metadata.operationId){
+      const requestHash=fieldRequestHash({kind:"photo",headstoneId,metadata,contentType:file.contentType,originalFilename:file.originalFilename,
+        bytesHash:createHash("sha256").update(file.bytes).digest("hex")});
+      const receipt=await beginFieldOperation(client,actorUser,metadata.operationId,requestHash);
+      if(receipt.replayed){await client.query("ROLLBACK");return receipt.response;}
+    }
     const assetId = randomUUID();
     const extension = fileExtension(file.contentType, file.originalFilename);
     const storageKey = `${assetId}${extension}`;
@@ -146,9 +154,11 @@ export async function createHeadstonePhoto(pool, headstoneId, file, metadata = {
 
     if (metadata.inspectionId || metadata.maintenanceRecordId) await upsertPhotoContext(client, headstoneId, assetId, metadata);
     await stagedFile.publish();
+    const response=toMediaAsset(assetResult.rows[0]);
+    if(metadata.operationId)await completeFieldOperation(client,actorUser,metadata.operationId,response);
     commitAttempted = true;
     await client.query("COMMIT");
-    return toMediaAsset(assetResult.rows[0]);
+    return response;
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     // A failed COMMIT response may still mean the transaction committed.

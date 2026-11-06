@@ -33,6 +33,7 @@ export async function selectHeadstoneMutationState(client, id) {
     `
       SELECT
         headstones.id::text,
+        headstones.xmin::text AS version,
         ${headstoneCemeteryIdSql}::text AS cemetery_id,
         headstones.headstone_id,
         headstones.marker_type_id::text,

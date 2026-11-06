@@ -1,0 +1,44 @@
+import { expect, test } from "@playwright/test";
+import { cemeteryId, fixture } from "./fixtures/cemetery";
+
+test("cemetery administrators manage only their cemetery members with existing form styles",async({page},testInfo)=>{
+  await fixture(page);
+  const otherId="22222222-2222-4222-8222-222222222222";
+  await page.route("**/api/me",route=>route.fulfill({json:{role:"cemetery-admin",assignedCemeteryIds:[cemeteryId,otherId],cemeteryMemberships:[{cemeteryId,role:"cemetery-admin"},{cemeteryId:otherId,role:"power-user"}],permissions:{canManageUsers:false,canOpenAdminPanel:true,canViewOwnership:true}}}));
+  await page.route("**/api/admin/cemetery-records",route=>route.fulfill({json:{cemeteries:[{id:cemeteryId,name:"Managed cemetery"},{id:otherId,name:"Other cemetery"}],sections:[],lots:[]}}));
+  const member={id:otherId,email:"volunteer@example.test",displayName:"Volunteer",role:"reader",isActive:true,version:"15"};
+  let saved:Record<string,unknown>|undefined;
+  let conflict=false;
+  await page.route(`**/api/cemeteries/${cemeteryId}/members**`,async route=>{
+    if(route.request().method()==="GET")return route.fulfill({json:[member]});
+    saved=route.request().postDataJSON();
+    if(conflict)return route.fulfill({status:409,json:{error:"This membership changed. Reload members and reopen the member."}});
+    return route.fulfill({status:route.request().method()==="POST"?201:200,json:{saved:true,invitationSent:route.request().method()==="POST"}});
+  });
+  await page.goto("/");await page.getByRole("button",{name:/^Open administration:/}).click();
+  const admin=page.getByRole("dialog",{name:"Admin management"});
+  await expect(admin.getByRole("button",{name:"Users",exact:true})).toHaveCount(0);
+  await admin.getByRole("button",{name:"Members",exact:true}).click();
+  await expect(admin.getByRole("combobox",{name:"Cemetery",exact:true}).getByRole("option")).toHaveCount(1);
+  await admin.getByRole("textbox",{name:"Email",exact:true}).fill("new@example.test");
+  await admin.getByRole("textbox",{name:"Display name",exact:true}).fill("New volunteer");
+  await expect(admin.getByRole("combobox",{name:"Cemetery role",exact:true})).toHaveValue("reader");
+  await expect(admin.getByRole("combobox",{name:"Cemetery role",exact:true}).getByRole("option")).toHaveCount(3);
+  await admin.getByRole("textbox",{name:"Reason",exact:true}).fill("Approved volunteer");
+  await admin.getByRole("button",{name:"Invite or add member",exact:true}).click();
+  await expect(admin).toContainText("Invitation email sent.");
+  expect(saved).toEqual({email:"new@example.test",displayName:"New volunteer",role:"reader",reason:"Approved volunteer"});
+  await admin.locator(".admin-user-edit").filter({hasText:"volunteer@example.test"}).click();
+  await expect(admin.getByRole("textbox",{name:"Email",exact:true})).toHaveAttribute("readonly","");
+  await admin.getByRole("combobox",{name:"Cemetery role",exact:true}).selectOption("power-user");
+  await admin.getByRole("textbox",{name:"Reason",exact:true}).fill("Approved editing");conflict=true;
+  await admin.getByRole("button",{name:"Save membership",exact:true}).click();
+  await expect(admin).toContainText("This membership changed.");
+  await expect(admin.getByRole("textbox",{name:"Reason",exact:true})).toHaveValue("Approved editing");
+  expect(saved?.expectedVersion).toBe("15");expect(saved?.email).toBeUndefined();
+  await page.setViewportSize({width:320,height:900});
+  expect(await admin.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  expect(await admin.locator(".admin-nav button span").evaluateAll(labels=>labels.every(label=>label.scrollWidth<=label.clientWidth))).toBe(true);
+  await admin.getByRole("button",{name:"Save membership",exact:true}).scrollIntoViewIfNeeded();
+  await page.screenshot({path:testInfo.outputPath("members-phone.png")});
+});

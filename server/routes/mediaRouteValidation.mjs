@@ -6,6 +6,7 @@ export function validateMediaUploadMetadata(query) {
   const source = optionalText(query?.source, "Photo source", 50) || "field_upload";
   if (!["iphone", "admin_upload", "field_upload", "import", "other"].includes(source)) throw new BadRequestError("Photo source is invalid.");
   return {
+    ...(query?.operationId===undefined?{}:{operationId:validateUuid(query.operationId,"Photo action")}),
     ...(query?.inspectionId || query?.maintenanceRecordId ? validatePhotoContext(query) : {}),
     originalFilename: optionalText(query?.filename, "Filename", 255),
     headstoneId: query?.headstoneId ? validateUuid(query.headstoneId, "Headstone id") : "",

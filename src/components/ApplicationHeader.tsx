@@ -1,6 +1,7 @@
+import {TaskReminderLink} from "./TaskReminderLink";
 import { roleForCemetery } from "../lib/selectionPermissions";
-import { useRef, useState } from "react";
-import { BarChart3, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, BarChart3, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react";
 import { useAccountSession } from "../auth/sessionContext";
 import type { CurrentUser } from "../types";
 
@@ -23,6 +24,14 @@ export function ApplicationHeader({
   const session = useAccountSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  useEffect(()=>{
+    if(!menuOpen)return;
+    const close=(event:MouseEvent)=>{
+      if(event.target instanceof Element&&!event.target.closest('.application-header, [role="dialog"]'))setMenuOpen(false);
+    };
+    document.addEventListener('click',close);
+    return()=>document.removeEventListener('click',close);
+  },[menuOpen]);
 
   return (
     <header className="application-header" onKeyDown={(event) => {
@@ -62,6 +71,9 @@ export function ApplicationHeader({
             title="Open reports: run saved cemetery reports and guided queries.">
             <BarChart3 size={16} aria-hidden="true" /> Reports
           </button>
+          <a href="/exports/" aria-label="Export cemetery records" title="Download scoped CSV and GeoJSON records."><Download size={16} aria-hidden="true"/>Export</a>
+          {currentUser.role!=="reader"?<TaskReminderLink accountId={currentUser.id}/>:null}
+          {currentUser.role!=="reader"?<a href="/field/" aria-label="Open field collection: prepare records and save work offline" title="Prepare records and collect field observations and photos."><MapPinned size={16} aria-hidden="true"/>Field</a>:null}
           {currentUser.permissions.canOpenAdminPanel ? <>
             <button type="button" onClick={onOpenControl}
               aria-label="Open control point collector: align historic map images to cemetery coordinates"

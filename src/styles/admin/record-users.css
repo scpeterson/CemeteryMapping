@@ -269,9 +269,30 @@
   overflow-wrap: anywhere;
 }
 
+.cemetery-members .admin-form-actions {
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+
+.cemetery-members h4 {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 760px) {
   .admin-user-row,
   .user-membership-row {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.conflict-recovery {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.conflict-recovery button {
+  min-height: 38px;
+  max-width: 100%;
+  white-space: normal;
 }

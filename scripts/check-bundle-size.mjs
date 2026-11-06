@@ -15,6 +15,11 @@ export const budgets = [
   { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 285 },
 ];
 export const totalJavaScriptGzipBudgetKilobytes = 700;
+// Field collection is a separate, explicitly prepared offline entry. Its lazy
+// chunk has an independent limit; the existing map/core allowance stays fixed.
+export const offlineFieldGzipBudgetKilobytes = 15;
+export const recordExportGzipBudgetKilobytes = 5;
+export const maintenanceTasksGzipBudgetKilobytes = 6;
 
 export function checkBundleAssets(assets) {
 const failures = [];
@@ -29,8 +34,14 @@ for (const budget of budgets) {
 }
 
 const totalGzipBytes = assets.reduce((total, asset) => total + asset.gzipBytes, 0);
-if (totalGzipBytes > totalJavaScriptGzipBudgetKilobytes * 1024) {
-  failures.push(`all JavaScript: ${(totalGzipBytes / 1024).toFixed(2)} KiB gzip exceeds ${totalJavaScriptGzipBudgetKilobytes} KiB`);
+const fieldBytes=assets.filter(asset=>/^FieldCollectionPage-.*\.js$/u.test(asset.filename)).reduce((n,asset)=>n+asset.gzipBytes,0);
+const exportBytes=assets.filter(asset=>/^ExportRecordsPage-.*\.js$/u.test(asset.filename)).reduce((n,asset)=>n+asset.gzipBytes,0);
+const taskBytes=assets.filter(asset=>/^MaintenanceTasksPage-.*\.js$/u.test(asset.filename)).reduce((n,asset)=>n+asset.gzipBytes,0);
+if(taskBytes>maintenanceTasksGzipBudgetKilobytes*1024)failures.push(`separate tasks entry exceeds ${maintenanceTasksGzipBudgetKilobytes} KiB gzip`);
+if(exportBytes>recordExportGzipBudgetKilobytes*1024)failures.push(`separate export entry exceeds ${recordExportGzipBudgetKilobytes} KiB gzip`);
+if(fieldBytes>offlineFieldGzipBudgetKilobytes*1024)failures.push(`offline field entry exceeds ${offlineFieldGzipBudgetKilobytes} KiB gzip`);
+if (totalGzipBytes-fieldBytes-exportBytes-taskBytes > totalJavaScriptGzipBudgetKilobytes * 1024) {
+  failures.push(`core JavaScript: ${((totalGzipBytes-fieldBytes-exportBytes-taskBytes) / 1024).toFixed(2)} KiB gzip exceeds ${totalJavaScriptGzipBudgetKilobytes} KiB`);
 }
 
 return { failures, totalGzipBytes };

@@ -6,7 +6,7 @@ export function ownershipRightNotes(right) {
 }
 
 const legacyOwnerSelect = `
-  owners.id::text AS id, owners.gravesite_uuid::text, owners.owner, owners.co_owner,
+  owners.id::text AS id, NULL::text AS version, owners.gravesite_uuid::text, owners.owner, owners.co_owner,
   NULL::text AS display_name, NULL::text AS first_name, NULL::text AS last_name,
   owners.full_address, NULL::text AS municipality, NULL::text AS state, NULL::text AS zip,
   owners.phone, owners.email, owners.sale_date,
@@ -30,6 +30,7 @@ export async function selectOwnersForCemeteries(client, cemeteryIds) {
       UNION ALL
       SELECT
         concat('ownership-party-', rights.ownership_party_uuid::text) AS id,
+        concat((SELECT p.xmin::text FROM ownership_parties p WHERE p.id=rights.ownership_party_uuid),':',ownership_events.xmin::text) AS version,
         COALESCE(rights.gravesite_uuid::text, target_gravesites.id::text) AS gravesite_uuid,
         NULL::text AS owner, NULL::text AS co_owner, rights.display_name, rights.first_name, rights.last_name,
         rights.full_address, rights.municipality, rights.state, rights.zip, NULL::text AS phone, NULL::text AS email, NULL::date AS sale_date,
@@ -78,6 +79,7 @@ export async function selectOwnersForGrave(client, graveUuid) {
       UNION ALL
       SELECT
         concat('ownership-party-', current_ownership_right_owners.ownership_party_uuid::text) AS id,
+        concat((SELECT p.xmin::text FROM ownership_parties p WHERE p.id=current_ownership_right_owners.ownership_party_uuid),':',ownership_events.xmin::text) AS version,
         selected_grave.id::text AS gravesite_uuid,
         NULL::text AS owner, NULL::text AS co_owner, current_ownership_right_owners.display_name, current_ownership_right_owners.first_name, current_ownership_right_owners.last_name,
         current_ownership_right_owners.full_address, current_ownership_right_owners.municipality, current_ownership_right_owners.state, current_ownership_right_owners.zip, NULL::text AS phone, NULL::text AS email, NULL::date AS sale_date,

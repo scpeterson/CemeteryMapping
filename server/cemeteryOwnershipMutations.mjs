@@ -1,3 +1,5 @@
+import { assertRecordVersion } from "./recordVersions.mjs";
+import { readOwnerEdit } from "./ownerEditVersion.mjs";
 import { cemeteryRole } from "./auth.mjs";
 import {readOwnershipEditor} from "./ownershipEditing.mjs";
 import {BadRequestError, ConflictError} from "./requestValidation.mjs";
@@ -174,6 +176,11 @@ export async function updateOwnershipParty(pool, partyId, eventId, update, { act
     );
     if (!scope.rowCount) {
       return rollback(undefined);
+    }
+    if (update.expectedVersion !== undefined) {
+      const latest=await readOwnerEdit(client,partyId,eventId,allowedCemeteryIds,{lock:true});
+      if(!latest)return rollback(undefined);
+      assertRecordVersion(latest.version,update.expectedVersion);
     }
     const recordedEffectiveDate = splitRecordedDate(update.effectiveDate);
     await client.query(
