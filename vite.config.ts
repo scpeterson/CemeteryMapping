@@ -46,7 +46,7 @@ export default defineConfig({
               // These helpers are shared by the map and standalone workspaces.
               // Keep them together to avoid repeated chunk/import overhead.
               name: "workspace-shared",
-              test: /src[\\/](?:api[\\/](?:cemeteryApi|apiClient|profileApi|sessionContext|recordEditPayloads)|hooks[\\/](?:useMediaUrl|useRecordOptions)|components[\\/](?:ConflictRecovery|ui[\\/]Feedback))\.tsx?$/,
+              test: /src[\\/](?:api[\\/](?:cemeteryApi|apiClient|profileApi)|auth[\\/]sessionContext|lib[\\/]recordEditPayloads|hooks[\\/](?:useMediaUrl|useRecordOptions|useDraftState)|components[\\/](?:detail[\\/]MediaPhoto|ui[\\/](?:Feedback|ConflictRecovery)))\.tsx?$/,
               priority: 25,
             },
             {
