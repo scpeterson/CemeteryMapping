@@ -10,6 +10,8 @@
   url: /frontend-development.html
 - title: "Rebuild Guide"
   url: /rebuild.html
+- title: "Release Status"
+  url: /release-status.html
 - title: "Database Upgrades and Review Tools"
   url: /postgresql-18-upgrade.html
 - title: "Data Sources"
