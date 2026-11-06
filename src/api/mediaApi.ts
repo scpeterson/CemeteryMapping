@@ -3,6 +3,7 @@ import type { MediaAsset } from "../types";
 import { authorizedFetch, jsonRequest, jsonResponse, normalizeBaseUrl } from "./apiClient";
 
 export type UploadHeadstonePhotoInput = {
+  operationId?: string;
   inspectionId?: string;
   maintenanceRecordId?: string; faceId?: string;
   phase?: "unspecified" | "before" | "during" | "after";
@@ -18,6 +19,7 @@ export type UploadHeadstonePhotoInput = {
 
 export async function uploadHeadstonePhoto(input: UploadHeadstonePhotoInput): Promise<MediaAsset> {
   const params = new URLSearchParams();
+  if (input.operationId) params.set("operationId",input.operationId);
   if (input.inspectionId) params.set("inspectionId", input.inspectionId);
   if (input.maintenanceRecordId) params.set("maintenanceRecordId", input.maintenanceRecordId);
   if (input.faceId) params.set("faceId", input.faceId);

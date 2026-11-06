@@ -92,3 +92,5 @@ export class ApiError extends Error {
     this.referenceId = referenceId;
   }
 }
+
+export const isRecordConflict = (error: unknown) => error instanceof ApiError && error.status === 409;

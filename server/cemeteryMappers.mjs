@@ -25,6 +25,7 @@ function ownerDisplayName(owner) {
 export function toOwner(owner) {
   return {
     id: owner.id,
+    ...(owner.version ? { version: owner.version } : {}),
     ownershipEventId: owner.ownership_event_id,
     ownershipEventRightId: owner.ownership_event_right_id,
     ownershipTargetType: owner.ownership_target_type,
@@ -48,6 +49,7 @@ export function toBurial(burial) {
 
   return {
     id: burial.id,
+    ...(burial.version ? { version: burial.version } : {}),
     person: {
       id: `person-${burial.id}`,
       firstName: burial.first_name ?? "",
@@ -172,6 +174,8 @@ export function toGraveFeature(row) {
 
 export function toMaintenanceRecord(row) {
   return {
+    ...(row.version?{version:row.version}:{}),
+    ...(Object.hasOwn(row,'due_date')?{assignedToId:row.assigned_to_app_user_id??'',assignedToName:row.assigned_to_name??'',dueDate:dateOnly(row.due_date)??'',remindOn:dateOnly(row.remind_on)??''}:{}),
     id: row.id,
     cemeteryId: row.cemetery_id,
     targetType: row.headstone_uuid ? "headstone" : "gravesite",
@@ -214,6 +218,7 @@ export function toHeadstone(row) {
   const orientation = row.source_properties?.MonumentOrientation ?? {};
   return {
     id: row.id,
+    ...(row.version ? { version: row.version } : {}),
     headstoneId: row.headstone_id,
     markerType: toLookupValue(row, "marker_type"),
     markerScope: toLookupValue(row, "marker_scope"),

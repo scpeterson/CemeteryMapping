@@ -1,3 +1,7 @@
+import { burialEditPayload as blankBurialForm } from "../../lib/recordEditPayloads";
+import { isRecordConflict } from "../../api/apiClient";
+import { ConflictRecovery } from "../ui/ConflictRecovery";
+import { fetchBurial } from "../../api/cemeteryApi";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useId } from "react";
 import { useDraftState } from "../../hooks/useDraftState";
@@ -15,41 +19,6 @@ import { ReviewBadgeGroup } from "./RecordReview";
 import { dataConfidenceOptions, reviewStatusOptions } from "./reviewOptions";
 
 import BurialNameFields from "./BurialNameFields";
-
-function blankBurialForm(burial: Burial): SaveBurialInput {
-  return {
-    firstName: burial.person.firstName,
-    givenNameStatus: burial.person.givenNameStatus ?? (burial.person.firstName.trim() ? "recorded" : "unknown"),
-    displayName: burial.person.displayName ?? "",
-    lastName: burial.person.lastName === "Unknown" ? "" : burial.person.lastName,
-    maidenName: burial.person.maidenName ?? "",
-    namePrefix: burial.person.namePrefix ?? "",
-    nameSuffix: burial.person.nameSuffix ?? "",
-    birthDate: burial.person.birthDate ?? "",
-    deathDate: burial.person.deathDate ?? "",
-    birthPlaceId: burial.birthPlace?.id ?? "",
-    deathPlaceId: burial.deathPlace?.id ?? "",
-    burialDate: burial.burialDate ?? "",
-    intermentType: burial.intermentType ?? "unknown",
-    recordStatusCode: burial.recordStatusCode ?? "interred",
-    funeralHome: burial.funeralHome ?? "",
-    sourceUrl: burial.sourceUrl ?? "",
-    veteran: burial.veteran ?? false,
-    militaryUnit: burial.militaryUnit ?? "",
-    militaryBranchCode: burial.militaryBranchCode ?? "",
-    militaryRankCode: burial.militaryRankCode ?? "",
-    militaryWarServiceCode: burial.militaryWarServiceCode ?? "",
-    militaryDecorationCodes: (burial.militaryDecorations ?? []).map((decoration) => decoration.code),
-    militaryEnlistedDate: burial.militaryEnlistedDate ?? "",
-    militaryDischargedDate: burial.militaryDischargedDate ?? "",
-    notes: burial.recordNotes ?? "",
-    dataConfidence: burial.dataConfidence ?? "unknown",
-    reviewStatus: burial.reviewStatus ?? "unreviewed",
-    reviewNotes: burial.reviewNotes ?? "",
-    sourceConflict: burial.sourceConflict ?? false,
-    reason: "Burial detail update",
-  };
-}
 
 function militaryServiceText(burial: Burial) {
   const rankLabel =
@@ -96,11 +65,13 @@ export function BurialRecord({
   const militaryRankOptions = lookups.militaryRanks.filter((option) => option.militaryBranchCode === form.militaryBranchCode);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const [conflict,setConflict]=useState(false);
   const errorId = useId();
 
   const startEditing = () => {
     setForm(blankBurialForm(burial));
     setError(undefined);
+    setConflict(false);
     setIsEditing(true);
   };
 
@@ -132,12 +103,14 @@ export function BurialRecord({
   const save = async (event: FormEvent) => {
     event.preventDefault();
     setIsSaving(true);
+    setConflict(false);
     setError(undefined);
     try {
       const saved = await onSave(burial.id, form);
       setForm(blankBurialForm(saved));
       setIsEditing(false);
     } catch (saveError) {
+      setConflict(isRecordConflict(saveError));
       setError(saveError instanceof Error ? saveError.message : "Unable to save burial.");
     } finally {
       setIsSaving(false);
@@ -322,6 +295,7 @@ export function BurialRecord({
           Review notes
           <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
         </label>
+        {conflict&&<ConflictRecovery disabled={isSaving} reload={async()=>{setForm(blankBurialForm(await fetchBurial(burial.id)));setError(undefined);setConflict(false);}}/>}
         {error ? <p id={errorId} className="detail-message is-error" role="alert">{error}</p> : null}
         <div className="burial-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>

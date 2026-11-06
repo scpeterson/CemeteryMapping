@@ -1,3 +1,4 @@
+import { ConflictRecovery } from "../ui/ConflictRecovery";
 import { EmptyState, Notice } from "../ui/Feedback";
 import { useState } from "react";
 import { fetchUserActivity } from "../../api/profileApi";
@@ -30,6 +31,7 @@ const userTitle = (user: AppUser) =>
 function userFormFromUser(user: AppUser): UserFormState {
   return {
     id: user.id,
+    expectedVersion: user.version,
     externalSubject: user.externalSubject,
     email: user.email,
     displayName: user.displayName,
@@ -42,6 +44,7 @@ function userFormFromUser(user: AppUser): UserFormState {
 
 export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAdminRecords }) {
   const {
+    conflict, reloadUser,
     query, setQuery, status, setStatus, cemeteryFilter, setCemeteryFilter,
     offset, pageSize, hasMore, setOffset, prepareAccessRequest,
     requestRefreshKey,
@@ -72,6 +75,7 @@ export function UsersAdminTab({ cemeteryRecords }: { cemeteryRecords: CemeteryAd
       {isLoading ? <Notice>Loading users…</Notice> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       {message ? <Notice tone="success">{message}</Notice> : null}
+      {conflict&&<ConflictRecovery disabled={isSaving} reload={reloadUser}/>}
       <AccessRequestsPanel refreshKey={requestRefreshKey} onReview={async (request) => {
         if (!confirmDiscardChanges()) return;
         if (await prepareAccessRequest(request)) document.getElementById("user-setup-form")?.scrollIntoView({ behavior: "smooth" });

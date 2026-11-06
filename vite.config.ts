@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 const packageJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
 const apiProxyTarget = process.env.VITE_PROXY_API_TARGET ?? "http://127.0.0.1:3001";
@@ -15,7 +16,14 @@ function gitSha() {
 }
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), {
+    name:"field-offline-assets",
+    generateBundle(_options,bundle){
+      const files=Object.keys(bundle).filter(name=>/^assets\/[^/]+\.(js|css|woff2?)$/u.test(name)).sort().map(name=>`/${name}`);
+      const revision=createHash("sha256").update(files.join("\n")).digest("hex").slice(0,16);
+      this.emitFile({type:"asset",fileName:"field-assets.json",source:JSON.stringify({revision,files})});
+    },
+  }],
   optimizeDeps: {
     // MapLibre 6 loads its ESM worker relative to import.meta.url. Pre-bundling
     // the main module into .vite/deps separates it from that worker file.
@@ -34,6 +42,13 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
+            {
+              // These helpers are shared by the map and standalone workspaces.
+              // Keep them together to avoid repeated chunk/import overhead.
+              name: "workspace-shared",
+              test: /src[\\/](?:api[\\/](?:cemeteryApi|apiClient|profileApi)|auth[\\/]sessionContext|lib[\\/]recordEditPayloads|hooks[\\/](?:useMediaUrl|useRecordOptions|useDraftState)|components[\\/](?:detail[\\/]MediaPhoto|ui[\\/](?:Feedback|ConflictRecovery)))\.tsx?$/,
+              priority: 25,
+            },
             {
               name: "vendor-map",
               test: /node_modules[\\/](maplibre-gl|@mapbox)[\\/]/,

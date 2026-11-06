@@ -53,6 +53,7 @@ export type PlaceSearchResponse = {
 };
 
 export type Burial = {
+  version?: string;
   id: string;
   person: Person;
   burialDate?: string;
@@ -90,6 +91,7 @@ export type Burial = {
 };
 
 export type SaveBurialInput = {
+  expectedVersion?: string;
   givenNameStatus?: GivenNameStatus;
   displayName?: string;
   firstName: string;

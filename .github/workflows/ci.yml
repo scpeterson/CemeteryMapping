@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, "codex/**"]
 
 permissions:
   contents: read
@@ -111,6 +111,11 @@ jobs:
       - name: Install Chromium and operating system dependencies
         run: npx playwright install --with-deps chromium
       - run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
+      - name: Verify built field shell offline
+        if: matrix.shard == 1
+        env:
+          FIELD_BUILD: '1'
+        run: npx playwright test --config playwright.field-offline.config.ts
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

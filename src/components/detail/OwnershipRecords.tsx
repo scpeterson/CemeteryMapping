@@ -1,3 +1,6 @@
+import { isRecordConflict } from "../../api/apiClient";
+import { ConflictRecovery } from "../ui/ConflictRecovery";
+import { fetchOwnerEdit } from "../../api/ownershipApi";
 import { useDraftState } from "../../hooks/useDraftState";
 import { type FormEvent, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -320,23 +323,25 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave, initial, onF
   );
 }
 
+function ownerEditForm(owner:Owner):UpdateOwnerInput {
+  return {expectedVersion:owner.version,firstName:owner.firstName,lastName:owner.lastName,fullAddress:owner.fullAddress,
+    municipality:owner.municipality,state:owner.state,zip:owner.zip,effectiveDate:owner.effectiveDate??"",
+    deedOnFile:owner.deedOnFile,deedRegisterOnFile:owner.deedRegisterOnFile,reason:"Owner information update"};
+}
+
 export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: { owner: Owner; canUpdate: boolean; canRemove: boolean; onSave: (partyId: string, eventId: string, update: UpdateOwnerInput) => Promise<void>; onRemove: (rightId: string) => Promise<void> }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirmingRemoval, setIsConfirmingRemoval] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
-  const [form, setForm] = useDraftState<UpdateOwnerInput>({
-    firstName: owner.firstName, lastName: owner.lastName, fullAddress: owner.fullAddress,
-    municipality: owner.municipality, state: owner.state, zip: owner.zip,
-    effectiveDate: owner.effectiveDate ?? "", deedOnFile: owner.deedOnFile, deedRegisterOnFile: owner.deedRegisterOnFile,
-    reason: "Owner information update",
-  });
+  const [conflict,setConflict]=useState(false);
+  const [form, setForm] = useDraftState<UpdateOwnerInput>(()=>ownerEditForm(owner));
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!owner.ownershipEventId) return;
     setIsSaving(true); setError(undefined);
     try { await onSave(owner.id, owner.ownershipEventId, form); setForm(form); setIsEditing(false); }
-    catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Unable to update owner."); }
+    catch (saveError) { setConflict(isRecordConflict(saveError)); setError(saveError instanceof Error ? saveError.message : "Unable to update owner."); }
     finally { setIsSaving(false); }
   };
   const remove = async () => {
@@ -351,7 +356,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
       <div className="owner-row-header">
         <strong>{owner.displayName}</strong>
         <div className="owner-row-actions">
-          {canUpdate && owner.ownershipEventId ? <button type="button" className="icon-text-button" onClick={() => setIsEditing(true)}><Pencil size={14} aria-hidden="true" />Edit</button> : null}
+          {canUpdate && owner.ownershipEventId ? <button type="button" className="icon-text-button" onClick={() => {setConflict(false);setError(undefined);setForm(ownerEditForm(owner));setIsEditing(true);}}><Pencil size={14} aria-hidden="true" />Edit</button> : null}
           {canRemove && owner.ownershipEventRightId && owner.ownershipTargetType === "gravesite" ? <button type="button" className="icon-text-button is-danger" onClick={() => setIsConfirmingRemoval(true)}><Trash2 size={14} aria-hidden="true" />Remove</button> : null}
         </div>
       </div>
@@ -381,6 +386,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
         <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedOnFile} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />Deed on file</label>
         <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />Deed register on file</label>
       </div>
+      {conflict&&<ConflictRecovery disabled={isSaving} reload={async()=>{if(!owner.ownershipEventId)return;const latest=await fetchOwnerEdit(owner.id,owner.ownershipEventId);setForm({...latest,expectedVersion:latest.version,reason:"Owner information update"});setError(undefined);setConflict(false);}}/>}
       {error ? <p className="detail-message is-error ownership-wide-field" role="alert">{error}</p> : null}
       <div className="ownership-form-actions ownership-wide-field"><button type="button" className="secondary-button" onClick={() => setIsEditing(false)}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save owner"}</button></div>
     </form>

@@ -17,6 +17,8 @@ export type GraveFeature = {
 };
 
 export type MaintenanceRecord = {
+  version?: string;
+  assignedToId?: string; assignedToName?: string; dueDate?: string; remindOn?: string;
   id: string;
   cemeteryId: string;
   targetType: "gravesite" | "headstone";
@@ -75,6 +77,7 @@ export type SaveGraveFeatureInput = {
 };
 
 export type SaveMaintenanceRecordInput = {
+  expectedVersion?: string;
   targetType: "gravesite" | "headstone";
   graveSpaceId: string;
   headstoneId: string;
