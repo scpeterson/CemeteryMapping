@@ -757,3 +757,19 @@ NHG review, report, search and selector checks; diagnostic access is denied and 
 settings are restored after scoped queries. See the [implementation and monitoring
 record](postgresql-18-upgrade.md#sql-efficiency-implementation-2026-11-05) and
 [ADR 0196](adr/0196-measured-sql-efficiency.md). No spatial correction was included.
+
+
+## November 6 DEV release and pending TEST promotion
+
+The seven feature PRs #789–#795 and dependency PRs #796–#799 are merged. DEV runs
+`9aec56d2b4bde06dde2491d530e78b30b12b32a6` with migrations through 516.
+This is not a hosted TEST release record. Check the target's actual revision,
+`databasechangelog` and pending migrations before the next hosted deployment.
+
+Rehearse pending migrations, retain database/media recovery material, refresh API
+role grants and deploy matched frontend/API through the existing release process.
+Preserve TEST account/membership data, field receipts, staged sources, merge evidence
+and maintenance schedules. Verify registered mixed-role accounts, conflict recovery,
+private exports and task reminders, plus the built offline shell over HTTPS.
+See [release status and checks](release-status.md#promotion-to-test) and
+[current schema requirements](rebuild.md#current-schema-and-workspace-release).

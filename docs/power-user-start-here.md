@@ -15,6 +15,29 @@ Use this guide if you are new to using Cemetery Mapping to find cemetery records
 
 Cloudflare access, your sign-in account, and your application role are separate requirements. Completing one does not grant the others.
 
+## New workspaces and availability
+
+Confirm the environment's [release status](release-status.md) with your administrator.
+The seven November features are deployed to DEV; that does not establish their
+availability on hosted TEST. Each person uses one account, with an independent
+role for each cemetery. Update contact/preferences through **My profile**.
+
+- **Field** saves encrypted marker/person drafts and original photos on your device.
+  Prepare the built offline page while online, then synchronize with the original
+  account when connected. Saving on the device does not save to the server.
+- **Export** downloads scoped CSV or gravesite/marker GeoJSON. Ownership contacts
+  require separate permission and explicit confirmation.
+- **Tasks** lists assigned or cemetery work, due dates and in-app reminders.
+  Reminders are shown while the application is in use; no email or push is sent.
+- Cemetery administrators use **Members**, **Onboarding** and **Recovery** under
+  Administration for delegated access, reviewed imports, restoration and person
+  duplicate review. Ask an administrator to review duplicates or deleted records.
+
+If saving reports another editor's change, keep or copy your draft, then explicitly
+reload the latest values and review them before saving again. The reload action
+discards the local draft after confirmation. Detailed steps are in
+[Operator Workflows](operator-workflows.md#recovering-other-conflicting-edits).
+
 ## Take a first tour
 
 1. Open the map and use its legend to identify the displayed features. Zoom into your cemetery and select a gravesite or monument.

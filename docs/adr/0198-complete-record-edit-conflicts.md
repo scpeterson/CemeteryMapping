@@ -3,7 +3,8 @@
 
 # ADR 0198: Protect record editors against concurrent changes
 
-- Status: Accepted; not deployed
+- Status: Accepted; deployed to DEV on 2026-11-06
+- Deployment evidence: [November 6 release status](../release-status.md); TEST promotion not established by this release.
 - Date: 2026-11-05
 - Related: [ADR 0197](0197-delegated-cemetery-members.md)
 
