@@ -220,8 +220,8 @@ If a decision is replaced, do not rewrite history. Add a new ADR and mark the ol
 
 ## Map and passageway schema through migration 504
 
-The API startup contract requires `502-passageway-area-type`; migrate before
-starting a new API build. Migrations 502–503 add typed passageways, original
+The passageway release originally required `502-passageway-area-type`. The current
+API requires migration 516; see [current requirements](#current-schema-and-workspace-release). Migrations 502–503 add typed passageways, original
 registry location references, individual-rights enforcement and the ten approved
 Trinity polygons. Migration 504 adjusts the southern C rows and C-P03. Real-data
 geometry migrations may skip a database without their source cemetery; do not
@@ -256,3 +256,51 @@ shards in parallel. Recognized documentation-only PRs build and validate the doc
 every main push still runs application validation. The required
 `Lint, build, and test` aggregate remains the hosted deployment gate. See
 [ADR 0181](adr/0181-parallel-ci.md) for classification, caches, isolation and recovery.
+
+
+## Current schema and workspace release
+
+The API startup guard requires `516-maintenance-task-scheduling`. Apply all pending
+changesets in order; checking for military-unit migration 510 or passageway
+migration 502 alone is insufficient. The new schema additions are:
+
+| Migration | Purpose |
+|---|---|
+| 513 | Transactional field-operation receipts for safe synchronization retries |
+| 514 | Immutable staged import source, review and approval history |
+| 515 | Person-merge evidence and guards against new references to archived people |
+| 516 | Maintenance assignments, calendar dates, reminder reset and work-queue indexes |
+
+After backing up a persistent target and rehearsing its pending migrations on an
+isolated copy, apply migrations and refresh the restricted runtime grants before
+starting the matching API. Local DEV commands are:
+
+```bash
+APP_ENV=dev npm run db:validate
+APP_ENV=dev npm run db:migrate
+APP_ENV=dev npm run db:configure-api
+npm ci
+npm run build:dev
+npm run dev
+```
+
+Use the target's own configuration and [hosted release procedure](hosted-test.md)
+for hosted TEST. Retain the existing PostgreSQL 18 volume selection and local
+Compose override; do not recreate the database against an older volume. Changes
+to environment files require restarting the relevant services. `db:configure-api`
+writes the local runtime credential file: run it from the target checkout, not
+an isolated worktree whose ignored environment file points at another environment.
+
+The field worker and asset manifest are produced by `npm run build:test` or
+`npm run build:prod`. Serve the build through the target HTTPS frontend and use
+**Prepare offline page loading**; Vite development mode does not provide offline
+page reload. Static caching is limited to the field shell/assets, not private API
+or media responses. Keep field-operation receipts with the database so uncertain
+retries remain deduplicated. Rollback of these features can remove receipt,
+import/merge evidence or task scheduling data; use reviewed recovery that accounts
+for later edits rather than rolling back a populated environment as a test.
+
+See [release status](release-status.md) for dated DEV evidence and pending TEST
+promotion, and [operator workflows](operator-workflows.md#offline-field-collection)
+for the user procedures. The public deployment record excludes private backup
+paths; those are retained in the private operations manual.

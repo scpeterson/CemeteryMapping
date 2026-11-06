@@ -3,7 +3,8 @@
 
 # ADR 0199: Encrypted offline field collection and safe synchronization
 
-- Status: Accepted; not deployed
+- Status: Accepted; deployed to DEV on 2026-11-06
+- Deployment evidence: [November 6 release status](../release-status.md); TEST promotion not established by this release.
 - Date: 2026-11-05
 - Related: [ADR 0198](0198-complete-record-edit-conflicts.md)
 

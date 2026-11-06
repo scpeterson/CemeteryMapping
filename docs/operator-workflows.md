@@ -114,7 +114,7 @@ Gravesite detail saves detect when another edit has changed the record since it 
 2. Select `Reload latest values (discard edits)` to replace the form with the current server values.
 3. Compare those values with your intended change, reapply the appropriate edits, and save again.
 
-This protection applies to the gravesite detail edit, not every mutation in the application. If you select another record while a save is in progress, its completion does not switch the visible selection back to the original grave.
+These steps describe the gravesite editor; the record editors covered below have their own version checks. If you select another record while a save is in progress, its completion does not switch the visible selection back to the original grave.
 
 ### Recovering Other Conflicting Edits
 
@@ -197,7 +197,7 @@ Open **My profile** from the application menu to edit your display name, optiona
 
 ### Profile and Membership Deployment
 
-Apply Liquibase migration `509-user-profiles-and-cemetery-memberships` before starting the updated API, then refresh the restricted API role grants using `db:configure-api` locally or the hosted runbook's role configuration script. The current API requires the latest schema contract (`510-burial-military-unit`), so apply all pending migrations in order. Migration 509 copies existing editable assignments to the user's current cemetery role and preserves read-only assignments as readers. System administrator access remains global. New profile fields start empty; last-activity tracking starts with subsequent authenticated API requests.
+Apply Liquibase migration `509-user-profiles-and-cemetery-memberships` before starting the updated API, then refresh the restricted API role grants using `db:configure-api` locally or the hosted runbook's role configuration script. The current API requires the latest schema contract (`516-maintenance-task-scheduling`), so apply all pending migrations in order. Migration 509 copies existing editable assignments to the user's current cemetery role and preserves read-only assignments as readers. System administrator access remains global. New profile fields start empty; last-activity tracking starts with subsequent authenticated API requests.
 
 For verification, use an account with a cemetery-admin membership in one cemetery and a reader membership in another. Confirm it can switch maps, edit only the first cemetery, cannot delete photos or edit inspections in the reader cemetery, and cannot access the system user directory. Save a profile and check its attributed change in **View activity**. Before deployment, run the PostgreSQL integration check with `APP_ENV=test node --test scripts/user-profiles.integration.mjs`; its fixtures and migration rehearsal are rolled back.
 

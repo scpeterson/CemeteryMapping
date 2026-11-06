@@ -213,7 +213,7 @@ Search currently returns populated places such as cities and towns, rather than 
 
 ### Military units and organizations
 
-Burial records have an optional **Military unit / organization** field for recorded companies, regiments, battalions, ships, or other units (up to 500 characters). For example, enter `Company E, 136th Pennsylvania Infantry Regiment` while keeping **Military branch** and **War service** as separate selections. The field is enabled for veterans and displayed after saving. See [operator instructions](docs/operator-workflows.md#burial-military-unit--organization). Migration `510-burial-military-unit` must be applied before starting the current API.
+Burial records have an optional **Military unit / organization** field for recorded companies, regiments, battalions, ships, or other units (up to 500 characters). For example, enter `Company E, 136th Pennsylvania Infantry Regiment` while keeping **Military branch** and **War service** as separate selections. The field is enabled for veterans and displayed after saving. See [operator instructions](docs/operator-workflows.md#burial-military-unit--organization). This field requires migration `510-burial-military-unit`; the current API requires all migrations through `516-maintenance-task-scheduling`. See [release status](docs/release-status.md) and [rebuild requirements](docs/rebuild.md#current-schema-and-workspace-release).
 
 ### API Security
 
