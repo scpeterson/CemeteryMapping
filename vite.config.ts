@@ -43,6 +43,13 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
+              // These helpers are shared by the map and standalone workspaces.
+              // Keep them together to avoid repeated chunk/import overhead.
+              name: "workspace-shared",
+              test: /src[\\/](?:api[\\/](?:cemeteryApi|apiClient|profileApi|sessionContext|recordEditPayloads)|hooks[\\/](?:useMediaUrl|useRecordOptions)|components[\\/](?:ConflictRecovery|ui[\\/]Feedback))\.tsx?$/,
+              priority: 25,
+            },
+            {
               name: "vendor-map",
               test: /node_modules[\\/](maplibre-gl|@mapbox)[\\/]/,
               priority: 30,
