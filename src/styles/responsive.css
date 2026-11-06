@@ -151,7 +151,7 @@
   }
 
   .admin-nav {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 64px), 1fr));
   }
 
   .admin-nav button {

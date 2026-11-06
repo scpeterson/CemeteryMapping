@@ -23,6 +23,7 @@ const BulkAdminTab = lazy(() => import("./admin/BulkAdminTab").then((module) => 
 const NorthHillsAdminTab = lazy(() => import("./admin/NorthHillsAdminTab").then((module) => ({ default: module.NorthHillsAdminTab })));
 const SourcePeopleAdminTab = lazy(() => import("./admin/SourcePeopleAdminTab").then((module) => ({ default: module.SourcePeopleAdminTab })));
 const LookupAdminTab = lazy(() => import("./admin/LookupAdminTab").then((module) => ({ default: module.LookupAdminTab })));
+const CemeteryMembersAdminTab = lazy(() => import("./admin/CemeteryMembersAdminTab").then((module) => ({ default: module.CemeteryMembersAdminTab })));
 export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>(currentUser.permissions.canManageUsers ? "users" : "records");
   const [auditSeedFilters, setAuditSeedFilters] = useState<AuditEventFilters>();
@@ -259,6 +260,7 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
 
       <div className="admin-workspace">
         <nav className="admin-nav" aria-label="Admin sections">
+          {canUseBulkTools ? <button type="button" aria-current={activeTab === "members" ? "page" : undefined} className={activeTab === "members" ? "is-active" : undefined} onClick={() => setActiveTab("members")}><UserCog size={16} aria-hidden="true" /><span>Members</span></button> : null}
           {canManageUsers ? <button
             type="button"
             aria-current={activeTab === "users" ? "page" : undefined}
@@ -365,6 +367,8 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
           <Suspense fallback={<p className="admin-message">Loading admin workflow…</p>}>
             {activeTab === "users" && canManageUsers ? (
               <UsersAdminTab cemeteryRecords={cemeteryRecords} />
+            ) : activeTab === "members" && canUseBulkTools ? (
+              <CemeteryMembersAdminTab currentUser={currentUser} cemeteryRecords={cemeteryRecords} />
             ) : activeTab === "records" ? (
               <RecordsAdminTab
                 cemeteryRecords={cemeteryRecords}
