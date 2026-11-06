@@ -29,6 +29,7 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0201: Record recovery and reviewed person merges](0201-record-recovery-and-reviewed-person-merges.md)
 - [ADR 0200: Guided cemetery setup and reviewed imports](0200-guided-cemetery-onboarding.md)
 - [ADR 0199: Encrypted offline field collection](0199-offline-field-collection.md)
 - [ADR 0198: Protect record editors against concurrent changes](0198-complete-record-edit-conflicts.md)

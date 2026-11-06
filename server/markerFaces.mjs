@@ -79,7 +79,7 @@ export async function validateFaceReferences(client, markerId, faces) {
   const mediaIds = [...new Set(faces.flatMap((f) => f.mediaAssetIds))];
   if (burialIds.length) {
     const result = await client.query(`SELECT b.id::text FROM burials b JOIN headstone_burials hb ON hb.burial_uuid=b.id
-      WHERE hb.headstone_uuid=$1 AND hb.deleted_at IS NULL AND b.deleted_at IS NULL AND b.id=ANY($2::uuid[])`, [markerId, burialIds]);
+      WHERE hb.headstone_uuid=$1 AND hb.deleted_at IS NULL AND b.deleted_at IS NULL AND b.id=ANY($2::uuid[]) FOR SHARE OF b,hb`, [markerId, burialIds]);
     if (new Set(result.rows.map((r) => r.id)).size !== burialIds.length) throw new BadRequestError("Face people must be active burial records linked to this marker.");
   }
   if (mediaIds.length) {

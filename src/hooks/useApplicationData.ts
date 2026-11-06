@@ -39,6 +39,7 @@ export function useApplicationData(setSelectedGrave: Dispatch<SetStateAction<Gra
   const [lookupLoading, setLookupLoading] = useState(true);
   const [lookupAttempt, setLookupAttempt] = useState(0);
   const [headstoneLookups, setHeadstoneLookups] = useState<HeadstoneLookups>(emptyHeadstoneLookups);
+  const [dataAttempt, setDataAttempt] = useState(0);
   const [userAttempt, setUserAttempt] = useState(0);
   const [userError, setUserError] = useState<string>();
   useEffect(() => {
@@ -104,8 +105,8 @@ export function useApplicationData(setSelectedGrave: Dispatch<SetStateAction<Gra
       isCurrent = false;
       controller.abort();
     };
-  }, [setSelectedGrave]);
+  }, [setSelectedGrave, dataAttempt]);
 
-  return { refreshCurrentUser: () => setUserAttempt(value => value + 1), data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading,
+  return { refreshCemeteryData: () => setDataAttempt(value => value + 1), refreshCurrentUser: () => setUserAttempt(value => value + 1), data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading,
     retryLookups: () => setLookupAttempt((value) => value + 1) };
 }

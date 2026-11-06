@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "514-guided-imports";
+export const requiredSchemaChangeset = "515-reviewed-burial-merges";
 
 export async function assertCurrentSchema(pool) {
   let result;

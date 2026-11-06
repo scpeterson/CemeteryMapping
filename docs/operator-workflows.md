@@ -1349,3 +1349,31 @@ history and created record IDs remain with the batch after approval/rejection.
 See [ADR 0200](adr/0200-guided-cemetery-onboarding.md) for deployment and source
 retention. Specialized headstone spreadsheet, deed registry and OCR sources still
 use their existing documented evidence workflows.
+
+## Deleted-record recovery and person duplicates
+
+Cemetery administrators can open **Administration → Recovery**, select an
+administered cemetery and record type, and search deleted records. Select a row,
+review its deletion reason, enter a restoration reason and confirm. Restore parents
+first. Restore a photo asset only after its original file is available; restore
+its library/observation links separately. Restoring an inspection retains its
+source, face identities/readings and manually-edited state. Other deleted children
+stay deleted. Existing rejected/review statuses are not promoted by restoration.
+A conflict retains your reason; reload current records and review again. Close
+administration to refresh the map and selected record.
+
+For person duplicates, search names/gravesite IDs, choose the duplicate to archive
+and the surviving person, then **Preview person merge**. Both must be active on the
+same gravesite. Confirm they describe the same person and that the survivor's
+profile is the one to keep. Correct the survivor's profile first if necessary,
+then obtain a new preview. Approval preserves donor details and original evidence
+in the archive, transfers supported source/memorial/place relationships and face
+person assignments, and retains original readings/photos. Changed evidence or
+relationship collisions require another review; no silent overwrite is applied.
+
+Merged donors appear as merged in deleted people and cannot be restored normally.
+**Download merge evidence** retrieves the original record and relationship snapshots.
+Undo requires a separately reviewed correction, not a donor restore. Marker and
+gravesite geometry duplicates need survey/source review outside this person merge.
+For supported records, transaction safeguards and deployment/retention, see
+[ADR 0201](adr/0201-record-recovery-and-reviewed-person-merges.md).

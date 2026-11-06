@@ -20,3 +20,14 @@
 .onboarding-workflow .admin-form { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
 .onboarding-workflow input, .onboarding-workflow select, .onboarding-workflow textarea { min-width: 0; max-width: 100%; }
 .onboarding-workflow .admin-form-actions { flex-wrap: wrap; grid-column: 1 / -1; }
+
+.record-recovery { min-width: 0; overflow-wrap: anywhere; }
+.record-recovery .admin-form { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.record-recovery .admin-form > h4, .record-recovery .admin-form > p, .record-recovery .admin-form > .ui-notice { grid-column: 1 / -1; }
+.record-recovery input, .record-recovery select, .record-recovery textarea { min-width: 0; max-width: 100%; }
+.record-recovery .admin-form-actions { flex-wrap: wrap; grid-column: 1 / -1; }
+.merge-ack { display: flex; align-items: center; gap: 8px; }
+.merge-comparison { table-layout: fixed; width: 100%; border-collapse: collapse; }
+.merge-comparison td, .merge-comparison th { padding: 8px; border: 1px solid #d9e0d5; text-align: left; overflow-wrap: anywhere; white-space: pre-wrap; }
+.record-recovery .merge-ack, .onboarding-workflow .import-ack { display: flex; align-items: flex-start; }
+.record-recovery .merge-ack input, .onboarding-workflow .import-ack input { width: 16px; height: 16px; margin: 2px 0 0; flex-shrink: 0; }
