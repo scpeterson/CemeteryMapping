@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "513-offline-field-operations";
+export const requiredSchemaChangeset = "514-guided-imports";
 
 export async function assertCurrentSchema(pool) {
   let result;
