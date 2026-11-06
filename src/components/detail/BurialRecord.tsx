@@ -1,3 +1,6 @@
+import { isRecordConflict } from "../../api/apiClient";
+import { ConflictRecovery } from "../ui/ConflictRecovery";
+import { fetchBurial } from "../../api/cemeteryApi";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useId } from "react";
 import { useDraftState } from "../../hooks/useDraftState";
@@ -18,6 +21,7 @@ import BurialNameFields from "./BurialNameFields";
 
 function blankBurialForm(burial: Burial): SaveBurialInput {
   return {
+    expectedVersion: burial.version,
     firstName: burial.person.firstName,
     givenNameStatus: burial.person.givenNameStatus ?? (burial.person.firstName.trim() ? "recorded" : "unknown"),
     displayName: burial.person.displayName ?? "",
@@ -96,11 +100,13 @@ export function BurialRecord({
   const militaryRankOptions = lookups.militaryRanks.filter((option) => option.militaryBranchCode === form.militaryBranchCode);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const [conflict,setConflict]=useState(false);
   const errorId = useId();
 
   const startEditing = () => {
     setForm(blankBurialForm(burial));
     setError(undefined);
+    setConflict(false);
     setIsEditing(true);
   };
 
@@ -132,12 +138,14 @@ export function BurialRecord({
   const save = async (event: FormEvent) => {
     event.preventDefault();
     setIsSaving(true);
+    setConflict(false);
     setError(undefined);
     try {
       const saved = await onSave(burial.id, form);
       setForm(blankBurialForm(saved));
       setIsEditing(false);
     } catch (saveError) {
+      setConflict(isRecordConflict(saveError));
       setError(saveError instanceof Error ? saveError.message : "Unable to save burial.");
     } finally {
       setIsSaving(false);
@@ -322,6 +330,7 @@ export function BurialRecord({
           Review notes
           <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
         </label>
+        {conflict&&<ConflictRecovery disabled={isSaving} reload={async()=>{setForm(blankBurialForm(await fetchBurial(burial.id)));setError(undefined);setConflict(false);}}/>}
         {error ? <p id={errorId} className="detail-message is-error" role="alert">{error}</p> : null}
         <div className="burial-form-actions">
           <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>

@@ -116,6 +116,17 @@ Gravesite detail saves detect when another edit has changed the record since it 
 
 This protection applies to the gravesite detail edit, not every mutation in the application. If you select another record while a save is in progress, its completion does not switch the visible selection back to the original grave.
 
+### Recovering Other Conflicting Edits
+
+Burial, marker-detail, quick owner, profile and account saves also detect concurrent
+changes. A conflict keeps your draft. Copy any values you want to retain, then
+choose **Reload latest values (discard edits)**. Confirming loads current values;
+canceling or a failed reload retains the draft. Reapply only the changes still
+needed and save. System account checks also detect changes to cemetery memberships.
+Inspection edits and the full ownership editor retain their existing revision
+checks. See [ADR 0198](adr/0198-complete-record-edit-conflicts.md) for API version
+requirements and recovery behavior.
+
 ### Marker Burial Pages Report
 
 Use `Reports -> Marker burial pages` when you need a printable record for every burial linked to one or more markers. The report is available to readers and higher roles and remains scoped to the cemeteries the signed-in user may access.

@@ -1,3 +1,4 @@
+import { assertRecordVersion } from "./recordVersions.mjs";
 import { deleteMonumentInspections, insertMonumentInspections, updateMonumentInspections, assertInspectionEditor, inspectionFieldsChanged } from "./monumentInspections.mjs";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 import { validateFaceReferences, validateMarkerFaces, validateFacesRevision } from "./markerFaces.mjs";
@@ -27,6 +28,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       return toHeadstone(await selectHeadstoneById(client, id));
     }
 
+    assertRecordVersion(existing.version, headstone.expectedVersion);
     if (actorUser && inspectionFieldsChanged(existing, headstone)) assertInspectionEditor(actorUser, existing.cemetery_id);
 
     if (headstone.faces === undefined && existing.faces?.length > 1
@@ -124,6 +126,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
         RETURNING
           id::text,
           headstone_id,
+          xmin::text AS version,
           marker_type_id::text,
           (SELECT code FROM marker_types WHERE marker_types.id = headstones.marker_type_id) AS marker_type_code,
           marker_scope_type_id::text,

@@ -1,3 +1,5 @@
+import { isRecordConflict } from "../api/apiClient";
+import { ConflictRecovery } from "./ui/ConflictRecovery";
 import { ShieldCheck, UserRound, X } from "lucide-react";
 import { EmptyState, Notice } from "./ui/Feedback";
 import { Modal } from "./ui/Modal";
@@ -12,6 +14,7 @@ export function UserProfilePanel({ user, cemeteries, onClose, onSaved }: {
 }) {
   const [profile, setProfile] = useDraftState<UserProfile | null>(null);
   const [error, setError] = useState("");
+  const [conflict,setConflict]=useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,9 +37,9 @@ export function UserProfilePanel({ user, cemeteries, onClose, onSaved }: {
     <section className="admin-section">
     <div className="section-title"><UserRound size={17} aria-hidden="true" /><h3>Contact details</h3></div>
     {profile ? <form className="admin-form" onSubmit={async event => {
-      event.preventDefault(); setSaving(true); setError(""); setMessage("");
+      event.preventDefault(); setConflict(false); setSaving(true); setError(""); setMessage("");
       try { setProfile(await saveProfile(profile)); setMessage("Profile saved."); onSaved(); }
-      catch (error) { setError(error instanceof Error ? error.message : "Unable to save profile."); }
+      catch (error) { setConflict(isRecordConflict(error)); setError(error instanceof Error ? error.message : "Unable to save profile."); }
       finally { setSaving(false); }
     }}>
       <label>Email<input aria-label="Email" value={profile.email} readOnly /><small>Contact an administrator to change your sign-in email.</small></label>
@@ -47,6 +50,7 @@ export function UserProfilePanel({ user, cemeteries, onClose, onSaved }: {
         <option value="">No preference</option>
         {cemeteries.filter(cemetery => user.role === "admin" || user.assignedCemeteryIds.includes(cemetery.id)).map(cemetery => <option key={cemetery.id} value={cemetery.id}>{cemetery.name}</option>)}
       </select></label>
+      {conflict&&<ConflictRecovery disabled={saving} reload={async()=>{const latest=await fetchProfile();if(!latest)throw new Error("Profile unavailable.");setProfile(latest);setError("");setConflict(false);}}/>}
       <div className="admin-form-actions profile-form-actions">
         <button type="submit" disabled={saving}>{saving ? "Saving…" : "Save profile"}</button>
         <button type="button" className="secondary-button" data-discard-draft onClick={onClose} disabled={saving}>Cancel</button>

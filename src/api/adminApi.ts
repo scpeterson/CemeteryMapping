@@ -52,7 +52,7 @@ export async function fetchAdminUsers(filters: { q?: string; email?: string; sta
   return jsonResponse<AppUser[]>(response, "Users API");
 }
 
-export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "assignedCemeteryIds" | "isActive"> & { accessRequestId?: string; cemeteryMemberships?: AppUser["cemeteryMemberships"] };
+export type SaveUserInput = Pick<AppUser, "email" | "externalSubject" | "displayName" | "role" | "assignedCemeteryIds" | "isActive"> & { expectedVersion?: string; accessRequestId?: string; cemeteryMemberships?: AppUser["cemeteryMemberships"] };
 
 export type ResolveAuth0UserInput = Pick<AppUser, "email" | "displayName">;
 
@@ -340,4 +340,8 @@ export async function updateSectionText(id: string, section: SaveSectionTextInpu
 export async function updateLotText(id: string, lot: SaveLotTextInput): Promise<LotTextRecord> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/cemetery-records/lots/${encodeURIComponent(id)}`, jsonRequest("PUT", lot));
   return jsonResponse<LotTextRecord>(response, "Update lot API");
+}
+
+export async function fetchAdminUser(id:string): Promise<AppUser> {
+  return jsonResponse(await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/admin/users/${encodeURIComponent(id)}`),"User API");
 }

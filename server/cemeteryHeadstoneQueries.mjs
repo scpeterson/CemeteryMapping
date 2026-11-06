@@ -16,6 +16,7 @@ const headstoneDetailColumnsSql = `
     FROM headstone_burials hb JOIN burials b ON b.id=hb.burial_uuid
     WHERE hb.headstone_uuid=headstones.id AND hb.deleted_at IS NULL AND b.deleted_at IS NULL) AS face_people,
   headstones.id::text,
+  headstones.row_version AS version,
   headstones.headstone_id,
   marker_types.id::text AS marker_type_id,
   marker_types.code AS marker_type_code,
@@ -150,6 +151,7 @@ const headstoneMediaJoinSql = `
 
 const headstoneDetailGroupBySql = `
   headstones.id,
+  headstones.row_version,
   headstones.headstone_id,
   marker_types.id,
   marker_types.code,
@@ -208,7 +210,7 @@ export async function selectHeadstonesForGrave(client, graveUuid) {
     `
       WITH selected_headstones AS (
         SELECT DISTINCT ON (headstones.id)
-          headstones.*,
+          headstones.*, headstones.xmin::text AS row_version,
           COALESCE(headstone_gravesites.relationship_type, 'primary') AS selected_relationship_type,
           headstone_gravesites.notes AS selected_relationship_notes
         FROM headstones
@@ -258,7 +260,7 @@ export async function selectHeadstoneById(client, id, { parallel = false } = {})
   const result = await client.query(
     `
       WITH selected_headstones AS (
-        SELECT headstones.*
+        SELECT headstones.*, headstones.xmin::text AS row_version
         FROM headstones
         WHERE headstones.id = $1
           AND headstones.deleted_at IS NULL

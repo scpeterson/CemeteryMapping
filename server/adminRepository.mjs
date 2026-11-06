@@ -1,4 +1,5 @@
 import { BadRequestError, validateCemeteryId } from "./requestValidation.mjs";
+import { accountVersionSql, assertRecordVersion } from "./recordVersions.mjs";
 import { lockAccessRequest, finishAccessRequest } from "./accessRequestRepository.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 
@@ -32,6 +33,7 @@ function toRole(row) {
 function toUser(row) {
   return {
     id: row.id,
+    ...(row.version ? { version: row.version } : {}),
     externalSubject: row.external_subject,
     email: row.email,
     displayName: row.display_name ?? "",
@@ -118,7 +120,7 @@ export async function listUsers(pool, { q = "", status = "all", cemeteryId, emai
         AND ($3::uuid IS NULL OR EXISTS (SELECT 1 FROM app_user_cemetery_access a WHERE a.app_user_id=u.id AND a.cemetery_id=$3))
       ORDER BY u.is_active DESC,lower(u.email),u.id LIMIT $4 OFFSET $5
     )
-    SELECT app_users.id::text,app_users.external_subject,app_users.email,app_users.display_name,
+    SELECT app_users.id::text, ${accountVersionSql} AS version, app_users.external_subject,app_users.email,app_users.display_name,
       app_users.role_name,app_users.is_active,app_users.phone,app_users.organization,app_users.preferred_cemetery_id,
       activity.last_active_at,app_users.last_authenticated_at,app_users.created_at,app_users.updated_at,
       coalesce(m.cemetery_memberships,'[]'::jsonb) AS cemetery_memberships,
@@ -158,11 +160,12 @@ async function replaceCemeteryAssignments(client, userId, assignedCemeteryIds, m
     AND NOT EXISTS (SELECT 1 FROM app_user_cemetery_access a WHERE a.app_user_id = app_users.id AND a.cemetery_id = app_users.preferred_cemetery_id)`, [userId]);
 }
 
-async function selectUserById(client, id) {
+export async function selectUserById(client, id) {
   const result = await client.query(
     `
       SELECT
         app_users.id::text,
+        ${accountVersionSql} AS version,
         app_users.external_subject,
         app_users.email,
         app_users.display_name,
@@ -211,6 +214,10 @@ export async function updateUser(pool, id, user) {
     await lockAccessRequest(client, user);
     const locked = await client.query("SELECT id FROM app_users WHERE id=$1 FOR UPDATE", [id]);
     if (!locked.rows[0]) return undefined;
+    if (user.expectedVersion !== undefined) {
+      const current = await client.query(`SELECT ${accountVersionSql} AS version FROM app_users WHERE id=$1`,[id]);
+      assertRecordVersion(current.rows[0]?.version,user.expectedVersion);
+    }
     await client.query(
       `
         UPDATE app_users

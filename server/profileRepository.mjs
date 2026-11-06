@@ -1,6 +1,7 @@
 import { withAuditContext } from "./auditContext.mjs";
 import { optionalText, validateUuid } from "./inputValidation.mjs";
 import { BadRequestError } from "./requestValidation.mjs";
+import { assertRecordVersion } from "./recordVersions.mjs";
 
 export function validateProfile(body) {
   return {
@@ -13,7 +14,7 @@ export function validateProfile(body) {
 
 export async function getProfile(pool, user) {
   if (!user.id) return null;
-  const { rows } = await pool.query(`SELECT id::text, email, COALESCE(display_name, '') AS "displayName", COALESCE(phone, '') AS phone, COALESCE(organization, '') AS organization,
+  const { rows } = await pool.query(`SELECT id::text, xmin::text AS version, email, COALESCE(display_name, '') AS "displayName", COALESCE(phone, '') AS phone, COALESCE(organization, '') AS organization,
     COALESCE(preferred_cemetery_id::text, '') AS "preferredCemeteryId", created_at AS "createdAt"
     FROM app_users WHERE id = $1`, [user.id]);
   return rows[0] ?? null;
@@ -22,6 +23,10 @@ export async function getProfile(pool, user) {
 export async function updateProfile(pool, user, profile) {
   if (!user.id) throw new BadRequestError("A registered account is required to edit a profile.");
   return withAuditContext(pool, { actorUser: user, reason: "Updated own profile" }, async client => {
+    if (profile.expectedVersion !== undefined) {
+      const locked = await client.query("SELECT xmin::text AS version FROM app_users WHERE id=$1 FOR UPDATE",[user.id]);
+      assertRecordVersion(locked.rows[0]?.version,profile.expectedVersion);
+    }
     if (profile.preferredCemeteryId) {
       const result = await client.query(`SELECT id FROM cemeteries WHERE id = $1 AND deleted_at IS NULL
         AND ($2::boolean OR EXISTS (SELECT 1 FROM app_user_cemetery_access WHERE app_user_id = $3 AND cemetery_id = $1))`,

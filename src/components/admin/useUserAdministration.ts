@@ -1,7 +1,8 @@
+import { isRecordConflict } from "../../api/apiClient";
 import { useDraftState } from "../../hooks/useDraftState";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { SaveUserInput } from "../../api/cemeteryApi";
-import { createAdminUser, fetchAdminRoles, fetchAdminUsers, resolveAuth0User, updateAdminUser } from "../../api/cemeteryApi";
+import { createAdminUser, fetchAdminUser, fetchAdminRoles, fetchAdminUsers, resolveAuth0User, updateAdminUser } from "../../api/cemeteryApi";
 import type { AccessRequest } from "../../api/accessRequestsApi";
 import type { AppRole, AppUser } from "../../types";
 export type UserFormState = SaveUserInput & { id?: string };
@@ -19,6 +20,7 @@ const blankUser: UserFormState = {
 function userFormFromUser(user: AppUser): UserFormState {
   return {
     id: user.id,
+    expectedVersion: user.version,
     externalSubject: user.externalSubject,
     email: user.email,
     displayName: user.displayName,
@@ -52,6 +54,7 @@ export function useUserAdministration() {
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
+  const [conflict,setConflict]=useState(false);
   useEffect(() => {
     let current = true;
     fetchAdminRoles().then(roles => { if (current) setRoles(roles); })
@@ -84,6 +87,7 @@ export function useUserAdministration() {
   };
 
   const resetForm = () => {
+    setConflict(false);
     setForm(blankUser);
     setMessage(undefined);
     setError(undefined);
@@ -123,6 +127,7 @@ export function useUserAdministration() {
 
   const saveUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setConflict(false);
     setIsSaving(true);
     setMessage(undefined);
     setError(undefined);
@@ -142,6 +147,7 @@ export function useUserAdministration() {
       setMessage(`${saved.email} saved.${userToSave.accessRequestId ? " Access request approved. If an invitation was not sent, arrange password setup before notifying the user." : ""}`);
       setRequestRefreshKey((value) => value + 1);
     } catch (saveError) {
+      setConflict(isRecordConflict(saveError));
       setError(saveError instanceof Error ? saveError.message : "Unable to save user.");
     } finally {
       setIsSaving(false);
@@ -154,13 +160,15 @@ export function useUserAdministration() {
   };
 
   const toggleUserActive = async (user: AppUser) => {
+    setConflict(false);
     setTogglingUserIds((current) => new Set(current).add(user.id));
     setMessage(undefined);
     setError(undefined);
 
     try {
       const saved = await updateAdminUser(user.id, {
-        externalSubject: user.externalSubject,
+        expectedVersion: user.version,
+    externalSubject: user.externalSubject,
         email: user.email,
         displayName: user.displayName,
         role: user.role,
@@ -172,6 +180,7 @@ export function useUserAdministration() {
       setRequestRefreshKey(value => value + 1);
       setMessage(`${saved.email} ${saved.isActive ? "reactivated" : "deactivated"}.`);
     } catch (toggleError) {
+      setConflict(isRecordConflict(toggleError));
       setError(toggleError instanceof Error ? toggleError.message : "Unable to update user status.");
     } finally {
       setTogglingUserIds((current) => {
@@ -182,7 +191,13 @@ export function useUserAdministration() {
     }
   };
 
+  const reloadUser = async () => {
+    if(form.id)setForm(userFormFromUser(await fetchAdminUser(form.id)));
+    setRequestRefreshKey(value=>value+1);setConflict(false);setError(undefined);
+  };
+
   return {
+    conflict, reloadUser,
     query, setQuery, status, setStatus, cemeteryFilter, setCemeteryFilter,
     offset, pageSize, hasMore, setOffset, prepareAccessRequest,
     requestRefreshKey,
