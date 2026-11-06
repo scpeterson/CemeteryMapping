@@ -222,7 +222,7 @@ for (const status of ["not_recorded", "blank", "illegible"] as const) {
     await page.getByRole("button",{name:"Manage faces",exact:true}).click();
     await expect(page.getByRole("button",{name:"Remove face",exact:true})).toBeDisabled();
     await page.getByRole("button",{name:"Save marker",exact:true}).click();
-    expect(current.faces).toHaveLength(1);
+    await expect.poll(() => current.faces).toHaveLength(1);
     expect(current.faces[0]).toMatchObject({label:"Front",inscription:"",inscriptionStatus:status,historicalTranscriptions:history,mediaAssetIds:[],burialIds:[]});
     await page.reload();await select(page,"A-TEST");
     await page.getByRole("tabpanel",{name:"Overview",exact:true}).getByRole("button",{name:/HS-OVERVIEW/}).click();
