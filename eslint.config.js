@@ -8,6 +8,7 @@ export default [
   { ignores: ["dist", "test-results", "playwright-report", "tmp/**"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  { files: ["public/field-sw.js"], languageOptions: { globals: globals.serviceworker } },
   {
     files: ["scripts/**/*.mjs", "server/**/*.mjs"],
     languageOptions: {

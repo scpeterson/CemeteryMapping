@@ -1,0 +1,68 @@
+.field-workspace {
+  width: min(100% - 24px, 960px);
+  margin: 16px auto;
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: 30px;
+}
+
+.field-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.field-workspace .admin-form-actions {
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+
+.field-workspace .admin-form h3,
+.field-workspace .admin-form > p,
+.field-workspace .admin-form > .ui-notice,
+.field-workspace .field-wide {
+  grid-column: 1 / -1;
+}
+
+.field-workspace label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.field-workspace select,
+.field-workspace input,
+.field-workspace textarea,
+.field-workspace button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.field-workspace select,
+.field-workspace button,
+.field-workspace input:not([type=checkbox]) {
+  min-height: 38px;
+}
+
+.field-workspace .field-change {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #d9e0d5;
+  border-radius: var(--radius-md);
+  overflow-wrap: anywhere;
+}
+
+.field-change p {
+  white-space: pre-wrap;
+}
+
+.field-change label:has(input[type=checkbox]) {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+}
+
+.field-workspace .admin-form { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.field-workspace > header { min-width: 0; overflow-wrap: anywhere; }

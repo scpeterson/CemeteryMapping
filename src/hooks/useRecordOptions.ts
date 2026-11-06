@@ -3,7 +3,7 @@ import { apiBaseUrl } from "../config/environment";
 import { authorizedFetch, jsonResponse, normalizeBaseUrl } from "../api/apiClient";
 import type { LookupOption } from "../types";
 
-export function useRecordOptions(kind: "headstones" | "gravesites", legacy: LookupOption[], enabled: boolean, initial?: LookupOption, excludeId?: string) {
+export function useRecordOptions(kind: "headstones" | "gravesites" | "field-markers", legacy: LookupOption[], enabled: boolean, initial?: LookupOption, excludeId?: string, cemeteryId?:string) {
   const useLegacy = legacy.length > 0;
   const [query, changeQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -20,14 +20,15 @@ export function useRecordOptions(kind: "headstones" | "gravesites", legacy: Look
     const controller = new AbortController();
     const params = new URLSearchParams({ kind,q:search,offset:String(offset),limit:String(pageSize+1) });
     if (excludeId) params.set("excludeId",excludeId);
+    if (cemeteryId) params.set("cemeteryId",cemeteryId);
     setLoading(true);setError("");
-    authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/record-options?${params}`,{signal:controller.signal})
+    authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/${kind==="field-markers"?"field-markers":"record-options"}?${params}`,{signal:controller.signal})
       .then(r => jsonResponse<LookupOption[]>(r,"Record options API"))
       .then(items => { if (!controller.signal.aborted) { setRows(items.slice(0,pageSize));setHasMore(items.length>pageSize); } })
       .catch(error => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Unable to load record options."); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  },[kind,search,offset,enabled,useLegacy,excludeId]);
+  },[kind,search,offset,enabled,useLegacy,excludeId,cemeteryId]);
   const filtered = legacy.filter(row => `${row.code} ${row.label}`.toLowerCase().includes(search.toLowerCase()));
   const page = useLegacy ? filtered.slice(offset,offset+pageSize) : rows;
   const options = selected && !page.some(row => row.id===selected.id) ? [selected,...page] : page;

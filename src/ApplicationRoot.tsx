@@ -4,8 +4,10 @@ import { isAuth0Enabled } from "./config/environment";
 const App = lazy(() => import("./App"));
 const Auth0AppProvider = lazy(() => import("./auth/Auth0AppProvider").then((module) => ({ default: module.Auth0AppProvider })));
 const RequestAccessPage = lazy(() => import("./components/RequestAccessPage").then((module) => ({ default: module.RequestAccessPage })));
+const FieldCollectionPage = lazy(() => import("./components/field/FieldCollectionPage").then((module) => ({ default: module.FieldCollectionPage })));
 
 export function ApplicationRoot() {
+  if(window.location.pathname.replace(/\/$/u,"")==="/field")return <Suspense fallback={<main className="auth-screen" role="status">Opening saved field work…</main>}><FieldCollectionPage/></Suspense>;
   if (window.location.pathname.replace(/\/$/u, "") === "/request-access") {
     return <Suspense fallback={<main className="auth-screen" role="status">Loading request form…</main>}><RequestAccessPage /></Suspense>;
   }

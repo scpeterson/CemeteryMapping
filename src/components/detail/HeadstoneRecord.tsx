@@ -1,8 +1,9 @@
+import { markerEditPayload as blankHeadstoneForm } from "../../lib/recordEditPayloads";
 import { isRecordConflict } from "../../api/apiClient";
 import { ConflictRecovery } from "../ui/ConflictRecovery";
 import { fetchHeadstone } from "../../api/cemeteryApi";
 import type { MarkerDetailAction } from "./markerWorkflowTypes";
-import { editableMarkerFaces, isEmptyNewMarkerFace } from "../../lib/markerFaces";
+import { isEmptyNewMarkerFace } from "../../lib/markerFaces";
 import { MarkerFacesEditor, MarkerFacesView } from "./MarkerFaces";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { lazy, Suspense, useId } from "react";
@@ -15,7 +16,6 @@ import type {
   GraveSpace,
   Headstone,
   HeadstoneLookups,
-  LookupOption,
   MediaAsset,
   SaveGraveFeatureInput,
   SaveHeadstoneInput
@@ -64,43 +64,6 @@ function headstoneRelationshipDetails(relationshipType: string) {
       description: "This marker has a non-standard relationship to the selected gravesite.",
     }
   );
-}
-
-function blankHeadstoneForm(headstone: Headstone, markerTypeOptions?: LookupOption[], cemeteryName = ""): SaveHeadstoneInput {
-  const markerTypeId = markerTypeOptions?.some((option) => option.id === headstone.markerType.id) ? headstone.markerType.id : (markerTypeOptions?.[0]?.id ?? headstone.markerType.id);
-  const isTrinity = cemeteryName === "Trinity Lutheran Church Cemetery";
-
-  return {
-    expectedVersion:headstone.version,
-    newInspections: [],
-    markerTypeId,
-    markerScopeId: headstone.markerScope.id,
-    materialId: headstone.material.id,
-    conditionId: headstone.condition.id,
-    vaseTypeId: headstone.vaseType?.id ?? "",
-    vaseMaterialId: headstone.vaseMaterial?.id ?? "",
-    vasePlacementId: headstone.vasePlacement?.id ?? "",
-    vaseNotes: headstone.vaseNotes ?? "",
-    conditionNotes: headstone.conditionNotes ?? "",
-    inscription: headstone.inscription ?? "",
-    currentLegibility: headstone.currentLegibility,
-    historicalTranscriptions: headstone.historicalTranscriptions,
-    faces: editableMarkerFaces(headstone),
-    facesRevision: headstone.facesRevision ?? 0,
-    designNotes: headstone.designNotes ?? "",
-    photoUrl: headstone.photoUrl ?? "",
-    lastInspectedAt: headstone.lastInspectedAt ?? "",
-    dataConfidence: headstone.dataConfidence ?? "unknown",
-    reviewStatus: headstone.reviewStatus ?? "unreviewed",
-    reviewNotes: headstone.reviewNotes ?? "",
-    sourceConflict: headstone.sourceConflict ?? false,
-    nhgInclusion: !headstone.nhgInclusionRecorded && isTrinity ? "listed" : (headstone.nhgInclusion ?? "not_checked"),
-    provenanceVerificationSource: headstone.provenanceVerificationSource ?? "manual_review",
-    provenanceVerifiedAt: headstone.provenanceVerifiedAt ?? "",
-    orientationBearingDegrees: headstone.orientationBearingDegrees ?? "",
-    applyNhgInclusionToBurials: false,
-    reason: "Headstone detail update",
-  };
 }
 
 export function HeadstoneRecord({

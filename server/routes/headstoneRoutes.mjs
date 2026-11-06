@@ -26,11 +26,13 @@ export function registerHeadstoneRoutes(app, context) {
     
       app.get("/api/record-options", requireReader, async (request,response,next) => {
         try {
-          const { limit,offset } = validateSearchPage(request.query);
+          const { limit,offset,cemeteryId } = validateSearchPage(request.query);
+          const granted=request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user);
+          if(cemeteryId&&granted&&!granted.includes(cemeteryId))return response.status(403).json({error:"Forbidden"});
           response.json(await listRecordOptions(pool,request.query.kind,{
             query: validateSearchQuery(request.query.q),limit,offset,
             excludeId: request.query.excludeId === undefined ? undefined : validateUuid(request.query.excludeId,"Excluded record"),
-            allowedCemeteryIds: request.user.role === "admin" ? undefined : assignedEditableCemeteryIds(request.user),
+            allowedCemeteryIds: cemeteryId ? [cemeteryId] : granted,
           }));
         } catch (error) { next(error); }
       });
