@@ -32,7 +32,8 @@ remained in place. The later dependency-only release required no new migrations.
 | Lucide React | 1.66.0 | [#798](https://github.com/scpeterson/CemeteryMapping/pull/798) |
 | ESLint | 10.14.0 | [#799](https://github.com/scpeterson/CemeteryMapping/pull/799) |
 
-TypeScript remains 6.0.3; PR #273 was deliberately left open. See
+TypeScript remains 6.0.3. PR #273 was subsequently closed without merging, and
+PR #801 ignores TypeScript 7.x Dependabot updates. See
 [ADR 0204](adr/0204-maplibre-runtime-budget.md) for measured map runtime growth
 and its bounded allowance; application chunk limits remain unchanged.
 
@@ -56,22 +57,37 @@ and the [field workflow](operator-workflows.md#offline-field-collection).
 
 ## Promotion to TEST
 
-The November 6 work deployed DEV only. It does not establish deployment of these
-features or dependencies to local or hosted TEST, STAGE or PROD. Historical TEST
-observations remain in the [hosted runbook](hosted-test.md). Check the live revision
-and Liquibase history before selecting a candidate or migration range.
+Hosted TEST promotion completed on November 6, 2026 at
+`8c01749e00129a88dcaa08bf9bedb518c5b22e6e`, including feature PRs #789–#795,
+dependency PRs #796–#799, the plot-marker quality fix (#807), and the offline asset
+manifest correction (#808). TypeScript remains 6.0.3; #801 suppresses TypeScript
+7.x Dependabot updates. See the [detailed TEST deployment record](hosted-test.md#november-6-2026-hosted-test-release)
+for the exact release metadata, preservation results and protected recovery paths.
 
-Before promoting this release, rehearse pending migrations on an isolated copy,
-retain database/media recovery material, apply migrations through
-`516-maintenance-task-scheduling`, refresh runtime grants, then release the matched
-frontend/API. Preserve tester identities, memberships, pending imports, merge
-evidence, field-operation receipts and task history. Do not seed or reset a
-persistent environment as part of this release.
+Migrations 513–516 passed on an isolated hosted database copy before live
+application. Existing-column fingerprints across all 79 existing application
+tables were preserved, media was preserved, runtime grants were refreshed, and
+no pending migrations remained. No DEV data refresh or demo reset was performed.
+The final revision passed main CI and the normal candidate/backup/cutover release
+procedure. Health, runtime/source integrity, HTTPS, anonymous API denial, account
+and media preservation, and restricted-role read checks passed. All 46 checked
+field-shell/manifest asset URLs were available after the manifest correction.
 
-Verify a registered account with different roles in two cemeteries, including
-member administration, denied cross-cemetery edits, conflict/draft recovery, staged
-import approval, person-merge evidence, private export access and assigned task
-reminders. Test built field-page preparation, offline reload and authenticated
-synchronization. Keep original photo files until synchronization is confirmed.
-Use the [release workflow](operator-workflows.md#environment-promotion-workflow)
-and [current rebuild requirements](rebuild.md#current-schema-and-workspace-release).
+Fresh user-assisted Cloudflare Access/application login and field account
+verification passed. Offline preparation completed; a downloaded marker and an
+unchanged-value queued save survived a **connected** reload and encrypted
+workspace unlock. Reauthentication and synchronization succeeded with zero
+pending actions. No photo upload was included.
+
+**Pending:** real network-disconnected reload, device save while offline, and
+synchronization after reconnection. The user deferred this check because Wi-Fi
+could not be disconnected. The prepared Trinity workspace remains in the browser
+profile for later testing. Follow the [pending offline test steps](hosted-test.md#pending-hosted-offline-reload-test);
+do not mark this check complete based on connected reload or CI simulation.
+
+Interactive mixed-role authorization, conflict recovery, reviewed import approval,
+person-merge/recovery mutations, photo synchronization and assigned reminder
+behavior remain outside this live smoke verification. This promotion establishes
+hosted TEST availability, not local TEST, STAGE or PROD deployment. Use the
+[release workflow](operator-workflows.md#environment-promotion-workflow) for later
+promotions.
