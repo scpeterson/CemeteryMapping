@@ -164,12 +164,22 @@ export async function listDataQualityDashboard(pool, options = {}) {
         SELECT
           'markers_without_gravesites' AS id,
           'Markers without linked gravesites' AS label,
-          'Active markers that are not linked to a gravesite.' AS description,
+          'Active markers, excluding plot markers, that are not linked to a gravesite.' AS description,
           count(*)::int AS count,
           'medium' AS severity,
           'Map links' AS category
         FROM scoped_headstones headstone
         WHERE NOT EXISTS (
+          SELECT 1 FROM marker_types
+          WHERE marker_types.id = headstone.marker_type_id
+            AND marker_types.code = 'plot_marker'
+        )
+          AND NOT EXISTS (
+          SELECT 1 FROM marker_scope_types
+          WHERE marker_scope_types.id = headstone.marker_scope_type_id
+            AND marker_scope_types.code = 'plot_marker'
+        )
+          AND NOT EXISTS (
           SELECT 1
           FROM headstone_gravesites link
           JOIN gravesites gravesite ON gravesite.id = link.gravesite_uuid

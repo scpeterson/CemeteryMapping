@@ -1,7 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { createHash } from "node:crypto";
 
 const packageJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
@@ -18,10 +19,12 @@ function gitSha() {
 export default defineConfig({
   plugins: [react(), {
     name:"field-offline-assets",
-    generateBundle(_options,bundle){
-      const files=Object.keys(bundle).filter(name=>/^assets\/[^/]+\.(js|css|woff2?)$/u.test(name)).sort().map(name=>`/${name}`);
+    writeBundle(options){
+      if(!options.dir)throw new Error("The field shell requires a build output directory.");
+      // Rolldown can finalize chunk names after generateBundle; use emitted files.
+      const files=readdirSync(join(options.dir,"assets"),{withFileTypes:true}).filter(entry=>entry.isFile()&&/\.(js|css|woff2?)$/u.test(entry.name)).map(entry=>`/assets/${entry.name}`).sort();
       const revision=createHash("sha256").update(files.join("\n")).digest("hex").slice(0,16);
-      this.emitFile({type:"asset",fileName:"field-assets.json",source:JSON.stringify({revision,files})});
+      writeFileSync(join(options.dir,"field-assets.json"),JSON.stringify({revision,files}));
     },
   }],
   optimizeDeps: {
