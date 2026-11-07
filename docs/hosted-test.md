@@ -759,12 +759,12 @@ record](postgresql-18-upgrade.md#sql-efficiency-implementation-2026-11-05) and
 [ADR 0196](adr/0196-measured-sql-efficiency.md). No spatial correction was included.
 
 
-## November 6 DEV release and pending TEST promotion
+## November 6 DEV release before TEST promotion
 
 The seven feature PRs #789–#795 and dependency PRs #796–#799 are merged. DEV runs
 `9aec56d2b4bde06dde2491d530e78b30b12b32a6` with migrations through 516.
-This is not a hosted TEST release record. Check the target's actual revision,
-`databasechangelog` and pending migrations before the next hosted deployment.
+This records the earlier DEV deployment. The hosted TEST promotion completed later
+the same day, as recorded below; it does not establish a later DEV revision.
 
 Rehearse pending migrations, retain database/media recovery material, refresh API
 role grants and deploy matched frontend/API through the existing release process.
@@ -773,3 +773,147 @@ and maintenance schedules. Verify registered mixed-role accounts, conflict recov
 private exports and task reminders, plus the built offline shell over HTTPS.
 See [release status and checks](release-status.md#promotion-to-test) and
 [current schema requirements](rebuild.md#current-schema-and-workspace-release).
+
+
+## November 6, 2026 hosted TEST release
+
+Hosted TEST was deployed at `8c01749e00129a88dcaa08bf9bedb518c5b22e6e`
+([PR #808](https://github.com/scpeterson/CemeteryMapping/pull/808)). The frontend
+build time is `2026-11-06T17:34:29Z` (12:34:29 PM EST); post-cutover health
+reported the selected commit, environment `TEST`, and database
+`cemetery_mapping_test`. This supersedes the November 5 code-release record above.
+PostgreSQL 18.6/PostGIS 3.6.4 and the existing live volume remained in place.
+
+### Deployed scope
+
+- Feature PRs #789–#795: cemetery membership administration, concurrent-edit
+  protection, encrypted field collection, cemetery onboarding/reviewed imports,
+  deleted-record recovery and person merges, CSV/GeoJSON exports, and maintenance
+  assignment/scheduling/reminders.
+- Dependency PRs #796–#799: Vite 8.3.5, MapLibre GL 6.16.0, Lucide React 1.66.0,
+  and ESLint 10.14.0. TypeScript remains 6.0.3. PR #273 was closed without merging;
+  [PR #801](https://github.com/scpeterson/CemeteryMapping/pull/801) ignores
+  TypeScript 7.x Dependabot updates.
+- [PR #807](https://github.com/scpeterson/CemeteryMapping/pull/807): the
+  “Markers without linked gravesites” quality metric excludes markers classified
+  as plot markers by either marker type or scope.
+- PR #808: generate the offline asset manifest from files actually emitted by the
+  build, after final chunk naming. Deployment smoke testing found a missing
+  vendor-map asset in the earlier manifest. Vite preview's HTML fallback had
+  hidden the missing asset from the former browser regression; that regression
+  now requires each manifest asset to return 200 with a non-HTML content type.
+
+The first code cutover reached `dacb3a8958be80667d4d59f8365264bba69b6518`.
+The missing offline asset was then reproduced, corrected through PR #808, and
+redeployed through the same release process after exact-revision main CI passed.
+
+### Schema rehearsal and preservation
+
+The release prerequisite stopped the initial code deployment before cutover
+because migrations 513–516 were pending. A validated hosted dump was restored
+into a disposable PostgreSQL/PostGIS container with no published ports or live
+volume access. The restore used a clean database created from `template0` to
+avoid conflicts with schemas precreated by the PostGIS image.
+
+| Migration | Scope |
+|---|---|
+| 513 | Private field synchronization receipts and retry identity. |
+| 514 | Staged cemetery import batches and review decisions. |
+| 515 | Reviewed burial-merge evidence and guards on active burial references. |
+| 516 | Maintenance assignees, due/reminder dates, queue indexes and reminder reset. |
+
+The full committed changelog passed rehearsal. Fingerprints of the original
+columns in all 79 existing non-extension application tables matched before and
+after; new schema objects and maintenance scheduling columns were expected.
+API/web were briefly paused for a fresh final database backup and live migration.
+The same preservation checks passed on live TEST, media was preserved, restricted
+API grants were refreshed using the existing credentials, and Liquibase reported
+no pending changes. The prior code was healthy again before normal code release.
+No DEV restore, demo seeding, or environment reset was performed.
+
+### Deployment and read-only verification
+
+- The final main revision passed the required `Lint, build, and test` CI gate.
+- Candidate startup passed with Auth0 enabled, restricted `cemetery_api`
+  credentials, the Node runtime user, and the private environment file at mode
+  `0600`.
+- API/database health, all 196 deployed server/shared runtime hashes, local
+  frontend integrity, public HTTPS, and rejection of anonymous private API access
+  passed. The API had zero restarts after cutover.
+- Account/access and media preservation checks passed. Protected host settings
+  and tunnel-token ownership were retained.
+- Read-only queries using the deployed restricted role passed across all three
+  active cemeteries: membership lists, field marker selectors, maintenance queues,
+  reminder summaries, and gravesite GeoJSON exports. The new receipt, import, and
+  merge-evidence tables were readable, and the quality metric used its updated
+  plot-marker exclusion. These reads do not establish write-workflow coverage.
+- All 46 field-shell/manifest asset URLs checked at the origin returned 200;
+  listed assets returned non-HTML content. The strengthened built offline reload
+  regression passed locally and in CI. This automated result is separate from
+  the pending disconnected hosted-browser check below.
+
+### Interactive login, device persistence and synchronization
+
+The user completed a fresh Cloudflare Access/application login in the TEST browser.
+The field workspace then verified the account as Scott Peterson. Offline page
+preparation completed with “Offline page loading is ready.”
+
+Memorial Grove had no downloadable markers, so a separate Trinity Lutheran Church
+Cemetery verification workspace downloaded `TLC-HS-0004`. Its existing marker
+values were saved unchanged to queue a synchronization operation. A browser
+reload with the network still available, followed by unlocking the encrypted
+workspace, preserved the downloaded marker and the queued action.
+
+After reconnecting the original account, authenticated synchronization reported
+“Saved changes and photos are synchronized. Downloaded records were refreshed,”
+and the queue showed zero pending actions with the marker operation marked
+“Synchronized.” No photo was uploaded in this check. The unchanged-value save
+exercised the write/receipt path and may update audit/version metadata; it did not
+intentionally change marker content.
+
+### Pending hosted offline reload test
+
+**Still pending:** a real network-disconnected reload and a save made while offline,
+followed by authenticated synchronization after reconnection. The user deferred
+this step because they could not disconnect Wi-Fi. Do not treat the connected
+reload or the automated CI offline test as completion of this hosted check.
+
+The prepared Trinity device workspace was retained in the same browser profile.
+When testing resumes:
+
+1. Confirm the workspace is available and retain its temporary verification
+   passphrase separately; no passphrase is stored in this documentation.
+2. Disconnect the device from all networks and reload `/field/`. Confirm the
+   field shell loads and displays its offline state.
+3. Unlock the saved Trinity workspace and confirm downloaded marker `TLC-HS-0004`
+   is available. Save its existing marker values unchanged on the device.
+4. Reconnect, verify the original account, and synchronize. Confirm the queued
+   action is acknowledged, the queue returns to zero, and the refreshed marker
+   values remain unchanged. Record the actual outcome before closing this gap.
+
+The same browser profile and intact site storage are required to resume this
+workspace. Browser profile/site-data cleanup can remove local verification work.
+Fresh photo capture/upload, identity-mismatch rejection, mixed-role access across
+two cemeteries, conflict resolution, import approval, merge/recovery mutations,
+and end-user task-reminder behavior were not exercised interactively in this
+release check; prior CI coverage and read-only smoke results do not close those
+interactive gaps.
+
+### Recovery and evidence
+
+Protected recovery material remains on the TEST host:
+
+- Schema rehearsal/live migration:
+  `/srv/nhcemeteries/backups/20261106T170231Z-dacb3a8958be-d3254a09-schema-retry1`,
+  including validated rehearsal/final dumps, application/media recovery material,
+  and `rehearsal-report.json` / `live-migration-report.json`.
+- Final code release:
+  `/srv/nhcemeteries/backups/20261106T173429Z-8c01749e0012-287cbef2`.
+- Final release evidence:
+  `/srv/nhcemeteries/staging/20261106T173429Z-8c01749e0012-287cbef2/verification.json`.
+
+The final API image is
+`sha256:1ec31702505ecd706e9092a2020d2792cb50e294dbba4b697476dd00c3bebda3`.
+The disposable rehearsal container and its volume were removed. Retained backups
+contain private data and must remain outside Git. This TEST deployment does not
+establish a STAGE or PROD deployment.
