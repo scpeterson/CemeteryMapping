@@ -9,8 +9,8 @@ The dedicated host is managed separately from local TEST. See
 The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
 PostGIS 3.6.4 cluster upgrade**, recorded in the
 [upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-The latest recorded code deployment is the [November 7 dependency and bundle
-release](#november-7-2026-dependency-and-bundle-release) at `3c5609f`. Dated sections
+The latest recorded code deployment is the [November 9 refactoring and draft
+recovery release](#november-9-2026-refactoring-and-draft-recovery-release) at `0b6d9c9`. Dated sections
 below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
@@ -1009,6 +1009,91 @@ The deployed API image is
 `sha256:7ee9266da734149f8cf6c47425f5ae5b78232a27b6fb08347c26052ecfe2889e`.
 Keep private recovery data outside Git. This record establishes hosted TEST
 availability only; it does not establish a STAGE or PROD deployment.
+
+## November 9, 2026 refactoring and draft recovery release
+
+[PR #811](https://github.com/scpeterson/CemeteryMapping/pull/811) was deployed to
+hosted TEST at commit `0b6d9c9a6bf5427e7c6f40b22cb8475f3c59d407`, replacing
+`3c5609f685d30a0c3104dd91eab27bc827b4f2e2`. The release build time was
+`2026-11-09T17:05:48Z` (12:05:48 PM EST); post-cutover health was verified at
+`2026-11-09T17:08:22.540Z` (12:08:22 PM EST).
+
+The release includes the inspection editor, detail fetching, CemeteryMap and
+record-option refactors, debounced inspection recovery writes with lifecycle
+flushing, and unsaved-draft comparisons moved from each edit to navigation/unload.
+See [ADR 0205](adr/0205-debounced-inspection-recovery.md) and
+[ADR 0206](adr/0206-draft-guard-navigation-comparison.md) for behavior, profiling
+evidence and validation scope. The reviewed core JavaScript budget is now
+**701 KiB gzip**; the November 7 section's 700 KiB figure is historical.
+
+### Release preparation and cutover
+
+- The exact merged main revision passed the required **Lint, build, and test**
+  CI gate before deployment. The standard release command built a clean source
+  archive using Node.js 24 and the existing hosted frontend settings.
+- Initial attempts stopped before cutover because a restrictive local `umask`
+  produced unreadable source files for the Liquibase validator and candidate
+  Node process. The previous release stayed healthy. Rebuilding with `umask 022`
+  allowed the unmodified deployment workflow to complete; hosted secrets retained
+  their protected permissions. Do not loosen secret-file permissions to resolve
+  source readability problems.
+- Liquibase validation passed and schema status was up to date. No migrations,
+  database refresh, restore or seeding ran. Database and tunnel containers stayed
+  running while only API/web services switched to the new release.
+- Validated database dumps, application/settings recovery material and a verified
+  media snapshot were retained before cutover. The API image was built without
+  cache and the isolated candidate passed startup, Auth0, restricted database-role,
+  runtime-user and private environment-file checks before the switch.
+
+### November 9 deployment verification
+
+- Origin health reported `ok`, environment `TEST`, database
+  `cemetery_mapping_test`, the exact selected commit and matching build time.
+  All **196** deployed server/shared runtime hashes matched the release manifest;
+  the API had **zero restarts** at verification.
+- The API ran as `node` with a readable mode-`0600` private environment file and
+  the restricted `cemetery_api` database role. Protected configuration, media,
+  account/access records and tunnel-token ownership were preserved. Runtime
+  metadata changed only as required to identify the new release.
+- Before/after row counts and content fingerprints matched across **83 tables**.
+  `audit_events` and `system_events` were excluded because operational logging
+  and retention can change them. This comparison describes deployment-time data,
+  before the later synthetic burst-protection verification request.
+- All **44** field-shell/manifest asset URLs returned HTTP 200 at the origin.
+  Non-page responses were non-HTML and matched deployed file hashes.
+- Restricted-role, read-only application smoke checks covered **3 cemeteries**:
+  map data, **3 grave details**, **2 headstone details**, **6 record-option
+  queries** and **3 searches**. These exercised deployed repository/database reads,
+  not a fresh authenticated browser session.
+- Public HTTPS `/request-access` returned 200. Anonymous private API access was
+  rejected with 401 at the origin and redirected to Cloudflare Access with 302
+  through the public hostname. Frontend integrity and Nginx configuration checks
+  passed.
+
+Fresh interactive Access/Auth0 sign-in and a real disconnected offline
+reload/save/reconnect synchronization test were **not performed for this
+deployment**. The [pending hosted offline steps](#pending-hosted-offline-reload-test)
+remain open; asset and read-only smoke checks do not close that gap. The later
+[burst-protection verification](#november-9-2026-cloudflare-burst-protection)
+separately exercised a real Turnstile-backed access request, without granting an
+account.
+
+### November 9 recovery material
+
+Protected host artifacts for the successful release are retained at:
+
+- Backup: `/srv/nhcemeteries/backups/20261109T170548Z-0b6d9c9a6bf5-f5e564b1`.
+- Release report:
+  `/srv/nhcemeteries/staging/20261109T170548Z-0b6d9c9a6bf5-f5e564b1/verification.json`.
+- Asset, read-only smoke and data-preservation report:
+  `/srv/nhcemeteries/staging/20261109T170548Z-0b6d9c9a6bf5-f5e564b1/smoke-verification.json`.
+
+The deployed API image is
+`sha256:118bd8addf55b4ef611f3844a754e8f1f145716382e686d8dfd9f462f63e096f`.
+Keep recovery archives, settings, secrets and raw database records outside Git.
+This record establishes hosted TEST deployment only; it does not establish a
+STAGE or PROD deployment. Documentation-only PRs after this release do not change
+the running API revision; check `/api/health` before planning another release.
 
 ## November 9, 2026 Cloudflare burst protection
 
