@@ -3,6 +3,8 @@ import { expect, test, type Route } from "@playwright/test";
 const rows = Array.from({ length: 55 }, (_, i) => ({ id: `remote-${i}`, code: `HS-${i}`, label: `Marker ${i}` }));
 
 test.beforeEach(async ({ page }) => {
+  // Install before mounting the hook so its initial debounce timer is controlled too.
+  await page.clock.install({ time: new Date("2026-11-09T12:00:00Z") });
   await page.goto("/tests/record-options.html");
   await expect(page.getByTestId("state")).toBeVisible();
 });
@@ -15,7 +17,6 @@ test("remote options retain selections across bounded pages and debounce search 
     const offset = Number(url.searchParams.get("offset"));
     return route.fulfill({ json: url.searchParams.get("q") ? [] : rows.slice(offset, offset + 51) });
   });
-  await page.clock.install({ time: new Date("2026-11-09T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-11-09T12:00:01Z"));
   await expect(page.getByTestId("state")).toContainText('"loading":false');
   expect(requests).toHaveLength(0);
@@ -37,6 +38,8 @@ test("remote options retain selections across bounded pages and debounce search 
   await page.clock.runFor(199);
   expect(requests).toHaveLength(before);
   await page.clock.runFor(1);
+  // Let React and the real fetch response settle after testing the exact debounce boundary.
+  await page.clock.resume();
   await expect(page.getByTestId("state")).toContainText('"count":0');
   expect(requests.at(-1)!.searchParams.get("q")).toBe("final & text");
   await expect(page.getByText("No matching records. Try another search.")).toBeVisible();
@@ -47,7 +50,6 @@ test("remote options retain selections across bounded pages and debounce search 
 test("legacy options filter and paginate locally, even while remote loading is disabled", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", request => { if (request.url().includes("/api/")) requests.push(request.url()); });
-  await page.clock.install({ time: new Date("2026-11-09T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-11-09T12:00:01Z"));
   await page.getByRole("button", { name: "Legacy", exact: true }).click();
   await expect(page.getByTestId("state")).toContainText('"count":50');
@@ -56,6 +58,7 @@ test("legacy options filter and paginate locally, even while remote loading is d
   await page.getByLabel("Search options").fill("LOCAL-54");
   await expect(page.locator("html")).toHaveAttribute("data-record-options-query", "LOCAL-54");
   await page.clock.runFor(200);
+  await page.clock.resume();
   await expect(page.getByTestId("state")).toContainText('"count":1');
   await expect(page.getByTestId("state")).toContainText('"offset":0');
   await expect(page.getByLabel("Remember option").locator("option")).toHaveCount(2);
