@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0205: Debounce inspection recovery writes with lifecycle flushing
 
 - Status: Accepted

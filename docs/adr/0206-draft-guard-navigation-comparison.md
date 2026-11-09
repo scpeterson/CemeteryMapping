@@ -1,3 +1,6 @@
+---
+---
+
 # ADR 0206: Compare unsaved drafts when navigating
 
 - Status: Accepted
