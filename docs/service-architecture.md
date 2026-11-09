@@ -94,6 +94,7 @@ Cloudflare and Auth0 do not store the application's cemetery records.
 | Service | Connects to | Purpose and scope |
 | --- | --- | --- |
 | **Cloudflare DNS** | Browser → hosted hostname | Routes the TEST hostname to the Cloudflare Tunnel. |
+| **Cloudflare edge security** | Visitor requests → Cloudflare → Tunnel/origin | The Free Managed Ruleset, HTTP DDoS protection and Browser Integrity Check filter traffic. The active burst rule blocks a client IP for 10 seconds above 5 requests in 10 seconds to the exact `/api/access-requests` path across the zone. It supplements Access, Turnstile and origin limits; it does not match the form page or its assets. See the [rule and verification record](hosted-test.md#november-9-2026-cloudflare-burst-protection). |
 | **Cloudflare Access** | Browser → application gateway | Checks the hosted TEST email allowlist using an emailed one-time PIN before allowing protected traffic. This is separate from Auth0 login. |
 | **Cloudflare Turnstile** | Public form → widget; Express → Siteverify | Verifies public access-request submissions. Only the public site key reaches the browser; the private secret stays in the API runtime. |
 | **Cloudflare Tunnel** | Cloudflare edge ↔ `cloudflared` → Nginx | The connector establishes an outbound tunnel from the Droplet, allowing Cloudflare to reach the loopback web listener without exposing public web or database ports. |
