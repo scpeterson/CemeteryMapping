@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0206: Compare unsaved drafts when navigating](0206-draft-guard-navigation-comparison.md)
+
 - [ADR 0205: Debounce inspection recovery writes with lifecycle flushing](0205-debounced-inspection-recovery.md)
 
 - [ADR 0203: Assigned maintenance work and personal reminders](0203-assigned-maintenance-tasks.md)

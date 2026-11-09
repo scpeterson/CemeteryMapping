@@ -1,0 +1,161 @@
+{
+  "variant": "after",
+  "workload": {
+    "name": "small",
+    "faces": 1,
+    "text": 1000,
+    "baseline": "record"
+  },
+  "trials": [
+    {
+      "typingSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 2.8999996185302734,
+        "medianMs": 0,
+        "p95Ms": 0.09999990463256836,
+        "maxMs": 0.20000028610229492
+      },
+      "rerenderSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "navigationSerialization": {
+        "count": 2,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "typingSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 1.8000001907348633,
+        "medianMs": 0,
+        "p95Ms": 0.09999990463256836,
+        "maxMs": 0.10000038146972656
+      },
+      "rerenderSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "navigationSerialization": {
+        "count": 2,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "typingSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 1.2999992370605469,
+        "medianMs": 0,
+        "p95Ms": 0.09999990463256836,
+        "maxMs": 0.10000038146972656
+      },
+      "rerenderSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "navigationSerialization": {
+        "count": 2,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "typingSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 2.899998188018799,
+        "medianMs": 0,
+        "p95Ms": 0.09999990463256836,
+        "maxMs": 0.10000038146972656
+      },
+      "rerenderSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "navigationSerialization": {
+        "count": 2,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "typingSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 1.900001049041748,
+        "medianMs": 0,
+        "p95Ms": 0.10000038146972656,
+        "maxMs": 0.19999980926513672
+      },
+      "rerenderSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      },
+      "navigationSerialization": {
+        "count": 2,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    }
+  ]
+}

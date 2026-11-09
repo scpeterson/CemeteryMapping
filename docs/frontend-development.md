@@ -64,7 +64,7 @@ The [operator recovery guide](operator-workflows.md#recovering-from-load-and-sav
 
 ## Draft State and Navigation
 
-`src/hooks/useDraftState.ts` intentionally distinguishes edits from loading or accepting a record. It compares JSON-serializable values against a saved baseline; update values immutably and keep files, DOM nodes, and other non-serializable objects outside this state.
+`src/hooks/useDraftState.ts` intentionally distinguishes edits from loading or accepting a record. It registers committed values during layout, then compares JSON-serializable values against a saved baseline synchronously when navigation or unload is attempted; update values immutably and keep files, DOM nodes, and other non-serializable objects outside this state.
 
 ```tsx
 const [form, setForm] = useDraftState(initialRecord);
@@ -79,6 +79,8 @@ setForm(savedRecord);
 Do not pass a replacement object from a user-edit handler: that would incorrectly mark the edit as saved. Only establish a new baseline after loading a record, explicitly discarding/reloading, or successfully saving it. A failed save must leave the draft intact. Switching records must be guarded before replacing state.
 
 `App` installs `useDraftNavigationGuard` once. It protects result selection, detail/admin tabs, marked record-selection controls, recognized cancel/close/new/reset buttons, and page exit while tracked drafts exist. Add `data-discard-draft` to a new button that replaces an editor. For map callbacks or keyboard navigation outside those click handlers, call `confirmDiscardChanges()` before changing selection. A confirmed discard resets all registered drafts to their baselines; canceled navigation must not proceed.
+
+Typing and unrelated renders do not serialize drafts for this guard. Clean drafts with the same value/baseline reference skip comparison; separately allocated but JSON-equal drafts remain clean. Confirming discard removes each dirty registration immediately before the next navigation check, restores its baseline value, and runs its discard callback once. Canceling leaves all drafts intact. See [ADR 0206](adr/0206-draft-guard-navigation-comparison.md) for the production profile and repeatable profiling commands.
 
 This tracking is not universal form middleware. Audit new form state and navigation handlers explicitly. Mounted phone views retain their state while hidden; most drafts are not persisted across reloads or browser sessions. Inspection drafts are the explicit exception described below.
 
