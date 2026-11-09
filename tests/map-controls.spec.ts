@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { fixture } from "./fixtures/cemetery";
+import { fixture, select } from "./fixtures/cemetery";
+import { overviewFixture, marker } from "./fixtures/overview";
 import type { GeoJSONSource } from "maplibre-gl";
 
 for (const width of [390, 1280]) {
@@ -55,3 +56,35 @@ for (const width of [390, 1280]) {
     })).toBeLessThanOrEqual(1);
   });
 }
+
+test("map point picking fills marker coordinates and keeps the selected gravesite editor", async ({ page }) => {
+  await overviewFixture(page);
+  await page.route("**/api/headstone-lookups*", route => route.fulfill({ json: {
+    markerTypes: [marker.markerType], markerScopes: [marker.markerScope],
+    materials: [marker.material], conditions: [marker.condition],
+  } }));
+  await page.route("https://imagery.pasda.psu.edu/**", route => route.abort());
+  await page.route("https://gisdata.alleghenycounty.us/**", route => route.abort());
+  await page.goto("/tests/map-highlighting.html");
+  await select(page, "A-TEST");
+  await page.getByRole("tab", { name: "Monuments and photos" }).click();
+  await page.getByRole("button", { name: "Add marker", exact: true }).click();
+  const form = page.locator("form").filter({ has: page.getByLabel("Marker ID", { exact: true }) });
+  await form.getByRole("button", { name: "Pick point on map", exact: true }).click();
+  await expect(page.locator(".map-placement")).toContainText("Pick marker point");
+  await expect.poll(() => page.evaluate(() => window.mapHighlightTest.map.isMoving())).toBe(false);
+  const point = await page.evaluate(() => {
+    const map = window.mapHighlightTest.map;
+    const rect = map.getCanvas().getBoundingClientRect();
+    const x = Math.floor(rect.left + rect.width * .5);
+    const y = Math.floor(rect.top + rect.height * .65);
+    const coordinate = map.unproject([x - rect.left, y - rect.top]);
+    return { x, y, latitude: coordinate.lat.toFixed(8), longitude: coordinate.lng.toFixed(8) };
+  });
+  expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, point)).toBe("CANVAS");
+  await page.mouse.click(point.x, point.y);
+  await expect(form.getByLabel("Latitude", { exact: true })).toHaveValue(point.latitude);
+  await expect(form.getByLabel("Longitude", { exact: true })).toHaveValue(point.longitude);
+  await expect(page.locator(".detail-panel")).toContainText("Record ID: A-TEST");
+  await expect(page.locator(".map-placement")).toHaveCount(0);
+});
