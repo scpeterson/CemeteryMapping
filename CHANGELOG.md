@@ -4,49 +4,73 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
-### Fixed
+No changes recorded since the 0.2.0 release baseline.
 
-- Remove search JIT compilation overhead with a read-only, transaction-local `jit=off` setting on one checked-out connection. Restore prior settings before pool reuse, preserving search behavior and leaving database-wide, role and unrelated-query settings unchanged. See [ADR 0195](docs/adr/0195-search-transaction-local-jit.md).
+## 0.2.0 — 2026-11-09
 
-- Shorten CI with parallel application checks, four isolated browser shards, documentation-only PR validation, superseded-run cancellation, and browser/Docker caches while retaining the required deployment check.
+This is the first named release baseline. Earlier work accumulated under
+Unreleased while the package remained 0.1.0; no retrospective tags are created.
+The detailed entries below retain that history, including intermediate dependency
+versions and dated data corrections. They are not a list of changes newly applied
+to an existing TEST database by this release.
 
-- Speed up cemetery search by resolving current ownership once per query for status calculation and authorized owner/date matches, preserving permissions, reasons, filtering and pagination.
+### Release summary
 
-- Move the 32 southern Section C lots south together to contain fixed TLC-HS-0330 in C-80 and TLC-HS-0361 in C-82; clip approved non-burial C-85/C-90 to the cemetery boundary and expand C-P03 to the new northern lot edge (migration 504).
+- Cemetery/marker/inspection editing, audited ownership and data corrections,
+  delegated membership, concurrent-edit protection, and reviewed record recovery.
+- Encrypted offline field collection, guided imports, permission-scoped CSV and
+  GeoJSON exports, and assigned maintenance work with reminders (ADRs 0197–0203).
+- Inspection editor, map, detail-fetching and record-option refactors; 350 ms
+  recovery-write debounce with lifecycle flushing; navigation-time unsaved-draft
+  comparisons (PR #811, ADRs 0205–0206). The reviewed charged-core budget is 701 KiB.
+- Versioning policy and exact-release TEST selection by immutable tag or full SHA,
+  with exact-revision CI and version/SHA/build health checks (PR #815).
+- Cloudflare access-request burst protection was configured separately on November 9:
+  5 requests per IP per 10 seconds, then a 10-second block on the exact API path
+  across the zone. Publishing or deploying application code does not configure
+  this edge rule (PRs #812–#814 document the rule and deployed verification).
+- Recent dependency baseline includes MapLibre 6.16.0 (PR #797), concurrently
+  10.0.6, Lucide React 1.67.0, Node types 26.6.6, JWT middleware 1.11.0 and Auth0
+  React 2.30.0 (PRs #802–#806). See the tagged lockfile for resolved dependencies.
 
-- Deflect only the shared southern D/E corner north between fixed TLC-HS-0577 in D and TLC-HS-0554 in E, preserving all other section vertices and the combined footprint (migration 501).
+### Release operations and verification limits
 
-- Move the six-lot D-77/67/68/58/47/38 row west together to contain fixed TLC-HS-0500 in D-77 and TLC-HS-0463 in D-38, preserving lot dimensions and alignment (migration 500).
+- Source identity: immutable tag `v0.2.0` on the merged release-preparation commit,
+  after its main-branch CI passes. See the [versioning policy](docs/adr/0016-versioned-releases.md).
+  The tag's complete Git history is the initial release history; there is no
+  earlier published tag from which to calculate a release delta.
+- Schema baseline: changelog files **001–516**, through maintenance-task scheduling.
+  This release adds no new migration. Existing TEST was already validated through
+  516 on November 9; other environments must inspect their actual pending range
+  and rehearse migrations separately. Never replay reviewed data corrections or
+  run data/import scripts automatically because a version number changed.
+- Data scripts: none required solely for this version bump. Preserve existing
+  accounts, data, media, private configuration and the Cloudflare edge rule.
+- Prior hosted evidence applies to `0b6d9c9`, package 0.1.0: 196 runtime hashes,
+  44 field URLs, 83 unchanged table fingerprints, read-only checks across three
+  cemeteries and zero API restarts. See the [November 9 record](docs/hosted-test.md#november-9-2026-refactoring-and-draft-recovery-release).
+  It does not establish a deployment of 0.2.0. Publishing this release changes no
+  running environment and tags no database.
+- Automated validation: the release PR and exact merged revision must pass CI;
+  deployment-selection/health regressions, production bundle enforcement,
+  database/Docker startup, browser shards and documentation checks are required.
+  After any deployment, independently verify frontend/API version, SHA and build
+  identity, actual schema status, preserved data/settings and public/private routes.
+- **Still pending:** fresh hosted Access/Auth0 login after the recent dependency
+  updates, real invitation-email delivery, live Turnstile token replay rejection,
+  and an actual disconnected offline reload/save/reconnect synchronization test.
+  Automated tests, a real access-request submission and connected smoke checks
+  do not close these gaps. See the [access-request verification status](docs/access-requests.md#deployed-verification-status--october-10-2026)
+  and [pending hosted offline steps](docs/hosted-test.md#pending-hosted-offline-reload-test).
+- Recovery: retain validated database/application/media backups and the previous
+  image before cutover. Automatic code/settings/image rollback does not undo
+  database changes. Review schema compatibility before choosing an older commit;
+  use a separately rehearsed forward fix or database recovery when necessary.
+  Do not disable authentication, Turnstile or origin limits to release this version.
 
-- Speed up cemetery map loading by resolving current ownership once per map query, preserving all gravesite statuses and fresh ownership data.
+### Accumulated changes
 
-- Shift ten Section D lots west together so fixed TLC-HS-0447 lies strictly inside D-25, preserving lot dimensions, restrictions and other records (migration 499).
-
-- Rename D-TMP01 to standard lot D-78 and move the confirmed twelve-lot group west to contain fixed TLC-HS-0496; retain D-TMP02 restrictions and retired D-TMP03 unchanged (migration 498).
-
-- Align the five-lot northern Section D row with the row below; clip D-33, D-TMP14 and D-TMP13 to the cemetery boundary and prohibit gravesites and monuments in both lots (migration 497).
-
-- Remove thirteen owner-confirmed defunct Section D temporary lots from the active map, preserving their outlines and history without changing gravesites or monuments (migration 496).
-
-- Move A-1 through A-9 and A-30 through A-38 together one foot north, placing the fixed TLC-HS-0053 marker strictly inside A-34 while preserving lot dimensions and alignment (migration 495).
-
-- Show a clear lot-capacity conflict when a sixth gravesite is assigned to a full lot, retaining the selected lot and existing assignments instead of displaying a generic server error.
-
-- Upgrade the hosted TEST tunnel to cloudflared 2026.10.3 for the eMudhra certificate trust-store security fix; pin the image digest, restrict metrics to loopback, and allow graceful shutdown.
-
-- Give the hosted API image’s copied TEST environment file to the Node runtime user so deployments built from a mode-0600 file start successfully without weakening host permissions.
-
-- Accept the verified original migration 485 checksum after its rollback-only revision, allowing inspection deletion migration 494 to run without replaying inspection history.
-
-- Assign gravesites to the exact selected lot using its UUID, avoiding duplicate lot numbers across sections. Reject ambiguous older requests and return clear burial-restriction messages; keep section/block hierarchy and cached assignments consistent.
-
-- Remove the redundant Flourishes or designs field from marker information; retain face-level editing and existing marker-level notes.
-
-- Restore Flourishes or designs on every inspection face, preserving those notes when copying, saving, editing, and clearing individual face observations.
-
-- Fix new marker creation failing with a server error by explicitly typing provenance values passed to PostgreSQL JSON construction. Add a real database regression for default and explicitly supplied provenance.
-
-### Added
+#### Added
 
 - Add local DEV/TEST query benchmarks with explicit planner-statistics refresh and session-only JIT comparisons, plus read-only spatial repair previews with an isolated GEOS worker, exact original geometry, separate candidate layers and an offline comparison viewer. Existing geometry and marker positions are preserved; candidates require review and have no apply command. See [the database review guide](docs/postgresql-18-upgrade.md#planner-statistics-and-query-benchmarks) and [ADR 0194](docs/adr/0194-local-database-review-tools.md).
 
@@ -100,57 +124,6 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Add Trinity Section B lots B-24 and B-18, plus irregular B-1 following the cemetery boundary, six feet north of B-23 (migration 419).
 
 - Add eight Trinity Section B lots in two adjoining four-lot rows, with a six-foot gap north of B-4 (migration 418).
-
-### Security
-
-- Enforce cemetery assignments when deleting North Hills evidence links, including denying unassigned cemetery administrators (PR #581).
-- Separate API runtime database privileges from administrative accounts in hosted TEST, local DEV, local automated TEST, and CI; add repeatable role setup and authorization regressions (PR #581).
-- Update vulnerable transitive dependencies (PR #581).
-
-### Maintenance
-
-- Merge MapLibre GL 6.10.0, Auth0 React 2.27.0, React DOM/type updates, and Node type updates (PRs #576–#579). Source merges do not automatically update running deployments.
-
-### Fixed
-
-- Preserve loaded photo previews while record links refresh after uploads, with regression coverage for delayed refreshes and inspection/maintenance selection cancellation (PR #708).
-
-- Retire the C-0425 plot-marker placeholder and imported pseudo-burial while retaining standalone marker TLC-HS-0425 and its evidence (migration 474).
-- Align C-0383 3.54 inches west within schematic C-83; preserve its marker, burial and lot assignment, and record the remaining C-0384 overlap for separate review (migration 475).
-
-- Align the two estimated DeCourcy gravesites C-0382/C-0382A 4.56 inches west inside schematic lot C-83, preserving marker coordinates, assignments, burial links, and C-0383 (migration 473).
-
-- Shift B-21, B-15, B-4, B-14, and B-5 together one additional foot north, preserving footprints and alignment (migration 422).
-
-- Shift the eight Section B lots B-23/B-19/B-17/B-2 and B-22/B-20/B-16/B-3 together 1.5 feet west and one foot north, preserving their footprints (migration 421).
-
-- Shift B-24, B-18, and boundary-shaped B-1 two feet west to contain TLC-HS-0138 and TLC-HS-0139, preserving standard footprints and B-1 southern/western edge lengths (migration 420).
-
-- Normalize Mary Mashey’s legacy combined surname before migration 415 on older TEST snapshots, preserving her burial and marker links and all TEST access records (migration 417).
-
-- Include `cemetery-admin` and its cemetery/deed permissions in Auth0 setup; application roles and cemetery assignments remain enforced by the application database.
-- Improve spacing around the Manage faces control in marker details (PR #583).
-
-- Correct TLC-HS-0098 to link B-0092, B-0093, B-0099 and B-0100, remove the incorrect B-0094 association, and associate the Front, Left and Back faces with Nannie/F. Myrtle, Mary and William Deer respectively (migration 411).
-
-- Retire B-0098 and its imported Deer Family Headstone pseudo-burial. Preserve family monument TLC-HS-0098, face inscriptions and photos, and real gravesite links; remove obsolete pseudo-person associations from its faces (migration 410).
-
-- Report API startup failures accurately, including an occupied port, and release database connections before exiting instead of falsely reporting that the API is listening.
-
-- Restored the missing NHG SNYDER/SOERGEL entry from printed page 189 (8A, 7, s) and linked it to TLC-HS-0072 and A-0072 in each existing source batch. Preserved Katherine Snyder’s existing burial details and the original OCR variant (migration 402).
-
-- Restored the missing NHG STEELE/MEHRLICK reading on page 188, linked it to TLC-HS-0066 and both Steele gravesites, and recorded the quoted Church Records dates and Anna's reported age. Preserved OCR variants and existing burial names and dates (migration 397).
-
-- Distinguish failed editing-option, photo, report, and saved control-point loads from empty data, with retry actions and actionable messages. Disable lookup-dependent saves until options load, label retained report results after failures, preserve place-search error guidance, and protect unreadable control-point storage from overwrite.
-
-- Show provider-specific notices when PASDA imagery or Allegheny County parcels cannot load, with per-layer retry and Diagram view actions. Notices clear on recovery; Diagram view hides external layers.
-
-- Show actionable API messages for connection failures, expired sessions, permissions, missing records, conflicts, and oversized photo uploads. Unexpected server errors include a reference ID recorded in system-event metadata and console logs.
-- Validate marker and maintenance calendar dates and report unavailable burial selections as user-correctable errors. Announce detail-form errors accessibly and associate date errors with affected fields while preserving edits.
-
-- Reject impossible calendar dates before saving and show field-specific validation messages without API jargon. People edits remain available for correction; partial birth and death dates are still supported.
-
-### Added
 
 - Add a public access-request form and global administrator review in Users. Requests grant no access until an active application user is approved; new users default to Read-only. Requires migration 416 and public-page hosting configuration (ADR 0076).
 
@@ -231,7 +204,7 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Added memorial-plaque grave features, including a government-issued veteran plaque subtype.
 - Added repeatable vase grave features so each physical vase can be recorded independently on a marker or gravesite.
 
-### Changed
+#### Changed
 
 - Updated Auth0 React to 2.25.0, MapLibre GL JS to 6.9.1, Lucide React to 1.46.0, and Node.js type definitions to 26.5.1. The CI runtime remains Node.js 24; TypeScript remains 6.0.3.
 - Expanded People editing, name data-model, and error-recovery guidance; refreshed the dependency inventory and restored documentation-site navigation through ADR 0068.
@@ -267,7 +240,92 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Upgraded `@emnapi/runtime` to 1.11.2.
 - Upgraded the Auth0 React SDK to 2.22.1, MapLibre GL JS to 6.1.0, Playwright to 1.62.1, ESLint to 10.8.0, and `jekyll-relative-links` to 0.8.0.
 
-### Database
+#### Fixed
+
+- Remove search JIT compilation overhead with a read-only, transaction-local `jit=off` setting on one checked-out connection. Restore prior settings before pool reuse, preserving search behavior and leaving database-wide, role and unrelated-query settings unchanged. See [ADR 0195](docs/adr/0195-search-transaction-local-jit.md).
+
+- Shorten CI with parallel application checks, four isolated browser shards, documentation-only PR validation, superseded-run cancellation, and browser/Docker caches while retaining the required deployment check.
+
+- Speed up cemetery search by resolving current ownership once per query for status calculation and authorized owner/date matches, preserving permissions, reasons, filtering and pagination.
+
+- Move the 32 southern Section C lots south together to contain fixed TLC-HS-0330 in C-80 and TLC-HS-0361 in C-82; clip approved non-burial C-85/C-90 to the cemetery boundary and expand C-P03 to the new northern lot edge (migration 504).
+
+- Deflect only the shared southern D/E corner north between fixed TLC-HS-0577 in D and TLC-HS-0554 in E, preserving all other section vertices and the combined footprint (migration 501).
+
+- Move the six-lot D-77/67/68/58/47/38 row west together to contain fixed TLC-HS-0500 in D-77 and TLC-HS-0463 in D-38, preserving lot dimensions and alignment (migration 500).
+
+- Speed up cemetery map loading by resolving current ownership once per map query, preserving all gravesite statuses and fresh ownership data.
+
+- Shift ten Section D lots west together so fixed TLC-HS-0447 lies strictly inside D-25, preserving lot dimensions, restrictions and other records (migration 499).
+
+- Rename D-TMP01 to standard lot D-78 and move the confirmed twelve-lot group west to contain fixed TLC-HS-0496; retain D-TMP02 restrictions and retired D-TMP03 unchanged (migration 498).
+
+- Align the five-lot northern Section D row with the row below; clip D-33, D-TMP14 and D-TMP13 to the cemetery boundary and prohibit gravesites and monuments in both lots (migration 497).
+
+- Remove thirteen owner-confirmed defunct Section D temporary lots from the active map, preserving their outlines and history without changing gravesites or monuments (migration 496).
+
+- Move A-1 through A-9 and A-30 through A-38 together one foot north, placing the fixed TLC-HS-0053 marker strictly inside A-34 while preserving lot dimensions and alignment (migration 495).
+
+- Show a clear lot-capacity conflict when a sixth gravesite is assigned to a full lot, retaining the selected lot and existing assignments instead of displaying a generic server error.
+
+- Upgrade the hosted TEST tunnel to cloudflared 2026.10.3 for the eMudhra certificate trust-store security fix; pin the image digest, restrict metrics to loopback, and allow graceful shutdown.
+
+- Give the hosted API image’s copied TEST environment file to the Node runtime user so deployments built from a mode-0600 file start successfully without weakening host permissions.
+
+- Accept the verified original migration 485 checksum after its rollback-only revision, allowing inspection deletion migration 494 to run without replaying inspection history.
+
+- Assign gravesites to the exact selected lot using its UUID, avoiding duplicate lot numbers across sections. Reject ambiguous older requests and return clear burial-restriction messages; keep section/block hierarchy and cached assignments consistent.
+
+- Remove the redundant Flourishes or designs field from marker information; retain face-level editing and existing marker-level notes.
+
+- Restore Flourishes or designs on every inspection face, preserving those notes when copying, saving, editing, and clearing individual face observations.
+
+- Fix new marker creation failing with a server error by explicitly typing provenance values passed to PostgreSQL JSON construction. Add a real database regression for default and explicitly supplied provenance.
+
+- Preserve loaded photo previews while record links refresh after uploads, with regression coverage for delayed refreshes and inspection/maintenance selection cancellation (PR #708).
+
+- Retire the C-0425 plot-marker placeholder and imported pseudo-burial while retaining standalone marker TLC-HS-0425 and its evidence (migration 474).
+- Align C-0383 3.54 inches west within schematic C-83; preserve its marker, burial and lot assignment, and record the remaining C-0384 overlap for separate review (migration 475).
+
+- Align the two estimated DeCourcy gravesites C-0382/C-0382A 4.56 inches west inside schematic lot C-83, preserving marker coordinates, assignments, burial links, and C-0383 (migration 473).
+
+- Shift B-21, B-15, B-4, B-14, and B-5 together one additional foot north, preserving footprints and alignment (migration 422).
+
+- Shift the eight Section B lots B-23/B-19/B-17/B-2 and B-22/B-20/B-16/B-3 together 1.5 feet west and one foot north, preserving their footprints (migration 421).
+
+- Shift B-24, B-18, and boundary-shaped B-1 two feet west to contain TLC-HS-0138 and TLC-HS-0139, preserving standard footprints and B-1 southern/western edge lengths (migration 420).
+
+- Normalize Mary Mashey’s legacy combined surname before migration 415 on older TEST snapshots, preserving her burial and marker links and all TEST access records (migration 417).
+
+- Include `cemetery-admin` and its cemetery/deed permissions in Auth0 setup; application roles and cemetery assignments remain enforced by the application database.
+- Improve spacing around the Manage faces control in marker details (PR #583).
+
+- Correct TLC-HS-0098 to link B-0092, B-0093, B-0099 and B-0100, remove the incorrect B-0094 association, and associate the Front, Left and Back faces with Nannie/F. Myrtle, Mary and William Deer respectively (migration 411).
+
+- Retire B-0098 and its imported Deer Family Headstone pseudo-burial. Preserve family monument TLC-HS-0098, face inscriptions and photos, and real gravesite links; remove obsolete pseudo-person associations from its faces (migration 410).
+
+- Report API startup failures accurately, including an occupied port, and release database connections before exiting instead of falsely reporting that the API is listening.
+
+- Restored the missing NHG SNYDER/SOERGEL entry from printed page 189 (8A, 7, s) and linked it to TLC-HS-0072 and A-0072 in each existing source batch. Preserved Katherine Snyder’s existing burial details and the original OCR variant (migration 402).
+
+- Restored the missing NHG STEELE/MEHRLICK reading on page 188, linked it to TLC-HS-0066 and both Steele gravesites, and recorded the quoted Church Records dates and Anna's reported age. Preserved OCR variants and existing burial names and dates (migration 397).
+
+- Distinguish failed editing-option, photo, report, and saved control-point loads from empty data, with retry actions and actionable messages. Disable lookup-dependent saves until options load, label retained report results after failures, preserve place-search error guidance, and protect unreadable control-point storage from overwrite.
+
+- Show provider-specific notices when PASDA imagery or Allegheny County parcels cannot load, with per-layer retry and Diagram view actions. Notices clear on recovery; Diagram view hides external layers.
+
+- Show actionable API messages for connection failures, expired sessions, permissions, missing records, conflicts, and oversized photo uploads. Unexpected server errors include a reference ID recorded in system-event metadata and console logs.
+- Validate marker and maintenance calendar dates and report unavailable burial selections as user-correctable errors. Announce detail-form errors accessibly and associate date errors with affected fields while preserving edits.
+
+- Reject impossible calendar dates before saving and show field-specific validation messages without API jargon. People edits remain available for correction; partial birth and death dates are still supported.
+
+#### Security
+
+- Enforce cemetery assignments when deleting North Hills evidence links, including denying unassigned cemetery administrators (PR #581).
+- Separate API runtime database privileges from administrative accounts in hosted TEST, local DEV, local automated TEST, and CI; add repeatable role setup and authorization regressions (PR #581).
+- Update vulnerable transitive dependencies (PR #581).
+
+#### Database
 
 - Retired imported placeholder gravesite `A-0017` and its generated `Burgess Monolith` pseudo-burial; family monument `TLC-HS-0017` remains active as a standalone monolith and retains both marker photos.
 - Split reviewed Trinity shared-marker gravesites `C-0392`, `C-0395`, `C-0398`, `C-0401`, `C-0402`, `C-0403`, `C-0409`, `C-0410`, `C-0413`, `C-0416`, `C-0419`, and `C-0420`; each original identifier remains with the southern burial, each new `A` gravesite contains the northern burial, and every observed marker remains fixed while spanning both gravesites.
@@ -297,7 +355,11 @@ This project uses semantic application versions and GitHub releases. Each releas
 - Shifted the paired Trinity Section C lot `18` gravesite rows south to their reviewed position.
 - Added text-preserving ownership-event effective dates for incomplete or source-specific date values.
 
-### Operations
+#### Maintenance
+
+- Merge MapLibre GL 6.10.0, Auth0 React 2.27.0, React DOM/type updates, and Node type updates (PRs #576–#579). Source merges do not automatically update running deployments.
+
+#### Operations
 
 - Use Git tags like `v0.2.0` for app releases.
 - Tag migrated databases with the same version using `APP_ENV=<env> npm run db:tag -- v0.2.0`.
