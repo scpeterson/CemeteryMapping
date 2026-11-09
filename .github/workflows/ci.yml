@@ -136,7 +136,8 @@ jobs:
           fetch-depth: 0
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.1'
+          # New runner images provide only the latest patch in each Ruby series.
+          ruby-version: '3.4'
           bundler: '2.6.2'
           bundler-cache: true
           working-directory: docs
