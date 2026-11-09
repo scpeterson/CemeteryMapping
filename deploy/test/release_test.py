@@ -52,6 +52,11 @@ class ArchiveTests(unittest.TestCase):
 
     def test_health_requires_exact_test_revision_and_build(self):
         release.validate_health(health(), NEW, TIME)
+        versioned = health()
+        versioned['version']['version'] = '0.2.0'
+        release.validate_health(versioned, NEW, TIME, '0.2.0')
+        with self.assertRaises(RuntimeError):
+            release.validate_health(versioned, NEW, TIME, '0.3.0')
         for invalid in [dict(health(), environment='PROD'), health(OLD), dict(health(), status='error')]:
             with self.assertRaises(RuntimeError):
                 release.validate_health(invalid, NEW, TIME)

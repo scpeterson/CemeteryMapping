@@ -380,6 +380,25 @@ umask 022
 npm run deploy:test
 ```
 
+For a named release, select its immutable tag or full 40-character commit SHA:
+
+```sh
+umask 022
+npm run deploy:test -- --ref v0.2.0 --prepare-only
+npm run deploy:test -- --ref v0.2.0
+```
+
+The example tag is usable only after its release is published. `--prepare-only`
+performs backups and candidate validation without switching live services. The
+subsequent deployment rebuilds and validates the same selected source revision;
+it is not promotion of the previously built image. Each build has its own time.
+The fetched reference must belong to `origin/main`; version tags must match
+their package version. Branch names, abbreviated SHAs and arbitrary Git revision
+expressions are rejected. CI must pass for the resolved commit, not a newer main
+commit. Candidate and final health check the selected version/SHA/build identity.
+Do not use an older tag as a database rollback: schema compatibility still needs
+review, and the existing schema validation and recovery safeguards remain active.
+
 Use the standard source-file creation mask so the release archive is readable by
 the schema validator and candidate runtime. A restrictive inherited mask caused
 the [November 9 pre-cutover failures](#november-9-2026-refactoring-and-draft-recovery-release).
@@ -387,8 +406,9 @@ The release workflow separately protects hosted settings and secrets; do not
 broaden their permissions to fix source readability.
 
 This is an on-demand release command for the existing hosted TEST host only.
-It fetches `origin/main`, requires the exact commit's **Lint, build, and test**
-check to have passed, and builds that revision from a clean Git archive. Local
+It fetches `origin/main` and, when supplied, the explicit release reference,
+requires the selected commit's **Lint, build, and test** check to have passed,
+and builds that revision from a clean Git archive. Local
 changes, personal media, ignored files and local environment settings are not
 part of the release. It does not deploy a feature branch or configure a schedule.
 

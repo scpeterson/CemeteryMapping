@@ -8,6 +8,48 @@
 - Owners: Project maintainers
 - Related changes: Version metadata and release workflow implementation
 
+## November 9, 2026: current release policy
+
+This policy updates the original decision below; the original commands and
+rationale remain historical context.
+
+- Use `package.json` as the application version source and update the root
+  versions in `package-lock.json` in the same release-preparation PR.
+- Before 1.0, use patch releases for fixes and behavior-preserving refactors,
+  and minor releases for new workflows or intentional breaking changes. Identify
+  breaking changes, migration requirements and recovery limits explicitly.
+  Documentation-only PRs do not require an application version bump.
+- Reserve 1.0.0 for an agreed stable compatibility contract covering API payloads,
+  supported workflows, exports and persisted/offline data. After 1.0, incompatible
+  contract changes require a major version. A release number is not proof of
+  production readiness or completion of pending verification.
+- Release notes identify the exact source/tag, included PRs, schema baseline and
+  migration range, data scripts, checks, known gaps and recovery instructions.
+  Create a release-preparation PR, pass CI, merge, then wait for CI on the exact
+  merged commit before creating an annotated `vX.Y.Z` tag and GitHub Release.
+  Never move published tags or invent retrospective releases. New fixes receive
+  a new version. Environment and build identity remain separate metadata.
+- For hosted TEST, use `npm run deploy:test -- --ref v0.2.0` (or a full 40-character
+  commit SHA). The command fetches the selected revision, requires it to be on
+  `origin/main`, resolves it once, and checks CI for that exact commit. A version
+  tag must match the selected package version. Omitting `--ref` retains the
+  latest-main workflow; named releases should always use an explicit reference.
+- Frontend metadata uses the selected package version, SHA and build timestamp.
+  The release manifest records them; candidate and final health must match the
+  version, SHA and timestamp. A stale hosted `APP_VERSION` override fails those
+  checks rather than silently relabeling the release. Preserve private settings.
+- Publishing or merging a release does not deploy it. Record each environment's
+  actual version, SHA, build time and migration state after separate deployment.
+  Database release tags require a separately authorized migration/promotion
+  procedure; code-only TEST deployment does not migrate, restore, seed or tag
+  the live database. A Git tag is not a database rollback instruction.
+
+Start the named release history at **0.2.0**, retaining the existing accumulated
+changelog as the initial baseline. Pending fresh Access/Auth0 login, invitation
+delivery, live token replay and disconnected offline synchronization checks must
+remain visible in the applicable release notes and runbooks until completed.
+See the [hosted TEST workflow](../hosted-test.md#repeatable-deployment-command).
+
 ## Context
 
 The application now has enough schema, data import, audit, and operational workflows that maintainers need to know exactly which code and database migration state is running in each environment. A commit hash alone is too low-level for normal release notes, and an application version alone is not enough because the database changelog is part of the deployed system.

@@ -65,11 +65,12 @@ def protected_paths(app):
     return sorted(paths)
 
 
-def validate_health(health, commit, build_time):
+def validate_health(health, commit, build_time, version=None):
     if (health.get('status') != 'ok' or health.get('environment') != 'TEST'
             or health.get('database') != 'cemetery_mapping_test'
             or health.get('version', {}).get('gitSha') != commit
-            or health.get('version', {}).get('buildTime') != build_time):
+            or health.get('version', {}).get('buildTime') != build_time
+            or (version is not None and health.get('version', {}).get('version') != version)):
         raise RuntimeError('API health does not match the selected TEST release.')
 
 
@@ -160,7 +161,8 @@ class Release:
         for _ in range(30):
             try:
                 health = self.fetch_health(port)
-                validate_health(health, commit, build_time)
+                validate_health(health, commit, build_time,
+                                self.manifest.get('version') if commit == self.commit else None)
                 return health
             except (OSError, ValueError, RuntimeError):
                 time.sleep(1)

@@ -3,7 +3,54 @@ import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { frontendEnvironment, releaseFiles, requirePassingCi } from "./lib/hosted-test-release.mjs";
+import { execFileSync } from "node:child_process";
+import { deploymentOptions, frontendEnvironment, releaseFiles, requirePassingCi, selectReleaseCommit } from "./lib/hosted-test-release.mjs";
+
+test("deployment arguments accept exact releases and reject ambiguous or unsafe inputs", () => {
+  assert.deepEqual(deploymentOptions([]), { prepareOnly: false, ref: null });
+  assert.deepEqual(deploymentOptions(["--prepare-only", "--ref", "v0.2.0"]), { prepareOnly: true, ref: "v0.2.0" });
+  assert.equal(deploymentOptions(["--ref", "a".repeat(40)]).ref, "a".repeat(40));
+  for (const args of [["--ref"], ["--ref", "main"], ["--ref", "abc123"], ["--ref", "--help"], ["--ref", "v0.2.0;id"], ["--prepare-only", "--prepare-only"], ["--ref", "v0.2.0", "--ref", "v0.3.0"]]) {
+    assert.throws(() => deploymentOptions(args));
+  }
+});
+
+test("release selection pins an older annotated tag after main advances and rejects non-main or mismatched releases", () => {
+  const root = mkdtempSync(join(tmpdir(), "release-selection-"));
+  const upstream = join(root, "upstream");
+  const checkout = join(root, "checkout");
+  const git = (cwd, args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  try {
+    mkdirSync(upstream);
+    git(upstream, ["init", "-b", "main"]);
+    git(upstream, ["config", "user.name", "Release fixture"]);
+    git(upstream, ["config", "user.email", "release@example.com"]);
+    const commit = (version) => {
+      writeFileSync(join(upstream, "package.json"), JSON.stringify({ version }));
+      git(upstream, ["add", "package.json"]);
+      git(upstream, ["commit", "-m", version]);
+      return git(upstream, ["rev-parse", "HEAD"]);
+    };
+    const release = commit("0.2.0");
+    git(upstream, ["tag", "-a", "v0.2.0", "-m", "Release"]);
+    git(upstream, ["tag", "v9.0.0"]);
+    const latest = commit("0.3.0");
+    git(upstream, ["switch", "-c", "unmerged"]);
+    const unmerged = commit("0.4.0");
+    git(upstream, ["switch", "main"]);
+    git(root, ["clone", upstream, checkout]);
+    const run = (command, args) => {
+      assert.equal(command, "git");
+      return git(checkout, args);
+    };
+    assert.equal(selectReleaseCommit(run, null), latest);
+    assert.equal(selectReleaseCommit(run, "v0.2.0"), release);
+    assert.equal(selectReleaseCommit(run, release), release);
+    assert.throws(() => selectReleaseCommit(run, unmerged));
+    assert.throws(() => selectReleaseCommit(run, "v9.0.0"), /package version/u);
+    assert.throws(() => selectReleaseCommit(run, "v8.0.0"));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
 
 test("only successful CI for the selected main commit allows deployment", () => {
   const passing = { name: "Lint, build, and test", head_sha: "selected", status: "completed", conclusion: "success" };

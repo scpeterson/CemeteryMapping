@@ -2,10 +2,39 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+export function deploymentOptions(args) {
+  const options = { prepareOnly: false, ref: null };
+  for (let index = 0; index < args.length; index++) {
+    if (args[index] === "--prepare-only" && !options.prepareOnly) options.prepareOnly = true;
+    else if (args[index] === "--ref" && options.ref === null) {
+      const ref = args[++index];
+      if (!ref || !/^(?:[a-f0-9]{40}|v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/u.test(ref)) {
+        throw new Error("--ref requires a full commit SHA or version tag such as v0.2.0.");
+      }
+      options.ref = ref;
+    } else throw new Error("Usage: npm run deploy:test -- [--ref <full-sha|version-tag>] [--prepare-only]");
+  }
+  return options;
+}
+
+export function selectReleaseCommit(run, ref) {
+  run("git", ["fetch", "origin", "main"]);
+  if (ref) run("git", ["fetch", "origin", ...(ref.startsWith("v") ? ["tag", ref] : [ref])]);
+  const revision = ref?.startsWith("v") ? `refs/tags/${ref}` : ref ?? "origin/main";
+  const sha = run("git", ["rev-parse", "--verify", `${revision}^{commit}`], { capture: true });
+  if (!/^[a-f0-9]{40}$/u.test(sha)) throw new Error("Invalid release revision.");
+  run("git", ["merge-base", "--is-ancestor", sha, "origin/main"]);
+  if (ref?.startsWith("v")) {
+    const pkg = JSON.parse(run("git", ["show", `${sha}:package.json`], { capture: true }));
+    if (`v${pkg.version}` !== ref) throw new Error("Release tag does not match its package version.");
+  }
+  return sha;
+}
+
 export function requirePassingCi(response, sha) {
   const checks = response.check_runs.filter((check) => check.name === "Lint, build, and test" && check.head_sha === sha);
   if (!checks.length || checks.some((check) => check.status !== "completed" || check.conclusion !== "success")) {
-    throw new Error("Latest main must pass Lint, build, and test before deployment.");
+    throw new Error("The selected release must pass Lint, build, and test before deployment.");
   }
 }
 
