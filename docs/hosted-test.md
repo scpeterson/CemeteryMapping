@@ -14,6 +14,10 @@ release](#november-7-2026-dependency-and-bundle-release) at `3c5609f`. Dated sec
 below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
+The latest edge-security change is the
+[November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
+for the public access-request API.
+
 ## Availability and cost
 
 The accepted setup keeps hosted TEST available independently of the developer's
@@ -499,13 +503,15 @@ steps for rehearsed schema changes and manual recovery.
 - Check **Admin → Users → Access requests** and review pending requests. The queue
   warns at 80% of the 100-per-hour or 200-pending ceilings. Reviewed requests remain
   historical; rejecting one frees pending capacity, not the rolling-hour count.
-- Watch Nginx 429 counts and Turnstile Analytics. API visitor/global rate buckets
+- Watch Cloudflare rate-limit events, Nginx 429 counts and Turnstile Analytics.
+  The [edge burst rule](#november-9-2026-cloudflare-burst-protection) supplements
+  the origin controls. API visitor/global rate buckets
   reset on process restart; database capacity limits survive restart. Do not
   restart services to evade limits or create a database log/email per rejection.
 - A 403 verification failure can mean a missing/expired/invalid token, wrong secret,
   action/hostname mismatch, or failed outbound Siteverify call. Check configuration
   and connectivity without logging secrets or tokens; preserve fail-closed behavior.
-- A 429 can originate at Nginx, the API attempt limiter, database lock contention,
+- A 429 can originate at Cloudflare, Nginx, the API attempt limiter, database lock contention,
   or queue/hourly capacity. Honor Retry-After when supplied. Nginx 429 responses
   currently lack that header. Investigate before increasing limits.
 - For a 502 after release, inspect API startup and source ownership. For a blank
@@ -1003,3 +1009,75 @@ The deployed API image is
 `sha256:7ee9266da734149f8cf6c47425f5ae5b78232a27b6fb08347c26052ecfe2889e`.
 Keep private recovery data outside Git. This record establishes hosted TEST
 availability only; it does not establish a STAGE or PROD deployment.
+
+## November 9, 2026 Cloudflare burst protection
+
+The **Access request burst protection** rate-limiting rule is active in the
+`nhcemeteries.org` Cloudflare zone. Its rule ID is
+`5f40a4d3b1a549aba83d0962b23079c1`; inspect it under **Security → Security rules →
+Rate limiting rules**, or use the
+[rule dashboard](https://dash.cloudflare.com/05d74c95ee93c4804f7a05ca2c4c91fd/nhcemeteries.org/security/security-rules/rate-limiting-rules/5f40a4d3b1a549aba83d0962b23079c1).
+
+| Setting | Saved value |
+|---|---|
+| Match | `(http.request.uri.path eq "/api/access-requests")` |
+| Counting characteristic | Client IP |
+| Threshold | More than 5 requests in 10 seconds |
+| Action | Block for 10 seconds |
+| Status | Active |
+
+The Free-plan rule matches the exact path **across the zone**, including TEST;
+it is not restricted to the TEST hostname or to POST requests. It does not match
+`/request-access`, its assets, or other API paths. The rule uses the zone's one
+available Free-plan rate-limiting rule. Edge counters are not an exact global
+transaction limit: enforcement can lag the configured threshold. Keep the origin
+limits as well. See [Cloudflare rate limiting](https://developers.cloudflare.com/waf/rate-limiting-rules/).
+
+This change added only the edge rule. Cloudflare Access, Auth0, the Free Managed
+Ruleset, HTTP DDoS protection and Browser Integrity Check were preserved. Bot
+Fight Mode remained off. Turnstile's required server-side verification, exact
+hostname/action checks, trusted loopback proxy handling, Nginx/API request limits
+and database queue/hourly ceilings remain in place. No application deployment,
+schema change, credential change, or account provisioning was performed.
+
+### Hosted verification on November 9
+
+- Reopened the saved rule and confirmed the exact expression, client-IP counter,
+  threshold, period, block duration and Active status.
+- Submitted one synthetic request through the public TEST form in Chrome with a
+  real Turnstile token. The browser displayed the received/review message, and
+  the database contained the corresponding pending request. The fixture was
+  subsequently marked **rejected**, with an audit reason identifying the
+  verification. It remains historical; no user account was created.
+- Sent a bounded burst of 12 GET requests to the exact API path. GET cannot
+  submit an access request and normally returns 404. Six responses were 404 and
+  six were Cloudflare 429 rate-limit pages. After a 15-second cooldown, a new GET
+  returned 404 without a Cloudflare rate-limit page. These observations verify
+  edge blocking and recovery; they do not promise an exact sixth-request cutoff.
+- Missing-token and forged-token POSTs both returned the application's 403
+  verification error. Neither created an access-request record.
+- The public form returned HTTP 200, anonymous `/api/me` still redirected to
+  Cloudflare Access (302), and origin health remained `ok` in environment `TEST`.
+- Running configuration still required Turnstile, included the exact TEST
+  hostname, and trusted only the configured loopback proxy. No secrets or tokens
+  were recorded in this runbook.
+
+### Monitoring, retesting and recovery
+
+Review **Security → Analytics → Events** for this rule ID and TEST hostname;
+allow for analytics delay and sampling. Distinguish Cloudflare rate-limit pages
+from origin 429 responses before changing limits. A successful browser request
+alone does not establish that it was stored: verify the synthetic pending record,
+then reject it without granting access. Never disable Turnstile to test success.
+
+For a bounded retest, use GETs to the exact API path so burst probes cannot create
+records. Allow the cooldown before checking recovery, and test an ordinary
+Turnstile-backed form submission separately. Avoid flooding the live form or
+using business records as fixtures.
+
+If the edge rule causes legitimate-request failures, disable **only this named
+rate-limiting rule** while investigating, retain its configuration, and preserve
+all origin verification, rate limits, capacity controls and Access policies.
+Recheck the public form, valid/invalid token handling and private-API protection.
+The rule is managed in Cloudflare rather than the application checkout; a code
+rollback does not remove it.
