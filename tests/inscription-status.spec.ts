@@ -56,6 +56,7 @@ test("current legibility archives text with source history and locks whole-marke
   const partial = "  NAME\n[blank] – 1980\n[illegible lines]  ";
   await second.getByRole("textbox", { name: "Inscription", exact: true }).fill(partial);
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Back", exact: true })).toContainText("1980");
   expect(faces[1].inscription).toBe(partial);
   expect(faces[1].inscriptionStatus).toBe("transcribed");
   expect(faces[0].historicalTranscriptions?.some((entry) => entry.source === "NHG" && entry.sourceDate === "2005-10-11")).toBe(true);
