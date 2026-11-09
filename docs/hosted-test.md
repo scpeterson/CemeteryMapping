@@ -376,8 +376,15 @@ from `https://challenges.cloudflare.com` and test it before release.
 From the repository checkout, run:
 
 ```sh
+umask 022
 npm run deploy:test
 ```
+
+Use the standard source-file creation mask so the release archive is readable by
+the schema validator and candidate runtime. A restrictive inherited mask caused
+the [November 9 pre-cutover failures](#november-9-2026-refactoring-and-draft-recovery-release).
+The release workflow separately protects hosted settings and secrets; do not
+broaden their permissions to fix source readability.
 
 This is an on-demand release command for the existing hosted TEST host only.
 It fetches `origin/main`, requires the exact commit's **Lint, build, and test**

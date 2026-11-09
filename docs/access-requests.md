@@ -132,7 +132,19 @@ Reviewing pending requests frees queue
 space, while the hourly count naturally ages out. Already stored requests remain
 available for review. The database-backed limits survive API restarts.
 
-Monitor the admin queue warning, Nginx 429 counts, and Turnstile Analytics. No
+Since November 9, 2026, the Cloudflare edge also blocks a client IP for 10 seconds
+when it exceeds 5 requests in 10 seconds to the exact `/api/access-requests` path.
+This Free-plan rule applies across the `nhcemeteries.org` zone, including TEST,
+and to all methods on that path. It does not match the `/request-access` page or
+its assets. Enforcement can lag the threshold; the origin limits remain required.
+See the [saved rule and verification record](hosted-test.md#november-9-2026-cloudflare-burst-protection)
+for the rule ID, real Turnstile submission, bounded burst test and recovery steps.
+
+Monitor Cloudflare rate-limit events, the admin queue warning, Nginx 429 counts,
+and Turnstile Analytics. Distinguish Cloudflare rate-limit pages from origin 429
+responses before changing thresholds. If the edge rule blocks legitimate traffic,
+follow the runbook's recovery steps for that named rule while retaining Turnstile,
+Access and all origin limits. No
 per-rejection database logs or automatic emails are created. At release, submit
 one real verified request, check that its token cannot be replayed, and confirm
 missing/forged tokens produce no database rows.

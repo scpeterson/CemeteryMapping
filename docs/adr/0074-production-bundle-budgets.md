@@ -1,6 +1,32 @@
+---
+---
+
 # ADR 0074: Enforce Production Bundle Budgets in CI
 
 Status: Accepted
+
+## Current budget reference — November 9, 2026
+
+The dated decisions and measurements below are historical. Later accepted ADRs
+refine the original combined JavaScript allowance:
+
+- [ADR 0199](0199-offline-field-collection.md),
+  [ADR 0202](0202-scoped-record-exports.md) and
+  [ADR 0203](0203-assigned-maintenance-tasks.md) introduce separately budgeted
+  field, export and maintenance-task entries.
+- [ADR 0204](0204-maplibre-runtime-budget.md) bounds MapLibre runtime growth
+  separately, with at most 12 KiB of credit against the charged core calculation.
+- [ADR 0205](0205-debounced-inspection-recovery.md) raises the charged core cap
+  from 700 to **701 KiB gzip** after measurement and review.
+  [ADR 0206](0206-draft-guard-navigation-comparison.md) retains that cap after
+  profiling the navigation guard.
+
+See [`scripts/check-bundle-size.mjs`](https://github.com/scpeterson/CemeteryMapping/blob/main/scripts/check-bundle-size.mjs) for current
+enforced limits and accounting. The 701 KiB figure is the charged core cap, not
+an unconditional cap on every emitted JavaScript asset combined. The historical
+figures below are retained as the record of the original decisions.
+
+## Original decision
 
 CI runs `npm run build:prod` in addition to the TEST build. Production budgets are 50 KiB for the application entry, 70 KiB for React, and 700 KiB for all JavaScript, including lazy chunks and MapLibre workers. Existing Auth0, admin, and map chunk limits remain in effect.
 
