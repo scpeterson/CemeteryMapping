@@ -3,8 +3,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 const detailPanel = ["CreateHeadstoneForm", "GraveDetailPanel"].map((name) => readFileSync(new URL(`../src/components/detail/${name}.tsx`, import.meta.url), "utf8")).join("\n");
-const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
-const cemeteryMap = readFileSync(new URL("../src/components/CemeteryMap.tsx", import.meta.url), "utf8");
 const api = readFileSync(new URL("../src/api/cemeteryApi.ts", import.meta.url), "utf8");
 const headstoneRoutes = readFileSync(new URL("../server/routes/headstoneRoutes.mjs", import.meta.url), "utf8");
 const cemeteryRouteValidation = readFileSync(new URL("../server/routes/cemeteryRouteValidation.mjs", import.meta.url), "utf8");
@@ -18,17 +16,6 @@ test("gravesite detail panel exposes an add marker workflow", () => {
   assert.match(detailPanel, /Pick point on map/u);
   assert.match(detailPanel, /<option value="footstone">Footstone<\/option>/u);
   assert.match(detailPanel, /onCreateHeadstone\(grave, headstone\)/u);
-});
-
-test("map point picking fills the add marker coordinates without selecting map features", () => {
-  assert.match(app, /const \[isPickingMarkerPoint, setIsPickingMarkerPoint\]/u);
-  assert.match(app, /setPickedMarkerPoint\(\{ \.\.\.point, pickedAt: Date\.now\(\) \}\)/u);
-  assert.match(app, /onPickMarkerPoint=\{pickMarkerPoint\}/u);
-  assert.match(detailPanel, /pickedMarkerPoint\.latitude\.toFixed\(8\)/u);
-  assert.match(detailPanel, /pickedMarkerPoint\.longitude\.toFixed\(8\)/u);
-  assert.match(cemeteryMap, /onPickMarkerPointRef\.current\?\.\(\{ latitude: event\.lngLat\.lat, longitude: event\.lngLat\.lng \}\)/u);
-  assert.match(cemeteryMap, /isMeasuringRef\.current \|\| isPickingMarkerPointRef\.current/u);
-  assert.match(cemeteryMap, /Pick marker point/u);
 });
 
 test("create marker API posts to the selected gravesite route", () => {

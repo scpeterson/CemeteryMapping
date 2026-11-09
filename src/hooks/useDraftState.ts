@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useState, type Dispatch, type SetStateAction } from "react";
 
-const drafts = new Map<string, () => void>();
+type DraftGuard = { isDirty: () => boolean; discard: () => void };
+const drafts = new Map<string, DraftGuard>();
 
 export function confirmDiscardChanges() {
-  if (!drafts.size) return true;
+  const pending = [...drafts.values()].filter(draft => draft.isDirty());
+  if (!pending.length) return true;
   if (!window.confirm("Discard unsaved changes? Choose Cancel to keep editing.")) return false;
-  for (const discard of drafts.values()) discard();
-  drafts.clear();
+  for (const draft of pending) draft.discard();
   return true;
 }
 
@@ -22,11 +23,18 @@ export function useDraftState<T>(initial: T | (() => T), onDiscard?: () => void)
       ? { ...current, value: next(current.value) }
       : { value: next, baseline: next });
   }, []);
-  // Update the guard during commit, before saved controls become visible or navigation can occur.
+  // Register committed values before navigation can occur, but serialize only
+  // when navigation/unload actually asks whether they differ from the baseline.
   useLayoutEffect(() => {
-    if (JSON.stringify(state.value) !== JSON.stringify(state.baseline)) {
-      drafts.set(id, () => { onDiscard?.(); setState((current) => ({ ...current, value: current.baseline })); });
-    } else drafts.delete(id);
+    drafts.set(id, {
+      isDirty: () => state.value !== state.baseline && JSON.stringify(state.value) !== JSON.stringify(state.baseline),
+      discard: () => {
+        onDiscard?.();
+        // Remove immediately so a second check in the same event does not prompt again.
+        drafts.delete(id);
+        setState(current => ({ ...current, value: current.baseline }));
+      },
+    });
     return () => { drafts.delete(id); };
   }, [id, state, onDiscard]);
   return [state.value, setDraft];
@@ -35,7 +43,7 @@ export function useDraftState<T>(initial: T | (() => T), onDiscard?: () => void)
 export function useDraftNavigationGuard() {
   useEffect(() => {
     const unload = (event: BeforeUnloadEvent) => {
-      if (!drafts.size) return;
+      if (![...drafts.values()].some(draft => draft.isDirty())) return;
       event.preventDefault();
       event.returnValue = "";
     };

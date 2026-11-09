@@ -26,6 +26,8 @@ Prefer a component with one editing or review responsibility over extending a co
 
 Marker summaries fetch associated gravesite details through the existing authorized API, with at most four requests in flight and stale results discarded on selection changes. The overview shares an AbortController across its bounded request pool, aborts in-flight requests on cleanup or retry, and stops dequeuing linked graves after cancellation. Cancellation does not appear as a failed record. Honor explicit burial links, group people/owners by gravesite, and keep errors distinct from empty records. The API remains responsible for data access; the UI also hides ownership sections unless the selected cemetery is permitted.
 
+`useSelectedRecordDetails` fetches by stable record identity (marker ID, or cemetery ID plus gravesite ID). Replacing a summary for the same selection does not refetch or clear loaded details. Mutations that require server reconciliation must call `refreshDetails`; `preserveCurrent` retains the current details while refreshing the same selection. Selection changes still clear details and owners and abort the previous request. Run `npx playwright test --config playwright.detail-regressions.config.ts` for request-count, refresh/retry, selection, draft, mutation, and photo regressions against the isolated server.
+
 `App` increments `selectionVersion` only for user selections. `DetailPanel` keys the grave/marker panel by feature identity and that version so each click defaults to Overview, including repeat clicks; saves do not reset the tab. It rejects detail objects belonging to a different selection. Shared `DetailTabs` preserves keyboard navigation and draft guards. Gravesite editing belongs in Location, while standalone marker editing belongs in Details.
 
 `tests/overview.spec.ts` covers photos, linked people/owners, permissions, empty and failure states, and selection defaults.
@@ -46,6 +48,10 @@ Use `src/components/ui/` for common behavior:
 
 Use `protectDrafts` on editable panels that must check drafts before Escape closes them. Photo viewers and nested action confirmations do not discard editor drafts just by closing. The navigation-discard warning currently uses the browser's synchronous confirmation, independently of `useConfirmation`.
 
+`useRecordOptions` owns the picker's debounced query, offset, remembered selection, loading/error state, and local lookup fallback. `recordOptionsApi` owns authorized requests, endpoint selection, query encoding, and the shared 50-row page size; it requests one extra row to detect another page. The hook derives the next-page flag from the returned rows rather than storing a second pagination flag. Keep the remembered option separate from page matches so an off-page selection remains available without changing the match count. New searches reset the offset immediately while retaining the existing 200 ms debounce. Existing nonempty lookup arrays stay local, including when remote loading is disabled.
+
+Run `npx playwright test --config playwright.record-options-regressions.config.ts` for the isolated picker, marker-link, maintenance-task, and offline-fieldwork regressions. The service-worker offline-build test in that set requires `FIELD_BUILD=1` and built assets; it skips against the development server.
+
 ## Error Recovery
 
 Use the shared API client in `src/api/apiClient.ts` for actionable connection, session, permission, conflict, upload, and server-error messages. Unexpected server failures can include a `referenceId`; retain the displayed reference for support without exposing internal exception details.
@@ -58,7 +64,7 @@ The [operator recovery guide](operator-workflows.md#recovering-from-load-and-sav
 
 ## Draft State and Navigation
 
-`src/hooks/useDraftState.ts` intentionally distinguishes edits from loading or accepting a record. It compares JSON-serializable values against a saved baseline; update values immutably and keep files, DOM nodes, and other non-serializable objects outside this state.
+`src/hooks/useDraftState.ts` intentionally distinguishes edits from loading or accepting a record. It registers committed values during layout, then compares JSON-serializable values against a saved baseline synchronously when navigation or unload is attempted; update values immutably and keep files, DOM nodes, and other non-serializable objects outside this state.
 
 ```tsx
 const [form, setForm] = useDraftState(initialRecord);
@@ -73,6 +79,8 @@ setForm(savedRecord);
 Do not pass a replacement object from a user-edit handler: that would incorrectly mark the edit as saved. Only establish a new baseline after loading a record, explicitly discarding/reloading, or successfully saving it. A failed save must leave the draft intact. Switching records must be guarded before replacing state.
 
 `App` installs `useDraftNavigationGuard` once. It protects result selection, detail/admin tabs, marked record-selection controls, recognized cancel/close/new/reset buttons, and page exit while tracked drafts exist. Add `data-discard-draft` to a new button that replaces an editor. For map callbacks or keyboard navigation outside those click handlers, call `confirmDiscardChanges()` before changing selection. A confirmed discard resets all registered drafts to their baselines; canceled navigation must not proceed.
+
+Typing and unrelated renders do not serialize drafts for this guard. Clean drafts with the same value/baseline reference skip comparison; separately allocated but JSON-equal drafts remain clean. Confirming discard removes each dirty registration immediately before the next navigation check, restores its baseline value, and runs its discard callback once. Canceling leaves all drafts intact. See [ADR 0206](adr/0206-draft-guard-navigation-comparison.md) for the production profile and repeatable profiling commands.
 
 This tracking is not universal form middleware. Audit new form state and navigation handlers explicitly. Mounted phone views retain their state while hidden; most drafts are not persisted across reloads or browser sessions. Inspection drafts are the explicit exception described below.
 
@@ -114,6 +122,10 @@ Parameters are associated with the selected report rather than reset by an effec
 
 ## Map Geometry and Highlighting
 
+`CemeteryMap` owns map creation, teardown, viewport fitting, click selection, and the toolbar. `useCemeteryMapSources` synchronizes each geometry collection independently and applies status filters and feature-state highlights. `cemeteryMapMeasurement` owns measurement GeoJSON, layer definitions, distance calculation, and formatting. Selection callbacks use Effect Events so map listeners see current callbacks without rebuilding the map. Preserve collection-specific effect dependencies and keep creation/cleanup paired when extending these modules.
+
+Run `npx playwright test --config playwright.map-regressions.config.ts` for isolated, database-free map regressions, including worker startup, provider retries, highlighting, status filters, cemetery scope, measurement, zoom/fit, and responsive navigation. Measurement regressions exercise real canvas clicks and verify that unrelated geometry sources are not resubmitted.
+
 Graves, lots, and markers have stable GeoJSON feature IDs. Selection and search use MapLibre feature state in paint expressions, with `mapHighlightState.ts` applying only changed IDs. They do not rebuild geometry. Linked marker IDs are indexed by grave, and selecting a marker takes precedence over highlighting markers associated with the selected grave.
 
 Source-update effects depend on their geometry collections: boundaries, sections, restricted areas, lots, visible graves, and markers. Marker data also depends on veteran flags. Preserve stable collection references for unrelated edits so a record change does not reload every map layer. Feature IDs must remain stable across source updates; the browser regression verifies highlighting survives a geometry refresh and Diagram mode.
@@ -137,6 +149,10 @@ APP_ENV=test npm run test:e2e
 Shared browser fixtures live in `tests/fixtures/cemetery.ts`. The nested-dialog harness and its mounting helper are test-only files. Keep API mocking limited to the boundaries a test needs, and retain API-backed coverage for real record reads and mutations. CI rebuilds TEST and runs lint, build, server, database, and browser checks. Test counts change as coverage grows; use the current run's results rather than a fixed documented count.
 
 ## Inspection Faces And Photo Links
+
+`MonumentInspections` coordinates selection, required-field navigation, and inspection/photo saves. `useInspectionDraft` owns draft registration and account/marker-scoped browser recovery, including the current step and face. Recovery writes debounce for 350 ms and flush synchronously on page hiding, unload, or editor unmount. Saving or discarding cancels queued writes before clearing storage. `useInspectionPhotoLinks` owns abortable linked-photo loading and retries. `useInspectionDisplayPreferences` owns persisted disclosure choices, reset confirmation timing, and reset focus targets; `InspectionDisplaySettings` renders those controls without adding layout wrappers. Keep these hooks inside the account/marker-keyed editor so changing identity or marker resets their state.
+
+Run `npm run test:inspections:browser` for the isolated mocked-API browser regression suite; it starts its own Vite server on port 5199 and does not require a database.
 
 `editableMarkerFaces` supplies a single Front face for older responses with no faces, preserving current text, status, legibility and unassigned historical readings. The database persists this default on creation and migration 491 backfills old records. Keep at least one face in editors and disable removal of the final face; an empty reading is distinct from an empty face list. Inspection draft fallback uses the selected visit’s own text and defaults its label to Front. Migration 492 updates persisted single-face labels without changing IDs or readings. Front remains eligible for the simple inscription editor; Manage faces opens the labeled editor.
 
@@ -208,7 +224,7 @@ Reset restores remaining items shown, both keyboard hints hidden and the restore
 
 ## Inspection recovery
 
-Inspection editors write versioned snapshots to browser local storage scoped to the authenticated account subject (or local development session) and marker ID. Resume is explicit; a quick action never overwrites a pending recovery. Persist visit details, face readings/designs, active step/face, optimistic concurrency tokens, saved-record state and photo metadata. Files are not serialized: names and metadata become reselection placeholders and block saving until replaced or removed. Successful saves and explicit discards remove recovery. Guarded navigation that confirms discard also clears recovery. Validate snapshots before using them; unavailable storage leaves editing operational and shows a message. Recovery is local to this browser, not server autosave or cross-device sync.
+Inspection editors write versioned snapshots to browser local storage scoped to the authenticated account subject (or local development session) and marker ID. Writes debounce for 350 ms after the latest committed edit, including step and face changes. Flush pending edits on `visibilitychange` to hidden, `beforeunload`, `pagehide`, and editor unmount; a failed flush retains its pending snapshot for retry. Clearing recovery cancels the timer and pending snapshot so a later lifecycle event cannot recreate a discarded or finished draft. Resume is explicit; a quick action never overwrites a pending recovery. Persist visit details, face readings/designs, active step/face, optimistic concurrency tokens, saved-record state and photo metadata. Files are not serialized: names and metadata become reselection placeholders and block saving until replaced or removed. Successful saves and explicit discards remove recovery. Guarded navigation that confirms discard also clears recovery. Validate snapshots before using them; unavailable storage leaves editing operational and shows a message. Recovery is local to this browser, not server autosave or cross-device sync.
 
 
 ## Typed lot and passageway areas

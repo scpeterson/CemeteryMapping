@@ -50,7 +50,7 @@ test("MapLibre growth allowance covers only bounded vendor and worker bytes",()=
  assets.find(a=>a.filename.startsWith('vendor-map-')).gzipBytes=281*1024;
  assets.push({filename:'maplibre-gl-worker-fixture.js',gzipBytes:145*1024});
  const otherBytes=assets.filter(a=>!a.filename.startsWith('vendor-map-')&&!a.filename.startsWith('maplibre-gl-worker-')).reduce((n,a)=>n+a.gzipBytes,0);
- assets.push({filename:'shared-fixture.js',gzipBytes:(700-415)*1024-otherBytes});
+ assets.push({filename:'shared-fixture.js',gzipBytes:(totalJavaScriptGzipBudgetKilobytes-415)*1024-otherBytes});
  assert.deepEqual(checkBundleAssets(assets).failures,[]);
  assets.at(-1).gzipBytes++;
  assert.ok(checkBundleAssets(assets).failures.some(f=>f.includes('core JavaScript')));

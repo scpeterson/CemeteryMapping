@@ -13,7 +13,8 @@ export const budgets = [
   // MapLibre runtime chunks have separate dependency limits; application limits stay fixed.
   { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 285 },
 ];
-export const totalJavaScriptGzipBudgetKilobytes = 700;
+// ADR 0205: one KiB for debounced inspection persistence and lifecycle flushes.
+export const totalJavaScriptGzipBudgetKilobytes = 701;
 // ADR 0204: count the historical map runtime inside core, with at most 12 KiB
 // additional allowance for the measured 6.16 vendor + worker growth. This credit
 // applies only to those assets, never to application/shared JavaScript.

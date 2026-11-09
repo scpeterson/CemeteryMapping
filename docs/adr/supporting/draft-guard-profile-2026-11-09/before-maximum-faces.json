@@ -1,0 +1,161 @@
+{
+  "variant": "before",
+  "workload": {
+    "name": "maximum-faces",
+    "faces": 32,
+    "text": 20000,
+    "baseline": "record"
+  },
+  "trials": [
+    {
+      "typingSerialization": {
+        "count": 208,
+        "totalMs": 144.49999809265137,
+        "medianMs": 0.6999998092651367,
+        "p95Ms": 0.8999996185302734,
+        "maxMs": 1.0999999046325684
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 148.59999799728394,
+        "medianMs": 1.4000000953674316,
+        "p95Ms": 1.700000286102295,
+        "maxMs": 2.0999999046325684
+      },
+      "rerenderSerialization": {
+        "count": 20,
+        "totalMs": 23.699999809265137,
+        "medianMs": 1.200000286102295,
+        "p95Ms": 1.8000001907348633,
+        "maxMs": 1.8000001907348633
+      },
+      "navigationSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "typingSerialization": {
+        "count": 208,
+        "totalMs": 59.70000123977661,
+        "medianMs": 0.2999997138977051,
+        "p95Ms": 0.40000009536743164,
+        "maxMs": 0.8000001907348633
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 61.39999961853027,
+        "medianMs": 0.5999999046325684,
+        "p95Ms": 0.8000001907348633,
+        "maxMs": 1.3000001907348633
+      },
+      "rerenderSerialization": {
+        "count": 20,
+        "totalMs": 11.300000667572021,
+        "medianMs": 0.5999999046325684,
+        "p95Ms": 0.8999996185302734,
+        "maxMs": 0.8999996185302734
+      },
+      "navigationSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "typingSerialization": {
+        "count": 208,
+        "totalMs": 61.000000953674316,
+        "medianMs": 0.2999997138977051,
+        "p95Ms": 0.5,
+        "maxMs": 0.7000002861022949
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 62.90000009536743,
+        "medianMs": 0.5999999046325684,
+        "p95Ms": 1,
+        "maxMs": 1.299999713897705
+      },
+      "rerenderSerialization": {
+        "count": 20,
+        "totalMs": 11.800000667572021,
+        "medianMs": 0.5999999046325684,
+        "p95Ms": 1.1999998092651367,
+        "maxMs": 1.1999998092651367
+      },
+      "navigationSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "typingSerialization": {
+        "count": 208,
+        "totalMs": 63.29999828338623,
+        "medianMs": 0.3000001907348633,
+        "p95Ms": 0.5,
+        "maxMs": 1
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 64.89999771118164,
+        "medianMs": 0.5999999046325684,
+        "p95Ms": 1,
+        "maxMs": 1.799999713897705
+      },
+      "rerenderSerialization": {
+        "count": 20,
+        "totalMs": 10.199999332427979,
+        "medianMs": 0.5,
+        "p95Ms": 0.9000000953674316,
+        "maxMs": 0.9000000953674316
+      },
+      "navigationSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    },
+    {
+      "typingSerialization": {
+        "count": 208,
+        "totalMs": 62.500000953674316,
+        "medianMs": 0.3000001907348633,
+        "p95Ms": 0.40000009536743164,
+        "maxMs": 0.8000001907348633
+      },
+      "inputCommit": {
+        "count": 104,
+        "totalMs": 64.30000114440918,
+        "medianMs": 0.5999999046325684,
+        "p95Ms": 1.0999999046325684,
+        "maxMs": 1.200000286102295
+      },
+      "rerenderSerialization": {
+        "count": 20,
+        "totalMs": 8.499999523162842,
+        "medianMs": 0.3000001907348633,
+        "p95Ms": 1.200000286102295,
+        "maxMs": 1.200000286102295
+      },
+      "navigationSerialization": {
+        "count": 0,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "maxMs": 0
+      }
+    }
+  ]
+}

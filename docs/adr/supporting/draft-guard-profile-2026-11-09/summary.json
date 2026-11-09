@@ -1,0 +1,143 @@
+{
+  "platform": "darwin",
+  "architecture": "arm64",
+  "node": "v22.21.0",
+  "rows": [
+    {
+      "variant": "before",
+      "workload": {
+        "name": "small",
+        "faces": 1,
+        "text": 1000,
+        "baseline": "record"
+      },
+      "trialCount": 5,
+      "charactersPerTrial": 104,
+      "serializationCallsPerTrial": 208,
+      "medianTypingSerializationMs": 0.5999994277954102,
+      "medianInputCommitMs": 0,
+      "medianP95InputCommitMs": 0.10000038146972656,
+      "rerenderSerializationCallsPerTenRenders": 20,
+      "medianNavigationSerializationMs": 0
+    },
+    {
+      "variant": "after",
+      "workload": {
+        "name": "small",
+        "faces": 1,
+        "text": 1000,
+        "baseline": "record"
+      },
+      "trialCount": 5,
+      "charactersPerTrial": 104,
+      "serializationCallsPerTrial": 0,
+      "medianTypingSerializationMs": 0,
+      "medianInputCommitMs": 0,
+      "medianP95InputCommitMs": 0.09999990463256836,
+      "rerenderSerializationCallsPerTenRenders": 0,
+      "medianNavigationSerializationMs": 0
+    },
+    {
+      "variant": "before",
+      "workload": {
+        "name": "multi-face",
+        "faces": 8,
+        "text": 2000,
+        "baseline": "record"
+      },
+      "trialCount": 5,
+      "charactersPerTrial": 104,
+      "serializationCallsPerTrial": 208,
+      "medianTypingSerializationMs": 1.700000286102295,
+      "medianInputCommitMs": 0,
+      "medianP95InputCommitMs": 0.10000038146972656,
+      "rerenderSerializationCallsPerTenRenders": 20,
+      "medianNavigationSerializationMs": 0
+    },
+    {
+      "variant": "after",
+      "workload": {
+        "name": "multi-face",
+        "faces": 8,
+        "text": 2000,
+        "baseline": "record"
+      },
+      "trialCount": 5,
+      "charactersPerTrial": 104,
+      "serializationCallsPerTrial": 0,
+      "medianTypingSerializationMs": 0,
+      "medianInputCommitMs": 0,
+      "medianP95InputCommitMs": 0.09999990463256836,
+      "rerenderSerializationCallsPerTenRenders": 0,
+      "medianNavigationSerializationMs": 0.09999990463256836
+    },
+    {
+      "variant": "before",
+      "workload": {
+        "name": "maximum-faces",
+        "faces": 32,
+        "text": 20000,
+        "baseline": "record"
+      },
+      "trialCount": 5,
+      "charactersPerTrial": 104,
+      "serializationCallsPerTrial": 208,
+      "medianTypingSerializationMs": 62.500000953674316,
+      "medianInputCommitMs": 0.5999999046325684,
+      "medianP95InputCommitMs": 1,
+      "rerenderSerializationCallsPerTenRenders": 20,
+      "medianNavigationSerializationMs": 0
+    },
+    {
+      "variant": "after",
+      "workload": {
+        "name": "maximum-faces",
+        "faces": 32,
+        "text": 20000,
+        "baseline": "record"
+      },
+      "trialCount": 5,
+      "charactersPerTrial": 104,
+      "serializationCallsPerTrial": 0,
+      "medianTypingSerializationMs": 0,
+      "medianInputCommitMs": 0,
+      "medianP95InputCommitMs": 0.09999990463256836,
+      "rerenderSerializationCallsPerTenRenders": 0,
+      "medianNavigationSerializationMs": 3
+    },
+    {
+      "variant": "before",
+      "workload": {
+        "name": "maximum-inspection",
+        "faces": 32,
+        "text": 20000,
+        "baseline": "null"
+      },
+      "trialCount": 5,
+      "charactersPerTrial": 104,
+      "serializationCallsPerTrial": 104,
+      "medianTypingSerializationMs": 30.899994373321533,
+      "medianInputCommitMs": 0.3000001907348633,
+      "medianP95InputCommitMs": 0.5,
+      "rerenderSerializationCallsPerTenRenders": 10,
+      "medianNavigationSerializationMs": 0
+    },
+    {
+      "variant": "after",
+      "workload": {
+        "name": "maximum-inspection",
+        "faces": 32,
+        "text": 20000,
+        "baseline": "null"
+      },
+      "trialCount": 5,
+      "charactersPerTrial": 104,
+      "serializationCallsPerTrial": 0,
+      "medianTypingSerializationMs": 0,
+      "medianInputCommitMs": 0,
+      "medianP95InputCommitMs": 0.09999990463256836,
+      "rerenderSerializationCallsPerTenRenders": 0,
+      "medianNavigationSerializationMs": 3
+    }
+  ]
+}

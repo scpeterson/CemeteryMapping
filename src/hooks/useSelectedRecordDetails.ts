@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchGraveSpace, fetchHeadstone } from "../api/cemeteryApi";
 import type { GraveSpace, GraveSpaceSummary, Headstone, HeadstoneSummary, Owner } from "../types";
 
@@ -14,11 +14,13 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
   const [detailError, setDetailError] = useState<string>();
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailRequest, setDetailRequest] = useState({ version: 0, preserveCurrent: false });
-  const selectionKey = useMemo(() => {
-    if (selectedHeadstone) return `headstone:${selectedHeadstone.id}`;
-    if (selectedGrave) return `grave:${selectedGrave.cemeteryId}:${selectedGrave.id}`;
-    return "";
-  }, [selectedGrave, selectedHeadstone]);
+  // Summary edits may replace objects without changing the selected record.
+  // Marker selection takes precedence over a simultaneously selected gravesite.
+  const headstoneId = selectedHeadstone?.id;
+  const graveId = selectedHeadstone ? undefined : selectedGrave?.id;
+  const cemeteryId = selectedHeadstone ? undefined : selectedGrave?.cemeteryId;
+  const selectionKey = headstoneId !== undefined ? `headstone:${headstoneId}`
+    : graveId !== undefined ? `grave:${cemeteryId}:${graveId}` : "";
   const previousSelectionKey = useRef("");
 
   useEffect(() => {
@@ -32,11 +34,11 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
     }
     setDetailError(undefined);
 
-    if (selectedHeadstone) {
+    if (headstoneId !== undefined) {
       const controller = new AbortController();
       setIsDetailLoading(true);
 
-      fetchHeadstone(selectedHeadstone.id, controller.signal)
+      fetchHeadstone(headstoneId, controller.signal)
         .then((detail) => {
           if (controller.signal.aborted) return;
           setSelectedHeadstoneDetails(detail);
@@ -54,7 +56,7 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
       };
     }
 
-    if (!selectedGrave) {
+    if (graveId === undefined || cemeteryId === undefined) {
       setIsDetailLoading(false);
       return;
     }
@@ -62,7 +64,7 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
     const controller = new AbortController();
     setIsDetailLoading(true);
 
-    fetchGraveSpace(selectedGrave.cemeteryId, selectedGrave.id, controller.signal)
+    fetchGraveSpace(cemeteryId, graveId, controller.signal)
       .then((detail) => {
         if (controller.signal.aborted) return;
         setSelectedGraveDetails(detail);
@@ -79,7 +81,7 @@ export function useSelectedRecordDetails({ selectedGrave, selectedHeadstone }: U
     return () => {
       controller.abort();
     };
-  }, [selectedGrave, selectedHeadstone, selectionKey, detailRequest]);
+  }, [graveId, cemeteryId, headstoneId, selectionKey, detailRequest]);
 
   return {
     selectedGraveDetails,

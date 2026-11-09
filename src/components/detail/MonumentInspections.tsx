@@ -1,13 +1,16 @@
-import { readInspectionRecovery, storeInspectionRecovery, type InspectionDraft } from "../../lib/inspectionDraftRecovery";
+import type { InspectionDraft } from "../../lib/inspectionDraftRecovery";
 import { useAccountSession } from "../../auth/sessionContext";
 import { sortedMonumentInspections, inspectionTypeLabels } from "../../lib/monumentInspections";
 import { inspectionFacePhotos } from "../../lib/inspectionPhotos";
-import { fetchPhotoContexts, savePhotoContext, type PhotoContext } from "../../api/mediaApi";
+import { savePhotoContext } from "../../api/mediaApi";
 import { PhotoGalleryContext } from "./photoGalleryContext";
 import { RecordPhotos } from "./RecordPhotos";
 import type { ComponentProps } from "react";
 import { lazy, Suspense, useContext, useEffect, useEffectEvent, useId, useRef, useState } from "react";
-import { useDraftState } from "../../hooks/useDraftState";
+import { useInspectionDraft } from "./useInspectionDraft";
+import { useInspectionDisplayPreferences } from "./useInspectionDisplayPreferences";
+import { useInspectionPhotoLinks } from "./useInspectionPhotoLinks";
+import { InspectionDisplaySettings } from "./InspectionDisplaySettings";
 import type { Headstone, InspectionInput, InspectionFace, LookupOption } from "../../types";
 import { formatDate } from "../../lib/format";
 
@@ -16,29 +19,6 @@ const InspectionFacePhotos = lazy(() => import("./InspectionFacePhotos").then(mo
 const InspectionFacePhotoReview = lazy(() => import("./InspectionFacePhotos").then(module => ({default:module.InspectionFacePhotoReview})));
 
 type RequiredVisitField = "date" | "source" | "condition";
-const remainingItemsPreferenceKey = "cemetery-mapping:inspection-remaining-items-open";
-const restoredDefaultsPreferenceKey = "cemetery-mapping:inspection-restored-defaults-open";
-const resetKeyboardHelpPreferenceKey = "cemetery-mapping:inspection-reset-keyboard-help-open";
-const keyboardHelpPreferenceKey = "cemetery-mapping:inspection-keyboard-help-open";
-const displayPreferenceSettings = [
-  {key:"remainingItems",id:remainingItemsPreferenceKey,label:"Remaining items",controlLabel:"remaining items",defaultOpen:true},
-  {key:"keyboardHelp",id:keyboardHelpPreferenceKey,label:"Inspection keyboard hint",controlLabel:"Keyboard shortcuts",defaultOpen:false},
-  {key:"resetKeyboardHelp",id:resetKeyboardHelpPreferenceKey,label:"Reset confirmation keyboard hint",controlLabel:"Keyboard shortcuts",defaultOpen:false},
-  {key:"restoredDefaults",id:restoredDefaultsPreferenceKey,label:"Restored-defaults list",controlLabel:"Restored defaults",defaultOpen:false},
-] as const;
-type DisplayPreferenceKey = typeof displayPreferenceSettings[number]["key"];
-const displayPreferenceSetting = (key:DisplayPreferenceKey) => displayPreferenceSettings.find(setting=>setting.key===key)!;
-const readDisplayPreference = (key:DisplayPreferenceKey) => {
-  const setting=displayPreferenceSetting(key);
-  try {
-    const stored=window.localStorage.getItem(setting.id);
-    return stored==="true" ? true : stored==="false" ? false : setting.defaultOpen;
-  } catch { return setting.defaultOpen; }
-};
-const saveDisplayPreference = (key:DisplayPreferenceKey,open:boolean) => {
-  try { window.localStorage.setItem(displayPreferenceSetting(key).id,String(open)); }
-  catch { /* Keep the in-session choice when browser storage is unavailable. */ }
-};
 const requiredVisitLabels = {date:"Inspection date",source:"Inspection source",condition:"Monument condition"};
 
 
@@ -69,50 +49,23 @@ export function MonumentInspections(props: MonumentInspectionsProps) {
 }
 
 function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUploadPhoto, showHeading = true, startNew = false, onStarted }: MonumentInspectionsProps) {
-  const account = useAccountSession();
-  const recoveryKey = `cemetery-mapping:inspection-draft:v1:${encodeURIComponent(account?.accountId ?? account?.identity ?? "local")}:${headstone.id}`;
-  const [recovery,setRecovery] = useState(()=>readInspectionRecovery(recoveryKey));
-  const [recoveryUnavailable,setRecoveryUnavailable] = useState(false);
-  const clearRecovery = () => { try { localStorage.removeItem(recoveryKey); } catch { /* Editing remains available. */ } setRecovery(null); };
+  const { recovery, setRecovery, recoveryUnavailable, clearRecovery, draft, setDraft, updating, setUpdating,
+    step, setStep, activeFaceId, setActiveFaceId } = useInspectionDraft(headstone.id);
   const {open:openPhotoGallery}=useContext(PhotoGalleryContext);
   const inspections = sortedMonumentInspections(headstone.inspections);
   const [selectedId, setSelectedId] = useState<string>();
   const selected = inspections.find((entry) => entry.id === selectedId) ?? inspections[0];
-  const [draft, setDraft] = useDraftState<InspectionDraft | null>(null,clearRecovery);
-  const [updating, setUpdating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedNotice,setSavedNotice] = useState(false);
-  const [step, setStep] = useState(0);
   const [stepFocusRequest, setStepFocusRequest] = useState(0);
   const [editingFromReview, setEditingFromReview] = useState<"face" | "visit" | null>(null);
   const [requiredCorrection, setRequiredCorrection] = useState<string | null>(null);
   const [returnToRequiredSummary, setReturnToRequiredSummary] = useState(false);
-  const [activeFaceId, setActiveFaceId] = useState<string>();
   const activeFace = draft?.faces?.find(face => face.id === activeFaceId) ?? draft?.faces?.[0];
-  useEffect(()=>{
-    if (!draft) return;
-    try { storeInspectionRecovery(recoveryKey,{draft,updating,step,activeFaceId}); setRecoveryUnavailable(false); }
-    catch { setRecoveryUnavailable(true); }
-  },[recoveryKey,draft,updating,step,activeFaceId]);
   const missingPhotoFiles = (draft?.photos??[]).filter(photo=>!photo.saved && photo.missingFileName && !photo.file);
 
-  const [linkedPhotos, setLinkedPhotos] = useState<{key:string; links?:PhotoContext[]; error?:string}>();
-  const [photoCountRetry, setPhotoCountRetry] = useState(0);
   const editInspectionId = updating && draft && !draft.recordSaved ? draft.id : undefined;
-  const photoCountKey = `${headstone.id}/${editInspectionId}/${photoCountRetry}`;
-  useEffect(() => {
-    if (!editInspectionId) return;
-    const controller = new AbortController();
-    void fetchPhotoContexts(headstone.id, controller.signal).then(links => {
-      if (!controller.signal.aborted) setLinkedPhotos({key:photoCountKey, links:links.filter(link => link.inspectionId === editInspectionId)});
-    }).catch(() => {
-      if (!controller.signal.aborted) setLinkedPhotos({key:photoCountKey, error:"Linked photo counts could not be loaded."});
-    });
-    return () => controller.abort();
-  }, [headstone.id, editInspectionId, photoCountKey]);
-  const photoCountsReady = linkedPhotos?.key === photoCountKey;
-  const photoCountsError = photoCountsReady ? linkedPhotos.error : undefined;
-  const existingPhotoLinks = photoCountsReady ? linkedPhotos.links ?? [] : [];
+  const { photoCountsReady, photoCountsError, existingPhotoLinks, setPhotoCountRetry } = useInspectionPhotoLinks(headstone.id, editInspectionId);
   const steps = ["Visit & condition", "Faces & photos", "Review & save"];
   const requirementsId = useId();
   const missingVisitFields: RequiredVisitField[] = draft ? [
@@ -146,64 +99,21 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
     observer.observe(panel);
     return () => { observer.disconnect(); editor.style.removeProperty('--inspection-correction-height'); };
   }, [showCorrectionPanel]);
-  const [displayPreferencesReset,setDisplayPreferencesReset] = useState(false);
-  const [restoredDefaultsOpen,setRestoredDefaultsOpen] = useState(()=>readDisplayPreference("restoredDefaults"));
-  const rememberRestoredDefaults = (open:boolean) => {
-    setRestoredDefaultsOpen(open);
-    saveDisplayPreference("restoredDefaults",open);
-  };
-  const [resetKeyboardHelpOpen,setResetKeyboardHelpOpen] = useState(()=>readDisplayPreference("resetKeyboardHelp"));
-  const rememberResetKeyboardHelp = (open:boolean) => {
-    setResetKeyboardHelpOpen(open);
-    saveDisplayPreference("resetKeyboardHelp",open);
-  };
-  const displayResetButton = useRef<HTMLButtonElement | null>(null);
-  const displayResetNotice = useRef<HTMLDivElement | null>(null);
-  const displayResetTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(()=>()=>clearTimeout(displayResetTimeout.current),[]);
-  const [remainingItemsOpen,setRemainingItemsOpen] = useState(()=>readDisplayPreference("remainingItems"));
-  const [correctionCollapsed,setCorrectionCollapsed] = useState(!remainingItemsOpen);
-  const rememberRemainingItems = (open:boolean) => {
-    setDisplayPreferencesReset(false);
-    setRemainingItemsOpen(open);
-    setCorrectionCollapsed(!open);
-    saveDisplayPreference("remainingItems",open);
-  };
-  const [keyboardHelpOpen,setKeyboardHelpOpen] = useState(()=>readDisplayPreference("keyboardHelp"));
-  const rememberKeyboardHelp = (open:boolean) => {
-    setDisplayPreferencesReset(false);
-    setKeyboardHelpOpen(open);
-    saveDisplayPreference("keyboardHelp",open);
-  };
-  const displayPreferenceWriters = {
-    remainingItems:rememberRemainingItems,
-    keyboardHelp:rememberKeyboardHelp,
-    resetKeyboardHelp:rememberResetKeyboardHelp,
-    restoredDefaults:rememberRestoredDefaults,
-  } satisfies Record<DisplayPreferenceKey,(open:boolean)=>void>;
-  const displayPreferenceValues = {
-    remainingItems:!correctionCollapsed,
-    keyboardHelp:keyboardHelpOpen,
-    resetKeyboardHelp:resetKeyboardHelpOpen,
-    restoredDefaults:restoredDefaultsOpen,
-  } satisfies Record<DisplayPreferenceKey,boolean>;
-  const restoredDisplayDefaults = displayPreferenceSettings.map(setting=>({
-    ...setting,open:displayPreferenceValues[setting.key],apply:displayPreferenceWriters[setting.key],
-  }));
-  const preferenceControl = (key:DisplayPreferenceKey) => restoredDisplayDefaults.find(setting=>setting.key===key)!;
-  const remainingItemsControl=preferenceControl("remainingItems");
-  const keyboardHelpControl=preferenceControl("keyboardHelp");
-  const resetKeyboardHelpControl=preferenceControl("resetKeyboardHelp");
-  const restoredDefaultsControl=preferenceControl("restoredDefaults");
+  const {
+    displayPreferencesReset, setDisplayPreferencesReset, remainingItemsOpen,
+    correctionCollapsed, setCorrectionCollapsed, remainingItemsControl, keyboardHelpControl,
+    resetKeyboardHelpControl, restoredDefaultsControl, restoredDisplayDefaults,
+    displayResetButton, displayResetNotice, pendingItemListFocusRef,
+    dismissDisplayReset, resetDisplayPreferences,
+  } = useInspectionDisplayPreferences();
   const requiredItemButtons = useRef(new Map<string, HTMLButtonElement>());
-  const pendingItemListFocus = useRef<string | null>(null);
   useEffect(()=>{
-    if(correctionCollapsed || !pendingItemListFocus.current) return;
-    const target=requiredItemButtons.current.get(pendingItemListFocus.current);
-    pendingItemListFocus.current=null;
+    if(correctionCollapsed || !pendingItemListFocusRef.current) return;
+    const target=requiredItemButtons.current.get(pendingItemListFocusRef.current);
+    pendingItemListFocusRef.current=null;
     target?.scrollIntoView({block:"nearest",inline:"nearest"});
     target?.focus({preventScroll:true});
-  },[correctionCollapsed]);
+  },[correctionCollapsed, pendingItemListFocusRef]);
   const requiredSummaryHeading = useRef<HTMLHeadingElement | null>(null);
   const pendingRequiredSummaryFocus = useRef(false);
   const requiredVisitInputs = useRef(new Map<RequiredVisitField, HTMLInputElement | HTMLSelectElement>());
@@ -285,21 +195,9 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
     else if(editingFromReview === "visit") pendingVisitFocus.current="review";
     goToStep(editingFromReview || correctingRequired ? 2 : step + 1);
   };
-  const dismissDisplayReset = (restoreFocus=false) => {
-    clearTimeout(displayResetTimeout.current);
-    setDisplayPreferencesReset(false);
-    if(restoreFocus || displayResetNotice.current?.contains(document.activeElement)) displayResetButton.current?.focus({preventScroll:true});
-  };
-  const resetDisplayPreferences = () => {
-    pendingItemListFocus.current=null;
-    restoredDisplayDefaults.forEach(setting=>setting.apply(setting.defaultOpen));
-    setDisplayPreferencesReset(true);
-    clearTimeout(displayResetTimeout.current);
-    displayResetTimeout.current=setTimeout(()=>dismissDisplayReset(),4000);
-  };
   const hideRemainingItems = () => {
     remainingItemsControl.apply(false);
-    pendingItemListFocus.current=null;
+    pendingItemListFocusRef.current=null;
     if(step===0 && currentCorrectionKey?.startsWith("visit:")) requiredVisitFocus.current=currentCorrectionKey.slice(6) as RequiredVisitField;
     else if(step===1 && activeFace) reviewFaceFocus.current=activeFace.id;
     else if(step===0) pendingVisitFocus.current="editor";
@@ -566,7 +464,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
         </div>{missingRequiredCount>0 ? <button type="button" className="secondary-button inspection-correction-toggle"
           aria-expanded={remainingItemsControl.open} aria-controls={`${requirementsId}-controls`}
           onClick={()=>{
-            if(!remainingItemsControl.open) pendingItemListFocus.current=(missingItems.find(item=>item.key===currentCorrectionKey)??missingItems[0])?.key??null;
+            if(!remainingItemsControl.open) pendingItemListFocusRef.current=(missingItems.find(item=>item.key===currentCorrectionKey)??missingItems[0])?.key??null;
             remainingItemsControl.apply(!remainingItemsControl.open);
           }}>{remainingItemsControl.open ? "Hide" : "Show"} {remainingItemsControl.controlLabel}</button> : null}</div>
         <div id={`${requirementsId}-controls`} className="inspection-correction-body" hidden={!remainingItemsControl.open}>
@@ -619,30 +517,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
         {step === 2 || draft.recordSaved ? <button type="button" disabled={missingRequiredCount>0 || missingPhotoFiles.length>0} onClick={() => void save()}>{saving ? "Saving..." : draft.recordSaved ? (draft.photos?.some(p=>!p.saved) ? "Retry remaining photos" : "Finish inspection") : "Save inspection"}</button> : null}
         <button type="button" className="secondary-button" onClick={() => { clearRecovery(); setDraft(null); setError(undefined); }}>{draft.recordSaved ? "Close saved inspection" : "Cancel inspection"}</button>
       </div>
-      <section className="inspection-display-settings" aria-label="Display preferences">
-      <h5>Display preferences</h5>
-      <button type="button" className="secondary-button inspection-display-preferences-reset" ref={displayResetButton} onClick={resetDisplayPreferences}>Reset display preferences</button>
-      {displayPreferencesReset ? <div className="inspection-display-reset-notice" ref={displayResetNotice}>
-          <div><div className="inspection-restored-defaults">
-            <p role="status">Display defaults restored:</p>
-            <details className="inspection-restored-defaults-list" open={restoredDefaultsControl.open}>
-              <summary onClick={event=>{event.preventDefault();restoredDefaultsControl.apply(!restoredDefaultsControl.open);}}>{restoredDefaultsControl.controlLabel} ({restoredDisplayDefaults.length})</summary>
-            <ul>
-              {restoredDisplayDefaults.map(setting=><li key={setting.id}>{setting.label}: {setting.defaultOpen?"shown":"hidden"}</li>)}
-            </ul>
-            </details>
-          </div>
-          <details className="inspection-reset-keyboard-help" open={resetKeyboardHelpControl.open}>
-            <summary onClick={event=>{event.preventDefault();resetKeyboardHelpControl.apply(!resetKeyboardHelpControl.open);}}>{resetKeyboardHelpControl.controlLabel}</summary>
-          <ul id={`${requirementsId}-reset-escape`} className="inspection-reset-escape-hint">
-            <li><kbd>Tab/Shift+Tab</kbd> <span>Next/previous control</span></li>
-            <li><kbd>Enter/Space</kbd> <span>Activate Dismiss</span></li>
-            <li><kbd>Escape</kbd> <span>Dismiss and return to Reset display preferences</span></li>
-          </ul>
-          </details></div>
-          <button type="button" className="secondary-button" aria-label="Dismiss display preferences confirmation" aria-keyshortcuts="Escape" aria-describedby={`${requirementsId}-reset-escape`} onClick={()=>dismissDisplayReset(true)}>Dismiss</button>
-        </div> : null}
-      </section>
+      <InspectionDisplaySettings {...{ displayPreferencesReset, displayResetButton, displayResetNotice, resetDisplayPreferences, restoredDefaultsControl, restoredDisplayDefaults, resetKeyboardHelpControl, dismissDisplayReset, requirementsId }} />
     </fieldset> : null}
     {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
   </section>;
