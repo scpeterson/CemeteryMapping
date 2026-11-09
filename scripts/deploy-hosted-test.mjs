@@ -3,10 +3,9 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { frontendEnvironment, releaseFiles, requirePassingCi } from "./lib/hosted-test-release.mjs";
+import { deploymentOptions, frontendEnvironment, releaseFiles, requirePassingCi, selectReleaseCommit } from "./lib/hosted-test-release.mjs";
 
-const prepareOnly = process.argv.slice(2).join(" ") === "--prepare-only";
-if (process.argv.length > 2 && !prepareOnly) throw new Error("Usage: npm run deploy:test -- [--prepare-only]");
+const { prepareOnly, ref } = deploymentOptions(process.argv.slice(2));
 const host = "root@67.205.168.195";
 const key = process.env.HOSTED_TEST_SSH_KEY ?? join(homedir(), ".ssh/nhcemeteries_test_ed25519");
 if (!existsSync(key)) throw new Error("Set HOSTED_TEST_SSH_KEY to the hosted TEST private key.");
@@ -19,10 +18,9 @@ function run(command, args, { cwd, env, input, capture = false } = {}) {
   return result.stdout?.trim();
 }
 try {
-  run("git", ["fetch", "origin", "main"]);
-  const sha = run("git", ["rev-parse", "origin/main"], { capture: true });
-  if (!/^[a-f0-9]{40}$/u.test(sha)) throw new Error("Invalid main revision.");
-  const checks = JSON.parse(run("gh", ["api", `repos/scpeterson/CemeteryMapping/commits/${sha}/check-runs?per_page=100`], { capture: true }));
+  const sha = selectReleaseCommit(run, ref);
+  const pages = JSON.parse(run("gh", ["api", "--paginate", "--slurp", `repos/scpeterson/CemeteryMapping/commits/${sha}/check-runs?per_page=100`], { capture: true }));
+  const checks = { check_runs: pages.flatMap((page) => page.check_runs) };
   requirePassingCi(checks, sha);
   const buildTime = new Date().toISOString().replace(/\.\d{3}Z$/u, "Z");
   const releaseId = `${buildTime.replaceAll(/[-:]/gu, "")}-${sha.slice(0, 12)}-${randomUUID().slice(0, 8)}`;
@@ -31,6 +29,7 @@ try {
   mkdirSync(source);
   run("git", ["archive", "--format=tar", `--output=${join(temporary, "source.tar")}`, sha]);
   run("tar", ["-xf", join(temporary, "source.tar"), "-C", source]);
+  const version = JSON.parse(readFileSync(join(source, "package.json"), "utf8")).version;
   function removeEnvironmentFiles(directory) {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
@@ -41,11 +40,11 @@ try {
   removeEnvironmentFiles(source);
   const frontend = run("ssh", [...sshArgs, host, "test -d /srv/nhcemeteries/app/deploy/test && cat /srv/nhcemeteries/app/deploy/test/frontend.env"], { capture: true });
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("VITE_")));
-  Object.assign(env, frontendEnvironment(frontend), { GIT_SHA: sha, BUILD_TIME: buildTime });
+  Object.assign(env, frontendEnvironment(frontend), { APP_VERSION: version, GIT_SHA: sha, BUILD_TIME: buildTime });
   run("npm", ["ci", "--include=dev"], { cwd: source });
   run("npm", ["run", "build:test"], { cwd: source, env });
   rmSync(join(source, "node_modules"), { recursive: true, force: true });
-  const manifest = { commit: sha, buildTime, files: releaseFiles(source) };
+  const manifest = { commit: sha, version, buildTime, files: releaseFiles(source) };
   writeFileSync(join(temporary, "manifest.json"), JSON.stringify(manifest), { mode: 0o600 });
   const archive = join(temporary, "release.tar.gz");
   // Python tarfile avoids macOS extended attributes and AppleDouble sidecars.

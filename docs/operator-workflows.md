@@ -728,6 +728,15 @@ For a versioned release, first create and merge a release-preparation PR:
 3. Let CI pass and merge the release-preparation PR.
 4. Tag the merged `main` commit with the matching release tag, such as `v0.2.0`, and create a GitHub Release from that tag.
 
+Wait for CI on that exact merged commit before tagging. Follow the
+[current versioning policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy)
+for pre-1.0 compatibility, immutable annotated tags, lockfile updates and known
+verification gaps. Named TEST releases use an explicit tag or full SHA with
+[`deploy:test -- --ref`](hosted-test.md#repeatable-deployment-command); publishing
+a release does not deploy it or change the database. Record actual migration
+state separately and preserve the pending login, delivery, token-replay and
+disconnected offline checks until verified.
+
 Before promoting to STAGE:
 
 1. Confirm `main` contains the merged PRs intended for release.
