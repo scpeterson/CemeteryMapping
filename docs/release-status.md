@@ -3,6 +3,24 @@
 
 # Release status and deployment checks
 
+## November 9, 2026: 0.2.0 source release baseline
+
+Version **0.2.0** establishes the first named source release; publication and
+deployment are separate actions. See the [0.2.0 release notes](https://github.com/scpeterson/CemeteryMapping/blob/main/CHANGELOG.md)
+and [current versioning policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy).
+No deployment of 0.2.0 is established by its release-preparation PR or Git tag.
+
+The latest recorded hosted TEST code remains `0b6d9c9`, package **0.1.0**, built
+November 9 at 12:05:48 PM EST. The [November 9 deployment record](hosted-test.md#november-9-2026-refactoring-and-draft-recovery-release)
+documents preserved data/settings, schema through 516, 196 runtime hashes,
+44 field URLs and zero API restarts. The later Cloudflare burst rule was a
+separate edge configuration change, not a new application deployment.
+
+Fresh hosted login after the dependency updates, real invitation delivery, live
+Turnstile replay rejection, and disconnected offline reload/save/reconnect
+synchronization remain pending. Dated sections below preserve earlier evidence
+and its original scope; they do not close those gaps or establish STAGE/PROD.
+
 ## November 7, 2026: hosted TEST dependency release
 
 The latest recorded hosted TEST deployment is
