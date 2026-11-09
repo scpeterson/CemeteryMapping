@@ -9,8 +9,10 @@ The dedicated host is managed separately from local TEST. See
 The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
 PostGIS 3.6.4 cluster upgrade**, recorded in the
 [upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-Dated sections below describe historical code releases and their verification
-scope. Check `/api/health` for the running application release.
+The latest recorded code deployment is the [November 7 dependency and bundle
+release](#november-7-2026-dependency-and-bundle-release) at `3c5609f`. Dated sections
+below describe historical releases and their verification scope. Check
+`/api/health` for the running application release.
 
 ## Availability and cost
 
@@ -917,3 +919,87 @@ The final API image is
 The disposable rehearsal container and its volume were removed. Retained backups
 contain private data and must remain outside Git. This TEST deployment does not
 establish a STAGE or PROD deployment.
+
+
+## November 7, 2026 dependency and bundle release
+
+Hosted TEST was deployed at `3c5609f685d30a0c3104dd91eab27bc827b4f2e2`,
+superseding the November 6 code revision `8c01749`. Frontend build time was
+`2026-11-07T14:55:41Z` (9:55:41 AM EST); post-cutover health verification completed
+at `2026-11-07T14:58:02Z` (9:58:02 AM EST). These are deployment observations,
+not a fresh interactive verification on the documentation update date.
+
+### Dependency updates and bundle fix
+
+| Dependency | Deployed version | Merged PR |
+|---|---|---|
+| `concurrently` | 10.0.6 | [#802](https://github.com/scpeterson/CemeteryMapping/pull/802) |
+| `lucide-react` | 1.67.0 | [#803](https://github.com/scpeterson/CemeteryMapping/pull/803) |
+| `@types/node` | 26.6.6 | [#804](https://github.com/scpeterson/CemeteryMapping/pull/804) |
+| `express-oauth2-jwt-bearer` | 1.11.0 | [#805](https://github.com/scpeterson/CemeteryMapping/pull/805) |
+| `@auth0/auth0-react` | 2.30.0 | [#806](https://github.com/scpeterson/CemeteryMapping/pull/806) |
+
+The release lockfile was checked for all five versions; the running API's
+installed JWT middleware was separately verified as 1.11.0. `@types/node` is a
+build-time dependency, not an installed production runtime requirement.
+TypeScript remains 6.0.3, with TypeScript 7.x Dependabot updates ignored.
+
+PR #806 also consolidates shared permissions, task-reminder and record-search
+modules into the existing `workspace-shared` chunk. This removes three small
+chunks and repeated import overhead. Measured local production builds with the
+upgraded Auth0 SDK reduced core JavaScript from **700.28 to 699.46 KiB gzip** and
+all JavaScript from 729.11 to 728.20 KiB gzip (42 to 39 JavaScript chunks).
+The core budget remains **700 KiB**; no budget allowance was increased. These
+are local production-build measurements, not hosted TEST transfer-size timings.
+
+### Deployment verification
+
+- The selected main revision passed the required `Lint, build, and test` gate
+  before deployment. PR validation also passed production bundle enforcement,
+  all eight bundle-budget tests and the built offline field-shell regression.
+- The normal backup/candidate/cutover workflow deployed matched frontend/API
+  artifacts. Schema validation was up to date; no new migrations were required,
+  and the schema remains through migration 516.
+- Candidate startup verified Auth0 configuration, the restricted API database
+  role, the Node runtime user and mode-`0600` environment-file permissions.
+- Post-cutover health identified the exact selected commit, environment `TEST`
+  and database `cemetery_mapping_test`. All 196 deployed server/shared runtime
+  hashes matched; the API had zero restarts.
+- Frontend integrity, public HTTPS and anonymous private-API rejection passed.
+  Accounts/access records, media, protected settings and tunnel-token ownership
+  were preserved; no database refresh, seeding or environment reset was done.
+- All **43** checked field-shell/manifest asset URLs returned HTTP 200 at the
+  origin; manifest assets returned non-HTML content. The lower count reflects
+  the three consolidated JavaScript chunks, compared with 46 URLs on November 6.
+
+### Offline verification remains pending
+
+**Still pending:** a real network-disconnected reload of hosted TEST, a save made
+while offline, and authenticated synchronization after reconnection. The user
+previously deferred disconnection because Wi-Fi could not be turned off. This
+release did not complete or repeat that test. Follow the
+[pending hosted offline reload steps](#pending-hosted-offline-reload-test).
+
+The November 6 user-assisted login, offline preparation, **connected**
+reload/unlock and unchanged-value synchronization remain historical evidence for
+that earlier release. Fresh interactive login and authenticated synchronization
+were **not repeated after the November 7 Auth0/JWT updates**. Automated offline
+regressions and successful asset requests do not close these live verification
+gaps. The previously prepared browser workspace may be reused only if its browser
+profile and site storage remain intact; its availability was not rechecked for
+this deployment. No photo synchronization was performed.
+
+### November 7 recovery material
+
+Protected host recovery and verification files are retained at:
+
+- Backup: `/srv/nhcemeteries/backups/20261107T145541Z-3c5609f685d3-06da2b92`.
+- Release report:
+  `/srv/nhcemeteries/staging/20261107T145541Z-3c5609f685d3-06da2b92/verification.json`.
+- Dependency and asset smoke report:
+  `/srv/nhcemeteries/staging/20261107T145541Z-3c5609f685d3-06da2b92/smoke-verification.json`.
+
+The deployed API image is
+`sha256:7ee9266da734149f8cf6c47425f5ae5b78232a27b6fb08347c26052ecfe2889e`.
+Keep private recovery data outside Git. This record establishes hosted TEST
+availability only; it does not establish a STAGE or PROD deployment.

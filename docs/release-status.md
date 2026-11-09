@@ -3,6 +3,33 @@
 
 # Release status and deployment checks
 
+## November 7, 2026: hosted TEST dependency release
+
+The latest recorded hosted TEST deployment is
+`3c5609f685d30a0c3104dd91eab27bc827b4f2e2`, built November 7 at 9:55:41 AM EST.
+It includes PRs #802–#806: concurrently 10.0.6, Lucide React 1.67.0, Node types
+26.6.6, JWT middleware 1.11.0 and Auth0 React 2.30.0. TypeScript stays at 6.0.3.
+PR #806 also consolidates three shared chunks; local production-build core
+JavaScript decreased from 700.28 to 699.46 KiB gzip under the unchanged 700 KiB
+budget. See the [detailed November 7 TEST record](hosted-test.md#november-7-2026-dependency-and-bundle-release).
+
+Exact-revision main CI and the normal backup/candidate/cutover release checks
+passed. No migrations were required (schema remains through 516). Health,
+196 runtime file hashes, HTTPS, anonymous API denial, zero API restarts,
+account/media preservation, release-lockfile dependency versions, installed JWT
+middleware and all 43 field-shell/manifest asset URLs passed verification.
+Recovery paths and retained reports are in the detailed record.
+
+**Offline reload remains pending:** real network-disconnected reload, a device
+save while offline, and authenticated synchronization after reconnection. Fresh
+interactive login and synchronization were not repeated after the November 7
+Auth0/JWT updates. The November 6 connected reload/synchronization and automated
+CI offline tests do not close this gap. Resume using the
+[pending offline test steps](hosted-test.md#pending-hosted-offline-reload-test).
+
+The dated DEV and earlier TEST records below retain their original verification
+scope. This deployment does not establish STAGE or PROD availability.
+
 ## November 6, 2026: DEV
 
 DEV was deployed at `9aec56d2b4bde06dde2491d530e78b30b12b32a6`.
