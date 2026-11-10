@@ -10,11 +10,13 @@ import { runOwnerHoldings, runUnownedGravesites } from "./reports/ownershipRepor
 import { runMissingNhgLinks } from "./reports/nhgReports.mjs";
 import { runMissingMonumentInscriptions } from "./reports/inscriptionReports.mjs";
 import { runMonumentPhotoExceptions } from "./reports/photoReports.mjs";
+import { runUnreadableMonumentInscriptions } from "./reports/unreadableInscriptionReports.mjs";
 
 export { matchReportQuery } from "./reports/queryMatcher.mjs";
 
 const reportRunners = new Map([
   ["missing-nhg-links", runMissingNhgLinks],
+  ["unreadable-monument-inscriptions", runUnreadableMonumentInscriptions],
   ["missing-monument-inscriptions", runMissingMonumentInscriptions],
   ["monument-photo-exceptions", runMonumentPhotoExceptions],
   ["burial-date-extremes", (client, definition, _parameters, cemeteryIds) => runBurialDateExtremes(client, definition, cemeteryIds)],

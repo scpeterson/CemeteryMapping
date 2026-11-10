@@ -38,7 +38,7 @@ test("listReportsForUser filters reports by role", () => {
   );
   assert.deepEqual(
     listReportsForUser(powerUser).map((report) => report.id),
-    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "marker-burial-pages", "owner-holdings", "unowned-gravesites", "available-inventory", "maintenance-needs"],
+    ["burial-date-extremes", "veteran-service-summary", "spatial-inventory-counts", "marker-type-inventory", "marker-burial-pages", "owner-holdings", "unowned-gravesites", "available-inventory", "maintenance-needs", "unreadable-monument-inscriptions"],
   );
   assert.ok(listReportsForUser(adminUser).some((report) => report.id === "deed-claim-trace-guide"));
 });

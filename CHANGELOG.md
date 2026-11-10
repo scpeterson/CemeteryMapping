@@ -4,7 +4,14 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
-No changes recorded since the 0.2.4 release baseline.
+### Added
+
+- Add **Unreadable monument inscriptions** for power users and above. It lists
+  monuments whose latest non-deleted inspection includes `illegible` (any case)
+  or `[-]` with optional internal whitespace, including face inscriptions and
+  partial readings, with location, inspection details and monument links for
+  photography follow-up. Existing cemetery access restrictions apply. No
+  migration or data change is required.
 
 ## 0.2.4 — 2026-11-10
 
