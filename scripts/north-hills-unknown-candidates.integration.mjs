@@ -44,8 +44,49 @@ test('unknown readings suggest same-row markers across page breaks without confi
     await client.query("UPDATE north_hills_ocr_entries SET name_text='MILLER',surnames=ARRAY['MILLER']");
     assert.deepEqual(await matches(), []);
     await client.query("UPDATE north_hills_ocr_entries SET name_text='UNKNOWN',surnames=ARRAY['UNKNOWN']");
+
+    // E-0567: the imported location survives even though its name is Illegible
+    // and neither the burial nor marker has an NHG page reference.
+    await client.query(`UPDATE north_hills_ocr_entries SET source_page_number=230,
+      parsed_section_name='E',parsed_row_number=6,parsed_position_number=3`);
+    await client.query("UPDATE gravesites SET gravesite_id='TLC-GPS-0567',grave_id='0567',section_id='E'");
+    await client.query(`UPDATE burials SET full_name='Illegible',notes=
+      'Imported feature. North Hills Genealogists section: E. North Hills Genealogists row: 6. North Hills Genealogists site: 3. Person column: 1.'`);
+    await client.query(`UPDATE headstones SET headstone_id='TLC-HS-0567',source_properties='{"NhgSection":"E","NhgRow":"6"}'`);
+    const locationReview = async () => listNorthHillsOcrReview(client, { q: '230' });
+    const locationMatches = async () => (await locationReview()).entries[0].candidateMatches;
+    const review = await locationReview();
+    assert.equal(review.batches[0].matchedCount, 1);
+    assert.equal(review.entries[0].candidateMatches.length, 1);
+    const [locationMatch] = review.entries[0].candidateMatches;
+    assert.equal(locationMatch.gravesiteId, 'TLC-GPS-0567');
+    assert.equal(locationMatch.headstoneCandidates[0].headstoneId, 'TLC-HS-0567');
+    assert.deepEqual(locationMatch.gravesiteEvidence, []);
+    assert.deepEqual(locationMatch.headstoneCandidates[0].evidence, []);
+    const originalNotes = 'North Hills Genealogists section: E. North Hills Genealogists row: 6. North Hills Genealogists site: 3.';
+    for (const notes of [
+      originalNotes.replace('section: E', 'section: D'),
+      originalNotes.replace('row: 6', 'row: 60'),
+      originalNotes.replace('site: 3', 'site: 30'),
+      originalNotes.replace('site: 3.', ''),
+      null,
+    ]) {
+      await client.query('UPDATE burials SET notes=$1', [notes]);
+      assert.deepEqual(await locationMatches(), []);
+    }
+    await client.query('UPDATE burials SET notes=$1', [originalNotes]);
+    await client.query('UPDATE north_hills_ocr_entries SET parsed_position_number=NULL');
+    assert.deepEqual(await locationMatches(), []);
+    await client.query('UPDATE north_hills_ocr_entries SET parsed_position_number=3,cemetery_id=gen_random_uuid()');
+    assert.deepEqual(await locationMatches(), []);
+    await client.query('UPDATE north_hills_ocr_entries SET cemetery_id=$1', [ids.cemetery]);
+    // Existing page/surname paths still work and UNION must not duplicate them.
+    await client.query("UPDATE burials SET notes=notes || ' North Hills Genealogists page: 230.'");
+    assert.equal((await locationMatches()).length, 1);
+    await client.query("UPDATE north_hills_ocr_entries SET name_text='Illegible',surnames=ARRAY['Illegible']");
+    assert.equal((await locationMatches()).length, 1);
     await client.query('UPDATE gravesites SET deleted_at=now()');
-    assert.deepEqual(await matches(), []);
+    assert.deepEqual(await locationMatches(), []);
   } finally {
     await client.query('ROLLBACK');
     client.release();

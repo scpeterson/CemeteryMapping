@@ -4,7 +4,12 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
-No changes recorded since the 0.2.2 release baseline.
+### Fixed
+
+- Suggest unknown NHG readings using a complete imported section, row, and site
+  when the page reference is missing, including E-0567 on page 230. Existing
+  name, page, and nearby-page marker suggestions remain available; matches still
+  require reviewer confirmation. No database migration or data repair is needed.
 
 ## 0.2.2 — 2026-11-10
 
