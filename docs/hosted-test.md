@@ -9,8 +9,8 @@ The dedicated host is managed separately from local TEST. See
 The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
 PostGIS 3.6.4 cluster upgrade**, recorded in the
 [upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-The latest recorded code deployment is [v0.2.0 on November 10](#november-10-2026-versioned-test-deployment)
-at `ed22668`. Dated sections
+The latest recorded code deployment is [v0.2.1 on November 10](#november-10-2026-environment-label-and-version-badge-fix)
+at `4aaf050`. Dated sections
 below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
@@ -1265,6 +1265,10 @@ Configuration was preserved as requested. Correcting the frontend environment
 input needs a separate reviewed change; do not move the published tag or broaden
 secret-file permissions to address it.
 
+This discrepancy was subsequently resolved by
+[v0.2.1](#november-10-2026-environment-label-and-version-badge-fix), without changing
+hosted settings. The observations above remain the historical v0.2.0 evidence.
+
 Fresh interactive Access/Auth0 sign-in, real invitation-email delivery, live
 Turnstile token replay rejection, and a real disconnected offline
 reload/save/reconnect synchronization test remain **pending**. No real
@@ -1285,3 +1289,90 @@ The deployed API image is
 `sha256:c719f59b1fa843bb310f03360992c38ea04e33be70b9e4e0244a86728e4360ea`.
 Retain private recovery material outside Git. This establishes a TEST deployment
 only, not a STAGE or PROD deployment; use `/api/health` to check running identity.
+
+## November 10, 2026 environment label and version badge fix
+
+[PR #818](https://github.com/scpeterson/CemeteryMapping/pull/818) fixes the missing
+frontend-label fallback and displays the application version directly in the map
+badge. Explicit `VITE_APP_ENV` overrides remain authoritative; otherwise Vite's
+selected dev/test/stage/prod mode supplies DEV/TEST/STAGE/PROD, including sanitized
+builds without environment files. The version is visible in every environment;
+SHA, build time and API details remain in the tooltip. Phone badges stack the
+label and version to avoid map-control overlap.
+
+The fix was published as immutable annotated tag **`v0.2.1`**, commit
+`4aaf0504a40a708a2359c0d6c69a1757bd27fb64`, after full PR and exact-merged-commit
+CI passed without rerun. The original `v0.2.0` tag remains unchanged. TEST was
+then deployed with:
+
+```sh
+umask 022
+npm exec --yes --package=node@24 -- npm run deploy:test -- --ref v0.2.1
+```
+
+Build time is **`2026-11-10T14:27:15Z`** (9:27:15 AM EST); final release health
+was verified at **`2026-11-10T14:29:41.423Z`** (9:29:41 AM EST). This replaced
+v0.2.0 at `ed2266812b9bd852134c31c7c56a2a8cff3d57a1` using the standard
+backup/candidate/cutover workflow. Database and tunnel services stayed running;
+no migration, database tag, restore, seeding or configuration change was needed.
+
+### Fix and deployment verification
+
+- Real builds of the actual environment module without environment files passed
+  for all four modes, with explicit override and version/SHA/build checks. The
+  focused 21-test browser suite passed; the final phone badge adjustment passed
+  all 8 header regressions with non-overlap checks at 320, 390, 760, 768, 1280 and
+  1920 pixels. Twelve existing protection/configuration tests, production build
+  and unchanged bundle budgets, lint and documentation checks passed. Full PR
+  and main CI also passed all browser shards and database/Docker checks.
+- API health reported `ok`, **TEST**, version **0.2.1**, the exact tagged SHA and
+  matching build time. All **198** server/shared runtime hashes matched (including
+  the new shared environment helper/declaration), and the API had **zero restarts**.
+- A fresh headless browser evaluated the deployed public metadata module
+  `workspace-shared-lVvcbK4x.js`. Its runtime values were **TEST**, **0.2.1**,
+  `4aaf0504a40a708a2359c0d6c69a1757bd27fb64` and `2026-11-10T14:27:15Z`, matching
+  API metadata. This confirms resolution of the inherited DEV-label issue while
+  hosted `VITE_APP_ENV` remains unset. The probe used the public request page via
+  a temporary loopback-only SSH forward, blocked the widget script for this
+  metadata-only check, submitted no form and then closed the browser/forward.
+  It did not disable any hosted protection or establish a fresh authenticated
+  login or real Turnstile submission.
+- All **83** compared table fingerprints and row counts were unchanged, excluding
+  operational `audit_events` and `system_events`. Standard account/access, media,
+  protected-settings and tunnel-token ownership checks passed. The API still ran
+  as `node` with the restricted `cemetery_api` role and mode-`0600` private env;
+  runtime configuration changed only in `GIT_SHA` and `BUILD_TIME`.
+- Schema remains **518 applied changesets through file 516**, with no pending
+  migrations. All **44** field-shell/manifest URLs passed status, non-HTML asset
+  and deployed-hash checks. Restricted-role read-only checks covered 3 cemeteries,
+  3 grave details, 2 headstone details, 6 record-option queries and 3 searches.
+- Public `/request-access` returned 200, origin anonymous private API access was
+  rejected with 401, and public `/api/me` redirected to Cloudflare Access with 302.
+  Required Turnstile, exact TEST hostname validation and trusted loopback proxy
+  handling remained enabled. Missing/forged token POSTs returned application 403
+  errors and created zero records.
+- Existing edge burst protection/cooldown passed: 12 bounded GET probes returned
+  4×404 and 8×429 (7 identified Cloudflare rate-limit pages); a new GET after 15
+  seconds returned normal 404. No edge rule or origin limit was changed, and these
+  GETs cannot submit an access request.
+
+The frontend-label gap is now **resolved on TEST**. Fresh interactive
+Access/Auth0 login, invitation delivery, live token replay, disconnected offline
+reload/save/reconnect synchronization and a fresh real Turnstile-backed submission
+remain pending. Building labels for STAGE/PROD does not establish deployments to
+those environments. Historical records and pending verification scope remain intact.
+
+### v0.2.1 recovery material
+
+- Backup: `/srv/nhcemeteries/backups/20261110T142715Z-4aaf0504a40a-3d26dd7e`.
+- Release report:
+  `/srv/nhcemeteries/staging/20261110T142715Z-4aaf0504a40a-3d26dd7e/verification.json`.
+- Supplemental preservation/asset/security/metadata report:
+  `/srv/nhcemeteries/staging/20261110T142715Z-4aaf0504a40a-3d26dd7e/smoke-verification.json`.
+- Browser runtime metadata evidence:
+  `/srv/nhcemeteries/staging/20261110T142715Z-4aaf0504a40a-3d26dd7e/browser-metadata-verification.json`.
+
+The deployed API image is
+`sha256:c356e33e971c557f289bf9e97773cac2734991e9f581f9048ccce8a54920f10a`.
+Retain protected recovery material outside Git. Later documentation-only merges
+do not change this running application revision.
