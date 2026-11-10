@@ -15,7 +15,7 @@ below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
 The latest NHG review update is the
-[November 10 HIEBER/EADIE reading-text reconciliation](#november-10-2026-hieber-and-eadie-reading-text-reconciliation).
+[November 10 remaining NHG reconciliation](#november-10-2026-remaining-nhg-reading-fact-and-observation-reconciliation).
 
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
@@ -1837,3 +1837,98 @@ It contains validated `database-before.dump`, `reconciliation-plan.json` with
 both source/before readings, and `verification.json`. Keep private artifacts
 outside Git. Use the retained two-row before-state for any reviewed targeted
 recovery; do not restore the whole database over subsequent work.
+
+## November 10, 2026 remaining NHG reading, fact and observation reconciliation
+
+The user authorized applying the remaining NHG differences in TEST with DEV as
+authoritative. A fresh comparison identified **2 readings, 21 source facts and
+2 observations** requiring updates. Seven source facts were promoted in DEV but
+still staged in TEST; their associated burial date fields were reconciled as
+part of applying those promotions consistently. Post-commit database-enforced
+read-only verification passed at **`2026-11-10T21:37:18.409Z`** (4:37:18 PM EST).
+
+### Applied changes
+
+- **GILLEN, page 197:** changed `Arthur l. Gillen` to `Arthur J. Gillen` in
+  `raw_text` and `inscription_text`, and matched DEV's empty `source_entry`.
+- **MARSCHY, page 228:** matched DEV's empty `source_entry`; the reading text
+  itself was unchanged.
+- **21 source facts:** aligned 18 review/promotion decisions (11 reviewed and
+  7 promoted, previously staged in TEST), including the seven promoted burial
+  references. Corrected three supporting `raw_text` fields: two HAGUE facts on
+  page 201 removed the stray `I'` after `LCR`, and EADIE's page-207 fact removed
+  the stray bullet. Other fact fields were preserved.
+- **2 MARSCHY observations, page 228:** changed the gap and plot-marker
+  observations from staged to reviewed, preserving their text.
+
+The seven promotion targets were active burials in the same cemetery as their
+readings, and DEV's death dates agreed with the promoted fact dates. TEST's
+`death_date` / `death_date_text` fields were matched to DEV as follows; all other
+burial fields, including notes, were preserved:
+
+| Burial | Previous TEST date/date text | DEV-authoritative date and date text |
+| --- | --- | --- |
+| John H. Soergel | No full date; `1869` | `1869-03-09` |
+| Clarence Wesley Soergel | `1931-06-28` / `June 28, 1931` | `1925-06-25` |
+| Johann Heinrich Braurmann | `1875-01-23` / `January 23, 1875` | `1875-01-23` |
+| Harry Ralph Pfeiffer | `1986-01-23` / `January 23, 1986` | `1986-01-23` |
+| Johann Will | No full date; `1891` | `1891-04-20` |
+| Heinrich Killian | No full date; `1877` | `1877-12-21` |
+| Johann G. Sperber/Soergel | No full date; `1877` | `1877-02-10` |
+
+### Preservation and audit
+
+A full TEST database dump was created and validated with `pg_restore --list`
+before mutation. Fresh source/before snapshots and the exact field-level plan
+were retained. The deployed restricted `cemetery_api` role applied all changes
+in one repeatable-read transaction with row locks and exact planning-snapshot
+checks. Each target row was checked for unintended field changes. Audit source
+was `codex`, external subject `codex:user-request`, with a DEV-authoritative
+reconciliation reason and recovery identifier. Exactly **32 update audit events**
+were verified: 2 readings, 21 facts, 2 observations and 7 burial records.
+
+Before/after counts and content fingerprints across **83 public tables** matched
+for unrelated records. Exclusions were limited to the authorized target rows,
+normal derived NHG inspections for **two linked markers**, and operational
+audit/system logs. All NHG links, other burial fields, other facts/observations
+and manually edited inspections were preserved. Normal refresh triggers stayed
+enabled. New review actions carry TEST reconciliation attribution/timestamps;
+DEV reviewer identity and timestamps were not copied or backdated.
+
+### Independent final comparison
+
+Fresh repeatable-read, database-enforced read-only snapshots of both environments
+confirmed equal counts and **zero remaining NHG content/decision differences**:
+
+| Record type | DEV | TEST |
+| --- | ---: | ---: |
+| Import batches | 3 | 3 |
+| Readings | 1,523 | 1,523 |
+| Gravesite link decisions | 2,608 | 2,608 |
+| Marker link decisions | 2,353 | 2,353 |
+| Source facts | 1,489 | 1,489 |
+| Observations | 48 | 48 |
+
+The comparison normalized the two previously verified equivalent reading UUID
+pairs and one equivalent generated source-fact UUID pair, preserving TEST's
+local IDs. Reading content, link status/confidence/notes, source-fact content/
+review/promotion state and observation content/status match DEV. The seven
+promotion targets' saved death-date fields were separately verified. Expected
+record-ID, reviewer and timestamp provenance differences remain. A fresh DEV
+snapshot exactly matched its pre-action source snapshot; DEV was not modified.
+
+Earlier comparison/reconciliation entries retain their historical scope. No
+application version, code, schema, accounts, media, configuration or protections
+changed; TEST remains on immutable v0.2.4. Fresh live login, invitation delivery,
+token replay, disconnected offline synchronization and a fresh real Turnstile
+submission remain pending. This is an NHG reconciliation, not a claim that all
+other DEV/TEST data is identical.
+
+### Remaining-reconciliation recovery evidence
+
+Protected directory:
+`/srv/nhcemeteries/backups/20261110T213441Z-nhg-remaining-reconciliation`.
+It contains validated `database-before.dump`, source/before `reconciliation-plan.json`,
+post-commit `verification.json` and independent `final-comparison.json`. Keep
+private recovery material outside Git. Use the retained target-row before-state
+for reviewed targeted recovery rather than restoring over subsequent TEST work.
