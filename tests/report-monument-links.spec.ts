@@ -3,8 +3,8 @@ import { cemeteryId, fixture, geometry, summaries } from "./fixtures/cemetery";
 import { marker, markerSummary } from "./fixtures/overview";
 import { reportDefinitions } from "../server/reports/definitions.mjs";
 
-for (const reportId of ["missing-monument-inscriptions", "monument-photo-exceptions"]) {
-  for (const role of ["cemetery-admin", "admin"]) {
+for (const reportId of ["missing-monument-inscriptions", "monument-photo-exceptions", "unreadable-monument-inscriptions"]) {
+  for (const role of reportId === "unreadable-monument-inscriptions" ? ["power-user", "cemetery-admin", "admin"] : ["cemetery-admin", "admin"]) {
     for (const located of [true, false]) {
       test(`${reportId} opens monument records and zooms for ${role} (${located ? "mapped" : "unmapped"})`, async ({ page }) => {
         await fixture(page);

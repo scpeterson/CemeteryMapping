@@ -133,6 +133,15 @@ export const reportDefinitions = [
     examples: ["Which monuments are missing inscription data?"],
   },
   {
+    id: "unreadable-monument-inscriptions",
+    title: "Unreadable monument inscriptions",
+    description: "Finds monuments whose latest inspection includes illegible text or [-] fragments, including faces, for better photography or field review. All sections are included.",
+    category: "Data maintenance",
+    requiredRole: "power-user",
+    parameters: [],
+    examples: ["Which monuments have unreadable inscriptions?", "List inscriptions with illegible lines or [-]."],
+  },
+  {
     id: "monument-photo-exceptions",
     title: "Monument photo exceptions",
     description: "Finds monuments without a monument photo or without a Primary photo, including standalone markers.",
