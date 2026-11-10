@@ -4,12 +4,34 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+No changes recorded since the 0.2.3 release baseline.
+
+## 0.2.3 — 2026-11-10
+
 ### Fixed
 
 - Suggest unknown NHG readings using a complete imported section, row, and site
   when the page reference is missing, including E-0567 on page 230. Existing
   name, page, and nearby-page marker suggestions remain available; matches still
   require reviewer confirmation. No database migration or data repair is needed.
+
+### Release operations and verification
+
+- Includes the matcher fix from [PR #823](https://github.com/scpeterson/CemeteryMapping/pull/823).
+  PostgreSQL regressions cover complete/missing/mismatched locations, cemetery
+  isolation, duplicate candidates and existing page-break suggestions. A read-only
+  query against TEST's actual records finds E-0567 without confirming any link.
+- Publish immutable `v0.2.3` only after release PR and exact-merged-commit CI pass,
+  then deploy that exact tag to TEST. Preserve existing data, media, accounts,
+  configuration, authentication and edge/origin protections. No database tag,
+  migration, repair script or restore is required; retain recovery material.
+- Record deployed version/SHA/build identity, preservation checks and the
+  unconfirmed E-0567 suggestion separately after deployment. Previous dated
+  deployment records and tags remain unchanged.
+- Fresh live login, invitation delivery, token replay, disconnected offline
+  reload/save/reconnect synchronization and a fresh real Turnstile-backed
+  submission remain pending. Read-only checks do not close those gaps or
+  establish STAGE/PROD deployments.
 
 ## 0.2.2 — 2026-11-10
 
