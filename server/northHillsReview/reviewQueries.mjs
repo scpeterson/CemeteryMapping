@@ -207,6 +207,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
                    'birthDate', candidate.birth_date,
                    'deathDate', candidate.death_date,
                    'score', candidate.score,
+                   'exactNhgLocation', candidate.exact_nhg_location,
                    'notes', candidate.notes,
                    'gravesiteEvidence', candidate.gravesite_evidence,
                    'headstoneCandidates', candidate.headstone_candidates
@@ -224,6 +225,10 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
             COALESCE(burial.birth_date_text, burial.birth_date::text) AS birth_date,
             COALESCE(burial.death_date_text, burial.death_date::text) AS death_date,
             burial.notes,
+            EXISTS (
+              SELECT 1 FROM location_burials location
+              WHERE location.entry_id=entry.id AND location.burial_id=burial.id
+            ) AS exact_nhg_location,
             COALESCE(gravesite_evidence.evidence, '[]'::jsonb) AS gravesite_evidence,
             COALESCE(headstone_candidates.candidates, '[]'::jsonb) AS headstone_candidates,
             (

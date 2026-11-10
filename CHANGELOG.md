@@ -4,7 +4,11 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
-No changes recorded since the 0.2.3 release baseline.
+### Changed
+
+- Show exact NHG section/row/site suggestions first in the main Readings matches,
+  including E-0567, while retaining existing suggestions and review completion
+  behavior. Promotion does not confirm a link or change stored records.
 
 ## 0.2.3 — 2026-11-10
 

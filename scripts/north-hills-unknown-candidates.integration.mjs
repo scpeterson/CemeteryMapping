@@ -63,6 +63,23 @@ test('unknown readings suggest same-row markers across page breaks without confi
     assert.equal(locationMatch.headstoneCandidates[0].headstoneId, 'TLC-HS-0567');
     assert.deepEqual(locationMatch.gravesiteEvidence, []);
     assert.deepEqual(locationMatch.headstoneCandidates[0].evidence, []);
+    assert.equal(locationMatch.exactNhgLocation, true);
+    // Six stronger name/page suggestions used to push E-0567 into extras.
+    // Keep all of them, but display the exact location first in the main list.
+    await client.query(`INSERT INTO gravesites (id,cemetery_id,gravesite_id,grave_id,section_id)
+      SELECT gen_random_uuid(),$1,'competing-' || n,n::text,'E' FROM generate_series(1,6) n`, [ids.cemetery]);
+    await client.query(`INSERT INTO burials (id,gravesite_uuid,full_name,notes)
+      SELECT gen_random_uuid(),id,'UNKNOWN competing ' || grave_id,'North Hills Genealogists page: 230.'
+      FROM gravesites WHERE gravesite_id LIKE 'competing-%'`);
+    const ranked = (await locationReview()).entries[0];
+    assert.equal(ranked.candidateMatches[0].gravesiteId, 'TLC-GPS-0567');
+    assert.equal(ranked.candidateMatches.length, 6);
+    assert.equal(ranked.additionalCandidateMatches.length, 1);
+    assert.equal(new Set([...ranked.candidateMatches, ...ranked.additionalCandidateMatches].map(m => m.gravesiteId)).size, 7);
+    assert.equal(ranked.processingSummary.pendingCount, 5);
+    assert.deepEqual(ranked.candidateMatches[0].gravesiteEvidence, []);
+    await client.query("DELETE FROM burials WHERE gravesite_uuid IN (SELECT id FROM gravesites WHERE gravesite_id LIKE 'competing-%')");
+    await client.query("DELETE FROM gravesites WHERE gravesite_id LIKE 'competing-%'");
     const originalNotes = 'North Hills Genealogists section: E. North Hills Genealogists row: 6. North Hills Genealogists site: 3.';
     for (const notes of [
       originalNotes.replace('section: E', 'section: D'),

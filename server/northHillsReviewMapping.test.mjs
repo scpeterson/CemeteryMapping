@@ -52,3 +52,25 @@ test("original pending work and source facts still count", () => {
   assert.equal(after.processingSummary.pendingCount, 2);
   assert.equal(after.processingSummary.isProcessed, false);
 });
+
+test("exact NHG locations lead main suggestions without displacing matches or reopening completed work", () => {
+  const exact = { ...match(5), graveId: "0567", exactNhgLocation: true, headstoneCandidates: [{ id: "567", evidence: [] }] };
+  const before = toEntry({ candidate_matches: [...original, exact, match(6)] });
+  const baseline = toEntry({ candidate_matches: [...original, { ...exact, exactNhgLocation: false }, match(6)] });
+  assert.equal(before.candidateMatches[0].graveId, "0567");
+  assert.equal(before.candidateMatches.length, 6);
+  assert.deepEqual(before.candidateMatches.slice(1), baseline.candidateMatches);
+  assert.deepEqual(before.additionalCandidateMatches.map((m) => m.burialId), ["burial-6"]);
+  assert.deepEqual(before.processingSummary, baseline.processingSummary);
+  assert.equal(before.processingSummary.isProcessed, true);
+  assert.deepEqual(before.candidateMatches[0].gravesiteEvidence, []);
+});
+
+test("exact location display priority preserves stable score order and original pending work", () => {
+  const matches = [match(0), { ...match(1), exactNhgLocation: true }, match(2), match(3), match(4), { ...match(5), exactNhgLocation: true }, match(6)];
+  const entry = toEntry({ candidate_matches: matches });
+  assert.deepEqual(entry.candidateMatches.map((m) => m.burialId), ["burial-1", "burial-5", "burial-0", "burial-2", "burial-3", "burial-4"]);
+  assert.equal(entry.processingSummary.pendingCount, 5);
+  assert.equal(entry.processingSummary.isProcessed, false);
+  assert.deepEqual(entry.additionalCandidateMatches.map((m) => m.burialId), ["burial-6"]);
+});
