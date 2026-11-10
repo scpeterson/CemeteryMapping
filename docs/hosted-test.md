@@ -9,8 +9,8 @@ The dedicated host is managed separately from local TEST. See
 The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
 PostGIS 3.6.4 cluster upgrade**, recorded in the
 [upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-The latest recorded code deployment is the [November 9 refactoring and draft
-recovery release](#november-9-2026-refactoring-and-draft-recovery-release) at `0b6d9c9`. Dated sections
+The latest recorded code deployment is [v0.2.0 on November 10](#november-10-2026-versioned-test-deployment)
+at `ed22668`. Dated sections
 below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
@@ -1193,3 +1193,95 @@ all origin verification, rate limits, capacity controls and Access policies.
 Recheck the public form, valid/invalid token handling and private-API protection.
 The rule is managed in Cloudflare rather than the application checkout; a code
 rollback does not remove it.
+
+## November 10, 2026 versioned TEST deployment
+
+Published annotated tag **`v0.2.0`** was deployed using the exact-release command,
+resolving to `ed2266812b9bd852134c31c7c56a2a8cff3d57a1`. It replaced package
+0.1.0 at `0b6d9c9a6bf5427e7c6f40b22cb8475f3c59d407`. The tag was not moved and
+later documentation commits are not part of the deployed application.
+
+```sh
+umask 022
+npm exec --yes --package=node@24 -- npm run deploy:test -- --ref v0.2.0
+```
+
+The local build runtime was Node.js 24.22.2. The selected revision belonged to
+`origin/main`, its package version matched the tag, and its exact-commit CI gate
+had passed before deployment. The standard workflow built the tagged source with
+existing hosted public settings, validated schema status, retained verified
+database/application/media recovery material, built the committed API Dockerfile
+without cache, and checked the isolated candidate before cutover. No migration,
+database restore, refresh, seeding, database release tag, or configuration reset
+was performed. Database and tunnel services stayed running.
+
+The release build time is **`2026-11-10T13:51:40Z`** (8:51:40 AM EST);
+post-cutover health was verified at **`2026-11-10T13:54:50.231Z`**
+(8:54:50 AM EST).
+
+### Verification results
+
+- API health reported `ok`, version **0.2.0**, environment `TEST`, database
+  `cemetery_mapping_test`, the exact tagged SHA and matching build time. Compiled
+  frontend metadata in `workspace-shared-D4MKPDiY.js` matched the API's version,
+  full SHA and build time. The environment-label exception below remains open.
+- All **196** deployed server/shared runtime hashes matched. The API ran as
+  `node`, used the restricted `cemetery_api` role, had a readable mode-`0600`
+  private environment file, and had **zero restarts** at release verification.
+- Schema validation passed with no pending migrations: **518 applied changesets**,
+  through migration file **516**. No live schema or release-tag metadata changed.
+- Before/after row counts and content fingerprints matched across **83 tables**.
+  `audit_events` and `system_events` were excluded because operational logging and
+  retention can change them. Account/access records, media inventory, protected
+  settings and tunnel-token ownership also passed the standard preservation
+  checks; runtime settings changed only in `GIT_SHA` and `BUILD_TIME`.
+- All **44** field-shell/manifest URLs returned HTTP 200 at the origin. Non-page
+  assets were non-HTML and matched deployed hashes. Restricted-role read-only
+  checks covered map data across **3 cemeteries**, **3 grave details**, **2
+  headstone details**, **6 record-option queries** and **3 searches**.
+- Public HTTPS `/request-access` returned 200. Origin anonymous private API access
+  returned 401; public `/api/me` redirected to Cloudflare Access with 302. Nginx
+  configuration and frontend integrity passed the release checks.
+- Hosted Auth0, required Turnstile verification, exact TEST hostname validation
+  and trusted loopback proxy handling remained enabled. Missing-token and
+  forged-token POSTs returned the application's 403 verification error and
+  created **zero** access-request records. No account was provisioned.
+- The existing Cloudflare edge burst protection remained effective: a bounded
+  12-GET probe on `/api/access-requests` returned **4×404 and 8×429**, with 7
+  responses identified as Cloudflare rate-limit pages. After 15 seconds, a new
+  GET returned the normal 404 without a rate-limit page. These GETs cannot submit
+  access requests. The observed count is not an exact global cutoff guarantee;
+  the existing edge and origin limits were preserved without reconfiguration.
+
+### Existing environment-label discrepancy and pending live checks
+
+The compiled frontend environment label is **`DEV`**, while API environment is
+correctly **`TEST`**. The retained previous 0.1.0 build also contains `DEV`, and
+the unchanged hosted `frontend.env` does not set `VITE_APP_ENV`. The release
+archive strips environment files before building, so the frontend falls back to
+its default label rather than the tracked `.env.test` value. Version/SHA/build
+identity matches; this is a separately verified pre-existing build-label issue.
+Configuration was preserved as requested. Correcting the frontend environment
+input needs a separate reviewed change; do not move the published tag or broaden
+secret-file permissions to address it.
+
+Fresh interactive Access/Auth0 sign-in, real invitation-email delivery, live
+Turnstile token replay rejection, and a real disconnected offline
+reload/save/reconnect synchronization test remain **pending**. No real
+Turnstile-backed form submission was repeated for this deployment. Automated
+checks, invalid-token rejection and asset/repository smoke checks do not close
+these gaps. Retain the earlier dated browser evidence and follow the
+[pending offline steps](#pending-hosted-offline-reload-test).
+
+### November 10 recovery material
+
+- Backup: `/srv/nhcemeteries/backups/20261110T135140Z-ed2266812b9b-c2c67afa`.
+- Release report:
+  `/srv/nhcemeteries/staging/20261110T135140Z-ed2266812b9b-c2c67afa/verification.json`.
+- Supplemental asset, identity, schema, protection and data-preservation report:
+  `/srv/nhcemeteries/staging/20261110T135140Z-ed2266812b9b-c2c67afa/smoke-verification.json`.
+
+The deployed API image is
+`sha256:c719f59b1fa843bb310f03360992c38ea04e33be70b9e4e0244a86728e4360ea`.
+Retain private recovery material outside Git. This establishes a TEST deployment
+only, not a STAGE or PROD deployment; use `/api/health` to check running identity.
