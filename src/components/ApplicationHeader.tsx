@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, BarChart3, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react";
 import { useAccountSession } from "../auth/sessionContext";
 import type { CurrentUser } from "../types";
+import { apiBaseUrl, appEnvironment, appVersionMetadata } from "../config/environment";
 
 type ApplicationHeaderProps = {
   cemeteryScopeLabel: string;
@@ -42,7 +43,17 @@ export function ApplicationHeader({
       }
     }}>
       <div className="application-brand">
-        <h1>Cemetery Map</h1>
+        <div className="application-title">
+          <h1>Cemetery Map</h1>
+          <div
+            className={`environment-badge environment-${appEnvironment.toLowerCase()}`}
+            title={`Version: ${appVersionMetadata.version} (${appVersionMetadata.gitSha})\nBuild: ${appVersionMetadata.buildTime}\nAPI: ${apiBaseUrl}`}
+          >
+            <span>{appEnvironment}</span>{" "}
+            <span className="environment-badge-separator">·</span>{" "}
+            <span>v{appVersionMetadata.version}</span>
+          </div>
+        </div>
         <p>{cemeteryScopeLabel}</p>
         {currentUser && (currentUser.role === "admin" || (cemeteries?.length ?? 0) > 1) && cemeteries?.length ? <label className="cemetery-scope" htmlFor="cemetery-scope">
           <span className="sr-only">Cemetery</span>

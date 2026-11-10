@@ -7,8 +7,10 @@
 
 ## Environment and version identity
 
-The map badge displays the environment and application version in every
-environment, for example **TEST · v0.2.0**. Its tooltip retains the commit SHA,
+The header badge to the right of **Cemetery Map** displays the environment and
+application version in every environment, for example **TEST · v0.2.1**. It stays
+outside the map and remains available when phone users switch workspaces. Its
+tooltip retains the commit SHA,
 build timestamp and API base URL. Values come from the build's package/version
 metadata, not a hard-coded release number or a browser hostname guess.
 
@@ -25,7 +27,8 @@ metadata inputs retain their existing controls.
 `scripts/frontend-environment.test.mjs` builds the actual environment module
 without environment files in all four modes and verifies explicit overrides and
 version/SHA/build metadata. Application-header browser regressions check the
-visible version badge and tooltip across phone and desktop widths.
+visible version badge, title alignment, map clearance and tooltip across phone
+and desktop widths.
 
 ## Component Boundaries
 

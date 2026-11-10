@@ -11,14 +11,17 @@ for (const width of [320, 390, 760, 768, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     await fixture(page);
     await page.goto("/tests/auth.html");
-    const badge = page.locator(".environment-badge");
+    const header = page.getByRole("banner");
+    const badge = header.locator(".environment-badge");
     await expect(badge).toBeVisible();
     await expect(badge).toHaveText(`${environment} · v${version}`);
     await expect(badge).toHaveAttribute("title", new RegExp(`Version: ${version.replaceAll(".", "\\.")} \\(`));
     const badgeBox = (await badge.boundingBox())!;
-    const viewBox = (await page.locator(".map-view-toggle").boundingBox())!;
-    expect(badgeBox.x < viewBox.x + viewBox.width && badgeBox.x + badgeBox.width > viewBox.x && badgeBox.y < viewBox.y + viewBox.height && badgeBox.y + badgeBox.height > viewBox.y).toBe(false);
-    const header = page.getByRole("banner");
+    const titleBox = (await header.getByRole("heading", { name: "Cemetery Map" }).boundingBox())!;
+    expect(badgeBox.x).toBeGreaterThanOrEqual(titleBox.x + titleBox.width);
+    expect(badgeBox.y).toBeLessThan(titleBox.y + titleBox.height);
+    expect(badgeBox.y + badgeBox.height).toBeGreaterThan(titleBox.y);
+    await expect(page.locator(".map-region .environment-badge")).toHaveCount(0);
     await expect(header.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Cemetery Map" })).toHaveCount(1);
     await expect(header).toContainText("1 cemetery");
@@ -60,6 +63,8 @@ test("phone application dialogs open from Search and Details and restore focus",
   await page.goto("/tests/auth.html");
   for (const view of ["Search", "Details"]) {
     await page.getByRole("navigation", { name: "Workspace views" }).getByRole("button", { name: view, exact: true }).click();
+    await expect(page.getByRole("banner").locator(".environment-badge")).toBeVisible();
+    await expect(page.locator(".map-region")).toBeHidden();
     await showApplicationActions(page);
     for (const [action, dialog] of [[/^Open reports:/, "Reports"], [/^Open administration:/, "Admin management"], [/^Open control point collector:/, "Control point collector"]] as const) {
       const opener = page.getByRole("button", { name: action });

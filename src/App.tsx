@@ -10,7 +10,6 @@ import { roleForCemetery, selectionPermissions } from "./lib/selectionPermission
 import { CemeteryMap } from "./components/CemeteryMap";
 import { DetailPanel } from "./components/DetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
-import { apiBaseUrl, appEnvironment, appVersionMetadata } from "./config/environment";
 import { graveSelectionKey, lotSelectionKey } from "./lib/format";
 import { useSelectedRecordDetails } from "./hooks/useSelectedRecordDetails";
 import { createGraveSpace, createHeadstoneGravesiteRelationship } from "./api/cemeteryApi";
@@ -277,15 +276,6 @@ export default function App() {
             onSelectMatch={selectMatch}
           />
           <section className={`map-region ${isLoading || loadError || userError ? "has-data-status" : ""}`}>
-            <div
-              className={`environment-badge environment-${appEnvironment.toLowerCase()}`}
-              title={`Version: ${appVersionMetadata.version} (${appVersionMetadata.gitSha})\nBuild: ${appVersionMetadata.buildTime}\nAPI: ${apiBaseUrl}`}
-            >
-              <span>{appEnvironment}</span>{" "}
-              <span className="environment-badge-separator">·</span>{" "}
-              <span>v{appVersionMetadata.version}</span>
-            </div>
-
             {isLoading || loadError || userError ? (
               <div className={`data-status ${loadError || userError ? "is-error" : ""}`} role={loadError || userError ? "alert" : "status"}>
                 {isLoading && !loadError ? <p>Loading cemetery records...</p> : null}
