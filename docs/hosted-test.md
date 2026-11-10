@@ -9,8 +9,8 @@ The dedicated host is managed separately from local TEST. See
 The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
 PostGIS 3.6.4 cluster upgrade**, recorded in the
 [upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-The latest recorded code deployment is [v0.2.4 on November 10](#november-10-2026-nhg-suggestion-priority-release)
-at `8806506`. Dated sections
+The latest recorded code deployment is [v0.2.5 on November 10](#november-10-2026-unreadable-inscription-report-release)
+at `d595d1c`. Dated sections
 below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
@@ -1932,3 +1932,128 @@ It contains validated `database-before.dump`, source/before `reconciliation-plan
 post-commit `verification.json` and independent `final-comparison.json`. Keep
 private recovery material outside Git. Use the retained target-row before-state
 for reviewed targeted recovery rather than restoring over subsequent TEST work.
+
+## November 10, 2026 unreadable inscription report release
+
+Immutable annotated tag **`v0.2.5`**, commit
+`d595d1c3c404ef1934e5b56d7e03362817f3b086`, is deployed to TEST, replacing
+v0.2.4 at `880650634483dc6709e67c9dd6bd8b746fe989a0`.
+[PR #833](https://github.com/scpeterson/CemeteryMapping/pull/833) adds
+**Reports → Data maintenance → Unreadable monument inscriptions** for power
+users and above. It matches the word `illegible` case-insensitively and `[-]`
+with optional internal whitespace in the latest active inspection's monument/
+face inscriptions, including partial readings. Results include inspection
+details, location and clickable monument IDs for photography follow-up.
+[PR #834](https://github.com/scpeterson/CemeteryMapping/pull/834) prepared the
+release. Full [release PR CI](https://github.com/scpeterson/CemeteryMapping/actions/runs/42909602057)
+and [exact-main CI](https://github.com/scpeterson/CemeteryMapping/actions/runs/42910823103)
+passed without rerun before tagging. Prior tags were not moved.
+
+```sh
+umask 022
+npm exec --yes --package=node@24 -- npm run deploy:test -- --ref v0.2.5
+```
+
+Build time is **`2026-11-10T22:09:55Z`** (5:09:55 PM EST); final health was
+verified at **`2026-11-10T22:12:19.935Z`** (5:12:19 PM EST). The workflow
+validated source/settings/schema, retained database/application/media backups,
+built the tagged API Dockerfile without cache, checked an isolated candidate
+and switched API/web only. Database and tunnel stayed running. No migration,
+database tag, data repair, refresh, restore, seeding or account provisioning ran.
+Current TEST data, including the completed NHG reconciliations, was preserved.
+Existing public/private configuration and protections stayed in place; runtime
+configuration changed only in `GIT_SHA` and `BUILD_TIME`.
+
+### Report access and result verification
+
+- The deployed report catalog and runner were exercised using power-user,
+  reader, cemetery-admin and system-admin role contexts, through restricted
+  `cemetery_api` connections with database-enforced read-only settings. Power
+  users could list/run the report; readers could not list it and execution
+  returned **`REPORT_FORBIDDEN`**. Higher-role catalog access passed.
+- Cemetery scope checks passed for each of the three active cemeteries, a mixed
+  power-user/reader membership context and a user with no assignments. A
+  client-supplied cemetery filter did not expand power-user access; no-assignment
+  execution returned zero rows. No actual account role or membership changed.
+- TEST returned **22 rows / 22 distinct monuments**, all at Trinity Lutheran
+  Church Cemetery; Memorial Grove Cemetery and St. Mark Church Cemetery returned
+  zero. Every row had inspection evidence and monument navigation metadata.
+  The system-admin result set matched the power-user context with access to all
+  active cemeteries.
+- An independent PostgreSQL expression selected each monument's latest active
+  inspection before applying case-insensitive word/whitespace-bracket matching
+  to its inscription and faces. It returned the **same 22 monument UUIDs**.
+  Release database regressions verify that older unreadable text does not match
+  when a newer readable/empty inspection exists, with deleted inspections,
+  chronology, faces, plot/standalone markers, duplicate locations and scope covered.
+  Browser regressions verify power-user/higher-role report display and navigation.
+- These are deployed repository/policy checks plus automated browser regressions,
+  **not a fresh authenticated live Access/Auth0 login**. Live auth settings were
+  not disabled or bypassed for a hosted report request.
+
+### DEV versus TEST report counts
+
+DEV's read-only report smoke returned **48 monuments**, compared with TEST's
+22. A separate read-only latest-inspection comparison found **26 DEV-only
+matches and zero TEST-only matches**. All 26 monuments exist in both environments
+and have latest inspections in **2026**, but their latest inscription and/or face
+data differs. The count difference is existing inspection data, not missing
+monuments or a release identity mismatch.
+
+These inspection snapshots are separate from the NHG reading/fact/link records
+reconciled earlier. They were **not copied or corrected during this deployment**;
+preserving current TEST data takes precedence over making report counts equal.
+The 26 inspection differences remain available for a separately authorized
+DEV-authoritative review/reconciliation.
+
+### v0.2.5 preservation and usual checks
+
+- API health reported `ok`, TEST, **0.2.5**, the full tagged SHA and matching
+  build time. All **200** runtime server/shared hashes matched, with `node`
+  runtime, restricted database role, private mode-`0600` environment file and
+  **zero API restarts** at verification.
+- Compiled frontend identity and a fresh public browser evaluation of
+  `workspace-shared-CFYGp7sQ.js` matched the API's TEST/version/SHA/build time.
+  The probe used a temporary loopback SSH forward, blocked the widget script
+  only in its own context, submitted no form and closed browser/forward afterwards.
+- **83** before/after table counts and content fingerprints matched, excluding
+  operational `audit_events` and `system_events`. Accounts/access records, media,
+  protected settings and tunnel-token ownership passed preservation checks.
+  Schema remains **518 applied changesets through file 516**, with no pending
+  migrations. All **44** field-shell/manifest URLs passed status, non-HTML asset
+  and deployed-hash checks; read-only smoke checks covered 3 cemeteries, 3 grave
+  details, 2 headstone details, 6 record-option queries and 3 searches.
+- Public `/request-access` returned 200, origin anonymous private API requests
+  returned 401, and public `/api/me` redirected to Cloudflare Access with 302.
+  Auth0, required Turnstile, TEST hostname validation and trusted loopback proxy
+  remained enabled. Missing/forged token POSTs returned application 403 errors
+  and created **zero** access-request records.
+- Unchanged burst protection/cooldown passed: 12 bounded GET probes returned
+  4×404 and 8×429, with **7** identified Cloudflare rate-limit pages. After 15
+  seconds a new GET returned normal 404 without a rate-limit page. GET probes
+  cannot create access requests and do not promise an exact global cutoff.
+
+Fresh live Access/Auth0 login, invitation delivery, token replay, disconnected
+offline synchronization and a fresh real Turnstile-backed submission remain
+**pending**. This release does not establish STAGE/PROD deployment. Historical
+deployment/reconciliation records and their original verification scope remain
+intact. Refresh TEST to load the new report catalog.
+
+### v0.2.5 recovery material
+
+- Backup: `/srv/nhcemeteries/backups/20261110T220955Z-d595d1c3c404-77381384`.
+- Release report:
+  `/srv/nhcemeteries/staging/20261110T220955Z-d595d1c3c404-77381384/verification.json`.
+- Supplemental checks:
+  `/srv/nhcemeteries/staging/20261110T220955Z-d595d1c3c404-77381384/smoke-verification.json`.
+- Power-user/reader/scope/result evidence:
+  `/srv/nhcemeteries/staging/20261110T220955Z-d595d1c3c404-77381384/report-verification.json`.
+- DEV/TEST latest-inspection count comparison:
+  `/srv/nhcemeteries/staging/20261110T220955Z-d595d1c3c404-77381384/report-data-comparison.json`.
+- Browser metadata evidence:
+  `/srv/nhcemeteries/staging/20261110T220955Z-d595d1c3c404-77381384/browser-metadata-verification.json`.
+
+Deployed API image:
+`sha256:c2cb080963fe406c051333e0ea2a8751382e29bf258ffc51acba8ac5b09cdf22`.
+Keep recovery evidence private and outside Git. Code rollback does not roll back
+data/schema; later documentation-only merges do not change the deployed tag.

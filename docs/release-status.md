@@ -3,6 +3,41 @@
 
 # Release status and deployment checks
 
+## November 10, 2026: v0.2.5 adds the unreadable-inscription report
+
+TEST runs immutable tag **v0.2.5** at
+`d595d1c3c404ef1934e5b56d7e03362817f3b086`, built at 5:09:55 PM EST and verified
+healthy at 5:12:19 PM EST. See the
+[deployment record](hosted-test.md#november-10-2026-unreadable-inscription-report-release)
+for exact-tag commands, CI, role/result verification, preservation and recovery.
+
+Refresh TEST, then open **Reports → Data maintenance → Unreadable monument
+inscriptions**. Deployed read-only policy checks confirmed power users can list/
+run it, readers cannot, higher-role catalog access works and cemetery/mixed-role/
+no-assignment restrictions hold. Results were **22 distinct monuments**, matching
+an independent latest-inspection PostgreSQL query. Each row has inspection and
+monument navigation metadata. These checks and release browser regressions do
+not constitute a fresh authenticated live Access/Auth0 login.
+
+DEV returns 48 matches. Read-only comparison explains the difference: 26 monuments
+have different latest 2026 inspection text/face data; all exist in both environments,
+with no TEST-only matches. This is separate from the reconciled NHG source records.
+Those inspection differences were left unchanged to preserve TEST data and remain
+for a separately authorized review/reconciliation.
+
+Release PR and exact-main CI passed without rerun. Frontend/API metadata agrees
+on TEST, 0.2.5, full SHA and build time, including public browser evaluation.
+All 200 runtime hashes, 44 field URLs and 83 unchanged table fingerprints passed,
+along with account/media/settings/protection preservation, restricted-role reads,
+zero API restarts, invalid-token rejection without records and burst/cooldown.
+Schema remains 518 changesets through file 516; no migration, database tag, data
+repair/refresh/restore or configuration reset ran. Existing NHG reconciliations
+were preserved.
+
+Fresh live login, invitation delivery, token replay, disconnected offline
+synchronization and a fresh real Turnstile submission remain pending. Earlier
+dated records retain their scope; this does not establish STAGE/PROD deployment.
+
 ## November 10, 2026: v0.2.4 puts E-0567 first in main suggestions
 
 TEST now runs immutable tag **v0.2.4** at
