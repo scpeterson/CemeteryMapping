@@ -4,11 +4,39 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+No changes recorded since the 0.2.2 release baseline.
+
+## 0.2.2 — 2026-11-10
+
 ### Changed
 
 - Move the environment/version badge beside the Cemetery Map title in the
   application header, freeing the map area and retaining metadata details and
   compact phone layout.
+
+### Release operations and verification
+
+- Includes the header placement change from [PR #820](https://github.com/scpeterson/CemeteryMapping/pull/820).
+  The badge remains visible in phone Search and Details views, and retains
+  environment colors and version/SHA/build/API metadata. The v0.2.1 label fallback
+  and existing protections are unchanged.
+- No new migration, database release tag or data script is required. The schema
+  baseline remains 518 applied changesets through migration file 516. Preserve
+  accounts, data, media and private/public configuration during TEST deployment.
+- Validation includes the header regressions at 320–1920 pixels, phone workspace
+  switching, auth/access-request regressions, production bundle enforcement,
+  documentation checks and full PR/exact-merged-revision CI before tagging.
+- Publish immutable `v0.2.2` on the validated merged release commit, then deploy
+  that exact tag separately. Prior TEST evidence at v0.2.1 remains historical;
+  record new frontend/API identity, preservation checks and recovery paths after
+  deployment. Keep v0.2.0 and v0.2.1 tags unchanged.
+- Fresh live login, invitation delivery, token replay, disconnected offline
+  reload/save/reconnect synchronization and a fresh real Turnstile-backed
+  submission remain pending. Automated fixtures and metadata probes do not close
+  those gaps or establish STAGE/PROD deployments.
+- Retain validated application/database/media recovery material. Code rollback
+  does not roll back schema or data; preserve authentication and edge/origin
+  controls during recovery.
 
 ## 0.2.1 — 2026-11-10
 
