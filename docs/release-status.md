@@ -3,6 +3,32 @@
 
 # Release status and deployment checks
 
+## November 10, 2026: v0.2.1 fixes TEST label and shows versions
+
+TEST now runs immutable tag **v0.2.1** at
+`4aaf0504a40a708a2359c0d6c69a1757bd27fb64`, built at 9:27:15 AM EST and verified
+healthy at 9:29:41 AM EST. The [patch deployment record](hosted-test.md#november-10-2026-environment-label-and-version-badge-fix)
+contains source/CI evidence, exact-tag command, preservation checks and recovery paths.
+
+The frontend now resolves TEST from the selected build mode when environment files
+are removed. Existing explicit overrides and hosted configuration are unchanged.
+The map badge shows the environment and version in DEV/TEST/STAGE/PROD, stacking
+them on phones; its tooltip retains SHA/build/API details. A fresh browser
+evaluation of the deployed public metadata confirms TEST, version 0.2.1 and the
+same full SHA/build time as the API. This closes the inherited label discrepancy
+recorded for v0.2.0 without moving that tag.
+
+Full PR and exact-main CI passed. Post-deployment checks verified 198 runtime
+hashes, 44 field URLs, unchanged fingerprints across 83 tables, preserved settings,
+accounts/media/protections, restricted-role reads, zero API restarts, invalid-token
+rejection without stored records, and edge burst blocking/cooldown. Schema remains
+518 changesets through migration file 516; no database or configuration changes ran.
+
+Fresh authenticated login, real invitation delivery, live token replay,
+disconnected offline reload/save/reconnect synchronization and a fresh real
+Turnstile submission remain pending. The public metadata probe did not submit a
+form or exercise a new login; STAGE/PROD label builds are not live deployments.
+
 ## November 10, 2026: v0.2.0 deployed to hosted TEST
 
 The exact published tag **`v0.2.0`**, commit
