@@ -15,7 +15,7 @@ below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
 The latest NHG review update is the
-[November 10 DEV-authoritative link reconciliation](#november-10-2026-dev-authoritative-nhg-link-reconciliation).
+[November 10 HIEBER/EADIE reading-text reconciliation](#november-10-2026-hieber-and-eadie-reading-text-reconciliation).
 
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
@@ -1778,3 +1778,62 @@ It contains `database-before.dump`, `reconciliation-plan.json`,
 artifacts outside Git. The dump is recovery evidence, not an instruction to
 restore the whole TEST database over subsequent work; use the retained row-level
 before state for a reviewed targeted correction if recovery becomes necessary.
+
+## November 10, 2026 HIEBER and EADIE reading-text reconciliation
+
+The user authorized reconciling the two remaining reading-text differences in
+TEST using DEV as authoritative. Both readings were updated together at
+**`2026-11-10T21:25:26.140981Z`** (4:25:26 PM EST); separate read-only verification
+passed at **`2026-11-10T21:25:28.243Z`** (4:25:28 PM EST).
+
+| Reading | Page | Reading UUID | Raw text correction from TEST to DEV |
+| --- | --- | --- | --- |
+| HIEBER | 198 | `7c85d323-acef-499c-8430-2069320018bd` | `Separa·te flag holder` → `Separate flag holder` |
+| EADIE | 207 | `14790575-fc7d-4ce9-a7c7-9e7569c0e655` | `in plot • with Hilda G. Eadie` → `in plot with Hilda G. Eadie` |
+
+For each reading, the only differing fields before reconciliation were
+`raw_text`, `source_entry` and `updated_at`. TEST's `source_entry` contained
+heading/descriptor metadata while DEV's was `{}`. The authorized reconciliation
+copied **`raw_text` and `source_entry`** exactly from DEV, with a new TEST
+`updated_at`; it did not copy DEV's modification timestamp. Every other reading
+field was preserved, including the inscription, parsed coordinates/years,
+confidence, status and existing notes. No facts or observations were rebuilt.
+
+### Execution and verification
+
+- A full TEST database dump was created and validated with `pg_restore --list`
+  before changes. The exact DEV source and TEST before-state were retained in
+  protected recovery material.
+- The deployed restricted `cemetery_api` role updated the two readings in one
+  audited repeatable-read transaction. Row locks and exact before-state checks
+  prevented overwriting intervening edits. Audit source was `codex`, external
+  subject `codex:user-request`, with an explicit DEV-authoritative HIEBER/EADIE
+  reconciliation reason and recovery identifier. Exactly **two reading-update
+  audit events** were verified.
+- Before/after counts and content fingerprints across **83 public tables**
+  matched for unrelated records. Exclusions were only the two authorized reading
+  rows, their automatically derived NHG inspections and operational audit/system
+  logs. All saved NHG links, other readings, source facts/observations and
+  manually edited inspections were included and preserved.
+- Normal refresh triggers remained enabled and refreshed **two NHG-derived
+  inspections for two linked markers**. No manually edited inspection changed.
+- A separate database-enforced read-only connection verified that both saved
+  readings match DEV in every field except their new TEST update timestamps:
+  **zero remaining reading-content differences**. A fresh DEV inventory matched
+  its source snapshot exactly; DEV was not modified.
+
+This completes the reading-text work explicitly excluded from the earlier
+link-only reconciliation. That earlier record and its verification reports remain
+intact as historical evidence. No application code, version, schema, accounts,
+media, configuration or protections changed; TEST remains on immutable v0.2.4.
+Pending live login, invitation delivery, token replay, disconnected offline
+synchronization and a fresh real Turnstile submission remain pending.
+
+### Reading-text recovery evidence
+
+Protected directory:
+`/srv/nhcemeteries/backups/20261110T212345Z-nhg-reading-text-reconciliation`.
+It contains validated `database-before.dump`, `reconciliation-plan.json` with
+both source/before readings, and `verification.json`. Keep private artifacts
+outside Git. Use the retained two-row before-state for any reviewed targeted
+recovery; do not restore the whole database over subsequent work.
