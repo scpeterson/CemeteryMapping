@@ -15,7 +15,7 @@ below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
 The latest NHG review update is the
-[November 10 E-0567 and TLC-HS-0567 confirmation](#november-10-2026-e-0567-nhg-link-confirmations).
+[November 10 DEV-authoritative link reconciliation](#november-10-2026-dev-authoritative-nhg-link-reconciliation).
 
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
@@ -1704,3 +1704,77 @@ configuration/protection change or DEV data change was performed for this action
 Fresh authenticated live login, invitation delivery, token replay, disconnected
 offline synchronization and a fresh real Turnstile-backed submission remain
 pending; this saved-link verification does not close those gaps.
+
+## November 10, 2026 DEV-authoritative NHG link reconciliation
+
+The user designated DEV as authoritative for the NHG link decisions compared
+between DEV and TEST. At **`2026-11-10T21:20:53.187Z`** (4:20:53 PM EST), a
+post-commit read-only check verified **4,961 TEST decisions**, matching DEV on
+reading/target, status, confidence and notes after resolving two equivalent
+reading IDs. The operation **inserted 545 decisions, updated 24, and deleted
+none**. The inserted decisions comprise **104 linked** and **441 rejected**
+decisions. Of the 24 conflicts, 23 changed from TEST rejected to DEV linked and
+one changed from TEST linked to DEV rejected. E-0567 and TLC-HS-0567 remain
+high-confidence linked; their earlier confirmation history was preserved.
+
+### Identity-aware comparison
+
+The initial UUID-only comparison reported 547 DEV-only decisions, two TEST-only
+marker confirmations and 24 conflicts. Preflight stopped before writing because
+two DEV reading UUIDs were absent from TEST. Investigation found equivalent
+readings with identical import batch, page, line, name, section/row/site and raw
+source text but different locally generated reading UUIDs:
+
+| Reading | DEV reading UUID | Existing TEST reading UUID |
+| --- | --- | --- |
+| JANCOSKO/KRIZOVANY, page 199, line 9, C/2/15 | `fcb28694-b396-4b12-81dd-b091725e1b6f` | `fb890763-ad0e-4005-b0f1-977df57f1de8` |
+| WEBER, page 221, line 7, D/2/1 | `9f0e9092-fb62-4cca-b49d-1828d3134992` | `0746a810-ba3b-4a40-a4cb-1f57d726d24d` |
+
+The corrected plan mapped DEV decisions to those existing TEST readings. The
+TLC-HS-0188 and TLC-HS-0440 confirmations consequently already matched DEV and
+were retained, with no deletion or duplicate reading created. This refines the
+initial comparison rather than treating internal UUID differences as lost work.
+
+### Preservation, audit and verification
+
+- A protected full TEST database dump was created and validated with
+  `pg_restore --list` before mutation. Fresh DEV/TEST inventories and both the
+  original and mapped plans were retained alongside it.
+- The deployed restricted `cemetery_api` role performed the changes in one
+  repeatable-read transaction, locking the two NHG link tables. The transaction
+  required TEST decisions to equal the planning snapshot and all referenced
+  readings/targets to exist in the same cemetery. Audit source was `codex`,
+  external subject `codex:user-request`, with a DEV-authoritative reconciliation
+  reason and recovery identifier.
+- Existing equal decisions retained TEST's reviewer/timestamp provenance.
+  Inserted/changed decisions record this reconciliation; DEV's original review
+  metadata is preserved in the protected source plan rather than impersonating
+  the original reviewer or backdating TEST actions.
+- Before/after counts and content fingerprints matched across **81 unrelated
+  public tables**. The two intentionally reconciled link tables were verified
+  against DEV separately. Operational audit/system logs and automatically
+  derived NHG inspections for **102 affected markers** were excluded from the
+  unrelated-record comparison. Manually edited inspections were included and
+  preserved. Normal inspection refresh triggers remained enabled.
+- A separate database-enforced read-only connection verified **zero semantic
+  link differences** after commit, and both E-0567 links remained `linked` /
+  `high`. A fresh DEV inventory exactly matched the original DEV snapshot;
+  DEV was not modified.
+
+Scope was NHG link decisions and their normal derived inspection refreshes, not
+a whole-database replacement. The separately observed raw-reading text differences
+for HIEBER (page 198) and EADIE (page 207) were not copied. No other reading text,
+accounts, media, configuration, protections, schema or application code changed.
+TEST remains on immutable v0.2.4; pending live login, invitation, token replay,
+offline synchronization and real Turnstile-submission checks remain pending.
+Earlier deployment and E-0567 confirmation records retain their historical scope.
+
+### Reconciliation recovery evidence
+
+Protected directory:
+`/srv/nhcemeteries/backups/20261110T211733Z-nhg-dev-reconciliation`.
+It contains `database-before.dump`, `reconciliation-plan.json`,
+`reconciliation-plan-mapped.json` and `verification.json`. Keep these private
+artifacts outside Git. The dump is recovery evidence, not an instruction to
+restore the whole TEST database over subsequent work; use the retained row-level
+before state for a reviewed targeted correction if recovery becomes necessary.
