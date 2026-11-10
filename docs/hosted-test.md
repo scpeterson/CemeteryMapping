@@ -9,8 +9,8 @@ The dedicated host is managed separately from local TEST. See
 The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
 PostGIS 3.6.4 cluster upgrade**, recorded in the
 [upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-The latest recorded code deployment is [v0.2.1 on November 10](#november-10-2026-environment-label-and-version-badge-fix)
-at `4aaf050`. Dated sections
+The latest recorded code deployment is [v0.2.2 on November 10](#november-10-2026-header-placement-release)
+at `4f3f0c2`. Dated sections
 below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
@@ -1376,3 +1376,85 @@ The deployed API image is
 `sha256:c356e33e971c557f289bf9e97773cac2734991e9f581f9048ccce8a54920f10a`.
 Retain protected recovery material outside Git. Later documentation-only merges
 do not change this running application revision.
+
+## November 10, 2026 header placement release
+
+Immutable annotated tag **`v0.2.2`**, commit
+`4f3f0c2827750dc24621e4cff877c83c1d7aa199`, is deployed to TEST. It includes
+[PR #820](https://github.com/scpeterson/CemeteryMapping/pull/820), which moves
+environment/version information to the right of **Cemetery Map** in the header,
+removes the map overlay and keeps the badge visible in phone Search and Details.
+[PR #821](https://github.com/scpeterson/CemeteryMapping/pull/821) prepared the
+release version and notes. Full PR and exact-merged-commit CI passed without
+rerun before publication; previous tags were not moved.
+
+```sh
+umask 022
+npm exec --yes --package=node@24 -- npm run deploy:test -- --ref v0.2.2
+```
+
+The release replaced v0.2.1 at `4aaf0504a40a708a2359c0d6c69a1757bd27fb64`.
+Build time is **`2026-11-10T15:08:18Z`** (10:08:18 AM EST); post-cutover health
+was verified at **`2026-11-10T15:10:56.130Z`** (10:10:56 AM EST). The standard
+workflow validated schema, retained database/application/media recovery material,
+built the API image without cache, checked the isolated candidate and switched
+API/web only. Database and tunnel services stayed running. No migration,
+database tag, restore, seeding, account provisioning or configuration reset ran.
+
+### v0.2.2 verification results
+
+- API health reported `ok`, environment **TEST**, version **0.2.2**, the exact
+  tagged SHA and matching build time. All **198** server/shared runtime hashes
+  matched; the API ran as `node` with the restricted `cemetery_api` role and
+  mode-`0600` private environment file, with **zero restarts** at verification.
+- A fresh headless browser evaluated the deployed public metadata module
+  `workspace-shared-Ba17O52O.js` and confirmed TEST, 0.2.2, the full tagged SHA and
+  `2026-11-10T15:08:18Z`, matching API metadata. This metadata-only probe used the
+  public request page through a temporary loopback SSH forward, blocked the
+  widget script in its own context and submitted no form; the browser/forward
+  were closed afterwards. Hosted protections were not disabled.
+- Release browser regressions verified the badge beside the title and absent
+  from the map at 320, 390, 760, 768, 1280 and 1920 pixels, plus visibility when
+  the phone map is hidden in Search/Details. Auth/access-request regressions,
+  production bundle enforcement, database/Docker and documentation checks passed.
+  These are automated UI checks, not a new authenticated live-browser login.
+- **83** before/after table counts and content fingerprints matched, excluding
+  operational `audit_events` and `system_events`. Account/access records, media,
+  protected settings and tunnel-token ownership passed preservation checks.
+  Runtime configuration changed only in `GIT_SHA` and `BUILD_TIME`.
+- Schema remains **518 applied changesets through file 516**, with no pending
+  migrations. All **44** field-shell/manifest URLs passed HTTP status, non-HTML
+  asset and hash checks. Restricted-role read-only smoke checks covered 3
+  cemeteries, 3 grave details, 2 headstone details, 6 record-option queries and
+  3 searches.
+- Public `/request-access` returned 200, origin private API access rejected an
+  anonymous request with 401, and public `/api/me` redirected to Cloudflare Access
+  with 302. Auth0, required Turnstile, exact TEST hostname validation and trusted
+  loopback proxy handling remained enabled. Missing/forged token POSTs returned
+  application 403 errors and created **zero** access-request records.
+- Existing burst protection/cooldown passed without changing edge or origin
+  settings: 12 bounded GET probes returned 4×404 and 8×429, with 6 responses
+  identified as Cloudflare rate-limit pages. After 15 seconds, a new GET returned
+  normal 404 without a rate-limit page. GET probes cannot submit access requests;
+  these observations do not promise an exact global cutoff.
+
+Fresh live Access/Auth0 login, invitation delivery, token replay, disconnected
+offline reload/save/reconnect synchronization and a fresh real Turnstile-backed
+submission remain **pending**. Existing dated evidence remains intact; this TEST
+release does not establish STAGE or PROD deployment. Refresh an already-open TEST
+page to load the new header placement.
+
+### v0.2.2 recovery material
+
+- Backup: `/srv/nhcemeteries/backups/20261110T150818Z-4f3f0c282775-217fe980`.
+- Release report:
+  `/srv/nhcemeteries/staging/20261110T150818Z-4f3f0c282775-217fe980/verification.json`.
+- Supplemental preservation/asset/security/identity report:
+  `/srv/nhcemeteries/staging/20261110T150818Z-4f3f0c282775-217fe980/smoke-verification.json`.
+- Browser runtime metadata evidence:
+  `/srv/nhcemeteries/staging/20261110T150818Z-4f3f0c282775-217fe980/browser-metadata-verification.json`.
+
+The deployed API image is
+`sha256:fcc4d45e58f7a390678a79b99f4823605cc58ced05f612aba90543d02b9fce3a`.
+Keep private recovery material outside Git. Later documentation-only merges do
+not change the deployed application commit or version tag.

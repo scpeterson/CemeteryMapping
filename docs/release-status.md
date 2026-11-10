@@ -3,6 +3,30 @@
 
 # Release status and deployment checks
 
+## November 10, 2026: v0.2.2 moves release identity into the header
+
+TEST now runs immutable tag **v0.2.2** at
+`4f3f0c2827750dc24621e4cff877c83c1d7aa199`, built at 10:08:18 AM EST and verified
+healthy at 10:10:56 AM EST. Environment/version information is beside **Cemetery
+Map**, outside the map, and remains visible in phone Search/Details. See the
+[v0.2.2 deployment record](hosted-test.md#november-10-2026-header-placement-release)
+for exact-tag commands, validation and protected recovery paths.
+
+Full release PR and exact-main CI passed without rerun. Runtime frontend/API
+metadata agrees on TEST, 0.2.2, full SHA and build time. Post-deployment checks
+verified 198 runtime hashes, 44 field URLs, unchanged counts/fingerprints across
+83 tables, existing configuration/accounts/media/protections, restricted-role
+reads, zero API restarts, invalid-token rejection without stored records, and
+edge burst blocking/cooldown. Schema remains 518 changesets through file 516;
+no migration, database tag, data refresh or configuration change was performed.
+
+The header placement is covered by automated browser regressions; the deployed
+public metadata was separately evaluated in a fresh browser without submitting
+a form. Fresh authenticated live login, invitation delivery, token replay,
+disconnected offline synchronization and a fresh real Turnstile submission remain
+pending. Previous release records retain their original scope. Refresh TEST to
+load the new header layout; this does not establish STAGE/PROD deployments.
+
 ## November 10, 2026: v0.2.1 fixes TEST label and shows versions
 
 TEST now runs immutable tag **v0.2.1** at
