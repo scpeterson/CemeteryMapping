@@ -4,6 +4,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+No changes recorded since the 0.2.5 release baseline.
+
+## 0.2.5 — 2026-11-10
+
 ### Added
 
 - Add **Unreadable monument inscriptions** for power users and above. It lists
@@ -12,6 +16,25 @@ This project uses semantic application versions and GitHub releases. Each releas
   partial readings, with location, inspection details and monument links for
   photography follow-up. Existing cemetery access restrictions apply. No
   migration or data change is required.
+
+### Release operations and verification
+
+- Includes the new report from [PR #833](https://github.com/scpeterson/CemeteryMapping/pull/833).
+  Validation covers text markers, latest-inspection chronology, faces, plot and
+  standalone markers, power-user authorization, cemetery scope and monument
+  navigation. The report uses the latest active inspection, not old unreadable
+  text when a newer readable inspection exists.
+- Publish immutable `v0.2.5` after release PR and exact-main CI pass, then deploy
+  that exact tag to TEST. Preserve existing data, including the completed NHG
+  reconciliations, media, accounts, configuration and protections. No migration,
+  database tag, repair, refresh, restore or seeding is required by this release.
+- Record deployed frontend/API identity, preservation checks, report results
+  and role/scope verification separately after deployment. Prior tags, dated
+  operational records and protected recovery material remain unchanged.
+- Fresh live Access/Auth0 login, invitation delivery, token replay, disconnected
+  offline synchronization and a fresh real Turnstile-backed submission remain
+  pending. Automated role tests and read-only report execution do not close
+  those gaps or establish STAGE/PROD deployments.
 
 ## 0.2.4 — 2026-11-10
 
