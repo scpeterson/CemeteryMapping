@@ -9,8 +9,8 @@ The dedicated host is managed separately from local TEST. See
 The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
 PostGIS 3.6.4 cluster upgrade**, recorded in the
 [upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-The latest recorded code deployment is [v0.2.2 on November 10](#november-10-2026-header-placement-release)
-at `4f3f0c2`. Dated sections
+The latest recorded code deployment is [v0.2.3 on November 10](#november-10-2026-nhg-location-matcher-release)
+at `7f0d31d`. Dated sections
 below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
@@ -1458,3 +1458,94 @@ The deployed API image is
 `sha256:fcc4d45e58f7a390678a79b99f4823605cc58ced05f612aba90543d02b9fce3a`.
 Keep private recovery material outside Git. Later documentation-only merges do
 not change the deployed application commit or version tag.
+
+## November 10, 2026 NHG location matcher release
+
+Immutable annotated tag **`v0.2.3`**, commit
+`7f0d31d92bc8da9901b3104caef55846ff0cea7e`, is deployed to TEST, replacing
+v0.2.2 at `4f3f0c2827750dc24621e4cff877c83c1d7aa199`.
+[PR #823](https://github.com/scpeterson/CemeteryMapping/pull/823) adds complete
+NHG section/row/site matching for UNKNOWN readings without requiring a page
+reference, preserving existing surname, page and nearby-page marker suggestions.
+[PR #824](https://github.com/scpeterson/CemeteryMapping/pull/824) prepared the
+release. Full [release PR CI](https://github.com/scpeterson/CemeteryMapping/actions/runs/42847692379)
+and [exact-merged-commit CI](https://github.com/scpeterson/CemeteryMapping/actions/runs/42849123771)
+passed without rerun before publishing the tag. Previous tags were not moved.
+
+```sh
+umask 022
+npm exec --yes --package=node@24 -- npm run deploy:test -- --ref v0.2.3
+```
+
+Build time is **`2026-11-10T16:01:38Z`** (11:01:38 AM EST); final health was
+verified at **`2026-11-10T16:04:28.625Z`** (11:04:28 AM EST). The standard
+workflow validated schema and source integrity, backed up database/application/
+media, built the committed API Dockerfile without cache, checked an isolated
+candidate and switched API/web only. Database and tunnel remained running.
+No migration, database tag, data repair, refresh, restore, seeding or account
+provisioning ran. Existing private/public settings and protections were preserved;
+runtime configuration changed only in `GIT_SHA` and `BUILD_TIME`.
+
+### v0.2.3 verification results
+
+- **E-0567 is available for confirmation.** The deployed Readings repository,
+  queried with page `230` and the latest default import batch using the restricted
+  API role and database-enforced read-only connections, returns **E-0567**
+  (`TLC-GPS-0567`, burial name `Illegible`) for **UNKNOWN (6E, 3, s)** under
+  **Show more possible matches**. It also returns marker `TLC-HS-0567`.
+  Both evidence arrays are empty and both saved-decision counts are **zero**.
+  No link, rejection or field-check decision was submitted. Refresh TEST, filter
+  Admin > Readings to page 230, find the final UNKNOWN reading and expand
+  **Show more possible matches** to review it. This verifies the deployed
+  repository response, not a fresh authenticated live-browser session.
+- API health reported `ok`, TEST, version **0.2.3**, the full tagged SHA and
+  matching build time. All **198** runtime server/shared hashes matched; API ran
+  as `node` with restricted `cemetery_api`, private mode-`0600` environment file
+  and **zero restarts** at verification.
+- Compiled frontend metadata and a fresh browser evaluation of deployed public
+  module `workspace-shared-B4lvuox8.js` agreed with the API on TEST, version, full
+  SHA and build time. The public-request-page probe used a temporary loopback SSH
+  forward, blocked the widget script only in its own browser context, submitted
+  no form and closed browser/forward afterwards. Hosted protections stayed enabled.
+- **83** before/after table counts and content fingerprints matched, excluding
+  operational `audit_events` and `system_events`. Account/access records, media,
+  protected settings and tunnel-token ownership passed preservation checks.
+- Schema remains **518 applied changesets through migration file 516**, with
+  no pending migrations. All **44** field-shell/manifest URLs passed HTTP,
+  non-HTML asset and deployed-hash checks. Restricted-role read-only smoke checks
+  covered 3 cemeteries, 3 grave details, 2 headstone details, 6 record-option
+  queries and 3 searches. Release CI passed matcher database regressions,
+  browser regressions, production bundle enforcement and documentation validation.
+- Public `/request-access` returned 200; origin anonymous private API requests
+  were rejected with 401; public `/api/me` redirected to Cloudflare Access with
+  302. Auth0, required Turnstile, TEST hostname validation and trusted loopback
+  proxy settings remained enabled. Missing/forged token POSTs returned application
+  403 errors and created **zero** access-request records.
+- Existing burst protection/cooldown passed without configuration changes:
+  12 bounded GET probes returned 4×404 and 8×429, with **7** identified Cloudflare
+  rate-limit pages. After 15 seconds, a new GET returned normal 404 without a
+  rate-limit page. These GET probes cannot create access requests and do not
+  promise an exact global cutoff.
+
+Fresh live Access/Auth0 login, invitation delivery, token replay, disconnected
+offline reload/save/reconnect synchronization and a fresh real Turnstile-backed
+submission remain **pending**. The E-0567 read-only check and public metadata
+probe do not close these gaps. Historical evidence remains intact; this release
+does not establish STAGE/PROD deployment.
+
+### v0.2.3 recovery material
+
+- Backup: `/srv/nhcemeteries/backups/20261110T160138Z-7f0d31d92bc8-95d760bd`.
+- Release report:
+  `/srv/nhcemeteries/staging/20261110T160138Z-7f0d31d92bc8-95d760bd/verification.json`.
+- Supplemental preservation/asset/security/identity report:
+  `/srv/nhcemeteries/staging/20261110T160138Z-7f0d31d92bc8-95d760bd/smoke-verification.json`.
+- Unconfirmed E-0567 evidence:
+  `/srv/nhcemeteries/staging/20261110T160138Z-7f0d31d92bc8-95d760bd/reading-match-verification.json`.
+- Browser runtime metadata evidence:
+  `/srv/nhcemeteries/staging/20261110T160138Z-7f0d31d92bc8-95d760bd/browser-metadata-verification.json`.
+
+The deployed API image is
+`sha256:56310db09491138d39dbadd72f489bbaed0c3f285bb0462a4e0d5e677d7cd541`.
+Retain private recovery material outside Git. Code rollback does not roll back
+schema/data; later documentation-only merges do not change the deployed tag.

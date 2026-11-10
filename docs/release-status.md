@@ -3,6 +3,36 @@
 
 # Release status and deployment checks
 
+## November 10, 2026: v0.2.3 suggests E-0567 from its NHG location
+
+TEST now runs immutable tag **v0.2.3** at
+`7f0d31d92bc8da9901b3104caef55846ff0cea7e`, built at 11:01:38 AM EST and
+verified healthy at 11:04:28 AM EST. The
+[v0.2.3 deployment record](hosted-test.md#november-10-2026-nhg-location-matcher-release)
+contains exact-tag commands, CI evidence, preservation checks and recovery paths.
+
+The deployed Readings repository returns **E-0567** and marker **TLC-HS-0567**
+for page 230's final **UNKNOWN (6E, 3, s)** reading, in the latest default import
+batch under **Show more possible matches**. Both remain unconfirmed, with empty
+evidence and zero saved decisions. Refresh TEST, filter Admin > Readings to page
+230 and expand the extra suggestions on that reading. This was verified through
+deployed repository code with a restricted, database-enforced read-only connection;
+no link or data correction was submitted and no fresh authenticated UI login ran.
+
+Release PR and exact-main CI passed without rerun. Frontend/API metadata agrees
+on TEST, 0.2.3, full SHA and build time, including fresh public browser evaluation.
+All 198 runtime hashes, 44 field URLs and 83 unchanged table fingerprints passed,
+along with account/media/settings preservation, restricted-role reads, zero API
+restarts, invalid-token rejection without stored records and edge burst/cooldown.
+Schema remains 518 changesets through file 516; no migration, database tag, data
+refresh, repair or configuration reset was performed. Existing match paths and
+authentication/edge/origin protections are preserved.
+
+Fresh live Access/Auth0 login, invitation delivery, token replay, disconnected
+offline synchronization and a fresh real Turnstile submission remain pending.
+Historical verification scope is retained; this does not establish STAGE/PROD
+deployments.
+
 ## November 10, 2026: v0.2.2 moves release identity into the header
 
 TEST now runs immutable tag **v0.2.2** at
