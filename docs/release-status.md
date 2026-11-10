@@ -3,6 +3,33 @@
 
 # Release status and deployment checks
 
+## November 10, 2026: v0.2.0 deployed to hosted TEST
+
+The exact published tag **`v0.2.0`**, commit
+`ed2266812b9bd852134c31c7c56a2a8cff3d57a1`, is deployed to TEST. Build time is
+`2026-11-10T13:51:40Z` (8:51:40 AM EST); post-cutover health was verified at
+8:54:50 AM EST. The [November 10 runbook record](hosted-test.md#november-10-2026-versioned-test-deployment)
+contains the command, retained reports and recovery paths.
+
+Exact-revision CI, candidate checks, 196 runtime hashes, 44 field URLs,
+restricted-role reads across three cemeteries, 83 unchanged table fingerprints,
+account/media/settings preservation, public/private routing and zero API restarts
+passed. Schema remains at 518 applied changesets through file 516; no migration,
+data refresh, database release tag or configuration reset ran. Missing/forged
+Turnstile tokens created no records, and existing edge burst blocking/cooldown
+remained effective.
+
+Frontend/API **version, SHA and build time match**. The frontend still labels the
+environment **DEV**, as did the retained previous build; API environment is TEST.
+Hosted frontend settings omit `VITE_APP_ENV`, and the sanitized release build
+does not load the tracked `.env.test` label. This pre-existing discrepancy remains
+open for a separate reviewed fix; existing configuration was preserved.
+
+Fresh interactive login, invitation delivery, live token replay, disconnected
+offline reload/save/reconnect synchronization, and a fresh real Turnstile-backed
+submission were not verified by this deployment. Prior evidence remains dated;
+this release does not establish STAGE/PROD availability or close pending gaps.
+
 ## November 9, 2026: 0.2.0 source release baseline
 
 Version **0.2.0** establishes the first named source release; publication and
@@ -10,7 +37,7 @@ deployment are separate actions. See the [0.2.0 release notes](https://github.co
 and [current versioning policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy).
 No deployment of 0.2.0 is established by its release-preparation PR or Git tag.
 
-The latest recorded hosted TEST code remains `0b6d9c9`, package **0.1.0**, built
+At release preparation, the latest recorded hosted TEST code was `0b6d9c9`, package **0.1.0**, built
 November 9 at 12:05:48 PM EST. The [November 9 deployment record](hosted-test.md#november-9-2026-refactoring-and-draft-recovery-release)
 documents preserved data/settings, schema through 516, 196 runtime hashes,
 44 field URLs and zero API restarts. The later Cloudflare burst rule was a
