@@ -29,7 +29,7 @@ export async function listNorthHillsOcrReview(pool, filters = {}) {
   // the all-batches query made every filter request rescan every imported row.
   const matchedResult = await pool.query(`
     WITH batch_entries AS (SELECT id, cemetery_id, surnames, source_page_number,
-      name_text, parsed_section_name, parsed_row_number
+      name_text, parsed_section_name, parsed_row_number, parsed_position_number
       FROM north_hills_ocr_entries WHERE batch_id=$1),
     ${candidateMatchCtes("batch_entries")}
     SELECT count(DISTINCT entry_id) AS matched_count FROM matching_burials

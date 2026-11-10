@@ -38,6 +38,17 @@ export function candidateMatchCtes(entryRelation) {
       UNION
       SELECT m.entry_id, hg.gravesite_uuid FROM unknown_markers m
       JOIN headstone_gravesites hg ON hg.headstone_uuid=m.marker_id AND hg.deleted_at IS NULL
+    ), location_burials AS (
+      -- Imported illegible burials can have a complete NHG location without a
+      -- page number. Require all three coordinates; never infer from row alone.
+      SELECT e.id AS entry_id, b.id AS burial_id
+      FROM candidate_entries e JOIN candidate_burials b ON b.cemetery_id=e.cemetery_id
+        AND upper(trim(substring(b.notes from 'North Hills Genealogists section: ([^.]+)[.]')))=upper(trim(e.parsed_section_name))
+        AND trim(substring(b.notes from 'North Hills Genealogists row: ([^.]+)[.]'))=e.parsed_row_number::text
+        AND trim(substring(b.notes from 'North Hills Genealogists site: ([^.]+)[.]'))=e.parsed_position_number::text
+      WHERE upper(trim(coalesce(e.name_text,'')))='UNKNOWN'
+        AND e.parsed_section_name IS NOT NULL AND trim(e.parsed_section_name)<>''
+        AND e.parsed_row_number IS NOT NULL AND e.parsed_position_number IS NOT NULL
     ), matching_burials AS MATERIALIZED (
       SELECT e.id AS entry_id, b.id AS burial_id FROM entry_surnames e
       JOIN surname_burials b ON b.cemetery_id=e.cemetery_id AND b.pattern=e.pattern
@@ -48,5 +59,7 @@ export function candidateMatchCtes(entryRelation) {
       SELECT u.entry_id, b.id FROM unknown_graves u JOIN candidate_burials b
         ON b.gravesite_uuid=u.gravesite_uuid
       JOIN candidate_entries e ON e.id=u.entry_id AND e.cemetery_id=b.cemetery_id
+      UNION
+      SELECT entry_id, burial_id FROM location_burials
     )`;
 }
