@@ -3,6 +3,36 @@
 
 # Release status and deployment checks
 
+## November 10, 2026: v0.2.4 puts E-0567 first in main suggestions
+
+TEST now runs immutable tag **v0.2.4** at
+`880650634483dc6709e67c9dd6bd8b746fe989a0`, built at 11:57:25 AM EST and
+verified healthy at 12:00:18 PM EST. See the
+[v0.2.4 deployment record](hosted-test.md#november-10-2026-nhg-suggestion-priority-release)
+for exact-tag commands, CI evidence, preservation results and recovery paths.
+
+The deployed Readings repository returns **E-0567 at position 1 in Possible
+existing matches** for page 230's final **UNKNOWN (6E, 3, s)** reading in the
+latest default batch. Exact location is true; E-0567 and marker TLC-HS-0567 both
+have empty evidence and zero saved decisions. Refresh TEST and filter Admin >
+Readings to page 230; E-0567 no longer requires expanding the extra suggestions.
+Verification used deployed code and a restricted database-enforced read-only
+connection, with no confirmation or fresh authenticated UI login. Automated
+regressions retain existing candidates, ordering and completed/pending review state.
+
+Release PR and exact-main CI passed. The earlier PR run was superseded after
+reopening delayed checks; no code correction was needed. Frontend/API identity
+matches on TEST, 0.2.4, full SHA and build time, including fresh public browser
+metadata evaluation. Checks passed for 198 runtime hashes, 44 field URLs, 83
+unchanged table fingerprints, preserved accounts/media/settings/protections,
+restricted-role reads, zero restarts, invalid-token rejection without records
+and edge burst/cooldown. Schema remains 518 changesets through file 516. No
+migration, database tag, repair, refresh or configuration reset ran.
+
+Fresh live Access/Auth0 login, invitation delivery, token replay, disconnected
+offline synchronization and a fresh real Turnstile submission remain pending.
+Prior dated evidence is retained; this does not establish STAGE/PROD deployment.
+
 ## November 10, 2026: v0.2.3 suggests E-0567 from its NHG location
 
 TEST now runs immutable tag **v0.2.3** at
