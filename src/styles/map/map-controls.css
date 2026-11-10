@@ -33,6 +33,17 @@
   color: #8c302d;
 }
 
+@media (max-width: 760px) {
+  .environment-badge {
+    display: grid;
+    padding: 4px 8px;
+  }
+
+  .environment-badge-separator {
+    display: none;
+  }
+}
+
 .environment-stage {
   border-color: rgba(217, 164, 65, 0.5);
   color: #795316;

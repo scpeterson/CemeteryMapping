@@ -1,11 +1,23 @@
 import { expect, test } from "@playwright/test";
 import { fixture, showApplicationActions } from "./fixtures/cemetery";
+import { readFileSync } from "node:fs";
+import { resolveAppEnvironment } from "../shared/appEnvironment.mjs";
+
+const version = JSON.parse(readFileSync("package.json", "utf8")).version;
+const environment = resolveAppEnvironment(process.env.VITE_APP_ENV, process.env.APP_ENV ?? "dev");
 
 for (const width of [320, 390, 760, 768, 1280, 1920]) {
   test(`application header fits and exposes actions at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
     await fixture(page);
     await page.goto("/tests/auth.html");
+    const badge = page.locator(".environment-badge");
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveText(`${environment} · v${version}`);
+    await expect(badge).toHaveAttribute("title", new RegExp(`Version: ${version.replaceAll(".", "\\.")} \\(`));
+    const badgeBox = (await badge.boundingBox())!;
+    const viewBox = (await page.locator(".map-view-toggle").boundingBox())!;
+    expect(badgeBox.x < viewBox.x + viewBox.width && badgeBox.x + badgeBox.width > viewBox.x && badgeBox.y < viewBox.y + viewBox.height && badgeBox.y + badgeBox.height > viewBox.y).toBe(false);
     const header = page.getByRole("banner");
     await expect(header.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Cemetery Map" })).toHaveCount(1);
