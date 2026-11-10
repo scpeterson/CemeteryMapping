@@ -25,6 +25,13 @@ Hosted frontend settings omit `VITE_APP_ENV`, and the sanitized release build
 does not load the tracked `.env.test` label. This pre-existing discrepancy remains
 open for a separate reviewed fix; existing configuration was preserved.
 
+Source follow-up: the frontend now derives a missing label from its Vite mode and
+shows the version directly in the map badge in every environment. Explicit label
+overrides and hosted protection settings are preserved. This source fix is not
+part of the immutable v0.2.0 tag; the recorded live discrepancy remains until a
+subsequent versioned release is deployed. See the
+[frontend identity guide](frontend-development.md#environment-and-version-identity).
+
 Fresh interactive login, invitation delivery, live token replay, disconnected
 offline reload/save/reconnect synchronization, and a fresh real Turnstile-backed
 submission were not verified by this deployment. Prior evidence remains dated;

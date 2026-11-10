@@ -281,7 +281,7 @@ export default function App() {
               className={`environment-badge environment-${appEnvironment.toLowerCase()}`}
               title={`Version: ${appVersionMetadata.version} (${appVersionMetadata.gitSha})\nBuild: ${appVersionMetadata.buildTime}\nAPI: ${apiBaseUrl}`}
             >
-              {appEnvironment}
+              {appEnvironment} · v{appVersionMetadata.version}
             </div>
 
             {isLoading || loadError || userError ? (

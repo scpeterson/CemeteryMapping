@@ -5,6 +5,28 @@
 
 [Documentation Home](index.md) | [Frontend ADR](adr/0001-vite-react-typescript-frontend.md)
 
+## Environment and version identity
+
+The map badge displays the environment and application version in every
+environment, for example **TEST · v0.2.0**. Its tooltip retains the commit SHA,
+build timestamp and API base URL. Values come from the build's package/version
+metadata, not a hard-coded release number or a browser hostname guess.
+
+`src/config/environment.ts` resolves the label through
+`shared/appEnvironment.mjs`. An explicit `VITE_APP_ENV` remains authoritative
+(normalized to DEV, TEST, STAGE or PROD). When it is absent, use the selected
+Vite mode: dev/development → DEV, test → TEST, stage → STAGE, and prod/production
+→ PROD. This keeps sanitized hosted builds correct without restoring environment
+files or changing hosted configuration. Invalid explicit labels and unsupported
+modes raise an error rather than silently labeling another environment DEV.
+Authentication settings, Turnstile requirements, API authorization and deployment
+metadata inputs retain their existing controls.
+
+`scripts/frontend-environment.test.mjs` builds the actual environment module
+without environment files in all four modes and verifies explicit overrides and
+version/SHA/build metadata. Application-header browser regressions check the
+visible version badge and tooltip across phone and desktop widths.
+
 ## Component Boundaries
 
 `useApplicationData` owns startup map/identity/options loading and lookup retry. `useCemeteryScope` owns scope filtering and labels. `selectionPermissions` centralizes selected-record access calculations; the API remains the authorization authority. Behavioral mutation tests in `tests/targeted-mutations.spec.ts` assert state and network effects rather than source formatting.

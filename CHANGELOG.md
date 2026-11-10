@@ -4,7 +4,39 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
-No changes recorded since the 0.2.0 release baseline.
+No changes recorded since the 0.2.1 release baseline.
+
+## 0.2.1 — 2026-11-10
+
+### Fixed
+
+- Derive a missing frontend environment label from the Vite mode so sanitized
+  TEST builds display TEST without changing hosted configuration. Preserve
+  explicit environment overrides and existing authentication/Turnstile controls.
+
+### Changed
+
+- Show the application version directly alongside the map's environment badge in
+  DEV, TEST, STAGE and PROD; retain SHA, build time and API details in its tooltip.
+
+### Release operations and verification
+
+- Fix the sanitized-build label using the selected Vite mode, preserving explicit
+  overrides and existing Auth0, Turnstile, proxy, data and configuration controls.
+  The map badge displays the version directly; SHA/build/API details remain in
+  the tooltip. No schema migration or data script is required.
+- Validation includes real builds without environment files in DEV/TEST/STAGE/PROD,
+  explicit overrides, metadata consistency, 21 focused browser regressions across
+  phone/desktop layouts, 12 existing protection/configuration tests, production
+  bundle enforcement, and the full PR/exact-merged-revision CI gates before tagging.
+- Deploy the immutable `v0.2.1` tag separately and record actual hosted identity and
+  preservation checks in the TEST runbook. The prior v0.2.0 deployment remains
+  historical evidence, not proof that this fix is deployed.
+- Fresh live login, invitation delivery, token replay, disconnected offline
+  reload/save/reconnect synchronization and a fresh real Turnstile submission
+  remain unverified. Automated fixtures do not close these gaps.
+- Retain validated application/database/media backups. Code rollback does not
+  roll back data or schema; preserve Access, Turnstile and origin/edge limits.
 
 ## 0.2.0 — 2026-11-09
 
