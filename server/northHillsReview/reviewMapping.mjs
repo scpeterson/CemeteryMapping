@@ -107,8 +107,11 @@ export function toEntry(row) {
   // must never reopen a completed reading, including through shared markers.
   const originalMatches = allMatches.slice(0, 5);
   const extraMatches = allMatches.slice(5);
-  const candidateMatches = [...originalMatches, ...extraMatches.filter((match) => match.gravesiteEvidence.length > 0)];
-  const additionalCandidateMatches = extraMatches.filter((match) => match.gravesiteEvidence.length === 0);
+  // Promote exact coordinates for display without replacing existing suggestions
+  // or changing the original review workload used by the summary below.
+  const candidateMatches = [...originalMatches, ...extraMatches.filter((match) => match.exactNhgLocation || match.gravesiteEvidence.length > 0)]
+    .sort((left, right) => Number(Boolean(right.exactNhgLocation)) - Number(Boolean(left.exactNhgLocation)));
+  const additionalCandidateMatches = extraMatches.filter((match) => !match.exactNhgLocation && match.gravesiteEvidence.length === 0);
   const summaryMatches = [...originalMatches, ...extraMatches
     .filter((match) => match.gravesiteEvidence.length > 0)
     .map((match) => ({ ...match, headstoneCandidates: match.headstoneCandidates.filter((headstone) => headstone.evidence.length > 0) }))];

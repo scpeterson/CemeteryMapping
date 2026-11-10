@@ -18,6 +18,7 @@ export type NorthHillsOcrSummaryItem = {
 };
 
 export type NorthHillsOcrCandidateMatch = {
+  exactNhgLocation?: boolean;
   burialId: string;
   gravesiteUuid: string;
   gravesiteId: string;
