@@ -14,6 +14,9 @@ at `8806506`. Dated sections
 below describe historical releases and their verification scope. Check
 `/api/health` for the running application release.
 
+The latest NHG review update is the
+[November 10 E-0567 and TLC-HS-0567 confirmation](#november-10-2026-e-0567-nhg-link-confirmations).
+
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
@@ -1644,3 +1647,60 @@ Deployed API image:
 `sha256:5fcf80240b28c780b30e8a1bb3fb3475573caaafbb566fa4e552f1f417c36a8e`.
 Retain recovery material outside Git. Code rollback does not roll back schema/
 data; later documentation-only merges do not change the deployed tag.
+
+## November 10, 2026 E-0567 NHG link confirmations
+
+Following the v0.2.4 deployment, the user explicitly authorized confirming the
+NHG page **230** links for **E-0567** and marker **TLC-HS-0567** in TEST to match
+DEV. Both TEST links were saved together at **`2026-11-10T17:17:32.810491Z`**
+(12:17:32 PM EST), with **status `linked` and confidence `high`**.
+
+The reading is **UNKNOWN (6E, 3, s)**, source line **51**, in the latest default
+**North Hills Genealogists Trinity OCR** batch:
+
+- Reading ID: `fb3ce1f5-48e9-4223-8543-8be3d9955ec0`.
+- Batch ID: `d0b5ce4c-b2e4-4c08-b4d3-948b18335c92`.
+- Gravesite record ID: `TLC-GPS-0567`; saved gravesite-link ID:
+  `3c51f1aa-df85-45c6-ab5c-644712acaa11`.
+- Marker record ID: `TLC-HS-0567`; saved marker-link ID:
+  `3c998a95-d96f-405b-9f6d-0d8b46b86dd9`.
+
+### Confirmation scope and audit
+
+The prior read-only comparison found identical reading/batch IDs and source text
+in DEV and TEST. DEV already held high-confidence linked decisions created
+through the API by an administrator at **10:45:42 AM EST** (gravesite) and
+**10:45:47 AM EST** (marker). TEST had no saved decisions for these targets.
+Code deployments had preserved that environment-specific data difference;
+they had not copied DEV's review decisions into TEST.
+
+The TEST confirmation used the deployed restricted `cemetery_api` role and one
+audited, repeatable-read transaction. Audit source was `codex`, with external
+subject `codex:user-request` and an explicit user-requested confirmation reason.
+DEV's reviewer identity and timestamps were not copied. The initial attempt
+stopped on a transaction-isolation setup error and rolled back before writing;
+the corrected attempt committed both links atomically.
+
+The normal marker-link trigger refreshed this marker's NHG-derived inspection.
+No unrelated reading, gravesite, marker or review decision was edited. Before/
+after counts and content fingerprints across **83 public tables** matched for
+unrelated records, excluding the two authorized target link rows, this marker's
+NHG inspection, and operational `audit_events`/`system_events`.
+
+### Saved-link verification and historical scope
+
+A separate database-enforced read-only connection ran the deployed Readings
+repository for page 230 and the latest default batch. It returned E-0567 in the
+main suggestions with exactly one gravesite evidence record and one evidence
+record for TLC-HS-0567. Both were `linked`, confidence `high`, with the saved
+timestamp above. No additional confirmation was submitted during verification.
+
+The v0.2.3/v0.2.4 deployment entries and retained reports correctly describe the
+links as **unconfirmed at their earlier verification times**. They remain intact
+as historical evidence; this later authorized data action supersedes that state.
+TEST remains on immutable **v0.2.4** at
+`880650634483dc6709e67c9dd6bd8b746fe989a0`. No release, migration, database tag,
+configuration/protection change or DEV data change was performed for this action.
+Fresh authenticated live login, invitation delivery, token replay, disconnected
+offline synchronization and a fresh real Turnstile-backed submission remain
+pending; this saved-link verification does not close those gaps.
