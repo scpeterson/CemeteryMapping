@@ -15,6 +15,9 @@ for (const width of [320, 390, 760, 768, 1280, 1920]) {
     await expect(badge).toBeVisible();
     await expect(badge).toHaveText(`${environment} · v${version}`);
     await expect(badge).toHaveAttribute("title", new RegExp(`Version: ${version.replaceAll(".", "\\.")} \\(`));
+    const badgeBox = (await badge.boundingBox())!;
+    const viewBox = (await page.locator(".map-view-toggle").boundingBox())!;
+    expect(badgeBox.x < viewBox.x + viewBox.width && badgeBox.x + badgeBox.width > viewBox.x && badgeBox.y < viewBox.y + viewBox.height && badgeBox.y + badgeBox.height > viewBox.y).toBe(false);
     const header = page.getByRole("banner");
     await expect(header.getByRole("heading", { name: "Cemetery Map" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Cemetery Map" })).toHaveCount(1);
