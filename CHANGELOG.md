@@ -4,7 +4,11 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
-No changes recorded since the 0.2.1 release baseline.
+### Changed
+
+- Move the environment/version badge beside the Cemetery Map title in the
+  application header, freeing the map area and retaining metadata details and
+  compact phone layout.
 
 ## 0.2.1 — 2026-11-10
 
