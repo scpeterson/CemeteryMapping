@@ -4,11 +4,33 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+No changes recorded since the 0.2.4 release baseline.
+
+## 0.2.4 — 2026-11-10
+
 ### Changed
 
 - Show exact NHG section/row/site suggestions first in the main Readings matches,
   including E-0567, while retaining existing suggestions and review completion
   behavior. Promotion does not confirm a link or change stored records.
+
+### Release operations and verification
+
+- Includes the ranking change from [PR #826](https://github.com/scpeterson/CemeteryMapping/pull/826).
+  Database regressions place E-0567 ahead of six higher-score candidates while
+  retaining all suggestions; unit tests preserve completed/pending review state,
+  existing decisions and stable ordering. No migration or data repair is needed.
+- Publish immutable `v0.2.4` after release PR and exact-merged-commit CI pass,
+  then deploy that exact tag to TEST. Preserve data, media, accounts, settings
+  and authentication/edge/origin protections; retain recovery material. No
+  database tag, refresh, repair, migration or restore is required.
+- Record deployed identity, preservation checks and E-0567's unconfirmed main
+  suggestion separately after deployment. Prior tags and historical deployment
+  records stay unchanged.
+- Fresh live Access/Auth0 login, invitation delivery, token replay, disconnected
+  offline reload/save/reconnect synchronization and a fresh real Turnstile-backed
+  submission remain pending. Read-only checks do not close these gaps or
+  establish STAGE/PROD deployments.
 
 ## 0.2.3 — 2026-11-10
 
