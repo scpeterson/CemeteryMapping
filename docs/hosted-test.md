@@ -40,6 +40,10 @@ The subsequent [final complete read-only comparison](#november-11-2026-final-com
 confirmed that parity and recorded the remaining documentation, recovery-file and
 environment-specific operational differences.
 
+The later [November 11 deployed documentation sync](#november-11-2026-deployed-documentation-sync)
+resolved the older deployed runbook/release-status copies without changing the
+application release or data.
+
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
@@ -2659,3 +2663,53 @@ token replay rejection, disconnected offline reload/save/reconnect synchronizati
 or a fresh real Turnstile-backed submission. Those pending verification gaps remain
 open; the preceding reconciliation's report/application checks retain their own
 recorded scope.
+
+## November 11, 2026 deployed documentation sync
+
+The user authorized updating only the deployed TEST copies of
+`docs/hosted-test.md` and `docs/release-status.md` to match DEV, preserving
+application code, data, authentication and configuration. File/runtime verification
+passed at **`2026-11-11T21:22:47.692Z`**; independent read-only database verification
+completed at **`2026-11-11T21:23:17.738914Z`** (4:23:17 PM EST).
+
+### Changes and verification
+
+- The two original documents were backed up privately before replacement. DEV
+  copies were staged and hash-checked, then published using atomic replacement
+  with the original deployed ownership and permissions retained.
+- Both deployed documents matched DEV by SHA-256. All **1,666 tracked
+  non-environment files** then matched DEV, including the **1,664 non-target
+  files**, which were unchanged. The **202 running API source/package files**
+  continued to match DEV.
+- Before/after database-enforced read-only snapshots confirmed all **30,294
+  business rows in 76 tables** were unchanged, along with all **nine protected
+  authentication/operational/audit/migration tables**, user identities and database
+  schema metadata. No application record or audit event was added or altered by
+  this file-only operation.
+- All **eight protected host configuration files** retained their hashes. Origin
+  health remained healthy on **v0.2.5** at
+  `d595d1c3c404ef1934e5b56d7e03362817f3b086`, with the original
+  `2026-11-10T22:09:55Z` build time. No application deployment, restart, version,
+  authentication, configuration or protection change was performed.
+
+Recovery and verification evidence is retained under
+`/srv/nhcemeteries/backups/20261111T212220Z-deployed-documentation-sync`, including
+the original documents, `before-state.json`, `expected-source.json`,
+`file-verification.json` and `final-verification.json`. Private staging is under
+`/srv/nhcemeteries/staging/20261111T212220Z-deployed-documentation-sync`.
+Use the backed-up documents for any reviewed targeted recovery; do not overwrite
+later documentation changes without checking their current contents.
+
+The earlier final comparison's finding of two older deployed documents remains
+accurate historical evidence; this later action resolved it. The retained
+unreferenced recovery media file and environment-specific operational records were
+not changed. Publishing this record uses the same documentation-only procedure:
+merge its PR, copy the merged runbook and release-status documents to TEST, then
+verify their hashes and preservation checks. Publication evidence is kept with
+the private document backups; it does not constitute an application release.
+
+Historical deployment/reconciliation records and all pending gaps remain intact.
+This documentation sync did not rerun report-role checks or exercise fresh live
+Access/Auth0 login, authenticated browser image download, invitation delivery,
+token replay rejection, disconnected offline reload/save/reconnect synchronization
+or a fresh real Turnstile-backed submission. Those verification gaps remain open.
