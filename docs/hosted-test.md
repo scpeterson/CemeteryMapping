@@ -17,6 +17,9 @@ below describe historical releases and their verification scope. Check
 The latest NHG review update is the
 [November 10 remaining NHG reconciliation](#november-10-2026-remaining-nhg-reading-fact-and-observation-reconciliation).
 
+The latest inspection-data update is the
+[November 11 DEV-authoritative latest-inspection reconciliation](#november-11-2026-dev-authoritative-latest-inspection-reconciliation).
+
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
@@ -2057,3 +2060,103 @@ Deployed API image:
 `sha256:c2cb080963fe406c051333e0ea2a8751382e29bf258ffc51acba8ac5b09cdf22`.
 Keep recovery evidence private and outside Git. Code rollback does not roll back
 data/schema; later documentation-only merges do not change the deployed tag.
+
+## November 11, 2026 DEV-authoritative latest-inspection reconciliation
+
+The user authorized reconciling the **26 latest-inspection differences** identified
+during v0.2.5 report verification, using DEV as authoritative and preserving other
+TEST records. All 26 TEST inspections were updated in one transaction. Post-commit
+read-only verification passed at **`2026-11-11T13:55:39.783Z`** (8:55:39 AM EST).
+The unreadable-inscription report increased from **22 to 48 monuments** in TEST.
+
+### Scope and identity mapping
+
+Fresh snapshots confirmed each DEV latest inspection was a manually edited
+field-survey observation dated **October 21, 2026**; TEST had its older year-only
+2026 counterpart. The pairs shared monument UUID, inspection year, source type
+and origin key, but had different local inspection/face IDs. The authorized
+monument IDs were:
+
+```text
+TLC-HS-0507
+TLC-HS-0511 through TLC-HS-0525
+TLC-HS-0527 through TLC-HS-0530
+TLC-HS-0565 through TLC-HS-0570
+```
+
+The reconciliation updated only the differing inspection fields:
+
+| Field | Inspections updated |
+| --- | ---: |
+| Inspection date: year-only → `2026-10-21` | 26 |
+| Condition type | 25 |
+| Condition notes | 11 |
+| Monument inscription | 26 |
+| Face content | 26 |
+| `manually_edited`: false → true | 26 |
+
+TEST's **26 inspection IDs, origin keys and creation times** were retained.
+The **26 existing Front-face IDs** were preserved by matching unique face labels;
+DEV's face content was copied to those local identities. TLC-HS-0515 gained its
+additional **Top** face with a new TEST-local UUID. No existing face was removed.
+TEST update timestamps and audit context identify the new reconciliation rather
+than copying DEV's modification timestamps. The manual-edit flag protects these
+observations from later automatic field-assessment refreshes.
+
+### Preservation, audit and recovery
+
+- A full TEST database dump was created and validated with `pg_restore --list`
+  before mutation. Exact DEV source, TEST before-state, desired values and
+  inspection/face ID mappings were retained privately.
+- The deployed restricted `cemetery_api` role performed the updates in one
+  audited repeatable-read transaction, locking the target rows and requiring
+  TEST inspections, photo contexts and condition lookups to equal the planning
+  snapshot. Each saved target row was checked for unintended field changes.
+- Audit source was `codex`, external subject `codex:user-request`, with an explicit
+  DEV-authoritative 26-inspection reconciliation reason and recovery identifier.
+  Exactly **26 inspection-update audit events** were verified.
+- Before/after counts and content fingerprints across **83 public tables**
+  matched for unrelated records. Only the 26 authorized inspection rows and
+  operational audit/system logs were excluded. Older inspections, other manually
+  edited inspections, root monument records/faces, NHG readings/facts/links,
+  burials, accounts, media and photo associations were included and preserved.
+- There were **zero TEST photo-context rows** attached to the target monuments'
+  inspection history. DEV's **28 inspection photo-context rows were not copied**;
+  media/photo reconciliation was outside this operation. The source face objects
+  had no embedded media-asset IDs to transfer. This operation establishes
+  inspection-content parity, not photo or whole-database parity.
+
+Protected recovery directory:
+`/srv/nhcemeteries/backups/20261111T135222Z-latest-inspection-reconciliation`.
+It contains validated `database-before.dump`, source/before/desired
+`reconciliation-plan.json`, `verification.json`, `final-comparison.json`,
+`report-before.json` and `report-after.json`. Keep private artifacts outside Git.
+Use the retained target-row before-state for any reviewed targeted recovery;
+do not restore the whole database over subsequent TEST work.
+
+### Independent verification
+
+Fresh database-enforced read-only snapshots of DEV and TEST confirmed:
+
+- **26 latest inspections compared; zero content differences** after normalizing
+  intentionally local inspection/face IDs and audit timestamps.
+- **DEV source unchanged**, including its inspection, condition and photo-context
+  snapshot; no DEV mutation was performed.
+- **48 distinct unreadable-inscription report monuments in both environments**,
+  with the **same monument-ID set**, including all 26 reconciled monuments.
+- TEST's independent latest-inspection PostgreSQL expression also returned the
+  same **48** monuments. Deployed policy checks confirmed power-user listing/
+  execution, reader denial and cemetery/mixed-role/no-assignment scope.
+
+These are repository/policy and read-only verification checks, not a fresh
+authenticated live Access/Auth0 login. The original v0.2.5 deployment record and
+protected reports correctly retain the earlier **22 TEST versus 48 DEV** results;
+this later authorized data action resolves those 26 inspection-content differences.
+Refresh or rerun **Reports → Data maintenance → Unreadable monument inscriptions**
+to see the updated results.
+
+No code, version, schema, configuration or protection change occurred. TEST remains
+on immutable **v0.2.5** at `d595d1c3c404ef1934e5b56d7e03362817f3b086`.
+Fresh live login, invitation delivery, token replay, disconnected offline
+synchronization and a fresh real Turnstile-backed submission remain pending.
+Historical deployment and NHG reconciliation records retain their original scope.

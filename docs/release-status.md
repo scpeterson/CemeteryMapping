@@ -3,6 +3,32 @@
 
 # Release status and deployment checks
 
+## November 11, 2026: latest inspections reconciled; report returns 48 monuments
+
+TEST's **26 latest-inspection differences** were reconciled using DEV as
+authoritative. Post-commit read-only verification passed at **8:55:39 AM EST**.
+The [reconciliation record](hosted-test.md#november-11-2026-dev-authoritative-latest-inspection-reconciliation)
+details the changes, preserved local identities and protected recovery material.
+
+The October 21, 2026 observation dates, differing conditions/notes, inscriptions
+and face content now match DEV. TEST inspection and existing Front-face IDs were
+retained, and TLC-HS-0515 gained its Top face with a local UUID. All target
+observations are marked manually edited to preserve the authoritative content.
+Exactly 26 audited updates were verified. Unrelated records across 83 public
+tables, older inspections, other manual edits, root monument records/faces,
+NHG decisions and all existing photo associations were preserved. DEV was unchanged.
+DEV's inspection photo links were not transferred; this is not photo parity.
+
+Fresh read-only report comparisons now return **the same 48 monument IDs in DEV
+and TEST**, including all 26 reconciled monuments. TEST's independent latest-
+inspection SQL and power-user/reader/cemetery-scope policy checks passed. Rerun
+**Reports → Data maintenance → Unreadable monument inscriptions** to refresh.
+The earlier v0.2.5 deployment's 22-result report remains historical evidence.
+
+No deployment/version/configuration/schema/protection change was made; TEST stays
+on immutable v0.2.5. Fresh authenticated live login, invitation delivery, token
+replay, offline synchronization and a real Turnstile submission remain pending.
+
 ## November 10, 2026: v0.2.5 adds the unreadable-inscription report
 
 TEST runs immutable tag **v0.2.5** at
