@@ -31,6 +31,11 @@ The later [November 11 remaining inspection and photo reconciliation](#november-
 extends that check to all active monuments: **566 latest inspections and 729
 active photo associations** now match DEV after local identity normalization.
 
+The latest data operation is the [November 11 complete business-data reconciliation](#november-11-2026-complete-dev-authoritative-business-data-reconciliation):
+**all 30,294 rows in 76 business/reference tables now match DEV exactly**, including
+IDs, timestamps and deleted history. TEST authentication, configuration and audit
+history remain environment-specific and preserved.
+
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
@@ -2440,3 +2445,145 @@ and created-file manifest for any reviewed targeted recovery, first checking lat
 references. Do not overwrite subsequent TEST work with a whole-database restore or
 delete shared/referenced files. TLC-HS-0506's retained photo and the 732 pre-existing
 files were not replaced and need no file rollback.
+
+## November 11, 2026 complete DEV-authoritative business-data reconciliation
+
+The broader parity audit found remaining ownership, burial, monument, grave/lot,
+place, feature and historical-record differences outside the earlier inspection
+and active-photo scope. The user authorized reconciling **all remaining business
+data using DEV as authoritative**, preserving TEST authentication, configuration
+and audit history. The transaction committed after its final in-transaction check
+at **`2026-11-11T20:43:38.598008Z`**. Independent verification completed at
+**`2026-11-11T20:44:53.941795Z`** (3:44:53 PM EST).
+
+### Exact parity boundary and changes
+
+All **76 public business/reference tables** were compared as full rows, covering
+**30,294 records**. This includes primary/foreign keys, nested JSON, original
+timestamps and deleted history, rather than only matching latest observations or
+normalizing equivalent local IDs. **24 tables** needed changes; matching rows were
+left untouched.
+
+The nine protected tables were not reconciled from DEV:
+`app_users`, `app_user_activity`, `app_user_cemetery_access`, `access_requests`,
+`field_operations`, `audit_events`, `system_events`, `databasechangelog` and
+`databasechangeloglock`. TEST accounts, memberships, activity, access requests,
+operation receipts and migration execution history were preserved. All source
+user IDs referenced by business records already existed in TEST, so no account,
+permission or identity change was required.
+
+The business transaction **created 2,683 rows, updated 1,988 shared rows and
+deleted 2,464 TEST-only rows** to establish DEV's canonical record identities and
+history. Many changes replaced environment-local keys or timestamps rather than
+adding new substantive content. The reconciled scope includes:
+
+- Ownership events, parties, rights and their party associations; verified places;
+  burial names/dates, military information and review data; grave features;
+  monument attributes, inscriptions, face snapshots and review/provenance data;
+  grave/lot assignments and aliases; media status and gravesite links.
+- NHG readings, candidate/confirmed link records, source facts and observations,
+  including canonical keys for the previously equivalent local records.
+- All inspection and photo-context history, using DEV's IDs. The **five extra TEST
+  historical inspection rows** were removed. DEV's deleted inspection/photo history
+  was imported as deleted history, without making it active.
+
+This later authorization supersedes the earlier policy of retaining TEST-local
+inspection/context IDs and the TLC-HS-0506 media alias. Source creation/review/
+deletion timestamps now describe DEV's canonical business history; TEST's audit
+trail records when and why the import actually occurred. Prior TEST audit entries
+retain their original record IDs and payloads. Refresh open TEST record views
+after the canonical ID changes.
+
+### Backup, file publication and transaction safeguards
+
+- A full TEST database dump was created and validated with `pg_restore --list`.
+  Private source/before-state snapshots, dependency ordering, exact row-key changes
+  and source file hashes were retained before mutation. All 76 DEV tables were
+  re-read immediately before commit and were unchanged.
+- All **755 original files referenced by DEV media records** existed in DEV.
+  TEST already had **753 byte-identical files**. Only **two missing originals**,
+  totaling **23,996,555 bytes**, were copied through private staging and published
+  by exclusive hard links, with no existing path overwritten. New files use
+  mode `0644`, UID/GID `1000`.
+- Every one of TEST's **754 pre-existing files** retained its bytes, ownership and
+  permissions. All **755 DEV originals** then matched TEST by size and SHA-256.
+  One old TEST-only physical file was retained for recovery; it no longer has a
+  current business media record and is not part of the authoritative file set.
+- A full **rollback rehearsal** passed before the identical transaction committed.
+  The import used repeatable-read isolation, locks and exact before-state assertions
+  with dependency-ordered deletes/inserts/updates. Administrative database access
+  was used for transactional trigger control; no password or configuration change
+  was made.
+- **All audit triggers and native constraints stayed enabled.** Ninety non-audit
+  business-derived, timestamp and validation triggers were temporarily suspended
+  inside the transaction to avoid generating extra observations, changing source
+  timestamps or rejecting intermediate import states. Full typed-row equality to
+  DEV, all **158 foreign keys** and active-photo integrity were verified before
+  every trigger was restored. Trigger, constraint and primary-key definitions/state
+  were independently verified unchanged after commit. No schema change persisted.
+- TEST's protected tables were checked against their in-transaction before-state.
+  All **41,230 pre-existing audit events** retained their exact content. The import
+  appended **7,135 audit events**: **2,683 creates, 1,984 updates, four soft-deletes
+  and 2,464 deletes**. Audit source was `codex`, subject `codex:user-request`, with
+  the explicit complete DEV-authoritative business-data reconciliation reason and
+  recovery identifier below. The rehearsal and committed event breakdowns matched.
+
+### Independent saved-state and application verification
+
+Fresh database-enforced read-only snapshots, taken through the restricted API role,
+found **zero differing business tables**: every full row in all **76 tables**
+matched DEV exactly, including IDs and historical/deleted records. DEV's complete
+business snapshot and all 755 source-file hashes were rechecked and unchanged.
+
+Active counts match in both environments:
+
+| Records | DEV and TEST |
+| --- | ---: |
+| Monuments | 566 |
+| Gravesites | 783 |
+| Burials | 687 |
+| Ownership events | 57 |
+| Ownership parties | 70 |
+| Ownership rights | 147 |
+| Places | 6 |
+| Grave features | 78 |
+| Monument-media links / inspection-photo associations | 729 each |
+
+Deployed repository reads verified **566 monument details, 729 active photo
+contexts, 131 changed gravesite details with ownership and 44 changed burial
+details**. The API runtime user (UID 1000) could read all **755 originals**;
+new-file hashes also passed under that user. The unreadable-inscription report
+still returned **51 monuments**, matching independent SQL, with power-user
+execution, reader denial and cemetery/mixed-role/no-assignment checks passing.
+
+All **1,401 compared deployed application-source files** remained identical to
+DEV. All **eight protected host configuration files** retained their hashes.
+Origin health remained healthy on **v0.2.5**,
+`d595d1c3c404ef1934e5b56d7e03362817f3b086`, with the original November 10 build
+time; anonymous access to an imported photo still returned **401**. No deployment,
+application code, authentication, configuration or protection change occurred.
+
+Earlier deployment counts, missing-data findings and local-ID preservation records
+above retain their original historical scope. This later operation establishes
+complete business-table parity at the verification time; the nine protected tables
+and TEST environment configuration intentionally remain independent. Fresh live
+Access/Auth0 login, authenticated browser image download, invitation delivery,
+token replay rejection, disconnected offline reload/save/reconnect synchronization
+and a fresh real Turnstile-backed submission remain pending.
+
+### Complete-reconciliation recovery evidence
+
+Protected directory: `/srv/nhcemeteries/backups/20261111T203652Z-business-parity`.
+It retains the validated `database-before.dump`/listing, `cemetery-business-plan.json`,
+`cemetery-business-source-files.json`, `media-inventory-before.json`,
+`configuration-before.json`, `file-publication.json`, `file-verification.json`,
+`host-verification.json`, the private compressed transaction and its builder,
+rehearsal/committed results, `cemetery-business-final-verification.json` and the
+application/report/code check results. Private file staging remains under
+`/srv/nhcemeteries/staging/20261111T203652Z-business-parity`.
+
+Keep these artifacts outside Git: they include business records and before-state
+history. Any reviewed recovery must account for canonical key changes, dependency
+ordering, subsequent references and later TEST work. Do not blindly restore the
+whole database over later changes or delete shared/referenced files; the existing
+754 files were not replaced and require no file rollback.
