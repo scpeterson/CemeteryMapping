@@ -3,6 +3,19 @@
 
 # Release status and deployment checks
 
+## November 11, 2026: deployed TEST documentation aligned with DEV
+
+The deployed runbook and release-status copies were synchronized with DEV and
+verified at **4:23:17 PM EST**. The [documentation sync record](hosted-test.md#november-11-2026-deployed-documentation-sync)
+details the original-file backups, hashes and preservation checks. All 1,666
+tracked non-environment files then matched DEV; the 1,664 non-target files,
+202 running API files, 30,294 business rows, nine protected tables and eight
+configuration files were unchanged.
+
+TEST remains healthy on v0.2.5 at `d595d1c3c404ef1934e5b56d7e03362817f3b086`.
+This is a documentation-only publication. Historical records and pending live
+login/image-download/invitation/replay/offline/Turnstile gaps remain intact.
+
 ## November 11, 2026: complete business-data parity with DEV
 
 TEST's **30,294 rows across all 76 business/reference tables** now match DEV
