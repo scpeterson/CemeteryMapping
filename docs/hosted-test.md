@@ -36,6 +36,10 @@ The latest data operation is the [November 11 complete business-data reconciliat
 IDs, timestamps and deleted history. TEST authentication, configuration and audit
 history remain environment-specific and preserved.
 
+The subsequent [final complete read-only comparison](#november-11-2026-final-complete-read-only-comparison)
+confirmed that parity and recorded the remaining documentation, recovery-file and
+environment-specific operational differences.
+
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
@@ -2587,3 +2591,71 @@ history. Any reviewed recovery must account for canonical key changes, dependenc
 ordering, subsequent references and later TEST work. Do not blindly restore the
 whole database over later changes or delete shared/referenced files; the existing
 754 files were not replaced and require no file rollback.
+
+## November 11, 2026 final complete read-only comparison
+
+After the complete business-data reconciliation and its documentation merge
+([PR #840](https://github.com/scpeterson/CemeteryMapping/pull/840)), fresh DEV and
+TEST comparisons completed at **`2026-11-11T21:18:54.159650Z`** (4:18:54 PM EST).
+**DEV was authoritative. No application-code or business-data differences remained.**
+
+Both database snapshots used database-enforced **repeatable-read, read-only
+transactions ending in `ROLLBACK`**. Files were only read/hashed. No application
+records, media, source files or configuration were changed by the comparison;
+report artifacts were written only to local temporary storage.
+
+### Verified equality
+
+- All **30,294 full rows across 76 business/reference tables** match exactly,
+  including primary/foreign keys, timestamps, nested JSON and deleted/history
+  records. Only row ordering was normalized; no local ID or media alias was
+  needed for equality.
+- All **1,401 non-documentation application-source files** match. Inside the
+  running API container, all **202 checked server/shared/package files** also
+  match current DEV files.
+- Database definitions match for **1,205 columns, 866 functions and 316 indexes**,
+  along with primary keys and trigger definitions/state. The cemetery-membership
+  role CHECK has different but equivalent PostgreSQL cast/deparser formatting;
+  its allowed roles and behavior are identical.
+- All **755 original files referenced by DEV media records**, totaling
+  **7,326,068,405 bytes**, match TEST by size and SHA-256. No referenced file is
+  missing or different.
+- TEST origin health remained healthy on **v0.2.5** at
+  `d595d1c3c404ef1934e5b56d7e03362817f3b086`, with build time
+  `2026-11-10T22:09:55Z`. DEV main contains newer documentation commits with the
+  same application code. Environment files and generated environment-specific
+  bundles were excluded from source byte equality.
+
+### Remaining ancillary and excluded differences
+
+The full tracked-file comparison checked **1,666 non-environment files**. Only
+`docs/hosted-test.md` and `docs/release-status.md` differed: TEST's deployed release
+package retains their older copies, while DEV main includes the merged
+reconciliation records. No tracked file was missing. This documentation difference
+does not indicate a different application build.
+
+TEST retains **one extra physical file**,
+`294eab09-fce0-459c-944a-addf338277e4.jpg`, for recovery. Its SHA-256 matches the
+authoritative TLC-HS-0506 photo. No current TEST media row references this retained
+copy, and all authoritative media records and associations match DEV. It was not
+deleted during this read-only check.
+
+The same nine protected tables remain outside business-data equality:
+`app_users`, `app_user_activity`, `app_user_cemetery_access`, `access_requests`,
+`field_operations`, `audit_events`, `system_events`, `databasechangelog` and
+`databasechangeloglock`. These cover TEST authentication/onboarding, operational
+receipts, audit/system logs and migration execution history. In particular, TEST
+has **one field-operation receipt** versus none in DEV; both have **518 migration
+rows**, with different execution metadata. Account/membership/access-request and
+audit/log records also remain environment-specific. These exclusions were reported
+explicitly, not counted as matching business data.
+
+Earlier deployment counts, missing-data findings, reconciliation actions and
+recovery records above retain their original historical scope. This final check
+establishes parity at its verification time and performs no further reconciliation
+or deployment. It did not rerun report-role checks or perform fresh live
+Access/Auth0 login, authenticated browser image download, invitation delivery,
+token replay rejection, disconnected offline reload/save/reconnect synchronization
+or a fresh real Turnstile-backed submission. Those pending verification gaps remain
+open; the preceding reconciliation's report/application checks retain their own
+recorded scope.
