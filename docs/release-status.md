@@ -3,6 +3,38 @@
 
 # Release status and deployment checks
 
+## November 11, 2026: complete business-data parity with DEV
+
+TEST's **30,294 rows across all 76 business/reference tables** now match DEV
+exactly, including UUIDs, timestamps, nested content and deleted history.
+Independent read-only verification completed at **3:44:53 PM EST**. See the
+[complete reconciliation record](hosted-test.md#november-11-2026-complete-dev-authoritative-business-data-reconciliation)
+for scope, canonical ID changes, safeguards and private recovery evidence.
+
+Twenty-four tables required changes: 2,683 creates, 1,988 shared-row updates and
+2,464 TEST-only row removals. This includes ownership, burial, monument, grave/lot,
+place, feature, NHG and historical inspection/photo data. Earlier TEST-local keys
+were replaced with DEV's canonical business identities; old TEST audit payloads
+remain intact. The nine protected authentication/operational/audit/migration tables
+and eight host configuration files were preserved. All 41,230 existing audit
+events remained unchanged, with 7,135 new import events appended.
+
+A validated full backup and rollback rehearsal preceded commit. Audit triggers
+and native constraints remained enabled; temporary non-audit trigger suspension
+was transaction-local and all original trigger/schema state was restored. Exact
+full-row comparison, 158 foreign-key checks, deployed repository reads and report
+role/cemetery checks passed. DEV's business data and files were unchanged.
+
+All 755 DEV original media files now match TEST by hash; only two missing files
+(23,996,555 bytes) needed copying. All 754 pre-existing TEST files were preserved.
+Ownership counts now match (57 active events, 70 parties, 147 rights), as do all
+other business tables. The unreadable-inscription report remains at 51 monuments.
+
+All 1,401 compared deployed source files match DEV. TEST remains **v0.2.5** at
+`d595d1c3c404ef1934e5b56d7e03362817f3b086`, healthy with anonymous media denied (401).
+Historical records and pending live login/image-download/invitation/replay/offline/
+Turnstile verification gaps remain recorded.
+
 ## November 11, 2026: remaining inspections and photos reconciled; report returns 51
 
 DEV-authoritative reconciliation is complete across all active monuments:
