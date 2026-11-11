@@ -23,6 +23,10 @@ The latest inspection-data update is the
 The latest inspection-photo update is the
 [November 11 active photo reconciliation](#november-11-2026-active-inspection-photo-reconciliation).
 
+The subsequent [November 11 final read-only comparison](#november-11-2026-final-read-only-inspection-and-photo-comparison)
+confirmed the latest inspections and active photo associations match DEV for all
+26 monuments in that reconciliation scope.
+
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
@@ -2267,3 +2271,52 @@ Keep these artifacts outside Git. For reviewed targeted recovery, use the exact
 new record IDs and created-file manifest, first checking subsequent references.
 Do not restore the whole database or delete shared/referenced files over later
 TEST work. Existing files were not replaced and require no file rollback.
+
+## November 11, 2026 final read-only inspection and photo comparison
+
+After the inspection and photo reconciliations above, a fresh comparison used
+**DEV as authoritative** for the same **26 monuments**. Both database inventories
+ran in database-enforced **repeatable-read, read-only transactions**, ending with
+`ROLLBACK`. File verification only read existing files. No database records, media
+files, application code, configuration or protections were changed by this check.
+
+### Results
+
+- **26 latest active inspections in DEV and 26 in TEST**, all dated
+  **October 21, 2026**, with **zero substantive differences**. Latest selection
+  used inspection year, inspection date, creation time and ID as tie-breakers.
+  Dates, source/type, condition, condition notes, inscriptions, manual-edit flags,
+  source entries and face content match. Environment-local inspection/face IDs
+  and creation/update timestamps were excluded from content equality; omitted
+  optional face `designNotes` were treated as an empty string.
+- **27 active inspection-photo associations in each environment**, covering
+  **25 of the 26 monuments**, with **none missing or extra in TEST**. Comparison
+  resolved local inspection and face IDs to monument, inspection year/date/type
+  and face label, then compared media ID, phase and maintenance reference.
+  TLC-HS-0568 still has no active photo association in either environment.
+- The associated media metadata matches after allowing for environment-local
+  creation/update timestamps and mapped capture-user IDs. Monument-media
+  relationship types, status, notes, **Primary flags and display order match**.
+- All **27 original photo files**, totaling **318,970,966 bytes**, were read
+  again in both environments. Every file's size and **SHA-256 hash** matched the
+  source manifest; there were no missing or differing files in this scope.
+
+### Expected history and verification limits
+
+DEV retains **one deleted association for TLC-HS-0514**; TEST has no corresponding
+deleted context. It was deliberately excluded from the active-photo import and
+is not an outstanding active-link discrepancy. Local IDs and import/audit
+timestamps remain environment-specific, preserving TEST's reconciliation history.
+
+This comparison covers the latest inspections and their active photo associations
+for these 26 monuments; it does not assert equality of all historical records or
+all media elsewhere. Earlier missing-photo findings, deployment checks and
+reconciliation records above remain historical evidence with their original
+scope. The previous 48-monument report result was not rerun as part of this final
+comparison.
+
+TEST remains **v0.2.5** at `d595d1c3c404ef1934e5b56d7e03362817f3b086`.
+Fresh live Access/Auth0 login and authenticated browser image download were not
+exercised. Invitation delivery, token replay rejection, disconnected offline
+reload/save/reconnect synchronization and a fresh real Turnstile-backed submission
+remain pending; this read-only comparison closes none of those verification gaps.
