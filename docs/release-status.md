@@ -3,6 +3,33 @@
 
 # Release status and deployment checks
 
+## November 11, 2026: 27 active inspection photos reconciled to TEST
+
+TEST now has the **27 active inspection-photo associations** from DEV for
+**25 of the 26 reconciled monuments**, verified read-only at **9:36:26 AM EST**.
+See the [photo reconciliation record](hosted-test.md#november-11-2026-active-inspection-photo-reconciliation)
+for scope, checks and protected recovery paths.
+
+Imported 27 original JPEGs (318,970,966 bytes), 27 media records, 27 monument links
+and 27 contexts mapped to TEST's local inspection/Front/Top face IDs. Primary
+flags and display order match DEV. The deleted DEV association was excluded;
+TLC-HS-0568 had no active photo association and remained unchanged.
+
+Fresh comparison found **zero active association differences**. All source/target
+file hashes match; the API runtime user can read all 27 files, and the deployed
+photo-context and monument-detail repositories return all 27 associations/photos.
+All 705 existing TEST files retained their hashes/ownership/permissions; unrelated
+records across 83 public tables, inspection content, NHG data and accounts were
+preserved. DEV was unchanged. A validated full backup and targeted import/file
+manifests were retained, and 81 audited creates were verified.
+
+The unreadable-inscription report remains at **48 monuments**, matching independent
+SQL, with power-user/reader/cemetery policy checks passing. Anonymous media access
+still returns 401; fresh authenticated live-browser login/download was not exercised.
+TEST remains v0.2.5 with no code, schema, configuration or protection change.
+Historical records and pending live login/invitation/replay/offline/Turnstile
+verification gaps remain intact.
+
 ## November 11, 2026: latest inspections reconciled; report returns 48 monuments
 
 TEST's **26 latest-inspection differences** were reconciled using DEV as
