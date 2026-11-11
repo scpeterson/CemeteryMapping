@@ -3,6 +3,34 @@
 
 # Release status and deployment checks
 
+## November 11, 2026: remaining inspections and photos reconciled; report returns 51
+
+DEV-authoritative reconciliation is complete across all active monuments:
+**566 latest inspections and 729 active photo associations** now match in DEV and
+TEST after local identity normalization. See the
+[remaining reconciliation record](hosted-test.md#november-11-2026-remaining-inspection-and-photo-reconciliation)
+for scope, verification and protected recovery evidence.
+
+Updated 31 existing latest inspections; added G-0001, its link to the existing
+G-001 gravesite and its October 23 inspection. The automatically generated
+baseline remains deleted to match DEV. Copied 22 original JPEGs (251,363,126 bytes)
+and their media/link/context records, corrected five face assignments and copied
+327 Primary flags. TLC-HS-0506's byte-identical TEST photo was retained under its
+existing ID. Existing IDs/history, all 732 pre-existing files and unrelated records
+across 83 public tables were preserved; DEV was unchanged.
+
+A validated full backup and rollback rehearsal preceded the audited transaction.
+Post-commit checks at **10:00:41 AM EST** and independent inventories found zero
+substantive latest-inspection, active association or compared link-field
+differences. API-user file hashes and deployed repository checks passed. The
+unreadable-inscription report now returns the same **51 monuments** in both
+environments, with independent SQL and role/cemetery checks passing.
+
+TEST remains **v0.2.5** at `d595d1c3c404ef1934e5b56d7e03362817f3b086`; origin health
+was healthy and anonymous media access remained denied (401). No code, schema,
+configuration or protection changed. Earlier report counts/findings and pending
+live login/image-download/invitation/replay/offline/Turnstile gaps remain recorded.
+
 ## November 11, 2026: 27 active inspection photos reconciled to TEST
 
 TEST now has the **27 active inspection-photo associations** from DEV for

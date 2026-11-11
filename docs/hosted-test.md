@@ -27,6 +27,10 @@ The subsequent [November 11 final read-only comparison](#november-11-2026-final-
 confirmed the latest inspections and active photo associations match DEV for all
 26 monuments in that reconciliation scope.
 
+The later [November 11 remaining inspection and photo reconciliation](#november-11-2026-remaining-inspection-and-photo-reconciliation)
+extends that check to all active monuments: **566 latest inspections and 729
+active photo associations** now match DEV after local identity normalization.
+
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
@@ -2320,3 +2324,119 @@ Fresh live Access/Auth0 login and authenticated browser image download were not
 exercised. Invitation delivery, token replay rejection, disconnected offline
 reload/save/reconnect synchronization and a fresh real Turnstile-backed submission
 remain pending; this read-only comparison closes none of those verification gaps.
+
+## November 11, 2026 remaining inspection and photo reconciliation
+
+A broader read-only comparison outside the original 26 monuments identified
+remaining latest-inspection, active photo-mapping and Primary-flag differences.
+The user authorized reconciling them in TEST using **DEV as authoritative**, while
+preserving other records. Post-commit read-only repository verification passed
+at **`2026-11-11T15:00:41.624Z`** (10:00:41 AM EST), followed by independent
+DEV/TEST inventories and report checks.
+
+### Targeted changes
+
+| Scope | TEST changes |
+| --- | --- |
+| Existing latest inspections | Updated **31** inspections to DEV's dates, conditions, notes, inscriptions, faces, source entries and manual-edit flags where different. Existing inspection/face IDs, creation times and origin keys were retained. |
+| Missing monument | Added **G-0001** and its link to the already-existing **G-001** gravesite. The gravesite and its reference data were unchanged. Added the active **October 23, 2026** inspection. |
+| Required baseline history | The normal G-0001 insert trigger created a baseline inspection. It was immediately marked deleted with DEV's baseline content/deletion metadata, leaving only the October 23 inspection active. No existing inspection was deleted. |
+| New photos | Copied **22 original JPEGs**, totaling **251,363,126 bytes**, with **22 media records, 22 monument links and 22 inspection-photo contexts**. No thumbnails were referenced or images re-encoded. |
+| Existing photo mappings | Updated **5 face assignments** for TLC-HS-0179 and TLC-HS-0577. Nine additional date-mapping differences resolved through the latest-inspection date updates; existing context IDs were retained. |
+| Primary flags | Set **327 existing monument-photo links** to DEV's Primary values. This includes the **326 shared-ID links** found initially plus TLC-HS-0506 after resolving its duplicate identity. No new Primary choice was invented. |
+
+TLC-HS-0506's existing TEST photo has a different UUID/storage key from DEV but
+identical bytes, verified by SHA-256. Its TEST media, monument-link and context
+IDs were retained instead of duplicating the file. Comparisons normalize that
+single media alias. TLC-HS-0183's unrelated TEST asset with the same filename/size
+had a **different** SHA-256; it was preserved and was not substituted for DEV's
+photo. The deleted DEV association for TLC-HS-0514 remains excluded.
+
+New media retained source capture/upload metadata, original filenames,
+geolocation/device details and notes. **16 capture-user references** mapped to an
+existing TEST user; none were omitted and no user account was created or changed.
+The other six new assets had no capture-user reference. New TEST records and
+audits identify this import; source historical metadata was not presented as a
+backdated TEST operator action.
+
+### Backup, transaction and preservation checks
+
+- A full TEST database dump was created and validated with `pg_restore --list`
+  before mutation. Fresh DEV/TEST inventories, local identity mappings and source
+  hashes formed the exact reconciliation plan. DEV was checked again immediately
+  before commit and had not changed.
+- All **732 pre-existing TEST media files** were hashed and inventoried with
+  sizes, ownership and permissions. Private archive extraction accepted only the
+  exact 22 planned regular filenames, rejecting traversal/symlinks. After size
+  and SHA-256 validation, exclusive hard links published the new files without
+  overwriting any existing file. The 732 original files retained their hashes,
+  ownership and permissions; new files use mode `0644`, UID/GID `1000`.
+- The complete database operation first passed a **rollback rehearsal**, including
+  normal constraints/triggers and source-equality checks. The same scoped plan
+  then committed in one audited repeatable-read transaction using the restricted
+  `cemetery_api` role, table locks and exact before-state assertions.
+- Existing/unrelated row counts and content fingerprints across **83 public
+  tables** were identical after excluding only the explicitly planned records and
+  operational audit/system logs. Older existing inspections, all **708 original
+  active media records**, root records for other monuments, gravesites, NHG data,
+  burials and accounts were preserved. Every existing face ID in the 31 updated
+  inspections was retained.
+- Exactly **434 audit events** were verified: **70 creates, 363 updates and one
+  soft-delete of G-0001's newly generated baseline**. Audit source was `codex`,
+  subject `codex:user-request`, with the explicit DEV-authoritative reconciliation
+  reason and recovery identifier below.
+
+### Independent saved-state verification
+
+Fresh database-enforced read-only inventories confirmed:
+
+- **566 latest active inspections in each environment**, with **zero substantive
+  content differences**, including the previously reconciled 26 monuments.
+- **729 active inspection-photo associations in each environment**, with **zero
+  differences** after resolving local inspection/face IDs and TLC-HS-0506's
+  byte-identical media alias. The compared monument-link relationship types,
+  status, notes, display order and Primary flags also match.
+- G-0001's root content and gravesite link match DEV. Older existing TEST
+  inspection rows and all original active media records remain unchanged. DEV's
+  metadata and all 22 new source-file hashes were independently rechecked and
+  unchanged.
+- All **22 new files** passed size/SHA-256 checks while read by the **API runtime
+  user (UID 1000)**. Deployed repository checks verified **444 photo contexts** and
+  **355 affected monument details**, including their photo references.
+- The unreadable-inscription report returns **51 monuments in DEV and TEST**,
+  matching independent SQL and the same monument set. TEST gained TLC-HS-0571,
+  TLC-HS-0574 and TLC-HS-0575; no prior result was removed. Power-user execution,
+  reader denial and cemetery/mixed-role/no-assignment checks passed.
+- Origin health remained healthy with **v0.2.5**, SHA
+  `d595d1c3c404ef1934e5b56d7e03362817f3b086` and the original November 10 build time.
+  Anonymous origin access to an imported photo returned **401**.
+
+Local IDs, existing inspection origin keys and import/audit timestamps remain
+environment-specific. This verifies latest inspection content, active photo
+associations and the compared link fields; it does not assert equality of all
+historical observations or all media metadata/storage elsewhere.
+
+No application deployment, schema, configuration or protection change occurred.
+Earlier 22/48-monument report results and missing-photo findings remain historical
+records of their original checks; this later reconciliation establishes **51**.
+Fresh live Access/Auth0 login, authenticated browser image download, invitation
+delivery, token replay rejection, disconnected offline reload/save/reconnect
+synchronization and a fresh real Turnstile-backed submission remain pending.
+
+### Remaining-reconciliation recovery evidence
+
+Protected directory:
+`/srv/nhcemeteries/backups/20261111T145522Z-remaining-inspection-photo-reconciliation`.
+It retains `database-before.dump`, its validated listing, `reconciliation-plan.json`,
+`media-inventory-before.json`, `file-publication.json`,
+`cemetery-remainder-dry-result.json`, `cemetery-remainder-result.json`,
+`cemetery-remainder-final-comparison.json`, `cemetery-remainder-file-verification.json`
+and the DEV/TEST report-policy verification JSON files. Private archive/file staging
+remains under
+`/srv/nhcemeteries/staging/20261111T145522Z-remaining-inspection-photo-reconciliation`.
+
+Keep private evidence outside Git. Use the exact planned IDs, before-state fields
+and created-file manifest for any reviewed targeted recovery, first checking later
+references. Do not overwrite subsequent TEST work with a whole-database restore or
+delete shared/referenced files. TLC-HS-0506's retained photo and the 732 pre-existing
+files were not replaced and need no file rollback.
