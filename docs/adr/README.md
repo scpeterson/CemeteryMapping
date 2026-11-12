@@ -374,3 +374,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [0207: Separate the Köenig graves beside TLC-HS-0543](0207-split-e-0543-koenig-gravesites.md)
 
 - [0208: Refresh dependencies while retaining migration and compiler holds](0208-dependency-security-refresh.md)
+
+- [0209: Allow and report MapLibre bundle growth](0209-maplibre-growth-reporting.md)

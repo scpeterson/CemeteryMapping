@@ -10,14 +10,14 @@ export const budgets = [
   { label: "admin shell", pattern: /^AdminPanel-.*\.js$/u, gzipKilobytes: 22 },
   { label: "React vendor", pattern: /^vendor-react-.*\.js$/u, gzipKilobytes: 70 },
   { label: "authentication vendor", pattern: /^vendor-auth-.*\.js$/u, gzipKilobytes: 65 },
-  // MapLibre runtime chunks have separate dependency limits; application limits stay fixed.
-  { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 285 },
+  // MapLibre thresholds report upstream growth without blocking upgrades.
+  { label: "individual map vendor chunk", pattern: /^vendor-map-.*\.js$/u, gzipKilobytes: 285, reportOnly: true },
 ];
 // ADR 0205: one KiB for debounced inspection persistence and lifecycle flushes.
 export const totalJavaScriptGzipBudgetKilobytes = 701;
-// ADR 0204: count the historical map runtime inside core, with at most 12 KiB
-// additional allowance for the measured 6.16 vendor + worker growth. This credit
-// applies only to those assets, never to application/shared JavaScript.
+// Keep the historical map runtime in core, but credit all upstream growth.
+// ADR 0209: the former 12 KiB allowance is now a reporting threshold only.
+// Credit applies only to named map vendor/worker assets, never application code.
 export const mapRuntimeBaselineGzipKilobytes = 415;
 export const mapRuntimeGrowthGzipKilobytes = 12;
 // Field collection is a separate, explicitly prepared offline entry. Its lazy
@@ -28,21 +28,25 @@ export const maintenanceTasksGzipBudgetKilobytes = 6;
 
 export function checkBundleAssets(assets) {
 const failures = [];
+const warnings = [];
 
 for (const budget of budgets) {
   const matches = assets.filter((asset) => budget.pattern.test(asset.filename));
   if (!matches.length) failures.push(`${budget.label}: matching bundle was not produced`);
   for (const asset of matches) {
     const limit = budget.gzipKilobytes * 1024;
-    if (asset.gzipBytes > limit) failures.push(`${asset.filename}: ${(asset.gzipBytes / 1024).toFixed(2)} KiB gzip exceeds ${budget.gzipKilobytes} KiB`);
+    if (asset.gzipBytes > limit) {
+      const messages = budget.reportOnly ? warnings : failures;
+      messages.push(`${asset.filename}: ${(asset.gzipBytes / 1024).toFixed(2)} KiB gzip exceeds ${budget.gzipKilobytes} KiB${budget.reportOnly ? " (MapLibre growth allowed)" : ""}`);
+    }
   }
 }
 
 const totalGzipBytes = assets.reduce((total, asset) => total + asset.gzipBytes, 0);
 const mapRuntimeBytes=assets.filter(asset=>/^(?:vendor-map-|maplibre-gl-worker-).*\.js$/u.test(asset.filename)).reduce((n,asset)=>n+asset.gzipBytes,0);
 const mapGrowth=Math.max(0,mapRuntimeBytes-mapRuntimeBaselineGzipKilobytes*1024);
-const mapGrowthCredit=Math.min(mapGrowth,mapRuntimeGrowthGzipKilobytes*1024);
-if(mapGrowth>mapRuntimeGrowthGzipKilobytes*1024)failures.push(`map vendor and worker runtime exceeds ${mapRuntimeBaselineGzipKilobytes+mapRuntimeGrowthGzipKilobytes} KiB gzip`);
+const mapGrowthCredit=mapGrowth;
+if(mapGrowth>mapRuntimeGrowthGzipKilobytes*1024)warnings.push(`MapLibre vendor and worker runtime: ${(mapRuntimeBytes/1024).toFixed(2)} KiB gzip exceeds the former ${mapRuntimeBaselineGzipKilobytes+mapRuntimeGrowthGzipKilobytes} KiB budget by ${((mapGrowth-mapRuntimeGrowthGzipKilobytes*1024)/1024).toFixed(2)} KiB; growth allowed and credited against core.`);
 const fieldBytes=assets.filter(asset=>/^FieldCollectionPage-.*\.js$/u.test(asset.filename)).reduce((n,asset)=>n+asset.gzipBytes,0);
 const exportBytes=assets.filter(asset=>/^ExportRecordsPage-.*\.js$/u.test(asset.filename)).reduce((n,asset)=>n+asset.gzipBytes,0);
 const taskBytes=assets.filter(asset=>/^MaintenanceTasksPage-.*\.js$/u.test(asset.filename)).reduce((n,asset)=>n+asset.gzipBytes,0);
@@ -53,7 +57,7 @@ if (totalGzipBytes-fieldBytes-exportBytes-taskBytes-mapGrowthCredit > totalJavaS
   failures.push(`core JavaScript: ${((totalGzipBytes-fieldBytes-exportBytes-taskBytes-mapGrowthCredit) / 1024).toFixed(2)} KiB gzip exceeds ${totalJavaScriptGzipBudgetKilobytes} KiB`);
 }
 
-return { failures, totalGzipBytes };
+return { failures, warnings, totalGzipBytes, mapRuntimeBytes, mapGrowthCredit, coreGzipBytes: totalGzipBytes-fieldBytes-exportBytes-taskBytes-mapGrowthCredit };
 }
 
 export async function checkBundleDirectory(assetDirectory) {
@@ -65,7 +69,9 @@ export async function checkBundleDirectory(assetDirectory) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-const { failures, totalGzipBytes, count } = await checkBundleDirectory(resolve(process.cwd(), "dist", "assets"));
+const { failures, warnings, totalGzipBytes, mapRuntimeBytes, mapGrowthCredit, coreGzipBytes, count } = await checkBundleDirectory(resolve(process.cwd(), "dist", "assets"));
+console.log(`MapLibre vendor + worker: ${(mapRuntimeBytes/1024).toFixed(2)} KiB gzip; +${(mapGrowthCredit/1024).toFixed(2)} KiB credited above the ${mapRuntimeBaselineGzipKilobytes} KiB historical baseline. Adjusted core: ${(coreGzipBytes/1024).toFixed(2)} / ${totalJavaScriptGzipBudgetKilobytes} KiB.`);
+for (const warning of warnings) console.warn(`Bundle size report: ${warning}`);
 if (failures.length) {
   console.error(`Bundle size check failed:\n- ${failures.join("\n- ")}`);
   process.exitCode = 1;

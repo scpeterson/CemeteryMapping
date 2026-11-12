@@ -34,6 +34,10 @@ sass-embedded patches while retaining Jekyll's constrained dependency majors.
 
 ## MapLibre deferral
 
+Superseded by [ADR 0209](0209-maplibre-growth-reporting.md): the owner subsequently
+authorized MapLibre growth beyond the budgets with explicit reporting. The
+measurements below record the earlier decision.
+
 Retain MapLibre 6.16.0. With the updated toolchain, the trial 6.18.0 production
 build exceeded both the 427 KiB map-runtime limit and the 701 KiB core limit
 (701.41 KiB). Trial 6.17.0 passed the map-runtime limit but narrowly exceeded the
