@@ -3,6 +3,7 @@ import { ConfirmationProvider } from "./components/ui/ConfirmationProvider";
 import { confirmDiscardChanges, useDraftNavigationGuard } from "./hooks/useDraftState";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { ApplicationHeader } from "./components/ApplicationHeader";
+import { appVersionMetadata } from "./config/environment";
 import { useCemeterySearchResults } from "./hooks/useCemeterySearchResults";
 import { useApplicationData } from "./hooks/useApplicationData";
 import { useCemeteryScope } from "./hooks/useCemeteryScope";
@@ -30,6 +31,7 @@ const ControlPointCollector = lazy(() =>
   import("./components/ControlPointCollector").then((module) => ({ default: module.ControlPointCollector })),
 );
 const ReportsPanel = lazy(() => import("./components/ReportsPanel").then((module) => ({ default: module.ReportsPanel })));
+const WhatsNewPanel = lazy(() => import("./components/WhatsNewPanel"));
 
 const allStatuses: GraveStatus[] = ["available", "reserved", "occupied", "sold", "needs_review", "unknown"];
 type PickedMarkerPoint = {
@@ -51,6 +53,7 @@ export default function App() {
   const { refreshCemeteryData, refreshCurrentUser, data, setData, loadError, isLoading, currentUser, userError, headstoneLookups, lookupError, lookupLoading, retryLookups } = useApplicationData(setSelectedGrave);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isReportsPanelOpen, setIsReportsPanelOpen] = useState(false);
+  const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false);
   const [isControlPointCollectorOpen, setIsControlPointCollectorOpen] = useState(false);
   const [isPickingMarkerPoint, setIsPickingMarkerPoint] = useState(false);
   const [pickedMarkerPoint, setPickedMarkerPoint] = useState<PickedMarkerPoint>();
@@ -239,6 +242,7 @@ export default function App() {
           onCemeteryScopeChange={changeCemeteryScope}
           currentUser={currentUser}
           onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenWhatsNew={() => setIsWhatsNewOpen(true)}
           onOpenReports={() => setIsReportsPanelOpen(true)}
           onOpenControl={() => setIsControlPointCollectorOpen(true)}
           onOpenAdmin={() => setIsAdminPanelOpen(true)}
@@ -381,6 +385,7 @@ export default function App() {
             }
             setSelectedGrave(grave); setIsCreatingGravesite(false); setPickedMarkerPoint(undefined);
           }} /> : null}
+          {isWhatsNewOpen ? <WhatsNewPanel version={appVersionMetadata.version} onClose={() => setIsWhatsNewOpen(false)} /> : null}
           {isReportsPanelOpen && currentUser ? <ReportsPanel currentUser={currentUser} data={data} onOpenMonument={(monument) => {
             if (selectHeadstone(monument)) setIsReportsPanelOpen(false);
           }} onClose={() => setIsReportsPanelOpen(false)} /> : null}

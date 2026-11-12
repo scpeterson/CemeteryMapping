@@ -4,7 +4,11 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
-No changes recorded since the 0.2.5 release baseline.
+### Added
+
+- Click or keyboard-activate the environment/version badge to read **What's new**
+  for the installed release. The read-only panel is available to every user and
+  keeps the badge's existing version, revision, build and API hover details.
 
 ## 0.2.5 — 2026-11-10
 
