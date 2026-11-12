@@ -10,10 +10,6 @@ updates:
       - dependency-name: "typescript"
         versions:
           - ">=7.0.0 <8.0.0"
-      # @vitejs/plugin-react 6.x requires Vite 8.x; upgrade them together intentionally.
-      - dependency-name: "@vitejs/plugin-react"
-        versions:
-          - ">=6.0.0"
 
   - package-ecosystem: "bundler"
     directory: "/docs"
