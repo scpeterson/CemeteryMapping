@@ -3,6 +3,31 @@
 
 # Release status and deployment checks
 
+## November 11, 2026: What's new deployed to TEST
+
+TEST is healthy on the exact merged main revision
+**`87833b366068968920468c2d643c5ad6b51fa0fd`**, built
+**`2026-11-12T01:29:22Z`**. This is a **v0.2.5-based main build**, not a new tag;
+the existing v0.2.5 release tag remains unchanged. The version badge opens
+installed-release notes for all roles and retains its original hover details.
+See the [deployment record](hosted-test.md#november-11-2026-whats-new-test-deployment).
+
+Exact-commit CI, candidate/hosted health, manifest checks and deployed-asset browser
+fixtures passed. All 30,294 business rows, nine protected tables, identities,
+schema metadata, settings and 756 physical media files were preserved; all 755
+canonical originals matched SHA-256 hashes. Browser fixtures verified click,
+hover, keyboard/focus and 320-pixel layout without sending writes; they did not
+exercise fresh live authentication.
+
+The original 701 KiB production budget remains unchanged and passed. A separate
+configured TEST measurement was **99 gzip bytes over** that core threshold;
+TEST-specific bundle sizing remains a follow-up. The retained media recovery
+archive leaves about **3 GB free (97% disk use)**, requiring capacity/retention
+follow-up. Historical evidence and pending live login/image-download/invitation/
+replay/offline/Turnstile verification gaps remain intact. Publishing these two
+documents to TEST changes documentation only.
+
+
 ## November 11, 2026: DEV API and frontend running v0.2.5
 
 DEV's checkout was current, but its long-running API still reported v0.2.4.

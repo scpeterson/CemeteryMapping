@@ -2769,3 +2769,94 @@ This DEV update did not rerun report-role checks or verify fresh live Access/Aut
 login, authenticated browser image download, invitation delivery, token replay
 rejection, disconnected offline reload/save/reconnect synchronization or a fresh
 real Turnstile-backed submission. Those pending verification gaps remain open.
+
+
+## November 11, 2026 What's new TEST deployment
+
+The user requested deployment of the merged version-badge change from
+[PR #844](https://github.com/scpeterson/CemeteryMapping/pull/844). TEST now runs
+exact main revision **`87833b366068968920468c2d643c5ad6b51fa0fd`**, built at
+**`2026-11-12T01:29:22Z`** (November 11, 8:29:22 PM EST). This is a
+**v0.2.5-based main build**, not a new tagged release: the displayed package
+version remains **0.2.5**, and the existing immutable v0.2.5 tag was not moved.
+The badge's revision/build hover details identify the newer TEST build.
+
+Clicking the badge opens What's new for all signed-in roles, with plain-language
+notes for the installed version. Existing hover details remain unchanged.
+The v0.2.5 notes describe the unreadable-inscription report; the new panel is
+part of the main build deployed here, rather than a retrospective tag change.
+
+### Deployment and recovery evidence
+
+- Required checks passed for the exact merged commit, including lint/unit/build,
+  documentation, database/Docker startup and all four browser-test shards
+  ([CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/43134007053)).
+- Deployment used `npm run deploy:test -- --ref
+  87833b366068968920468c2d643c5ad6b51fa0fd`. The workflow validated the archive,
+  verified Liquibase schema validation/status, and applied no migrations or seeds.
+- The first preparation attempt stopped before service changes because a private
+  local umask made archived changelog files unreadable to non-root Liquibase.
+  Rebuilding with normal source-file permissions resolved it; all gates reran.
+  Private settings and recovery directories retained their protected permissions.
+- Validated database dumps, the previous application/settings and a checksummed
+  complete media archive were retained under
+  `/srv/nhcemeteries/backups/20261112T012922Z-87833b366068-810ce136`.
+  The candidate API passed startup, non-root/private-environment, Auth0 and
+  database checks before switching API/web. Database and tunnel remained running.
+- Private installer results are at
+  `/srv/nhcemeteries/staging/20261112T012922Z-87833b366068-810ce136/verification.json`.
+  Do not publish private settings, backup contents or command logs.
+
+### Verification results
+
+- Installer health verification at **`2026-11-12T01:38:00.271Z`** returned healthy
+  **TEST**, database `cemetery_mapping_test`, package **0.2.5**, the exact revision
+  and build time above. The API had zero restarts. All **200 server/shared runtime
+  files** matched the release manifest; the full source/frontend manifest passed.
+- The served frontend was **200** and its version/revision/build metadata matched
+  the API exactly. Public HTTPS `/request-access` was **200**; nginx validation
+  passed. Anonymous `/api/me` and the real `/media/<storage-key>` route remained
+  **401**. Existing Auth0, Cloudflare/tunnel, Turnstile and burst-protection
+  configuration was preserved; no security control was edited.
+- Browser smoke checks loaded the **actual deployed production assets** through a
+  localhost SSH tunnel. All four role fixtures (reader, power-user,
+  cemetery-admin, admin) passed badge clicking, exact installed-release notes,
+  unchanged hover title before/after closing, Close/Escape, Enter/Space, focus
+  containment/restoration and a **320-pixel** layout. A screenshot was inspected.
+  Only the identity-provider module and API responses were browser-local fixtures;
+  no deployed file or authentication setting was changed and no write request
+  was sent. This does **not** verify a fresh live Access/Auth0 login.
+- Before/after read-only fingerprints confirmed all **30,294 business rows across
+  76 tables**, all **nine protected authentication/operational/audit/migration
+  tables**, user identities and constraints/triggers/primary-key metadata were
+  unchanged. Only aggregate counts and one-way fingerprints were exported for
+  the post-deployment comparison. Runtime configuration changed only intended
+  revision/build metadata; all other protected settings and ownership checks
+  passed.
+- SHA-256 verification found zero missing or differing files among all **755
+  canonical originals** (7,326,068,405 bytes). The existing extra TLC-HS-0506
+  recovery copy remained present and byte-identical; all **756 physical files**
+  and their deployment inventory were preserved.
+
+### Measurements and pending verification
+
+The production bundle check passed with the original **701 KiB core** limit
+unchanged. An additional measurement of this fully configured TEST artifact
+found **717,923 core gzip bytes**, **99 bytes above** that threshold
+(**701.10 KiB**), across 40 JavaScript chunks (747,380 total gzip bytes before
+separate-entry/map allowances). The automated budget gate currently runs on the
+production build; this TEST-specific measurement remains an explicit follow-up,
+not a claimed passing TEST bundle check or a reason to raise the limit.
+
+Retaining the full recovery archive leaves about **3 GB free on the 77 GB TEST
+volume (97% used)**. Capacity/retention follow-up is needed before further large
+media backups; no historical backup or media was deleted during this deployment.
+
+Historical records and pending fresh live Access/Auth0 login, authenticated
+browser image download, invitation delivery, real token replay rejection,
+disconnected offline reload/save/reconnect synchronization and fresh real
+Turnstile-backed submission gaps remain open. Mocked browser checks do not close
+those gaps. No STAGE or PROD deployment occurred. This record is published through
+a documentation PR, followed by a backed-up documentation-only sync to TEST with
+source/configuration hashes, health and data-preservation verification; that sync
+does not rebuild or restart the application.
