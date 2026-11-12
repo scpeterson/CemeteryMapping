@@ -3,7 +3,7 @@
 
 # ADR 0204: Bound the MapLibre 6.16 runtime increase separately
 
-- Status: Accepted
+- Status: Superseded by [ADR 0209](0209-maplibre-growth-reporting.md) on November 12, 2026
 - Date: 2026-11-06
 - Related: PR #797
 
