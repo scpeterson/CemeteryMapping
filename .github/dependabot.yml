@@ -27,7 +27,8 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     ignore:
-      # Liquibase 5.x images no longer include the PostgreSQL JDBC driver we rely on.
+      # Stay on Liquibase 4.33.0 pending owner review/approval of the 5.x license change.
+      # See ADR 0003. A future 5.x upgrade must also supply the PostgreSQL JDBC driver.
       - dependency-name: "liquibase/liquibase"
         versions:
           - ">=5.0.0"
