@@ -3,6 +3,21 @@
 
 # Release status and deployment checks
 
+## November 11, 2026: DEV API and frontend running v0.2.5
+
+DEV's checkout was current, but its long-running API still reported v0.2.4.
+The existing DEV services were restarted from main; API health and served frontend
+version definitions both verified **v0.2.5**, revision **`9b9db34d5565`**, with
+build/start metadata **`2026-11-11T21:34:56.217962Z`**. API verification passed
+at **4:35:13 PM EST**. See the [DEV runtime update record](hosted-test.md#november-11-2026-dev-v025-runtime-update).
+
+All 30,294 business rows, nine protected tables, user identities and schema were
+unchanged. Nine DEV configuration/environment file hashes and existing launch
+settings were preserved apart from intended version metadata. No migration,
+dependency upgrade or source change was needed. TEST's application remained on
+its existing v0.2.5 release. Historical records and pending live verification gaps
+remain intact; publishing this record to TEST changes documentation only.
+
 ## November 11, 2026: deployed TEST documentation aligned with DEV
 
 The deployed runbook and release-status copies were synchronized with DEV and
