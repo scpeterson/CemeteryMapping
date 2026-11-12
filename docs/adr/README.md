@@ -376,3 +376,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [0208: Refresh dependencies while retaining migration and compiler holds](0208-dependency-security-refresh.md)
 
 - [0209: Allow and report MapLibre bundle growth](0209-maplibre-growth-reporting.md)
+
+- [0210: Retain ExcelJS pending future reevaluation](0210-retain-exceljs-pending-reevaluation.md)
