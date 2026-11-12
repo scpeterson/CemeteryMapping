@@ -188,7 +188,7 @@ The `nhcemeteries-test` connector runs in Docker on the TEST host. Updating a
 Mac installation does not update this container. Docker updates require pulling
 and recreating the container, as described in
 [Cloudflare's update guide](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/update-cloudflared/).
-The Compose file pins cloudflared 2026.10.3 by digest for the
+The Compose file pins cloudflared 2026.11.0 by digest, retaining the
 [eMudhra certificate security update](https://blog.cloudflare.com/emudhra-certificate-compromise/).
 
 For future upgrades, review and update the pinned image first. On the TEST host,
@@ -201,7 +201,7 @@ the token or put it in arguments:
 docker compose --profile tunnel pull tunnel
 docker run -d --name nhcemeteries-test-tunnel-upgrade --restart unless-stopped \
   --network host -v "$PWD/tunnel-token:/run/secrets/tunnel-token:ro" \
-  cloudflare/cloudflared:2026.10.3@sha256:faa8e0a1475f137c910be6025f43c8e4092fdd35461b31e19fd1390657a1ff39 \
+  cloudflare/cloudflared:2026.11.0@sha256:b94b96edf2c9c4360f8879c8580cfaa99077f19c849ec595ca2f711b27d4f344 \
   tunnel --no-autoupdate --metrics 127.0.0.1:20246 run \
   --token-file /run/secrets/tunnel-token
 curl -fsS http://127.0.0.1:20246/ready

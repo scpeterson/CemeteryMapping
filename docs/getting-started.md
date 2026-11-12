@@ -21,7 +21,7 @@ Start here when you want to run the application locally with demo data. After th
 Install these before running the project:
 
 - **Git**: downloads the project source code.
-- **Node.js 24**: runs the frontend, API, and project scripts. Node includes `npm`.
+- **Node.js 24.22.3 or a newer 24.x patch**: runs the frontend, API, and project scripts. Node includes `npm`.
 - **Docker Desktop**: runs the local PostgreSQL/PostGIS database and Liquibase migration container.
 - **Ruby 3.4.1 and Bundler 2.6.2**: only needed to build the documentation site locally.
 - **GDAL/OGR**: only needed when importing Esri File Geodatabases.
@@ -33,7 +33,7 @@ For a first demo run, the required tools are Git, Node.js/npm, and Docker Deskto
 Recommended install options:
 
 - Install **Git** from Apple's command line tools or from [git-scm.com](https://git-scm.com/).
-- Install **Node.js 24** from [nodejs.org](https://nodejs.org/) or with a version manager such as `nvm`.
+- Install **Node.js 24** from [nodejs.org](https://nodejs.org/) or with a version manager such as `nvm`. The repository includes `.nvmrc`; run `nvm install` and `nvm use` from the project directory to select the reviewed patch.
 - Install **Docker Desktop for Mac** from Docker.
 - Install **Ruby 3.4.1** with a Ruby version manager such as `rbenv`, `asdf`, or `mise` if you need to build docs.
 - Install **GDAL** with Homebrew when you need geodatabase imports:
