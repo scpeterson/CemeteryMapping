@@ -31,7 +31,9 @@ The later [November 11 remaining inspection and photo reconciliation](#november-
 extends that check to all active monuments: **566 latest inspections and 729
 active photo associations** now match DEV after local identity normalization.
 
-The latest data operation is the [November 11 complete business-data reconciliation](#november-11-2026-complete-dev-authoritative-business-data-reconciliation):
+The latest gravesite correction is the [November 12 Köenig split](#november-12-2026-koenig-gravesite-correction).
+
+The prior data operation is the [November 11 complete business-data reconciliation](#november-11-2026-complete-dev-authoritative-business-data-reconciliation):
 **all 30,294 rows in 76 business/reference tables now match DEV exactly**, including
 IDs, timestamps and deleted history. TEST authentication, configuration and audit
 history remain environment-specific and preserved.
@@ -2860,3 +2862,45 @@ those gaps. No STAGE or PROD deployment occurred. This record is published throu
 a documentation PR, followed by a backed-up documentation-only sync to TEST with
 source/configuration hashes, health and data-preservation verification; that sync
 does not rebuild or restart the application.
+
+## November 12, 2026 Koenig gravesite correction
+
+Migration **517-split-e-0543-koenig-gravesites** was rehearsed and applied to
+hosted TEST. Margareta Köenig remains in E-0543 with its polygon unchanged.
+Nicholas Köenig has the new adjoining E-0543A (`TLC-GPS-0543-01`) immediately
+southeast. TLC-HS-0543 remains fixed and links to both graves. The owner accepts
+the estimated historic-boundary overlap with E-0573; measured mapped overlap is
+approximately 0.7824 square metres. No neighboring graves were moved.
+
+Hosted burial records retain their existing ASCII `Koenig` names and all other
+burial details. The initial rehearsal stopped on the original accented-name
+prerequisite without changing live TEST. Migration 517 now accepts either exact
+spelling, with DEV's prior checksum explicitly accepted; all five isolated tests
+and DEV Liquibase validation passed. See [ADR 0207](adr/0207-split-e-0543-koenig-gravesites.md).
+
+The successful rehearsal restored a validated hosted database dump into a
+separate disposable database. All unrelated public application-table fingerprints
+matched before/after. API/web were then briefly paused for a final validated
+backup, confirmation that live input matched the rehearsal, and Liquibase
+application. Only `gravesites`, `burials`, `headstone_gravesites`, `audit_events`
+and `databasechangelog` changed. Additional comparisons preserved all neighboring
+graves, original E-0543 geometry, burial details and unrelated burial rows;
+headstones, monument/burial links, identities, settings and media-reference tables
+were unchanged. No media files were modified.
+
+Both grave polygons are valid and adjoining, with Nicholas southeast of Margareta.
+Liquibase recorded migration 517 as `EXECUTED` and reports no pending changes.
+Restricted API grants were refreshed, the disposable database was removed, API/web
+were restarted and `/api/health` returned `ok`. The public request-access page
+returned HTTP 200. The application release remains
+`87833b366068968920468c2d643c5ad6b51fa0fd`, built `2026-11-12T01:29:22Z`;
+this was a database correction, with no application build or Production change.
+Fresh interactive Auth0 login was not exercised.
+
+Protected recovery material and verification reports are retained under
+`/srv/nhcemeteries/backups/koenig-0543-20261112-r3/`, including `live-before.dump`,
+`rehearsal-report.json`, `verification.json`, before/after health and Liquibase
+status, the prior changelog and the deployment script. Earlier failed rehearsal
+artifacts remain in the corresponding initial and `-r2` directories. Recovery
+uses a reviewed forward correction or the pre-migration backup with subsequent
+edits accounted for; automatic SQL rollback is empty.

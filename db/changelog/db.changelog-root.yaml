@@ -1545,3 +1545,6 @@ databaseChangeLog:
   - include:
       file: changes/516-maintenance-task-scheduling.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/517-split-e-0543-koenig-gravesites.sql
+      relativeToChangelogFile: true
