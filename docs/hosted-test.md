@@ -44,6 +44,10 @@ The later [November 11 deployed documentation sync](#november-11-2026-deployed-d
 resolved the older deployed runbook/release-status copies without changing the
 application release or data.
 
+The [November 11 DEV v0.2.5 runtime update](#november-11-2026-dev-v025-runtime-update)
+restarted DEV's older long-running services so both the API and frontend report
+the current release. TEST's application release was unchanged.
+
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
@@ -2713,3 +2717,55 @@ This documentation sync did not rerun report-role checks or exercise fresh live
 Access/Auth0 login, authenticated browser image download, invitation delivery,
 token replay rejection, disconnected offline reload/save/reconnect synchronization
 or a fresh real Turnstile-backed submission. Those verification gaps remain open.
+
+## November 11, 2026 DEV v0.2.5 runtime update
+
+The user requested that DEV run the latest version. Fetching main and release
+tags confirmed **v0.2.5** was the latest release and DEV's checkout was already
+current at `9b9db34d5565af5afceba3828b5b70abde39bb76`. However, the long-running
+DEV API still reported **v0.2.4**, with startup revision `27a9773f20bd`.
+Earlier source-file comparisons retained their original scope: identical files
+on disk did not establish that DEV's running processes had reloaded release
+metadata. Application-file changes since that startup revision were limited to
+package version metadata, plus changelog/documentation updates.
+
+DEV's existing API/frontend supervisor was restarted from the current checkout
+at **`2026-11-11T21:34:56.217962Z`**, preserving its existing launch environment
+and updating only `APP_VERSION`, `GIT_SHA` and `BUILD_TIME` metadata. No dependency
+upgrade, migration, seed, data reconciliation or configuration edit was needed.
+The database service and TEST services were left running.
+
+### Verification
+
+- At **`2026-11-11T21:35:13.009Z`** (4:35:13 PM EST), DEV API health returned
+  `status: ok`, environment **DEV**, version **0.2.5**, revision
+  **`9b9db34d5565`**, build/start metadata **`2026-11-11T21:34:56.217962Z`** and
+  database **`cemetery_mapping_dev`**.
+- The frontend returned **200** on `127.0.0.1:5173`. Its served Vite definitions
+  for application version, Git revision and build time matched the API exactly.
+  The API remained on `127.0.0.1:3001`. Open DEV tabs should be refreshed to load
+  the new runtime metadata.
+- All **nine DEV environment/configuration files** checked retained their hashes.
+  Existing launch-environment values were preserved apart from the three intended
+  version metadata fields. Authentication settings were unchanged.
+- Database-enforced read-only before/after snapshots confirmed all **30,294
+  business rows across 76 tables** were unchanged. All **nine protected
+  authentication/operational/audit/migration tables**, user identities and schema
+  metadata were also unchanged. No audit or business record was added by this
+  restart and verification.
+- The checkout remained on current main with no tracked source changes. User
+  untracked files were untouched. TEST remained on its existing exact **v0.2.5**
+  release at `d595d1c3c404ef1934e5b56d7e03362817f3b086`; this operation did not
+  deploy or restart TEST's application.
+
+The DEV revision/build time above identify that restart. Later documentation-only
+commits do not require another application restart. Publishing this record uses a
+documentation PR followed by copying the merged runbook/release-status files to
+TEST, with original-file backups and hash/data/configuration preservation checks.
+That publication does not change TEST's runtime release.
+
+Historical deployment, parity and documentation-sync records remain intact.
+This DEV update did not rerun report-role checks or verify fresh live Access/Auth0
+login, authenticated browser image download, invitation delivery, token replay
+rejection, disconnected offline reload/save/reconnect synchronization or a fresh
+real Turnstile-backed submission. Those pending verification gaps remain open.
