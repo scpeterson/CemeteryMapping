@@ -3,6 +3,22 @@
 
 # Release status and deployment checks
 
+## November 12, 2026: Security, dependency and MapLibre updates deployed to TEST
+
+TEST is healthy on **`3763e2f062d88de9beb135c5023fe73f09b21d06`**, built
+**`2026-11-12T16:22:52Z`**, with Node 24.22.3, patched request-parser dependencies,
+nginx 1.30.6, cloudflared 2026.11.0 and MapLibre 6.18.0. The deployed production
+npm audit reports zero known vulnerabilities. Liquibase stays at 4.33.0 and
+TypeScript at 6.0.3. No database or media changes occurred.
+
+All 84 application tables, schema metadata and 756 media-file hashes were
+preserved. Runtime/manifest, public HTTPS, anonymous access denial and deployed-map
+browser checks passed; fresh interactive login was not exercised. MapLibre growth
+is reported as allowed. The hosted adjusted core has a small 0.13 KiB budget
+overage (previously 0.10 KiB), and host disk usage remains high at 97% after
+reclaiming build cache. See the [deployment record](hosted-test.md#november-12-2026-security-dependency-and-maplibre-release)
+for scope, recovery files and follow-ups. Production is unchanged.
+
 ## November 11, 2026: What's new deployed to TEST
 
 TEST is healthy on the exact merged main revision
