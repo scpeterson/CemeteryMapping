@@ -45,6 +45,22 @@
 
 .environment-prod { border-color: rgba(199, 82, 79, 0.45); color: #8c302d; }
 .environment-stage { border-color: rgba(217, 164, 65, 0.5); color: #795316; }
+.environment-badge:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.whats-new-panel {
+  width: min(560px, calc(100vw - 24px));
+  padding: var(--space-6);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  line-height: 1.6;
+}
+.whats-new-panel h2 { margin: 0; font-size: 1.125rem; }
+.whats-new-panel > button { float: right; min-height: 44px; margin-left: var(--space-3); }
+.whats-new-panel > p { color: var(--text-muted); }
+.whats-new-panel ul { padding-left: var(--space-6); }
+.whats-new-panel li + li { margin-top: var(--space-3); }
 
 .application-actions {
   grid-column: 2;

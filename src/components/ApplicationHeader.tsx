@@ -13,6 +13,7 @@ type ApplicationHeaderProps = {
   cemeteryScope?: string;
   onCemeteryScopeChange?: (id: string) => void;
   onOpenProfile: () => void;
+  onOpenWhatsNew: () => void;
   onOpenReports: () => void;
   onOpenControl: () => void;
   onOpenAdmin: () => void;
@@ -20,7 +21,7 @@ type ApplicationHeaderProps = {
 };
 
 export function ApplicationHeader({
-  cemeteryScopeLabel, cemeteries, cemeteryScope, onCemeteryScopeChange, currentUser, onOpenProfile, onOpenReports, onOpenControl, onOpenAdmin, onOpenCreateGravesite,
+  cemeteryScopeLabel, cemeteries, cemeteryScope, onCemeteryScopeChange, currentUser, onOpenProfile, onOpenWhatsNew, onOpenReports, onOpenControl, onOpenAdmin, onOpenCreateGravesite,
 }: ApplicationHeaderProps) {
   const session = useAccountSession();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -45,14 +46,18 @@ export function ApplicationHeader({
       <div className="application-brand">
         <div className="application-title">
           <h1>Cemetery Map</h1>
-          <div
+          <button
+            type="button"
             className={`environment-badge environment-${appEnvironment.toLowerCase()}`}
+            aria-label={`${appEnvironment} v${appVersionMetadata.version}: What's new`}
+            aria-haspopup="dialog"
+            onClick={onOpenWhatsNew}
             title={`Version: ${appVersionMetadata.version} (${appVersionMetadata.gitSha})\nBuild: ${appVersionMetadata.buildTime}\nAPI: ${apiBaseUrl}`}
           >
             <span>{appEnvironment}</span>{" "}
             <span className="environment-badge-separator">·</span>{" "}
             <span>v{appVersionMetadata.version}</span>
-          </div>
+          </button>
         </div>
         <p>{cemeteryScopeLabel}</p>
         {currentUser && (currentUser.role === "admin" || (cemeteries?.length ?? 0) > 1) && cemeteries?.length ? <label className="cemetery-scope" htmlFor="cemetery-scope">

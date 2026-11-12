@@ -38,6 +38,14 @@ rationale remain historical context.
   The release manifest records them; candidate and final health must match the
   version, SHA and timestamp. A stale hosted `APP_VERSION` override fails those
   checks rather than silently relabeling the release. Preserve private settings.
+- The environment/version badge opens an in-application **What's new** panel for
+  every role while retaining its technical hover details. Maintain plain-language
+  notes in `src/data/releaseNotes.json`, keyed by the exact installed package
+  version. Add that version's entry in the release-preparation PR; retain existing
+  release entries. An unknown version shows an unavailable message, never notes
+  for a different release. Bundled notes work without a GitHub account or a
+  separate release-notes request. These user-facing summaries complement the
+  changelog and operational verification records.
 - Publishing or merging a release does not deploy it. Record each environment's
   actual version, SHA, build time and migration state after separate deployment.
   Database release tags require a separately authorized migration/promotion
