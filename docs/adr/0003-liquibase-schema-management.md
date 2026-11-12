@@ -29,6 +29,14 @@ Core software:
 
 Liquibase gives the project an ordered changelog, a database changelog table, validation, rollback support, and a containerized migration runner. Formatted SQL lets migrations use native PostgreSQL and PostGIS features without hiding spatial behavior behind an ORM abstraction.
 
+## Version hold pending license review — November 12, 2026
+
+Keep Liquibase pinned to **4.33.0** pending the owner's review of the license change introduced in Liquibase 5.x. An upgrade is deferred until the owner understands the impact and explicitly approves proceeding. This records a decision to postpone the upgrade, not a conclusion about the new license's suitability.
+
+Retain the Dependabot ignore rule for `liquibase/liquibase` versions `>=5.0.0` in `.github/dependabot.yml`. Keep the local/CI Compose runner and hosted TEST migration runner on 4.33.0 during this hold.
+
+After license review and approval, revisit the version pin and Dependabot block together. Any future 5.x upgrade must also explicitly supply the PostgreSQL JDBC driver and verify changelog validation, fresh rebuilds, upgrades of existing databases, and supported rollback/recovery procedures before deployment.
+
 ## Consequences
 
 Every schema change must be a new changeset. Migration files must include rollback instructions. CI runs changelog validation, rollback testing, migrations, and status checks.
