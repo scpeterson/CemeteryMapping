@@ -28,7 +28,9 @@ must validate this major-version substitution before merge.
 
 Routine direct updates are Vite 8.3.8, its React plugin 6.3.0, Playwright 1.65.0,
 Lucide 1.72.0, concurrently 10.0.7, globals 17.14.0 and typescript-eslint 8.72.2.
-Keep ExcelJS and the emnapi dependencies pending separate replacement/removal work.
+Retain ExcelJS under [ADR 0210](0210-retain-exceljs-pending-reevaluation.md); its
+replacement is deferred by the owner. Keep the emnapi dependencies pending separate
+removal evaluation.
 Update jekyll-relative-links to 0.9.2 and compatible addressable, csv and
 sass-embedded patches while retaining Jekyll's constrained dependency majors.
 

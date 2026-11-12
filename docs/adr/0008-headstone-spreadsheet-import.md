@@ -16,6 +16,9 @@ The cemetery has an Excel spreadsheet containing GPS coordinates for headstones.
 
 Use `scripts/db-import-headstones-xlsx.mjs` to import the spreadsheet.
 
+Retain ExcelJS as the workbook reader pending future reevaluation under
+[ADR 0210](0210-retain-exceljs-pending-reevaluation.md).
+
 For each row with coordinates and at least one person, the importer creates or updates:
 
 1. One generated 10 foot by 20 foot `lots` polygon.
