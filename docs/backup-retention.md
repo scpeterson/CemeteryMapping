@@ -30,10 +30,21 @@ instructions and a link to this runbook. Both attachments uploaded successfully.
 Use this entry to recover the restic encryption password and the bucket-scoped
 Spaces credentials independently of the TEST host or the operator's Mac.
 
-The original mode-0600 recovery copies remain on the operator's Mac in
-`~/.config/nhcemeteries-backup/`. Keep the NordPass entry current when either
-secret changes; rotating a Spaces access key does not change the restic
-repository encryption password.
+On November 13, 2026, both attachments were downloaded from the saved NordPass
+entry and matched the original Mac files exactly by SHA-256 and byte size
+(`repository-password`: 65 bytes; `hosted-test.env`: 338 bytes). Only after both
+matches passed were the original Mac secret files and verification downloads
+removed. The NordPass note now records this verification and removal.
+
+The Mac directory `~/.config/nhcemeteries-backup/` now contains only a non-secret
+`recovery-storage-verification.json` receipt. Recover the secrets from NordPass
+when needed. Keep the NordPass entry current when either secret changes;
+rotating a Spaces access key does not change the restic encryption password.
+
+The server files `/etc/nhcemeteries-backup.env` and
+`/etc/nhcemeteries-backup/repository-password` were verified to match the
+originals, remain root-owned with mode 0600, and were preserved for scheduled
+backups. Backup freshness and disk status were healthy, and cron remained active.
 
 From the reviewed revision, install the official checksum-pinned binary and both
 scripts (Python 3.12 or later):
