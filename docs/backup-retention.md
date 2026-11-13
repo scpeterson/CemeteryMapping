@@ -101,7 +101,9 @@ separately against retained source/settings and recovery sets. Do not run blanke
 
 ## Schedule, monitoring, and recovery
 
-Keep the existing daily 03:30 UTC cron without duplication. After the initial
+Set the explicit PATH from `backup-retention.cron.example`; cron otherwise may
+not find restic in `/usr/local/bin`. Keep the existing daily 03:30 UTC cron
+without duplication. After the initial
 verified backup and cleanup, use `backup-retention.cron.example` for weekly
 maintenance and offsite expiration, and monthly full repository readback.
 `status` reports verified daily backup freshness and disk thresholds: warn below
@@ -110,8 +112,14 @@ maintenance and offsite expiration, and monthly full repository readback.
 these scripts do not themselves deliver alerts. Rotate `commands.log` and inspect
 restic cache growth. Never treat a fresh local dump as a verified remote backup.
 
-Monthly, also restore a selected dump to a disposable PostgreSQL/PostGIS instance
-and verify schema, representative business rows, roles, media references, and
+Monthly, also restore a selected dump to a disposable PostgreSQL/PostGIS instance.
+Wait for the container entrypoint to finish initialization, not merely for its
+temporary initialization server to accept connections. Create a separate empty
+database with `createdb --template=template0` and restore there; the image's
+automatically created database already contains PostGIS/tiger schemas and can
+conflict with a full dump. Use `pg_restore --exit-on-error --no-owner
+--no-privileges` after creating required roles in the isolated cluster.
+Verify schema, representative business rows, roles, media references, and
 application health. Recover settings/media into private isolated paths, then run
 the normal application verification. Restore testing must not overwrite live TEST.
 Use the independent password copy and bucket credentials to prove recovery can
@@ -122,3 +130,32 @@ References: [restic backup](https://restic.readthedocs.io/en/stable/040_backup.h
 [restore](https://restic.readthedocs.io/en/stable/050_restore.html),
 [retention](https://restic.readthedocs.io/en/stable/060_forget.html), and
 [PostgreSQL logical backups](https://www.postgresql.org/docs/current/backup-dump.html).
+
+## November 13, 2026 setup and recovery verification
+
+The private Standard bucket and a bucket-scoped Read/Write/Delete key were
+created with operator authorization. Anonymous requests to both bucket listing
+and the repository configuration returned HTTP 403. The password and credentials
+were installed privately on TEST, with a separate mode-0600 recovery copy on the
+operator's Mac. Independent repository decryption from that Mac passed.
+
+The initial recovery-hold snapshot `cf2dcfb853799302a06e23e9c9e3dcfda25381655fe21da43fc800515524ad13`
+contains application/settings, live media, existing daily dumps, and the held
+PostgreSQL upgrade checkpoint: 2,605 files, 14,255,989,143 source bytes.
+A complete `restic check --read-data` passed. A broader initial scan was stopped
+safely after identifying repeated hard-linked paths; it did not delete local
+files. Any unreferenced uploaded packs can be reclaimed by normal restic pruning.
+
+The dump in rehearsal snapshot `d868b0be5ab180dc7394c7881dce891be6436142037c0b8e941d9eef46057a17`
+was downloaded from Spaces, matched its source SHA-256, and restored successfully
+to an isolated PostgreSQL 18.6/PostGIS 3.6.4 container using the production image
+digest. It contained **566 headstones, 809 gravesites, 755 media assets, and 519
+migration records**. Early rehearsal attempts exposed initialization and prefilled
+schema conflicts in the test harness; the successful rehearsal used the empty
+`template0` database procedure above. Temporary rehearsal containers and data
+were removed, leaving live TEST unchanged. Private logs and the restore report
+remain under `/srv/nhcemeteries/backup-retention/`.
+
+The implementation and explicit checksum-hold safeguard were merged after all
+required CI passed in [PR 859](https://github.com/scpeterson/CemeteryMapping/pull/859)
+and [PR 860](https://github.com/scpeterson/CemeteryMapping/pull/860).
