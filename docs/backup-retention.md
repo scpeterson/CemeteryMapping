@@ -39,7 +39,9 @@ Preserve the previous installed script before replacement. Initialize the empty
 remote repository once with `nhcemeteries-test-backup-retention init`. Do not
 initialize a different repository when credentials or connectivity fail.
 All commands take the deployment lock; a concurrent deployment or backup causes
-them to stop instead of racing. No application release or database migration is
+them to stop instead of racing. External restore clients also hold repository
+locks: finish those restores before integrity checks or pruning, and allow the
+client to release its live lock normally. No application release or database migration is
 required to install this tooling.
 
 ## Verification before deletion
@@ -162,3 +164,40 @@ remain under `/srv/nhcemeteries/backup-retention/`.
 The implementation and explicit checksum-hold safeguard were merged after all
 required CI passed in [PR 859](https://github.com/scpeterson/CemeteryMapping/pull/859)
 and [PR 860](https://github.com/scpeterson/CemeteryMapping/pull/860).
+
+The initial cleanup manifest selected 16 backup/staging roots containing 5,005
+files and 38,415,671,283 logical bytes, with an estimated 18,297,073,664 bytes
+(17.04 GiB) reclaimable after accounting for external hard links. Recovery-hold
+snapshot `cfb4c8e178422acd2e1e4d97362deee518323937df23372cd86b7d8136bab83f`
+passed repository structure checks, complete decrypted file readback against
+SHA-256/size records, and a subsequent comparison with the unchanged local
+sources before cleanup proof was issued.
+
+[PR 861](https://github.com/scpeterson/CemeteryMapping/pull/861) completed the cron
+environment, persistent release-verification evidence, and recovery procedure.
+All required CI passed before the merged safeguards were installed. CI bundle
+measurements use fixed test metadata for reproducibility; the core budget and
+MapLibre growth policy remain unchanged, and release builds use real metadata.
+
+After the proof passed a final snapshot/hold/source check, the 16 selected roots
+were removed. The root filesystem changed from **97% used with about 2.9 GiB
+free to 74% used with about 20 GiB free**. The latest four verified deployment
+recovery sets and the PostgreSQL upgrade checkpoint remained. Six older retained
+release sets kept private successful-verification evidence after staging removal.
+Live application/media files, Docker images, and database volumes were preserved.
+
+A fresh daily snapshot `418e2d1a2c14270175fcc44cd44fc64d01f07ae8a9a397ea68a601a1d8a5c191`
+then passed complete decrypted readback with the explicit cron environment.
+Offsite expiration passed its dry run, was applied, and passed the subsequent
+repository check. Recovery-hold snapshots remained available. Initial cleanup
+inputs are preserved as `initial-cleanup-manifest.json` and
+`initial-cleanup-proof.json`; `implementation.json` records the installed script
+hash, source revision, enabled schedules, and healthy disk/freshness status.
+
+The existing cron file now contains one daily backup at 03:30 UTC, weekly local
+retention Sundays at 05:30 UTC, weekly offsite expiration at 06:30 UTC, monthly
+full-data checks on day 1 at 07:30 UTC, and hourly status logging at minute 17.
+Cron was active after installation. Job output is protected in `scheduler.log`;
+status JSON is logged with tag `nhcemeteries-backup-status`. Protected command and
+scheduler logs rotate weekly or at 10 MiB, retaining eight compressed rotations.
+Both disk warning and critical flags were false after setup.
