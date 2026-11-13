@@ -49,6 +49,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test:server
+      - name: Install checksum-pinned restic for encrypted retention tests
+        run: |
+          python3 deploy/test/install_restic.py "$RUNNER_TEMP/backup-retention-bin"
+          echo "$RUNNER_TEMP/backup-retention-bin" >> "$GITHUB_PATH"
       - run: npm run test:deploy
       - run: python3 -m unittest discover -s scripts -p 'check_docs_test.py'
       - run: npm run build:test
