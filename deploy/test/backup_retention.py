@@ -105,15 +105,16 @@ def candidates(root, now=None):
         safe_root(root, hold)
     held_names = {PurePosixPath(hold).name for hold in holds}
     backups, staging = root / 'backups', root / 'staging'
+    evidence_file = root / 'backup-retention/release-verifications.json'
+    evidence = json.loads(evidence_file.read_text()) if evidence_file.exists() else {}
     releases = []
     for p in backups.iterdir():
         if not p.is_dir() or not RELEASE.fullmatch(p.name):
             continue
         report = staging / p.name / 'verification.json'
-        if report.is_file():
-            data = json.loads(report.read_text())
-            if data.get('health', {}).get('status') == 'ok' and data.get('accountAndMediaPreservation') == 'passed':
-                releases.append(p.name)
+        data = json.loads(report.read_text()) if report.is_file() else evidence.get(p.name, {})
+        if data.get('health', {}).get('status') == 'ok' and data.get('accountAndMediaPreservation') == 'passed':
+            releases.append(p.name)
     keep = set(sorted(releases, reverse=True)[:4])
     selected = []
     for parent in (backups, staging):
@@ -283,6 +284,25 @@ class Manager:
         paths = self.paths(plan)
         if inventory(paths) != plan['files']:
             raise RuntimeError('Local recovery files changed; no cleanup was performed.')
+        # Staging expires before its paired backup. Preserve verified release
+        # evidence first so deleting staging does not orphan the 14-day policy.
+        evidence_file = self.state / 'release-verifications.json'
+        evidence = json.loads(evidence_file.read_text()) if evidence_file.exists() else {}
+        changed = False
+        for path in paths:
+            if path.parent != self.root / 'staging' or not RELEASE.fullmatch(path.name):
+                continue
+            backup = self.root / 'backups' / path.name
+            if not backup.is_dir() or str(backup.relative_to(self.root)) in plan['roots']:
+                continue
+            report = json.loads((path / 'verification.json').read_text())
+            if report.get('health', {}).get('status') != 'ok' or report.get('accountAndMediaPreservation') != 'passed':
+                raise RuntimeError('Release verification evidence is no longer successful.')
+            evidence[path.name] = {'health': {'status': 'ok'}, 'accountAndMediaPreservation': 'passed',
+                                   'snapshot': proof['snapshot']}
+            changed = True
+        if changed:
+            save(evidence_file, evidence)
         # Recheck all sources before any removal; current media/app/volumes cannot be roots.
         for path in paths:
             if path.is_dir():
@@ -401,6 +421,7 @@ def main():
             if not dumps:
                 raise RuntimeError('No database dumps exist; no retention was attempted.')
             paths = [ROOT / 'app', ROOT / 'media', *dumps]
+            paths.extend(p for p in (state / 'policy.json', state / 'release-verifications.json') if p.is_file())
             before = inventory(paths)
             snapshot = restic.backup(paths, 'hosted-test-daily')
             restic.verify(snapshot, paths, before)

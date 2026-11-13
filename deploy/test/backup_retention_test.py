@@ -213,6 +213,27 @@ class Fixture(unittest.TestCase):
         self.assertIn(str(archive.relative_to(self.root)), roots)
         self.assertNotIn(relative, roots)
 
+    def test_staging_cleanup_preserves_later_backup_retention_evidence(self):
+        now = time.time()
+        names = []
+        for day in range(1, 6):
+            name = f'2026010{day}T010000Z-aaaaaaaaaaaa-bbbbbbbb'
+            names.append(name)
+            (self.root / 'backups' / name).mkdir()
+            retention.save(self.root / 'staging' / name / 'verification.json', {
+                'health': {'status': 'ok'}, 'accountAndMediaPreservation': 'passed'})
+            for parent in ('backups', 'staging'):
+                os.utime(self.root / parent / name, (now - 10 * 86400, now - 10 * 86400))
+        plan, proof = self.proof()
+        self.assertIn('staging/' + names[0], plan['roots'])
+        self.assertNotIn('backups/' + names[0], plan['roots'])
+        self.manager.apply(plan, proof)
+        self.assertFalse((self.root / 'staging' / names[0]).exists())
+        self.assertTrue((self.root / 'backups' / names[0]).exists())
+        roots, keep, _ = retention.candidates(self.root, now=now + 5 * 86400)
+        self.assertIn('backups/' + names[0], roots)
+        self.assertEqual(keep, names[1:])
+
     def test_daily_dump_failure_keeps_existing_recovery_copy(self):
         (self.root / 'app/deploy/test').mkdir(parents=True)
         with patch.object(retention.subprocess, 'run', side_effect=RuntimeError('dump failed')):
