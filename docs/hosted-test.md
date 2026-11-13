@@ -237,10 +237,12 @@ code releases leave the tunnel service running; connector upgrades are separate.
 ## Verification and updates
 
 Install `deploy/test/backup.sh` as `/usr/local/sbin/nhcemeteries-test-backup`
-and run it daily before the provider backup window. It creates a validated
-custom-format database dump, keeps 14 days locally, and preserves the initial
-snapshot. Provider backups cover this directory and media, but they are still
-in the same provider account; a separate offsite copy remains follow-up work.
+together with the Python retention manager as described in the
+[encrypted backup and retention runbook](backup-retention.md). The daily job
+creates a validated custom-format database dump and encrypted Spaces backup.
+Local dumps older than 14 days are removed only after verified offsite readback.
+Provider snapshots supplement logical backups; both remain in the same provider
+account. Keep the encryption password separately from the host.
 
 - `docker compose ps` must show healthy database and running application services.
 - Check `http://127.0.0.1:8080/api/health` from the host and confirm TEST metadata.
