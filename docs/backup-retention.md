@@ -21,10 +21,19 @@ can recover an encrypted repository after that password is lost.
 Root-owned mode-0600 `/etc/nhcemeteries-backup.env` follows
 `deploy/test/backup.env.example`. The repository password is a separate mode-0600
 file under `/etc/nhcemeteries-backup/`. Never commit secrets or publish protected
-command logs, manifests, raw records, or recovery files. A separate recovery copy
-is kept on the operator's Mac in `~/.config/nhcemeteries-backup/`; copy its files
-into the operator's password manager or another independently protected recovery
-location. Backing up this Mac is necessary until that transfer is completed.
+command logs, manifests, raw records, or recovery files.
+
+Recovery secrets were saved in **NordPass** on November 13, 2026, in the private
+secure note **“NH Cemeteries — Hosted TEST backup recovery”**. It contains the
+`repository-password` and `hosted-test.env` files as attachments, plus recovery
+instructions and a link to this runbook. Both attachments uploaded successfully.
+Use this entry to recover the restic encryption password and the bucket-scoped
+Spaces credentials independently of the TEST host or the operator's Mac.
+
+The original mode-0600 recovery copies remain on the operator's Mac in
+`~/.config/nhcemeteries-backup/`. Keep the NordPass entry current when either
+secret changes; rotating a Spaces access key does not change the restic
+repository encryption password.
 
 From the reviewed revision, install the official checksum-pinned binary and both
 scripts (Python 3.12 or later):
