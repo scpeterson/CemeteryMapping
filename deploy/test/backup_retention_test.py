@@ -199,6 +199,20 @@ class Fixture(unittest.TestCase):
             self.manager.apply(plan, proof)
         self.assertTrue(archive.exists())
 
+    def test_media_pool_checksum_hold_is_preserved(self):
+        pool = self.root / 'backups/media-snapshots'
+        pool.mkdir()
+        archive = pool / ('b' * 64 + '.tar.gz')
+        checksum = pool / ('b' * 64 + '.sha256')
+        archive.write_bytes(b'archive fixture')
+        checksum.write_text('checksum fixture')
+        os.utime(archive, (1, 1))
+        relative = str(checksum.relative_to(self.root))
+        retention.save(self.root / 'backup-retention/policy.json', {'holds': [relative]})
+        roots, _, _ = retention.candidates(self.root)
+        self.assertIn(str(archive.relative_to(self.root)), roots)
+        self.assertNotIn(relative, roots)
+
     def test_daily_dump_failure_keeps_existing_recovery_copy(self):
         (self.root / 'app/deploy/test').mkdir(parents=True)
         with patch.object(retention.subprocess, 'run', side_effect=RuntimeError('dump failed')):

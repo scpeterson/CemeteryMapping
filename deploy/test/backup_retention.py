@@ -141,7 +141,7 @@ def candidates(root, now=None):
                     and archive.stat().st_nlink == 1 and now - archive.stat().st_mtime > 14 * 86400):
                 selected.append(relative)
                 checksum = pool / (key + '.sha256')
-                if checksum.is_file():
+                if checksum.is_file() and str(checksum.relative_to(root)) not in holds:
                     selected.append(str(checksum.relative_to(root)))
     return sorted(selected), sorted(keep), sorted(holds)
 
