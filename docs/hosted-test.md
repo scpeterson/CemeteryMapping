@@ -14,6 +14,9 @@ The latest recorded code deployment is the
 at `3763e2f`, a v0.2.5-based main build. Dated sections below describe historical
 releases and their verification scope. Check `/api/health` for the running release.
 
+The latest backup operation is the
+[November 13 encrypted Spaces backup and verified cleanup](#november-13-2026-encrypted-spaces-backup-and-verified-cleanup).
+
 The latest NHG review update is the
 [November 10 remaining NHG reconciliation](#november-10-2026-remaining-nhg-reading-fact-and-observation-reconciliation).
 
@@ -2962,3 +2965,26 @@ Additional table/schema/media fingerprints, runtime audit, tunnel/browser/final
 health reports and canonical before/after bundle reports are retained privately
 under `/srv/nhcemeteries/backups/dependency-refresh-20261112/`.
 Production was not changed.
+
+
+## November 13, 2026 encrypted Spaces backup and verified cleanup
+
+Hosted TEST now has a private DigitalOcean Spaces Standard repository in SFO3,
+with restic encryption and an independently held recovery password. See the
+[backup retention runbook](backup-retention.md#november-13-2026-setup-and-recovery-verification)
+for verified snapshots, restore results, policy and operations.
+
+Before local removal, all 5,005 selected files passed decrypted offsite readback
+against SHA-256/size records and a subsequent comparison with local sources.
+Manifest-gated cleanup removed 16 reviewed backup/staging roots and reduced root
+disk usage from **97% to 74%, leaving about 20 GiB free**. The latest four
+verified deployment recovery sets, PostgreSQL upgrade recovery hold, live media,
+Docker images and database volumes were retained. This operation did not deploy
+a new application release or migrate the database.
+
+The fresh daily snapshot also passed complete decrypted readback, and offsite
+retention passed its dry run and application. Daily backups, weekly local/offsite
+retention, monthly repository readback, hourly status logging, and protected log
+rotation are enabled. Initial status reported no disk or backup-freshness warning
+or critical condition. The application remains on `3763e2f`; the backup tooling
+was installed separately from merged, CI-passed main `06e687a`.
