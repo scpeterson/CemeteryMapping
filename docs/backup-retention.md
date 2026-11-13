@@ -46,7 +46,8 @@ required to install this tooling.
 
 The daily command creates a custom-format database dump, validates its table of
 contents with `pg_restore --list`, and saves database roles with `pg_dumpall`.
-It snapshots application files/settings, media, and the daily dumps with restic.
+It snapshots application files/settings, media, daily dumps, and existing
+retention holds/verification evidence with restic.
 It checks repository structure, streams decrypted content back without extracting
 large archives locally, compares every file's SHA-256 and size, and rehashes the
 local sources. Changes or failures stop pruning. A listing check is not a database
@@ -76,7 +77,9 @@ change. Store private audit results under `/srv/nhcemeteries/backup-retention/`.
   dump filenames do not prevent expiration.
 - Keep the latest four successfully verified deployment recovery sets locally.
   Older successful backups become eligible after 14 days; their staging files
-  after 7 days. Unknown or failed releases remain for manual review.
+  after 7 days. Successful verification evidence is saved privately before
+  staging removal so the paired backup remains eligible at 14 days. Unknown or
+  failed releases remain for manual review.
 - Three reviewed legacy sets are eligible: `release-20261017-f927266`,
   `release-20261017-38eb15e`, and `security-20260925T172451Z`. Their estimated
   exclusive allocation was 16.9 GiB during the November 12 investigation.
