@@ -23,6 +23,10 @@ test("lookupTables exposes only admin-maintained lookup tables", () => {
       "maintenance_action_types",
       "maintenance_priority_types",
       "military_rank_types",
+      "grave_feature_types",
+      "grave_feature_subtypes",
+      "grave_feature_material_types",
+      "grave_feature_placement_types",
     ],
   );
 });
@@ -44,7 +48,7 @@ test("listLookupRecords reads source fields only for marker lookup tables", asyn
 
   const result = await listLookupRecords(pool);
 
-  assert.equal(result.tables.length, 17);
+  assert.equal(result.tables.length, 21);
   for (const sql of queries) assert.match(sql, /ORDER BY lower\(label\), label, code/u);
   assert.match(queries[0], /source_notes, source_url/u);
   assert.match(queries[0], /usage_counts\.lookup_id=marker_types\.id/u);

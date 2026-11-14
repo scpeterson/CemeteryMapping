@@ -232,7 +232,7 @@ Sections may exist before they have geometry. A section with no geometry can sti
 
 ### Lookup Maintenance
 
-Use `Admin -> Lookups` to maintain controlled values such as marker types, marker materials, headstone conditions, gravesite statuses, lot ownership event types, and military ranks.
+System administrators use `Admin -> Lookups` to maintain controlled values such as marker types, marker materials, headstone conditions, gravesite statuses, lot ownership event types, military ranks, and grave feature types, subtypes, materials and placements. These lists are shared across all cemeteries; cemetery admins cannot maintain them.
 
 1. Open `Admin -> Lookups`.
 2. Choose the lookup table from the dropdown.
@@ -243,6 +243,22 @@ Use `Admin -> Lookups` to maintain controlled values such as marker types, marke
 7. Use `Show inactive` when reviewing retired values or reactivating one.
 8. Use the usage count before deactivating a value. If a value is already used by records, deactivation hides it from new choices but preserves historical data.
 9. Use the audit jump link when you need to see who last changed a lookup row.
+
+For grave features, choose **Grave feature types**, **Grave feature subtypes**,
+**Grave feature materials**, or **Grave feature placements**. Add a label and
+description, then click **Add value**. For a new subtype, select an active
+**Feature type**, or **All feature types** for a generic subtype. A saved subtype's
+parent stays fixed, including a generic parent, to preserve existing feature
+references; create a new subtype when a different parent is needed. Existing
+subtypes retain their parent even when that type becomes inactive.
+
+All four lists support label, description and active-status edits, reference counts
+across cemeteries, and the audit-history link. Deactivating an in-use value requires
+confirmation and retains its existing grave/marker feature records. Deactivating a
+type does not change or deactivate its subtypes. Active choices refresh in feature
+forms after saving without a page reload. Stable codes are generated when adding
+values and do not change when labels are edited. There is no permanent-delete
+control; deactivate obsolete values instead.
 
 For military ranks, choose **Military ranks** from the lookup table dropdown. Add a label and description, select the military branch, enter the abbreviation, and choose Enlisted, Warrant officer, or Officer. Pay grade is optional and accepts historical grades such as `4th Grade` as well as modern values such as `E-5`. Click **Add value**. Existing ranks support label, description, abbreviation, pay-grade, rank-group, and active-status edits. Their branch stays fixed to preserve existing burial references; add a new rank for another branch instead. Saved changes refresh burial-form lookup choices without a page reload. Changes use the existing audit log and deactivation confirmation for ranks used by burials.
 

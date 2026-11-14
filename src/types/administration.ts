@@ -130,6 +130,7 @@ export type LookupTableDefinition = {
   label: string;
   hasSourceFields: boolean;
   hasRankFields?: boolean;
+  hasGraveFeatureType?: boolean;
 };
 
 export type LookupRecord = {
@@ -140,6 +141,7 @@ export type LookupRecord = {
   isActive: boolean;
   usageCount: number;
   usageLabel: string;
+  graveFeatureTypeId?: string | null;
   militaryBranchId?: string;
   abbreviation?: string;
   payGrade?: string;

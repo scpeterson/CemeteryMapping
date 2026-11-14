@@ -110,6 +110,7 @@ export function validateLookupPayload(body, table) {
   }
   return {
     ...rankFields,
+    ...(table === "grave_feature_subtypes" ? { graveFeatureTypeId: body?.graveFeatureTypeId ? validateUuid(body.graveFeatureTypeId, "Grave feature type") : null } : {}),
     code: validateLookupCode(body?.code),
     label: requiredText(body?.label, "Label", 100),
     description: requiredText(body?.description, "Description", 500),

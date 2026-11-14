@@ -1,3 +1,4 @@
+import { GraveFeatureTypeField } from "./GraveFeatureTypeField";
 import { MilitaryRankFields } from "./MilitaryRankFields";
 import { History, ListChecks } from "lucide-react";
 import { lookupRowTitle, lookupUsageText } from "../admin/adminWorkflowConfig";
@@ -55,6 +56,7 @@ export function LookupAdminTab({
           </label>
         </div>
 
+        <p>Lookup values are shared across all cemeteries. Only system administrators can maintain them.</p>
         <p>Values are listed alphabetically. Name related items with the shared term first, such as “Granite, gray”.</p>
 
         {isLoadingLookups ? <div className="admin-message" role="status">Loading lookup records...</div> : null}
@@ -68,7 +70,7 @@ export function LookupAdminTab({
                 return (
                   <article
                     key={row.id}
-                    className={`${row.isActive ? "lookup-row" : "lookup-row is-inactive"} ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""}`}
+                    className={`${row.isActive ? "lookup-row" : "lookup-row is-inactive"} ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""} ${selectedLookupDefinition.hasGraveFeatureType ? "has-feature-type" : ""}`}
                     title={lookupRowTitle(row)}
                   >
                     <label className="lookup-label">
@@ -110,6 +112,7 @@ export function LookupAdminTab({
                       </>
                     ) : null}
                     {selectedLookupDefinition.hasRankFields ? <MilitaryRankFields record={row} branches={lookupRecords.lookups.military_branch_types ?? []} onChange={patch => updateLocalLookupRecord(selectedLookupTable, row.id, patch)} /> : null}
+                    {selectedLookupDefinition.hasGraveFeatureType ? <GraveFeatureTypeField record={row} types={lookupRecords.lookups.grave_feature_types ?? []} onChange={patch => updateLocalLookupRecord(selectedLookupTable, row.id, patch)} /> : null}
                     <div className="lookup-usage" title={lookupUsageText(row)}>
                       {lookupUsageText(row)}
                     </div>
@@ -147,7 +150,7 @@ export function LookupAdminTab({
             </div>
 
             <article
-              className={`lookup-row lookup-row-new ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""}`}
+              className={`lookup-row lookup-row-new ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""} ${selectedLookupDefinition.hasGraveFeatureType ? "has-feature-type" : ""}`}
               title={`Add a new value to ${selectedLookupDefinition.label}.`}
             >
               <h4>Add lookup value</h4>
@@ -190,6 +193,7 @@ export function LookupAdminTab({
                 </>
               ) : null}
               {selectedLookupDefinition.hasRankFields ? <MilitaryRankFields record={newLookupRecord} branches={lookupRecords.lookups.military_branch_types ?? []} onChange={patch => setNewLookupRecord(current => ({ ...current, ...patch }))} /> : null}
+              {selectedLookupDefinition.hasGraveFeatureType ? <GraveFeatureTypeField record={newLookupRecord} types={lookupRecords.lookups.grave_feature_types ?? []} onChange={patch => setNewLookupRecord(current => ({ ...current, ...patch }))} /> : null}
               <label className="checkbox-row lookup-active" title="New lookup values are active by default.">
                 <input
                   type="checkbox"

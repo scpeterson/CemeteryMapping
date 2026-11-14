@@ -310,7 +310,7 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
             aria-current={activeTab === "lookups" ? "page" : undefined}
             className={activeTab === "lookups" ? "is-active" : undefined}
             onClick={openLookupsTab}
-            title="Maintain lookup values for statuses, marker types, materials, and ownership event types."
+            title="Maintain shared lookup values for grave features, statuses, markers, materials, and ownership event types."
           >
             <ListChecks size={16} aria-hidden="true" />
             <span>Lookups</span>

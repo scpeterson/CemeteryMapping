@@ -149,6 +149,27 @@ const lookupDefinitions = {
     usageTable: "burials", usageColumn: "military_rank_type_id", usageLabel: "burials",
     usageWhere: "usage_records.deleted_at IS NULL",
   },
+  grave_feature_types: {
+    table: "grave_feature_types", label: "Grave feature types", hasSourceFields: false,
+    usageTable: "grave_features", usageColumn: "feature_type_id", usageLabel: "grave features",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
+  grave_feature_subtypes: {
+    table: "grave_feature_subtypes", label: "Grave feature subtypes", hasSourceFields: false,
+    usageTable: "grave_features", usageColumn: "feature_subtype_id", usageLabel: "grave features",
+    usageWhere: "usage_records.deleted_at IS NULL",
+    hasGraveFeatureType: true,
+  },
+  grave_feature_material_types: {
+    table: "grave_feature_material_types", label: "Grave feature materials", hasSourceFields: false,
+    usageTable: "grave_features", usageColumn: "material_type_id", usageLabel: "grave features",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
+  grave_feature_placement_types: {
+    table: "grave_feature_placement_types", label: "Grave feature placements", hasSourceFields: false,
+    usageTable: "grave_features", usageColumn: "placement_type_id", usageLabel: "grave features",
+    usageWhere: "usage_records.deleted_at IS NULL",
+  },
 };
 
 function lookupDefinition(table) {
@@ -172,6 +193,7 @@ function toLookupRow(row, definition) {
       militaryBranchId: row.military_branch_type_id,
       abbreviation: row.abbreviation, payGrade: row.pay_grade ?? "", rankGroup: row.rank_group,
     } : {}),
+    ...(definition.hasGraveFeatureType ? { graveFeatureTypeId: row.grave_feature_type_id ?? null } : {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -183,6 +205,7 @@ export function lookupTables() {
     label: definition.label,
     hasSourceFields: definition.hasSourceFields,
     ...(definition.hasRankFields ? { hasRankFields: true } : {}),
+    ...(definition.hasGraveFeatureType ? { hasGraveFeatureType: true } : {}),
   }));
 }
 
@@ -194,7 +217,7 @@ export async function listLookupRecords(pool) {
 
     for (const table of tables) {
       const definition = lookupDefinition(table.table);
-      const sourceFields = definition.hasSourceFields ? ", source_notes, source_url" : definition.hasRankFields ? ", military_branch_type_id::text, abbreviation, pay_grade, rank_group" : "";
+      const sourceFields = definition.hasSourceFields ? ", source_notes, source_url" : definition.hasRankFields ? ", military_branch_type_id::text, abbreviation, pay_grade, rank_group" : definition.hasGraveFeatureType ? ", grave_feature_type_id::text" : "";
       const usageWhere = definition.usageWhere ? ` AND ${definition.usageWhere}` : "";
       const result = await client.query(`
         SELECT
@@ -227,6 +250,7 @@ export async function listLookupRecords(pool) {
 export async function updateLookupRecord(pool, table, id, record, { actorUser } = {}) {
   const definition = lookupDefinition(table);
   if (definition.hasRankFields) return saveMilitaryRank(pool, id, record, actorUser);
+  if (definition.hasGraveFeatureType) return saveGraveFeatureSubtype(pool, id, record, actorUser);
 
   return withAuditContext(pool, { actorUser }, async (client) => {
     const sourceAssignments = definition.hasSourceFields
@@ -261,6 +285,7 @@ export async function updateLookupRecord(pool, table, id, record, { actorUser } 
 export async function createLookupRecord(pool, table, record, { actorUser } = {}) {
   const definition = lookupDefinition(table);
   if (definition.hasRankFields) return saveMilitaryRank(pool, undefined, record, actorUser);
+  if (definition.hasGraveFeatureType) return saveGraveFeatureSubtype(pool, undefined, record, actorUser);
 
   return withAuditContext(pool, { actorUser }, async (client) => {
     const sourceColumns = definition.hasSourceFields ? ", source_notes, source_url" : "";
@@ -312,6 +337,32 @@ async function saveMilitaryRank(pool, id, record, actorUser) {
       if (error.code === "23505") throw new BadRequestError("A rank with this code already exists in this branch. Refresh the list and edit the existing rank.");
       throw error;
     }
+    return toLookupRow(result.rows[0], definition);
+  });
+}
+
+async function saveGraveFeatureSubtype(pool, id, record, actorUser) {
+  const definition = lookupDefinitions.grave_feature_subtypes;
+  const parentId = record.graveFeatureTypeId ?? null;
+  return withAuditContext(pool, { actorUser }, async client => {
+    if (id) {
+      const current = await client.query("SELECT grave_feature_type_id::text FROM grave_feature_subtypes WHERE id=$1::uuid FOR UPDATE", [id]);
+      if (!current.rows.length) return undefined;
+      if (current.rows[0].grave_feature_type_id !== parentId) {
+        throw new BadRequestError("A subtype's feature type cannot be changed. Add a new subtype for the other type.");
+      }
+    } else if (parentId) {
+      const parent = await client.query("SELECT id FROM grave_feature_types WHERE id=$1::uuid AND is_active FOR SHARE", [parentId]);
+      if (!parent.rows.length) throw new BadRequestError("Choose an active grave feature type or All feature types.");
+    }
+    const usage = `(SELECT count(*) FROM grave_features WHERE grave_features.feature_subtype_id=grave_feature_subtypes.id AND grave_features.deleted_at IS NULL)`;
+    const returning = `RETURNING id::text,code,label,description,is_active,created_at,updated_at,grave_feature_type_id::text,${usage} AS usage_count`;
+    const values = [record.label, record.description, record.isActive];
+    const query = id
+      ? `UPDATE grave_feature_subtypes SET label=$1,description=$2,is_active=$3 WHERE id=$4::uuid ${returning}`
+      : `INSERT INTO grave_feature_subtypes(label,description,is_active,code,grave_feature_type_id,sort_order) VALUES($1,$2,$3,$4,$5::uuid,100) ${returning}`;
+    values.push(...(id ? [id] : [record.code, parentId]));
+    const result = await client.query(query, values);
     return toLookupRow(result.rows[0], definition);
   });
 }
