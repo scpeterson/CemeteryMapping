@@ -45,7 +45,7 @@ test('the standalone task page has a fixed budget and shared reminders remain in
 });
 
 
-test("MapLibre growth allowance covers only bounded vendor and worker bytes",()=>{
+test("MapLibre growth is reported and credited without hiding application overages",()=>{
  const assets=baseline();
  assets.find(a=>a.filename.startsWith('vendor-map-')).gzipBytes=281*1024;
  assets.push({filename:'maplibre-gl-worker-fixture.js',gzipBytes:145*1024});
@@ -56,5 +56,15 @@ test("MapLibre growth allowance covers only bounded vendor and worker bytes",()=
  assert.ok(checkBundleAssets(assets).failures.some(f=>f.includes('core JavaScript')));
  assets.at(-1).gzipBytes--;
  assets.find(a=>a.filename.startsWith('maplibre-gl-worker-')).gzipBytes=147*1024;
- assert.ok(checkBundleAssets(assets).failures.some(f=>f.includes('map vendor and worker')));
+ const result=checkBundleAssets(assets);
+ assert.deepEqual(result.failures,[]);
+ assert.ok(result.warnings.some(w=>w.includes('former 427 KiB budget')));
+ assets.find(a=>a.filename.startsWith('vendor-map-')).gzipBytes=900*1024;
+ assets.find(a=>a.filename.startsWith('maplibre-gl-worker-')).gzipBytes=300*1024;
+ const large=checkBundleAssets(assets);
+ assert.deepEqual(large.failures,[]);
+ assert.equal(large.mapGrowthCredit,(1200-415)*1024);
+ assert.ok(large.warnings.some(w=>w.includes('exceeds 285 KiB')));
+ assets.at(-1).gzipBytes++;
+ assert.ok(checkBundleAssets(assets).failures.some(f=>f.includes('core JavaScript')));
 });

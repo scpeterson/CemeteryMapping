@@ -49,10 +49,21 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test:server
+      - name: Install checksum-pinned restic for encrypted retention tests
+        run: |
+          python3 deploy/test/install_restic.py "$RUNNER_TEMP/backup-retention-bin"
+          echo "$RUNNER_TEMP/backup-retention-bin" >> "$GITHUB_PATH"
       - run: npm run test:deploy
       - run: python3 -m unittest discover -s scripts -p 'check_docs_test.py'
       - run: npm run build:test
-      - run: npm run build:prod
+      # Commit/time literals change chunk hashes and gzip sizes even when only
+      # documentation changes. These CI files are not deployment artifacts;
+      # deploy-hosted-test builds separately with the real release metadata.
+      - name: Check production bundle with reproducible build metadata
+        env:
+          GIT_SHA: '0123456789ab'
+          BUILD_TIME: '2026-01-01T00:00:00.000Z'
+        run: npm run build:prod
 
   database:
     name: Database and Docker startup

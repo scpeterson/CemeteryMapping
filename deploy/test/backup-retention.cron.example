@@ -1,0 +1,11 @@
+# Proposed root cron.d entries, UTC. Enable only after remote setup and a verified dry run.
+# Cron does not include /usr/local/bin by default; restic is installed there.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# The existing daily cron is retained; do not install a duplicate daily job.
+# 30 3 * * * root /usr/local/sbin/nhcemeteries-test-backup
+# Weekly local retention: archives and verifies every selected byte before removal.
+# 30 5 * * 0 root /usr/local/sbin/nhcemeteries-test-backup-retention maintain
+# Offsite daily-snapshot retention; recovery-hold archives are not selected.
+# 30 6 * * 0 root /usr/local/sbin/nhcemeteries-test-backup-retention expire --apply
+# Monthly readback of all repository data. Monitor exit status and freshness separately.
+# 30 7 1 * * root /usr/local/sbin/nhcemeteries-test-backup-retention check

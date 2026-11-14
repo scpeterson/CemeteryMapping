@@ -9,10 +9,13 @@ The dedicated host is managed separately from local TEST. See
 The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
 PostGIS 3.6.4 cluster upgrade**, recorded in the
 [upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-The latest recorded code deployment is [v0.2.5 on November 10](#november-10-2026-unreadable-inscription-report-release)
-at `d595d1c`. Dated sections
-below describe historical releases and their verification scope. Check
-`/api/health` for the running application release.
+The latest recorded code deployment is the
+[November 12 security, dependency and MapLibre release](#november-12-2026-security-dependency-and-maplibre-release)
+at `3763e2f`, a v0.2.5-based main build. Dated sections below describe historical
+releases and their verification scope. Check `/api/health` for the running release.
+
+The latest backup operation is the
+[November 13 encrypted Spaces backup and verified cleanup](#november-13-2026-encrypted-spaces-backup-and-verified-cleanup).
 
 The latest NHG review update is the
 [November 10 remaining NHG reconciliation](#november-10-2026-remaining-nhg-reading-fact-and-observation-reconciliation).
@@ -188,7 +191,7 @@ The `nhcemeteries-test` connector runs in Docker on the TEST host. Updating a
 Mac installation does not update this container. Docker updates require pulling
 and recreating the container, as described in
 [Cloudflare's update guide](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/update-cloudflared/).
-The Compose file pins cloudflared 2026.10.3 by digest for the
+The Compose file pins cloudflared 2026.11.0 by digest, retaining the
 [eMudhra certificate security update](https://blog.cloudflare.com/emudhra-certificate-compromise/).
 
 For future upgrades, review and update the pinned image first. On the TEST host,
@@ -201,7 +204,7 @@ the token or put it in arguments:
 docker compose --profile tunnel pull tunnel
 docker run -d --name nhcemeteries-test-tunnel-upgrade --restart unless-stopped \
   --network host -v "$PWD/tunnel-token:/run/secrets/tunnel-token:ro" \
-  cloudflare/cloudflared:2026.10.3@sha256:faa8e0a1475f137c910be6025f43c8e4092fdd35461b31e19fd1390657a1ff39 \
+  cloudflare/cloudflared:2026.11.0@sha256:b94b96edf2c9c4360f8879c8580cfaa99077f19c849ec595ca2f711b27d4f344 \
   tunnel --no-autoupdate --metrics 127.0.0.1:20246 run \
   --token-file /run/secrets/tunnel-token
 curl -fsS http://127.0.0.1:20246/ready
@@ -237,10 +240,12 @@ code releases leave the tunnel service running; connector upgrades are separate.
 ## Verification and updates
 
 Install `deploy/test/backup.sh` as `/usr/local/sbin/nhcemeteries-test-backup`
-and run it daily before the provider backup window. It creates a validated
-custom-format database dump, keeps 14 days locally, and preserves the initial
-snapshot. Provider backups cover this directory and media, but they are still
-in the same provider account; a separate offsite copy remains follow-up work.
+together with the Python retention manager as described in the
+[encrypted backup and retention runbook](backup-retention.md). The daily job
+creates a validated custom-format database dump and encrypted Spaces backup.
+Local dumps older than 14 days are removed only after verified offsite readback.
+Provider snapshots supplement logical backups; both remain in the same provider
+account. Keep the encryption password separately from the host.
 
 - `docker compose ps` must show healthy database and running application services.
 - Check `http://127.0.0.1:8080/api/health` from the host and confirm TEST metadata.
@@ -2904,3 +2909,82 @@ status, the prior changelog and the deployment script. Earlier failed rehearsal
 artifacts remain in the corresponding initial and `-r2` directories. Recovery
 uses a reviewed forward correction or the pre-migration backup with subsequent
 edits accounted for; automatic SQL rollback is empty.
+
+## November 12, 2026 security, dependency and MapLibre release
+
+Hosted TEST runs merged revision **`3763e2f062d88de9beb135c5023fe73f09b21d06`**,
+package **0.2.5**, built **`2026-11-12T16:22:52Z`**. Exact main-commit CI passed
+before the standard backup/candidate/cutover workflow ran. The previous runtime
+was `87833b366068968920468c2d643c5ad6b51fa0fd`. No schema migrations, database
+restores or seeds were performed; Liquibase remains 4.33.0 and TypeScript 6.0.3.
+
+The API now runs Node **24.22.3**, body-parser **2.4.0** and qs **6.17.1**.
+The actual deployed production dependency audit returned **zero known
+vulnerabilities**. Build-only Vite tooling is excluded from production dependencies.
+The frontend includes MapLibre **6.18.0**, updated Vite/React tooling, Lucide and
+Auth0 dependencies from the reviewed lockfile. Nginx is **1.30.6**. Cloudflared
+**2026.11.0** was rolled through a ready temporary replica, then the regular
+connector was recreated and verified with four ready connections. The temporary
+replica was removed; public HTTPS returned 200 afterward.
+
+Validation confirmed healthy TEST/database/release metadata, zero API restarts,
+all **201** server/shared runtime hashes and the complete release manifest.
+Anonymous private API and a real media route returned **401**. Auth0, Turnstile,
+access controls and protected settings were preserved. Actual deployed-asset
+browser fixtures passed for reader, power-user, cemetery-admin and admin roles:
+MapLibre worker loading, WebGL2 canvas, zoom controls, release notes, keyboard/focus
+behavior and 320-pixel layout. Identity/API fixtures were browser-local and no
+live write requests were sent; fresh interactive Access/Auth0 login was not tested.
+
+Independent before/after checks found **all 84 application tables / 70,724 rows**,
+schema constraints/triggers and all **756 physical media files / 7,336,086,948
+bytes** unchanged. Media comparisons used SHA-256, including the retained recovery
+copy. The standard installer separately verified account/media preservation and
+validated database/application/media recovery material.
+
+Canonical Node gzip measurements of actual deployed assets report MapLibre
+vendor/worker runtime **425.95 → 427.41 KiB (+1.46 KiB)**. Its **0.41 KiB** excess
+over the former map limit is allowed and reported under
+[ADR 0209](adr/0209-maplibre-growth-reporting.md). Actual hosted adjusted core is
+**701.13 / 701 KiB**, compared with **701.10 KiB** for the previous deployed
+frontend under the same checker: a pre-existing hosted-build overage plus **0.03
+KiB** additional overhead. The exact-commit CI production build passed; hosted
+TEST is built with its own public settings and release metadata. The canonical
+hosted bundle check therefore still reports the small core overage. No application
+budget was raised and this is not recorded as an unrestricted bundle-check pass.
+
+Disposable Docker build-cache cleanup reclaimed **1.344 GB**. Existing recovery
+images, backups and database volumes were retained. The host still has only about
+**2.9 GB free (97% used)**; capacity/backup-retention follow-up remains necessary.
+API and tunnel health were rechecked after cleanup.
+
+Recovery and installer verification are under
+`/srv/nhcemeteries/backups/20261112T162252Z-3763e2f062d8-6b0733dd/` and
+`/srv/nhcemeteries/staging/20261112T162252Z-3763e2f062d8-6b0733dd/verification.json`.
+Additional table/schema/media fingerprints, runtime audit, tunnel/browser/final
+health reports and canonical before/after bundle reports are retained privately
+under `/srv/nhcemeteries/backups/dependency-refresh-20261112/`.
+Production was not changed.
+
+
+## November 13, 2026 encrypted Spaces backup and verified cleanup
+
+Hosted TEST now has a private DigitalOcean Spaces Standard repository in SFO3,
+with restic encryption and an independently held recovery password. See the
+[backup retention runbook](backup-retention.md#november-13-2026-setup-and-recovery-verification)
+for verified snapshots, restore results, policy and operations.
+
+Before local removal, all 5,005 selected files passed decrypted offsite readback
+against SHA-256/size records and a subsequent comparison with local sources.
+Manifest-gated cleanup removed 16 reviewed backup/staging roots and reduced root
+disk usage from **97% to 74%, leaving about 20 GiB free**. The latest four
+verified deployment recovery sets, PostgreSQL upgrade recovery hold, live media,
+Docker images and database volumes were retained. This operation did not deploy
+a new application release or migrate the database.
+
+The fresh daily snapshot also passed complete decrypted readback, and offsite
+retention passed its dry run and application. Daily backups, weekly local/offsite
+retention, monthly repository readback, hourly status logging, and protected log
+rotation are enabled. Initial status reported no disk or backup-freshness warning
+or critical condition. The application remains on `3763e2f`; the backup tooling
+was installed separately from merged, CI-passed main `06e687a`.
