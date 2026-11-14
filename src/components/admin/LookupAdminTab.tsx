@@ -1,3 +1,5 @@
+import { LookupTextFields } from "./LookupTextFields";
+import { GraveFeatureTypeField } from "./GraveFeatureTypeField";
 import { MilitaryRankFields } from "./MilitaryRankFields";
 import { History, ListChecks } from "lucide-react";
 import { lookupRowTitle, lookupUsageText } from "../admin/adminWorkflowConfig";
@@ -37,7 +39,7 @@ export function LookupAdminTab({
             <select
               value={selectedLookupTable}
               onChange={(event) => setSelectedLookupTable(event.target.value)}
-              title="Choose which controlled lookup list to maintain."
+              title="Choose a lookup list."
             >
               {lookupRecords.tables.map((table) => (
                 <option key={table.table} value={table.table}>
@@ -46,15 +48,16 @@ export function LookupAdminTab({
               ))}
             </select>
           </label>
-          <button type="button" className="secondary-button" onClick={() => void loadLookupRecords()} disabled={isLoadingLookups} title="Reload lookup values from the database.">
+          <button type="button" className="secondary-button" onClick={() => void loadLookupRecords()} disabled={isLoadingLookups} title="Refresh lookup values.">
             {isLoadingLookups ? "Loading..." : "Refresh"}
           </button>
-          <label className="checkbox-row lookup-show-inactive" title="Show inactive lookup values in this maintenance list.">
+          <label className="checkbox-row lookup-show-inactive" title="Include inactive values.">
             <input type="checkbox" checked={showInactiveLookups} onChange={(event) => setShowInactiveLookups(event.target.checked)} />
             Show inactive
           </label>
         </div>
 
+        <p>Lookup values are shared across all cemeteries. System admins only.</p>
         <p>Values are listed alphabetically. Name related items with the shared term first, such as “Granite, gray”.</p>
 
         {isLoadingLookups ? <div className="admin-message" role="status">Loading lookup records...</div> : null}
@@ -68,57 +71,20 @@ export function LookupAdminTab({
                 return (
                   <article
                     key={row.id}
-                    className={`${row.isActive ? "lookup-row" : "lookup-row is-inactive"} ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""}`}
+                    className={`${row.isActive ? "lookup-row" : "lookup-row is-inactive"} ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""} ${selectedLookupDefinition.hasGraveFeatureType ? "has-feature-type" : ""}`}
                     title={lookupRowTitle(row)}
                   >
-                    <label className="lookup-label">
-                      Label
-                      <input
-                        value={row.label}
-                        onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { label: event.target.value })}
-                        title="Human-readable label shown in admin screens and future form controls."
-                      />
-                    </label>
-                    <label className="lookup-description">
-                      Description
-                      <textarea
-                        value={row.description}
-                        onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { description: event.target.value })}
-                        rows={selectedLookupDefinition.hasSourceFields ? 3 : 2}
-                        title="Admin-facing explanation of when this value should be used."
-                      />
-                    </label>
-                    {selectedLookupDefinition.hasSourceFields ? (
-                      <>
-                        <label className="lookup-source-notes">
-                          Source notes
-                          <textarea
-                            value={row.sourceNotes ?? ""}
-                            onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sourceNotes: event.target.value })}
-                            rows={3}
-                            title="Optional note describing where this lookup value came from."
-                          />
-                        </label>
-                        <label className="lookup-source-url">
-                          Source URL
-                          <input
-                            value={row.sourceUrl ?? ""}
-                            onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { sourceUrl: event.target.value })}
-                            title="Optional source URL for this lookup value."
-                          />
-                        </label>
-                      </>
-                    ) : null}
+                    <LookupTextFields record={row} hasSourceFields={selectedLookupDefinition.hasSourceFields} onChange={patch => updateLocalLookupRecord(selectedLookupTable, row.id, patch)} />
                     {selectedLookupDefinition.hasRankFields ? <MilitaryRankFields record={row} branches={lookupRecords.lookups.military_branch_types ?? []} onChange={patch => updateLocalLookupRecord(selectedLookupTable, row.id, patch)} /> : null}
+                    {selectedLookupDefinition.hasGraveFeatureType ? <GraveFeatureTypeField record={row} types={lookupRecords.lookups.grave_feature_types ?? []} onChange={patch => updateLocalLookupRecord(selectedLookupTable, row.id, patch)} /> : null}
                     <div className="lookup-usage" title={lookupUsageText(row)}>
                       {lookupUsageText(row)}
                     </div>
-                    <label className="checkbox-row lookup-active" title="Inactive lookup values stay in the database for history but are hidden from active-only pickers.">
+                    <label className="checkbox-row lookup-active" title="Inactive values retain history but are hidden from pickers.">
                       <input
                         type="checkbox"
                         checked={row.isActive}
                         onChange={(event) => updateLocalLookupRecord(selectedLookupTable, row.id, { isActive: event.target.checked })}
-                        title="Controls whether this lookup value is active."
                       />
                       Active
                     </label>
@@ -127,7 +93,7 @@ export function LookupAdminTab({
                         type="button"
                         className="icon-button"
                         onClick={() => viewLookupAudit(selectedLookupTable, row)}
-                        title="Open audit log entries for this lookup value."
+                        title={`View audit log for ${row.label}`}
                         aria-label={`View audit log for ${row.label}`}
                       >
                         <History size={16} aria-hidden="true" />
@@ -136,7 +102,7 @@ export function LookupAdminTab({
                         type="button"
                         onClick={() => void saveLookupRecord(selectedLookupTable, row)}
                         disabled={isSavingRow || !row.label.trim() || !row.description.trim() || (selectedLookupDefinition.hasRankFields && (!row.militaryBranchId || !row.abbreviation?.trim()))}
-                        title="Save changes to this lookup value."
+                        title="Save lookup value."
                       >
                         {savingLookupKey === `${selectedLookupTable}:${row.id}` ? "Saving..." : "Save"}
                       </button>
@@ -147,55 +113,18 @@ export function LookupAdminTab({
             </div>
 
             <article
-              className={`lookup-row lookup-row-new ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""}`}
+              className={`lookup-row lookup-row-new ${selectedLookupDefinition.hasSourceFields ? "has-source-fields" : ""} ${selectedLookupDefinition.hasRankFields ? "has-rank-fields" : ""} ${selectedLookupDefinition.hasGraveFeatureType ? "has-feature-type" : ""}`}
               title={`Add a new value to ${selectedLookupDefinition.label}.`}
             >
               <h4>Add lookup value</h4>
-              <label className="lookup-label">
-                Label
-                <input
-                  value={newLookupRecord.label}
-                  onChange={(event) => setNewLookupRecord((current) => ({ ...current, label: event.target.value }))}
-                  title="Human-readable label for the new lookup value."
-                />
-              </label>
-              <label className="lookup-description">
-                Description
-                <textarea
-                  value={newLookupRecord.description}
-                  onChange={(event) => setNewLookupRecord((current) => ({ ...current, description: event.target.value }))}
-                  rows={selectedLookupDefinition.hasSourceFields ? 3 : 2}
-                  title="Admin-facing explanation of when this value should be used."
-                />
-              </label>
-              {selectedLookupDefinition.hasSourceFields ? (
-                <>
-                  <label className="lookup-source-notes">
-                    Source notes
-                    <textarea
-                      value={newLookupRecord.sourceNotes ?? ""}
-                      onChange={(event) => setNewLookupRecord((current) => ({ ...current, sourceNotes: event.target.value }))}
-                      rows={3}
-                      title="Optional note describing where this lookup value came from."
-                    />
-                  </label>
-                  <label className="lookup-source-url">
-                    Source URL
-                    <input
-                      value={newLookupRecord.sourceUrl ?? ""}
-                      onChange={(event) => setNewLookupRecord((current) => ({ ...current, sourceUrl: event.target.value }))}
-                      title="Optional source URL for this lookup value."
-                    />
-                  </label>
-                </>
-              ) : null}
+              <LookupTextFields record={newLookupRecord} hasSourceFields={selectedLookupDefinition.hasSourceFields} onChange={patch => setNewLookupRecord(current => ({ ...current, ...patch }))} />
               {selectedLookupDefinition.hasRankFields ? <MilitaryRankFields record={newLookupRecord} branches={lookupRecords.lookups.military_branch_types ?? []} onChange={patch => setNewLookupRecord(current => ({ ...current, ...patch }))} /> : null}
-              <label className="checkbox-row lookup-active" title="New lookup values are active by default.">
+              {selectedLookupDefinition.hasGraveFeatureType ? <GraveFeatureTypeField record={newLookupRecord} types={lookupRecords.lookups.grave_feature_types ?? []} onChange={patch => setNewLookupRecord(current => ({ ...current, ...patch }))} /> : null}
+              <label className="checkbox-row lookup-active">
                 <input
                   type="checkbox"
                   checked={newLookupRecord.isActive}
                   onChange={(event) => setNewLookupRecord((current) => ({ ...current, isActive: event.target.checked }))}
-                  title="Controls whether this new lookup value is active."
                 />
                 Active
               </label>
@@ -208,7 +137,7 @@ export function LookupAdminTab({
                   !newLookupRecord.description.trim() ||
                   (selectedLookupDefinition.hasRankFields && (!newLookupRecord.militaryBranchId || !newLookupRecord.abbreviation?.trim()))
                 }
-                title="Add this lookup value."
+                title="Add lookup value."
               >
                 {savingLookupKey === `${selectedLookupTable}:new` ? "Adding..." : "Add value"}
               </button>

@@ -87,7 +87,7 @@ export type SaveCemeteryTextInput = Pick<
 >;
 export type SaveSectionTextInput = Pick<SectionTextRecord, "name" | "alternateNames" | "notes">;
 export type SaveLotTextInput = Pick<LotTextRecord, "name">;
-export type SaveLookupInput = Pick<LookupRecord, "code" | "label" | "description" | "isActive" | "sourceNotes" | "sourceUrl" | "militaryBranchId" | "abbreviation" | "payGrade" | "rankGroup">;
+export type SaveLookupInput = Pick<LookupRecord, "code" | "label" | "description" | "isActive" | "sourceNotes" | "sourceUrl" | "graveFeatureTypeId" | "militaryBranchId" | "abbreviation" | "payGrade" | "rankGroup">;
 export type SaveAuditRetentionPolicyInput = Pick<AuditRetentionPolicy, "retentionDays" | "minimumProtectedDays" | "batchSize" | "isEnabled"> & {
   reason?: string;
 };
