@@ -82,3 +82,41 @@ test("cemetery admins do not receive shared lookup maintenance", async ({ page }
   await page.getByRole("button", { name: /^Open administration:/ }).click();
   await expect(page.getByRole("dialog", { name: "Admin management" }).getByRole("button", { name: "Lookups", exact: true })).toHaveCount(0);
 });
+
+test("shared lookup text fields retain source metadata when editing and adding values", async ({ page }) => {
+  await page.route(/^http:\/\/[^/]+\/api\//, route => route.fulfill({ status: 404, json: { error: "Outside lookup fixture" } }));
+  await fixture(page);
+  await page.route("**/api/admin/cemetery-records", route => route.fulfill({ json: { cemeteries: [], sections: [], lots: [] } }));
+  const original: LookupRecord = { id: "11111111-1111-4111-8111-111111111111", code: "granite", label: "Granite", description: "Granite material", isActive: true, usageCount: 0, usageLabel: "headstones", sourceNotes: "Original source", sourceUrl: "https://example.test/original", createdAt: "", updatedAt: "" };
+  let rows = [original];
+  await page.route("**/api/admin/lookups", route => route.fulfill({ json: { tables: [{ table: "marker_material_types", label: "Marker materials", hasSourceFields: true }], lookups: { marker_material_types: rows } } }));
+  await page.route("**/api/admin/lookups/marker_material_types**", route => {
+    const body = route.request().postDataJSON();
+    const created = route.request().method() === "POST";
+    expect(body.sourceNotes).toBe(created ? "New source" : "Updated source");
+    expect(body.sourceUrl).toBe(created ? "https://example.test/new" : "https://example.test/updated");
+    const saved = { ...original, ...body, id: created ? "22222222-2222-4222-8222-222222222222" : original.id };
+    rows = created ? [...rows, saved] : [saved];
+    return route.fulfill({ json: saved });
+  });
+  await page.goto("/"); await showApplicationActions(page);
+  await page.getByRole("button", { name: /^Open administration:/ }).click();
+  const admin = page.getByRole("dialog", { name: "Admin management" });
+  await admin.getByRole("button", { name: "Lookups", exact: true }).click();
+  const existing = admin.locator(".lookup-row-list .lookup-row").first();
+  await expect(existing.getByRole("textbox", { name: "Source notes", exact: true })).toHaveValue("Original source");
+  await existing.getByRole("textbox", { name: "Source notes", exact: true }).fill("Updated source");
+  await existing.getByRole("textbox", { name: "Source URL", exact: true }).fill("https://example.test/updated");
+  await existing.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(admin).toContainText("Granite saved.");
+  const added = admin.locator(".lookup-row-new");
+  await added.getByRole("textbox", { name: "Label", exact: true }).fill("Marble");
+  await added.getByRole("textbox", { name: "Description", exact: true }).fill("Marble material");
+  await added.getByRole("textbox", { name: "Source notes", exact: true }).fill("New source");
+  await added.getByRole("textbox", { name: "Source URL", exact: true }).fill("https://example.test/new");
+  await added.getByRole("button", { name: "Add value", exact: true }).click();
+  await expect(admin).toContainText("Marble added.");
+  await expect(added.getByRole("textbox", { name: "Source notes", exact: true })).toHaveValue("");
+  await admin.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(existing.getByRole("textbox", { name: "Source URL", exact: true })).toHaveValue("https://example.test/updated");
+});
