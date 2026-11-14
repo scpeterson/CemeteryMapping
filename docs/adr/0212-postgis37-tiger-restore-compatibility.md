@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # ADR 0212: PostGIS 3.7 with legacy TIGER restore compatibility
 
 - Status: Accepted

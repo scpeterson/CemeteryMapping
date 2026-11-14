@@ -8,7 +8,7 @@ render_with_liquid: false
 
 All environment definitions build **PostgreSQL 18.6 / PostGIS 3.7.0** as
 `cemeterymapping-postgis:18-3.7-tiger3.6.4` using
-[`deploy/database/Dockerfile`](../deploy/database/Dockerfile). The runtime and
+[`deploy/database/Dockerfile`](https://github.com/scpeterson/CemeteryMapping/blob/main/deploy/database/Dockerfile). The runtime and
 SQL-only legacy TIGER donor are pinned by digest. This preserves restore
 compatibility for databases containing `postgis_tiger_geocoder` 3.6.4, which is
 no longer included upstream in 3.7. No old shared libraries are copied.
