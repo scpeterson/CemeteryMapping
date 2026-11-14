@@ -1548,3 +1548,6 @@ databaseChangeLog:
   - include:
       file: changes/517-split-e-0543-koenig-gravesites.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/518-assign-c-0384-to-c-88.sql
+      relativeToChangelogFile: true

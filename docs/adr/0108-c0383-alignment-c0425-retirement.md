@@ -19,7 +19,7 @@ DEV and hosted TEST show William Hamilton DeCourcy's estimated 4-by-10-foot C-03
 
 The polygon overlaps Allan J Watenpool's C-0384 by approximately 4.940 square feet and the imported C-0425 polygon by 0.484 square feet. C-0425 represents the physical W plot marker, not a burial space. Its `Plot marker, W` pseudo-burial has no interment facts and came from the headstone spreadsheet label.
 
-After the migration-473 correction to Louise's neighboring grave, only about 3.45 feet separates that polygon from C-0384. Moving C-0383 south to remove the northern overlap creates an overlap with Louise's polygon. Source records do not establish smaller grave dimensions. Allan Watenpool's registry entry lists lot 88, but C-0384 currently has no assignment and its location needs separate review.
+After the migration-473 correction to Louise's neighboring grave, only about 3.45 feet separates that polygon from C-0384. Moving C-0383 south to remove the northern overlap creates an overlap with Louise's polygon. Source records do not establish smaller grave dimensions. At that review, Allan Watenpool's registry entry listed lot 88, but C-0384 had no assignment. [ADR 0211](0211-assign-c0384-to-c88.md) subsequently records the assignment-only correction; its location and surrounding overlaps remain separate reviews.
 
 ## Decision
 
