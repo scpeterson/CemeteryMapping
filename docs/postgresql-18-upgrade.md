@@ -6,9 +6,12 @@ render_with_liquid: false
 
 [Documentation Home](index.md) · [Rebuild Guide](rebuild.md) · [ADR 0193](adr/0193-postgresql18-volume-layout.md) · [ADR 0194](adr/0194-local-database-review-tools.md)
 
-All environment definitions use the same verified **PostgreSQL 18.6 / PostGIS
-3.6.4** image, pinned to
-`postgis/postgis:18-3.6@sha256:4a43e3c3e5d55b9208240fc71db543b79c638766280c625a425bd0a2390989c4`.
+All environment definitions build **PostgreSQL 18.6 / PostGIS 3.7.0** as
+`cemeterymapping-postgis:18-3.7-tiger3.6.4` using
+[`deploy/database/Dockerfile`](../deploy/database/Dockerfile). The runtime and
+SQL-only legacy TIGER donor are pinned by digest. This preserves restore
+compatibility for databases containing `postgis_tiger_geocoder` 3.6.4, which is
+no longer included upstream in 3.7. No old shared libraries are copied.
 This applies to root Compose DEV/TEST/STAGE/PROD and hosted TEST. PostgreSQL 18
 stores its cluster at `/var/lib/postgresql/18/docker`; its named volume must mount
 at `/var/lib/postgresql`. The old `/var/lib/postgresql/data` mount is rejected even
@@ -42,6 +45,45 @@ and compare record counts, spatial validation, ownership, photos and application
 workflows before scheduling the actual cutover. Retain the source commit, old
 volume name, database dump, media backup and pre-upgrade counts. Do not run
 `docker compose down -v` or remove the old volume as part of the upgrade.
+
+## PostGIS 3.6 to 3.7 within PostgreSQL 18
+
+These definitions do not indicate that an existing database has been upgraded.
+Normal hosted API/web releases leave the database container unchanged. Schedule
+an explicit database maintenance window after rehearsing on a disposable backup
+copy. Keep the original image, dump and volume snapshot for recovery. Never open
+a database modified by the new extension SQL with the old image as a rollback;
+restore the pre-upgrade backup into a separate volume instead.
+
+Build the compatibility image from the checked-out release (`docker compose build
+db` locally; `docker compose -f deploy/test/compose.yaml build db` for the
+hosted definition). During an approved cutover, stop application writers, take a
+final backup, and recreate only the database service using its existing PostgreSQL
+18 volume. Connect as database administrator to **each application database** and
+run:
+
+```sql
+ALTER EXTENSION postgis UPDATE;
+ALTER EXTENSION postgis_topology UPDATE;
+SELECT extname, extversion FROM pg_extension ORDER BY extname;
+SELECT postgis_full_version();
+```
+
+Run the topology command only where that extension is installed. Core PostGIS and
+topology should report 3.7.0; the retained TIGER extension stays at 3.6.4. Do **not**
+use `postgis_extensions_upgrade()` for this combination: it attempts a nonexistent
+TIGER 3.7.0 update. Compare stored geometry, all business tables, spatial findings
+and API map/detail responses, then restart and repeat reads before restoring
+application traffic. Existing spatial overlaps are a separate data review.
+
+The TIGER donor remains intentionally pinned. Updating either base requires a
+review of restore compatibility, dependency security and the regression rehearsal;
+replace the legacy donor with a supported standalone TIGER release in a separately
+reviewed change. See [PostGIS 3.7 release notes](https://postgis.net/2026/10/PostGIS-3.7.0/).
+
+The startup integration suite also rehearses a same-volume 3.6→3.7 upgrade and a
+pre-upgrade logical dump restore, preserving polygon EWKB, TIGER user data and
+address normalization across restart. It uses disposable resources only.
 
 ## Inventory the whole cluster
 
@@ -599,3 +641,23 @@ reopening it. Keep the new volume for diagnosis.
 After writes resume on 18, the 17 volume is no longer current. Returning to it
 would lose those later edits; use a reviewed reconciliation or forward-fix plan.
 A PostgreSQL 18 dump must not be assumed compatible with PostgreSQL 17.
+
+## PostGIS 3.7 rehearsal — 2026-11-14
+
+PR #848 was refreshed against main `cc38a6c`. A private logical dump of local DEV
+was restored into a uniquely named disposable PostgreSQL 18.6/PostGIS 3.6.4
+cluster, then its disposable volume was reopened with the new compatibility image.
+Explicit core and topology extension updates produced 3.7.0 with TIGER retained at
+3.6.4. All 84 non-extension tables matched by ordered JSON row hashes (including
+stored geometry), as did sequences and large objects. All 893 existing spatial
+findings, including 675 errors, were identical; this upgrade does not resolve
+those pre-existing data findings. Read-only map responses covering 3 cemeteries,
+784 graves and 566 markers, plus C-0384 detail and marker responses, matched exactly.
+Table fingerprints still matched after restarting the upgraded copy.
+
+Private dump and verification evidence remain under ignored
+`db/backups/postgis37-pr848-20261114T150253Z/`; no records or credentials are
+committed. The disposable containers and volumes were removed. Maintained DEV,
+local TEST and hosted TEST were not restarted or upgraded. The integration suite
+also passed fresh startup, PostgreSQL 17 fail-closed/recovery and logical restore,
+plus a 3.6 same-volume upgrade and fresh dump restore preserving TIGER user data.

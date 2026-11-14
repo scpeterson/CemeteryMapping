@@ -24,7 +24,7 @@ Install:
 
 The application containers provide:
 
-- PostgreSQL/PostGIS: `postgis/postgis:18-3.6`
+- PostgreSQL/PostGIS: `cemeterymapping-postgis:18-3.7-tiger3.6.4` (built from digest-pinned bases in `deploy/database/Dockerfile`; see [upgrade procedure](postgresql-18-upgrade.md))
 - Liquibase: `liquibase/liquibase:4.33.0`
 
 ## Clean Checkout Setup

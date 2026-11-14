@@ -4,12 +4,14 @@ This project uses Liquibase to manage a PostgreSQL/PostGIS schema for cemetery G
 
 ## PostgreSQL 18 upgrade
 
-Root Compose uses PostgreSQL 18/PostGIS 3.6 with its volume mounted at
+Root and hosted TEST Compose definitions build PostgreSQL 18.6/PostGIS 3.7.0
+with SQL-only TIGER 3.6.4 restore compatibility with its volume mounted at
 `/var/lib/postgresql`. Existing PostgreSQL 17 databases require a dump/restore
 into a separate volume before starting the upgraded environment. Follow the
 [upgrade and recovery guide](../docs/postgresql-18-upgrade.md); changing the image
-alone does not upgrade database files. The separate hosted TEST stack stays on
-its pinned PostgreSQL 17 configuration.
+alone does not upgrade database files. Existing PostgreSQL 18 databases also need the explicit extension upgrade and
+verification procedure in that guide; normal hosted application deployments do
+not upgrade the database.
 
 ## Local database maintenance and spatial review
 
