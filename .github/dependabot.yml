@@ -23,6 +23,8 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     ignore:
+      # Built locally from manually reviewed, digest-pinned bases (ADR 0212).
+      - dependency-name: "cemeterymapping-postgis"
       # Stay on Liquibase 4.33.0 pending owner review/approval of the 5.x license change.
       # See ADR 0003. A future 5.x upgrade must also supply the PostgreSQL JDBC driver.
       - dependency-name: "liquibase/liquibase"

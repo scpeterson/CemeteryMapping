@@ -291,7 +291,7 @@ Core versions in the merged source as of 2026-09-25 (running deployments may lag
 | Lucide React | 1.46.0 | `package-lock.json` |
 | Node.js type definitions | 26.6.2 | `package-lock.json` |
 | ExcelJS | 4.4.0 | `package-lock.json` |
-| PostgreSQL/PostGIS image (upgraded 2026-10-30) | `postgis/postgis:18-3.6` | `docker-compose.yml`; see ADR 0193 |
+| PostgreSQL/PostGIS image definition | `cemeterymapping-postgis:18-3.7-tiger3.6.4` | Root/hosted Compose; see ADR 0212 and the PostgreSQL upgrade guide |
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
 | Playwright | 1.63.0 | `package-lock.json` |
 | ESLint | 10.8.0 | `package-lock.json` |
@@ -380,3 +380,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [0210: Retain ExcelJS pending future reevaluation](0210-retain-exceljs-pending-reevaluation.md)
 
 - [0211: Assign C-0384 to C-88 without moving geometry](0211-assign-c0384-to-c88.md)
+
+- [ADR 0212: PostGIS 3.7 with legacy TIGER restore compatibility](0212-postgis37-tiger-restore-compatibility.md)

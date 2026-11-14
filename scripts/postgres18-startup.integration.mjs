@@ -26,7 +26,7 @@ async function ready(name) {
     const logs = docker(["logs", name], { allowFailure: true });
     const output = `${logs.stdout}${logs.stderr}`;
     if (docker(["inspect", "--format", "{{.State.Running}}", name]).stdout.trim() !== "true") throw new Error(output);
-    if (output.includes("PostgreSQL init process complete")) {
+    if ((output.includes("PostgreSQL init process complete") || output.includes("Skipping initialization"))) {
       const probe = docker(["exec", name, "psql", "-X", "-U", "upgrade_test", "-d", "upgrade_test", "-Atc", "SELECT PostGIS_Version()"], { allowFailure: true });
       if (probe.status === 0) return;
     }
@@ -39,7 +39,7 @@ test("PostGIS 18 uses the configured mount, preserves data across restart, and s
   const config = JSON.parse(docker(["compose", "-f", fileURLToPath(new URL("../docker-compose.yml", import.meta.url)), "config", "--format", "json"]).stdout);
   const { image, volumes } = config.services.db;
   const mount = volumes.find((volume) => volume.type === "volume");
-  assert.match(image, /^postgis\/postgis:18-3\.6/u);
+  assert.match(image, /^cemeterymapping-postgis:18-3\.7-tiger3\.6\.4$/u);
   assert.equal(mount.target, "/var/lib/postgresql");
   const prefix = `cemetery-pr748-${randomUUID()}`;
   const containers = [], createdVolumes = [];
@@ -64,7 +64,9 @@ test("PostGIS 18 uses the configured mount, preserves data across restart, and s
     const destination = start("new18", image, volume("new-data"), mount.target);
     await ready(destination);
     assert.match(sql(destination, "SHOW server_version"), /^18\.6(?: |$)/u);
-    assert.equal(sql(destination, "SELECT PostGIS_Lib_Version()"), "3.6.4");
+    assert.equal(sql(destination, "SELECT PostGIS_Lib_Version()"), "3.7.0");
+    sql(destination, "CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder CASCADE");
+    assert.equal(sql(destination, "SELECT extversion FROM pg_extension WHERE extname='postgis_tiger_geocoder'"), "3.6.4");
     assert.equal(docker(["exec", destination, "printenv", "PGDATA"]).stdout.trim(), "/var/lib/postgresql/18/docker");
     sql(destination, "CREATE SCHEMA diagnostics; REVOKE ALL ON SCHEMA diagnostics FROM PUBLIC; CREATE EXTENSION pg_stat_statements WITH SCHEMA diagnostics; CREATE ROLE diagnostic_reader");
     assert.equal(sql(destination, "SELECT has_schema_privilege('diagnostic_reader','diagnostics','USAGE')"), "f");
@@ -98,5 +100,50 @@ test("PostGIS 18 uses the configured mount, preserves data across restart, and s
   } finally {
     for (const name of containers.reverse()) docker(["rm", "--force", name], { allowFailure: true });
     for (const name of createdVolumes) docker(["volume", "rm", name], { allowFailure: true });
+  }
+});
+
+
+test("PostGIS 3.6→3.7 retains existing-volume and dump-restore geometry and legacy TIGER data", { timeout: 360_000 }, async (t) => {
+  const config = JSON.parse(docker(["compose", "-f", fileURLToPath(new URL("../docker-compose.yml", import.meta.url)), "config", "--format", "json"]).stdout);
+  const image = config.services.db.image;
+  const oldImage = "postgis/postgis:18-3.6@sha256:4a43e3c3e5d55b9208240fc71db543b79c638766280c625a425bd0a2390989c4";
+  const prefix = `cemetery-postgis37-${randomUUID()}`;
+  const containers = [], volumes = [];
+  const volume = suffix => {
+    const name = `${prefix}-${suffix}`; docker(["volume", "create", "--label", "cemetery.test=postgis37", name]); volumes.push(name); return name;
+  };
+  const start = (suffix, selectedImage, data) => {
+    const name = `${prefix}-${suffix}`; containers.push(name);
+    docker(["run", "--detach", "--platform", "linux/amd64", "--name", name, "--label", "cemetery.test=postgis37",
+      "-e", "POSTGRES_PASSWORD", "-e", "POSTGRES_DB=upgrade_test", "-e", "POSTGRES_USER=upgrade_test",
+      "--mount", `type=volume,source=${data},target=/var/lib/postgresql`, selectedImage], { timeout: 120_000 });
+    return name;
+  };
+  const inspectData = name => sql(name, "SELECT id,label,encode(ST_AsEWKB(location),'hex') FROM migration_probe ORDER BY id; SELECT id,note FROM tiger_data.recovery_probe ORDER BY id;");
+  const address = "SELECT pprint_addy(normalize_address('1 Devonshire Place, Boston, MA 02109'))";
+  try {
+    const data = volume("source"); const source = start("old",oldImage,data); await ready(source);
+    sql(source, "CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder CASCADE; CREATE SCHEMA IF NOT EXISTS tiger_data; CREATE TABLE migration_probe(id int PRIMARY KEY,label text,location geometry(Polygon,4326)); INSERT INTO migration_probe VALUES(1,'Keep geometry',ST_MakeEnvelope(-80.081,40.601,-80.0809,40.6011,4326)); CREATE TABLE tiger_data.recovery_probe(id int PRIMARY KEY,note text); INSERT INTO tiger_data.recovery_probe VALUES(1,'Keep non-extension TIGER data');");
+    const expected=inspectData(source), expectedAddress=sql(source,address);
+    const archive=docker(["exec",source,"pg_dump","-U","upgrade_test","-d","upgrade_test","-Fc","--no-owner","--no-acl"],{binary:true}).stdout;
+    docker(["stop",source]);
+    const upgraded=start("upgraded",image,data); await ready(upgraded);
+    sql(upgraded,"ALTER EXTENSION postgis UPDATE; ALTER EXTENSION postgis_topology UPDATE;");
+    assert.equal(sql(upgraded,"SELECT PostGIS_Lib_Version()"),"3.7.0");
+    assert.equal(sql(upgraded,"SELECT extversion FROM pg_extension WHERE extname='postgis'"),"3.7.0");
+    assert.equal(sql(upgraded,"SELECT extversion FROM pg_extension WHERE extname='postgis_tiger_geocoder'"),"3.6.4");
+    assert.equal(inspectData(upgraded),expected);assert.equal(sql(upgraded,address),expectedAddress);
+    docker(["restart",upgraded]);await ready(upgraded);assert.equal(inspectData(upgraded),expected);
+    t.diagnostic("Disposable existing PostgreSQL 18 volume upgraded without changing geometry or TIGER data.");
+    const restored=start("restored",image,volume("restore"));await ready(restored);
+    docker(["exec","-i",restored,"pg_restore","-U","upgrade_test","-d","upgrade_test","--exit-on-error","--clean","--if-exists","--no-owner","--no-acl"],{input:archive});
+    assert.equal(inspectData(restored),expected);assert.equal(sql(restored,address),expectedAddress);
+    assert.equal(sql(restored,"SELECT PostGIS_Lib_Version()"),"3.7.0");
+    docker(["restart",restored]);await ready(restored);assert.equal(inspectData(restored),expected);
+    t.diagnostic("A pre-upgrade dump restores successfully with legacy TIGER functions and user tables intact.");
+  } finally {
+    for(const name of containers.reverse())docker(["rm","--force",name],{allowFailure:true});
+    for(const name of volumes)docker(["volume","rm",name],{allowFailure:true});
   }
 });
