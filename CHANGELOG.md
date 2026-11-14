@@ -4,6 +4,10 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+### Fixed
+
+- Assign Allan Watenpool’s C-0384 to C-88 from reviewed registry evidence, preserving its geometry, marker, burial data and links; surrounding geometry remains for separate review (migration 518).
+
 ### Added
 
 - Click or keyboard-activate the environment/version badge to read **What's new**
