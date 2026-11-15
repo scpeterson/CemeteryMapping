@@ -10,7 +10,7 @@ export function HistoricalTranscriptions({ entries = [], onAdd, disabled }: {
   const isNhg = /\b(?:NHG|North Hills Genealogists)\b/iu.test(source);
   return <section className="headstone-wide-field" aria-label="Historical transcriptions">
     <h5>Historical transcriptions</h5>
-    <p className="muted">Earlier readings are evidence of what was recorded then, not what can be read today. Source dates may be a year alone.</p>
+    <p className="muted">Earlier readings document past observations. Source dates can be a year or full date.</p>
     {entries.map((entry) => <div key={entry.id}>
       <p><strong>{entry.source}</strong>{entry.sourceDate ? ` · ${entry.sourceDate}` : " · Date not recorded"}{entry.faceLabel ? ` · ${entry.faceLabel}` : ""}</p>
       <p className="note-box inscription-box">{entry.text}</p>
