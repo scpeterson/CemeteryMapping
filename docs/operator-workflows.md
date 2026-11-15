@@ -436,6 +436,14 @@ Linked North Hills evidence supports interpretation of a headstone or gravesite,
 
 ### Inspection History
 
+In **Details → Inspections**, **Current marker reading** shows the latest saved
+inspection’s own face readings,
+with its date (or year and “exact date unknown”), type, and source. Selecting an
+older visit in the Inspection dropdown changes the inspection view, not this
+current summary. An unreadable, blank, or unrecorded latest face never falls back
+to an older transcription. Without inspection history, the reading is explicitly
+labeled as a marker-summary fallback with no source inspection recorded.
+
 In a monument's details, use the `Inspection` dropdown to select a visit by date, type, and source. The latest inspection is selected when the panel first opens or the app reloads. The condition, condition notes, inscription, face inscriptions, and photos below belong to the selected inspection. Switching visits does not change saved records.
 
 Cemetery admins for the assigned cemetery and global admins can use `New inspection` or `Edit inspection`. A new inspection copies the currently selected inscription and all its face inscriptions so they can be corrected or saved as-is. It starts with Unknown condition and empty condition notes; it does not copy photo links. Within each face, choose photos to upload or select existing monument photos by thumbnail. Enter `Flourishes or designs` for each face (such as carved ivy or a border); these notes copy with the selected face readings and remain specific to each inspection. Review the previews and optionally enter photo notes and dates, then use `Save inspection` to save the readings and link the chosen photos to their faces. Canceling before Save uploads nothing. If a photo fails after the inspection saves, `Retry remaining photos` resumes the pending queue without creating another inspection or repeating successful uploads; `Close saved inspection` keeps the inspection and completed photos. Editing one inspection, including a single face reading, leaves other inspections unchanged. Keep a reading whose face is unknown in the inspection's general inscription rather than guessing a face.
@@ -445,6 +453,13 @@ Cemetery admins for the assigned cemetery and global admins can use `New inspect
 Trinity NHG inspections use October 11, 2005. Their conditions and transcriptions remain separate from the 2026 field observations; a missing NHG condition is Unknown. Existing monument photos from the 2026 field work belong to those field inspections. An NHG inspection with no recorded photographs opens an empty filtered gallery.
 
 Every monument has at least one face, including monuments whose inscription has not been recorded or is blank or illegible. New monuments default to `Front`, and every existing single-face monument uses `Front`. Multi-face monuments keep their individual labels; a historical reading with an unknown side can remain `Unspecified face`. The face retains the monument’s current inscription, legibility and applicable historical readings; shared condition, material, designs and relationships remain on the monument. Clear or correct a reading on that face rather than removing the final face. `Remove face` is disabled when only one remains. New inspections always begin with at least one face containing the selected visit’s own reading, without photo links.
+
+In **Edit inspection → Faces & photos**, each face has the same **Illegible** and
+**Blank** controls as Edit face records. The statuses belong to that inspection: a
+new inspection copies the selected visit’s statuses, readings, designs, and source
+history, while editing a visit leaves other visits and stored marker history
+unchanged. Review & save and the saved inspection show the status even when the
+text is empty. Browser-local draft recovery retains these statuses and history.
 
 Use the **Illegible** checkbox when a face has an inscription that cannot be read,
 or **Blank** when the surface was intentionally left uninscribed. Checking one
@@ -457,12 +472,22 @@ reading, including `Blank family`, `[blank] surname` or `Name [illegible] 1880`,
 remain exact transcription text and disable both checkboxes. Typing a standalone
 marker does not interrupt further typing; use the checkbox or save when finished.
 
-To document that a previously recorded inscription is now unreadable, first move
-the current reading into history: choose **Inscription status → Not recorded** and
+To document that a previously recorded inscription is now unreadable, create a
+new inspection. In its copied face reading, first move the text into history: choose **Inscription status → Not recorded** and
 confirm preservation, then check Illegible. Earlier source readings are retained in
 **Historical transcriptions** and do not prevent documenting a blank/illegible
 current face. These controls use the existing mutually exclusive status fields;
-no new database columns or bulk data conversion are required.
+no new database columns or bulk data conversion are required. Only a submitted
+inspection snapshot normalizes standalone placeholders; older visits remain intact.
+
+**Historical transcriptions** hold additional source readings, each with its own
+source and optional year/date. They are not an automatic edit/version log. An
+older inspection already preserves its reading, so copying it into this list is
+optional. Choosing Not recorded offers to archive the text before clearing it;
+ordinary text edits do not automatically archive the previous value. Under
+**Face records and transcription history**, stored marker face records remain
+separate from the latest inspection summary. Use Edit inspection for a dated
+observation, and Edit face records to manage those stored records.
 
 
 A stone with writing on both sides uses `Front` and `Back` faces. There is no separate Back of stone field. Migration 490 moves existing back descriptions verbatim into Back face inscriptions and labels the former sole Unspecified face Front. The matching field inspection receives these face readings; NHG and other visits retain their own evidence. Existing photo links and face IDs are preserved. For future observations, add or edit the Back face in the selected inspection, then label its photos with `Photo face` as appropriate.

@@ -4,9 +4,9 @@ import { currentLegibility as resolveLegibility, legibilityLabels, preserveTrans
 import { HistoricalTranscriptions } from "./HistoricalTranscriptions";
 
 type Value = { inscription: string; inscriptionStatus: InscriptionStatus; currentLegibility: CurrentLegibility; historicalTranscriptions: HistoricalTranscription[] };
-export function InscriptionFields({ text, status, currentLegibility, historicalTranscriptions = [], disabled, rows = 5, onChange }: {
+export function InscriptionFields({ text, status, currentLegibility, historicalTranscriptions = [], disabled, rows = 5, textLabel = "Inscription", onChange }: {
   text: string; status?: InscriptionStatus; currentLegibility?: CurrentLegibility;
-  historicalTranscriptions?: HistoricalTranscription[]; disabled?: boolean; rows?: number; onChange: (value: Value) => void;
+  historicalTranscriptions?: HistoricalTranscription[]; disabled?: boolean; rows?: number; textLabel?: string; onChange: (value: Value) => void;
 }) {
   const legibility = status === "blank" || status === "illegible" ? status : resolveLegibility(currentLegibility, status);
   const hasText = Boolean(text.trim()) && !inscriptionPlaceholder(text);
@@ -14,29 +14,29 @@ export function InscriptionFields({ text, status, currentLegibility, historicalT
   const selected = terminal ? legibility : inscriptionStatus(status, text);
   const change = (value: Partial<Value>) => onChange({ inscription: text, inscriptionStatus: selected, currentLegibility: legibility, historicalTranscriptions, ...value });
   return <>
-    <fieldset className="headstone-wide-field" disabled={disabled || hasText}>
+    <fieldset className="headstone-wide-field whole-face-inscription" disabled={disabled || hasText}>
       <legend>Whole-face inscription</legend>
       {(["illegible", "blank"] as const).map(value => <label key={value} className="headstone-checkbox-field">
         <input type="checkbox" checked={legibility === value} onChange={event => {
           if (disabled || hasText) return;
           change(wholeFaceInscription(event.target.checked ? value : undefined));
-        }} />{legibilityLabels[value]}
+        }} /><span>{legibilityLabels[value]}</span>
       </label>)}
     </fieldset>
-    {!terminal ? <label className="headstone-wide-field">Current legibility
+    {!terminal ? <><label className="headstone-wide-field">Current legibility
       <select value={legibility} disabled={disabled} onChange={event => change({ currentLegibility: event.target.value as CurrentLegibility })}>
         {(["unknown", "legible", "partially_legible"] as const).map(value => <option key={value} value={value}>{legibilityLabels[value]}</option>)}
       </select>
-    </label> : null}
-    {!terminal ? <label className="headstone-wide-field">Inscription status
+    </label>
+    <label className="headstone-wide-field">Inscription status
       <select value={selected} disabled={disabled} onChange={(event) => {
         const next = event.target.value as InscriptionStatus;
         if (next === "not_recorded" && text.length && !window.confirm("Move this transcription to history and clear the current field?")) return;
         change({ inscriptionStatus: next, inscription: next === "not_recorded" ? "" : text,
           historicalTranscriptions: next === "not_recorded" ? preserveTranscription(historicalTranscriptions, text) : historicalTranscriptions });
       }}><option value="not_recorded">Not recorded</option><option value="transcribed">Transcribed</option></select>
-    </label> : <p className="muted">No current transcription. Earlier readings remain in history.</p>}
-    <label className="headstone-wide-field">Inscription
+    </label></> : null}
+    <label className="headstone-wide-field">{textLabel}
       <textarea value={text} rows={rows} maxLength={20000} disabled={disabled || terminal}
         onChange={(event) => change({ inscription: event.target.value, inscriptionStatus: "transcribed" })} />
     </label>

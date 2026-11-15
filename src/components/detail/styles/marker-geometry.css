@@ -431,6 +431,34 @@
   font: inherit;
 }
 
+/* Shared inscription controls also appear outside .headstone-form. Keep native
+   checkboxes out of the inspection form's full-width input/grid-label rules. */
+.whole-face-inscription {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #cbd6c7;
+  border-radius: 7px;
+}
+
+.whole-face-inscription .headstone-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 38px;
+}
+
+.whole-face-inscription input[type="checkbox"] {
+  flex: 0 0 16px;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+}
+
 .monument-inspections .inspection-editor {
   margin: 0;
   padding: 12px;

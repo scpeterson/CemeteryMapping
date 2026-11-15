@@ -279,3 +279,35 @@ infer corridor ownership from the UI or registry references. See
 [the current map guide](map-layout-and-passageways.md). Regression coverage is in
 `tests/passageways.spec.ts`, `tests/grave-lot-assignment.spec.ts`,
 `tests/edit-ownership.spec.ts` and `tests/map-highlighting.spec.ts`.
+
+
+### Inspection face status and reading attribution
+
+`MonumentInspections` reuses `InscriptionFields` for each face, with the Face
+inscription label. Keep Blank/Illegible exclusive, lock text for a selected flag,
+and disable both flags for legitimate mixed text. `inspectionDraftReading` copies
+reading/status/history/design evidence without people or photo associations and
+normalizes exact standalone legacy placeholders while synchronizing only an
+already-combined inscription. Additional/unassigned text remains independent.
+
+`InspectionFaceReading` and `InspectionReading` render saved visits, review faces,
+stored marker faces, and the current summary consistently. `CurrentMarkerReading`
+derives its data directly from `sortedMonumentInspections`, never from whichever
+older visit is selected in the editor. Display source inspection date/year, type,
+and source, or label the no-inspection marker fallback explicitly. Stored face
+records and transcription history remain accessible separately.
+
+`validateInspectionFaces` validates optional status, legibility, and source history
+without dropping existing evidence. Updates retain existing JSON keys omitted by
+older clients, clear obsolete terminal flags when a legacy client submits real
+text, and keep optimistic concurrency and photo-face removal protection. There is
+no migration or bulk normalization. Regression coverage includes desktop/mobile
+save, refresh, copy and recovery, current-source attribution independent of visit
+selection, exact mixed text, rollback-only database round trips, preserved history,
+and unchanged older visits/marker records/photo links. Run
+`npm run test:inspections:browser`, `APP_ENV=dev npm run test:inspections:db`,
+`npm run test:server`, `npm run lint`, and `npm run build:prod`.
+
+The bounded core bundle allowance is 702 KiB after this feature (about 0.26 KiB
+application growth over main); see [ADR 0213](adr/0213-inspection-face-status-and-reading-source.md).
+This growth is not charged to the MapLibre vendor exemption.

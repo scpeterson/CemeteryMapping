@@ -382,3 +382,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [0211: Assign C-0384 to C-88 without moving geometry](0211-assign-c0384-to-c88.md)
 
 - [ADR 0212: PostGIS 3.7 with legacy TIGER restore compatibility](0212-postgis37-tiger-restore-compatibility.md)
+
+- [ADR 0213: Inspection face status and current reading attribution](0213-inspection-face-status-and-reading-source.md)

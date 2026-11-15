@@ -68,3 +68,34 @@ test('inspection deletion requires bounded IDs and valid versions',async()=>{
  assert.deepEqual(validateDeletedInspections([deletion]),[deletion]);
  for(const value of [{},Array(21).fill(deletion),[{...deletion,id:'invalid'}],[{id:entry.id}],[{...deletion,expectedUpdatedAt:'invalid'}]]) assert.throws(()=>validateDeletedInspections(value));
 });
+
+
+test('inspection faces round-trip whole-face status and historical readings without normalizing legitimate text', () => {
+ const history = [{ id: entry.conditionId, text: '  Earlier reading\n[illegible]  ', source: 'Old register', sourceDate: '1901' }];
+ for (const status of ['blank','illegible']) {
+  const face = { id: entry.id, label: 'Front', inscription: '', inscriptionStatus: status, currentLegibility: status, historicalTranscriptions: history };
+  assert.deepEqual(validateNewInspections([{ ...entry, inscription: '', faces: [face] }])[0].faces, [face]);
+  for (const text of ['Actual reading', 'Name [illegible] 1880', '[blank] surname'])
+   assert.throws(() => validateNewInspections([{ ...entry, faces: [{ ...face, inscription: text }] }]), /cannot contain text/);
+ }
+ for (const inscription of ['blank','illegible','  Blank family\nName [illegible] 1880  ','[blank] surname','[illegible lines]','[blank] [illegible]']) {
+  const face = { id: entry.id, label: 'Front', inscription, inscriptionStatus: 'transcribed', currentLegibility: 'partially_legible', historicalTranscriptions: history };
+  assert.deepEqual(validateNewInspections([{ ...entry, faces: [face] }])[0].faces, [face]);
+ }
+ for (const change of [{inscriptionStatus:'wrong'}, {currentLegibility:'wrong'}, {inscriptionStatus:'blank',currentLegibility:'illegible'}, {inscriptionStatus:'transcribed',currentLegibility:'blank'}, {historicalTranscriptions:[{...history[0],source:''}]}])
+  assert.throws(() => validateNewInspections([{ ...entry, faces: [{id:entry.id,label:'Front',inscription:'',...change}] }]));
+});
+
+test('standalone legacy face placeholders become structured status only on submitted snapshots', () => {
+ for (const inscription of ['[blank]',' \n[ILLEGIBLE]\t']) {
+  const raw = {...entry, inscription, faces:[{id:entry.id,label:'Front',inscription}]};
+  const before = structuredClone(raw);
+  const [result] = validateNewInspections([raw]);
+  assert.equal(result.faces[0].inscription,'');
+  assert.equal(result.faces[0].inscriptionStatus,inscription.toLowerCase().includes('blank')?'blank':'illegible');
+  assert.equal(result.faces[0].currentLegibility,result.faces[0].inscriptionStatus);
+  assert.equal(result.inscription,'');
+  assert.deepEqual(raw,before,'Existing source snapshot is not mutated');
+  assert.equal(validateNewInspections([{...raw,inscription:'Additional source text'}])[0].inscription,'Additional source text');
+ }
+});

@@ -180,6 +180,24 @@ erDiagram
 | `maintenance_records` | Dated issue/action history for gravesites and markers, such as cleaned, repaired, listing, broken, illegible, grass needed, or leveling needed. |
 | `maintenance_issue_types`, `maintenance_action_types`, `maintenance_priority_types` | Controlled maintenance categories for reporting and work queues. |
 
+Inspection `faces` JSON snapshots also support `inscriptionStatus`,
+`currentLegibility`, and `historicalTranscriptions`, using the same values as marker
+faces. Blank and Illegible require empty current text and matching status/legibility;
+additional historical source readings remain independent. The API validates these
+fields, normalizes only exact standalone legacy placeholders on submitted faces,
+and preserves unspecified existing JSON evidence when updating a face. Older
+clients submitting real text clear obsolete whole-face flags while retaining
+historical entries. There is no bulk rewrite or schema migration.
+
+The UI’s **Current marker reading** is derived from the latest active inspection
+using the same date/year, updated-at, and ID ordering as Overview and inspection
+history. It displays that inspection’s date/type/source and its own face readings,
+including empty or unreadable faces and additional unassigned text. It never uses
+an older reading to fill a latest visit’s missing text. `headstones.faces` and
+`historical_transcriptions` remain stored marker evidence; inspection saves do not
+rewrite them. With no inspections, the UI labels the marker-summary fallback as
+having no recorded source inspection.
+
 Migration 491 requires a nonempty `faces` array on every monument and inspection. Inserts that omit faces receive a persistent default face populated from that record’s own inscription; API validation and database checks reject removal of all faces. The backfill preserves existing named faces and photo contexts, and keeps historical visits independent of the current marker reading.
 
 Migration 492 names new default monument faces Front and renames the sole face of every existing single-face monument, including its single-face inspection snapshots. IDs, readings, history and photo contexts are preserved. Multi-face labels remain unchanged; historical unknown-side readings on multi-face monuments remain Unspecified face.
