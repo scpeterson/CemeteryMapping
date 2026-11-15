@@ -5,6 +5,7 @@ import { ConflictRecovery } from "../ui/ConflictRecovery";
 import { fetchHeadstone } from "../../api/cemeteryApi";
 import type { MarkerDetailAction } from "./markerWorkflowTypes";
 import { isEmptyNewMarkerFace } from "../../lib/markerFaces";
+import { CurrentMarkerReading } from "./CurrentMarkerReading";
 import { MarkerFacesEditor, MarkerFacesView } from "./MarkerFaces";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { lazy, Suspense, useId } from "react";
@@ -429,6 +430,7 @@ export function HeadstoneRecord({
         <h3 id={`${sectionPrefix}-inspections`} tabIndex={-1}>Inspections</h3>
         <p className="muted">Dated observations of condition, inscriptions, and supporting photos.</p>
         {!headstone.inspections?.length ? <div className="note-box"><strong>Earlier marker condition:</strong> {headstone.condition.label} · Last inspected: {formatDate(headstone.lastInspectedAt)}{headstone.conditionNotes ? <p>{headstone.conditionNotes}</p> : null}<p className="muted">No dated inspection has been recorded yet.</p></div> : null}
+      <CurrentMarkerReading headstone={headstone} />
       <Suspense fallback={<p role="status">Loading inspections…</p>}><MonumentInspections key={headstone.id} onStarted={onInitialActionHandled} startNew={initialAction === "new-inspection"} showHeading={false} headstone={headstone} conditions={lookups.conditions} onUploadPhoto={canEditInspections ? onUploadPhoto : undefined}
         onDelete={canEditInspections ? async (entry) => onSave(headstone.id, {
           ...blankHeadstoneForm(headstone, markerTypeOptions, cemeteryName),
@@ -495,8 +497,9 @@ export function HeadstoneRecord({
         {canUpdate && canEditInspections ? <button type="button" className="icon-text-button" data-discard-draft onClick={() => startEditing("faces")}>Edit face records</button> : null}
       {headstone.inspections?.length ? <details>
         <summary>Face records and transcription history</summary>
+        <p className="muted">Stored face records and source history are separate from inspection readings. Use Edit inspection for dated observations.</p>
       <MarkerFacesView headstone={headstone} canDelete={canDeletePhotos} onDelete={onDeletePhoto} />
-      </details> : <MarkerFacesView headstone={headstone} canDelete={canDeletePhotos} onDelete={onDeletePhoto} />}
+      </details> : null}
       {headstone.designNotes ? <p className="note-box">Designs: {headstone.designNotes}</p> : null}
       {headstone.features?.length ? (
         <GraveFeatureList

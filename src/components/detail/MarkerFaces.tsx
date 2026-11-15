@@ -1,14 +1,11 @@
 import { PhotoGalleryContext } from "./photoGalleryContext";
 import { HistoricalTranscriptions } from "./HistoricalTranscriptions";
-import { currentLegibility, legibilityLabels } from "../../../shared/inscriptionHistory.mjs";
+import { InspectionFaceReading } from "./InspectionFaceReading";
 import { InscriptionFields } from "./InscriptionFields";
-import { inscriptionStatus } from "../../../shared/inscriptionStatus.mjs";
 import { useId, useState, type ComponentProps, useContext } from "react";
 import type { Headstone, MarkerFace } from "../../types";
 import { MediaGallery } from "./MediaRecords";
 import { isEmptyNewMarkerFace } from "../../lib/markerFaces";
-
-const statusLabels = { not_recorded: "Not recorded", transcribed: "Transcribed", blank: "Blank", illegible: "Illegible" };
 
 export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
   headstone: Headstone; faces: MarkerFace[]; disabled: boolean; onChange: (faces: MarkerFace[]) => void;
@@ -73,21 +70,17 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
 
 export function MarkerFacesView({ headstone }: { headstone: Headstone } & Pick<ComponentProps<typeof MediaGallery>, "canDelete" | "onDelete" | "onMove">) {
   const {open} = useContext(PhotoGalleryContext);
-  const faces: MarkerFace[] = headstone.faces ?? (headstone.inscription ? [{ id: "legacy", label: "Front", inscription: headstone.inscription, notes: "", burialIds: [], mediaAssetIds: [] }] : []);
+  const faces: MarkerFace[] = headstone.faces?.length ? headstone.faces : [{
+    id: "legacy", label: "Front", inscription: headstone.inscription, inscriptionStatus: headstone.inscriptionStatus,
+    currentLegibility: headstone.currentLegibility, notes: "", burialIds: [], mediaAssetIds: [],
+  }];
   const faceHistoryIds = new Set(faces.flatMap((face) => (face.historicalTranscriptions ?? []).map((entry) => entry.id)));
   const monumentHistory = headstone.historicalTranscriptions?.filter((entry) => !faceHistoryIds.has(entry.id));
   return <section aria-label="Faces / Inscriptions">
     <h4>Faces / Inscriptions</h4>
-    {!faces.length ? <div>
-      <p className="muted">Current legibility: {legibilityLabels[currentLegibility(headstone.currentLegibility, headstone.inscriptionStatus)]}</p>
-      <p className="muted">Inscription status: {statusLabels[inscriptionStatus(headstone.inscriptionStatus, headstone.inscription)]}</p>
-      {headstone.inscription ? <p className="note-box inscription-box">{headstone.inscription}</p> : null}
-    </div> : faces.map((face) => <section key={face.id} className="marker-face-view" aria-label={face.label}>
+    {faces.map((face) => <section key={face.id} className="marker-face-view" aria-label={face.label}>
       <h5>{face.label}</h5>
-      <p className="muted">Current legibility: {legibilityLabels[currentLegibility(face.currentLegibility, face.inscriptionStatus)]}</p>
-      <p className="muted">Inscription status: {statusLabels[inscriptionStatus(face.inscriptionStatus, face.inscription)]}</p>
-      {face.inscription ? <p className="note-box inscription-box">{face.inscription}</p> : null}
-      <HistoricalTranscriptions entries={face.historicalTranscriptions} />
+      <InspectionFaceReading face={face} />
       {face.designNotes ? <p className="note-box">Designs: {face.designNotes}</p> : null}
       {face.notes ? <p className="note-box">{face.notes}</p> : null}
       {face.burialIds.length ? <p>Associated people: {face.burialIds.map((id) => headstone.facePeople?.find((p) => p.id === id)?.fullName ?? "Person no longer linked").join("; ")}</p> : null}

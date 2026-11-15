@@ -1,3 +1,5 @@
+import { validateInscriptionStatus, validateCurrentLegibility, validateHistoricalTranscriptions } from "./markerFaces.mjs";
+import { normalizeInscriptionPlaceholder } from "../shared/inscriptionStatus.mjs";
 import { cemeteryRole } from "./auth.mjs";
 import { isDeepStrictEqual } from "node:util";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
@@ -17,12 +19,24 @@ function inspectionDesignNotes(value) {
 
 export function validateInspectionFaces(value) {
   if (!Array.isArray(value) || value.length < 1 || value.length > 32) throw new BadRequestError("An inspection must have between 1 and 32 faces.");
-  const faces = value.map(face => ({
-    id: validateUuid(face?.id, "Inspection face").toLowerCase(),
-    label: requiredText(face?.label, "Face label", 100),
-    inscription: inspectionTranscription(face?.inscription),
-    ...(face?.designNotes === undefined ? {} : {designNotes: inspectionDesignNotes(face.designNotes)}),
-  }));
+  const faces = value.map(raw => {
+    const face = normalizeInscriptionPlaceholder({ ...raw, inscription: inspectionTranscription(raw?.inscription) });
+    const status = validateInscriptionStatus(face.inscriptionStatus, face.inscription);
+    const legibility = validateCurrentLegibility(face.currentLegibility, face.inscription);
+    const terminal = [status, legibility].find(value => value === "blank" || value === "illegible");
+    if (terminal && ((status !== undefined && status !== terminal) || (legibility !== undefined && legibility !== terminal))) {
+      throw new BadRequestError("Inspection face inscription status and legibility must agree for Blank or Illegible.");
+    }
+    return {
+      id: validateUuid(face?.id, "Inspection face").toLowerCase(),
+      label: requiredText(face?.label, "Face label", 100),
+      inscription: inspectionTranscription(face?.inscription),
+      ...(face?.designNotes === undefined ? {} : {designNotes: inspectionDesignNotes(face.designNotes)}),
+      ...(status === undefined && !terminal ? {} : { inscriptionStatus: terminal ?? status }),
+      ...(legibility === undefined && !terminal ? {} : { currentLegibility: terminal ?? legibility }),
+      ...(face.historicalTranscriptions === undefined ? {} : { historicalTranscriptions: validateHistoricalTranscriptions(face.historicalTranscriptions) }),
+    };
+  });
   if (new Set(faces.map(f => f.id)).size !== faces.length || new Set(faces.map(f => f.label.toLowerCase())).size !== faces.length) throw new BadRequestError("Inspection faces need unique ids and labels.");
   if (JSON.stringify(faces).length > 400000) throw new BadRequestError("Combined face inscriptions are too long.");
   return faces;
@@ -38,10 +52,14 @@ export function validateNewInspections(value, { updating = false } = {}) {
     if (!inspectedAt && (!updating || !Number.isInteger(inspectionYear) || inspectionYear < 1 || inspectionYear > 9999)) throw new BadRequestError("Inspection date is required.");
     const expectedUpdatedAt = updating ? requiredText(entry.expectedUpdatedAt, "Inspection version", 50) : undefined;
     if (updating && !Number.isFinite(Date.parse(expectedUpdatedAt))) throw new BadRequestError("Inspection version is invalid.");
+    const faces = entry.faces === undefined ? undefined : validateInspectionFaces(entry.faces);
+    const combined = list => list.length === 1 ? list[0].inscription : list.map(face => `${face.label}\n${face.inscription}`).join("\n\n");
+    const originalInscription = inspectionTranscription(entry.inscription);
+    const inscription = faces && originalInscription === combined(entry.faces) ? combined(faces) : originalInscription;
     return { id: validateUuid(entry.id, "Inspection"), inspectedAt, inspectionYear, sourceType, ...(updating ? { expectedUpdatedAt } : {}),
       source: requiredText(entry.source, "Inspection source", 500), conditionId: validateUuid(entry.conditionId, "Inspection condition"),
       conditionNotes: optionalText(entry.conditionNotes, "Inspection condition notes", 4000) || "",
-      inscription: inspectionTranscription(entry.inscription), ...(entry.faces === undefined ? {} : {faces: validateInspectionFaces(entry.faces)}) };
+      inscription, ...(faces === undefined ? {} : { faces }) };
   });
 }
 
@@ -63,9 +81,15 @@ export function assertInspectionEditor(actorUser, cemeteryId) {
 
 export async function updateMonumentInspections(client, markerId, entries = []) {
   for (const entry of entries) {
+    // Merge old evidence, but do not retain a whole-face flag when an older
+    // client (without status fields) submits a real transcription for that face.
     const result = await client.query(`UPDATE monument_inspections SET inspected_at=$3::date,inspection_year=$4,
       source_type=$5,source=$6,condition_type_id=$7,condition_notes=$8,inscription=$9,faces=CASE WHEN $11::jsonb IS NULL THEN faces ELSE COALESCE((SELECT jsonb_agg(
-        COALESCE((SELECT old FROM jsonb_array_elements(faces) old WHERE old->>'id'=f->>'id' LIMIT 1),'{}'::jsonb) || f)
+        COALESCE((SELECT old FROM jsonb_array_elements(faces) old WHERE old->>'id'=f->>'id' LIMIT 1),'{}'::jsonb) || f ||
+        CASE WHEN COALESCE(f->>'inscription','') ~ '[^[:space:]]' AND EXISTS(SELECT 1 FROM jsonb_array_elements(faces) old WHERE old->>'id'=f->>'id' AND (old->>'inscriptionStatus' IN ('blank','illegible') OR old->>'currentLegibility' IN ('blank','illegible'))) THEN
+          (CASE WHEN NOT jsonb_exists(f,'inscriptionStatus') THEN jsonb_build_object('inscriptionStatus','transcribed') ELSE '{}'::jsonb END) ||
+          (CASE WHEN NOT jsonb_exists(f,'currentLegibility') AND EXISTS(SELECT 1 FROM jsonb_array_elements(faces) old WHERE old->>'id'=f->>'id' AND old->>'currentLegibility' IN ('blank','illegible')) THEN jsonb_build_object('currentLegibility','unknown') ELSE '{}'::jsonb END)
+        ELSE '{}'::jsonb END)
         FROM jsonb_array_elements($11::jsonb) f),'[]'::jsonb) END,
       manually_edited=true,updated_at=clock_timestamp()
       WHERE id=$1 AND headstone_uuid=$2 AND deleted_at IS NULL AND updated_at=$10::timestamptz
@@ -110,6 +134,8 @@ export function validateDeletedInspections(value) {
 
 export async function deleteMonumentInspections(client, markerId, entries = []) {
   for (const entry of entries) {
+    // Merge old evidence, but do not retain a whole-face flag when an older
+    // client (without status fields) submits a real transcription for that face.
     const result = await client.query(`UPDATE monument_inspections SET deleted_at=clock_timestamp(),
       manually_edited=true,updated_at=clock_timestamp()
       WHERE id=$1 AND headstone_uuid=$2 AND updated_at=$3::timestamptz AND deleted_at IS NULL RETURNING id`,

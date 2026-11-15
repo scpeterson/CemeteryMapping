@@ -89,3 +89,34 @@ test('face designs round-trip and clear independently without changing other rea
   assert.equal(after.row.inscription,before.row.inscription);
  });
 });
+
+
+test('inspection statuses and history survive saves and legacy updates without modifying older evidence', async()=>{
+ await withFixture(async({c,marker,entry,saved})=>{
+  const markerBefore=(await c.query('SELECT faces,historical_transcriptions,inscription FROM headstones WHERE id=$1',[marker.id])).rows[0];
+  const history=[{id:randomUUID(),text:'  Earlier sourced text\n[illegible]  ',source:'Old register',sourceDate:'1901'}];
+  const faces=entry.faces.map((face,index)=>({...face,inscription:index?'':'[ILLEGIBLE]',historicalTranscriptions:history}));
+  faces[1]={...faces[1],inscriptionStatus:'blank',currentLegibility:'blank'};
+  const [payload]=validateNewInspections([{...entry,faces}],{updating:false});
+  await updateMonumentInspections(c,marker.id,[{...payload,expectedUpdatedAt:(await saved()).version}]);
+  let before=await saved();
+  assert.deepEqual(before.row.faces,payload.faces);
+  assert.equal(before.row.faces[0].inscriptionStatus,'illegible');
+  assert.equal(before.row.faces[1].inscriptionStatus,'blank');
+  // Older clients may omit status/history keys. Keep evidence while clearing
+  // obsolete terminal flags when they submit a real reading.
+  const legacyFaces=entry.faces.map(face=>({id:face.id,label:face.label,inscription:'  Blank family\nName [illegible] 1880  '}));
+  await updateMonumentInspections(c,marker.id,[{...entry,faces:legacyFaces,expectedUpdatedAt:before.version}]);
+  before=await saved();
+  for(const [index,face] of before.row.faces.entries()){
+   assert.equal(face.inscription,legacyFaces[0].inscription);
+   assert.equal(face.inscriptionStatus,index<2?'transcribed':undefined);
+   assert.notEqual(face.currentLegibility,'blank');assert.notEqual(face.currentLegibility,'illegible');
+   assert.deepEqual(face.historicalTranscriptions,history);
+  }
+  const [cleared]=validateNewInspections([{...entry,faces:before.row.faces.map(face=>({...face,inscription:'',inscriptionStatus:'not_recorded',currentLegibility:'unknown'})),expectedUpdatedAt:before.version}],{updating:true});
+  await updateMonumentInspections(c,marker.id,[cleared]);
+  assert.deepEqual((await saved()).row.faces,cleared.faces);
+  assert.deepEqual((await c.query('SELECT faces,historical_transcriptions,inscription FROM headstones WHERE id=$1',[marker.id])).rows[0],markerBefore,'Stored marker readings and source history remain unchanged');
+ });
+});

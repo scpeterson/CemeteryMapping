@@ -1,3 +1,6 @@
+import { InscriptionFields } from "./InscriptionFields";
+import { InspectionFaceReading, InspectionReading } from "./InspectionFaceReading";
+import { combinedInspectionReading as combinedReading, isCombinedInspectionReading as isCombined, inspectionDraftReading } from "../../lib/inspectionReadings";
 import type { InspectionDraft } from "../../lib/inspectionDraftRecovery";
 import { useAccountSession } from "../../auth/sessionContext";
 import { sortedMonumentInspections, inspectionTypeLabels } from "../../lib/monumentInspections";
@@ -22,11 +25,6 @@ type RequiredVisitField = "date" | "source" | "condition";
 const requiredVisitLabels = {date:"Inspection date",source:"Inspection source",condition:"Monument condition"};
 
 
-const combinedReading = (faces: InspectionFace[]) => faces.length === 1 ? faces[0].inscription : faces.map(f=>`${f.label}\n${f.inscription}`).join("\n\n");
-const isCombined = (inscription: string, faces: InspectionFace[] = []) => faces.length > 0 && inscription === combinedReading(faces);
-const draftFaces = (inscription: string, faces: InspectionFace[] = []): InspectionFace[] => faces.length
-  ? faces.map(({id,label,inscription,designNotes}) => ({id,label,inscription,...(designNotes===undefined?{}:{designNotes})}))
-  : [{id:crypto.randomUUID(),label:"Front",inscription}];
 const localToday = () => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -236,14 +234,14 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
     setDraft(() => edit && selected ? {
       id: selected.id, inspectedAt: selected.inspectedAt ?? "", inspectionYear: selected.inspectionYear,
       sourceType: selected.sourceType, source: selected.source, conditionId: selected.conditionId,
-      conditionNotes: selected.conditionNotes, inscription: selected.inscription, expectedUpdatedAt: selected.updatedAt,
-      faces: draftFaces(selected.inscription, selected.faces),
+      conditionNotes: selected.conditionNotes, expectedUpdatedAt: selected.updatedAt,
+      ...inspectionDraftReading(selected.inscription, selected.faces),
     } : {
       id: crypto.randomUUID(), inspectedAt: localToday(), sourceType: "field_survey",
       source: "Cemetery administrator field inspection",
       conditionId: conditions.find((c) => c.code === "unknown")?.id ?? "",
-      conditionNotes: "", inscription: selected?.inscription ?? headstone.inscription ?? "",
-      faces: draftFaces(selected?.inscription ?? headstone.inscription ?? "", selected ? selected.faces : headstone.faces),
+      conditionNotes: "",
+      ...inspectionDraftReading(selected?.inscription ?? headstone.inscription ?? "", selected ? selected.faces : headstone.faces),
     });
   };
   const launchNew = useEffectEvent(()=>{if(!recovery)begin(false);});
@@ -301,13 +299,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
       <p><strong>Condition:</strong> {selected.condition}</p>
       {selected.conditionNotes ? <p className="note-box">{selected.conditionNotes}</p> : null}
       <p><strong>Source:</strong> {selected.source}</p>
-      {(selected.faces ?? []).map(face => <div key={face.id}>
-        <h5>{face.label}</h5>
-        {face.inscription ? <p className="note-box inscription-box">{face.inscription}</p> : <p className="muted">No inscription recorded for this face.</p>}
-        {face.designNotes ? <p className="note-box"><strong>Flourishes or designs:</strong> {face.designNotes}</p> : null}
-      </div>)}
-      {!isCombined(selected.inscription,selected.faces) ? <><h5>{selected.faces?.length ? "Additional / unassigned inscription" : "Inscription"}</h5>
-      {selected.inscription ? <p className="note-box inscription-box">{selected.inscription}</p> : <p className="muted">No inscription recorded for this inspection.</p>}</> : null}
+      <InspectionReading inscription={selected.inscription} faces={selected.faces} />
     </div> : null}
     {selected && !draft ? <RecordPhotos key={selected.id} headstone={headstone} faces={selected.faces ?? []} inspectionId={selected.id} canUpdate={Boolean(onSave)} onUpload={onUploadPhoto} /> : null}
     {onSave && !draft && recovery ? <section className="inspection-recovery" aria-label="Saved inspection draft">
@@ -393,7 +385,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
             aria-controls={`inspection-face-${face.id}`} aria-describedby={`inspection-face-reading-${face.id} inspection-face-photos-${face.id}`} aria-label={`Select face ${index + 1}: ${face.label.trim() ? face.label : "Unlabeled face"}`}
             onClick={() => setActiveFaceId(face.id)}>
             <strong>{face.label.trim() ? face.label : `Face ${index + 1}: label required`}</strong>
-            <span id={`inspection-face-reading-${face.id}`}>{face.inscription.trim() ? "Reading recorded" : "No reading recorded"}</span>
+            <span id={`inspection-face-reading-${face.id}`}>{face.inscription.trim() ? "Reading recorded" : face.inscriptionStatus === "blank" ? "Blank" : face.inscriptionStatus === "illegible" ? "Illegible" : "No reading recorded"}</span>
             <span id={`inspection-face-photos-${face.id}`}>{photoLabel}</span>
           </button>;
         })}
@@ -401,7 +393,9 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
       {(draft.faces ?? []).map((face,index) => <fieldset key={face.id} id={`inspection-face-${face.id}`} hidden={activeFace?.id !== face.id} aria-label={`Inspection face ${index+1}`}>
         <legend>Face {index+1}</legend>
         <label>Face label<input aria-required="true" aria-invalid={!face.label.trim()||undefined} aria-describedby={!face.label.trim()?`${requirementsId}-face-${face.id}`:undefined} ref={element=>{if(element)faceLabelInputs.current.set(face.id,element);else faceLabelInputs.current.delete(face.id);}} value={face.label} maxLength={100} onChange={e=>changeFaces(draft.faces!.map(f=>f.id===face.id?{...f,label:e.target.value}:f))} /></label>
-        <label>Face inscription<textarea value={face.inscription} maxLength={20000} rows={5} onChange={e=>changeFaces(draft.faces!.map(f=>f.id===face.id?{...f,inscription:e.target.value}:f))} /></label>
+        <InscriptionFields textLabel="Face inscription" text={face.inscription} status={face.inscriptionStatus}
+          currentLegibility={face.currentLegibility} historicalTranscriptions={face.historicalTranscriptions}
+          onChange={value=>changeFaces(draft.faces!.map(f=>f.id===face.id?{...f,...value}:f))} />
         <details><summary>Flourishes or designs</summary><label>Flourishes or designs<textarea value={face.designNotes??""} maxLength={20000} rows={3} onChange={e=>changeFaces(draft.faces!.map(f=>f.id===face.id?{...f,designNotes:e.target.value}:f))} /></label></details>
         {!draft.recordSaved?<Suspense fallback={<p role="status">Loading face photos…</p>}><InspectionFacePhotos canUpload={Boolean(onUploadPhoto)} faceId={face.id} photos={draft.photos??[]} assets={(headstone.mediaAssets??[]).filter(a=>a.assetType==="photo")}
           linkedPhotos={existingPhotoLinks} linkedLoading={Boolean(editInspectionId && !photoCountsReady)} linkedUnavailable={Boolean(photoCountsError)}
@@ -445,7 +439,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
             <h5>{face.label.trim() ? face.label : `Face ${index + 1}: label required`}</h5>
             <button type="button" className="secondary-button" ref={element=>{if(element)reviewEditButtons.current.set(face.id,element);else reviewEditButtons.current.delete(face.id);}} aria-label={`Edit face ${index + 1}: ${face.label.trim() ? face.label : "Unlabeled face"}`} onClick={()=>editFace(face.id)}>Edit face</button>
           </div>
-          <p className="note-box inscription-box">{face.inscription || "No inscription recorded for this face."}</p>
+          <InspectionFaceReading face={face} />
           {face.designNotes ? <p className="note-box">{face.designNotes}</p> : null}
           <Suspense fallback={<p>Loading face photos…</p>}><InspectionFacePhotoReview faceId={face.id} faceLabel={face.label.trim()?face.label:`Face ${index+1}`}
             photos={draft.photos??[]} assets={headstone.mediaAssets??[]} linkedPhotos={existingPhotoLinks}
