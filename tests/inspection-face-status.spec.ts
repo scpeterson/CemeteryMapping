@@ -39,7 +39,7 @@ async function setup(page: Page) {
 }
 const step=async(page:Page,name:string)=>page.getByRole('navigation',{name:'Inspection steps'}).getByRole('button',{name:new RegExp(name)}).click();
 
-for(const width of [1280,390]) test(`inspection face flags preserve sources, exclude text and round-trip at ${width}px`,async({page})=>{
+for(const width of [1280,390]) test(`inspection face flags preserve sources, exclude text and round-trip at ${width}px`,async({page},testInfo)=>{
  await page.setViewportSize({width,height:1000});
  const {patches,open,entries}=await setup(page);
  const beforeOld=structuredClone(entries()[0]);
@@ -58,6 +58,20 @@ for(const width of [1280,390]) test(`inspection face flags preserve sources, exc
  const frontText=front.getByRole('textbox',{name:'Face inscription',exact:true});
  const blank=front.getByRole('checkbox',{name:'Blank',exact:true});
  const illegible=front.getByRole('checkbox',{name:'Illegible',exact:true});
+ const flags=front.getByRole('group',{name:'Whole-face inscription',exact:true});
+ for(const input of [blank,illegible]) {
+  const label=input.locator('..');
+  await expect(label).toHaveCSS('display','flex');
+  const checkboxBox=(await input.boundingBox())!;
+  const textBox=(await label.locator('span').boundingBox())!;
+  const labelBox=(await label.boundingBox())!;
+  expect(Math.abs(checkboxBox.x-labelBox.x)).toBeLessThan(2);
+  expect(checkboxBox.width).toBe(16);
+  expect(textBox.x-checkboxBox.x-checkboxBox.width).toBeGreaterThanOrEqual(6);
+  expect(Math.abs((textBox.y+textBox.height/2)-(checkboxBox.y+checkboxBox.height/2))).toBeLessThan(3);
+ }
+ await expect(flags).toHaveCSS('border-top-left-radius','7px');
+ await flags.screenshot({path:testInfo.outputPath(`face-checkbox-layout-${width}.png`)});
  await illegible.check();await expect(frontText).toBeDisabled();await expect(blank).not.toBeChecked();
  await blank.check();await expect(illegible).not.toBeChecked();
  await blank.uncheck();await expect(frontText).toBeEnabled();

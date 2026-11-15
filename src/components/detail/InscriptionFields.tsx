@@ -14,13 +14,13 @@ export function InscriptionFields({ text, status, currentLegibility, historicalT
   const selected = terminal ? legibility : inscriptionStatus(status, text);
   const change = (value: Partial<Value>) => onChange({ inscription: text, inscriptionStatus: selected, currentLegibility: legibility, historicalTranscriptions, ...value });
   return <>
-    <fieldset className="headstone-wide-field" disabled={disabled || hasText}>
+    <fieldset className="headstone-wide-field whole-face-inscription" disabled={disabled || hasText}>
       <legend>Whole-face inscription</legend>
       {(["illegible", "blank"] as const).map(value => <label key={value} className="headstone-checkbox-field">
         <input type="checkbox" checked={legibility === value} onChange={event => {
           if (disabled || hasText) return;
           change(wholeFaceInscription(event.target.checked ? value : undefined));
-        }} />{legibilityLabels[value]}
+        }} /><span>{legibilityLabels[value]}</span>
       </label>)}
     </fieldset>
     {!terminal ? <><label className="headstone-wide-field">Current legibility
