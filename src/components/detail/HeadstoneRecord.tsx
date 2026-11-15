@@ -1,3 +1,4 @@
+import { normalizeInscriptionPlaceholder } from "../../../shared/inscriptionStatus.mjs";
 import { markerEditPayload as blankHeadstoneForm } from "../../lib/recordEditPayloads";
 import { isRecordConflict } from "../../api/apiClient";
 import { ConflictRecovery } from "../ui/ConflictRecovery";
@@ -212,7 +213,7 @@ export function HeadstoneRecord({
     try {
       const saved = await onSave(headstone.id, {
         ...form,
-        faces: form.faces?.filter((face) => !isEmptyNewMarkerFace(face, editingBaseline)),
+        faces: form.faces?.filter((face) => !isEmptyNewMarkerFace(face, editingBaseline)).map(normalizeInscriptionPlaceholder),
       });
       setForm(blankHeadstoneForm(saved, markerTypeOptions, cemeteryName));
       if (saved.burialNhgPropagation) {

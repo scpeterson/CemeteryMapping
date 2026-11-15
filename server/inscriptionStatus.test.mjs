@@ -42,3 +42,21 @@ test("retired back field cannot silently discard a client's reading", () => {
   assert.throws(() => validateHeadstonePayload({...payload,backDescription:"Legacy Back"}), /Back face inscription/);
   assert.equal(Object.hasOwn(validateHeadstonePayload({...payload,backDescription:""}),"backDescription"),false);
 });
+
+
+test("whole-face placeholders match only complete bracketed values and preserve all other transcription bytes", async () => {
+  const { inscriptionPlaceholder, normalizeInscriptionPlaceholder, wholeFaceInscription } = await import("../shared/inscriptionStatus.mjs");
+  assert.deepEqual(wholeFaceInscription(), { inscription: "", inscriptionStatus: "not_recorded", currentLegibility: "unknown" });
+  for (const [text, status] of [["[blank]", "blank"], [" \n[ILLEGIBLE]\t", "illegible"], ["[Blank]", "blank"]]) {
+    const face = { id, label: "Front", inscription: text, inscriptionStatus: "transcribed", currentLegibility: "unknown", burialIds: [id], mediaAssetIds: [], historicalTranscriptions: [{ text: "Old reading" }] };
+    assert.equal(inscriptionPlaceholder(text), status);
+    assert.deepEqual(normalizeInscriptionPlaceholder(face), { ...face, inscription: "", inscriptionStatus: status, currentLegibility: status });
+    assert.equal(face.inscription, text, "normalization must not mutate the source record");
+  }
+  for (const inscription of ["", " \n", "blank", "illegible", "Blank family", "Illegible inscription noted", "  ALICE\n[blank]\n[illegible]  ", "[blank] surname", "[illegible lines]", "[blank] [illegible]", "[ blank ]"]) {
+    const face = { inscription, inscriptionStatus: "transcribed" };
+    assert.equal(inscriptionPlaceholder(inscription), undefined);
+    assert.equal(normalizeInscriptionPlaceholder(face), face);
+    assert.equal(normalizeInscriptionPlaceholder(face).inscription, inscription);
+  }
+});

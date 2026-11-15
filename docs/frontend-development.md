@@ -181,6 +181,17 @@ Run `npm run test:inspections:browser` for the isolated mocked-API browser regre
 
 `editableMarkerFaces` supplies a single Front face for older responses with no faces, preserving current text, status, legibility and unassigned historical readings. The database persists this default on creation and migration 491 backfills old records. Keep at least one face in editors and disable removal of the final face; an empty reading is distinct from an empty face list. Inspection draft fallback uses the selected visit’s own text and defaults its label to Front. Migration 492 updates persisted single-face labels without changing IDs or readings. Front remains eligible for the simple inscription editor; Manage faces opens the labeled editor.
 
+`InscriptionFields` presents mutually exclusive Illegible/Blank checkboxes using
+the existing status and current-legibility values. Real current text disables
+both controls. `inscriptionPlaceholder` recognizes only complete bracketed values
+(after trimming outer whitespace and ignoring case); ordinary words and mixed
+transcriptions are never reclassified. `editableMarkerFaces` normalizes legacy
+marker-only text in the editing draft, and save/create boundaries normalize exact
+standalone markers. Do not normalize on every keystroke: `[blank]` may be the
+beginning of a legitimate longer reading. Historical transcriptions and inspection
+snapshots remain independent. The checkbox state, mixed-text protection and
+preservation workflow are covered in `tests/inscription-status.spec.ts`.
+
 `MonumentInspections.tsx` owns the selected visit and its draft. The dropdown defaults to the latest visit; new drafts copy the selected general inscription and face IDs, labels, and readings, without media IDs or photo context links. Each saved visit has an independent face snapshot. `MarkerFaces.tsx` still manages monument face definitions and linked people; visit-specific readings belong in the inspection editor. Keep unknown-face historical readings in the general inscription. See [Inspection History](operator-workflows.md#inspection-history) and [ADR 0069](adr/0069-marker-faces.md) for the original marker-face model.
 
 Back readings use the same face model as every other side. Do not reintroduce `backDescription` or a separate back field; migration 490 removes the database column, and nonempty legacy API payloads receive an actionable validation error. Printed reports use the combined face inscription.

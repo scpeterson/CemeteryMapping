@@ -10,3 +10,17 @@ export function inscriptionMissing(status, text, legibility) {
   const resolved = inscriptionStatus(status, text);
   return resolved === "not_recorded" || (resolved === "transcribed" && !String(text ?? "").trim());
 }
+
+export function inscriptionPlaceholder(text) {
+  const match = /^\[(blank|illegible)\]$/iu.exec(String(text ?? "").trim());
+  return match?.[1].toLowerCase();
+}
+
+export function wholeFaceInscription(status) {
+  return { inscription: "", inscriptionStatus: status ?? "not_recorded", currentLegibility: status ?? "unknown" };
+}
+
+export function normalizeInscriptionPlaceholder(value) {
+  const status = inscriptionPlaceholder(value.inscription);
+  return status ? { ...value, ...wholeFaceInscription(status) } : value;
+}

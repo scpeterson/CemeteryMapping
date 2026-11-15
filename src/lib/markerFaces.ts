@@ -1,3 +1,4 @@
+import { normalizeInscriptionPlaceholder } from "../../shared/inscriptionStatus.mjs";
 import type { Headstone, MarkerFace } from "../types";
 
 export function isEmptyNewMarkerFace(face: MarkerFace, headstone: Headstone): boolean {
@@ -9,11 +10,11 @@ export function isEmptyNewMarkerFace(face: MarkerFace, headstone: Headstone): bo
 }
 
 export function editableMarkerFaces(headstone: Headstone): MarkerFace[] {
-  if (headstone.faces?.length) return headstone.faces;
-  return [{
+  if (headstone.faces?.length) return headstone.faces.map(normalizeInscriptionPlaceholder);
+  return [normalizeInscriptionPlaceholder({
     id: crypto.randomUUID(), label: "Front", inscription: headstone.inscription ?? "",
     inscriptionStatus: headstone.inscriptionStatus, currentLegibility: headstone.currentLegibility,
     historicalTranscriptions: headstone.historicalTranscriptions?.filter(entry => !entry.faceId),
     notes: "", burialIds: [], mediaAssetIds: [],
-  }];
+  })];
 }

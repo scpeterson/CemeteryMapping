@@ -1,3 +1,4 @@
+import { normalizeInscriptionPlaceholder } from "../../../shared/inscriptionStatus.mjs";
 import { InscriptionFields } from "./InscriptionFields";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
 import { useDraftState } from "../../hooks/useDraftState";
@@ -104,7 +105,7 @@ export function CreateHeadstoneForm({
     setMessage(undefined);
     setError(undefined);
     try {
-      const saved = await onSave(form);
+      const saved = await onSave(normalizeInscriptionPlaceholder(form));
       setForm(form);
       setMessage(`Marker ${saved.headstoneId} added.`);
       setIsAdding(false);

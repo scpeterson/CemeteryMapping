@@ -19,7 +19,7 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
     <InscriptionFields text={faces[0]?.inscription ?? ""} status={faces[0]?.inscriptionStatus ?? headstone.inscriptionStatus} currentLegibility={faces[0]?.currentLegibility ?? headstone.currentLegibility} historicalTranscriptions={faces[0]?.historicalTranscriptions ?? headstone.historicalTranscriptions} disabled={disabled}
       onChange={(value) => onChange([{ ...(faces[0] ?? { id: crypto.randomUUID(), label: "Front", notes: "", burialIds: [], mediaAssetIds: [] }), ...value }])} />
     <button type="button" className="icon-text-button" disabled={disabled} onClick={() => setManageFaces(true)}>Manage faces</button>
-    <p className="muted">For separate inscriptions on multiple sides, use Manage faces.</p>
+    <p className="muted">Use Manage faces for multiple inscriptions.</p>
   </div>;
 
   const update = (id: string, changes: Partial<MarkerFace>) => onChange(faces.map((face) => face.id === id ? { ...face, ...changes } : face));
@@ -29,7 +29,7 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
   const photos = (headstone.mediaAssets ?? []).filter((asset) => asset.assetType === "photo");
   return <fieldset className="headstone-wide-field marker-faces-editor" disabled={disabled}>
     <legend>Faces / Inscriptions</legend>
-    <p className="muted">Label each side or surface, such as North, Front, or Base. Keep line breaks in the transcription. Leave orientation unspecified when unknown.</p>
+    <p className="muted">Label faces, preserve line breaks, and leave unknown orientation unspecified.</p>
     <datalist id={labelListId}>{["Unspecified face", "North", "East", "South", "West", "Front", "Back", "Base"].map((label) => <option key={label} value={label} />)}</datalist>
     {faces.map((face, index) => <fieldset key={face.id} className="headstone-form marker-face-editor">
       <legend>Face {index + 1}</legend>
@@ -52,7 +52,7 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
         </label>)}
       </fieldset>
       <fieldset className="headstone-wide-field"><legend>Face photos</legend>
-        <p className="muted">Choose from this marker’s photos. To add a new photo, save the marker, upload it below, then assign it to a face.</p>
+        <p className="muted">Save and upload photos below before linking them to a face.</p>
         {photos.map((asset) => <label key={asset.id} className="headstone-checkbox-field">
           <input type="checkbox" checked={face.mediaAssetIds.includes(asset.id)} onChange={(event) => toggle(face, "mediaAssetIds", asset.id, event.target.checked)} />{asset.originalFilename || asset.notes || "Marker photo"}
         </label>)}
@@ -67,7 +67,7 @@ export function MarkerFacesEditor({ headstone, faces, disabled, onChange }: {
     <button type="button" className="secondary-button" disabled={faces.length >= 32} onClick={() => onChange([...faces, {
       id: crypto.randomUUID(), label: "", inscription: "", notes: "", burialIds: [], mediaAssetIds: [],
     }])}>Add face</button>
-    <p className="muted">Every monument needs at least one face. Add face starts another face. Save marker saves your changes; empty new faces are ignored.</p>
+    <p className="muted">Save marker saves all faces. Empty new faces are ignored.</p>
   </fieldset>;
 }
 
