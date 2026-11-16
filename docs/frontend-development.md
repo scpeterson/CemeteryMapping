@@ -135,6 +135,13 @@ exports, tasks and access requests. This uses a dedicated Vite server on port
 It includes compact control-point tools, keyboard focus, checkbox geometry,
 multiline typography and phone-width overflow regressions. One built-offline-shell
 case is intentionally reserved for the separate built field test configuration.
+At 800px and below, lookup cards stack all named fields in DOM order. The mobile
+`grid-area` reset must match the specificity of the desktop label/description and
+source-field placement rules; clearing `grid-template-areas` alone leaves named
+placements that can create overlapping implicit tracks. Cover existing and new
+cards for plain, source-enabled, rank and grave-feature lookups on both sides of
+the breakpoint. Access-request Refresh uses the shared secondary Button with its
+busy/disabled state; it remains a read-only queue reload, not a user-form submit.
 See the [dated consistency review](ui-consistency-review.md) for scope and findings.
 
 The stylesheet entry remains `src/styles.css`:

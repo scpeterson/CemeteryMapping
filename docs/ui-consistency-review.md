@@ -61,3 +61,35 @@ seven new consistency cases and additional map/admin layouts. Lint, production
 TypeScript/build, bundle budgets, documentation build and local documentation
 file-link checks passed. The adjusted core bundle remains below the existing
 702 KiB gzip cap; no application-code allowance was changed.
+
+
+## Hosted verification and admin follow-up — November 16, 2026
+
+PR #871 subsequently deployed to hosted TEST as `3b4dd5e`. Live desktop and
+393px phone emulation verified the shared controls and error notice, but exposed
+two pre-existing gaps: Admin → Users' **Refresh requests** still used browser
+styling, and standard lookup cards overlapped labels/source fields on phones.
+These follow-up source changes are separate from that deployed release; they do
+not record another deployment or new live data edits.
+
+Refresh requests now uses the shared secondary Button, including keyboard focus
+and a disabled/busy state during the existing queue reload. Queue failures remain
+retryable; approval/rejection and account permissions are unchanged.
+
+Lookup cards already cleared their desktop grid template on phones, but their
+child reset had lower specificity than desktop named field placements. The mobile
+reset now overrides label/description, source notes/URL, title, usage, actions and
+specialized fields so both existing and Add lookup value cards stack without
+implicit overlapping tracks. Desktop named-area layouts remain intact.
+
+`tests/admin-ui-fixes.spec.ts` reproduces the original failures before the fix and
+checks refresh loading/error/retry at 390/1280px. It checks plain, source-enabled,
+rank and grave-feature cards at 320, 390, 600, 800, 801 and 1280px, including card
+boundaries, non-overlap, phone stacking, unchanged text, and screenshots. These
+checks run through `npm run test:ui:browser` with isolated mocked APIs.
+
+Follow-up validation: all 25 affected browser checks passed, including the six
+new refresh/layout cases and existing approval, lookup editing, rank and shared
+control checks. Lint, production TypeScript/build and bundle checks passed with
+the existing 702 KiB adjusted-core cap unchanged. Documentation build and link
+validation also passed. No hosted deployment is included in this follow-up.

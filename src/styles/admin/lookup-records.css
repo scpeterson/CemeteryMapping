@@ -284,10 +284,12 @@
     grid-template-areas: none;
   }
 
+  /* Match the desktop placement selectors: a bare child reset loses to
+     .lookup-row .lookup-label and the more specific source-field rules. */
   .lookup-row > *,
-  .lookup-row.has-source-fields > *,
-  .lookup-row.has-rank-fields > *,
-  .lookup-row.has-feature-type > * {
+  .lookup-row > :is(h4, button, .lookup-label, .lookup-description, .lookup-usage,
+    .lookup-active, .lookup-actions, .lookup-rank-fields, .lookup-feature-type),
+  .lookup-row.has-source-fields > :is(.lookup-source-notes, .lookup-source-url) {
     grid-area: auto;
   }
 }
