@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "../ui/Button";
 import { fetchAccessRequestStats, type AccessRequestStats, fetchAccessRequests, rejectAccessRequest, type AccessRequest } from "../../api/accessRequestsApi";
 
 export function AccessRequestsPanel({ onReview, refreshKey }: { onReview: (request: AccessRequest) => void; refreshKey: number }) {
@@ -27,7 +28,7 @@ export function AccessRequestsPanel({ onReview, refreshKey }: { onReview: (reque
     <p>Review requests before creating accounts. New accounts default to Read-only. Saving an active user approves the selected request.</p>
     {stats && <p>{stats.pending} of {stats.limits.pending} pending requests; {stats.lastHour} of {stats.limits.hourly} new requests in the last hour.</p>}
     {stats && (stats.pending >= stats.limits.pending * 0.8 || stats.lastHour >= stats.limits.hourly * 0.8) && <p role="alert">Access requests are nearing capacity. Review the queue and check for unusual submissions.</p>}
-    <button type="button" disabled={busy} onClick={() => void reload()}>Refresh requests</button>
+    <Button variant="secondary" busy={busy} onClick={() => void reload()}>Refresh requests</Button>
     {busy && <p role="status">Loading…</p>}
     {error && <p role="alert">{error}</p>}
     {!busy && !error && requests.length === 0 && <p>No pending requests.</p>}
