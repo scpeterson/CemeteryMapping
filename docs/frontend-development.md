@@ -326,11 +326,36 @@ merely to expose general uploads. The API's power-user route guard is not the
 whole authorization check: `validatePhotoContextTarget` also enforces inspection
 permissions and record/face ownership for inspection destinations.
 
-`unreadableInscriptionReasons` currently matches text only: the whole word
-`illegible` or a bracketed hyphen with optional whitespace. The report inspects the
-latest non-deleted visit's general/face text and ignores historical readings.
-Structured Illegible status/legibility with empty text does not cause a match;
-another matching current reading may still include the monument. Treat this as a
-known report coverage gap for separate application review, not a reason to put
-placeholder text back into structured readings. This documentation change does
-not alter report queries, status handling, authorization or tests.
+The unreadable-inscription report classifies structured whole/partial legibility
+and legacy text without changing stored readings. `inscriptionLegibility.mjs`
+provides pure classification and face matching. Whole-face status or exact
+standalone `[illegible]` means full; explicit partial legibility or text cues with
+surviving letters/numbers means partial. Fragments alone have unknown extent.
+Blank/unassessed/missing evidence is not comparable. Stable IDs are reserved
+before unique-label fallback so a renamed face cannot lose its previous reading
+to another face's label. Independent unassigned text stays separate; combined
+face text and archived transcriptions do not create extra observations.
+
+The SQL loads the two latest active inspection snapshots atomically in one query,
+using the UI's year/date/updated-time/ID ordering (creation-time fallback for legacy
+null updated timestamps). Cemetery selection intersects role-authorized IDs,
+including for non-admin report users; an unauthorized selection never falls back
+to all cemeteries. Section and both plot type/scope predicates use the scoped
+location query. Other reports retain their existing cemetery-selection behavior.
+
+Report catalog parameter type `section` renders map/section-derived options,
+including Unsectioned and cemeteries represented only by boundaries. Changing
+cemetery resets section and marks old results stale. Filter selects share input
+styling, and result/table flex sizing keeps mobile tables scrollable rather than
+collapsing below a long filter form. Current/previous extent and observed change
+precede ancillary location/name evidence; original text stays in the result.
+
+Run `node --test server/unreadableInscriptionReports.test.mjs`,
+`APP_ENV=test node --test scripts/unreadable-inscriptions-report.integration.mjs`,
+and the browser specs `unreadable-inscriptions-report.spec.ts` and
+`report-monument-links.spec.ts`. Coverage includes full/partial/unknown extent,
+recovered readings, missing/renamed/ambiguous faces, latest/previous ordering,
+filters, scoped cemetery selection, direct monument navigation and actual
+non-collapsed desktop/phone table geometry. Database fixtures are temporary and
+rolled back. No migration, inscription rewrite or production data change is needed.
+See [ADR 0214](adr/0214-inscription-legibility-report.md).

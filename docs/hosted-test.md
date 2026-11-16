@@ -3064,7 +3064,6 @@ Private backups and reports remain outside this public documentation. Report/log
 copies retained locally are not new off-host database/media backups. This release
 does not establish a full recovery restore rehearsal or a new capacity/retention
 audit. See the [inspection workflow](operator-workflows.md#inspection-history),
-[photo permissions](operator-workflows.md#photo-collection), and [current unreadable
-report limitation](operator-workflows.md#unreadable-monument-inscriptions-report).
+[photo permissions](operator-workflows.md#photo-collection), and [report workflow and deployment requirement](operator-workflows.md#unreadable-monument-inscriptions-report).
 Adding these records to source does not itself publish documentation to hosted
 TEST or redeploy the application.

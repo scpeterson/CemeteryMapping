@@ -33,6 +33,8 @@ export function matchReportQuery(query) {
 
   if (/\binscriptions?\b/u.test(lower) && (/\b(illegible|unreadable|cannot be read|can't be read)\b/u.test(lower) || /\[\s*-\s*\]/u.test(lower))) {
     reportId = "unreadable-monument-inscriptions";
+    parameters.sectionName = extractSectionName(text);
+    if (/\b(exclude|excluding|without)\s+plot\s+markers?\b/u.test(lower)) parameters.includePlotMarkers = "no";
   } else if (/\b(nhg|north hills)\b/u.test(lower) && /\b(missing|without|no|unlinked|lack|not)\b/u.test(lower)) {
     reportId = "missing-nhg-links";
   } else if (/\binscriptions?\b/u.test(lower) && /\b(missing|empty|blank|without|no|incomplete)\b/u.test(lower)) {

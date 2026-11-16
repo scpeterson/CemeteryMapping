@@ -163,21 +163,59 @@ An occupied or marked gravesite can still appear in this report because burial a
 
 ### Unreadable Monument Inscriptions Report
 
-Use **Reports → Data maintenance → Unreadable monument inscriptions** for
-photography or field-review follow-up. Power users and cemetery/system admins can
-run it within their permitted cemeteries. It searches the latest non-deleted
-inspection's general and face inscription text for the whole word `illegible`
-(case-insensitive), including mixed readings, or `[-]` with optional whitespace.
-Older visits and historical transcription entries do not cause a match.
+Use **Reports → Data maintenance → Unreadable monument inscriptions** to plan
+photography or field-review follow-up. Power users and cemetery/system admins
+can run it. Select **Cemetery** (all permitted cemeteries or one where you have
+power-user/admin authority), **Section** (all, a named section, or Unsectioned),
+and **Include plot markers → No** to omit markers classified as plot markers by
+either marker type or scope. Cemetery changes reset Section. A cemetery where
+you are only a reader cannot be used to run this report.
 
-**Known limitation:** structured Illegible status/legibility with empty current
-text does not itself match. Such a monument appears only if some other current
-inscription text matches the report's rules. The report is therefore not a
-complete inventory of faces marked Illegible, and absence is not proof of
-readability. Review an individual inspection's status and preserve its historical
-readings. Do not add dummy placeholder text or remove a correct flag to influence
-the report. Extending the report to structured status is separate application
-review; this documentation does not change report behavior.
+Under **Show**, choose current illegibility at all extents (the default), Fully
+illegible, Partially illegible, or **Current or previous illegibility**. The last
+option also shows readings that have recovered and previously unreadable faces
+absent from the latest inspection. Each row represents a face or an independent
+unassigned reading, rather than labeling an entire multi-face monument with one
+condition. A monument spanning sections may appear in each section; the summary
+counts distinct monuments.
+
+- **Fully illegible:** a whole-face Illegible status/legibility assessment or an
+  exact standalone `[illegible]`, ignoring case/surrounding whitespace. Empty text
+  with the structured Illegible checkbox now matches.
+- **Partially illegible:** a Partially legible assessment, or unreadable text cues
+  mixed with surviving letters/numbers, such as `Name [illegible] 1880` or
+  `Name [-] 1880`. Text-derived extent is an inference for review, not a rewrite.
+- **Extent unknown:** a bare unreadable fragment such as `[-]` or `[illegible
+  lines]` without an explicit extent assessment or surviving text. Do not guess
+  that an unknown extent is full or partial. Blank surfaces and empty unassessed
+  readings are not current illegibility matches.
+
+An explicit Legible or Partially legible assessment takes precedence over mixed
+text cues; legacy text cues are used when that assessment is absent.
+
+Latest/previous legibility, **Observed change**, both inspection dates/sources,
+both original transcriptions, and the assessment basis support each result.
+Improved/Worsened/Same legibility category compare recorded readable, partial and
+full states; changed transcription text within the same category is labeled
+separately. Scroll the table horizontally for dates, sources and original text.
+A transcription without unreadable annotations is labeled Readable / no
+illegibility noted; this does not prove every character was read. Missing visits,
+unmatched faces, blank/unassessed observations and unknown extents are **Not
+comparable**, not automatic deterioration or improvement.
+
+The two most recent non-deleted inspections are ordered by inspection year,
+exact date when present, then updated time and stable ID (creation time for
+legacy rows without updated time). Year-only dates remain explicitly unknown.
+Faces match by stable ID first, then by a unique case-insensitive label. Combined
+face text is not counted twice; archived historical transcriptions are not used
+as inspection assessments. Open the monument ID to review the dated evidence.
+Observed differences may reflect different transcription methods or corrections,
+not physical change. A new photograph may not recover an unreadable inscription.
+
+This enhanced report must be deployed before these controls/structured matches
+are available. Older deployments, including the separately recorded November 15
+release, still use the earlier text-only report. Check the running release; do
+not insert dummy text or remove correct face flags to work around an older report.
 
 ### Admin User Management
 

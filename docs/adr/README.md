@@ -384,3 +384,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0212: PostGIS 3.7 with legacy TIGER restore compatibility](0212-postgis37-tiger-restore-compatibility.md)
 
 - [ADR 0213: Inspection face status and current reading attribution](0213-inspection-face-status-and-reading-source.md)
+
+- [ADR 0214: Inscription legibility and inspection comparison report](0214-inscription-legibility-report.md)

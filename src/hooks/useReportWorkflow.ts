@@ -1,3 +1,4 @@
+import { roleForCemetery } from "../lib/selectionPermissions";
 import { useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 import { fetchReports, queryReports, runReport } from "../api/reportsApi";
 import type { CemeteryData, CurrentUser, ReportDefinition, ReportResult } from "../types";
@@ -57,16 +58,30 @@ export function useReportWorkflow(currentUser: CurrentUser, data: CemeteryData) 
   }, [catalogAttempt]);
 
   const selectedReport = useMemo(() => reports.find((report) => report.id === selectedReportId), [reports, selectedReportId]);
+  const canFilterCemetery = currentUser.role === "admin" || selectedReportId === "unreadable-monument-inscriptions";
   const cemeteryOptions = useMemo(() => {
     const options = new Map<string, string>();
+    for (const boundary of data.boundaries ?? (data.boundary ? [data.boundary] : [])) {
+      if (boundary.properties.id) options.set(boundary.properties.id, boundary.properties.name);
+    }
     data.graves.forEach((grave) => options.set(grave.cemeteryId, grave.cemeteryName));
     return [...options.entries()]
+      .filter(([id]) => currentUser.role === "admin" || ["power-user", "cemetery-admin"].includes(roleForCemetery(currentUser, id)))
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [data.graves]);
+  }, [data, currentUser]);
+  const sectionOptions = useMemo(() => {
+    const sections = new Map<string, string>([["UNSECTIONED", "Unsectioned"]]);
+    const add = (id: string, name: string) => {
+      if ((selectedCemeteryId === "__all" || selectedCemeteryId === id) && cemeteryOptions.some(cemetery => cemetery.id === id) && name.trim()) sections.set(name.trim().toUpperCase(), name.trim());
+    };
+    data.sections.forEach(section => add(section.cemeteryId, section.name));
+    data.graves.forEach(grave => add(grave.cemeteryId, grave.section));
+    return [{ value: "", label: "All sections" }, ...[...sections].sort((a,b) => a[1].localeCompare(b[1])).map(([value,label]) => ({ value, label }))];
+  }, [data, selectedCemeteryId, cemeteryOptions]);
   const scopedParameters = (reportParameters: Record<string, string>) => ({
     ...reportParameters,
-    ...(currentUser.role === "admin" ? { cemeteryId: selectedCemeteryId } : {}),
+    ...(canFilterCemetery ? { cemeteryId: selectedCemeteryId } : {}),
   });
   const groupedReports = useMemo(() => {
     const groups = new Map<string, ReportDefinition[]>();
@@ -78,6 +93,7 @@ export function useReportWorkflow(currentUser: CurrentUser, data: CemeteryData) 
 
   const parameters = parameterState.reportId === selectedReportId ? parameterState.values : initialParameters(selectedReport);
   const setParameters = (update: SetStateAction<Record<string, string>>) => {
+    setStaleResult(true);
     setParameterState((current) => {
       const values = current.reportId === selectedReportId ? current.values : initialParameters(selectedReport);
       return { reportId: selectedReportId, values: typeof update === "function" ? update(values) : update };
@@ -178,7 +194,8 @@ export function useReportWorkflow(currentUser: CurrentUser, data: CemeteryData) 
     setIsRunning(false);
     setStaleResult(true);
     updateSelectedCemeteryId(id);
+    if (selectedReportId === "unreadable-monument-inscriptions") setParameters(current => ({ ...current, sectionName: "" }));
   };
   const retryCatalog = () => setCatalogAttempt((value) => value + 1);
-  return { catalogError, staleResult, reports, selectedReportId, parameters, setParameters, selectedCemeteryId, setSelectedCemeteryId, question, setQuestion, result, message, messageTone, error, isLoading, selectedReport, cemeteryOptions, groupedReports, selectReport, executeReport, askQuestion, retryCatalog };
+  return { catalogError, staleResult, reports, selectedReportId, parameters, setParameters, selectedCemeteryId, setSelectedCemeteryId, question, setQuestion, result, message, messageTone, error, isLoading, selectedReport, cemeteryOptions, sectionOptions, canFilterCemetery, groupedReports, selectReport, executeReport, askQuestion, retryCatalog };
 }

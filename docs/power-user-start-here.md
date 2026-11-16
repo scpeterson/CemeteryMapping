@@ -47,22 +47,24 @@ discards the local draft after confirmation. Detailed steps are in
 5. Open **Reports** to explore the reports available to your role. **Owner holdings** helps find recorded ownership within your permitted cemeteries.
 
 For photography follow-up, run **Reports → Data maintenance → Unreadable monument
-inscriptions**. Power users and cemetery/system administrators can list monuments
-whose latest non-deleted inspection contains the word `illegible` (any case),
-including `[illegible lines]`, or `[-]` with optional spaces inside the brackets.
-The report includes partial text and face inscriptions, all sections, plot
-markers and standalone monuments in your permitted cemeteries. It shows the
-inspection date/source and matching surfaces; select a monument ID to open its
-record. Older unreadable inspections do not match when a newer inspection is
-readable. Blank text alone and monuments without inspections are not included.
+inscriptions**. Select your permitted **Cemetery**, a **Section** or All sections,
+and optionally set **Include plot markers → No**. The report separates fully
+illegible faces from partially illegible faces, includes empty faces marked with
+the Illegible checkbox, and labels unreadable fragments with insufficient extent
+evidence as unknown. It includes plot/standalone markers unless filtered out.
 
-**Current limitation:** the report searches inscription text, not the Illegible
-checkbox/status. A face marked Illegible with empty text does not itself trigger
-a match; the monument can still appear if another current reading matches.
-Absence from this report does not prove every face is readable. Keep using the
-correct checkbox rather than adding placeholder text to force a match. Review
-individual inspections for flagged faces and refer follow-up to an administrator.
-See the [report limitation](operator-workflows.md#unreadable-monument-inscriptions-report).
+Each face/reading row shows its latest and immediately previous inspection's
+legibility, dates/sources, original text and observed change. Use **Show → Current
+or previous illegibility** to include readings that became readable. Missing or
+unmatched evidence is Not comparable, not proof that legibility changed. Select
+a monument ID to review the inspections before taking new photographs. One
+illegible face does not mean every face on the monument is unreadable.
+
+The enhanced report needs its own deployment; older releases use text matching
+only and do not independently match an empty structured Illegible flag. Absence
+from a report is not proof of readability. Keep correct flags and history rather
+than adding placeholder text to force a match. See the [report workflow and
+classification rules](operator-workflows.md#unreadable-monument-inscriptions-report).
 
 Search can find deceased names, known monument/gravesite IDs, and other recorded details. Owner and deed information is restricted by cemetery assignment. If a search returns nothing, try a surname or shorter identifier and check active filters.
 

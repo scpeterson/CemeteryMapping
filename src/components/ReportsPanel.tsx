@@ -14,7 +14,7 @@ type ReportsPanelProps = {
 };
 
 export function ReportsPanel({ currentUser, data, onClose, onOpenMonument }: ReportsPanelProps) {
-  const { catalogError, staleResult, selectedReportId, parameters, setParameters, selectedCemeteryId, setSelectedCemeteryId, question, setQuestion, result, message, messageTone, error, isLoading, selectedReport, cemeteryOptions, groupedReports, selectReport, executeReport, askQuestion, retryCatalog } = useReportWorkflow(currentUser, data);
+  const { catalogError, staleResult, selectedReportId, parameters, setParameters, selectedCemeteryId, setSelectedCemeteryId, question, setQuestion, result, message, messageTone, error, isLoading, selectedReport, cemeteryOptions, sectionOptions, canFilterCemetery, groupedReports, selectReport, executeReport, askQuestion, retryCatalog } = useReportWorkflow(currentUser, data);
 
   return (
     <Modal className="reports-panel" label="Reports" onClose={onClose}>
@@ -43,11 +43,11 @@ export function ReportsPanel({ currentUser, data, onClose, onOpenMonument }: Rep
         </button>
       </div>
 
-      {currentUser.role === "admin" ? (
+      {canFilterCemetery ? (
         <label className="report-scope">
           <span>Cemetery</span>
           <select value={selectedCemeteryId} onChange={(event) => setSelectedCemeteryId(event.target.value)}>
-            <option value="__all">All cemeteries</option>
+            <option value="__all">{currentUser.role === "admin" ? "All cemeteries" : "All permitted cemeteries"}</option>
             {cemeteryOptions.map((cemetery) => (
               <option key={cemetery.id} value={cemetery.id}>
                 {cemetery.name}
@@ -100,13 +100,13 @@ export function ReportsPanel({ currentUser, data, onClose, onOpenMonument }: Rep
                   {selectedReport.parameters.map((parameter) => (
                     <label key={parameter.name}>
                       <span>{parameter.label}</span>
-                      {parameter.type === "select" ? (
+                      {parameter.type !== "text" ? (
                         <select
                           value={parameters[parameter.name] ?? ""}
                           onChange={(event) => setParameters((current) => ({ ...current, [parameter.name]: event.target.value }))}
                           required={parameter.required}
                         >
-                          {parameter.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                          {(parameter.type === "section" ? sectionOptions : parameter.options)?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                         </select>
                       ) : <input
                         value={parameters[parameter.name] ?? ""}
@@ -138,7 +138,7 @@ export function ReportsPanel({ currentUser, data, onClose, onOpenMonument }: Rep
 
           {result ? (
             <div className="report-result">
-              {staleResult ? <p role="status">Previous results—latest request failed. Run the report again to refresh them.</p> : null}
+              {staleResult ? <p role="status">Previous results—{error ? "latest request failed" : "filters changed"}. Run the report again to refresh them.</p> : null}
               <div className="report-result-meta">
                 <div className="report-result-heading">
                   <strong>{result.report.title}</strong>
@@ -154,7 +154,7 @@ export function ReportsPanel({ currentUser, data, onClose, onOpenMonument }: Rep
                   ) : null}
                 </div>
               </div>
-              {result.layout === "marker-burial-pages" ? <MarkerBurialPages rows={result.rows} /> : <div className="report-table-wrap">
+              {result.layout === "marker-burial-pages" ? <MarkerBurialPages rows={result.rows} /> : <div className="report-table-wrap" role="region" aria-label="Report results table" tabIndex={0}>
                 <table className="report-table">
                   <thead>
                     <tr>
