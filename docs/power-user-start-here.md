@@ -56,6 +56,14 @@ inspection date/source and matching surfaces; select a monument ID to open its
 record. Older unreadable inspections do not match when a newer inspection is
 readable. Blank text alone and monuments without inspections are not included.
 
+**Current limitation:** the report searches inscription text, not the Illegible
+checkbox/status. A face marked Illegible with empty text does not itself trigger
+a match; the monument can still appear if another current reading matches.
+Absence from this report does not prove every face is readable. Keep using the
+correct checkbox rather than adding placeholder text to force a match. Review
+individual inspections for flagged faces and refer follow-up to an administrator.
+See the [report limitation](operator-workflows.md#unreadable-monument-inscriptions-report).
+
 Search can find deceased names, known monument/gravesite IDs, and other recorded details. Owner and deed information is restricted by cemetery assignment. If a search returns nothing, try a surname or shorter identifier and check active filters.
 
 ## Understand what you are looking at
@@ -84,6 +92,29 @@ Power users can update existing cemetery records and view/edit deed-owner data f
 Open the monument and check its type, material, relationships, source information, and available photos. In its details, select an **Inspection** to view that visit's condition, inscriptions, and photos. The latest inspection is selected initially. An empty photo gallery for a historical inspection does not mean the monument has no photos in other visits.
 
 Keep historical readings separate from what can be read today. Do not replace a historical inscription merely because the current stone is illegible. Creating or editing inspections currently requires cemetery-admin or admin access; ask for help if those controls are absent. See [Inspection History](operator-workflows.md#inspection-history) for the detailed workflow.
+
+**Current marker reading** identifies the latest inspection's date/year, type
+and source. Selecting an older inspection changes the visit view without replacing
+that summary. Historical transcriptions are additional source evidence, not an
+automatic log of every edit; older inspection readings remain independent.
+
+### Add monument photos
+
+Within a cemetery where you have power-user access, open the monument and choose
+**Overview → Add photos**, or **Details → Photos → Photo gallery (N)**. Set
+**Photo record** to **All marker photos** or **Photos without a record**, then
+choose **Upload new photos**, select your files, and **Upload photos**. These
+choices store the images in the monument library without assigning an inspection.
+
+You can also upload/link/unlink photos for an existing maintenance record in a
+cemetery you may edit. Choose that maintenance record to set its face and
+Before/During/After timing. Inspection-linked uploads, links, face changes and
+unlinking require a cemetery admin for that cemetery or a system admin. If an
+inspection is selected and upload controls are absent, switch Photo record to
+All marker photos or Photos without a record; you do not need inspection-edit
+permission to upload to the monument library. Deleting the photo itself requires
+cemetery-admin or system-admin access; unlinking from maintenance keeps the image.
+See the [photo permissions and workflow](operator-workflows.md#photo-collection).
 
 ### Work with ownership evidence
 
