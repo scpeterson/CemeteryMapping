@@ -311,3 +311,26 @@ and unchanged older visits/marker records/photo links. Run
 The bounded core bundle allowance is 702 KiB after this feature (about 0.26 KiB
 application growth over main); see [ADR 0213](adr/0213-inspection-face-status-and-reading-source.md).
 This growth is not charged to the MapLibre vendor exemption.
+
+
+### Photo permissions and unreadable-report limitation
+
+Photo library and maintenance uploads/associations use cemetery-scoped monument
+edit permission (power-user or higher); inspection-linked uploads and context
+mutations additionally require inspection-edit permission (cemetery-admin or
+system admin). `PhotoWorkspace` switches editing permission with Photo record.
+All marker photos and Photos without a record remain valid upload destinations
+for power users when an inspection destination is read-only. Asset deletion is
+separately restricted to cemetery-admin or higher. Do not grant inspection edits
+merely to expose general uploads. The API's power-user route guard is not the
+whole authorization check: `validatePhotoContextTarget` also enforces inspection
+permissions and record/face ownership for inspection destinations.
+
+`unreadableInscriptionReasons` currently matches text only: the whole word
+`illegible` or a bracketed hyphen with optional whitespace. The report inspects the
+latest non-deleted visit's general/face text and ignores historical readings.
+Structured Illegible status/legibility with empty text does not cause a match;
+another matching current reading may still include the monument. Treat this as a
+known report coverage gap for separate application review, not a reason to put
+placeholder text back into structured readings. This documentation change does
+not alter report queries, status handling, authorization or tests.

@@ -6,15 +6,15 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
-The latest database maintenance is the **November 5, 2026 PostgreSQL 18.6 /
-PostGIS 3.6.4 cluster upgrade**, recorded in the
-[upgrade guide](postgresql-18-upgrade.md#hosted-test-validation-record-2026-11-05).
-The latest recorded code deployment is the
-[November 12 security, dependency and MapLibre release](#november-12-2026-security-dependency-and-maplibre-release)
-at `3763e2f`, a v0.2.5-based main build. Dated sections below describe historical
-releases and their verification scope. Check `/api/health` for the running release.
+The latest database maintenance is the **November 14, 2026 PostGIS 3.7 upgrade**,
+retaining PostgreSQL 18.6 and legacy TIGER 3.6.4. The latest verified code release
+is **`60d6285`**, package 0.2.5, built **`2026-11-15T18:41:27Z`**. See the
+[November 14 summary](#november-14-2026-assignment-postgis-and-lookup-releases)
+and [November 15 inspection release](#november-15-2026-inspection-face-controls-and-source-attribution).
+Schema is through migration file 518. Dated sections below retain historical
+release/verification scope; check `/api/health` for the running release.
 
-The latest backup operation is the
+The latest recorded backup-service setup and retention cleanup is the
 [November 13 encrypted Spaces backup and verified cleanup](#november-13-2026-encrypted-spaces-backup-and-verified-cleanup).
 
 The latest NHG review update is the
@@ -2988,3 +2988,83 @@ retention, monthly repository readback, hourly status logging, and protected log
 rotation are enabled. Initial status reported no disk or backup-freshness warning
 or critical condition. The application remains on `3763e2f`; the backup tooling
 was installed separately from merged, CI-passed main `06e687a`.
+
+
+## November 14, 2026 assignment, PostGIS and lookup releases
+
+These completed hosted TEST releases supersede the November 12 code/database
+status above. They are separate recovery boundaries; the private operations
+repository retains account-specific deployment and recovery evidence.
+
+| Release | Merged application revision | Verified scope |
+| --- | --- | --- |
+| C-0384 assignment, [PR #865](https://github.com/scpeterson/CemeteryMapping/pull/865) | `cc38a6c` | Migration 518 assigns C-0384 to C-88; geometry and marker remain unchanged. Surrounding geometry remains separate review. |
+| PostGIS compatibility upgrade, [PR #848](https://github.com/scpeterson/CemeteryMapping/pull/848) | `81c8a07` | PostgreSQL remains 18.6; PostGIS/topology upgraded to 3.7.0. Legacy TIGER 3.6.4 data/address behavior and cemetery geometry/associations were preserved. |
+| Shared grave feature lookup administration, [PR #866](https://github.com/scpeterson/CemeteryMapping/pull/866) | `abe04ce` | System admins can maintain types, subtypes, materials and placements across cemeteries. Existing values and permissions were preserved. |
+
+The extension upgrade used backups and disposable restore/geometry comparisons.
+Its cold physical archive was validated but a full physical host/media restore
+was not rehearsed. Existing spatial findings were retained, not declared fixed.
+Subsequent API/web code releases do not update installed extension SQL or reverse
+migration 518. Use the [PostGIS compatibility guidance](postgresql-18-upgrade.md#postgis-36-to-37-within-postgresql-18)
+for version-specific constraints.
+
+Lookup UI checks used an authenticated system-admin session and unsaved drafts.
+Create/edit/deactivate behavior and cemetery-admin denial used approved isolated
+role/database contexts because no active hosted cemetery-admin account was
+available. This does not claim a live cemetery-admin sign-in or saved lookup edit.
+
+## November 15, 2026 inspection face controls and source attribution
+
+Hosted TEST was deployed from exact CI-passed main
+**`60d628543781a7aa574264bd419d43137e3ac329`**
+([PR #868](https://github.com/scpeterson/CemeteryMapping/pull/868)), package
+**0.2.5**, build **`2026-11-15T18:41:27Z`**. The immediate predecessor,
+`018adb8` ([PR #867](https://github.com/scpeterson/CemeteryMapping/pull/867)),
+introduced the stored marker-face Illegible/Blank controls earlier that day.
+
+The backup-first release verified schema/release integrity, candidate startup,
+Auth0, protected settings, API/web cutover, frontend manifest and 202 runtime
+source/shared file hashes. Health was ok in TEST on the expected database and
+revision, with zero API restarts. Public HTTPS and anonymous marker read/update
+rejection passed. No database restart, migration or bulk data conversion occurred;
+schema remains through migration file 518, PostgreSQL 18.6, PostGIS/topology 3.7.0
+and legacy TIGER 3.6.4. No DEV/local TEST/STAGE/PRODUCTION deployment occurred.
+
+Verification scope:
+
+- The existing authorized system-admin TEST Chrome session loaded the exact
+  release; no fresh Access/Auth0 sign-in was required. The narrow detail panel
+  showed checkboxes beside labels with matching rounded field borders. Legitimate
+  text disabled both flags, flags were mutually exclusive, and checking/unchecking
+  locked/unlocked text. Mixed text and standalone legacy placeholder handling
+  behaved as documented.
+- Selecting an older NHG inspection kept Current marker reading attributed to
+  the latest field inspection, including its unknown exact date. An empty latest
+  face did not borrow older text. In an unsaved draft, canceling the archival
+  prompt kept current text; accepting it retained the exact reading in history.
+  History survived flag changes and appeared in Review & save. The draft was
+  explicitly discarded and the original reading remained unchanged. **No live
+  Save inspection was submitted.**
+- Six isolated browser regressions passed on identical merged source, including
+  1280px/390px label geometry, saves, reloads, copied evidence and draft recovery.
+  These mocked fixtures are separate from live authentication/phone evidence.
+- The deployed image's real inspection validation/insert/update functions ran
+  14 rollback-only database round trips using the restricted runtime role,
+  temporary copies and the actual inspection BEFORE trigger. Flags, eight exact
+  mixed-text cases, history, older-client compatibility and stale-save rejection
+  passed. Both older snapshots and stored marker/history remained exact. These
+  were function/database checks, not authenticated HTTP saves.
+- All 84 application-table fingerprints matched after runtime checks. At final
+  browser verification, 83 matched and only expected authenticated activity had
+  changed. Existing source evidence, inspections, geometry, markers, memberships,
+  lookups and media references were preserved; no persistent fixtures remained.
+
+Private backups and reports remain outside this public documentation. Report/log
+copies retained locally are not new off-host database/media backups. This release
+does not establish a full recovery restore rehearsal or a new capacity/retention
+audit. See the [inspection workflow](operator-workflows.md#inspection-history),
+[photo permissions](operator-workflows.md#photo-collection), and [current unreadable
+report limitation](operator-workflows.md#unreadable-monument-inscriptions-report).
+Adding these records to source does not itself publish documentation to hosted
+TEST or redeploy the application.

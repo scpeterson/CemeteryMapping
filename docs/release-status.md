@@ -3,6 +3,50 @@
 
 # Release status and deployment checks
 
+## November 15, 2026: Inspection face controls and source attribution deployed to TEST
+
+Latest verified hosted TEST is **`60d628543781a7aa574264bd419d43137e3ac329`**
+([PR #868](https://github.com/scpeterson/CemeteryMapping/pull/868)), package
+**0.2.5**, build **`2026-11-15T18:41:27Z`**. Each inspection face has exclusive
+Illegible/Blank controls, with corrected checkbox/label alignment and protection
+for legitimate text. Current marker reading identifies its latest source
+inspection independently of an older visit selected for review. Source history
+remains separate and preserved. The earlier November 15 `018adb8` release
+([PR #867](https://github.com/scpeterson/CemeteryMapping/pull/867)) added the
+corresponding stored marker-face controls.
+
+The release passed exact-commit CI and backup/candidate/cutover checks. The existing
+system-admin TEST session verified layout, flags, text protection, attribution
+and history in an unsaved draft, which was discarded. Six isolated desktop/phone
+browser regressions and 14 deployed rollback-only database round trips passed.
+No live inspection save or new account/permission changes were made. In the final
+84-table comparison, only normal authenticated activity changed; business data
+and source history matched. See the [deployment scope](hosted-test.md#november-15-2026-inspection-face-controls-and-source-attribution).
+
+Schema is through **migration file 518**; PostgreSQL **18.6**, PostGIS/topology
+**3.7.0** and legacy TIGER **3.6.4** remain in place. This code release did not
+restart the database or apply a migration. The production core budget is now
+**702 KiB**, explicitly allowing bounded application growth for this feature
+([ADR 0213](adr/0213-inspection-face-status-and-reading-source.md)); this is not
+a third-party exemption. Earlier disk/backup observations retain their dates
+and are not new capacity audits. No STAGE/PRODUCTION deployment is claimed.
+
+The unreadable-inscription report still searches text rather than structured
+Illegible status. Empty flagged faces do not themselves match; see the [known
+limitation](operator-workflows.md#unreadable-monument-inscriptions-report).
+
+## November 14, 2026: Assignment, PostGIS and grave feature lookups deployed to TEST
+
+The separate completed releases assigned C-0384 to C-88 without changing its
+geometry/marker (`cc38a6c`, [PR #865](https://github.com/scpeterson/CemeteryMapping/pull/865)),
+upgraded PostGIS/topology to 3.7.0 while retaining legacy TIGER compatibility
+(`81c8a07`, [PR #848](https://github.com/scpeterson/CemeteryMapping/pull/848)), and
+added system-admin management of shared grave feature lookups (`abe04ce`,
+[PR #866](https://github.com/scpeterson/CemeteryMapping/pull/866)). These supersede
+the November 12 application/database versions below. See the [sanitized release
+summary](hosted-test.md#november-14-2026-assignment-postgis-and-lookup-releases)
+for verification limits; private recovery evidence remains in operations records.
+
 ## November 12, 2026: Security, dependency and MapLibre updates deployed to TEST
 
 TEST is healthy on **`3763e2f062d88de9beb135c5023fe73f09b21d06`**, built

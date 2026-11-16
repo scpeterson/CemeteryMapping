@@ -161,6 +161,24 @@ Use `Reports -> Unowned gravesites` to find active gravesites for which the appl
 
 An occupied or marked gravesite can still appear in this report because burial and marker evidence does not itself establish ownership. Likewise, `No owner found` means no current ownership record exists in the application; it does not prove that the gravesite was never deeded. Review imported deed evidence, paper records, lot assignment, and nearby ownership before treating a result as available inventory.
 
+### Unreadable Monument Inscriptions Report
+
+Use **Reports → Data maintenance → Unreadable monument inscriptions** for
+photography or field-review follow-up. Power users and cemetery/system admins can
+run it within their permitted cemeteries. It searches the latest non-deleted
+inspection's general and face inscription text for the whole word `illegible`
+(case-insensitive), including mixed readings, or `[-]` with optional whitespace.
+Older visits and historical transcription entries do not cause a match.
+
+**Known limitation:** structured Illegible status/legibility with empty current
+text does not itself match. Such a monument appears only if some other current
+inscription text matches the report's rules. The report is therefore not a
+complete inventory of faces marked Illegible, and absence is not proof of
+readability. Review an individual inspection's status and preserve its historical
+readings. Do not add dummy placeholder text or remove a correct flag to influence
+the report. Extending the report to structured status is separate application
+review; this documentation does not change report behavior.
+
 ### Admin User Management
 
 Use `Admin -> Users` when adding, editing, deactivating, or reactivating application users.
@@ -495,6 +513,28 @@ A stone with writing on both sides uses `Front` and `Back` faces. There is no se
 ### Photo Collection
 
 Open **Photo gallery (N)** on a marker, or **Open photo gallery** from an inspection or maintenance record. All three open the same marker gallery; a record entry point selects that inspection or maintenance action automatically. Overview remains a read-only preview.
+
+Photo mutation permissions follow the role in the monument's cemetery:
+
+| Action | Reader | Power user | Cemetery admin | System admin |
+| --- | --- | --- | --- | --- |
+| Upload to monument library without an inspection | No | Yes | Yes | Yes |
+| Upload/link/change face or timing/unlink for maintenance | No | Yes | Yes | Yes |
+| Upload/link/change face/unlink for an inspection | No | No | Yes | Yes |
+| Delete the photo asset itself | No | No | Yes | Yes |
+
+Non-system admins need the corresponding edit/admin membership in that cemetery;
+a higher role in another cemetery does not grant it here. Readers can browse
+photos available through their existing record-read access. Unlinking an allowed
+record association keeps the photo; deleting the asset is a separate action.
+
+Power users can enter through **Overview → Add photos** or the gallery. If an
+inspection is selected and upload/link controls are unavailable, choose **All
+marker photos** or **Photos without a record** under **Photo record**, then
+**Upload new photos**. These destinations require monument-edit permission and
+do not create an inspection association. Choose a maintenance record when the
+photos document that work; ask an administrator to associate inspection evidence.
+
 
 1. Choose **Photo record** to see all marker photos, a particular inspection, a maintenance action, or photos without an inspection/maintenance record. Filter by face or maintenance timing when useful. A photo appears once, with labels for every associated record and its own face/timing for that record.
 2. To add existing photos, select the destination record, then **Choose existing photos**. The gallery temporarily shows every marker photo so you can choose **Link to this record**. Choose **Photo face** and, for maintenance, **Maintenance timing**, then **Save photo link**. **Edit photo link** restores that record's saved metadata. **Cancel photo changes** leaves saved links unchanged.
@@ -1240,7 +1280,8 @@ Global photo deletion remains a separate cemetery-admin control in the full libr
 
 The initial monument photo collection was attributed to the 2026 field inspections
 by the cemetery administrator. NHG inspections start without photos. New inspections
-copy the selected inscription and each face’s label and inscription; they do not copy photo associations. Historical
+copy the selected inscription and each face’s label, reading, status, legibility,
+design notes and historical transcriptions; they do not copy photo associations. Historical
 inspections can receive scanned photos through the same record-specific controls.
 Photo capture dates remain separate from inspection or maintenance dates.
 
