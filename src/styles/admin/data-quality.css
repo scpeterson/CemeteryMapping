@@ -5,7 +5,7 @@
   align-items: stretch;
   padding: var(--space-3);
   border: 1px solid #d9e0d5;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #f8faf6;
 }
 
@@ -77,7 +77,7 @@
   padding: 10px 11px;
   border: 1px solid #d9e0d5;
   border-left-width: 5px;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
 }
 
@@ -172,9 +172,9 @@
 
 .data-quality-cemetery-filter select {
   width: 100%;
-  min-height: 38px;
+  min-height: var(--control-height);
   padding: 7px 9px;
-  border: 1px solid #c8d1c3;
-  border-radius: 7px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
   background: #fff;
 }

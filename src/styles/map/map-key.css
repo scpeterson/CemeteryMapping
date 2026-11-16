@@ -5,7 +5,7 @@
   min-height: 26px;
   padding: 5px 8px;
   border: 1px solid rgba(47, 93, 80, 0.32);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: rgba(251, 252, 247, 0.96);
   color: #26342d;
   font-size: 0.72rem;
@@ -20,7 +20,7 @@
   height: 8px;
   margin-right: 6px;
   border-radius: 50%;
-  background: #2f5d50;
+  background: var(--color-action);
   content: "";
 }
 

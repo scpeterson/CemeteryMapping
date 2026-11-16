@@ -80,7 +80,7 @@
   gap: var(--space-1);
   padding: 9px 10px;
   border: 1px solid #d9e0d5;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #f8faf6;
 }
 
@@ -97,11 +97,11 @@
 }
 
 .record-editor-row button {
-  min-height: 38px;
+  min-height: var(--control-height);
   padding: 7px 12px;
   border: 1px solid #496756;
-  border-radius: 7px;
-  background: #2f5d50;
+  border-radius: var(--control-radius);
+  background: var(--color-action);
   color: #fff;
   font-weight: 720;
   line-height: 1.12;
@@ -154,8 +154,8 @@
   justify-content: center;
   gap: 6px;
   min-height: 34px;
-  border: 1px solid #c8d1c3;
-  border-radius: 7px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
   background: #fff;
   color: #405048;
   font-weight: 720;
@@ -292,7 +292,7 @@
 }
 
 .conflict-recovery button {
-  min-height: 38px;
+  min-height: var(--control-height);
   max-width: 100%;
   white-space: normal;
 }

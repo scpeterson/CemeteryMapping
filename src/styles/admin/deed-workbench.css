@@ -43,7 +43,7 @@
   min-width: 0;
   padding: 8px 9px;
   border: 1px solid #d9e0d5;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
   color: #26342d;
   text-align: left;
@@ -89,7 +89,7 @@
   gap: var(--space-1);
   padding: 8px 9px;
   border: 1px solid #d9e0d5;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
   color: #4f5d52;
   font-size: 0.8rem;
@@ -122,8 +122,8 @@
 .deed-action-heading .secondary-button {
   min-height: 32px;
   padding: 5px 9px;
-  border: 1px solid #c8d1c3;
-  border-radius: 7px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
   background: #fff;
   color: #405048;
   font-weight: 720;
@@ -141,7 +141,7 @@
   min-width: 0;
   padding: 8px 9px;
   border: 1px solid #d9e0d5;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #f8faf6;
   color: #26342d;
   text-align: left;

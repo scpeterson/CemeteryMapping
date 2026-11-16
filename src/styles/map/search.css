@@ -5,7 +5,7 @@
   gap: 10px;
   min-height: 44px;
   padding: 0 8px 0 13px;
-  border: 1px solid #c8d1c3;
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-md);
   background: #fff;
   color: #445348;
@@ -64,7 +64,7 @@
   min-height: 32px;
   padding: 6px 10px;
   border: 1px solid #cbd5c7;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
   color: #39453d;
 }
@@ -147,4 +147,4 @@
 .filter-reset { margin-left: auto; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--focus); padding: 4px; font-size: var(--font-size-small); text-decoration: underline; }
 .filter-reset:disabled { color: var(--text-muted); cursor: default; text-decoration: none; }
 .single-status-filter { display: grid; gap: 6px; font-size: var(--font-size-small); }
-.single-status-filter select { min-height: 36px; width: 100%; padding: 6px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: white; color: inherit; }
+.single-status-filter select { min-height: var(--control-height-compact); width: 100%; padding: 6px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: white; color: inherit; }

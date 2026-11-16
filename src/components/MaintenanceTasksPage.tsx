@@ -4,6 +4,7 @@ import {fetchTaskCemeteries,fetchTasks,dismissTaskReminder,type MaintenanceTask,
 import type {CurrentUser} from '../types';
 import {confirmDiscardChanges,useDraftNavigationGuard} from '../hooks/useDraftState';
 import {Notice} from './ui/Feedback';
+import {Button} from './ui/Button';
 import {TaskEditor} from './tasks/TaskEditor';
 import {NewTaskForm} from './tasks/NewTaskForm';
 const labels={open:'Open',scheduled:'Scheduled',completed:'Completed',deferred:'Deferred',not_needed:'Not needed'};
@@ -23,7 +24,7 @@ export function MaintenanceTasksPage(){
  const saved=()=>{setSelected(undefined);setCreating(false);setRefresh(n=>n+1);setMessage('Maintenance task saved.');};
  return <main className="field-workspace task-workspace"><header><h1>Maintenance tasks</h1><p>Plan cemetery work, review assigned tasks and record completion.</p><a href="/">Return to cemetery map</a></header>
  {error&&<Notice tone="error">{error}</Notice>}{message&&<Notice tone="success">{message}</Notice>}
- {!user?<section className="field-card admin-section"><Notice>Checking registered account access…</Notice>{error&&<button type="button" onClick={()=>setUserAttempt(n=>n+1)}>Retry task access</button>}</section>:!canUse?<Notice>Current cemetery editor access is required for maintenance tasks.</Notice>:<>
+ {!user?<section className="field-card admin-section"><Notice>Checking registered account access…</Notice>{error&&<Button onClick={()=>setUserAttempt(n=>n+1)}>Retry task access</Button>}</section>:!canUse?<Notice>Current cemetery editor access is required for maintenance tasks.</Notice>:<>
  {!user.id&&<Notice>Local development has no registered person identity. Use the cemetery queue; My tasks and personal reminder dismissal require a registered account.</Notice>}
  <section className="field-card admin-section"><h2>Work queue</h2><div className="admin-form">
  <label>Find task cemetery<input type="search" maxLength={120} disabled={busy} value={cemeteryQuery} onChange={e=>setCemeteryQuery(e.target.value)}/></label><label>Task cemetery<select disabled={busy} value={filters.cemeteryId} onChange={e=>{if(confirmDiscardChanges()){setChosen(choices.find(c=>c.id===e.target.value));change({cemeteryId:e.target.value});}}}><option value="">All editable cemeteries</option>{choices.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>

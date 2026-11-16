@@ -57,7 +57,7 @@
   gap: 10px;
   min-height: 42px;
   padding: 0 8px 0 12px;
-  border: 1px solid #c8d1c3;
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-md);
   background: #fff;
   color: #445348;
@@ -83,8 +83,8 @@
   min-height: 30px;
   padding: 6px 10px;
   border: 1px solid rgba(47, 104, 79, 0.22);
-  border-radius: 7px;
-  background: #2f684f;
+  border-radius: var(--control-radius);
+  background: var(--color-action);
   color: #fff;
   font-weight: 760;
 }
@@ -105,9 +105,9 @@
 }
 
 .report-message.is-error {
-  border-color: rgba(199, 82, 79, 0.45);
-  background: #fff7f6;
-  color: #8c302d;
+  border-color: var(--color-error-border);
+  background: var(--color-error-surface);
+  color: var(--color-error-text);
 }
 
 .report-scope {
@@ -124,7 +124,7 @@
   min-height: 34px;
   padding: 6px 9px;
   border: 1px solid #c9d2c5;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
   color: #26342d;
 }
@@ -209,12 +209,12 @@
 .report-parameters select {
   width: 100%;
   min-width: 0;
-  min-height: 36px;
+  min-height: var(--control-height-compact);
   font: inherit;
   color: #26342d;
   padding: 8px 10px;
   border: 1px solid #c9d2c5;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
 }
 
@@ -227,7 +227,7 @@
 .report-examples button {
   padding: 6px 9px;
   border: 1px solid #d8dfd3;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
   color: #405045;
   font-size: var(--font-size-small);
@@ -259,7 +259,7 @@
   gap: 5px;
   padding: 6px 9px;
   border: 1px solid rgba(47, 104, 79, 0.28);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
   color: #2f684f;
   font-weight: 760;

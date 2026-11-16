@@ -65,7 +65,7 @@
   align-items: center;
   gap: var(--space-2);
   align-self: end;
-  min-height: 38px;
+  min-height: var(--control-height);
   color: var(--color-text);
   font-size: 0.82rem;
 }
@@ -76,8 +76,8 @@
   width: 100%;
   min-width: 0;
   padding: 9px 10px;
-  border: 1px solid #cbd6c7;
-  border-radius: 7px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
   background: #fff;
   color: var(--color-text);
   font: inherit;

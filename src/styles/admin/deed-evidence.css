@@ -45,7 +45,7 @@
 .deed-investigation-terms span {
   min-height: 26px;
   padding: 4px 8px;
-  border: 1px solid #c8d1c3;
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
   background: #fff;
   color: #35443c;
@@ -119,8 +119,8 @@
   min-height: 32px;
   align-self: start;
   padding: 5px 9px;
-  border: 1px solid #c8d1c3;
-  border-radius: 7px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
   background: #fff;
   color: #405048;
   font-weight: 720;
@@ -216,7 +216,7 @@
   gap: var(--space-1);
   padding: 8px 9px;
   border: 1px solid #e1e7dc;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #f8faf6;
 }
 
