@@ -24,7 +24,7 @@
   margin-top: 5px;
   padding: 9px;
   border: 1px solid #dfb8b3;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff7f5;
 }
 
@@ -67,8 +67,8 @@
   width: 100%;
   min-width: 0;
   padding: 9px 10px;
-  border: 1px solid #cbd6c7;
-  border-radius: 7px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
   background: #fff;
   color: var(--color-text);
   font: inherit;
@@ -80,7 +80,7 @@
 
 .owner-edit-form .ownership-checkbox-field {
   display: flex;
-  min-height: 38px;
+  min-height: var(--control-height);
   align-items: center;
   color: var(--color-text);
   font-size: var(--font-size-small);
@@ -232,7 +232,7 @@
   gap: 10px;
   padding: var(--space-2);
   border: 1px solid #dfe6dc;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #fff;
 }
 
@@ -252,7 +252,7 @@
   align-items: center;
   gap: var(--space-2);
   padding: 7px 9px;
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: #f0f5ef;
 }
 
@@ -278,8 +278,8 @@
 .ownership-gravesite-options {
   max-height: 190px;
   overflow-y: auto;
-  border: 1px solid #cbd6c7;
-  border-radius: 7px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
   background: #fff;
 }
 

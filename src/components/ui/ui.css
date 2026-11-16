@@ -1,12 +1,48 @@
-.ui-button { min-height: var(--control-height); padding: 8px 12px; border: 1px solid transparent; border-radius: var(--radius-md); font: inherit; font-weight: 650; background: var(--focus); color: white; }
+/* Low-specificity defaults cover standalone controls without changing map tools,
+   search composites, dense filters, or domain-specific editor layouts. */
+:where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="button"], [type="submit"], [type="reset"]), select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--control-height);
+  padding: 7px 9px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
+  background: var(--color-surface);
+  color: inherit;
+}
+:where(textarea) { resize: vertical; line-height: 1.4; }
+:where(a) { color: var(--focus); }
+:where(button):disabled { cursor: default; }
+:where(input, select, textarea):disabled { opacity: .65; cursor: not-allowed; }
+
+/* Native binary controls must never inherit full-width text-input sizing. */
+input:is([type="checkbox"], [type="radio"]) {
+  flex: 0 0 16px;
+  width: 16px;
+  min-width: 16px;
+  max-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--focus);
+}
+label:is(.checkbox-row, .toggle-field, .lookup-active, .import-ack, .merge-ack) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+}
+
+.ui-button { min-height: var(--control-height); padding: 8px 12px; border: 1px solid transparent; border-radius: var(--control-radius); font: inherit; font-weight: 650; background: var(--color-action); color: white; }
 .ui-button--secondary { background: var(--panel); border-color: var(--panel-border); color: inherit; }
-.ui-button--danger { background: #a03232; color: white; }
+.ui-button--danger { background: var(--color-danger); color: white; }
 .ui-button:disabled { cursor: default; opacity: .6; }
 .ui-field { display: grid; gap: 6px; }
-.ui-field input { width: 100%; min-height: var(--control-height); padding: var(--space-2); border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: white; color: inherit; }
-.ui-field-error { color: #9d2525; }
+.ui-field input:not([type="checkbox"], [type="radio"]) { width: 100%; min-height: var(--control-height); padding: var(--space-2); border: 1px solid var(--control-border); border-radius: var(--control-radius); background: white; color: inherit; }
+.ui-field-error { color: var(--color-error-text); }
 .ui-notice { padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: var(--panel); }
-.ui-notice--error { color: #862727; border-color: #dca6a6; background: #fff3f3; }
+.ui-notice--error { color: var(--color-error-text); border-color: var(--color-error-border); background: var(--color-error-surface); }
 .ui-notice--success { color: #235738; }
 .ui-empty-state { padding: 24px 12px; color: var(--text-muted); text-align: center; }
 .ui-status-badge { display: inline-flex; padding: 3px 8px; border-radius: 20px; background: #e8ece8; color: #354238; font-size: .8rem; }

@@ -114,7 +114,7 @@
 
 .map-view-toggle button.is-active,
 .map-selection-toggle button.is-active {
-  background: #2f5d50;
+  background: var(--color-action);
   color: #fff;
 }
 
@@ -142,7 +142,7 @@
 }
 
 .map-controls button.is-active {
-  background: #2f5d50;
+  background: var(--color-action);
   color: #fff;
 }
 

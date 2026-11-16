@@ -113,7 +113,31 @@ Gravesite updates additionally send the detail response's `version` as `expected
 
 ## Styling and Responsive Layout
 
-`src/styles/tokens.css` defines shared colors, spacing, type sizes, radii, and control sizing. Reuse these tokens when extending controls. The stylesheet entry remains `src/styles.css`:
+`src/styles/tokens.css` defines shared colors, spacing, type sizes, radii, and control sizing. Reuse these tokens when extending controls. Standard form controls
+use `--control-height` (38px), compact filters/tooling use
+`--control-height-compact` (36px), and shared field borders/radii use
+`--control-border` / `--control-radius`. Map icon buttons, phone navigation and
+other explicit touch targets retain their own dimensions. Button fill uses
+`--color-action`; keyboard focus uses `--focus`.
+
+`src/components/ui/ui.css` supplies low-specificity text/select/textarea defaults
+for standalone controls as well as native 16px checkbox/radio sizing. Keep binary
+controls outside full-width text-field rules. Checkbox labels use an aligned row
+with a full control-height click target; the square itself remains 16px. Textareas
+inherit the application font. Use the shared Button/Notice components for new
+standalone actions and feedback; existing detail/admin/report errors share the
+error color tokens. Preserve status/map colors and permission/draft behavior.
+
+Run `npm run test:ui:browser` for isolated fixture-based checks across the map,
+record/detail editors, administration, reports, photos, profiles, fieldwork,
+exports, tasks and access requests. This uses a dedicated Vite server on port
+5197 with no real API target, rather than an existing DEV or hosted session.
+It includes compact control-point tools, keyboard focus, checkbox geometry,
+multiline typography and phone-width overflow regressions. One built-offline-shell
+case is intentionally reserved for the separate built field test configuration.
+See the [dated consistency review](ui-consistency-review.md) for scope and findings.
+
+The stylesheet entry remains `src/styles.css`:
 
 - core map and general layout: `src/styles/core-map.css`;
 - record details and administration: `src/styles/detail.css` and `src/styles/admin.css`;

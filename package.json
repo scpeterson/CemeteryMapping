@@ -29,6 +29,7 @@
     "test:server": "node --test server/*.test.mjs scripts/*.test.mjs",
     "test:docker-startup": "APP_ENV=test node scripts/docker-startup-check.mjs",
     "test:e2e": "playwright test",
+    "test:ui:browser": "playwright test --config playwright.ui-consistency.config.ts",
     "test:inspections:browser": "playwright test --config playwright.inspection-regressions.config.ts",
     "test:inspections:db": "node --test --test-concurrency=1 scripts/single-face-photo-links.integration.mjs scripts/default-front-face.integration.mjs scripts/required-faces.integration.mjs scripts/back-faces.integration.mjs scripts/inspection-face-regressions.integration.mjs scripts/monument-inspections.integration.mjs scripts/monument-photo-contexts.integration.mjs",
     "test:db-rules": "node --test --test-concurrency=1 scripts/*.integration.mjs",

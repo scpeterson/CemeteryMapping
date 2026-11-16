@@ -33,7 +33,7 @@
   gap: 4px;
   padding: 4px 6px;
   border: 1px solid rgba(23, 32, 29, 0.18);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: rgba(251, 252, 247, 0.94);
   color: #26342d;
   font-size: 0.75rem;
@@ -131,7 +131,7 @@
 }
 
 .cemetery-scope { display: block; margin-top: 6px; }
-.cemetery-scope select { width: 100%; max-width: 300px; min-height: 36px; padding: 6px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: white; color: inherit; }
+.cemetery-scope select { width: 100%; max-width: 300px; min-height: var(--control-height-compact); padding: 6px; border: 1px solid var(--panel-border); border-radius: var(--radius-md); background: white; color: inherit; }
 @media (max-width: 760px) {
   .cemetery-scope select { min-height: 44px; }
 }

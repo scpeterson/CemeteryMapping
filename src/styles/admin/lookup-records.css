@@ -26,17 +26,17 @@
 
 .lookup-toolbar .secondary-button,
 .lookup-row button {
-  min-height: 38px;
+  min-height: var(--control-height);
   padding: 7px 12px;
   border: 1px solid #496756;
-  border-radius: 7px;
-  background: #2f5d50;
+  border-radius: var(--control-radius);
+  background: var(--color-action);
   color: #fff;
   font-weight: 720;
 }
 
 .lookup-toolbar .secondary-button {
-  border-color: #c8d1c3;
+  border-color: var(--control-border);
   background: #fff;
   color: #405048;
 }
@@ -131,7 +131,7 @@
 }
 
 .lookup-description textarea {
-  min-height: 38px;
+  min-height: var(--control-height);
 }
 
 .lookup-row .lookup-description textarea,

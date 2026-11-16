@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from "react";
+import { Button } from "./ui/Button";
+import { Notice } from "./ui/Feedback";
 import { AccessRequestVerification } from "./AccessRequestVerification";
 import { appEnvironment, apiBaseUrl } from "../config/environment";
 import { jsonRequest, jsonResponse, normalizeBaseUrl } from "../api/apiClient";
@@ -24,10 +26,10 @@ export function RequestAccessPage() {
       setError(failure instanceof TypeError ? "Couldn't reach the server. Please try again." : failure instanceof Error ? failure.message : "Unable to submit your request.");
     } finally { setBusy(false); setToken(""); setResetKey((value) => value + 1); }
   }
-  return <main className="access-request-page">
+  return <main className="access-request-page field-card">
     <h1>Request access</h1>
     <p>Cemetery records are private. An administrator must approve your account before you can view them.</p>
-    {message ? <p role="status">{message}</p> : <form onSubmit={(event) => void submit(event)}>
+    {message ? <Notice tone="success">{message}</Notice> : <form onSubmit={(event) => void submit(event)}>
       <label>Your name<input autoComplete="name" required maxLength={250} value={form.displayName} onChange={(event) => setForm({ ...form, displayName: event.target.value })} /></label>
       <label>Email<input type="email" autoComplete="email" required maxLength={320} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
       <label>Cemetery of interest<input required maxLength={250} value={form.cemeteryInterest} onChange={(event) => setForm({ ...form, cemeteryInterest: event.target.value })} /></label>
@@ -35,9 +37,9 @@ export function RequestAccessPage() {
       <div className="access-request-honeypot" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={form.website} onChange={(event) => setForm({ ...form, website: event.target.value })} /></label></div>
       <p>Your details will be shared with the system administrator to review your request. Please do not include passwords or sensitive personal records.</p>
       {sitekey && <AccessRequestVerification sitekey={sitekey} resetKey={resetKey} onToken={setToken} />}
-      {verificationRequired && !sitekey && <p role="alert">Requests are temporarily unavailable. Please contact an administrator.</p>}
-      {error && <p role="alert">{error}</p>}
-      <button disabled={busy || (verificationRequired && !token)} type="submit">{busy ? "Submitting…" : "Submit request"}</button>
+      {verificationRequired && !sitekey && <Notice tone="error">Requests are temporarily unavailable. Please contact an administrator.</Notice>}
+      {error && <Notice tone="error">{error}</Notice>}
+      <Button busy={busy} disabled={verificationRequired && !token} type="submit">{busy ? "Submitting…" : "Submit request"}</Button>
     </form>}
     <p><a href="/">Return to sign in</a></p>
   </main>;

@@ -43,7 +43,7 @@
 .field-workspace select,
 .field-workspace button,
 .field-workspace input:not([type=checkbox]) {
-  min-height: 38px;
+  min-height: var(--control-height);
 }
 
 .field-workspace .field-change {
@@ -61,7 +61,7 @@
 .field-change label:has(input[type=checkbox]) {
   display: flex;
   align-items: center;
-  min-height: 38px;
+  min-height: var(--control-height);
 }
 
 .field-workspace .admin-form { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }

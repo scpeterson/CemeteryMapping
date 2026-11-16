@@ -18,5 +18,12 @@
   --radius-lg: 12px;
   --font-size-small: 0.78rem;
   --font-size-body: 1rem;
-  --control-height: 40px;
+  --control-height: 38px;
+  --control-height-compact: 36px;
+  --control-radius: 7px;
+  --control-border: #c8d1c3;
+  --color-action: #2f5d50;
+  --color-error-text: #862727;
+  --color-error-border: #dca6a6;
+  --color-error-surface: #fff3f3;
 }
