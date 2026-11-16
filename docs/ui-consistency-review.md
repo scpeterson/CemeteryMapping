@@ -1,3 +1,8 @@
+---
+layout: default
+title: UI consistency review
+---
+
 # UI consistency review — November 16, 2026
 
 Reviewed the application at merged main `c20b535` and made shared presentation
