@@ -135,10 +135,19 @@ export const reportDefinitions = [
   {
     id: "unreadable-monument-inscriptions",
     title: "Unreadable monument inscriptions",
-    description: "Finds monuments whose latest inspection includes illegible text or [-] fragments, including faces, for better photography or field review. All sections are included.",
+    description: "Finds fully and partially illegible monument faces, including structured status, and compares the latest inspection with the previous one. Filter by cemetery, section and plot markers for photography follow-up.",
     category: "Data maintenance",
     requiredRole: "power-user",
-    parameters: [],
+    parameters: [
+      { name: "sectionName", label: "Section", type: "section", required: false },
+      { name: "includePlotMarkers", label: "Include plot markers", type: "select", required: false, options: [
+        { value: "", label: "Yes" }, { value: "no", label: "No" },
+      ] },
+      { name: "legibility", label: "Show", type: "select", required: false, options: [
+        { value: "", label: "Current illegibility (all extents)" }, { value: "full", label: "Fully illegible" },
+        { value: "partial", label: "Partially illegible" }, { value: "history", label: "Current or previous illegibility" },
+      ] },
+    ],
     examples: ["Which monuments have unreadable inscriptions?", "List inscriptions with illegible lines or [-]."],
   },
   {

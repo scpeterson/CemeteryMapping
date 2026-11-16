@@ -3,7 +3,7 @@ import type { AppRoleName } from "./common";
 export type ReportParameterDefinition = {
   name: string;
   label: string;
-  type: "text" | "select";
+  type: "text" | "select" | "section";
   options?: { value: string; label: string }[];
   required: boolean;
 };

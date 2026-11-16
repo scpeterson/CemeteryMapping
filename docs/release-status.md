@@ -3,6 +3,18 @@
 
 # Release status and deployment checks
 
+## Pending deployment: Full/partial illegibility and inspection comparison report
+
+The enhanced **Unreadable monument inscriptions** report includes structured
+Illegible flags, partial assessments and legacy text. Cemetery/section and plot
+marker filters support photography follow-up. Face-level results compare the
+latest inspection with the immediately previous active inspection and can include
+recovered readings; missing evidence is not labeled deterioration. See the
+[report workflow](operator-workflows.md#unreadable-monument-inscriptions-report).
+This source change is not a hosted deployment or data correction. The November 15
+release below retains its original text-only behavior until a new release is
+explicitly deployed and verified.
+
 ## November 15, 2026: Inspection face controls and source attribution deployed to TEST
 
 Latest verified hosted TEST is **`60d628543781a7aa574264bd419d43137e3ac329`**
@@ -31,9 +43,10 @@ restart the database or apply a migration. The production core budget is now
 a third-party exemption. Earlier disk/backup observations retain their dates
 and are not new capacity audits. No STAGE/PRODUCTION deployment is claimed.
 
-The unreadable-inscription report still searches text rather than structured
-Illegible status. Empty flagged faces do not themselves match; see the [known
-limitation](operator-workflows.md#unreadable-monument-inscriptions-report).
+At this November 15 deployment, the unreadable-inscription report searched text
+rather than structured Illegible status. Empty flagged faces did not themselves
+match. The pending enhanced report above addresses that coverage in source,
+without changing this dated deployment record.
 
 ## November 14, 2026: Assignment, PostGIS and grave feature lookups deployed to TEST
 
