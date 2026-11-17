@@ -1,3 +1,5 @@
+import { cemeteryRole } from './auth.mjs';
+import { BadRequestError } from './requestValidation.mjs';
 import { withAuditContext } from "./auditContext.mjs";
 
 function normalizeTextArray(values) {
@@ -13,6 +15,8 @@ function toCemeteryRecord(row) {
     agency: row.agency ?? "",
     agencyUrl: row.agency_url ?? "",
     operationalHours: row.operational_hours ?? "",
+    stackingAuthorizationCutoff: row.stacking_authorization_cutoff ?? "",
+    stackingPolicyNotes: row.stacking_policy_notes ?? "",
     contactName: row.contact_name ?? "",
     contactPhone: row.contact_phone ?? "",
     contactEmail: row.contact_email ?? "",
@@ -69,6 +73,8 @@ export async function listCemeteryAdminRecords(pool) {
         municipality,
         agency,
         agency_url,
+        stacking_authorization_cutoff::text,
+        stacking_policy_notes,
         operational_hours,
         contact_name,
         contact_phone,
@@ -122,10 +128,15 @@ export async function listCemeteryAdminRecords(pool) {
 export async function updateCemeteryText(
   pool,
   id,
-  { name, fullAddress, municipality, agency, agencyUrl, operationalHours, contactName, contactPhone, contactEmail, imageUrl, notes },
+  { name, fullAddress, municipality, agency, agencyUrl, operationalHours, contactName, contactPhone, contactEmail, imageUrl, notes, stackingAuthorizationCutoff, stackingPolicyNotes },
   { actorUser } = {},
 ) {
   return withAuditContext(pool, { actorUser }, async (client) => {
+    if (stackingAuthorizationCutoff !== undefined || stackingPolicyNotes !== undefined) {
+      const previous = (await client.query('SELECT stacking_authorization_cutoff::text AS cutoff, stacking_policy_notes AS notes FROM cemeteries WHERE id=$1 FOR UPDATE', [id])).rows[0];
+      if (previous && ((stackingAuthorizationCutoff !== undefined && stackingAuthorizationCutoff !== (previous.cutoff ?? '')) || (stackingPolicyNotes !== undefined && stackingPolicyNotes !== (previous.notes ?? '')))
+        && !['admin','cemetery-admin'].includes(cemeteryRole(actorUser,id))) throw new BadRequestError('Only cemetery or system administrators can change stacking rules.');
+    }
     const result = await client.query(
       `
         UPDATE cemeteries
@@ -139,7 +150,9 @@ export async function updateCemeteryText(
             contact_phone = NULLIF($9, ''),
             contact_email = NULLIF($10, ''),
             image_url = NULLIF($11, ''),
-            notes = NULLIF($12, '')
+            notes = NULLIF($12, ''),
+            stacking_authorization_cutoff = CASE WHEN $13::text IS NULL THEN stacking_authorization_cutoff ELSE NULLIF($13,'')::date END,
+            stacking_policy_notes = CASE WHEN $14::text IS NULL THEN stacking_policy_notes ELSE NULLIF($14,'') END
         WHERE id = $1
           AND deleted_at IS NULL
         RETURNING
@@ -149,6 +162,8 @@ export async function updateCemeteryText(
           municipality,
           agency,
           agency_url,
+          stacking_authorization_cutoff::text,
+          stacking_policy_notes,
           operational_hours,
           contact_name,
           contact_phone,
@@ -158,7 +173,7 @@ export async function updateCemeteryText(
           created_at,
           updated_at
       `,
-      [id, name, fullAddress, municipality, agency, agencyUrl, operationalHours, contactName, contactPhone, contactEmail, imageUrl, notes],
+      [id, name, fullAddress, municipality, agency, agencyUrl, operationalHours, contactName, contactPhone, contactEmail, imageUrl, notes, stackingAuthorizationCutoff ?? null, stackingPolicyNotes ?? null],
     );
 
     return result.rows[0] ? toCemeteryRecord(result.rows[0]) : undefined;

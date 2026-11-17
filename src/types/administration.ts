@@ -68,6 +68,8 @@ export type CemeteryTextRecord = {
   municipality: string;
   agency: string;
   agencyUrl: string;
+  stackingAuthorizationCutoff?: string;
+  stackingPolicyNotes?: string;
   operationalHours: string;
   contactName: string;
   contactPhone: string;

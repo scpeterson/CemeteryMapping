@@ -386,3 +386,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0213: Inspection face status and current reading attribution](0213-inspection-face-status-and-reading-source.md)
 
 - [ADR 0214: Inscription legibility and inspection comparison report](0214-inscription-legibility-report.md)
+
+- [ADR 0215: Vertical grave stacks and cemetery authorization cutoff](0215-vertical-grave-stacks-and-cemetery-cutoff.md)

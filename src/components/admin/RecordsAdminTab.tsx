@@ -19,6 +19,7 @@ type RecordsAdminTabProps = {
   selectedLot?: LotTextRecord;
   sectionsForSelectedCemetery: SectionTextRecord[];
   lotsForSelectedSection: LotTextRecord[];
+  canManageRules: boolean;
   canEditSelectedCemetery: boolean;
   savingRecordKey?: string;
   selectCemeteryById: (id: string) => void;
@@ -42,6 +43,7 @@ export function RecordsAdminTab({
   selectedLot,
   sectionsForSelectedCemetery,
   lotsForSelectedSection,
+  canManageRules,
   canEditSelectedCemetery,
   savingRecordKey,
   selectCemeteryById,
@@ -159,6 +161,15 @@ export function RecordsAdminTab({
                       onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { agencyUrl: event.target.value })}
                       title="The agency website URL associated with the cemetery."
                     />
+                  </label>
+                  <label>
+                    No new stacking authorizations on or after
+                    <input disabled={!canManageRules} type="date" value={selectedCemetery.stackingAuthorizationCutoff ?? ""} onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { stackingAuthorizationCutoff: event.target.value })} />
+                  </label>
+                  <label>
+                    Stacking policy notes
+                    <textarea disabled={!canManageRules} value={selectedCemetery.stackingPolicyNotes ?? ""} onChange={(event) => updateCemeteryRecord(selectedCemetery.id, { stackingPolicyNotes: event.target.value })} />
+                    <small>Earlier authorizations remain valid for later interments. Empty cutoff means no date restriction.</small>
                   </label>
                   <label>
                     Operational hours

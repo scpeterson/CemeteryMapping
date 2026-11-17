@@ -1,3 +1,4 @@
+import { saveGraveStack } from './graveStacks.mjs';
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 import { withAuditContext } from "./auditContext.mjs";
 import { auditEventIdForMutation } from "./cemeteryAudit.mjs";
@@ -45,6 +46,8 @@ export async function updateGraveSpaceMutation(
     // The row lock serializes writers; the version check also rejects forms
     // loaded before an earlier writer committed.
     if (!graveSpace.expectedVersion || graveSpace.expectedVersion !== existing.version) throw new ConflictError();
+
+    await saveGraveStack(client, existing, graveSpace.stack, actorUser);
 
     const updateResult = await client.query(
       `
