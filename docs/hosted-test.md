@@ -6,13 +6,19 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
-The latest database maintenance is the **November 14, 2026 PostGIS 3.7 upgrade**,
-retaining PostgreSQL 18.6 and legacy TIGER 3.6.4. The latest verified code release
-is **`60d6285`**, package 0.2.5, built **`2026-11-15T18:41:27Z`**. See the
-[November 14 summary](#november-14-2026-assignment-postgis-and-lookup-releases)
-and [November 15 inspection release](#november-15-2026-inspection-face-controls-and-source-attribution).
-Schema is through migration file 518. Dated sections below retain historical
-release/verification scope; check `/api/health` for the running release.
+The latest recorded deployment is **`f28da4e`**
+([PR #874](https://github.com/scpeterson/CemeteryMapping/pull/874)), package 0.2.5,
+built **`2026-11-17T18:21:57Z`**, including deed map-status refresh. The preceding
+[stacked-grave release](https://github.com/scpeterson/CemeteryMapping/pull/873)
+applied migration **519**. PostgreSQL remains **18.6**, PostGIS/topology **3.7.0**,
+and legacy TIGER **3.6.4**. The extension upgrade was recorded on November 14;
+see [that summary](#november-14-2026-assignment-postgis-and-lookup-releases).
+These are dated deployment records, not a new live audit performed for this
+documentation update. Dated sections below retain their historical scope;
+check `/api/health` for the running release.
+
+The [service inventory and backup/recovery diagram](service-architecture.md#backups-and-recovery)
+explains the TEST hosting, object storage and recovery dependencies.
 
 The latest recorded backup-service setup and retention cleanup is the
 [November 13 encrypted Spaces backup and verified cleanup](#november-13-2026-encrypted-spaces-backup-and-verified-cleanup).

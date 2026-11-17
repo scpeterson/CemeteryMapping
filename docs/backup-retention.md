@@ -3,13 +3,21 @@
 
 # Hosted TEST encrypted backups and retention
 
-Decision, November 13, 2026: use a private DigitalOcean Spaces **Standard** bucket,
-`nhcemeteries-test-backups` in SFO3, with CDN disabled and restricted listing.
+Decision, November 13, 2026: use a private DigitalOcean Spaces **Standard** bucket
+in SFO3, with CDN disabled and restricted listing. The actual bucket identifier
+and ownership/access inventory are recorded in the private operations repository.
 The TEST Droplet is in NYC1. Spaces is separate from the server and region, but
 remains exposed to the same DigitalOcean account's access and billing failures.
-The subscription is $5/month including 250 GiB storage; verify
+The November 13 setup record quoted $5/month including 250 GiB storage; this
+reconciliation does not revalidate billing. Check invoices and
 [current pricing](https://docs.digitalocean.com/products/spaces/details/pricing/).
 Daily provider Droplet backups supplement this logical recovery workflow.
+
+See the [service inventory and backup/recovery diagram](service-architecture.md#backups-and-recovery)
+for the relationship between provider backups, local recovery material, encrypted
+object storage and independent credentials. Reconciled November 17, 2026 from
+committed tooling and the November 13 records; no new live audit or restore was
+performed for this documentation update.
 
 ## Secrets and installation
 
@@ -23,23 +31,16 @@ Root-owned mode-0600 `/etc/nhcemeteries-backup.env` follows
 file under `/etc/nhcemeteries-backup/`. Never commit secrets or publish protected
 command logs, manifests, raw records, or recovery files.
 
-Recovery secrets were saved in **NordPass** on November 13, 2026, in the private
-secure note **“NH Cemeteries — Hosted TEST backup recovery”**. It contains the
-`repository-password` and `hosted-test.env` files as attachments, plus recovery
-instructions and a link to this runbook. Both attachments uploaded successfully.
-Use this entry to recover the restic encryption password and the bucket-scoped
-Spaces credentials independently of the TEST host or the operator's Mac.
+Recovery credentials and the independent restic password were saved in the
+operator's password vault on November 13, 2026. Retrieval matched the source
+files by checksum/size before the temporary Mac secret copies were removed.
+This proves the recorded retrieval, not access by a future successor. Consult
+the private operations repository for the vault item, attachment names and
+recovery access; no secret values belong in either repository.
 
-On November 13, 2026, both attachments were downloaded from the saved NordPass
-entry and matched the original Mac files exactly by SHA-256 and byte size
-(`repository-password`: 65 bytes; `hosted-test.env`: 338 bytes). Only after both
-matches passed were the original Mac secret files and verification downloads
-removed. The NordPass note now records this verification and removal.
-
-The Mac directory `~/.config/nhcemeteries-backup/` now contains only a non-secret
-`recovery-storage-verification.json` receipt. Recover the secrets from NordPass
-when needed. Keep the NordPass entry current when either secret changes;
-rotating a Spaces access key does not change the restic encryption password.
+Keep the independently held recovery copy current when credentials change.
+Rotating a Spaces access key does not change the restic encryption password.
+The vault is an operator recovery dependency, not a runtime API integration.
 
 The server files `/etc/nhcemeteries-backup.env` and
 `/etc/nhcemeteries-backup/repository-password` were verified to match the

@@ -17,7 +17,8 @@ The site is configured for GitHub Pages using Jekyll, a custom documentation lay
 - [Release Status and Deployment Checks](release-status.md)
 - [PostgreSQL upgrades, query benchmarks and spatial repair previews](postgresql-18-upgrade.md)
 - [Measured SQL efficiency changes](adr/0196-measured-sql-efficiency.md)
-- [Application and Third-Party Services](service-architecture.md)
+- [Application and Third-Party Services](service-architecture.md) — hosting, sign-in, external data and backup/recovery diagrams
+- [Encrypted backups and retention](backup-retention.md) — Spaces/restic protection, schedules and restore procedure
 - [Frontend Development](frontend-development.md)
 - [Architecture Decision Records](adr/)
 - [Data Source Register](data-sources.md)
