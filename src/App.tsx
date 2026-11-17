@@ -213,6 +213,7 @@ export default function App() {
     setSelectedGraveDetails,
     setSelectedHeadstoneDetails,
     refreshDetails,
+    refreshCemeteryData,
   });
   const startMarkerPointPick = () => {
     setMobileView("map");
