@@ -3,21 +3,24 @@ import { assignLotInMapData, assignLotToSelectedGrave } from "./recordMutationSt
 import type { SaveOwnershipEventInput, UpdateOwnerInput } from "../types";
 import type { RecordMutationContext } from "./recordMutationContext";
 
-export function createOwnershipMutations({ selectedGrave, setSelectedGrave, setData, setSelectedGraveDetails, refreshDetails }: RecordMutationContext) {
+export function createOwnershipMutations({ selectedGrave, setSelectedGrave, setData, setSelectedGraveDetails, refreshDetails, refreshCemeteryData }: RecordMutationContext) {
+  // A deed can affect every grave in a lot, or both old and new targets when edited.
+  // Reload authoritative statuses rather than guessing which graves became sold.
+  const refreshOwnership = () => { refreshDetails(); refreshCemeteryData(); };
   const saveOwnershipEvent = async (event: SaveOwnershipEventInput) => {
     if (!selectedGrave) throw new Error("Select a grave site before recording ownership.");
     await createOwnershipEvent(selectedGrave.cemeteryId, selectedGrave.id, event);
-    refreshDetails();
+    refreshOwnership();
   };
 
   const saveOwner = async (partyId: string, eventId: string, owner: UpdateOwnerInput) => {
     await updateOwner(partyId, eventId, owner);
-    refreshDetails();
+    refreshOwnership();
   };
 
   const removeOwnershipConnection = async (rightId: string) => {
     await removeGravesiteOwnershipRight(rightId);
-    refreshDetails();
+    refreshOwnership();
   };
 
   const saveGraveLot = async (lotId: string, lotUuid?: string) => {

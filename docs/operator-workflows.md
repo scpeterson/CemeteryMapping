@@ -322,6 +322,18 @@ The Army's **Technician Fourth Grade (Tec 4)** is seeded with the historical `4t
 
 Gravesite status labels are not all manually assigned. `reserved` and `needs_review` are human workflow flags, while `occupied`, `sold`, `available`, and `unknown` are derived from active burials and current deed or ownership-right records. `sold` means the gravesite has a deed or ownership right, either directly or through its lot, but has no active burial.
 
+After a successful deed/ownership save, correction, release, owner update or
+removal of a gravesite ownership connection, the application automatically
+refreshes the map data and selected record details. A whole-lot deed can update
+multiple graves; editing a deed can affect both its previous and new targets.
+Colors use the server's derived statuses, so an occupied grave remains occupied
+and manually reserved/review statuses retain their normal precedence. The page
+and map instance stay open, with map position, selection, cemetery scope and
+status filters preserved. Failed saves leave the map unchanged. If a background
+map request fails, the existing map remains and the data API error is shown;
+the successfully saved deed is not submitted again automatically.
+
+
 Avoid renaming a lookup value to mean something unrelated. Add a new value when the meaning changes, then deactivate the old one after records are reviewed.
 
 ### Data Quality Dashboard

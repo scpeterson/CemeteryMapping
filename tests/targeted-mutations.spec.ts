@@ -4,7 +4,7 @@ import type { CemeteryData, GraveSpace, GraveSpaceSummary, Headstone, SaveHeadst
 import { detail, fixture } from "./fixtures/cemetery";
 import { marker } from "./fixtures/overview";
 
-test("successful mutations update only local records without map or detail refresh", async ({ page }) => {
+test("targeted marker, lot and evidence mutations update local records without map or detail refresh", async ({ page }) => {
   await fixture(page);
   await page.goto("/");
   await expect(page.locator(".result-card")).toHaveCount(2);
@@ -33,6 +33,7 @@ test("successful mutations update only local records without map or detail refre
       setSelectedGraveDetails: (update: SetStateAction<GraveSpace | undefined>) => { grave = apply(grave, update); },
       setSelectedHeadstoneDetails: (update: SetStateAction<Headstone | undefined>) => { selectedMarker = apply(selectedMarker, update); },
       refreshDetails: () => { refreshes++; },
+      refreshCemeteryData: () => { refreshes++; },
     };
     await createMarkerMutations(context).createHeadstoneForGrave(grave!, { latitude: "40", longitude: "-80" } as SaveHeadstoneCreateInput);
     await createOwnershipMutations(context).saveGraveLot("new-lot");
@@ -62,7 +63,7 @@ test("failed deletion preserves local records", async ({ page }) => {
   const result = await page.evaluate(async (initial) => {
     const { createEvidenceMutations } = await import("/src/hooks/evidenceMutations.ts");
     let updates = 0;
-    const mutations = createEvidenceMutations({ selectedGrave: initial as GraveSpace, setSelectedGraveDetails: () => { updates++; }, setSelectedHeadstoneDetails: () => { updates++; }, setData: () => {}, setSelectedGrave: () => {}, refreshDetails: () => {} });
+    const mutations = createEvidenceMutations({ selectedGrave: initial as GraveSpace, setSelectedGraveDetails: () => { updates++; }, setSelectedHeadstoneDetails: () => { updates++; }, setData: () => {}, setSelectedGrave: () => {}, refreshCemeteryData: () => {}, refreshDetails: () => {} });
     try { await mutations.deleteSavedGraveFeature("keep"); return { failed: false, updates }; }
     catch { return { failed: true, updates }; }
   }, detail("A-TEST"));

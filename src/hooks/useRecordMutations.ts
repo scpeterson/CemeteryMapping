@@ -16,13 +16,14 @@ export function useRecordMutations({
   setSelectedGraveDetails: updateSelectedGraveDetails,
   setSelectedHeadstoneDetails,
   refreshDetails,
+  refreshCemeteryData,
 }: RecordMutationContext) {
   const setSelectedGrave: RecordMutationContext["setSelectedGrave"] = (update) =>
     updateSelectedGrave((current) => updateMatchingGrave(current, selectedGrave, update));
   const setSelectedGraveDetails: RecordMutationContext["setSelectedGraveDetails"] = (update) =>
     updateSelectedGraveDetails((current) => updateMatchingGrave(current, selectedGrave, update));
 
-  const context = { selectedGrave, selectedHeadstone, setSelectedGrave, setData, setSelectedGraveDetails, setSelectedHeadstoneDetails, refreshDetails };
+  const context = { selectedGrave, selectedHeadstone, setSelectedGrave, setData, setSelectedGraveDetails, setSelectedHeadstoneDetails, refreshDetails, refreshCemeteryData };
   const marker = createMarkerMutations(context);
   const evidence = createEvidenceMutations(context);
   const media = createMediaMutations(context);

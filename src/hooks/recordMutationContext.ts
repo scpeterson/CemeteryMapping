@@ -8,5 +8,6 @@ export type RecordMutationContext = {
   setData: Dispatch<SetStateAction<CemeteryData>>;
   setSelectedGraveDetails: Dispatch<SetStateAction<GraveSpace | undefined>>;
   setSelectedHeadstoneDetails: Dispatch<SetStateAction<Headstone | undefined>>;
+  refreshCemeteryData: () => void;
   refreshDetails: (options?: { preserveCurrent?: boolean }) => void;
 };

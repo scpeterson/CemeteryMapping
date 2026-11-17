@@ -314,14 +314,16 @@ export function CemeteryMap({
     fitMapToCemeteries(map, data, initialFitCemeteryIds);
   }, [data, initialFitCemeteryIds, isInitialFitReady, selectedGrave, selectedHeadstone, selectedLot]);
 
+  const selectedGraveKey = selectedGrave ? graveSelectionKey(selectedGrave) : undefined;
+  const selectedGraveGeometry = selectedGrave ? JSON.stringify(selectedGrave.geometry) : undefined;
   useEffect(() => {
-    if (!selectedGrave || !mapRef.current || !mapLoaded) return;
+    if (!selectedGraveGeometry || !mapRef.current || !mapLoaded) return;
 
-    const ring = exteriorRing(selectedGrave.geometry);
+    const ring = exteriorRing(JSON.parse(selectedGraveGeometry) as GraveSpaceSummary["geometry"]);
     if (!ring?.length) return;
     const bounds = extendGeometryBounds(undefined, { type: "Polygon", coordinates: [ring] })!;
     mapRef.current.fitBounds(bounds, { padding: 140, maxZoom: 20.5, duration: 450 });
-  }, [selectedGrave, mapLoaded]);
+  }, [selectedGraveKey, selectedGraveGeometry, mapLoaded]);
 
   useEffect(() => {
     const map = mapRef.current;
