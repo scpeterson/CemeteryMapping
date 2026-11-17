@@ -9,10 +9,19 @@ diagram represents **hosted TEST** at `test.nhcemeteries.org`; it is not a claim
 that STAGE or PROD is deployed. Local DEV runs the frontend, API, database, and
 media locally without the hosted Cloudflare gateway.
 
+Reconciled November 17, 2026 against committed configuration and the recorded
+November 13 backup setup and November 16 deployments. This is documentation
+reconciliation, not a new audit of provider settings, backup freshness, billing,
+or successor access. Generic relationships belong here; account identifiers,
+vault item names and authorized recovery access belong in the private operations
+repository.
+
 ## Application, hosting, and external data
 
 Arrows show the direction of a request or action; responses return along the same
-connection. Dashed arrows show optional provisioning and backup operations.
+connection. Dashed arrows show conditional provisioning or operator-led recovery;
+the configured daily backup is a separate scheduled operation, not optional
+coverage supplied by an application request.
 
 ### Hosting and stored records
 
@@ -35,9 +44,12 @@ flowchart TB
   edge -->|"Established tunnel"| tunnel
 ```
 
-DigitalOcean's daily provider backups cover the host, including its stored data
-and media. Logical database dumps are also created locally; a separate offsite
-copy remains follow-up work.
+DigitalOcean provider backups supply a host-recovery route. Separately, the
+scheduled backup creates logical database/role dumps and uses restic to encrypt
+application/settings, media and recovery material before uploading to private
+DigitalOcean Spaces. That off-host workflow was set up and restore-tested on
+November 13; see [Backups and recovery](#backups-and-recovery). A full host/media
+recovery drill and independent provider/account protection remain separate work.
 
 ### Sign-in and application permissions
 
@@ -76,7 +88,7 @@ flowchart TB
   browser["Browser / MapLibre<br/>Displays cemetery map"]
   imagery["Penn State PASDA<br/>2017 aerial imagery"]
   parcels["Allegheny County GIS<br/>Parcel boundaries"]
-  api["Express API<br/>Death-location search and verification"]
+  api["Express API<br/>Birth/death-location search and verification"]
   geo["GeoNames<br/>Geographic place lookup"]
   browser -->|"Viewport imagery"| imagery
   browser -->|"Parcel overlay tiles"| parcels
@@ -89,6 +101,60 @@ Authenticated browser API calls carry an Auth0 access token through Cloudflare
 and Nginx to Express. The database and media directory stay on the Droplet;
 Cloudflare and Auth0 do not store the application's cemetery records.
 
+## Backups and recovery
+
+The November 13 setup added encrypted off-host recovery; it did not move live
+PostgreSQL data or uploaded photos into object storage. Application reads and
+uploads still use the Droplet's database and media directory.
+
+```mermaid
+flowchart TB
+  subgraph provider["DigitalOcean account - shared access and billing dependency"]
+    host["Hosted TEST Droplet - NYC1<br/>Live database, media, application/settings"]
+    dumps["Local logical backups<br/>Database dump + roles"]
+    client["Scheduled backup + restic<br/>Encrypt content and metadata"]
+    spaces[("Private Spaces Standard - SFO3<br/>Encrypted backup repository")]
+    providerCopies["Provider Droplet backups<br/>Separate host-recovery path"]
+    host -->|"Database and roles"| dumps
+    host -->|"Media, app/settings, recovery evidence"| client
+    dumps --> client
+    client -->|"Encrypted upload + verified readback"| spaces
+    host -->|"Provider backup service"| providerCopies
+  end
+  vault["NordPass recovery vault<br/>Encryption password + bucket credentials"]
+  operator["Authorized recovery operator"]
+  target["Isolated recovery target<br/>Restore and verify before cutover"]
+  vault -.->|"Recover credentials"| operator
+  spaces -.->|"Download encrypted backup"| target
+  operator -.->|"Decrypt, restore and validate"| target
+  providerCopies -.->|"Alternative host restore"| target
+```
+
+[Open the backup/recovery diagram as SVG](assets/images/backup-recovery.svg).
+The graphic is an export of the Mermaid source above for viewing without the
+Mermaid CDN; update both when these relationships change.
+
+- **Routine protection:** daily logical dumps/roles and encrypted restic snapshots;
+  provider Droplet backups are a distinct recovery route. Local release backups
+  are checkpoints, not proof of an independently verified Spaces snapshot.
+- **Retention and verification:** the recorded policy keeps 14 days of eligible
+  local dumps and 30 daily / 8 weekly / 6 monthly off-host daily snapshots.
+  Recovery holds are reviewed separately. Local cleanup requires verified
+  decrypted readback and unchanged source checks; do not bypass it for free space.
+- **Recovery:** authorized operators need both bucket credentials and the separate
+  encryption password, plus a compatible PostgreSQL/PostGIS target and matching
+  media/settings. The November 13 isolated database restore passed; it was not a
+  complete replacement-host/media drill. A restore is not an automatic cutover.
+- **Failure boundaries:** Spaces is separate from the Droplet and region, but
+  remains in the same provider account. Vault access must be independently
+  recoverable. Scheduled status/logging does not itself send alerts; current
+  freshness, provider backups and successor access need operational checks.
+
+See the [backup/retention runbook](backup-retention.md) for scheduling, proof-gated
+cleanup and restore commands, and the private operations repository for actual
+resource ownership and recovery access. STAGE/PROD backup resources are not
+implied by this TEST diagram.
+
 ## Service names, relationships, and purposes
 
 | Service | Connects to | Purpose and scope |
@@ -99,17 +165,21 @@ Cloudflare and Auth0 do not store the application's cemetery records.
 | **Cloudflare Turnstile** | Public form → widget; Express → Siteverify | Verifies public access-request submissions. Only the public site key reaches the browser; the private secret stays in the API runtime. |
 | **Cloudflare Tunnel** | Cloudflare edge ↔ `cloudflared` → Nginx | The connector establishes an outbound tunnel from the Droplet, allowing Cloudflare to reach the loopback web listener without exposing public web or database ports. |
 | **DigitalOcean Droplet** | Hosts Nginx, Express, PostgreSQL/PostGIS, media, and the tunnel connector | Keeps hosted TEST available independently of the developer's computer. Docker Compose runs the application services on this server. |
-| **DigitalOcean backups** | Droplet → provider backup storage | Supplies daily host recovery copies. The local backup script also creates logical database dumps; a separate offsite media/database copy remains follow-up work. |
+| **DigitalOcean provider backups** | Droplet → provider recovery copies | Host-recovery protection, separate from the logical/restic workflow. Check recent successful provider backups independently. |
+| **DigitalOcean Spaces Standard** | Backup job/restic → private object storage | Holds encrypted off-host database/role dumps, media, application/settings and retained recovery evidence. Different region from TEST, but the same DigitalOcean account dependency. It does not serve live application photos. |
+| **NordPass recovery vault** | Authorized operator → password vault | Retains independently recoverable backup credentials and the restic encryption password. Not contacted by the application or scheduled backup; the host uses its protected installed credentials. Exact vault item/access information belongs in private operations documentation. |
 | **Auth0 Authentication API / Universal Login** | Browser ↔ Auth0; API → Auth0 signing keys | Authenticates application users and issues tokens. Express checks the token's issuer, audience, and signature, then resolves application access from PostgreSQL. |
 | **Auth0 Management API** | Express → Auth0 | When server credentials are configured, Admin → Users can find or create an identity in the matching environment's tenant. Hosted TEST has this enabled. |
 | **Auth0 email delivery** | Auth0 → user's email inbox | Supports verification and password setup/reset emails. Hosted TEST email configuration is enabled, but real tester delivery still needs verification. The repository does not identify a separate SMTP provider. |
 | **Penn State PASDA (ArcGIS REST)** | Browser → `imagery.pasda.psu.edu` | Provides Allegheny County 2017 aerial imagery behind the application's cemetery geometry. |
 | **Allegheny County GIS (ArcGIS REST)** | Browser → `gisdata.alleghenycounty.us` | Provides the parcel boundary overlay. Both map image services are requested directly by the browser, outside the application API. |
-| **GeoNames** | Express → `secure.geonames.org` | Searches and verifies geographic places for death-location entry. Requires `GEONAMES_USERNAME`; existing locally verified places remain available if it is absent or the service fails. |
+| **GeoNames** | Express → `secure.geonames.org` | Searches and verifies geographic places for birth/death-location entry. Requires `GEONAMES_USERNAME`; existing locally verified places remain available if it is absent or the service fails. |
 
 React, MapLibre, Express, Nginx, Docker, PostgreSQL/PostGIS, and Liquibase are
 software components or tools, rather than separately hosted application service
-accounts. MapLibre renders the map in the browser; the external ArcGIS services
+accounts. Restic is the backup/encryption client, not another storage provider.
+Cron schedules the backup/retention/check commands on the TEST host. Liquibase
+applies reviewed database migrations; it does not replace a data backup. MapLibre renders the map in the browser; the external ArcGIS services
 supply imagery and parcels, while the application supplies cemetery geometry.
 Find a Grave URLs are record links, not an API integration. Imported spreadsheets,
 scans, and Esri geodatabases are source files; see the [Data Source Register](data-sources.md).
@@ -126,7 +196,13 @@ scans, and Esri geodatabases are source files; see the [Data Source Register](da
    the user can access. Passing Cloudflare or signing into Auth0 alone does not
    grant cemetery access.
 
-Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. The `/api/me` response includes read-only assignments as well as editable ones for map scoping; edit permissions continue to use the role and editable assignments. Initial map fitting waits for user and map data, fits all cemetery boundaries for admins, and fits the assigned cemetery for other users.
+Non-admin accounts require cemetery membership when created or saved. Admin →
+Users manages independent roles for each cemetery; memberships may span several
+cemeteries. The map starts at a permitted preferred cemetery or the first assigned
+cemetery, and members can choose among their assignments. System admins can see
+all cemeteries, with an optional preferred initial scope. The API still enforces
+roles for the target cemetery; a map selection is not an authorization grant.
+See [profiles and cemetery roles](operator-workflows.md#my-profile).
 
 An administrator approves requests in the application and can provision an Auth0
 identity. They must **also add the approved email to Cloudflare Access manually**;
@@ -150,7 +226,7 @@ production design.
 | Identity and data | Dedicated TEST Auth0 tenant, database, media, and credentials | Provision separate PROD identity settings, database, media, credentials, and hostname. |
 | Gateway login | Cloudflare Access email allowlist and one-time PIN, followed by Auth0 login | Decide whether to retain this additional gateway login. Active application accounts and application permissions remain required. |
 | Hosting | One DigitalOcean Droplet with Docker Compose | A similar single-server deployment is a possible starting point. Server sizing, managed database, separate media storage, and redundancy remain deployment decisions. |
-| Recovery | Provider backups and local logical database dumps; separate offsite copy remains follow-up work | Establish separate offsite database/media copies and verify restoration before launch. |
+| Recovery | Provider backups plus encrypted restic backups in Spaces; independently stored recovery credentials | Provision separate PROD backup resources/credentials, address shared-provider/account risk, and rehearse complete database/settings/media restoration before launch. |
 | Operations | Persistent hosted testing | Establish monitoring and capacity for production usage; validate releases in TEST and rehearse in STAGE before promotion. |
 
 See [Operator Workflows](operator-workflows.md#environment-promotion-workflow)
@@ -190,6 +266,7 @@ flowchart LR
 
 ## Where to find the implementation
 
+- [Backup/retention runbook](backup-retention.md): Spaces, restic, schedules and recovery verification.
 - [Hosted TEST](hosted-test.md) and [ADR 0073](adr/0073-private-hosted-test.md): hosting and environment isolation.
 - [Auth0 Test Tenant](auth0-test-tenant.md) and [Auth0 Production Checklist](auth0-production-checklist.md): identity setup.
 - [`deploy/test/compose.yaml`](https://github.com/scpeterson/CemeteryMapping/blob/main/deploy/test/compose.yaml) and [`nginx.conf`](https://github.com/scpeterson/CemeteryMapping/blob/main/deploy/test/nginx.conf): server components and routing.
