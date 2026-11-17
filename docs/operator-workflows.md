@@ -104,6 +104,8 @@ For stale gravesite edits, follow the reconciliation steps below rather than rep
 
 PASDA aerial imagery and Allegheny County parcel boundaries can fail independently of the cemetery records. A notice names the affected provider and offers a retry for that layer. Notices clear when the layer recovers.
 
+PASDA image requests pause while the mobile map is hidden (for example, in Search or Details) and while Diagram view hides the imagery. Returning to a visible Geographic map loads the current extent if needed. Duplicate requests for the same extent and image dimensions are combined. A failed request still shows the provider warning; `Retry Aerial imagery (PASDA)` requests the image again even if you have not moved the map. The warning clears only after a successful image load, not merely when you retry or change workspace.
+
 Select `Switch to Diagram view` in the notice, or `Diagram` in the map controls, to hide external layers and continue viewing the cemetery layout. Diagram view changes presentation; it does not move stored markers or gravesite polygons, make estimated boundaries surveyed, or create a separate schematic geometry dataset. Return to `Geographic` to view external layers again.
 
 ### Recovering a Conflicting Gravesite Edit
