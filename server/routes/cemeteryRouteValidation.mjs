@@ -1,3 +1,4 @@
+import { validateGraveStack } from '../graveStacks.mjs';
 import { validateNewInspections, validateDeletedInspections } from "../monumentInspections.mjs";
 import { validateMarkerFaces, validateFacesRevision, validateInscriptionStatus, validateCurrentLegibility, validateHistoricalTranscriptions } from "../markerFaces.mjs";
 import { optionalCoordinate, optionalText, requiredText, validateUuid } from "../inputValidation.mjs";
@@ -231,6 +232,7 @@ export function validateGraveSpacePayload(body) {
   if (costText && (!Number.isFinite(cost) || cost < 0)) throw new BadRequestError("Cost must be a non-negative number.");
 
   return {
+    stack: validateGraveStack(body),
     expectedVersion,
     name: optionalText(body?.name, "Name", 255) ?? "",
     status,

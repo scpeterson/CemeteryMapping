@@ -1,3 +1,4 @@
+import { roleForCemetery } from "../lib/selectionPermissions";
 import { Notice } from "./ui/Feedback";
 import { Modal } from "./ui/Modal";
 import { Activity, BookOpenText, FileSearch, FileText, History, Landmark, ListChecks, ShieldAlert, UserCog, X } from "lucide-react";
@@ -13,16 +14,17 @@ import { useDeedAdministration } from "./admin/useDeedAdministration";
 import { useLookupAdministration } from "./admin/useLookupAdministration";
 import { useNorthHillsAdministration } from "./admin/useNorthHillsAdministration";
 import { useSourcePeopleAdministration } from "./admin/useSourcePeopleAdministration";
+// Keep the small record editors with the lazy admin shell for shared compression.
+import { RecordsAdminTab } from "./admin/RecordsAdminTab";
+import { LookupAdminTab } from "./admin/LookupAdminTab";
 const AuditAdminTab = lazy(() => import("./admin/events/AuditAdminTab").then((module) => ({ default: module.AuditAdminTab })));
 const SystemEventsAdminTab = lazy(() => import("./admin/events/SystemEventsAdminTab").then((module) => ({ default: module.SystemEventsAdminTab })));
 const DataQualityAdminTab = lazy(() => import("./DataQualityAdminTab").then((module) => ({ default: module.DataQualityAdminTab })));
 const DeedsAdminTab = lazy(() => import("./admin/DeedsAdminTab").then((module) => ({ default: module.DeedsAdminTab })));
 const UsersAdminTab = lazy(() => import("./admin/UsersAdminTab").then((module) => ({ default: module.UsersAdminTab })));
-const RecordsAdminTab = lazy(() => import("./admin/RecordsAdminTab").then((module) => ({ default: module.RecordsAdminTab })));
 const BulkAdminTab = lazy(() => import("./admin/BulkAdminTab").then((module) => ({ default: module.BulkAdminTab })));
 const NorthHillsAdminTab = lazy(() => import("./admin/NorthHillsAdminTab").then((module) => ({ default: module.NorthHillsAdminTab })));
 const SourcePeopleAdminTab = lazy(() => import("./admin/SourcePeopleAdminTab").then((module) => ({ default: module.SourcePeopleAdminTab })));
-const LookupAdminTab = lazy(() => import("./admin/LookupAdminTab").then((module) => ({ default: module.LookupAdminTab })));
 const CemeteryMembersAdminTab = lazy(() => import("./admin/CemeteryMembersAdminTab").then((module) => ({ default: module.CemeteryMembersAdminTab })));
 const RecordRecoveryAdminTab = lazy(() => import("./admin/RecordRecoveryAdminTab").then(module => ({default:module.RecordRecoveryAdminTab})));
 const OnboardingAdminTab = lazy(() => import("./admin/OnboardingAdminTab").then(module => ({default:module.OnboardingAdminTab})));
@@ -388,6 +390,7 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
                 selectedLot={selectedLot}
                 sectionsForSelectedCemetery={sectionsForSelectedCemetery}
                 lotsForSelectedSection={lotsForSelectedSection}
+                canManageRules={["admin","cemetery-admin"].includes(roleForCemetery(currentUser,selectedCemeteryId))}
                 canEditSelectedCemetery={canEditSelectedCemetery}
                 savingRecordKey={savingRecordKey}
                 selectCemeteryById={selectCemeteryById}

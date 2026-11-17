@@ -6,7 +6,7 @@ export default defineConfig({
   ...inspectionRegressions,
   workers: 2,
   testMatch: [
-    "ui-consistency.spec.ts", "admin-ui-fixes.spec.ts", "ui.spec.ts", "admin-layout.spec.ts",
+    "grave-stacks.spec.ts", "ui-consistency.spec.ts", "admin-ui-fixes.spec.ts", "ui.spec.ts", "admin-layout.spec.ts",
     "application-header.spec.ts", "auth-layout.spec.ts", "map-controls.spec.ts",
     "inspection-face-status.spec.ts", "grave-feature-lookups.spec.ts", "military-rank-lookups.spec.ts",
     "unreadable-inscriptions-report.spec.ts", "record-exports.spec.ts",

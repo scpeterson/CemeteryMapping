@@ -92,6 +92,7 @@ test("listCemeteryAdminRecords returns editable cemetery, section, and lot text"
         agency: "Church",
         agencyUrl: "https://example.test",
         operationalHours: "Dawn to dusk",
+        stackingAuthorizationCutoff: "", stackingPolicyNotes: "",
         contactName: "Pat Admin",
         contactPhone: "412-555-1212",
         contactEmail: "pat@example.test",
@@ -180,6 +181,7 @@ test("updateCemeteryText saves all editable cemetery text fields", async () => {
     "pat@example.test",
     "https://example.test/cemetery.jpg",
     "Main cemetery",
+    null, null,
   ]);
   assert.equal(cemetery.contactEmail, "pat@example.test");
   assert.equal(cemetery.updatedAt, "2026-01-03T12:00:00.000Z");

@@ -50,7 +50,7 @@ export default defineConfig({
               // Include shared permissions, reminders and record search controls
               // to avoid tiny standalone chunks and repeated import overhead.
               name: "workspace-shared",
-              test: /src[\\/](?:api[\\/](?:cemeteryApi|apiClient|profileApi|taskReminders)|auth[\\/]sessionContext|lib[\\/](?:recordEditPayloads|selectionPermissions)|hooks[\\/](?:useMediaUrl|useRecordOptions|useDraftState)|components[\\/](?:detail[\\/](?:MediaPhoto|RecordOptionSearch)|ui[\\/](?:Feedback|ConflictRecovery)))\.tsx?$/,
+              test: /src[\\/](?:api[\\/](?:cemeteryApi|apiClient|profileApi|taskReminders)|auth[\\/]sessionContext|lib[\\/](?:recordEditPayloads|selectionPermissions)|hooks[\\/](?:useMediaUrl|useRecordOptions|useDraftState)|components[\\/](?:detail[\\/](?:MediaPhoto|RecordOptionSearch)|ui[\\/](?:Button|Feedback|ConflictRecovery)))\.tsx?$/,
               priority: 25,
             },
             {

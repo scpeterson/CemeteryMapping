@@ -1,3 +1,4 @@
+import { optionalStackDate } from '../graveStacks.mjs';
 import { optionalText, requiredText, validateIdentifierList, validateUuid } from "../inputValidation.mjs";
 import { BadRequestError, validateMutationReason } from "../requestValidation.mjs";
 import { optionalDate, optionalRecordedDate } from "./routeValidationHelpers.mjs";
@@ -45,6 +46,8 @@ export function validateCemeteryTextPayload(body) {
     municipality: optionalText(body?.municipality, "Municipality", 150),
     agency: optionalText(body?.agency, "Agency", 50),
     agencyUrl: optionalText(body?.agencyUrl, "Agency URL", 300),
+    stackingAuthorizationCutoff: body?.stackingAuthorizationCutoff === undefined ? undefined : optionalStackDate(body.stackingAuthorizationCutoff, 'Stacking cutoff'),
+    stackingPolicyNotes: body?.stackingPolicyNotes === undefined ? undefined : optionalText(body.stackingPolicyNotes, 'Stacking policy notes', 4000),
     operationalHours: optionalText(body?.operationalHours, "Operational hours", 150),
     contactName: optionalText(body?.contactName, "Contact name", 150),
     contactPhone: optionalText(body?.contactPhone, "Contact phone", 15),

@@ -1,3 +1,4 @@
+import { graveStackSelect } from './graveStacks.mjs';
 import { veteranSql } from "./searchNormalizationSql.mjs";
 import { headstoneCemeteryIdSql, headstoneCemeteryJoinsSql } from "./headstoneCemeterySql.mjs";
 import { sectionAlternateNamesSelect } from "./cemeterySchema.mjs";
@@ -85,6 +86,7 @@ export async function selectGravesForCemeteries(client, cemeteryIds, { includeCo
         gravesites.cemetery_id::text, cemeteries.name AS cemetery_name, gravesites.section_id,
         gravesites.lot_id, gravesites.grave_id, gravesites.display_label, gravesites.label_aliases, gravesites.gravesite_id, gravesites.name,
         ${derivedGravesiteStatusSql({ currentOwnershipRelation: "map_current_ownership" })} AS status,
+        ${graveStackSelect},
         gravesites.geometry_type, gravesites.geometry_source, gravesites.geometry_confidence, gravesites.geometry_notes,
         (veteran_gravesite_uuids.gravesite_uuid IS NOT NULL OR veteran_legacy_ids.gravesite_id IS NOT NULL) AS has_veteran,
         ${includeCost ? "gravesites.cost," : ""}

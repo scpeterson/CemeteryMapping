@@ -87,6 +87,8 @@ export function CemeteryMap({
   isPickingGravesiteMonument = false,
   onPickMarkerPoint,
 }: CemeteryMapProps) {
+  const [stackGroup, setStackGroup] = useState<string>();
+  const stackChoices = stackGroup ? data.graves.filter(grave => JSON.stringify([grave.cemeteryId,grave.stackGroup]) === stackGroup).sort((a,b) => (b.stackLevel ?? 0)-(a.stackLevel ?? 0)) : [];
   const [failedLayers, setFailedLayers] = useState<ExternalMapLayer[]>([]);
   const layerHealthRef = useRef<ReturnType<typeof createMapLayerHealth> | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -114,6 +116,10 @@ export function CemeteryMap({
   const headstonesByIdRef = useRef<Map<string, HeadstoneSummary>>(new Map());
   const selectedStatusesRef = useRef(selectedStatuses);
   const onSelect = useEffectEvent(onSelectGrave);
+  const chooseStack = useEffectEvent((grave: GraveSpaceSummary) => {
+    setStackGroup(grave.stackGroup ? JSON.stringify([grave.cemeteryId,grave.stackGroup]) : undefined);
+    if (!grave.stackGroup) onSelect(grave);
+  });
   const selectLot = useEffectEvent(onSelectLot);
   const selectHeadstone = useEffectEvent(onSelectHeadstone);
   const pickMarkerPoint = useEffectEvent((point: { latitude: number; longitude: number }) => onPickMarkerPoint?.(point));
@@ -253,7 +259,7 @@ export function CemeteryMap({
 
         const key = feature.properties?.key;
         const grave = typeof key === "string" ? gravesBySelectionKeyRef.current.get(key) : undefined;
-        if (grave) onSelect(grave);
+        if (grave) chooseStack(grave);
       });
     });
 
@@ -378,6 +384,14 @@ export function CemeteryMap({
     <>
       <div ref={containerRef} className="map-canvas" aria-label="Interactive cemetery map" />
       <div className="map-toolbar" aria-label="Map tools">
+        {stackChoices.length ? <section className="map-layer-notice" aria-label="Stacked graves">
+          <strong>Stacked graves · {stackChoices[0].stackGroup}</strong>
+          <p>Select a level (shown from top to bottom).</p>
+          {stackChoices.map((grave) => <button type="button" key={graveSelectionKey(grave)} onClick={() => onSelectGrave(grave)}>
+            Level {grave.stackLevel} ({grave.stackLevel === 1 ? "Bottom" : grave.stackLevel === grave.stackTopLevel ? "Top" : "Upper"}) · {grave.displayLabel || grave.id} · {statusLabels[grave.status]}
+          </button>)}
+          <button type="button" className="secondary-button" onClick={() => setStackGroup(undefined)}>Close stacked graves</button>
+        </section> : null}
         {mapViewMode === "geographic" && failedLayers.length > 0 ? (
           <section className="map-layer-notice" aria-label="Map layer availability">
             <div role="status" aria-live="polite">

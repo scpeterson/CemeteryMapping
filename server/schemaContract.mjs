@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "516-maintenance-task-scheduling";
+export const requiredSchemaChangeset = "519-grave-stacks";
 
 export async function assertCurrentSchema(pool) {
   let result;

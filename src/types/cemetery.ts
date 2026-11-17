@@ -7,6 +7,11 @@ import type { GraveFeature, MaintenanceRecord, MediaAsset } from "./evidence";
 export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "needs_review" | "unknown";
 
 export type GraveSpaceSummary = {
+  stackGroup?: string;
+  stackLevel?: number;
+  stackTopLevel?: number;
+  stackingAuthorizedOn?: string;
+  stackingAuthorizationReference?: string;
   displayLabel?: string;
   labelAliases?: string[];
   id: string;
@@ -47,6 +52,10 @@ export type GraveSpace = GraveSpaceSummary & {
 };
 
 export type SaveGraveSpaceInput = {
+  stackGroup?: string;
+  stackLevel?: number | null;
+  stackingAuthorizedOn?: string;
+  stackingAuthorizationReference?: string;
   expectedVersion: string;
   name: string;
   status: GraveStatus;

@@ -18,7 +18,7 @@ export function gravesFeatureCollection(graves: GraveSpaceSummary[]) {
           hasVeteran: grave.hasVeteran ?? false,
           geometryType: grave.geometryType ?? "operational",
           geometryConfidence: grave.geometryConfidence ?? "estimated",
-          label: formatGraveLabel(grave),
+          label: grave.stackGroup ? `${formatGraveLabel(grave)} · Stacked (L${grave.stackLevel})` : formatGraveLabel(grave),
         },
         geometry: grave.geometry,
       };

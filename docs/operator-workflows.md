@@ -1581,3 +1581,57 @@ sessions use the cemetery queue; personal work needs a registered account.
 Apply migration 516 and refresh runtime grants before the new API/web release.
 See [ADR 0203](adr/0203-assigned-maintenance-tasks.md) for indexes, record-version
 compatibility, validation and rollback.
+
+## Vertically stacked graves and cemetery stacking rules
+
+Ordinary graves are **single-level**, with no stack group or level. Overlapping
+polygons do not establish a stacking relationship and are never converted
+automatically. A stacked grave remains a separate gravesite, with its own burial
+or reservation and ownership rights. Multiple graves may link to one monument.
+
+1. As a system administrator or an administrator of the selected cemetery, open
+   a grave, choose **Location and geometry → Edit**, and find **Vertical stacking**.
+2. Enter a shared **Stack group** name for the related graves. Group names are
+   scoped to a cemetery; the same name in another cemetery is a different group.
+3. Assign **Level 1** to the bottom grave, **Level 2** to the next grave up, and
+   higher numbers if needed. Each active level can belong to only one grave.
+   Record all members; a partially entered group is permitted during setup.
+4. Upper graves require the original **Stacking authorization date** and a
+   supporting **Authorization reference**. An unknown date requires evidence
+   review; do not invent one to pass the cutoff. Enter a pre-existing reservation
+   using its original authorization date, even when recording it later.
+5. Manage monument links and burial/ownership records using their existing
+   controls. Stacking does not move polygons, duplicate markers, merge burials,
+   or mark a living person as interred. Use reservation/ownership records for
+   living people; a pre-need inscription is evidence, not proof of interment.
+
+On the map, stacked graves have a **Stacked (L…)** label. In gravesite selection
+mode, selecting a member opens a level chooser showing the currently loaded
+members from top to bottom, with their individual statuses. Choose the desired
+grave to open its separate record. Unrelated overlapping graves are not grouped.
+The highest recorded level is labeled Top; level 1 is Bottom. Confirm a group's
+membership is complete before relying on those labels. Accurate footprints can
+coincide; there is no artificial displacement or 3D survey-depth claim.
+
+To remove an erroneous assignment, clear the group in the grave editor. This
+also clears its level and authorization evidence; the audit trail retains the
+change. Do not use removal/reassignment to evade a cemetery rule. Power users
+may edit ordinary grave details but cannot change stack assignments or policies.
+Authorization evidence is restricted with ownership details and is omitted from
+public map summaries.
+
+In **Admin → Records → Cemetery**, cemetery/system administrators can set
+**No new stacking authorizations on or after** and policy notes. An empty cutoff
+means no date restriction. This is a typed cemetery-wide stacking rule, not an
+arbitrary rule-expression engine. Other cemetery restrictions remain independent.
+
+Migration 519 sets Trinity Lutheran Church Cemetery's cutoff to **March 1, 2027**.
+New upper-grave reservations/authorizations dated on or after that date are
+rejected, including future-dated authorizations entered before the cutoff.
+Documented authorizations dated **February 28, 2027 or earlier** remain valid:
+recording them or interring the person later is allowed. The cutoff concerns the
+authorization date, not data-entry, death, inspection, or interment date. Existing
+unchanged authorizations remain editable for later burial/status updates after a
+policy change. Changing a group's assignment, level, authorization evidence, or
+restoring a deleted assignment revalidates it against the current rule. No other
+cemetery receives Trinity's cutoff automatically.

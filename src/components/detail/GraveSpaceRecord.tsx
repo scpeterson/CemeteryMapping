@@ -26,6 +26,10 @@ const graveStatusOptions: { value: GraveStatus; label: string }[] = [
 
 function blankGraveSpaceForm(grave: GraveSpace): SaveGraveSpaceInput {
   return {
+    stackGroup: grave.stackGroup ?? "",
+    stackLevel: grave.stackLevel ?? null,
+    stackingAuthorizedOn: grave.stackingAuthorizedOn ?? "",
+    stackingAuthorizationReference: grave.stackingAuthorizationReference ?? "",
     name: grave.name,
     expectedVersion: grave.version,
     status: grave.status,
@@ -123,6 +127,25 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
           Cost
           <input inputMode="decimal" value={form.cost} onChange={(event) => setForm((current) => ({ ...current, cost: event.target.value }))} />
         </label>
+        {canManageLot ? <fieldset className="grave-wide-field">
+          <legend>Vertical stacking</legend>
+          <p>Leave single-level graves ungrouped. Related graves share a group; level 1 is the bottom.</p>
+          {([
+            ["stackGroup", "Stack group", "text"],
+            ["stackLevel", "Level (1 = bottom)", "number"],
+            ["stackingAuthorizedOn", "Stacking authorization date", "date"],
+            ["stackingAuthorizationReference", "Authorization reference", "text"],
+          ] as const).filter(([key]) => key === "stackGroup" || form.stackGroup).map(([key,label,type]) => <label key={key}>{label}
+            <input type={type} min={type === "number" ? 1 : undefined} step={type === "number" ? 1 : undefined}
+              maxLength={key === "stackGroup" ? 100 : 1000} required={key !== "stackGroup" && (form.stackLevel ?? 1)>1}
+              value={form[key] ?? ""} onChange={(event) => setForm(current => {
+                const value=event.target.value;
+                if(key === "stackGroup") return value.trim() ? {...current,stackGroup:value,stackLevel:current.stackLevel ?? 1} : {...current,stackGroup:"",stackLevel:null,stackingAuthorizedOn:"",stackingAuthorizationReference:""};
+                return {...current,[key]:key === "stackLevel" ? Number(value) : value};
+              })} />
+          </label>)}
+          {form.stackGroup ? <p>Upper graves need the original authorization date and reference. Unknown dates require review. Geometry and monument links stay separate.</p> : null}
+        </fieldset> : null}
         {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
         {hasConflict ? <button type="button" disabled={isSaving} onClick={() => void reloadLatest()}>Reload latest values (discard edits)</button> : null}
         <div className="grave-form-actions">
@@ -149,6 +172,8 @@ export function GraveSpaceRecord({ grave, lots, inferredLot, canUpdate, canManag
         ) : null}
       </div>
       <dl>
+        <div><dt>Stacking</dt><dd>{grave.stackGroup ? `${grave.stackGroup} · Level ${grave.stackLevel}${grave.stackLevel === 1 ? " (Bottom)" : grave.stackLevel === grave.stackTopLevel ? " (Top)" : " (Upper)"}` : "Single-level"}</dd></div>
+        {grave.stackingAuthorizedOn ? <div><dt>Stacking authorization</dt><dd>{grave.stackingAuthorizedOn} · {grave.stackingAuthorizationReference}</dd></div> : null}
         <div>
           <dt>Record ID</dt>
           <dd>{grave.id}</dd>

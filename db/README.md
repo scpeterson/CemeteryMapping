@@ -723,3 +723,37 @@ See [Map Layout and Passageways](../docs/map-layout-and-passageways.md),
 [ADR 0178](../docs/adr/0178-passageways-and-individual-deeds.md),
 [ADR 0179](../docs/adr/0179-shift-southern-c-lots.md) and the
 [preserved review evidence](../docs/adr/supporting/passageway-review-2026-10-29/README.md).
+
+
+## Grave stack groups and authorization cutoff (519)
+
+`grave_stack_groups` identifies a cemetery-scoped, named vertical stack.
+`gravesites.stack_group_uuid` and `stack_level` are nullable together; ordinary
+graves receive no default level. A composite foreign key prevents cross-cemetery
+memberships, and a partial unique index prevents duplicate active levels.
+Upper levels require `stacking_authorized_on` and a nonempty supporting reference.
+These are authorization evidence, separate from burial dates and recorded/audit
+timestamps. Stacking never rewrites grave geometry, burials, ownership or markers.
+
+`cemeteries.stacking_authorization_cutoff` and `stacking_policy_notes` implement
+the first typed cemetery-wide stacking policy. Migration 519 sets only the exact
+Trinity Lutheran Church Cemetery record to 2027-03-01. The database trigger and
+API reject new/reassigned upper authorizations dated on or after the cutoff,
+while permitting historical authorizations to be recorded later. Routine updates
+to an unchanged active authorization remain valid after policy changes. Deleted
+assignments retain evidence; restoration revalidates policy and level uniqueness.
+Group changes and existing cemetery/grave changes are audited. No grave is
+inferred to be stacked from overlap, text or shared monument links.
+
+Run migrations before the API (schema contract 519), then refresh runtime-role
+grants using the environment's existing restricted-role setup so the API can
+read/write the new group table. The migration does not assign real graves to
+stacks; an administrator must review evidence and identify each group/level.
+Rollback removes stack and policy metadata, so export/review that evidence before
+an operational rollback; use a forward correction for ordinary data repair.
+
+Validation: `npm run test:server`, `npm run lint`, `npm run build`,
+`APP_ENV=test node --test scripts/grave-stacks.integration.mjs`, and
+`npx playwright test --config playwright.ui-consistency.config.ts tests/grave-stacks.spec.ts`.
+The database regression uses rollback-only fixtures. For migration rehearsal,
+use a disposable database copy, never a hosted operational database.

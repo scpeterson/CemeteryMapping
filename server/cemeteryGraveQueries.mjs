@@ -1,3 +1,4 @@
+import { graveStackSelect } from './graveStacks.mjs';
 import { runBoundedQueries } from "./queryBatch.mjs";
 import { selectBurialsForGrave } from "./cemeteryBurialQueries.mjs";
 import { selectFeaturesForGrave } from "./cemeteryFeatureQueries.mjs";
@@ -41,6 +42,9 @@ export function toGraveSummary(grave) {
     lot: grave.lot_id ?? "",
     space: grave.grave_id,
     ...(grave.display_label ? { displayLabel: grave.display_label, labelAliases: grave.label_aliases ?? [] } : {}),
+    stackGroup: grave.stack_group ?? undefined,
+    stackLevel: grave.stack_level ?? undefined,
+    stackTopLevel: grave.stack_top_level ?? undefined,
     status: normalizeStatus(grave.status),
     hasVeteran: Boolean(grave.has_veteran),
     geometryType: grave.geometry_type ?? "operational",
@@ -76,6 +80,7 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
         gravesites.name,
         gravesites.xmin::text AS version,
         gravesites.cost,
+        ${graveStackSelect}, gravesites.stacking_authorized_on::text, gravesites.stacking_authorization_reference,
         gravesites.geometry_type,
         gravesites.geometry_source,
         gravesites.geometry_confidence,
@@ -190,6 +195,8 @@ export function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstone
   }
   const detailedGrave = {
     ...toGraveSummary(grave),
+    stackingAuthorizedOn: includeOwnership ? grave.stacking_authorized_on ?? undefined : undefined,
+    stackingAuthorizationReference: includeOwnership ? grave.stacking_authorization_reference ?? undefined : undefined,
     name: grave.name ?? "",
     version: grave.version,
     cost: grave.cost === null || grave.cost === undefined ? undefined : Number(grave.cost),
