@@ -482,6 +482,10 @@ Use `Admin -> Audit Log` when answering who changed a record, what changed, or w
 
 Audit events are read-only. If an audit result looks wrong, correct the source record through the normal workflow and let that correction create a new audit event.
 
+### Adding A Gravesite On The Map
+
+System admins and cemetery admins can use `Add gravesite` to place a gravesite before a monument exists. Select the cemetery when prompted, leave Monument as `No monument for this gravesite`, and choose `Pick on map`. The dialog temporarily closes so the map is interactive, including on mobile. Click the desired location; the dialog returns with latitude and longitude populated and your other entries preserved. Use `Change map location` to choose again, then review and select `Create gravesite` to save. Picking a location alone does not save a record.
+
 ### Headstone And Marker Editing
 
 Use the normal grave-detail panel or the Markers panel, not the Admin drawer, for operational marker/headstone updates.
