@@ -171,7 +171,7 @@ implied by this TEST diagram.
 | **Auth0 Authentication API / Universal Login** | Browser ↔ Auth0; API → Auth0 signing keys | Authenticates application users and issues tokens. Express checks the token's issuer, audience, and signature, then resolves application access from PostgreSQL. |
 | **Auth0 Management API** | Express → Auth0 | When server credentials are configured, Admin → Users can find or create an identity in the matching environment's tenant. Hosted TEST has this enabled. |
 | **Auth0 email delivery** | Auth0 → user's email inbox | Supports verification and password setup/reset emails. Hosted TEST email configuration is enabled, but real tester delivery still needs verification. The repository does not identify a separate SMTP provider. |
-| **Penn State PASDA (ArcGIS REST)** | Browser → `imagery.pasda.psu.edu` | Provides Allegheny County 2017 aerial imagery behind the application's cemetery geometry. |
+| **Penn State PASDA (ArcGIS REST)** | Browser → `imagery.pasda.psu.edu` | Provides Allegheny County 2017 aerial imagery behind the application's cemetery geometry. Requests pause for hidden maps/Diagram view; identical viewport exports are deduplicated. Genuine failures retain the provider warning and explicit retry. |
 | **Allegheny County GIS (ArcGIS REST)** | Browser → `gisdata.alleghenycounty.us` | Provides the parcel boundary overlay. Both map image services are requested directly by the browser, outside the application API. |
 | **GeoNames** | Express → `secure.geonames.org` | Searches and verifies geographic places for birth/death-location entry. Requires `GEONAMES_USERNAME`; existing locally verified places remain available if it is absent or the service fails. |
 

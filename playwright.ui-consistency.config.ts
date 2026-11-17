@@ -7,7 +7,7 @@ export default defineConfig({
   workers: 2,
   testMatch: [
     "ownership-map-refresh.spec.ts", "targeted-mutations.spec.ts", "passageways.spec.ts", "grave-stacks.spec.ts", "ui-consistency.spec.ts", "admin-ui-fixes.spec.ts", "ui.spec.ts", "admin-layout.spec.ts",
-    "application-header.spec.ts", "auth-layout.spec.ts", "map-controls.spec.ts",
+    "application-header.spec.ts", "auth-layout.spec.ts", "map-controls.spec.ts", "map-layer-errors.spec.ts",
     "inspection-face-status.spec.ts", "grave-feature-lookups.spec.ts", "military-rank-lookups.spec.ts",
     "unreadable-inscriptions-report.spec.ts", "record-exports.spec.ts",
     "maintenance-tasks.spec.ts", "offline-fieldwork.spec.ts", "access-requests.spec.ts",
