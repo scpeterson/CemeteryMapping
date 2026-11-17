@@ -2,12 +2,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { CreateGraveSpaceInput, GraveSpace, HeadstoneSummary } from "../types";
 import { Modal } from "./ui/Modal";
 
-export function CreateGraveSpaceForm({ cemeteryId, cemeteries, monuments, selectedMonumentId, isPickingMonument = false, canChooseCemetery, onCemeteryChange, onPickMonument, point, onPickPoint, onCancel, onSaved, onSave }: {
+export function CreateGraveSpaceForm({ cemeteryId, cemeteries, monuments, selectedMonumentId, isPickingMonument = false, isPickingPoint = false, canChooseCemetery, onCemeteryChange, onPickMonument, point, onPickPoint, onCancel, onSaved, onSave }: {
   cemeteryId: string;
   cemeteries?: { id: string; name: string }[];
   monuments?: HeadstoneSummary[];
   selectedMonumentId?: string;
   isPickingMonument?: boolean;
+  isPickingPoint?: boolean;
   canChooseCemetery?: boolean;
   onCemeteryChange?: (id: string) => void;
   onPickMonument?: () => void;
@@ -44,7 +45,7 @@ export function CreateGraveSpaceForm({ cemeteryId, cemeteries, monuments, select
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to create gravesite."); }
     finally { setSaving(false); }
   }
-  return <Modal open={!isPickingMonument} className="create-gravesite-modal" label="Add gravesite" onClose={onCancel}>
+  return <Modal open={!isPickingMonument && !isPickingPoint} className="create-gravesite-modal" label="Add gravesite" onClose={onCancel}>
     <header className="create-gravesite-header"><div><p className="eyebrow">Cemetery records</p><h2>Add gravesite</h2><p>Place a new gravesite on the map, then add its identifying details.</p></div><button type="button" className="ui-button ui-button--secondary" onClick={onCancel} aria-label="Close">Close</button></header>
     <form className="create-gravesite-form" onSubmit={submit}>
       {canChooseCemetery ? <label>Cemetery<select required value={cemeteryId} onChange={(event) => onCemeteryChange?.(event.target.value)}><option value="">Select a cemetery</option>{(cemeteries ?? []).map((cemetery) => <option key={cemetery.id} value={cemetery.id}>{cemetery.name}</option>)}</select></label> : null}

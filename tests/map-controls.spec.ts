@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { fixture, select } from "./fixtures/cemetery";
+import { cemeteryId, fixture, select } from "./fixtures/cemetery";
 import { overviewFixture, marker } from "./fixtures/overview";
 import type { GeoJSONSource } from "maplibre-gl";
 
@@ -88,3 +88,67 @@ test("map point picking fills marker coordinates and keeps the selected gravesit
   await expect(page.locator(".detail-panel")).toContainText("Record ID: A-TEST");
   await expect(page.locator(".map-placement")).toHaveCount(0);
 });
+
+for (const width of [390, 1280]) {
+  test(`new gravesite map picking restores the dialog and its draft at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await fixture(page);
+    await page.route("https://imagery.pasda.psu.edu/**", route => route.abort());
+    await page.route("https://gisdata.alleghenycounty.us/**", route => route.abort());
+    await page.goto("/tests/map-highlighting.html");
+    await expect.poll(() => page.evaluate(() => Boolean(window.mapHighlightTest?.map.getSource("graves")))).toBe(true);
+    await page.getByRole("button", { name: /^Diagram view:/ }).click();
+    const menu = page.getByRole("button", { name: "Menu", exact: true });
+    if (await menu.isVisible()) await menu.click();
+    await page.getByRole("button", { name: /Add gravesite/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Add gravesite", exact: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("combobox", { name: "Cemetery", exact: true }).selectOption(cemeteryId);
+    await dialog.getByRole("combobox", { name: "Status", exact: true }).selectOption("reserved");
+    await expect(dialog.getByRole("combobox", { name: "Monument", exact: true })).toHaveValue("");
+    for (const [index, fraction] of [0.5, 0.6].entries()) {
+      await dialog.getByRole("button", { name: index ? "Change map location" : "Pick on map", exact: true }).click();
+      await expect(dialog).toBeHidden();
+      await expect(page.locator(".map-placement")).toBeVisible();
+      // Revealing the mobile map schedules a ResizeObserver update. Wait for
+      // its drawing buffer to match the displayed canvas before clicking.
+      await expect.poll(() => page.evaluate(() => {
+        const map = window.mapHighlightTest.map;
+        const canvas = map.getCanvas();
+        const ratio = map.getPixelRatio();
+        return Math.max(Math.abs(canvas.width / ratio - canvas.clientWidth), Math.abs(canvas.height / ratio - canvas.clientHeight));
+      })).toBeLessThanOrEqual(1);
+      await expect.poll(() => page.evaluate(() => window.mapHighlightTest.map.isMoving())).toBe(false);
+      const position = await page.evaluate(fraction => {
+        const map = window.mapHighlightTest.map;
+        const canvas = map.getCanvas();
+        const rect = canvas.getBoundingClientRect();
+        // Capture the real click coordinates after any mobile layout updates.
+        map.once("click", event => {
+          canvas.dataset.pickedLatitude = event.lngLat.lat.toFixed(7);
+          canvas.dataset.pickedLongitude = event.lngLat.lng.toFixed(7);
+        });
+        for (const yFraction of [.85, .75, .5, .3]) {
+          for (const xFraction of [fraction, .25, .75]) {
+            const x = Math.floor(rect.width * xFraction), y = Math.floor(rect.height * yFraction);
+            if (document.elementFromPoint(rect.left + x, rect.top + y) === canvas) return { x, y };
+          }
+        }
+        throw new Error("No unobstructed map point is available");
+      }, fraction);
+      const canvas = page.locator(".map-canvas canvas");
+      await canvas.click({ position });
+      await expect(dialog).toBeVisible();
+      const point = await canvas.evaluate(el => ({ latitude: el.dataset.pickedLatitude, longitude: el.dataset.pickedLongitude }));
+      expect(point.latitude).toMatch(/^-?\d+\.\d{7}$/);
+      expect(point.longitude).toMatch(/^-?\d+\.\d{7}$/);
+      await expect(dialog.getByLabel("Latitude", { exact: true })).toHaveValue(point.latitude!);
+      await expect(dialog.getByLabel("Longitude", { exact: true })).toHaveValue(point.longitude!);
+      await expect(dialog.getByRole("combobox", { name: "Status", exact: true })).toHaveValue("reserved");
+      await expect(dialog.getByRole("combobox", { name: "Monument", exact: true })).toHaveValue("");
+      await expect(page.locator(".map-placement")).toHaveCount(0);
+    }
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+  });
+}
