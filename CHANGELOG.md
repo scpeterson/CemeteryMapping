@@ -4,15 +4,97 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+## 0.3.0 — 2026-11-18
+
+### Added and improved
+
+- Open **What's new** from the version badge for every role, with notes matching
+  the installed release ([#844](https://github.com/scpeterson/CemeteryMapping/pull/844)).
+- System admins can manage shared grave feature types, subtypes, materials and
+  placements in Admin → Lookups; cemetery admins cannot
+  ([#866](https://github.com/scpeterson/CemeteryMapping/pull/866)).
+- Record mutually exclusive Illegible/Blank flags on marker and inspection faces,
+  protect legitimate inscription text, and identify the current reading's source
+  inspection while retaining transcription history
+  ([#867](https://github.com/scpeterson/CemeteryMapping/pull/867),
+  [#868](https://github.com/scpeterson/CemeteryMapping/pull/868)).
+- The enhanced illegibility report distinguishes full/partial readings, filters
+  by cemetery/section and plot-marker inclusion, and compares latest versus
+  previous inspections ([#870](https://github.com/scpeterson/CemeteryMapping/pull/870)).
+- Model stacked graves as separate graves and burials with explicit levels and
+  Top/Bottom map selection. Trinity's March 1, 2027 cutoff prohibits new stacking
+  authorizations while honoring earlier reserved upper graves
+  ([#873](https://github.com/scpeterson/CemeteryMapping/pull/873), migration 519).
+- First markers default to Primary. Blank IDs allocate the next established
+  cemetery format with historical/duplicate/concurrent protection. Section G
+  permits one flat marker per plot with Primary or Spans relationships; a shared
+  marker can serve multiple plots. Its one-casket/two-urn capacity is unchanged
+  ([#878](https://github.com/scpeterson/CemeteryMapping/pull/878), migration 520).
+
 ### Fixed
 
-- Assign Allan Watenpool’s C-0384 to C-88 from reviewed registry evidence, preserving its geometry, marker, burial data and links; surrounding geometry remains for separate review (migration 518).
+- Align checkboxes, forms, typography and error feedback; correct Refresh requests
+  styling and mobile lookup-field overlap
+  ([#871](https://github.com/scpeterson/CemeteryMapping/pull/871),
+  [#872](https://github.com/scpeterson/CemeteryMapping/pull/872)).
+- Refresh map statuses immediately after deed saves, including whole-lot changes,
+  without page reload or resetting map view, selection or filters
+  ([#874](https://github.com/scpeterson/CemeteryMapping/pull/874)).
+- Hide the new-gravesite dialog during map picking and restore coordinates and
+  draft entries afterward ([#876](https://github.com/scpeterson/CemeteryMapping/pull/876)).
+- Pause PASDA requests for hidden maps and combine duplicate updates, preserving
+  genuine failure warnings and Retry
+  ([#877](https://github.com/scpeterson/CemeteryMapping/pull/877)).
+- Separate the reviewed Köenig gravesites while preserving their marker and
+  burial associations ([#846](https://github.com/scpeterson/CemeteryMapping/pull/846),
+  migration 517); assign C-0384 to C-88 without changing its geometry, marker or
+  burial data ([#865](https://github.com/scpeterson/CemeteryMapping/pull/865), migration 518).
 
-### Added
+### Platform and operations
 
-- Click or keyboard-activate the environment/version badge to read **What's new**
-  for the installed release. The read-only panel is available to every user and
-  keeps the badge's existing version, revision, build and API hover details.
+- Include patched dependencies and tooling, MapLibre 6.18, and PostgreSQL 18 /
+  PostGIS 3.7 environment definitions with legacy TIGER 3.6.4 restore compatibility
+  ([#855](https://github.com/scpeterson/CemeteryMapping/pull/855),
+  [#856](https://github.com/scpeterson/CemeteryMapping/pull/856),
+  [#848](https://github.com/scpeterson/CemeteryMapping/pull/848)). The PostGIS
+  extension upgrade remains a separately rehearsed operation, not a consequence
+  of changing an application version.
+- Include encrypted Spaces backup/retention tooling and service/recovery
+  documentation ([#859](https://github.com/scpeterson/CemeteryMapping/pull/859)–
+  [#862](https://github.com/scpeterson/CemeteryMapping/pull/862),
+  [#875](https://github.com/scpeterson/CemeteryMapping/pull/875)). Backup credentials
+  and activation remain environment-specific; a release does not prove coverage.
+
+### Compatibility, verification and recovery
+
+- This minor release consolidates merged functionality since immutable v0.2.5.
+  New workflows and stricter Section G marker rules justify the pre-1.0 minor
+  increment. Cemetery/section/block policy inheritance is not implemented here.
+- The v0.2.5 schema baseline was migration file 516; this release requires the
+  normal changelog through **520**, including 517–520 above. Rehearse all pending
+  migrations and existing-data prerequisites on an isolated copy, then apply and
+  refresh restricted API grants. Never skip failed prerequisites or clear old
+  checksums. PostgreSQL 17/older PostGIS targets also need the documented upgrade
+  procedure before using the current database image.
+- Hosted TEST already runs the included functionality at `5b17c36`, schema 520,
+  verified November 18. Deploying the named release there is code/version only:
+  no migration, data repair, database tag, refresh, restore or seeding is required.
+  Preserve existing markers, burials, geometry, media, accounts and protections.
+- Pass release-PR CI, merge, pass exact-main CI, then publish annotated immutable
+  `v0.3.0` and its GitHub Release and deploy that exact tag. Record actual deployed
+  version/SHA/build identity and preservation checks separately. Do not move
+  previous tags or rewrite historical deployment records.
+- Code rollback does not undo data migrations or extension upgrades. In particular,
+  migration 520 remains enforced with older code and its code-cutover backup is
+  already schema 520. Use retained pre-migration material only after reviewing
+  later TEST edits; prefer reviewed forward repairs. See
+  [rebuild requirements](docs/rebuild.md#current-schema-and-workspace-release),
+  [release status](docs/release-status.md) and
+  [PostGIS upgrade guidance](docs/postgresql-18-upgrade.md).
+- Invitation delivery, real-token replay/Turnstile submission and disconnected
+  offline synchronization still need their own live verification. Recent
+  Access/Auth0 system-admin sign-ins and individual hosted feature checks do not
+  close those separate gaps or establish STAGE/PROD readiness.
 
 ## 0.2.5 — 2026-11-10
 
