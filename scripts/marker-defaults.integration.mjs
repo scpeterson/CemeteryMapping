@@ -31,7 +31,7 @@ test('automatic marker IDs reserve historical numbers and Section G preserves on
   await c.query('UPDATE headstones SET deleted_at=now() WHERE id=$1',[retired.id]);await flush(c);
   await c.query('SET LOCAL ROLE cemetery_api');
   assert.equal((await c.query("SELECT has_table_privilege(current_user,'section_g_primary_marker_claims','INSERT') AS allowed")).rows[0].allowed,false);
-  for(const relationship of ['secondary','footstone','spans','nearby','inferred'])
+  for(const relationship of ['secondary','footstone','nearby','inferred'])
    await rejected(c,()=>marker(c,f.g,null,relationship),'23514');
   const first=await marker(c,f.g,null);assert.equal(first.headstone_id,f.prefix+'0011');await flush(c);
   await rejected(c,()=>marker(c,f.a,f.prefix+'0009'),'23505');
@@ -107,4 +107,22 @@ test('repeatable-read link writers cannot commit conflicting primary claims',asy
   try {if(f){await setup.query('BEGIN');await setup.query('DELETE FROM monument_inspections WHERE headstone_uuid=ANY($1::uuid[])',[created]);await setup.query('DELETE FROM headstones WHERE id=ANY($1::uuid[])',[created]);await setup.query('DELETE FROM gravesites WHERE cemetery_id=$1',[f.cemetery]);await setup.query('DELETE FROM cemeteries WHERE id=$1',[f.cemetery]);await setup.query('COMMIT');}}
   finally{await Promise.all([setup.end(),one.end(),two.end()]);}
  }
+});
+
+
+test('one flat marker may span two Section G plots, with one marker claim per plot',async()=>{
+ const c=new pg.Client(config);await c.connect();
+ try{
+  await c.query('BEGIN');const f=await fixture(c);
+  await c.query("UPDATE gravesites SET section_id='G' WHERE id=$1",[f.a]);
+  const shared=await marker(c,f.g,f.prefix+'0001','spans');
+  await c.query("INSERT INTO headstone_gravesites(headstone_uuid,gravesite_uuid,relationship_type) VALUES($1,$2,'spans')",[shared.id,f.a]);
+  await flush(c);
+  assert.equal(Number((await c.query('SELECT count(*) FROM section_g_primary_marker_claims WHERE headstone_uuid=$1',[shared.id])).rows[0].count),2);
+  for(const grave of [f.g,f.a]){
+   await rejected(c,()=>marker(c,grave,null),'23514');
+   await rejected(c,()=>marker(c,grave,null,'spans'),'23514');
+  }
+  await c.query("UPDATE headstone_gravesites SET relationship_type='primary' WHERE headstone_uuid=$1 AND gravesite_uuid=$2",[shared.id,f.g]);await flush(c);
+ }finally{await c.query('ROLLBACK');await c.end();}
 });

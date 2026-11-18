@@ -498,7 +498,7 @@ Use the normal grave-detail panel or the Markers panel, not the Admin drawer, fo
 4. `power-user` and `cemetery-admin` users can edit marker details for assigned cemeteries.
 5. `admin` users can edit marker details for any cemetery.
 6. Edit marker type, material, or design/flourish notes. Use the inspection controls below for dated condition, condition notes, source, and inscriptions.
-7. For Section G, expect the marker type list to be restricted to flat markers. Each gravesite may have no marker or one primary flat marker. Secondary markers, footstones and spanning relationships are not permitted; Add marker is disabled once a marker exists. Other sections retain their permitted marker types and multiple markers. The database checks creation, linking, relationship edits, restoration and section changes; a conflict preserves the existing marker and asks you to review it.
+7. For Section G, expect the marker type list to be restricted to flat markers. Each gravesite may have no marker or one flat marker with a Primary or Spans relationship. A flat marker may span multiple plots and counts as the single marker on each plot. Secondary markers and footstones are not permitted; Add marker is disabled once a marker exists. Other sections retain their permitted marker types and multiple markers. The database checks creation, linking, relationship edits, restoration and section changes; a conflict preserves the existing marker and asks you to review it.
 8. Section G gravesites can contain either one casket burial or up to two funeral urn burials. The database enforces this capacity rule when burial rows are created, restored, or updated.
 9. Save the marker and confirm the detail panel reflects the update.
 

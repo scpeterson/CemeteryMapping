@@ -129,7 +129,7 @@ export function CreateHeadstoneForm({
           <MapPinned size={15} aria-hidden="true" />
           Add marker
         </button>
-        {markerLimitReached ? <p className="muted">Section G: one primary flat marker per gravesite.</p> : null}
+        {markerLimitReached ? <p className="muted">Section G: one flat marker per gravesite; sharing is allowed.</p> : null}
         {message ? <p className="detail-message is-success">{message}</p> : null}
         {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       </div>
@@ -182,10 +182,10 @@ export function CreateHeadstoneForm({
           onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneCreateInput["relationshipType"] }))}
         >
           <option value="primary">Primary marker</option>
+          <option value="spans">Spans gravesites</option>
           {!isSectionG ? <>
             <option value="footstone">Footstone</option>
             <option value="secondary">Secondary marker</option>
-            <option value="spans">Spans gravesites</option>
             <option value="nearby">Nearby</option>
             <option value="inferred">Inferred</option>
           </> : null}

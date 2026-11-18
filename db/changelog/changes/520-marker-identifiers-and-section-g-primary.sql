@@ -63,9 +63,9 @@ BEGIN
     SELECT 1 FROM headstones h LEFT JOIN marker_types t ON t.id=h.marker_type_id
     WHERE h.id=ANY(markers) AND (t.code IS DISTINCT FROM 'flat_marker' OR EXISTS (
       SELECT 1 FROM headstone_gravesites l WHERE l.headstone_uuid=h.id
-        AND l.gravesite_uuid=grave AND l.deleted_at IS NULL AND l.relationship_type IS DISTINCT FROM 'primary'))
+        AND l.gravesite_uuid=grave AND l.deleted_at IS NULL AND l.relationship_type NOT IN ('primary','spans')))
   ) THEN
-    RAISE EXCEPTION 'Section G permits only one primary flat marker per gravesite (%)', grave
+    RAISE EXCEPTION 'Section G permits only one flat marker per gravesite (primary or spanning) (%)', grave
       USING ERRCODE='23514', CONSTRAINT='section_g_single_primary';
   END IF;
   marker:=markers[1];

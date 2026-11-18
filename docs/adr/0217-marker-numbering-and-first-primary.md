@@ -11,11 +11,15 @@
 The first marker added to a gravesite defaults to Primary marker. Additional
 markers in other sections retain Footstone when available, otherwise Secondary
 marker, and those sections retain their permitted types and multiple markers.
-Section G permits zero markers or one primary flat marker per gravesite. It
-rejects secondary, footstone, spanning, nearby and inferred relationships. The
-form offers only Primary marker and Flat marker, and disables Add marker when a
+Section G permits zero markers or one flat marker per gravesite. It
+permits Primary and Spans relationships, rejecting secondary, footstone, nearby
+and inferred relationships. The
+form offers only Primary marker or Spans gravesites and Flat marker, and disables Add marker when a
 marker exists; database validation protects stale forms and other mutation paths.
-A gravesite and its burials may exist without any monument or marker.
+A gravesite and its burials may exist without any monument or marker. A shared
+flat marker may span multiple Section G plots and counts as the single marker on
+each plot. This is independent of burial capacity: one casket or two urn burials
+per plot, including a plot with one urn interment and a future second urn.
 
 Leave Marker ID blank to allocate an identifier when the insert commits. Migration
 520 adds an insert trigger which serializes marker creation, infers the cemetery's
@@ -40,7 +44,7 @@ existing conflicting G markers or relationships instead of choosing a survivor o
 
 Use `scripts/marker-defaults.integration.mjs` for transactional fixtures and
 concurrent writers. Browser regressions cover first/additional defaults in A/G,
-the single-primary Flat Marker restriction, blank-ID saves and the allocated identifier returned
+the single Flat Marker restriction and shared/spanning markers, blank-ID saves and the allocated identifier returned
 by the server. API validation accepts blank IDs and rejects oversized explicit
 IDs; Section G conflicts return HTTP 409.
 

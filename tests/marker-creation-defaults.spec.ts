@@ -23,7 +23,7 @@ for(const scenario of [{section:'G',existing:false},{section:'A',existing:false}
   const add=page.getByRole('button',{name:'Add marker',exact:true});
   if(scenario.section==='G' && scenario.existing){
    await expect(add).toBeDisabled();
-   await expect(page.getByText('Section G: one primary flat marker per gravesite.',{exact:true})).toBeVisible();
+   await expect(page.getByText('Section G: one flat marker per gravesite; sharing is allowed.',{exact:true})).toBeVisible();
    expect(saved).toBeUndefined();return;
   }
   await add.click();
@@ -34,15 +34,17 @@ for(const scenario of [{section:'G',existing:false},{section:'A',existing:false}
   if(scenario.section==='G'){
    await expect(form.getByRole('combobox',{name:'Marker type',exact:true}).locator('option')).toHaveCount(1);
    await expect(form.getByRole('combobox',{name:'Marker type',exact:true})).toHaveValue('flat_marker');
-   await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option')).toHaveCount(1);
+   await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option')).toHaveCount(2);
   }
   if(scenario.section==='A'){
    await expect(form.getByRole('combobox',{name:'Marker type',exact:true}).locator('option')).toHaveCount(2);
    await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option')).toHaveCount(6);
   }
+  if(scenario.section==='G')await form.getByRole('combobox',{name:'Relationship',exact:true}).selectOption('spans');
   await expect(form.getByRole('button',{name:'Save marker',exact:true})).toBeEnabled();
   await form.getByRole('button',{name:'Save marker',exact:true}).click();
   await expect.poll(()=>saved?.headstoneId).toBe('');
+  if(scenario.section==='G')expect(saved?.relationshipType).toBe('spans');
   await expect(page.getByText('Marker TLC-HS-0600 added.',{exact:true})).toBeVisible();
  });
 }
