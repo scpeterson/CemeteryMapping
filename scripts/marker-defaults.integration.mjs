@@ -31,20 +31,26 @@ test('automatic marker IDs reserve historical numbers and Section G preserves on
   await c.query('UPDATE headstones SET deleted_at=now() WHERE id=$1',[retired.id]);await flush(c);
   await c.query('SET LOCAL ROLE cemetery_api');
   assert.equal((await c.query("SELECT has_table_privilege(current_user,'section_g_primary_marker_claims','INSERT') AS allowed")).rows[0].allowed,false);
+  for(const relationship of ['secondary','footstone','spans','nearby','inferred'])
+   await rejected(c,()=>marker(c,f.g,null,relationship),'23514');
   const first=await marker(c,f.g,null);assert.equal(first.headstone_id,f.prefix+'0011');await flush(c);
   await rejected(c,()=>marker(c,f.a,f.prefix+'0009'),'23505');
   await rejected(c,()=>marker(c,f.g,null),'23514');
   await rejected(c,()=>marker(c,f.g,null,'spans'),'23514');
-  const secondary=await marker(c,f.g,null,'secondary');await flush(c);
-  await rejected(c,()=>c.query("UPDATE headstone_gravesites SET relationship_type='primary' WHERE headstone_uuid=$1",[secondary.id]),'23514');
+  await rejected(c,()=>c.query("UPDATE headstone_gravesites SET relationship_type='secondary' WHERE headstone_uuid=$1",[first.id]),'23514');
+  await rejected(c,()=>c.query("UPDATE headstones SET marker_type_id=(SELECT id FROM marker_types WHERE code='footstone') WHERE id=$1",[first.id]),'P0001');
   await c.query('UPDATE headstones SET deleted_at=now() WHERE id=$1',[first.id]);await flush(c);
-  await c.query("UPDATE headstone_gravesites SET relationship_type='primary' WHERE headstone_uuid=$1",[secondary.id]);await flush(c);
+  const replacement=await marker(c,f.g,null);await flush(c);
+  assert.notEqual(replacement.id,first.id);
   await rejected(c,()=>c.query('UPDATE headstones SET deleted_at=NULL WHERE id=$1',[first.id]),'23514');
   const linked=await marker(c,f.a,null);await flush(c);
   await c.query("INSERT INTO headstone_gravesites(headstone_uuid,gravesite_uuid,relationship_type,deleted_at) VALUES($1,$2,'primary',now())",[linked.id,f.g]);await flush(c);
   await rejected(c,()=>c.query('UPDATE headstone_gravesites SET deleted_at=NULL WHERE headstone_uuid=$1 AND gravesite_uuid=$2',[linked.id,f.g]),'23514');
-  // Moving an ordinary grave with two primary markers into G is also rejected.
-  await marker(c,f.a,null);await flush(c);
+  // Other sections retain multiple markers, non-primary relationships and types.
+  const footstone=await marker(c,f.a,null,'footstone');
+  await c.query("UPDATE headstones SET marker_type_id=(SELECT id FROM marker_types WHERE code='footstone') WHERE id=$1",[footstone.id]);
+  await marker(c,f.a,null,'secondary');await flush(c);
+  await c.query("UPDATE headstones SET marker_type_id=(SELECT id FROM marker_types WHERE code='flat_marker') WHERE id=$1",[footstone.id]);await flush(c);
   await rejected(c,()=>c.query("UPDATE gravesites SET section_id='G' WHERE id=$1",[f.a]),'23514');
   await c.query('RESET ROLE');
   const section=randomUUID();
@@ -87,10 +93,11 @@ test('repeatable-read link writers cannot commit conflicting primary claims',asy
  let f;const created=[];
  try{
   f=await fixture(setup);
-  const a=await marker(setup,f.g,f.prefix+'0001','secondary'),b=await marker(setup,f.g,f.prefix+'0002','secondary');created.push(a.id,b.id);
+  const a=await marker(setup,f.a,f.prefix+'0001','secondary'),b=await marker(setup,f.a,f.prefix+'0002','secondary');created.push(a.id,b.id);
+  for(const id of [a.id,b.id])await setup.query("INSERT INTO headstone_gravesites(headstone_uuid,gravesite_uuid,relationship_type,deleted_at) VALUES($1,$2,'primary',now())",[id,f.g]);
   await one.query('BEGIN ISOLATION LEVEL REPEATABLE READ');await two.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
-  await one.query("UPDATE headstone_gravesites SET relationship_type='primary' WHERE headstone_uuid=$1",[a.id]);
-  await two.query("UPDATE headstone_gravesites SET relationship_type='primary' WHERE headstone_uuid=$1",[b.id]);
+  await one.query("UPDATE headstone_gravesites SET deleted_at=NULL WHERE headstone_uuid=$1 AND gravesite_uuid=$2",[a.id,f.g]);
+  await two.query("UPDATE headstone_gravesites SET deleted_at=NULL WHERE headstone_uuid=$1 AND gravesite_uuid=$2",[b.id,f.g]);
   await one.query('COMMIT');
   await assert.rejects(two.query('COMMIT'),err=>['40001','23514'].includes(err.code));
   await two.query('ROLLBACK');

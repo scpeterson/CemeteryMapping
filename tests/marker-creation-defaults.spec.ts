@@ -20,15 +20,25 @@ for(const scenario of [{section:'G',existing:false},{section:'A',existing:false}
   await page.route('https://gisdata.alleghenycounty.us/**',r=>r.abort());
   await page.goto('/');await select(page,grave.id);
   await page.getByRole('tab',{name:'Monuments and photos'}).click();
-  await page.getByRole('button',{name:'Add marker',exact:true}).click();
+  const add=page.getByRole('button',{name:'Add marker',exact:true});
+  if(scenario.section==='G' && scenario.existing){
+   await expect(add).toBeDisabled();
+   await expect(page.getByText('Section G: one primary flat marker per gravesite.',{exact:true})).toBeVisible();
+   expect(saved).toBeUndefined();return;
+  }
+  await add.click();
   const form=page.locator('form').filter({has:page.getByLabel('Marker ID',{exact:true})});
   await expect(form.getByLabel('Marker ID',{exact:true})).toHaveValue('');
   await expect(form.getByPlaceholder('Assigned automatically when saved')).toBeVisible();
-  await expect(form.getByRole('combobox',{name:'Relationship',exact:true})).toHaveValue(!scenario.existing?'primary':scenario.section==='G'?'secondary':'footstone');
+  await expect(form.getByRole('combobox',{name:'Relationship',exact:true})).toHaveValue(!scenario.existing?'primary':'footstone');
   if(scenario.section==='G'){
    await expect(form.getByRole('combobox',{name:'Marker type',exact:true}).locator('option')).toHaveCount(1);
    await expect(form.getByRole('combobox',{name:'Marker type',exact:true})).toHaveValue('flat_marker');
-   if(scenario.existing)await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option[value="primary"]')).toBeDisabled();
+   await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option')).toHaveCount(1);
+  }
+  if(scenario.section==='A'){
+   await expect(form.getByRole('combobox',{name:'Marker type',exact:true}).locator('option')).toHaveCount(2);
+   await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option')).toHaveCount(6);
   }
   await expect(form.getByRole('button',{name:'Save marker',exact:true})).toBeEnabled();
   await form.getByRole('button',{name:'Save marker',exact:true}).click();

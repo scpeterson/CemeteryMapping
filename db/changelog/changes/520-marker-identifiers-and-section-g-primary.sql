@@ -54,13 +54,18 @@ BEGIN
   SELECT array_agg(DISTINCT h.id ORDER BY h.id) INTO markers
   FROM gravesites g JOIN headstones h ON h.deleted_at IS NULL AND (
     EXISTS (SELECT 1 FROM headstone_gravesites l WHERE l.headstone_uuid=h.id AND l.gravesite_uuid=g.id
-            AND l.deleted_at IS NULL AND l.relationship_type IN ('primary','spans'))
+            AND l.deleted_at IS NULL)
     OR (h.gravesite_uuid=g.id AND NOT EXISTS (
       SELECT 1 FROM headstone_gravesites l WHERE l.headstone_uuid=h.id AND l.gravesite_uuid=g.id AND l.deleted_at IS NULL)))
   WHERE g.id=grave AND g.deleted_at IS NULL
     AND upper(coalesce((SELECT name FROM sections WHERE section_id=g.section_uuid),g.section_id,''))='G';
-  IF cardinality(markers)>1 THEN
-    RAISE EXCEPTION 'Section G allows only one primary headstone per grave (%)', grave
+  IF cardinality(markers)>1 OR EXISTS (
+    SELECT 1 FROM headstones h LEFT JOIN marker_types t ON t.id=h.marker_type_id
+    WHERE h.id=ANY(markers) AND (t.code IS DISTINCT FROM 'flat_marker' OR EXISTS (
+      SELECT 1 FROM headstone_gravesites l WHERE l.headstone_uuid=h.id
+        AND l.gravesite_uuid=grave AND l.deleted_at IS NULL AND l.relationship_type IS DISTINCT FROM 'primary'))
+  ) THEN
+    RAISE EXCEPTION 'Section G permits only one primary flat marker per gravesite (%)', grave
       USING ERRCODE='23514', CONSTRAINT='section_g_single_primary';
   END IF;
   marker:=markers[1];

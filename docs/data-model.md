@@ -166,7 +166,7 @@ erDiagram
 | --- | --- |
 | `headstones` | Marker/headstone point geometry and marker metadata. The name is historical in the schema; the UI generally calls these markers. |
 | `headstone_gravesites` | Many-to-many link between markers and gravesites. This supports shared family markers, markers spanning adjacent graves, inferred or nearby links, footstones, and other secondary markers. |
-| `section_g_primary_marker_claims` | Internal, derived one-primary claim per Section G grave. Deferred database triggers count active primary/spanning links and legacy direct references; runtime API DML is excluded for this table. |
+| `section_g_primary_marker_claims` | Internal, derived single-marker claim per Section G gravesite. Deferred database triggers permit only one primary flat marker, counting all active links and legacy direct references; runtime API DML is excluded for this table. |
 | `headstone_burials` | Many-to-many link between markers and the burials or named people shown on them. |
 | `headstone_relationships` | Marker-to-marker relationships, such as family obelisk references, common-base relationships, foot markers, and other physical marker references. Plot markers should become actual marker records before they are related here; gap notes remain observations rather than marker relationships. |
 | `marker_types` | Marker form/type dropdown values, such as upright, flat, pillow, military marker, cradle grave, and other local marker types. |

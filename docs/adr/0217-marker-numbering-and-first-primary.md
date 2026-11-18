@@ -9,11 +9,13 @@
 ## Decision
 
 The first marker added to a gravesite defaults to Primary marker. Additional
-markers retain Footstone when available, otherwise Secondary marker. Section G
-continues to offer only Flat Marker and permits one active primary headstone per
-grave. Shared/spanning headstones count toward that limit. A second primary
-choice is disabled when the loaded Section G record already has one; database
-validation protects stale forms and other mutation paths.
+markers in other sections retain Footstone when available, otherwise Secondary
+marker, and those sections retain their permitted types and multiple markers.
+Section G permits zero markers or one primary flat marker per gravesite. It
+rejects secondary, footstone, spanning, nearby and inferred relationships. The
+form offers only Primary marker and Flat marker, and disables Add marker when a
+marker exists; database validation protects stale forms and other mutation paths.
+A gravesite and its burials may exist without any monument or marker.
 
 Leave Marker ID blank to allocate an identifier when the insert commits. Migration
 520 adds an insert trigger which serializes marker creation, infers the cemetery's
@@ -32,13 +34,13 @@ concurrent writers. Checks cover insert/update/delete of links and markers,
 restoration, grave section changes and section renaming. The runtime API cannot
 write claim rows directly; security-definer trigger functions maintain them with
 an explicit search path and no public execution grant. The migration refuses
-existing conflicting G primaries instead of choosing a survivor or changing data.
+existing conflicting G markers or relationships instead of choosing a survivor or changing data.
 
 ## Validation and deployment
 
 Use `scripts/marker-defaults.integration.mjs` for transactional fixtures and
 concurrent writers. Browser regressions cover first/additional defaults in A/G,
-the Flat Marker restriction, blank-ID saves and the allocated identifier returned
+the single-primary Flat Marker restriction, blank-ID saves and the allocated identifier returned
 by the server. API validation accepts blank IDs and rejects oversized explicit
 IDs; Section G conflicts return HTTP 409.
 

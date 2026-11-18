@@ -67,7 +67,7 @@ test("Section G primary-marker conflicts are recoverable and do not expose datab
  for(const constraint of ['section_g_single_primary','section_g_primary_marker_claims_pkey']){
   let status,body;const response={status(code){status=code;return this;},json(value){body=value;}};
   await createApiErrorHandler({}, {}, {})({code:'23514',constraint},{},response);
-  assert.equal(status,409);assert.match(body.error,/only one primary headstone/);
+  assert.equal(status,409);assert.match(body.error,/only one primary flat marker/);
  }
 });
 

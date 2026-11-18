@@ -24,7 +24,7 @@ function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lo
     headstoneId: "",
     graveSpaceId: grave.id,
     relationshipType: isFirstMarker ? "primary" : footstoneType ? "footstone" : "secondary",
-    relationshipNotes: isFirstMarker ? "Primary marker linked to this gravesite." : footstoneType ? "Footstone linked to this gravesite." : "Secondary marker linked to this gravesite.",
+    relationshipNotes: `${isFirstMarker ? "Primary marker" : footstoneType ? "Footstone" : "Secondary marker"} linked to this gravesite.`,
     markerTypeId: defaultMarkerType?.id ?? "",
     markerScopeId: defaultMarkerScope?.id ?? "",
     materialId: defaultMaterial?.id ?? "",
@@ -75,6 +75,7 @@ export function CreateHeadstoneForm({
   onCancelMarkerPointPick: () => void;
 }) {
   const isSectionG = sectionName.toUpperCase() === "G";
+  const markerLimitReached = isSectionG && headstones.length > 0;
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isAdding, setIsAdding] = useState(false);
   const [form, setForm] = useDraftState<SaveHeadstoneCreateInput>(() => blankCreateHeadstoneForm(grave, headstones, { ...lookups, markerTypes: markerTypeOptions }));
@@ -124,10 +125,11 @@ export function CreateHeadstoneForm({
   if (!isAdding) {
     return (
       <div className="headstone-form-actions">
-        <button type="button" className="secondary-button" onClick={open}>
+        <button type="button" className="secondary-button" onClick={open} disabled={markerLimitReached}>
           <MapPinned size={15} aria-hidden="true" />
           Add marker
         </button>
+        {markerLimitReached ? <p className="muted">Section G: one primary flat marker per gravesite.</p> : null}
         {message ? <p className="detail-message is-success">{message}</p> : null}
         {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       </div>
@@ -179,12 +181,14 @@ export function CreateHeadstoneForm({
           value={form.relationshipType}
           onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneCreateInput["relationshipType"] }))}
         >
-          <option value="footstone">Footstone</option>
-          <option value="secondary">Secondary marker</option>
-          <option value="primary" disabled={isSectionG && headstones.some((marker) => !marker.relationshipType || ["primary", "spans"].includes(marker.relationshipType))}>Primary marker</option>
-          <option value="spans">Spans gravesites</option>
-          <option value="nearby">Nearby</option>
-          <option value="inferred">Inferred</option>
+          <option value="primary">Primary marker</option>
+          {!isSectionG ? <>
+            <option value="footstone">Footstone</option>
+            <option value="secondary">Secondary marker</option>
+            <option value="spans">Spans gravesites</option>
+            <option value="nearby">Nearby</option>
+            <option value="inferred">Inferred</option>
+          </> : null}
         </LookupSelect>
       </label>
       <label>
@@ -240,13 +244,12 @@ export function CreateHeadstoneForm({
         Review notes
         <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={2} />
       </label>
-      {isSectionG ? <p className="muted headstone-wide-field">Section G allows only flat markers and one primary headstone per grave.</p> : null}
       {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="headstone-form-actions">
         <button type="button" className="secondary-button" onClick={cancel} disabled={isSaving}>
           Cancel
         </button>
-        <LookupSaveButton type="submit" disabled={isSaving || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
+        <LookupSaveButton type="submit" disabled={isSaving || markerLimitReached || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
           <MapPinned size={15} aria-hidden="true" />
           {isSaving ? "Saving..." : "Save marker"}
         </LookupSaveButton>
