@@ -14,6 +14,10 @@ const parserErrors = new Map([
 export function createApiErrorHandler(pool, config, versionMetadata) {
   return async (error, request, response, next) => {
     if (response.headersSent) return next(error);
+    if (error.constraint === "marker_identifier_format") { response.status(400).json({ error: "Enter a marker ID: automatic numbering cannot fit this cemetery’s identifier format." }); return; }
+    if (["section_g_single_primary", "section_g_primary_marker_claims_pkey"].includes(error.constraint)) {
+      response.status(409).json({ error: "Section G allows only one primary headstone per grave. Review the existing marker before adding or restoring another primary link." }); return;
+    }
     if(error.code==='23514'&&error.constraint==='active_burial_reference'){
       response.status(409).json({error:'This person was merged or deleted. Reload the current record before linking evidence.'});return;
     }

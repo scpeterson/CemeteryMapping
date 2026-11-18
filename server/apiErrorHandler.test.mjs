@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import express from "express";
 import { createApiErrorHandler } from "./apiErrorHandler.mjs";
-import { validateBurialPayload } from "./routes/cemeteryRouteValidation.mjs";
+import { validateBurialPayload, validateCreateHeadstonePayload } from "./routes/cemeteryRouteValidation.mjs";
 import { BadRequestError, ConflictError } from "./requestValidation.mjs";
 
 test("actual parser failures preserve 400 and 413 without recording server errors", async (t) => {
@@ -60,4 +60,23 @@ test("a concurrent person merge reference guard returns a recoverable conflict",
  let status,body;const response={status(code){status=code;return this;},json(value){body=value;}};
  await createApiErrorHandler({}, {}, {})({code:'23514',constraint:'active_burial_reference'}, {},response);
  assert.equal(status,409);assert.match(body.error,/merged or deleted/);
+});
+
+
+test("Section G primary-marker conflicts are recoverable and do not expose database details",async()=>{
+ for(const constraint of ['section_g_single_primary','section_g_primary_marker_claims_pkey']){
+  let status,body;const response={status(code){status=code;return this;},json(value){body=value;}};
+  await createApiErrorHandler({}, {}, {})({code:'23514',constraint},{},response);
+  assert.equal(status,409);assert.match(body.error,/only one primary headstone/);
+ }
+});
+
+
+test("marker creation accepts automatic numbering and validates explicit identifiers",()=>{
+ const id='11111111-1111-4111-8111-111111111111';
+ const input={markerTypeId:id,markerScopeId:id,materialId:id,conditionId:id,relationshipType:'primary'};
+ assert.equal(validateCreateHeadstonePayload(input,'G-015').headstoneId,'');
+ assert.equal(validateCreateHeadstonePayload({...input,headstoneId:'  '},'G-015').headstoneId,'');
+ assert.equal(validateCreateHeadstonePayload({...input,headstoneId:'TLC-HS-0600'},'G-015').headstoneId,'TLC-HS-0600');
+ assert.throws(()=>validateCreateHeadstonePayload({...input,headstoneId:'x'.repeat(51)},'G-015'),/Marker ID/);
 });

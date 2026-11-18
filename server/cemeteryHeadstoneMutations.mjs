@@ -413,7 +413,7 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
     return toHeadstone(created);
 
   }).catch((error) => {
-    if (error?.code === "23505") return { invalid: "duplicate_headstone_id" };
+    if (error?.code === "23505" && error.constraint === "headstones_identifier_unique") return { invalid: "duplicate_headstone_id" };
     throw error;
   });
 }

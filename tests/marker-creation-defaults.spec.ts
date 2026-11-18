@@ -1,0 +1,38 @@
+import {test,expect} from '@playwright/test';
+import {fixture,cemeteryId,detail,geometry,summaries,gravePath,select} from './fixtures/cemetery';
+import {marker} from './fixtures/overview';
+
+for(const scenario of [{section:'G',existing:false},{section:'A',existing:false},{section:'G',existing:true},{section:'A',existing:true}]){
+ test(`marker defaults in ${scenario.section}, existing marker: ${scenario.existing}`,async({page})=>{
+  await fixture(page);
+  const grave={...summaries[0],section:scenario.section};
+  const existing=scenario.existing?[{...marker,photoUrl:'',mediaAssets:[],relationshipType:'primary'}]:[];
+  await page.route('**/api/cemetery-map',r=>r.fulfill({json:{boundaries:[{type:'Feature',properties:{id:cemeteryId,name:'Test Cemetery'},geometry}],sections:[],lots:[],graves:[grave],headstones:[]}}));
+  await page.route('**/api/search**',r=>r.fulfill({json:[{grave,reasons:[]}] }));
+  await page.route(gravePath(grave.id),r=>r.fulfill({json:{...detail(grave.id),...grave,headstones:existing}}));
+  const option=(code:string)=>({id:code,code,label:code==='flat_marker'?'Flat marker':code==='footstone'?'Footstone':'Unknown'});
+  await page.route('**/api/headstone-lookups*',r=>r.fulfill({json:{markerTypes:[option('footstone'),option('flat_marker')],markerScopes:[option('unknown')],materials:[option('unknown')],conditions:[option('unknown')]}}));
+  let saved:Record<string,unknown>|undefined;
+  await page.route('**/api/cemeteries/*/gravesites/*/headstones',async r=>{
+   saved=r.request().postDataJSON();await r.fulfill({status:201,json:{...marker,id:'created-marker',headstoneId:'TLC-HS-0600',relationshipType:saved!.relationshipType}});
+  });
+  await page.route('https://imagery.pasda.psu.edu/**',r=>r.abort());
+  await page.route('https://gisdata.alleghenycounty.us/**',r=>r.abort());
+  await page.goto('/');await select(page,grave.id);
+  await page.getByRole('tab',{name:'Monuments and photos'}).click();
+  await page.getByRole('button',{name:'Add marker',exact:true}).click();
+  const form=page.locator('form').filter({has:page.getByLabel('Marker ID',{exact:true})});
+  await expect(form.getByLabel('Marker ID',{exact:true})).toHaveValue('');
+  await expect(form.getByPlaceholder('Assigned automatically when saved')).toBeVisible();
+  await expect(form.getByRole('combobox',{name:'Relationship',exact:true})).toHaveValue(!scenario.existing?'primary':scenario.section==='G'?'secondary':'footstone');
+  if(scenario.section==='G'){
+   await expect(form.getByRole('combobox',{name:'Marker type',exact:true}).locator('option')).toHaveCount(1);
+   await expect(form.getByRole('combobox',{name:'Marker type',exact:true})).toHaveValue('flat_marker');
+   if(scenario.existing)await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option[value="primary"]')).toBeDisabled();
+  }
+  await expect(form.getByRole('button',{name:'Save marker',exact:true})).toBeEnabled();
+  await form.getByRole('button',{name:'Save marker',exact:true}).click();
+  await expect.poll(()=>saved?.headstoneId).toBe('');
+  await expect(page.getByText('Marker TLC-HS-0600 added.',{exact:true})).toBeVisible();
+ });
+}
