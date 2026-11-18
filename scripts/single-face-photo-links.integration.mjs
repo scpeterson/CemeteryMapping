@@ -12,7 +12,9 @@ test('single-face photo backfill labels existing links without copying photos be
  const config=loadApiConfig();assert.equal(config.appEnv,'test');
  const c=new pg.Client(integrationAdminDatabase(config));await c.connect();
  try{
-  await c.query('BEGIN');const {id}=await createInspectionFixture(c);const {id:multiId}=await createInspectionFixture(c);
+  await c.query('BEGIN');
+  // Historical migration DDL must not encounter queued deferred fixture checks.
+  await c.query('SET CONSTRAINTS ALL IMMEDIATE');const {id}=await createInspectionFixture(c);const {id:multiId}=await createInspectionFixture(c);
   const multiFace=(await c.query('SELECT faces FROM headstones WHERE id=$1',[multiId])).rows[0].faces[0];
   await c.query('UPDATE headstones SET faces=$2::jsonb WHERE id=$1',[multiId,JSON.stringify([multiFace,{...multiFace,id:randomUUID(),label:'Back',inscription:'Back reading'}])]);
   const originalField=(await c.query("SELECT * FROM monument_inspections WHERE headstone_uuid=$1 AND source_type='field_survey'",[id])).rows[0];

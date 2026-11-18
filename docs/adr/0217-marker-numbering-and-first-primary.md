@@ -59,3 +59,11 @@ TEST/DEV deployment is separate from this PR.
 For local verification, apply the pending migrations and restart the API before
 using automatic IDs. Vite hot reload updates the form but does not reload the
 API; an older API still rejects a blank Marker ID as required.
+
+Historical face-migration replay tests set constraints to IMMEDIATE within their
+rollback-only transactions before creating fixtures. This validates fixture
+changes before schema DDL instead of leaving deferred trigger events pending;
+application and concurrent-marker regressions retain deferred commit checks.
+Relationship notes start empty so switching Primary to Spans does not retain an
+automatically generated, contradictory Primary note. The production bundle is
+checked with CI's fixed release metadata and the existing 702 KiB core budget.

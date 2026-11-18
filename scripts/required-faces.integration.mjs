@@ -13,6 +13,8 @@ test('every monument and visit gets its own face without changing existing faces
  const c=new pg.Client(integrationAdminDatabase(config));await c.connect();
  try{
   await c.query('BEGIN');
+  // Historical migration DDL must not encounter queued deferred fixture checks.
+  await c.query('SET CONSTRAINTS ALL IMMEDIATE');
   // Recreate the pre-491 schema inside this rollback-only fixture.
   await c.query(`ALTER TABLE headstones DROP CONSTRAINT IF EXISTS headstones_require_face;
    ALTER TABLE monument_inspections DROP CONSTRAINT IF EXISTS monument_inspections_require_face;

@@ -12,7 +12,9 @@ test('single-face monuments use Front without changing readings, IDs, metadata o
  const config=loadApiConfig();assert.equal(config.appEnv,'test');
  const c=new pg.Client(integrationAdminDatabase(config));await c.connect();
  try{
-  await c.query('BEGIN');const {id}=await createInspectionFixture(c);const {id:multiId}=await createInspectionFixture(c);
+  await c.query('BEGIN');
+  // Historical migration DDL must not encounter queued deferred fixture checks.
+  await c.query('SET CONSTRAINTS ALL IMMEDIATE');const {id}=await createInspectionFixture(c);const {id:multiId}=await createInspectionFixture(c);
   const face={id:randomUUID(),label:'North',inscription:'  Original\nreading  ',notes:'Keep notes',burialIds:[],mediaAssetIds:[]};
   await c.query('UPDATE headstones SET faces=$2::jsonb WHERE id=$1',[id,JSON.stringify([face])]);
   await c.query('UPDATE headstones SET faces=$2::jsonb WHERE id=$1',[multiId,JSON.stringify([face,{...face,id:randomUUID(),label:'Back',inscription:'Back reading'}])]);

@@ -29,6 +29,7 @@ for(const scenario of [{section:'G',existing:false},{section:'A',existing:false}
   await add.click();
   const form=page.locator('form').filter({has:page.getByLabel('Marker ID',{exact:true})});
   await expect(form.getByLabel('Marker ID',{exact:true})).toHaveValue('');
+  await expect(form.getByLabel('Relationship notes',{exact:true})).toHaveValue('');
   await expect(form.getByPlaceholder('Assigned automatically when saved')).toBeVisible();
   await expect(form.getByRole('combobox',{name:'Relationship',exact:true})).toHaveValue(!scenario.existing?'primary':'footstone');
   if(scenario.section==='G'){

@@ -12,23 +12,24 @@ import type {
 } from "../../types";
 import { PickedMarkerPoint } from "./detailTypes";
 
+function defaultLookupId(options: HeadstoneLookups["materials"]) {
+  return (options.find((option) => option.code === "unknown") ?? options[0])?.id ?? "";
+}
+
 function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lookups: HeadstoneLookups): SaveHeadstoneCreateInput {
   const isFirstMarker = headstones.length === 0;
   const footstoneType = isFirstMarker ? undefined : lookups.markerTypes.find((option) => option.code === "footstone");
   const defaultMarkerType = footstoneType ?? lookups.markerTypes.find((option) => option.code === "flat_marker") ?? lookups.markerTypes[0];
-  const defaultMarkerScope = lookups.markerScopes.find((option) => option.code === "unknown") ?? lookups.markerScopes[0];
-  const defaultMaterial = lookups.materials.find((option) => option.code === "unknown") ?? lookups.materials[0];
-  const defaultCondition = lookups.conditions.find((option) => option.code === "unknown") ?? lookups.conditions[0];
 
   return {
     headstoneId: "",
     graveSpaceId: grave.id,
     relationshipType: isFirstMarker ? "primary" : footstoneType ? "footstone" : "secondary",
-    relationshipNotes: `${isFirstMarker ? "Primary marker" : footstoneType ? "Footstone" : "Secondary marker"} linked to this gravesite.`,
+    relationshipNotes: "",
     markerTypeId: defaultMarkerType?.id ?? "",
-    markerScopeId: defaultMarkerScope?.id ?? "",
-    materialId: defaultMaterial?.id ?? "",
-    conditionId: defaultCondition?.id ?? "",
+    markerScopeId: defaultLookupId(lookups.markerScopes),
+    materialId: defaultLookupId(lookups.materials),
+    conditionId: defaultLookupId(lookups.conditions),
     vaseTypeId: "",
     vaseMaterialId: "",
     vasePlacementId: "",
