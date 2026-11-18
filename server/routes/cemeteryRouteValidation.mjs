@@ -98,7 +98,7 @@ export function validateCreateHeadstonePayload(body, graveSpaceId) {
 
   return {
     ...headstone,
-    headstoneId: requiredText(body?.headstoneId, "Marker ID", 50),
+    headstoneId: optionalText(body?.headstoneId, "Marker ID", 50),
     graveSpaceId,
     relationshipType: validateHeadstoneGravesiteRelationshipType(body?.relationshipType),
     relationshipNotes: optionalText(body?.relationshipNotes, "Marker relationship notes", 1000),

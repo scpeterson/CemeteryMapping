@@ -12,24 +12,24 @@ import type {
 } from "../../types";
 import { PickedMarkerPoint } from "./detailTypes";
 
+function defaultLookupId(options: HeadstoneLookups["materials"]) {
+  return (options.find((option) => option.code === "unknown") ?? options[0])?.id ?? "";
+}
+
 function blankCreateHeadstoneForm(grave: GraveSpace, headstones: Headstone[], lookups: HeadstoneLookups): SaveHeadstoneCreateInput {
-  const footstoneType = lookups.markerTypes.find((option) => option.code === "footstone");
+  const isFirstMarker = headstones.length === 0;
+  const footstoneType = isFirstMarker ? undefined : lookups.markerTypes.find((option) => option.code === "footstone");
   const defaultMarkerType = footstoneType ?? lookups.markerTypes.find((option) => option.code === "flat_marker") ?? lookups.markerTypes[0];
-  const defaultMarkerScope = lookups.markerScopes.find((option) => option.code === "unknown") ?? lookups.markerScopes[0];
-  const defaultMaterial = lookups.materials.find((option) => option.code === "unknown") ?? lookups.materials[0];
-  const defaultCondition = lookups.conditions.find((option) => option.code === "unknown") ?? lookups.conditions[0];
-  const primaryMarkerId = headstones[0]?.headstoneId;
-  const defaultHeadstoneId = primaryMarkerId ? `${primaryMarkerId}-FS` : `${grave.id}-MARKER`;
 
   return {
-    headstoneId: defaultHeadstoneId,
+    headstoneId: "",
     graveSpaceId: grave.id,
-    relationshipType: footstoneType ? "footstone" : "secondary",
-    relationshipNotes: footstoneType ? "Footstone linked to this gravesite." : "Secondary marker linked to this gravesite.",
+    relationshipType: isFirstMarker ? "primary" : footstoneType ? "footstone" : "secondary",
+    relationshipNotes: "",
     markerTypeId: defaultMarkerType?.id ?? "",
-    markerScopeId: defaultMarkerScope?.id ?? "",
-    materialId: defaultMaterial?.id ?? "",
-    conditionId: defaultCondition?.id ?? "",
+    markerScopeId: defaultLookupId(lookups.markerScopes),
+    materialId: defaultLookupId(lookups.materials),
+    conditionId: defaultLookupId(lookups.conditions),
     vaseTypeId: "",
     vaseMaterialId: "",
     vasePlacementId: "",
@@ -76,6 +76,7 @@ export function CreateHeadstoneForm({
   onCancelMarkerPointPick: () => void;
 }) {
   const isSectionG = sectionName.toUpperCase() === "G";
+  const markerLimitReached = isSectionG && headstones.length > 0;
   const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isAdding, setIsAdding] = useState(false);
   const [form, setForm] = useDraftState<SaveHeadstoneCreateInput>(() => blankCreateHeadstoneForm(grave, headstones, { ...lookups, markerTypes: markerTypeOptions }));
@@ -125,10 +126,11 @@ export function CreateHeadstoneForm({
   if (!isAdding) {
     return (
       <div className="headstone-form-actions">
-        <button type="button" className="secondary-button" onClick={open}>
+        <button type="button" className="secondary-button" onClick={open} disabled={markerLimitReached}>
           <MapPinned size={15} aria-hidden="true" />
           Add marker
         </button>
+        {markerLimitReached ? <p className="muted">Section G: one flat marker per gravesite; sharing is allowed.</p> : null}
         {message ? <p className="detail-message is-success">{message}</p> : null}
         {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       </div>
@@ -142,7 +144,7 @@ export function CreateHeadstoneForm({
       </div>
       <label>
         Marker ID
-        <input value={form.headstoneId} onChange={(event) => setForm((current) => ({ ...current, headstoneId: event.target.value }))} />
+        <input placeholder="Assigned automatically when saved" value={form.headstoneId} onChange={(event) => setForm((current) => ({ ...current, headstoneId: event.target.value }))} />
       </label>
       <label>
         Marker type
@@ -180,12 +182,14 @@ export function CreateHeadstoneForm({
           value={form.relationshipType}
           onChange={(event) => setForm((current) => ({ ...current, relationshipType: event.target.value as SaveHeadstoneCreateInput["relationshipType"] }))}
         >
-          <option value="footstone">Footstone</option>
-          <option value="secondary">Secondary marker</option>
           <option value="primary">Primary marker</option>
           <option value="spans">Spans gravesites</option>
-          <option value="nearby">Nearby</option>
-          <option value="inferred">Inferred</option>
+          {!isSectionG ? <>
+            <option value="footstone">Footstone</option>
+            <option value="secondary">Secondary marker</option>
+            <option value="nearby">Nearby</option>
+            <option value="inferred">Inferred</option>
+          </> : null}
         </LookupSelect>
       </label>
       <label>
@@ -241,13 +245,12 @@ export function CreateHeadstoneForm({
         Review notes
         <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={2} />
       </label>
-      {isSectionG ? <p className="muted headstone-wide-field">Section G allows only flat markers.</p> : null}
       {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       <div className="headstone-form-actions">
         <button type="button" className="secondary-button" onClick={cancel} disabled={isSaving}>
           Cancel
         </button>
-        <LookupSaveButton type="submit" disabled={isSaving || !form.headstoneId.trim() || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
+        <LookupSaveButton type="submit" disabled={isSaving || markerLimitReached || !form.markerTypeId || !form.markerScopeId || !form.materialId || !form.conditionId || markerTypeOptions.length === 0}>
           <MapPinned size={15} aria-hidden="true" />
           {isSaving ? "Saving..." : "Save marker"}
         </LookupSaveButton>

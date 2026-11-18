@@ -23,7 +23,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO cemetery_api;
 SELECT format('GRANT INSERT, UPDATE, DELETE ON TABLE %I.%I TO cemetery_api', n.nspname, c.relname)
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
-  AND c.relname NOT IN ('databasechangelog', 'databasechangeloglock')
+  AND c.relname NOT IN ('databasechangelog', 'databasechangeloglock', 'section_g_primary_marker_claims')
   AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_class'::regclass
                   AND d.objid = c.oid AND d.deptype = 'e') \gexec
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO cemetery_api;

@@ -375,7 +375,7 @@ export default function App() {
             if (monumentChoice === "__new__") {
               const option = (code: string, values: { code: string; id: string }[]) => values.find((value) => value.code === code)?.id ?? values[0]?.id ?? "";
               const createdMonument: SaveHeadstoneCreateInput = {
-                headstoneId: `TLC-HS-${grave.id.replace(/^TLC-GPS-/u, "")}`,
+                headstoneId: "",
                 graveSpaceId: grave.id,
                 relationshipType: "primary",
                 relationshipNotes: "Created during gravesite creation.",
