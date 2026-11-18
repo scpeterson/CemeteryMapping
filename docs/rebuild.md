@@ -260,7 +260,8 @@ every main push still runs application validation. The required
 
 ## Current schema and workspace release
 
-The API startup guard requires `516-maintenance-task-scheduling`. Apply all pending
+The API startup guard checks `516-maintenance-task-scheduling`, but the **0.3.0
+release requires the full changelog through migration 520**. Apply all pending
 changesets in order; checking for military-unit migration 510 or passageway
 migration 502 alone is insufficient. The new schema additions are:
 
@@ -270,6 +271,10 @@ migration 502 alone is insufficient. The new schema additions are:
 | 514 | Immutable staged import source, review and approval history |
 | 515 | Person-merge evidence and guards against new references to archived people |
 | 516 | Maintenance assignments, calendar dates, reminder reset and work-queue indexes |
+| 517 | Reviewed Köenig gravesite split with preserved marker/burial associations |
+| 518 | C-0384 assignment to C-88, preserving geometry and marker |
+| 519 | Explicit stacked graves and cemetery authorization cutoff |
+| 520 | Automatic marker IDs and single flat Primary/Spans marker per Section G plot |
 
 After backing up a persistent target and rehearsing its pending migrations on an
 isolated copy, apply migrations and refresh the restricted runtime grants before

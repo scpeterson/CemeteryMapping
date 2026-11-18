@@ -3,21 +3,39 @@
 
 # Release status and deployment checks
 
-## Pending deployment: Full/partial illegibility and inspection comparison report
+## 0.3.0 release baseline
 
-The enhanced **Unreadable monument inscriptions** report includes structured
-Illegible flags, partial assessments and legacy text. Cemetery/section and plot
-marker filters support photography follow-up. Face-level results compare the
-latest inspection with the immediately previous active inspection and can include
-recovered readings; missing evidence is not labeled deterioration. See the
-[report workflow](operator-workflows.md#unreadable-monument-inscriptions-report).
-This source change is not a hosted deployment or data correction. The November 15
-release below retains its original text-only behavior until a new release is
-explicitly deployed and verified.
+Version **0.3.0** consolidates the merged workflows and fixes since v0.2.5; see the
+[release changelog](https://github.com/scpeterson/CemeteryMapping/blob/main/CHANGELOG.md).
+It includes inspection legibility/history, the enhanced report, shared lookups,
+stacked graves, marker IDs and Section G sharing, map/deed fixes and UI updates.
+Cemetery/section/block policy inheritance remains future work. Publication and
+exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
+a package bump alone does not establish deployment.
+
+## November 18, 2026: pre-release marker baseline verified on TEST
+
+Before preparing the named release, hosted TEST was verified at
+**`5b17c362332850c0ec62615a95be4a31f9fa5a94`**
+([PR #878](https://github.com/scpeterson/CemeteryMapping/pull/878)), package
+**0.2.5**, build **2026-11-18T21:21:54Z** (4:21:54 p.m. EST), schema **520**.
+The merged feature baseline is already deployed, including the enhanced report,
+UI/map fixes, stacked graves and marker changes. This supersedes the older
+pending-report status; the November 15 record below retains its historical scope.
+
+Blank marker IDs and Primary/Spans saves passed deployed rollback-only checks.
+Live signed-in forms confirmed the first-marker Primary default, Section G's
+flat-only options and protection of the existing spanning G-0001 marker, and
+broader choices in Section C. Existing markers, burials, geometry, links, source
+history, accounts and media were preserved. The checks created no permanent
+marker or burial, and did not refresh TEST from DEV. Protected backup, rehearsal
+and recovery evidence is in the private operations repository; no private records
+or backup material is published here. This baseline is not evidence of a named
+v0.3.0 deployment; record that exact tag/SHA/build after cutover.
 
 ## November 15, 2026: Inspection face controls and source attribution deployed to TEST
 
-Latest verified hosted TEST is **`60d628543781a7aa574264bd419d43137e3ac329`**
+At this November 15 verification, hosted TEST was **`60d628543781a7aa574264bd419d43137e3ac329`**
 ([PR #868](https://github.com/scpeterson/CemeteryMapping/pull/868)), package
 **0.2.5**, build **`2026-11-15T18:41:27Z`**. Each inspection face has exclusive
 Illegible/Blank controls, with corrected checkbox/label alignment and protection

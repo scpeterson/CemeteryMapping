@@ -1,5 +1,8 @@
 {
+  "0.3.0": [
+    "Illegibility, stacked graves and automatic marker IDs."
+  ],
   "0.2.5": [
-    "Power users and above: Reports → Unreadable monument inscriptions finds monuments needing clearer photos."
+    "Power users and above: Reports \u2192 Unreadable monument inscriptions finds monuments needing clearer photos."
   ]
 }
