@@ -51,3 +51,7 @@ Rollback removes the new triggers/functions and derived claim table; it does not
 renumber committed markers or remove created marker records. Rolling back code
 alone restores the previous defaults and requires manually entered IDs. Hosted
 TEST/DEV deployment is separate from this PR.
+
+For local verification, apply the pending migrations and restart the API before
+using automatic IDs. Vite hot reload updates the form but does not reload the
+API; an older API still rejects a blank Marker ID as required.
