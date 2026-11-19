@@ -53,7 +53,7 @@ export type AdminPanelProps = {
   onClose: () => void;
 };
 
-export type AdminTab = "recovery" | "onboarding" | "users" | "members" | "records" | "quality" | "bulk" | "deeds" | "readings" | "sourcePeople" | "audit" | "lookups" | "system";
+export type AdminTab = "policies" | "recovery" | "onboarding" | "users" | "members" | "records" | "quality" | "bulk" | "deeds" | "readings" | "sourcePeople" | "audit" | "lookups" | "system";
 
 export type NorthHillsEditForm = SaveNorthHillsOcrEntryInput & {
   surnamesText: string;

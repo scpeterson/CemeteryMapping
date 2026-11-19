@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "521-scoped-location-policies";
+export const requiredSchemaChangeset = "522-policy-administration";
 
 export async function assertCurrentSchema(pool) {
   let result;
