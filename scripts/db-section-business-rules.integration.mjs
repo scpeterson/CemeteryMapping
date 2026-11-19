@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import pg from "pg";
+import { integrationAdminDatabase } from "./lib/integration-admin.mjs";
 import { loadApiConfig } from "../server/config.mjs";
 
 const { Pool } = pg;
@@ -115,7 +116,7 @@ async function insertBurial(client, { gravesiteId, firstName, lastName, intermen
 }
 
 test("database enforces Section F and Section G marker business rules", async () => {
-  const pool = new Pool(loadApiConfig().database);
+  const pool = new Pool(integrationAdminDatabase(loadApiConfig()));
   const client = await pool.connect();
   const suffix = uniqueSuffix();
 
@@ -142,6 +143,11 @@ test("database enforces Section F and Section G marker business rules", async ()
     const sectionFId = await insertSection(client, cemeteryId, suffix, "F", 0.0003);
     const sectionGId = await insertSection(client, cemeteryId, suffix, "G", 0.0005);
 
+    await client.query(`INSERT INTO location_policies(cemetery_id,section_uuid,rule_key,enabled,reason)
+      VALUES($1,$2,'no_gravesites',true,'Regression utility exclusion'),
+      ($1,$3,'flat_markers_only',true,'Regression flat marker policy'),
+      ($1,$3,'casket_or_two_urns',true,'Regression capacity policy')`,[cemeteryId,sectionFId,sectionGId]);
+
     await expectRuleViolation(
       client,
       `
@@ -158,7 +164,7 @@ test("database enforces Section F and Section G marker business rules", async ()
         VALUES ($1, $2, $3, 'F', '1', $4, $5, ST_GeomFromText($6, 4326))
       `,
       [cemeteryId, sectionFId, `TEST-${suffix}`, `F-${suffix}-1`, availableStatusId, gravePolygon(0.0003)],
-      /Section F cannot contain gravesites/u,
+      /Location policy prohibits gravesites/u,
     );
 
     const sectionAGravesiteId = await insertGravesite(client, {
@@ -221,7 +227,7 @@ test("database enforces Section F and Section G marker business rules", async ()
         VALUES ($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, 0.000015), 4326))
       `,
       [sectionGGravesiteId, `G-UPRIGHT-${suffix}`, uprightMarkerId, graniteMaterialId, goodConditionId, 0.000515],
-      /Section G can contain only flat markers/u,
+      /Location policy permits only flat markers/u,
     );
 
     await insertHeadstone(client, {
@@ -266,7 +272,7 @@ test("database enforces Section F and Section G marker business rules", async ()
         )
       `,
       [sectionGUrnGravesiteId],
-      /Section G gravesites can contain either one casket burial or up to two funeral urn burials/u,
+      /Location policy permits either one casket burial or up to two funeral urn burials/u,
     );
 
     await insertBurial(client, {
@@ -296,7 +302,7 @@ test("database enforces Section F and Section G marker business rules", async ()
         )
       `,
       [sectionGCasketGravesiteId],
-      /Section G gravesites can contain either one casket burial or up to two funeral urn burials/u,
+      /Location policy permits either one casket burial or up to two funeral urn burials/u,
     );
 
     await client.query("ROLLBACK");

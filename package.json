@@ -72,7 +72,8 @@
     "db:tag": "node scripts/db-tag.mjs",
     "db:benchmark": "node scripts/db-benchmark.mjs",
     "db:preview:spatial-repair": "node scripts/db-preview-spatial-repair.mjs",
-    "db:query-stats": "node scripts/db-query-stats.mjs"
+    "db:query-stats": "node scripts/db-query-stats.mjs",
+    "test:policies:browser": "playwright test --config playwright.location-policies.config.ts"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.30.0",

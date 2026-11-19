@@ -80,3 +80,11 @@ test("marker creation accepts automatic numbering and validates explicit identif
  assert.equal(validateCreateHeadstonePayload({...input,headstoneId:'TLC-HS-0600'},'G-015').headstoneId,'TLC-HS-0600');
  assert.throws(()=>validateCreateHeadstonePayload({...input,headstoneId:'x'.repeat(51)},'G-015'),/Marker ID/);
 });
+
+test("location policy constraints return actionable conflicts without database details",async()=>{
+ for(const constraint of ['location_policy_gravesites','location_policy_markers','location_policy_capacity']) {
+  let status,body;const response={status(code){status=code;return this;},json(value){body=value;}};
+  await createApiErrorHandler({}, {}, {})({code:'23514',constraint,message:'private database detail'},{},response);
+  assert.equal(status,409);assert.match(body.error,/This location/);assert.doesNotMatch(body.error,/private/);
+ }
+});

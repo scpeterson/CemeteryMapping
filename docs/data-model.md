@@ -342,3 +342,9 @@ Related documentation:
 - [Data Sources](data-sources.html)
 - [Admin Workflows](admin-workflows.html)
 - [ADR 0015: Generalized Ownership Rights](adr/0015-generalized-ownership-rights.md)
+
+## Scoped location policies
+
+`location_policies` stores a typed restriction, explicit boolean value, reason and UUID scope (system/cemetery/section/block). The nearest explicit value wins, including `false`. `location_policy_revision` protects concurrent policy changes and is excluded from runtime DML along with the policy catalog. Existing `section_g_primary_marker_claims` now supports any location with the single-primary policy; its historical name remains for compatibility. See [Location policies and rule inventory](location-policies.md).
+
+`location_burial_capacity_claims` is a derived revision per capacity-limited grave. It prevents competing burial writers from both exceeding capacity, without changing the grave record. Runtime DML is excluded.

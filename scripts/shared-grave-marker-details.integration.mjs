@@ -17,7 +17,7 @@ test("grave details return one shared marker with only the selected grave's rela
     for (const table of ["headstones", "headstone_gravesites", "headstone_burials"]) {
       await createLegacyTableFixture(client, table);
     }
-    await client.query("CREATE TEMP TABLE gravesites (id uuid, deleted_at timestamptz) ON COMMIT DROP");
+    await client.query("CREATE TEMP TABLE gravesites (id uuid, cemetery_id uuid, section_uuid uuid, section_id text, block_uuid uuid, deleted_at timestamptz) ON COMMIT DROP");
     await client.query("INSERT INTO gravesites (id) VALUES ($1),($2)", [primaryGrave, sharedGrave]);
     const { rows: [marker] } = await client.query(`
       INSERT INTO headstones (headstone_id,gravesite_uuid,marker_type_id,material_type_id,condition_type_id)

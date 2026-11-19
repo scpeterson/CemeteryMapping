@@ -1557,3 +1557,6 @@ databaseChangeLog:
   - include:
       file: changes/520-marker-identifiers-and-section-g-primary.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/521-scoped-location-policies.sql
+      relativeToChangelogFile: true

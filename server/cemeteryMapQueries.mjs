@@ -83,7 +83,7 @@ export async function selectGravesForCemeteries(client, cemeteryIds, { includeCo
       )
       SELECT
         ${includeCost ? "gravesites.id::text AS uuid," : ""}
-        gravesites.cemetery_id::text, cemeteries.name AS cemetery_name, gravesites.section_id,
+        gravesites.cemetery_id::text, gravesite_location_policies(gravesites.id) AS location_policies, cemeteries.name AS cemetery_name, gravesites.section_id,
         gravesites.lot_id, gravesites.grave_id, gravesites.display_label, gravesites.label_aliases, gravesites.gravesite_id, gravesites.name,
         ${derivedGravesiteStatusSql({ currentOwnershipRelation: "map_current_ownership" })} AS status,
         ${graveStackSelect},

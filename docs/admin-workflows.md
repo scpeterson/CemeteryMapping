@@ -157,7 +157,7 @@ Authorization:
 - `cemetery-admin`: can update existing marker details for assigned cemeteries.
 - `admin`: can update existing marker details.
 
-Section-specific cemetery rules are enforced below the UI as database triggers. Section F cannot contain gravesites because of underground utility lines. Section G can contain only flat markers, so the marker edit form filters the marker type list to `Flat marker` for Section G and the API rejects non-flat marker updates before the database trigger would fail.
+Location-specific rules are enforced below the UI as database triggers and resolve from system through cemetery, section and block. Existing Trinity F retains its utility exclusion; existing Trinity G retains its flat-marker restriction. The forms and API use resolved policies, so a new cemetery’s section named F or G does not inherit those restrictions merely because of its letter. There is no policy editor yet. See [Location policies](location-policies.md) for the inventory and controlled migration procedure.
 
 Expected audit action:
 

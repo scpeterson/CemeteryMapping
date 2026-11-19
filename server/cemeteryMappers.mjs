@@ -220,6 +220,7 @@ export function toHeadstone(row) {
     id: row.id,
     ...(row.version ? { version: row.version } : {}),
     headstoneId: row.headstone_id,
+    flatMarkersOnly: Boolean(row.flat_markers_only),
     markerType: toLookupValue(row, "marker_type"),
     markerScope: toLookupValue(row, "marker_scope"),
     material: toLookupValue(row, "material"),
