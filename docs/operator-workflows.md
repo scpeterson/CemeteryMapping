@@ -1655,3 +1655,7 @@ restoring a deleted assignment revalidates it against the current rule. No other
 cemetery receives Trinity's cutoff automatically.
 
 Policy-based restrictions use location identities rather than section letters. See [Location policies](location-policies.md) before importing a new cemetery or proposing different section/block rules. Existing Trinity behavior is preserved.
+
+### Inspect and change a location policy
+
+Open **Admin → Policies** with an active system-admin account or an assigned cemetery-admin account. Select cemetery, section and block, inspect the inherited source, then choose a local override or Inherit. Enter a reason, preview the actual constraints and impact, and save only after a successful preview. Any edit, changed policy revision, expired proof or new conflict requires another preview. Review older changes through the history controls. See [Location policies](location-policies.md).

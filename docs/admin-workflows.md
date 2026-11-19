@@ -157,7 +157,7 @@ Authorization:
 - `cemetery-admin`: can update existing marker details for assigned cemeteries.
 - `admin`: can update existing marker details.
 
-Location-specific rules are enforced below the UI as database triggers and resolve from system through cemetery, section and block. Existing Trinity F retains its utility exclusion; existing Trinity G retains its flat-marker restriction. The forms and API use resolved policies, so a new cemetery’s section named F or G does not inherit those restrictions merely because of its letter. There is no policy editor yet. See [Location policies](location-policies.md) for the inventory and controlled migration procedure.
+Location-specific rules are enforced below the UI as database triggers and resolve from system through cemetery, section and block. Existing Trinity F retains its utility exclusion; existing Trinity G retains its flat-marker restriction. The forms and API use resolved policies, so a new cemetery’s section named F or G does not inherit those restrictions merely because of its letter. System admins and assigned cemetery admins use **Admin → Policies** to inspect inherited sources, preview changes, save explicit overrides with a reason and review scoped history. Power users and readers cannot manage policies. See [Location policies](location-policies.md) for the inventory and controlled migration procedure.
 
 Expected audit action:
 

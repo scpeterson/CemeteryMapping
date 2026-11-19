@@ -1560,3 +1560,6 @@ databaseChangeLog:
   - include:
       file: changes/521-scoped-location-policies.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/522-policy-administration.sql
+      relativeToChangelogFile: true

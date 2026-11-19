@@ -3073,3 +3073,7 @@ audit. See the [inspection workflow](operator-workflows.md#inspection-history),
 [photo permissions](operator-workflows.md#photo-collection), and [report workflow and deployment requirement](operator-workflows.md#unreadable-monument-inscriptions-report).
 Adding these records to source does not itself publish documentation to hosted
 TEST or redeploy the application.
+
+### Policy administration verification (migration 522)
+
+After backup/rehearsal, apply migrations and re-run the reviewed API role grants before switching API/web. Confirm schema 522, SELECT-only policy/history tables and EXECUTE on the guarded policy function. Verify system-admin scope choices and inherited sources. With an existing assigned cemetery-admin account or an isolated role fixture, verify own-scope access and denial of system/other-cemetery edits; power users/readers must be denied. Prefer rollback-only previews against real cemetery data. Use disposable fixtures for save/history/concurrency checks so operational rules are not changed by verification. Check desktop/mobile layout, draft invalidation, expired/stale preview rejection, conflict messages and history pagination. Optional preview secrets must remain private API-only configuration; see [Location policies](location-policies.md).

@@ -46,6 +46,13 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
+              // Related admin workflows share form vocabulary and validation.
+              // Group them for compression while keeping the map entry lazy.
+              name: "admin-workflows",
+              test: /src[\\/]components[\\/]admin[\\/]/,
+              priority: 40,
+            },
+            {
               // These helpers are shared by the map and standalone workspaces.
               // Include shared permissions, reminders and record search controls
               // to avoid tiny standalone chunks and repeated import overhead.

@@ -66,14 +66,24 @@ the new grave. It still requires an eligible covering lot.
 
 ## Operator controls and rollout
 
-There is no policy editor or policy mutation API in this step. The runtime role has
-SELECT access to policy metadata, with no DML on `location_policies` or
-`location_policy_revision` or `location_burial_capacity_claims`. Apply migration 521 before starting the new API; its
-schema contract rejects an older database. Re-run the reviewed API role grants
-after migration, as for other releases.
+Admin → Policies provides the editor introduced by migration 522. System admins
+manage every scope, including system defaults. Cemetery admins manage their own
+editable cemetery memberships, including sections and blocks. Power users and
+readers cannot access policy administration. The API and guarded database function
+both enforce scope permissions; a submitted role or cemetery ID grants no access.
+An active application account is required for previews and saves. Disabled-auth
+local sessions can inspect policy metadata but cannot create attributed changes.
 
-Policy changes currently require an owner-reviewed migration, a nonempty reason,
-and a READ COMMITTED transaction. A deployment should take its usual backup and
+The runtime role has SELECT access to policy metadata and history, with no direct
+DML on `location_policies`, `location_policy_revision`,
+`location_burial_capacity_claims` or `location_policy_history`. Its only mutation
+entry is `change_location_policy`, a narrow SECURITY DEFINER function with a fixed
+search path, current-account/membership checks, hierarchy validation and a required
+reason. Apply migrations 521/522 and re-run the reviewed API grants before starting
+the new API; startup requires schema 522. Granting the function does not grant
+catalog/history DML.
+
+Policy changes require a nonempty reason and a READ COMMITTED transaction. Operator migrations remain available for reviewed configuration changes. A deployment should take its usual backup and
 rehearse on a disposable database first. Policy edits lock the affected data
 tables, then deferred checks reject configurations conflicting with existing
 active records. A revision row also forces older REPEATABLE READ data writers to
@@ -102,10 +112,57 @@ If new policy configurations or data cannot satisfy the former global F/G rules,
 resolve that incompatibility or restore the approved backup before rolling back.
 Never roll back around an existing conflicting marker or burial.
 
-## Next step
+## Admin workflow
 
-Build Admin → Policies with inherited/source explanations, controlled overrides,
-conflict preview, an audit trail and permission rules. Add effective-date handling
-by reusing the existing stacking authorization semantics. That editor and any new
-cemetery’s policy choices are separate work; this foundation does not authorize
-runtime users to change policy.
+1. Open **Admin → Policies** and select System defaults (system admins only),
+   cemetery, section and optionally block. Each rule shows its local value,
+   effective value, source and the source’s reason.
+2. Choose a supported rule and **Inherit**, **Enabled** or **Disabled**. Disabled
+   explicitly overrides the same inherited restriction; Inherit removes the local
+   row. Each key inherits independently. Changing scope resets the draft, and any
+   draft change invalidates its preview.
+3. Enter a reason and choose **Preview change**. The API applies the actual guarded
+   mutation, runs deferred constraints, calculates the effective-rule footprint,
+   then rolls back the policy, revision and proposed history row. Existing records
+   are never edited by this operation. Conflicts block saving and explain whether
+   graves, marker types/relationships, burial capacity or canonical references
+   need review. Fix the scope or existing conflict; a policy cannot bypass integrity.
+4. A successful preview shows counts of existing graves whose effective rule would
+   change and their associated markers/burials. Future records also use the rule.
+   Counts describe the rule footprint, not data edits. Marker and burial handlers apply through gravesite associations; unlinked monuments are not covered by this catalog. **Save policy** requires the
+   exact successful preview, account, reason, scope, value and revision. Proof
+   expires after five minutes. Saving revalidates current data, so newly introduced
+   conflicts still prevent a save.
+5. A concurrent policy change requires reload and a new preview. Table-lock waits
+   and statement timeouts return a retry message. Review again after a busy result;
+   do not repeatedly submit an old preview. Reopen affected record views after a
+   successful save; stale forms remain protected by database checks.
+6. **Recent policy changes** records actor email, time, immutable scope label,
+   previous/local value, resulting local value and reason. **Older changes** uses
+   stable keyset pagination; **Newest changes** returns to the latest page. Cemetery
+   admins see only their permitted cemeteries’ history; system admins see all. History begins with migration 522; the existing adopted 521 policies retain their migration-adoption reasons.
+
+Policy changes take effect on save. This editor does not schedule new effective
+periods. Trinity’s stacking cutoff remains in **Admin → Records**, reusing the
+existing cemetery fields and reservation grandfathering; there is no second cutoff
+source in this catalog.
+
+## Deployment and preview secrets
+
+Preview proofs use an API-only HMAC key. The default is a random per-process key:
+restarting the API invalidates outstanding previews safely. Multiple API replicas
+must share a private `POLICY_PREVIEW_SECRET` of at least 32 bytes. Inject it using
+the existing private environment/secret mechanism; never put it in a VITE variable,
+tracked file or browser bundle. Changing it requires a new preview. Policy values,
+reasons and actor IDs are bound to the proof; signing is additional protection,
+while database authorization and constraints are still enforced at save time.
+
+Migration 522 adds the append-only-to-runtime history table and guarded function.
+Rehearse apply/rollback/reapply on a disposable database before deployment. A 522
+rollback removes its function and history table, leaving the 521 policy values in
+place. Back up/export history before rollback if changes have been made. A 521
+rollback additionally refuses records incompatible with the former letter rules.
+
+The admin workflow modules share one lazy admin bundle for compression. This loads
+related workflows together when administration opens and keeps the existing core
+bundle limit unchanged. The map/public entry does not eagerly import the editor.

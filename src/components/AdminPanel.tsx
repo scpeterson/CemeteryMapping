@@ -17,6 +17,7 @@ import { useSourcePeopleAdministration } from "./admin/useSourcePeopleAdministra
 // Keep the small record editors with the lazy admin shell for shared compression.
 import { RecordsAdminTab } from "./admin/RecordsAdminTab";
 import { LookupAdminTab } from "./admin/LookupAdminTab";
+const PoliciesAdminTab = lazy(() => import("./admin/PoliciesAdminTab").then(module => ({default:module.PoliciesAdminTab})));
 const AuditAdminTab = lazy(() => import("./admin/events/AuditAdminTab").then((module) => ({ default: module.AuditAdminTab })));
 const SystemEventsAdminTab = lazy(() => import("./admin/events/SystemEventsAdminTab").then((module) => ({ default: module.SystemEventsAdminTab })));
 const DataQualityAdminTab = lazy(() => import("./DataQualityAdminTab").then((module) => ({ default: module.DataQualityAdminTab })));
@@ -307,6 +308,7 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
             <ListChecks size={16} aria-hidden="true" />
             <span>Bulk</span>
           </button> : null}
+          {canUseBulkTools ? <button type="button" aria-current={activeTab === "policies" ? "page" : undefined} className={activeTab === "policies" ? "is-active" : undefined} onClick={()=>setActiveTab("policies")}><ListChecks size={16} aria-hidden="true"/><span>Policies</span></button> : null}
           {canUseSystemAdminTabs ? <button
             type="button"
             aria-current={activeTab === "lookups" ? "page" : undefined}
@@ -373,6 +375,8 @@ export function AdminPanel({ currentUser, onClose, onLookupsChanged }: AdminPane
           <Suspense fallback={<p className="admin-message">Loading admin workflow…</p>}>
             {activeTab === "users" && canManageUsers ? (
               <UsersAdminTab cemeteryRecords={cemeteryRecords} />
+            ) : activeTab === "policies" && canUseBulkTools ? (
+              <PoliciesAdminTab systemAdmin={canUseSystemAdminTabs} hasAccount={Boolean(currentUser.id)}/>
             ) : activeTab === "recovery" && canUseBulkTools ? (
               <RecordRecoveryAdminTab currentUser={currentUser} cemeteryRecords={cemeteryRecords}/>
             ) : activeTab === "onboarding" && canUseBulkTools ? (

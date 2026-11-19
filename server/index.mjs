@@ -89,6 +89,7 @@ import {
 import { runAuditRetentionPurgeJob, runSystemEventRetentionPurgeJob } from "./retentionJobs.mjs";
 import { appVersionMetadata } from "./version.mjs";
 import { createApiErrorHandler } from "./apiErrorHandler.mjs";
+import { registerLocationPolicyRoutes } from "./routes/locationPolicyRoutes.mjs";
 import { registerAdminRoutes } from "./routes/adminRoutes.mjs";
 import { registerCemeteryRoutes } from "./routes/cemeteryRoutes.mjs";
 import { registerMediaDownloadRoutes } from "./routes/mediaDownloadRoutes.mjs";
@@ -140,6 +141,7 @@ export function createApp(config, pool) {
     moveMediaAssetLink, pool, requireReader, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   });
 
+  registerLocationPolicyRoutes(app, {pool,requireCemeteryAdmin});
   registerAdminRoutes(app, {
     Auth0ProvisioningNotConfiguredError, assignedEditableCemeteryIds, auth0ManagementClient,
     bulkAddNorthHillsEntryNote, bulkAssignGravesitesToLot, bulkMarkNorthHillsReviewed,
