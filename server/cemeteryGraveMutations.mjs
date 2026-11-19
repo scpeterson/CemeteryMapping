@@ -114,14 +114,16 @@ export async function createGraveSpaceMutation(pool, cemeteryId, graveSpace, { a
       [cemeteryId, graveSpace.longitude, graveSpace.latitude],
     );
     if (!sectionResult.rowCount) return { invalid: "no_section" };
-    const section = String(sectionResult.rows[0].name ?? sectionResult.rows[0].section_id ?? "").trim().toUpperCase();
-    if (["E", "F", "G"].includes(section)) return { invalid: "section_not_allowed", section };
+    const section = String(sectionResult.rows[0].name ?? sectionResult.rows[0].section_id ?? "").trim();
     const lotResult = await client.query(
-      `SELECT 1 FROM lots WHERE cemetery_id = $1 AND deleted_at IS NULL AND burial_use_status <> 'non_burial'
-       AND ST_Covers(geometry, ST_SetSRID(ST_MakePoint($2, $3), 4326)) LIMIT 1`,
-      [cemeteryId, graveSpace.longitude, graveSpace.latitude],
+      `SELECT resolve_location_policy(cemetery_id, $4::uuid, block_uuid, 'no_interactive_creation')
+         OR resolve_location_policy(cemetery_id, $4::uuid, block_uuid, 'no_gravesites') AS creation_prohibited
+       FROM lots WHERE cemetery_id = $1 AND deleted_at IS NULL AND burial_use_status <> 'non_burial'
+       AND ST_Covers(geometry, ST_SetSRID(ST_MakePoint($2, $3), 4326)) ORDER BY ST_Area(geometry::geography), id LIMIT 1`,
+      [cemeteryId, graveSpace.longitude, graveSpace.latitude, sectionResult.rows[0].section_id],
     );
     if (!lotResult.rowCount) return { invalid: "no_burial_lot" };
+    if (lotResult.rows[0].creation_prohibited) return { invalid: "section_not_allowed", section };
     const result = await client.query(
       `
         WITH next_number AS (
@@ -131,30 +133,30 @@ export async function createGraveSpaceMutation(pool, cemeteryId, graveSpace, { a
         ), selected_section AS (
           SELECT section_id
           FROM sections
-          WHERE cemetery_id = $1 AND (name = $2 OR section_id = $2) AND deleted_at IS NULL
+          WHERE cemetery_id = $1 AND section_id = $10::uuid AND deleted_at IS NULL
           ORDER BY section_id
           LIMIT 1
         ), selected_lot AS (
-          SELECT lots.id, lots.lot_id
+          SELECT lots.id, lots.lot_id, lots.block_uuid, lots.block_id
           FROM lots
           WHERE lots.cemetery_id = $1 AND lots.deleted_at IS NULL
             AND lots.burial_use_status <> 'non_burial'
             AND ST_Covers(lots.geometry, ST_SetSRID(ST_MakePoint($6, $7), 4326))
-          ORDER BY ST_Area(lots.geometry::geography)
+          ORDER BY ST_Area(lots.geometry::geography), lots.id
           LIMIT 1
         )
         INSERT INTO gravesites (
-          cemetery_id, section_uuid, section_id, lot_uuid, lot_id, grave_id, gravesite_id, name,
+          cemetery_id, section_uuid, section_id, lot_uuid, lot_id, block_uuid, block_id, grave_id, gravesite_id, name,
           status_type_id, cost, width_feet, length_feet, geometry,
           geometry_type, geometry_source, geometry_confidence, geometry_notes
         )
         VALUES (
-          $1, (SELECT section_id FROM selected_section), $2, (SELECT id FROM selected_lot), (SELECT lot_id FROM selected_lot),
+          $1, (SELECT section_id FROM selected_section), $2, (SELECT id FROM selected_lot), (SELECT lot_id FROM selected_lot), (SELECT block_uuid FROM selected_lot), (SELECT block_id FROM selected_lot),
           LPAD((SELECT number::text FROM next_number), 4, '0'),
           'TLC-GPS-' || LPAD((SELECT number::text FROM next_number), 4, '0'), NULLIF($3, ''),
           (SELECT id FROM gravesite_status_types WHERE code = $4), $5::numeric,
           4, 10,
-          CASE WHEN $8 = 'monument' AND $9 IS NOT NULL THEN
+          CASE WHEN $8 = 'monument' AND $9::double precision IS NOT NULL THEN
             ST_MakePolygon(ST_MakeLine(ARRAY[
               ST_Project(ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, (4 * 0.3048) / 2, radians($9 - 90))::geometry,
               ST_Project(ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, (4 * 0.3048) / 2, radians($9 - 90) + radians(180))::geometry,
@@ -172,7 +174,7 @@ export async function createGraveSpaceMutation(pool, cemeteryId, graveSpace, { a
         )
         RETURNING id::text AS uuid, cemetery_id::text, gravesite_id, updated_at
       `,
-      [cemeteryId, section, null, graveSpace.status, graveSpace.cost || null, graveSpace.longitude, graveSpace.latitude, graveSpace.anchorMode || "gravesite", graveSpace.bearingDegrees ?? null],
+      [cemeteryId, section, null, graveSpace.status, graveSpace.cost || null, graveSpace.longitude, graveSpace.latitude, graveSpace.anchorMode || "gravesite", graveSpace.bearingDegrees ?? null, sectionResult.rows[0].section_id],
     );
     const created = result.rows[0];
     await auditEventIdForMutation(client, {

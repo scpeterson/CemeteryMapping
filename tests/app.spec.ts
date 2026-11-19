@@ -360,7 +360,7 @@ test("power users can edit headstone marker details from grave detail", async ({
 
 });
 
-test("section G marker edits are limited to flat markers", async ({ page }) => {
+for (const flatMarkersOnly of [true,false]) test(`marker editing uses the resolved flat-only policy (${flatMarkersOnly})`, async ({ page }) => {
   const cemeteryId = "11111111-1111-4111-8111-111111111111";
   const graveSummary = {
     cemeteryId,
@@ -373,6 +373,7 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
     status: "occupied",
   };
   const headstone = {
+    flatMarkersOnly,
     id: "33333333-3333-4333-8333-333333333333",
     headstoneId: "HS-G-47",
     markerType: { id: "44444444-4444-4444-8444-444444444444", code: "upright_headstone", label: "Upright headstone" },
@@ -473,9 +474,14 @@ test("section G marker edits are limited to flat markers", async ({ page }) => {
   await page.getByLabel("Edit marker information HS-G-47").click();
 
   const markerType = page.getByRole("combobox", { name: "Marker type" });
-  await expect(markerType.locator("option")).toHaveCount(1);
-  await expect(markerType.locator("option")).toHaveText("Flat marker");
-  await expect(page.locator(".headstone-form")).toContainText("Section G allows only flat markers.");
+  await expect(markerType.locator("option")).toHaveCount(flatMarkersOnly ? 1 : 2);
+  if (flatMarkersOnly) {
+    await expect(markerType.locator("option")).toHaveText("Flat marker");
+    await expect(page.locator(".headstone-form")).toContainText("Only flat markers are permitted here.");
+  } else {
+    await markerType.selectOption("44444444-4444-4444-8444-444444444445");
+    await expect(page.locator(".headstone-form")).not.toContainText("Only flat markers are permitted here.");
+  }
 
   await page.getByRole("button", { name: "Save marker" }).click();
 

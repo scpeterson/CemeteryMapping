@@ -63,3 +63,5 @@ See the [full rebuild guide](rebuild.md) for prerequisites, real data imports, a
 ## Data Sources
 
 The [Data Source Register](data-sources.md) tracks known source paths, source owners, stewardship placeholders, import commands, and known limitations.
+
+- [Location policies, rule inventory and operational rollout](location-policies.md)

@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "519-grave-stacks";
+export const requiredSchemaChangeset = "521-scoped-location-policies";
 
 export async function assertCurrentSchema(pool) {
   let result;

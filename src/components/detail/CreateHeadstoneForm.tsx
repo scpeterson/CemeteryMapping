@@ -58,7 +58,6 @@ export function CreateHeadstoneForm({
   grave,
   headstones,
   lookups,
-  sectionName,
   pickedMarkerPoint,
   isPickingMarkerPoint,
   onSave,
@@ -75,9 +74,11 @@ export function CreateHeadstoneForm({
   onStartMarkerPointPick: () => void;
   onCancelMarkerPointPick: () => void;
 }) {
-  const isSectionG = sectionName.toUpperCase() === "G";
-  const markerLimitReached = isSectionG && headstones.length > 0;
-  const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
+  const policies = grave.locationPolicies;
+  const singlePrimary = policies?.single_primary_marker;
+  const flatMarkersOnly = policies?.flat_markers_only || singlePrimary;
+  const markerLimitReached = singlePrimary && headstones.length > 0;
+  const markerTypeOptions = flatMarkersOnly ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isAdding, setIsAdding] = useState(false);
   const [form, setForm] = useDraftState<SaveHeadstoneCreateInput>(() => blankCreateHeadstoneForm(grave, headstones, { ...lookups, markerTypes: markerTypeOptions }));
   const [isSaving, setIsSaving] = useState(false);
@@ -130,7 +131,7 @@ export function CreateHeadstoneForm({
           <MapPinned size={15} aria-hidden="true" />
           Add marker
         </button>
-        {markerLimitReached ? <p className="muted">Section G: one flat marker per gravesite; sharing is allowed.</p> : null}
+        {markerLimitReached ? <p className="muted">One flat marker per gravesite; sharing is allowed.</p> : null}
         {message ? <p className="detail-message is-success">{message}</p> : null}
         {error ? <p className="detail-message is-error" role="alert">{error}</p> : null}
       </div>
@@ -184,7 +185,7 @@ export function CreateHeadstoneForm({
         >
           <option value="primary">Primary marker</option>
           <option value="spans">Spans gravesites</option>
-          {!isSectionG ? <>
+          {!singlePrimary ? <>
             <option value="footstone">Footstone</option>
             <option value="secondary">Secondary marker</option>
             <option value="nearby">Nearby</option>

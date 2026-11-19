@@ -6,29 +6,12 @@ async function markerTypeCodeForId(pool, markerTypeId) {
   return result.rows[0]?.code;
 }
 
-async function sectionNameForHeadstone(pool, headstoneId) {
-  const result = await pool.query(
-    `
-      SELECT COALESCE(sections.name, gravesites.section_id) AS section_name
-      FROM headstones
-      LEFT JOIN gravesites
-        ON gravesites.id = headstones.gravesite_uuid
-      LEFT JOIN sections
-        ON sections.section_id = gravesites.section_uuid
-      WHERE headstones.id = $1
-        AND headstones.deleted_at IS NULL
-      LIMIT 1
-    `,
-    [headstoneId],
-  );
-  return result.rows[0]?.section_name;
-}
-
 export async function validateHeadstoneBusinessRules(pool, headstoneId, headstone) {
-  const [markerTypeCode, sectionName] = await Promise.all([markerTypeCodeForId(pool, headstone.markerTypeId), sectionNameForHeadstone(pool, headstoneId)]);
+  const markerTypeCode = await markerTypeCodeForId(pool, headstone.markerTypeId);
   if (!markerTypeCode) throw new BadRequestError("Marker type is invalid.");
-  if (String(sectionName ?? "").toUpperCase() === "G" && markerTypeCode !== "flat_marker") {
-    throw new BadRequestError("Section G can contain only flat markers.");
+  const result = await pool.query("SELECT headstone_requires_flat_marker($1) AS flat_only", [headstoneId]);
+  if (result.rows[0]?.flat_only && markerTypeCode !== "flat_marker") {
+    throw new BadRequestError("Location policy permits only flat markers.");
   }
 }
 

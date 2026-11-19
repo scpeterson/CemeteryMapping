@@ -76,7 +76,6 @@ export function HeadstoneRecord({
   onSave,
   grave,
   cemeteryName,
-  sectionName,
   canDeletePhotos,
   onDeletePhoto,
   onUploadPhoto,
@@ -113,8 +112,8 @@ export function HeadstoneRecord({
   canDeleteGraveFeatures: boolean;
 }) {
   const { open: openPhotos } = useContext(PhotoGalleryContext);
-  const isSectionG = sectionName.toUpperCase() === "G";
-  const markerTypeOptions = isSectionG ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
+  const flatMarkersOnly = headstone.flatMarkersOnly;
+  const markerTypeOptions = flatMarkersOnly ? lookups.markerTypes.filter((option) => option.code === "flat_marker") : lookups.markerTypes;
   const [isEditing, setIsEditing] = useState(initialAction === "edit-information" && canUpdate);
   const [editArea, setEditArea] = useState<"information" | "faces" | "review">("information");
   const [editingBaseline,setEditingBaseline]=useState(headstone);
@@ -250,7 +249,7 @@ export function HeadstoneRecord({
             ))}
           </LookupSelect>
         </label>
-        {isSectionG ? <p className="muted headstone-wide-field">Section G allows only flat markers.</p> : null}
+        {flatMarkersOnly ? <p className="muted headstone-wide-field">Only flat markers are permitted here.</p> : null}
         <label>
           Marker scope
           <LookupSelect value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>

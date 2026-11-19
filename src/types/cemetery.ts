@@ -7,6 +7,7 @@ import type { GraveFeature, MaintenanceRecord, MediaAsset } from "./evidence";
 export type GraveStatus = "available" | "reserved" | "occupied" | "sold" | "needs_review" | "unknown";
 
 export type GraveSpaceSummary = {
+  locationPolicies?: Partial<Record<"no_gravesites" | "no_interactive_creation" | "flat_markers_only" | "single_primary_marker" | "casket_or_two_urns", boolean>>;
   stackGroup?: string;
   stackLevel?: number;
   stackTopLevel?: number;

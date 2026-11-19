@@ -5,6 +5,7 @@ import { selectRelationshipsForHeadstone } from "./cemeteryRelationshipQueries.m
 import { recordReviewColumnsSql } from "./cemeterySchema.mjs";
 
 const headstoneDetailColumnsSql = `
+  headstone_requires_flat_marker(headstones.id) AS flat_markers_only,
   EXISTS (
     SELECT 1 FROM headstone_gravesites shared_link
     JOIN gravesites shared_grave ON shared_grave.id = shared_link.gravesite_uuid

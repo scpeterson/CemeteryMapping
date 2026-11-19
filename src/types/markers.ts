@@ -74,6 +74,7 @@ export type MonumentInspection = {
 };
 
 export type Headstone = {
+  flatMarkersOnly?: boolean;
   version?: string;
   inspections?: MonumentInspection[];
   id: string;

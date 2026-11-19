@@ -39,6 +39,7 @@ export function toGraveSummary(grave) {
     cemeteryId: grave.cemetery_id,
     cemeteryName: grave.cemetery_name,
     section: grave.section_id ?? "",
+    locationPolicies: grave.location_policies ?? {},
     lot: grave.lot_id ?? "",
     space: grave.grave_id,
     ...(grave.display_label ? { displayLabel: grave.display_label, labelAliases: grave.label_aliases ?? [] } : {}),
@@ -68,7 +69,7 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
     `
       SELECT
         gravesites.id::text AS uuid,
-        gravesites.cemetery_id::text,
+        gravesites.cemetery_id::text, gravesite_location_policies(gravesites.id) AS location_policies,
         cemeteries.name AS cemetery_name,
         gravesites.section_id,
         COALESCE(lots.lot_id, gravesites.lot_id) AS lot_id,

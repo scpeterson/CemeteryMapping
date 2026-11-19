@@ -392,3 +392,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0216: Refresh map statuses after ownership changes](0216-refresh-map-after-ownership-changes.md)
 
 - [ADR 0217: Marker numbering and first-primary defaults](0217-marker-numbering-and-first-primary.md)
+
+- [ADR 0218: Typed policies scoped by location identity](0218-scoped-location-policies.md)

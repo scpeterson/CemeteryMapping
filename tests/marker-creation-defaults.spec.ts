@@ -2,10 +2,11 @@ import {test,expect} from '@playwright/test';
 import {fixture,cemeteryId,detail,geometry,summaries,gravePath,select} from './fixtures/cemetery';
 import {marker} from './fixtures/overview';
 
-for(const scenario of [{section:'G',existing:false},{section:'A',existing:false},{section:'G',existing:true},{section:'A',existing:true}]){
- test(`marker defaults in ${scenario.section}, existing marker: ${scenario.existing}`,async({page})=>{
+for(const scenario of [{section:'G',existing:false},{section:'A',existing:false},{section:'G',existing:true},{section:'A',existing:true},{section:'G',existing:true,unrestricted:true}]){
+ test(`marker defaults in ${scenario.section}, existing marker: ${scenario.existing}, unrestricted: ${'unrestricted' in scenario}`,async({page})=>{
   await fixture(page);
-  const grave={...summaries[0],section:scenario.section};
+  const restricted=scenario.section==='G' && !('unrestricted' in scenario);
+  const grave={...summaries[0],section:scenario.section,locationPolicies:{flat_markers_only:restricted,single_primary_marker:restricted}};
   const existing=scenario.existing?[{...marker,photoUrl:'',mediaAssets:[],relationshipType:'primary'}]:[];
   await page.route('**/api/cemetery-map',r=>r.fulfill({json:{boundaries:[{type:'Feature',properties:{id:cemeteryId,name:'Test Cemetery'},geometry}],sections:[],lots:[],graves:[grave],headstones:[]}}));
   await page.route('**/api/search**',r=>r.fulfill({json:[{grave,reasons:[]}] }));
@@ -18,12 +19,14 @@ for(const scenario of [{section:'G',existing:false},{section:'A',existing:false}
   });
   await page.route('https://imagery.pasda.psu.edu/**',r=>r.abort());
   await page.route('https://gisdata.alleghenycounty.us/**',r=>r.abort());
-  await page.goto('/');await select(page,grave.id);
+  await page.goto('/');
+  if((page.viewportSize()?.width ?? 1280)<700)await page.getByRole('button',{name:'Search',exact:true}).click();
+  await select(page,grave.id);
   await page.getByRole('tab',{name:'Monuments and photos'}).click();
   const add=page.getByRole('button',{name:'Add marker',exact:true});
-  if(scenario.section==='G' && scenario.existing){
+  if(restricted && scenario.existing){
    await expect(add).toBeDisabled();
-   await expect(page.getByText('Section G: one flat marker per gravesite; sharing is allowed.',{exact:true})).toBeVisible();
+   await expect(page.getByText('One flat marker per gravesite; sharing is allowed.',{exact:true})).toBeVisible();
    expect(saved).toBeUndefined();return;
   }
   await add.click();
@@ -32,20 +35,20 @@ for(const scenario of [{section:'G',existing:false},{section:'A',existing:false}
   await expect(form.getByLabel('Relationship notes',{exact:true})).toHaveValue('');
   await expect(form.getByPlaceholder('Assigned automatically when saved')).toBeVisible();
   await expect(form.getByRole('combobox',{name:'Relationship',exact:true})).toHaveValue(!scenario.existing?'primary':'footstone');
-  if(scenario.section==='G'){
+  if(restricted){
    await expect(form.getByRole('combobox',{name:'Marker type',exact:true}).locator('option')).toHaveCount(1);
    await expect(form.getByRole('combobox',{name:'Marker type',exact:true})).toHaveValue('flat_marker');
    await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option')).toHaveCount(2);
   }
-  if(scenario.section==='A'){
+  if(!restricted){
    await expect(form.getByRole('combobox',{name:'Marker type',exact:true}).locator('option')).toHaveCount(2);
    await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option')).toHaveCount(6);
   }
-  if(scenario.section==='G')await form.getByRole('combobox',{name:'Relationship',exact:true}).selectOption('spans');
+  if(restricted)await form.getByRole('combobox',{name:'Relationship',exact:true}).selectOption('spans');
   await expect(form.getByRole('button',{name:'Save marker',exact:true})).toBeEnabled();
   await form.getByRole('button',{name:'Save marker',exact:true}).click();
   await expect.poll(()=>saved?.headstoneId).toBe('');
-  if(scenario.section==='G')expect(saved?.relationshipType).toBe('spans');
+  if(restricted)expect(saved?.relationshipType).toBe('spans');
   await expect(page.getByText('Marker TLC-HS-0600 added.',{exact:true})).toBeVisible();
  });
 }
