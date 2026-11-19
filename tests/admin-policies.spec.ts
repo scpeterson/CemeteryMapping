@@ -47,3 +47,16 @@ test('sessions without an attributable account cannot preview or save policies',
  const {admin}=await setup(page,'admin',false);await admin.getByRole('button',{name:'Policies',exact:true}).click();
  await expect(admin).toContainText('A signed-in application account is required');await expect(admin.getByRole('button',{name:'Preview change',exact:true})).toBeDisabled();await expect(admin.getByRole('button',{name:'Save policy',exact:true})).toBeDisabled();
 });
+
+test('failed policy load stops loading and retry clears the error',async({page})=>{
+ const {admin,data}=await setup(page,'cemetery-admin');
+ await page.route('**/api/admin/policies',r=>r.fulfill({status:404,json:{}}));
+ await admin.getByRole('button',{name:'Policies',exact:true}).click();
+ await expect(admin.getByRole('alert')).toContainText('no longer available');
+ await expect(admin.getByText('Loading policies…',{exact:true})).toHaveCount(0);
+ await page.route('**/api/admin/policies',r=>r.fulfill({json:data}));
+ await admin.getByRole('button',{name:'Reload policies',exact:true}).click();
+ await expect(admin.getByRole('alert')).toHaveCount(0);
+ await expect(admin.getByRole('combobox',{name:'Cemetery',exact:true})).toHaveValue(cemeteryId);
+ await expect(admin).toContainText('Source: Example Cemetery');
+});

@@ -6,12 +6,13 @@ const valueLabel=(p?:PolicyRow|null)=>p?(p.enabled?'Enabled':'Disabled'):'Inheri
 export function PoliciesAdminTab({systemAdmin,hasAccount}:{systemAdmin:boolean;hasAccount:boolean}){
  const [data,setData]=useState<PolicySnapshot>();const [cemeteryId,setCemetery]=useState('');const [sectionId,setSection]=useState('');const [blockId,setBlock]=useState('');
  const [rule,setRule]=useState('no_gravesites');const [value,setValue]=useState('inherit');const [reason,setReason]=useState('');
+ const [loading,setLoading]=useState(true);
  const [preview,setPreview]=useState<PolicyPreview>();const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [message,setMessage]=useState('');
  const scope={cemeteryId:cemeteryId||null,sectionId:sectionId||null,blockId:blockId||null};
- useEffect(()=>{let live=true;fetchPolicies().then(d=>{if(live){setData(d);if(!systemAdmin)setCemetery(d.cemeteries[0]?.id??'');}}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[systemAdmin]);
+ useEffect(()=>{let live=true;setLoading(true);setError('');fetchPolicies().then(d=>{if(live){setData(d);if(!systemAdmin)setCemetery(d.cemeteries[0]?.id??'');}}).catch(e=>{if(live)setError(e.message);}).finally(()=>{if(live)setLoading(false);});return()=>{live=false;};},[systemAdmin]);
  useEffect(()=>{setPreview(undefined);setMessage('');},[cemeteryId,sectionId,blockId,rule,value,reason]);
  const chooseScope=(cemetery:string,section='',block='')=>{setCemetery(cemetery);setSection(section);setBlock(block);const local=data&&localPolicy(data.policies,{cemeteryId:cemetery||null,sectionId:section||null,blockId:block||null},rule);setValue(local?(local.enabled?'enabled':'disabled'):'inherit');setReason('');};
- const historyPage=async(cursor?:string)=>{setBusy(true);setError('');setPreview(undefined);try{setData(await fetchPolicies(cursor));}catch(e){setError(e instanceof Error?e.message:'History request failed.');}finally{setBusy(false);}};
+ const historyPage=async(cursor?:string)=>{setBusy(true);setLoading(true);setError('');setPreview(undefined);try{const next=await fetchPolicies(cursor);setData(next);if(!systemAdmin&&!cemeteryId)setCemetery(next.cemeteries[0]?.id??'');}catch(e){setError(e instanceof Error?e.message:'Policy request failed.');}finally{setBusy(false);setLoading(false);}};
  const source=(p?:PolicyRow)=>!p?'Base behavior':p.block_uuid?`Block ${data?.blocks.find(b=>b.id===p.block_uuid)?.name??p.block_uuid}`:p.section_uuid?`Section ${data?.sections.find(s=>s.id===p.section_uuid)?.name??p.section_uuid}`:p.cemetery_id?data?.cemeteries.find(c=>c.id===p.cemetery_id)?.name??'Cemetery':'System';
  const submit=async(action:'preview'|'save')=>{
   if(!data)return;setBusy(true);setError('');setMessage('');
@@ -23,10 +24,10 @@ export function PoliciesAdminTab({systemAdmin,hasAccount}:{systemAdmin:boolean;h
   <p>Rules inherit from system to cemetery, section and block. Enabled applies the restriction. Disabled explicitly overrides it. Inherit removes the local override.</p>
   <p>Marker and burial rules apply through gravesite associations; unlinked monuments are outside this catalog.</p>
   <p>Changes take effect when saved. Stacking authorization dates remain in Admin → Records; earlier reservations remain protected.</p>
-  {error?<p role="alert" className="admin-error">{error} <button type="button" onClick={()=>{setPreview(undefined);fetchPolicies().then(setData).catch(e=>setError(e.message));}}>Reload policies</button></p>:null}
+  {error?<p role="alert" className="admin-error">{error} <button type="button" disabled={busy} onClick={()=>void historyPage()}>Reload policies</button></p>:null}
   {!hasAccount?<p>A signed-in application account is required to preview or save policies.</p>:null}
   {message?<p role="status">{message}</p>:null}
-  {!data?<p>Loading policies…</p>:<>
+  {!data?(loading?<p role="status">Loading policies…</p>:null):<>
    <fieldset disabled={busy}><legend>Location</legend><div className="policies-fields">
     <label>Cemetery<select value={cemeteryId} onChange={e=>chooseScope(e.target.value)}>{systemAdmin?<option value="">System defaults</option>:<option value="" disabled>Select cemetery</option>}{data.cemeteries.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
     <label>Section<select value={sectionId} disabled={!cemeteryId} onChange={e=>chooseScope(cemeteryId,e.target.value)}><option value="">Cemetery defaults</option>{data.sections.filter(s=>s.cemeteryId===cemeteryId).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
