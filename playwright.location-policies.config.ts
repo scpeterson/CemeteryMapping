@@ -14,7 +14,9 @@ export default defineConfig({
  },
  // Map-control instrumentation is DEV-only; run those specs in the normal profile.
  testIgnore:production?['**/map-controls.spec.ts']:[],
- testMatch:['app.spec.ts','admin-layout.spec.ts','admin-ui-fixes.spec.ts','grave-feature-lookups.spec.ts','admin-policies.spec.ts','marker-creation-defaults.spec.ts','marker-sections.spec.ts','map-controls.spec.ts'],
+ // app.spec.ts also relies on the real API's profile/lookups and belongs to
+ // the main E2E suite, not this closed-port, fully mocked frontend harness.
+ testMatch:['admin-layout.spec.ts','admin-ui-fixes.spec.ts','grave-feature-lookups.spec.ts','admin-policies.spec.ts','marker-creation-defaults.spec.ts','marker-sections.spec.ts','map-controls.spec.ts'],
  projects:[
   {name:'desktop',use:{...devices['Desktop Chrome']}},
   {name:'mobile',testMatch:['marker-creation-defaults.spec.ts'],use:{...devices['iPhone 13'],defaultBrowserType:'chromium'}},

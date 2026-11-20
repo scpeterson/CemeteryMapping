@@ -6,7 +6,14 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
-The latest recorded deployment is **`f28da4e`**
+The November 20 live verification found **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`**
+([PR #882](https://github.com/scpeterson/CemeteryMapping/pull/882)), version
+**0.3.0**, built **`2026-11-19T19:17:22Z`**, with migrations **521/522** applied.
+See [the scoped-policy verification record](release-status.md#november-20-2026-scoped-policy-deployment-verified)
+for fresh checks, retained rollout evidence and verification limits. This review
+did not deploy or migrate live TEST.
+
+The earlier November 17 deployment was **`f28da4e`**
 ([PR #874](https://github.com/scpeterson/CemeteryMapping/pull/874)), package 0.2.5,
 built **`2026-11-17T18:21:57Z`**, including deed map-status refresh. The preceding
 [stacked-grave release](https://github.com/scpeterson/CemeteryMapping/pull/873)
