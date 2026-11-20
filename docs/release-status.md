@@ -9,9 +9,65 @@ Version **0.3.0** consolidates the merged workflows and fixes since v0.2.5; see 
 [release changelog](https://github.com/scpeterson/CemeteryMapping/blob/main/CHANGELOG.md).
 It includes inspection legibility/history, the enhanced report, shared lookups,
 stacked graves, marker IDs and Section G sharing, map/deed fixes and UI updates.
-Cemetery/section/block policy inheritance remains future work. Publication and
+Cemetery/section/block policy inheritance was added after this release baseline
+and is deployed in the v0.3.0-based main revision recorded below. Publication and
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
+
+## November 20, 2026: scoped-policy deployment verified
+
+Read-only live checks found hosted TEST already running **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`**
+([PR #882](https://github.com/scpeterson/CemeteryMapping/pull/882)), version
+**0.3.0**, built **`2026-11-19T19:17:22Z`** (November 19, 2:17:22 p.m. EST).
+Migrations **521/522** are applied. This is a v0.3.0-based main deployment;
+it does not establish deployment of the immutable v0.3.0 tag. No deployment,
+live migration, live policy save or service restart was performed for this review.
+
+The exact revision's aggregate CI passed. All **1,775** deployed manifest files
+matched their recorded SHA-256 hashes. Auth0 and the restricted `cemetery_api`
+role are active, anonymous policy/map requests return 401, the API has zero
+restarts, and the Liquibase lock is clear. All four policy metadata/history/claim
+tables grant runtime SELECT without INSERT/UPDATE/DELETE; the guarded
+SECURITY DEFINER change function is executable with its fixed search path.
+There is one API container with a process-local preview key; another replica
+would require a shared private preview secret as documented in
+[Location policies](location-policies.md#deployment-and-preview-secrets).
+
+Retained November 19 evidence records migration apply/rollback/reapply,
+84 original table fingerprints preserved through the migration, successful
+isolated permission/concurrency checks, live rollback-only previews and conflict
+rejection. Its final preservation comparison matched 83 original tables exactly;
+only the expected last-active timestamp changed in the activity table. The
+756-file media inventory was preserved. These are dated retained results,
+distinct from the fresh November 20 checks. Private reports and recovery
+materials remain on the host; no settings or cemetery records are published here.
+
+Fresh November 20 rehearsal restored the retained pre-policy backup into a
+disposable database, applied 521/522, rolled back both, reapplied both and
+validated the changelog. All **84 original table fingerprints matched**. A fresh
+live TEST dump was then restored into that isolated database: Liquibase reported
+it up to date and **21 policy integration/unit checks passed**, including
+inheritance, ancestry, restoration, competing burial writes, guarded previews,
+permission forgery, scoped history, stale edits and concurrent saves. The
+disposable database was removed. All **90 live table fingerprints** matched
+before/after the review; no live database mutations or service restarts occurred.
+Private snapshot, logs and report are retained under the host's protected
+`staging/policy-review-20261120` directory.
+
+Local lint, **934 server/unit checks**, production TypeScript/build and bundle
+budgets passed (adjusted core **695.37 / 702 KiB gzip**). The documentation site
+built and changed-document file links passed. The policy browser profile now
+excludes the API-dependent `app.spec.ts`, which remains in the main E2E suite;
+see [the harness clarification](adr/0219-admin-location-policies.md#rehearsal-harness-clarification--november-20-2026).
+All **49 isolated policy/adjacent browser checks passed** with one worker,
+including the six policy-editor cases at desktop and phone widths. An earlier
+parallel run had a marker scroll-tracking failure that passed both serial runs;
+parallel timing remains a test-stability observation, not a proven runtime defect.
+
+Host capacity on November 20 was **81% used, approximately 15 GB available**.
+This supersedes the older capacity observation, without claiming a new backup
+retention or offsite restore audit. Physical offline field work and the older
+fresh-login/invitation/Turnstile verification gaps remain outside this review.
 
 ## November 18, 2026: pre-release marker baseline verified on TEST
 
