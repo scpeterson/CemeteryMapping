@@ -66,6 +66,31 @@ Use `View burial records` or `View ownership records` to open People, or select 
 
 Editing remains in the detailed views: use `Location` for the gravesite record and lot assignment, `People` for burials/ownership, `Monuments` for gravesite markers/photos, and a marker's `Details` tab for its editing and relationship controls. Saving within these views keeps the current tab. Ownership visibility and editing permissions still apply.
 
+### Adding a Burial to an Existing Gravesite
+
+When the deployed version includes **Add burial**, a power user or cemetery
+administrator for that cemetery (or a system administrator) can record a burial
+in a purchased gravesite without transferring the deed.
+
+1. Select the existing gravesite and confirm its cemetery and record ID.
+2. Open **People** and check existing burials. If the same person already has a
+   pre-need record, edit that record instead of creating another.
+3. Select **Add burial**. Under **Person to record**, choose a current deed holder
+   to prefill their name, or leave **Enter a new person** selected for a family
+   member or another person. For an unstructured joint owner name, enter the
+   individual person's name yourself.
+4. Review the name and enter dates, interment type and other known burial details.
+5. Select **Add burial** to save. Review the resulting record and occupied status;
+   a gravesite already marked Needs review retains that status.
+
+The deed holders and ownership history remain unchanged. Record a separate deed
+transfer only if one actually occurs. Marker associations are also unchanged.
+Capacity policies still apply. A failed save keeps the draft; retrying an unchanged
+request after a lost response returns the original burial. If a matching person
+already exists, review that record or ask an administrator about recovery rather
+than creating a duplicate. After a stale-record conflict, preserve your notes,
+close the form, reload the gravesite and review the current records before retrying.
+
 ### Recording People Names and Dates
 
 Select a gravesite, open `People`, and edit the burial record. Keep structured name fields separate from the exact inscription stored on the marker.

@@ -193,6 +193,7 @@ export default function App() {
     deleteSavedHeadstoneGravesiteRelationship,
     saveGraveSpace,
     saveBurial,
+    addBurial,
     saveGraveFeature,
     updateSavedGraveFeature,
     deleteSavedGraveFeature,
@@ -333,6 +334,7 @@ export default function App() {
             isPickingMarkerPoint={isPickingMarkerPoint}
             onSaveGraveSpace={saveGraveSpace}
             onSaveBurial={saveBurial}
+            onCreateBurial={addBurial}
             onSaveHeadstone={saveHeadstone}
             onCreateHeadstone={createHeadstoneForGrave}
             onSaveHeadstoneRelationship={saveHeadstoneRelationship}

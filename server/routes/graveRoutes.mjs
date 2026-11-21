@@ -2,6 +2,8 @@ import {getOwnershipEditor} from "../ownershipEditing.mjs";
 import { validateExpectedVersion } from "../recordVersions.mjs";
 import { readOwnerEdit } from "../ownerEditVersion.mjs";
 import { getBurial } from "../cemeteryBurialMutations.mjs";
+import { createBurial } from '../createBurial.mjs';
+import { validateCreateBurialPayload } from './cemeteryRouteValidation.mjs';
 export function registerGraveRoutes(app, context) {
   const {
     assignedEditableCemeteryIds, canEditCemetery, canViewOwnershipForCemetery, createGraveFeature, createGraveSpace,
@@ -140,6 +142,17 @@ export function registerGraveRoutes(app, context) {
         } catch (error) { next(error); }
       });
     
+      app.post('/api/cemeteries/:cemeteryId/grave-spaces/:id/burials', requirePowerUser, async (request, response, next) => {
+        try {
+          const cemeteryId = validateCemeteryId(request.params.cemeteryId);
+          if (!canEditCemetery(request.user, cemeteryId)) return response.status(403).json({ error: 'Forbidden' });
+          const created = await createBurial(pool, cemeteryId, validateGraveSpaceId(request.params.id), validateCreateBurialPayload(request.body), {
+            actorUser: request.user, allowedCemeteryIds: request.user.role === 'admin' ? undefined : assignedEditableCemeteryIds(request.user),
+          });
+          if (!created) return response.status(404).json({ error: 'Gravesite not found.' });
+          response.status(201).json(created);
+        } catch (error) { next(error); }
+      });
       app.get("/api/burials/:id",requireReader,async(request,response,next)=>{
         try{const record=await getBurial(pool,validateUuid(request.params.id,"Burial"));
           if(!record)return response.status(404).json({error:"Burial not found."});

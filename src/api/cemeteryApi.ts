@@ -3,6 +3,7 @@ import { apiBaseUrl } from "../config/environment";
 import type {
   AppVersion,
   Burial,
+  CreateBurialInput,
   CemeteryData,
   CurrentUser,
   GeographicPlaceCandidate,
@@ -72,6 +73,11 @@ export async function createGraveSpace(cemeteryId: string, graveSpace: CreateGra
 export async function updateBurial(id: string, burial: SaveBurialInput): Promise<Burial> {
   const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/burials/${encodeURIComponent(id)}`, jsonRequest("PATCH", burial));
   return jsonResponse<Burial>(response, "Update burial API");
+}
+
+export async function createBurial(cemeteryId: string, gravesiteId: string, burial: CreateBurialInput): Promise<Burial> {
+  const response = await authorizedFetch(`${normalizeBaseUrl(apiBaseUrl)}/cemeteries/${encodeURIComponent(cemeteryId)}/grave-spaces/${encodeURIComponent(gravesiteId)}/burials`, jsonRequest('POST', burial));
+  return jsonResponse<Burial>(response, 'Add burial API');
 }
 
 export async function searchGeographicPlaces(query: string): Promise<PlaceSearchResponse> {

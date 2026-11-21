@@ -398,3 +398,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0218: Typed policies scoped by location identity](0218-scoped-location-policies.md)
 
 - [ADR 0219: Previewed policy administration](0219-admin-location-policies.md)
+
+- [ADR 0221: Add a burial independently of ownership](0221-add-burial-to-existing-gravesite.md)
