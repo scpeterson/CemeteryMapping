@@ -94,7 +94,7 @@ npm run db:migrate
 npm run db:configure-api
 ```
 
-At startup, the API checks for Liquibase changeset `502-passageway-area-type` and exits with migration guidance before listening if it is missing.
+At startup, the API checks for Liquibase changeset `522-policy-administration` and exits with migration guidance before listening if it is missing. Apply the complete current changelog, then refresh the restricted API grants.
 
 More database details are in `db/README.md`.
 
@@ -213,7 +213,7 @@ Search currently returns populated places such as cities and towns, rather than 
 
 ### Military units and organizations
 
-Burial records have an optional **Military unit / organization** field for recorded companies, regiments, battalions, ships, or other units (up to 500 characters). For example, enter `Company E, 136th Pennsylvania Infantry Regiment` while keeping **Military branch** and **War service** as separate selections. The field is enabled for veterans and displayed after saving. See [operator instructions](docs/operator-workflows.md#burial-military-unit--organization). This field requires migration `510-burial-military-unit`; the current API requires all migrations through `516-maintenance-task-scheduling`. See [release status](docs/release-status.md) and [rebuild requirements](docs/rebuild.md#current-schema-and-workspace-release).
+Burial records have an optional **Military unit / organization** field for recorded companies, regiments, battalions, ships, or other units (up to 500 characters). For example, enter `Company E, 136th Pennsylvania Infantry Regiment` while keeping **Military branch** and **War service** as separate selections. The field is enabled for veterans and displayed after saving. See [operator instructions](docs/operator-workflows.md#burial-military-unit--organization). This field requires migration `510-burial-military-unit`; current main requires the full changelog through `522-policy-administration`. See [release status](docs/release-status.md) and [rebuild requirements](docs/rebuild.md#current-schema-and-workspace-release).
 
 ### API Security
 
@@ -227,7 +227,7 @@ AUTH0_DOMAIN=<tenant>.auth0.com
 AUTH0_AUDIENCE=<api-identifier>
 ```
 
-In `AUTH_MODE=auth0`, the API validates the bearer token with Auth0 and then loads the matching `app_users` row by token subject. The local `app_users.role_name` value is the authorization source used for `reader`, `power-user`, `cemetery-admin`, and `admin` checks.
+In `AUTH_MODE=auth0`, the API validates the bearer token and loads the active `app_users` account by token subject. `app_users.role_name = 'admin'` grants system-wide administration. Other accounts receive an independent `reader`, `power-user`, or `cemetery-admin` role from each `app_user_cemetery_access` membership. The API derives the account's highest membership role for route access, then checks the target cemetery's role and `can_edit` for scoped actions and ownership visibility. A higher role in one cemetery does not grant that role in another; Auth0 role claims do not replace these database checks.
 
 Each person has one application account with one or more cemetery memberships. Each membership assigns `reader`, `power-user`, or `cemetery-admin` independently; `admin` remains a system-wide role. Non-admin users need at least one membership and can switch between assigned cemeteries in the map header. Users edit contact details and choose a preferred cemetery under **My profile**. System admins can search users, inspect memberships and recent activity, and deactivate accounts under **Admin → Users**. See [user management](docs/operator-workflows.md#admin-user-management) and [cemetery scope](docs/operator-workflows.md#cemetery-scope-and-navigation).
 

@@ -20,7 +20,7 @@ Adopt a phased security model built around these parts:
 
 - External identity provider for sign-in.
 - Server-side role-based access control.
-- `admin`, `power-user`, and `reader` application roles.
+- `admin` system access and `reader`, `power-user`, `cemetery-admin` cemetery memberships.
 - Soft deletes for application data.
 - Append-only audit logging for data changes.
 
@@ -34,12 +34,12 @@ Request input that reaches data access paths must be validated before repository
 
 Application roles:
 
-- `reader`: can view the map, gravesites, and burial information, but cannot view deed/owner information.
-- `power-user`: can do everything a `reader` can do, plus view and edit deed/owner information and update existing cemetery records for assigned cemeteries. Power users have read-only access to unassigned cemeteries.
-- `cemetery-admin`: can administer assigned cemeteries and has read-only access to unassigned cemeteries. This role sits below the global `admin` role and cannot manage system-wide users, roles, lookups, audit logs, or deed-import evidence.
+- `reader`: read-only cemetery membership; general map, grave, marker and burial reads, with no edits or deed/owner access for that cemetery.
+- `power-user`: editable cemetery membership; permitted record updates and deed/owner access within that cemetery.
+- `cemetery-admin`: editable cemetery-admin membership; power-user access and permitted cemetery administration, including Members and Policies. It does not grant system-wide Users or shared Lookups access.
 - `admin`: can manage users and roles, view and edit all cemetery data, add burials, gravesites, lots, and sections, and soft-delete records across the whole system.
 
-Authorization is ranked as `reader` < `power-user` < `cemetery-admin` < `admin`. Cemetery-scoped edit access is stored separately from the role in `app_user_cemetery_access`, because one user may eventually need access to more than one cemetery. Deed and owner fields must be omitted from API responses unless the user is a global `admin` or has assigned edit access to that cemetery; they must not merely be hidden in the UI. Future roles can be added with a new ADR or an update if the access model changes materially.
+Authorization is ranked as `reader` < `power-user` < `cemetery-admin` < `admin`. Each non-admin membership stores its own `role_name` and `can_edit` in `app_user_cemetery_access`; one account can hold different roles across several cemeteries. Auth0 requests derive the highest membership role for route eligibility, then enforce the target cemetery's role and edit permission. Deed and owner fields are omitted unless that target check permits them; UI hiding alone is insufficient. General record reads retain their existing visibility, and map scope is a navigation preference rather than tenant isolation. See [user management](../operator-workflows.md#admin-user-management).
 
 ## Soft Delete Model
 
@@ -185,4 +185,23 @@ Update this ADR or add a superseding ADR when the identity provider changes, rol
 
 ## October 17, 2026 account-assignment update
 
+Historical single-assignment behavior, superseded by the membership model below.
+
 Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. Admin/API validation applies to creation and updates, including readers, before automatic Auth0 provisioning from the form. It does not add a database constraint or backfill legacy accounts. Reader assignments are returned by `/api/me` for map scope without granting edit access. System admins initially fit all cemetery boundaries; other accounts fit their one assignment. A missing or multiple assignment produces an empty map scope. See [operator guidance](../operator-workflows.md#cemetery-scope-and-navigation) and the [audit procedure](../hosted-test.md#cemetery-assignment-audit).
+
+## November 21, 2026 membership documentation reconciliation
+
+Migration 509 and the existing Users/Members workflows supersede the October 17
+single-assignment restriction. Users supports at least one membership for non-admin
+account creation/save, with an independent role per cemetery. Members delegates
+only the selected cemetery's membership changes; removal can leave an account
+unassigned. The current audit flags zero memberships, not multiple memberships.
+Preferred cemetery selection falls back to an assigned cemetery; system admins
+can open all cemeteries. Explicit `app_users.role_name = 'admin'` remains the
+system privilege, while other values are compatibility summaries. Scoped member
+changes can leave those summaries out of date, so authorization reads memberships.
+
+This reconciliation updates guides and Admin role-description copy to match
+`auth.mjs`, account validation, member administration and map scope. It changes
+no role hierarchy, authorization logic, schema or deployment state. The existing
+permission regression tests remain the behavioral evidence.

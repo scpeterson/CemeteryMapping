@@ -232,7 +232,7 @@ Use `Admin -> Users` when adding, editing, deactivating, or reactivating applica
 7. Use **View activity** to inspect the person's latest 50 changes still retained in the audit log. Last active means authenticated API use and is updated at most once every five minutes; it does not represent a complete login/session history. Activity before this feature was enabled may be absent.
 8. Use **Deactivate** to block access without deleting the Auth0 identity, profile, or attribution history. Review memberships before reactivating an account.
 
-Auth0 authenticates the person. Local cemetery membership roles authorize edits, ownership access, and administrative actions. The `app_users.role_name` value remains a summary for compatibility; explicit membership roles control cemetery access. System admins remain globally privileged. Existing general record read endpoints retain their previous visibility rules; this feature does not introduce private tenant boundaries between cemeteries.
+Auth0 authenticates the person. An active local account with `app_users.role_name = 'admin'` has system-wide access. For other accounts, that column is a compatibility summary; explicit membership roles and edit permissions authorize target-cemetery edits, ownership access and administrative actions. A cemetery-admin role in A does not upgrade a reader role in B. Existing general record read endpoints retain their visibility rules; the map selector is not a privacy boundary.
 
 ### Cemetery Member Administration
 
@@ -244,18 +244,22 @@ success message says when an invitation email was actually sent.
 
 Select a member to change their cemetery role or remove their membership, with
 a reason. Account identity, activation and other cemetery memberships are
-managed separately. Inactive accounts require a system administrator. Assign
-another active cemetery administrator before stepping down as the last one.
+managed separately. Inactive and system-admin accounts require a system
+administrator. Cemetery administrators must assign another active cemetery
+administrator before removing or demoting the last one; system administrators
+can deliberately override that guard. Removing a person's final membership can
+leave their active account unassigned with an empty map scope; review this in the
+[assignment audit](hosted-test.md#cemetery-assignment-audit).
 If a membership changed while editing, retain your notes, reload the member list
 and reopen the member before reapplying the change. See [ADR 0197](adr/0197-delegated-cemetery-members.md).
 
 ### My Profile
 
-Open **My profile** from the application menu to edit your display name, optional phone and organization, and preferred cemetery. The preferred cemetery must be one of your memberships (system administrators may choose any active cemetery). It becomes the default map scope when opening the app; the header lets you switch cemeteries during a session. The profile lists your assigned roles for reference. Sign-in email, account status, and memberships are managed by system administrators. Profile changes are attributed to your account in the audit log. Unsaved changes prompt before leaving the editor.
+Open **My profile** from the application menu to edit your display name, optional phone and organization, and preferred cemetery. The preferred cemetery must be an active cemetery in your memberships (system administrators may choose any active cemetery). It becomes the default map scope when opening the app; the header lets you switch cemeteries during a session. The profile lists your assigned roles for reference. System administrators manage sign-in email and account status through Users; cemetery administrators can manage their own cemetery's memberships through Members. Profile changes are attributed to your account in the audit log. Unsaved changes prompt before leaving the editor.
 
 ### Profile and Membership Deployment
 
-Apply Liquibase migration `509-user-profiles-and-cemetery-memberships` before starting the updated API, then refresh the restricted API role grants using `db:configure-api` locally or the hosted runbook's role configuration script. The current API requires the latest schema contract (`516-maintenance-task-scheduling`), so apply all pending migrations in order. Migration 509 copies existing editable assignments to the user's current cemetery role and preserves read-only assignments as readers. System administrator access remains global. New profile fields start empty; last-activity tracking starts with subsequent authenticated API requests.
+Migration `509-user-profiles-and-cemetery-memberships` introduced independent membership roles and profiles. Current main requires schema contract `522-policy-administration`; apply the full pending changelog in order, then refresh the restricted API grants using `db:configure-api` locally or the hosted runbook's role script before starting the API. Migration 509 copies existing editable assignments to the user's then-current cemetery role and preserves read-only assignments as readers. System administrator access remains global. Profile fields start empty at migration; last-activity tracking begins with subsequent authenticated API requests. See [current schema and release requirements](rebuild.md#current-schema-and-workspace-release) for the distinction between main and the v0.3.0 source baseline.
 
 For verification, use an account with a cemetery-admin membership in one cemetery and a reader membership in another. Confirm it can switch maps, edit only the first cemetery, cannot delete photos or edit inspections in the reader cemetery, and cannot access the system user directory. Save a profile and check its attributed change in **View activity**. Before deployment, run the PostgreSQL integration check with `APP_ENV=test node --test scripts/user-profiles.integration.mjs`; its fixtures and migration rehearsal are rolled back.
 

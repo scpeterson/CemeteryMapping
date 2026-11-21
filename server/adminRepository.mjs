@@ -6,15 +6,15 @@ import { withAuditContext } from "./auditContext.mjs";
 const systemRoles = [
   {
     name: "reader",
-    description: "Can view the map, gravesites, and burial information, but cannot view deed/owner information.",
+    description: "Read-only cemetery membership: view records without edits or deed/owner access in that cemetery.",
   },
   {
     name: "power-user",
-    description: "Can view cemetery records, view and edit deed/owner information for assigned cemeteries, and has read-only access to other cemeteries.",
+    description: "Can edit permitted records and view deed/owner information in cemeteries with an editable Power user membership. Other memberships retain their own roles.",
   },
   {
     name: "cemetery-admin",
-    description: "Can administer assigned cemeteries and has read-only access to other cemeteries.",
+    description: "Can administer cemeteries with an editable Cemetery admin membership, including Members and Policies. Other memberships retain their own roles; system access is separate.",
   },
   {
     name: "admin",
@@ -55,9 +55,9 @@ export async function ensureSystemRoles(pool) {
   await pool.query(`
     INSERT INTO app_roles (role_name, description)
     SELECT desired.role_name, desired.description FROM (VALUES
-      ('reader', 'Can view the map, gravesites, and burial information, but cannot view deed/owner information.'),
-      ('power-user', 'Can view cemetery records, view and edit deed/owner information for assigned cemeteries, and has read-only access to other cemeteries.'),
-      ('cemetery-admin', 'Can administer assigned cemeteries and has read-only access to other cemeteries.'),
+      ('reader', 'Read-only cemetery membership: view records without edits or deed/owner access in that cemetery.'),
+      ('power-user', 'Can edit permitted records and view deed/owner information in cemeteries with an editable Power user membership. Other memberships retain their own roles.'),
+      ('cemetery-admin', 'Can administer cemeteries with an editable Cemetery admin membership, including Members and Policies. Other memberships retain their own roles; system access is separate.'),
       ('admin', 'Can manage users and roles, view and edit all cemetery records, add structural records, and soft-delete records across the whole system.')
     ) desired(role_name,description)
     WHERE NOT EXISTS (SELECT 1 FROM app_roles r WHERE r.role_name=desired.role_name AND r.description IS NOT DISTINCT FROM desired.description)

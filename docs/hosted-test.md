@@ -657,23 +657,34 @@ FROM app_users u
 LEFT JOIN app_user_cemetery_access a ON a.app_user_id = u.id
 WHERE u.role_name <> 'admin'
 GROUP BY u.id, u.email, u.display_name, u.role_name, u.is_active
-HAVING count(a.cemetery_id) <> 1
+HAVING count(a.cemetery_id) = 0
 ORDER BY u.email;
 ROLLBACK;
 ```
 
-Zero rows means every non-admin account has exactly one assignment. Review any
-zero-assignment or multiple-assignment account with its administrator and select
-the intended cemetery in Admin → Users; do not infer an assignment from free-text
-access requests. Creating or saving non-admin accounts requires an assignment,
-but existing records are not backfilled and direct SQL can bypass validation.
-The initial map is empty for a non-admin account without exactly one assignment.
-System admins initially see all cemeteries.
+Zero rows means every non-admin account has at least one membership. Multiple
+memberships are valid and must not be removed to satisfy this audit. Review
+unassigned accounts with their administrator, including accounts whose final
+membership was removed through Members; account creation/update validation does
+not add a database constraint or backfill assignments. Use Admin → Users to add
+the intended cemeteries and independently assign each role. Do not infer access
+from free-text requests or use `app_users.role_name` to grant one role everywhere.
+
+For each membership, inspect `app_user_cemetery_access.role_name` and `can_edit`;
+normal UI writes set readers to false and power users/cemetery admins to true.
+The preferred cemetery must remain an active assigned cemetery for non-admins.
+The map opens the preferred assignment or falls back to an assignment, and its
+header allows switching. An unassigned account has an empty map scope. System
+admins open their preferred active cemetery or all cemeteries. These map choices
+do not impose a privacy boundary on existing general record reads; scoped writes
+and ownership visibility enforce target-cemetery permissions.
 
 Read-only audit on October 17, 2026 found no unassigned non-admin accounts in local
 DEV, local TEST, or hosted TEST. Local databases each contained one active admin;
 hosted TEST contained one active admin and one active, assigned power user. This
 is a dated account-data observation, not confirmation that PR #685 is deployed.
+The single-assignment workflow used at that time was superseded by independent
+memberships; the current audit above checks for missing memberships only.
 
 
 ## Passageway and recent map changes — release prerequisite
