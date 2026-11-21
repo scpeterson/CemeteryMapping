@@ -1,7 +1,7 @@
-import { updateBurial, updateGraveSpace } from "../api/cemeteryApi";
+import { createBurial, updateBurial, updateGraveSpace } from "../api/cemeteryApi";
 import { graveSelectionKey } from "../lib/format";
 import { updateMatchingGrave, replaceBurialInGrave } from "./recordMutationState";
-import type { Burial, GraveSpace, SaveBurialInput, SaveGraveSpaceInput } from "../types";
+import type { Burial, CreateBurialInput, GraveSpace, SaveBurialInput, SaveGraveSpaceInput } from "../types";
 import type { RecordMutationContext } from "./recordMutationContext";
 import { createMarkerMutations } from "./markerMutations";
 import { createEvidenceMutations } from "./evidenceMutations";
@@ -47,5 +47,14 @@ export function useRecordMutations({
     return saved;
   };
 
-  return { ...marker, ...evidence, ...media, ...ownership, saveGraveSpace, saveBurial };
+  const addBurial = async (input: CreateBurialInput): Promise<Burial> => {
+    if (!selectedGrave) throw new Error('Select a gravesite before adding a burial.');
+    const saved = await createBurial(selectedGrave.cemeteryId, selectedGrave.id, input);
+    setSelectedGraveDetails(current => current ? { ...current, burials: [...current.burials.filter(b => b.id !== saved.id), saved], status: current.status === 'needs_review' ? current.status : 'occupied' } : current);
+    refreshDetails({ preserveCurrent: true });
+    refreshCemeteryData();
+    return saved;
+  };
+
+  return { ...marker, ...evidence, ...media, ...ownership, saveGraveSpace, saveBurial, addBurial };
 }

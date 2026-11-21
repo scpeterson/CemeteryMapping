@@ -1,4 +1,5 @@
 import { validateGraveStack } from '../graveStacks.mjs';
+import { validateExpectedVersion } from '../recordVersions.mjs';
 import { validateNewInspections, validateDeletedInspections } from "../monumentInspections.mjs";
 import { validateMarkerFaces, validateFacesRevision, validateInscriptionStatus, validateCurrentLegibility, validateHistoricalTranscriptions } from "../markerFaces.mjs";
 import { optionalCoordinate, optionalText, requiredText, validateUuid } from "../inputValidation.mjs";
@@ -327,6 +328,18 @@ export function validateBurialPayload(body) {
     sourceConflict: optionalBoolean(body?.sourceConflict, "Source conflict"),
     reason: validateMutationReason(body?.reason),
   };
+}
+
+export function validateCreateBurialPayload(body) {
+  const burial = validateBurialPayload(body);
+  if (!burial.firstName && !burial.lastName && !burial.displayName) throw new BadRequestError('Enter a name or identifying display name for the person.');
+  if (burial.recordStatusCode !== 'interred') throw new BadRequestError('Add burial records an interment. Edit an existing record for other record statuses.');
+  const sourceOwnerId = optionalText(body?.sourceOwnerId, 'Deed holder', 80) || '';
+  if (sourceOwnerId) validateUuid(sourceOwnerId.replace(/^ownership-party-/u, ''), 'Deed holder');
+  const sourceOwnerVersion = optionalText(body?.sourceOwnerVersion, 'Deed holder version', 50) || '';
+  if (sourceOwnerVersion && (!sourceOwnerId || !/^\d+(?::\d+)?$/u.test(sourceOwnerVersion))) throw new BadRequestError('Reload the selected deed holder.');
+  return { ...burial, expectedVersion: validateExpectedVersion(body?.expectedVersion),
+    operationId: validateUuid(body?.operationId, 'Request ID'), sourceOwnerId, sourceOwnerVersion };
 }
 
 export function validateOwnershipEventPayload(body) {

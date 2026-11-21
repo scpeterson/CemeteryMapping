@@ -41,6 +41,11 @@ discards the local draft after confirmation. Detailed steps are in
 
 ## Take a first tour
 
+To record an interment in a purchased gravesite, use **People → Add burial** when
+available in your deployed version. Choose the deed holder or enter another
+person; ownership stays unchanged. See
+[Adding a burial to an existing gravesite](operator-workflows.md#adding-a-burial-to-an-existing-gravesite).
+
 1. Open the map and use its legend to identify the displayed features. Zoom into your cemetery and select a gravesite or monument.
 2. Read **Overview** first, then open **Details** or the relevant record section for more information. You can also use search to locate a person or known record identifier.
 3. Check the cemetery, section, and record ID before editing. Similar names and shared monuments can lead to several possible records.

@@ -50,17 +50,21 @@ export function BurialRecord({
   canUpdate,
   lookups,
   onSave,
+  creating = false,
+  onCancelCreate,
 }: {
   burial: Burial;
   canUpdate: boolean;
   lookups: HeadstoneLookups;
   onSave: (id: string, burial: SaveBurialInput) => Promise<Burial>;
+  creating?: boolean;
+  onCancelCreate?: () => void;
 }) {
   const noteItems = burialNoteItems(burial.notes);
   const serviceText = militaryServiceText(burial);
   const intermentOptions = intermentTypeOptions(lookups);
   const recordStatusOptions = burialRecordStatusOptions(lookups);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(creating);
   const [form, setForm] = useDraftState<SaveBurialInput>(() => blankBurialForm(burial));
   const militaryRankOptions = lookups.militaryRanks.filter((option) => option.militaryBranchCode === form.militaryBranchCode);
   const [isSaving, setIsSaving] = useState(false);
@@ -145,7 +149,7 @@ export function BurialRecord({
             ))}
           </LookupSelect>
         </label>
-        <label>
+        {!creating ? <label>
           Record status
           <LookupSelect value={form.recordStatusCode} onChange={(event) => setForm((current) => ({ ...current, recordStatusCode: event.target.value }))}>
             {recordStatusOptions.map((option) => (
@@ -154,7 +158,7 @@ export function BurialRecord({
               </option>
             ))}
           </LookupSelect>
-        </label>
+        </label> : <p className="burial-wide-field">Record status: Interred</p>}
         <label className="burial-wide-field">
           Funeral home
           <input value={form.funeralHome} onChange={(event) => setForm((current) => ({ ...current, funeralHome: event.target.value }))} />
@@ -295,14 +299,14 @@ export function BurialRecord({
           Review notes
           <textarea value={form.reviewNotes} onChange={(event) => setForm((current) => ({ ...current, reviewNotes: event.target.value }))} rows={3} />
         </label>
-        {conflict&&<ConflictRecovery disabled={isSaving} reload={async()=>{setForm(blankBurialForm(await fetchBurial(burial.id)));setError(undefined);setConflict(false);}}/>}
+        {conflict&&!creating&&<ConflictRecovery disabled={isSaving} reload={async()=>{setForm(blankBurialForm(await fetchBurial(burial.id)));setError(undefined);setConflict(false);}}/>}
         {error ? <p id={errorId} className="detail-message is-error" role="alert">{error}</p> : null}
         <div className="burial-form-actions">
-          <button type="button" className="secondary-button" onClick={() => setIsEditing(false)} disabled={isSaving}>
+          <button type="button" className="secondary-button" onClick={() => creating ? onCancelCreate?.() : setIsEditing(false)} disabled={isSaving}>
             Cancel
           </button>
           <LookupSaveButton type="submit" disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save burial"}
+            {isSaving ? "Saving..." : creating ? "Add burial" : "Save burial"}
           </LookupSaveButton>
         </div>
       </LookupForm>
