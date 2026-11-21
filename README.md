@@ -112,6 +112,11 @@ Component boundaries, shared controls, draft handling, styling, and UI validatio
 
 Data origins and stewardship placeholders are tracked in `docs/data-sources.md`.
 
+The [geometry model proposal](docs/geometry-model.md) and
+[proposed ADR 0220](docs/adr/0220-evidence-operational-and-schematic-geometry.md)
+describe how location evidence, operational footprints and schematic layouts
+should relate before broader spatial editing is added.
+
 The initial admin workflow order is tracked in `docs/admin-workflows.md`.
 
 Practical click-by-click and command-oriented workflows are tracked in `docs/operator-workflows.md`.

@@ -242,32 +242,32 @@ Expected audit actions:
 
 ### 5. Geometry Edits and New Spatial Records
 
-Defer until the spatial editing source of truth is decided.
+The [geometry model proposal](geometry-model.md) and
+[ADR 0220](adr/0220-evidence-operational-and-schematic-geometry.md) now describe
+the approach to review before wider editing: preserved location observations,
+accepted operational geography and independent schematic layouts linked by UUID.
+The ADR remains Proposed; its revision stores, renderer and publication workflow
+are future work.
 
-Geometry editing has higher risk because existing data originates from an Esri File Geodatabase and the spreadsheet-derived gravesite boxes are placeholders. Before exposing geometry edits, decide whether edits happen in this application, ArcGIS Pro, or another GIS editing workflow.
+Current lot/gravesite metadata already includes source, class, confidence and
+notes, but each record still has one geographic polygon. Some operationally used
+polygons are labeled schematic. Keep that compatibility while reviewing sources;
+moving them to display-only storage could affect covering-lot queries. Current
+Diagram mode changes styling and external layers, not coordinate storage. See
+[external map layer recovery](operator-workflows.md#external-map-layers-and-diagram-view).
 
-Future task: define and implement the cemetery geometry philosophy before adding broad spatial editing tools.
-
-The working principle should be:
-
-- Headstones and markers are evidence. GPS marker points should remain fixed unless the source observation itself is corrected.
-- Gravesites and lots are operational interpretation. Their polygons may be best-fit, estimated, reviewed, or aligned to local cemetery structure.
-- Historic scans, old TIF diagrams, and future schematic layouts are presentation and evidence aids. They may be easier for users to read without being geographically precise.
-
-Expected future work:
-
-- Add an ADR for separating evidence geometry, operational geometry, and schematic presentation geometry.
-- Add geometry metadata such as source type, confidence, review notes, reviewed timestamp, and reviewer where useful.
-- Consider a separate schematic geometry layer instead of forcing readable diagram layouts into the same PostGIS geometry used for geographic display.
-- Extend the existing `Geographic` and `Diagram` presentation modes with evidence-specific or separately stored schematic layers. Current Diagram view hides external layers and changes styling; it does not establish a separate geometry source of truth. See [external map layer recovery](operator-workflows.md#external-map-layers-and-diagram-view).
-- Add legends and detail-panel labels that tell users whether a marker point is GPS-observed and whether a gravesite or lot polygon is estimated, reviewed, or schematic.
-- Build alignment-run tools for sections such as C so gravesite polygons can be regularized between anchors without moving GPS marker points or accumulating east-west spacing error one grave at a time.
+Start with read-only provenance inventory and visible accuracy limitations.
+Then pilot whole-row alignment candidates from reviewed anchors and a common
+origin, preserving marker observations, explicit assignments, stack semantics and
+neighboring records. Broader editing depends on the ADR's migration, review,
+concurrency and preservation acceptance criteria. The proposed accepted store is
+PostGIS; external GIS tools would submit candidates through staging and review.
 
 ## Explicitly Deferred
 
 - Editing cemetery or section polygons in the web UI.
 - Creating surveyed gravesite polygons.
-- Adding broad gravesite geometry editing before the evidence/interpretation/presentation model is documented.
+- Adding broad gravesite geometry editing before the proposed model is reviewed and its publication safeguards are implemented.
 - Bulk import approval screens.
 - Automatic deed registry promotion from staged evidence into production ownership records.
 - Hard delete operations.

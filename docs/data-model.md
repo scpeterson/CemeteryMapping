@@ -75,6 +75,14 @@ erDiagram
 
 Geometry is stored in PostGIS using EPSG:4326. The application also stores geometry metadata such as geometry type, source, confidence, and review notes so users can distinguish GPS evidence, reviewed diagram geometry, and estimated operational geometry.
 
+For lots and gravesites, these classifications describe the same stored polygon;
+they do not provide separate geographic and diagram versions. Marker points
+include imported observations and explicit estimates. The existing Diagram mode
+restyles geographic data. See the [geometry model proposal](geometry-model.md)
+and [proposed ADR 0220](adr/0220-evidence-operational-and-schematic-geometry.md)
+for observation lineage, accepted geographic revisions and independent schematic
+layouts. Those additions are not implemented by the current classifications.
+
 See [Map Layout and Passageways](map-layout-and-passageways.md) for the ten accepted IDs, individual-deed workflow, ordinary-lot capacity exception, and Trinity E/G gravesite-only policy. A passageway uses the existing `lot_uuid` foreign key; it is not a new ownership target type. Migrations 502–504 preserve existing gravesite and ownership assignments.
 
 ## Burials, People, And Military Service
