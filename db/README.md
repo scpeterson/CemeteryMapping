@@ -343,9 +343,9 @@ Sections also include `alternate_names text[]` for locally used names that diffe
 
 The security foundation uses:
 
-- `app_roles` for application roles. Current values are `reader`, `power-user`, `cemetery-admin`, and `admin`.
-- `app_users` for identity-provider subjects mapped to application roles.
-- `app_user_cemetery_access` for cemetery assignments used by every non-admin role, including readers. Admin/API account creation and updates require at least one assignment; the current form and map workflow expect one. Reader assignments establish map scope without granting edits; power-user and cemetery-admin edits still require the appropriate role and `can_edit`. Direct SQL and imports must preserve this invariant because it is not a database constraint. See the [assignment audit](../docs/hosted-test.md#cemetery-assignment-audit).
+- `app_roles` for the role catalog: cemetery roles `reader`, `power-user`, `cemetery-admin`, and system role `admin`.
+- `app_users` for identity-provider subjects, account activation and profiles. Its `role_name = 'admin'` grants system access; other values are compatibility summaries.
+- `app_user_cemetery_access` for independent memberships, including readers. Each row has a cemetery role and `can_edit`. Users/API account creation and updates require at least one membership and support several. Map choices and preferred scope use those memberships; scoped actions and deed/owner access check the target role and edit permission. Direct SQL/imports must preserve these fields; there is no database constraint requiring an account to have a membership. Members can remove the final assignment, leaving an empty map scope. See the [assignment audit](../docs/hosted-test.md#cemetery-assignment-audit).
 - `audit_events` for append-only row-level change history.
 - `audit_retention_policies` for the global audit retention window and purge batch size.
 - `system_events` for operational failures, warnings, health-check failures, integration failures, and scheduled job runs.
@@ -705,8 +705,9 @@ Database regression scripts run sequentially (`--test-concurrency=1`) because mi
 
 ## Passageway schema and reviewed map corrections
 
-The API startup contract requires `502-passageway-area-type`. Apply the current
-root changelog before running a new build; migration 503 creates the approved
+The passageway release required `502-passageway-area-type`; current main's API
+contract requires `522-policy-administration`. Apply the complete current root
+changelog and refresh API grants before starting a new build. Migration 503 creates the approved
 Trinity passageways and 504 adjusts the southern C rows and C-P03. Neither
 creation nor geometry correction automatically reassigns existing gravesites.
 

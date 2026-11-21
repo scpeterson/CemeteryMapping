@@ -44,8 +44,8 @@ Initial Auth0 roles:
 Application role intent:
 
 - `reader`: can view cemetery map, grave, burial, and marker information, but cannot view deed/owner details.
-- `power-user`: can view deed/owner details and update existing cemetery records for assigned cemeteries.
-- `cemetery-admin`: can administer assigned cemeteries and has read-only access elsewhere, but cannot manage global users, lookups, audit/system events, or system-wide deletes.
+- `power-user`: an editable cemetery membership permitting deed/owner access and permitted record updates in that cemetery.
+- `cemetery-admin`: an editable cemetery membership permitting cemetery administration, including Members and Policies. Other memberships retain their own roles; system-wide Users, shared Lookups and audit/system administration remain restricted.
 - `admin`: can manage the whole system, including users, roles, lookups, audit/system events, all cemeteries, and global administrative actions.
 
 Initial API permissions:
@@ -55,7 +55,7 @@ Initial API permissions:
 - `read:deeds`
 - `write:deeds`
 
-The application database remains the system of record for application role assignment after token validation. Auth0 is the sign-in and token issuer. The API should map a validated token subject and email to `app_users`, then enforce the local role from `app_users`.
+The application database remains the system of record after token validation. Auth0 is the sign-in and token issuer. The API maps token subject to the active `app_users` account, grants system access only for its `admin` value, and uses explicit memberships for other cemetery roles and edit permissions. Changing Auth0 roles or a non-admin compatibility summary alone does not change a membership's permissions.
 
 ## Rationale
 
@@ -83,7 +83,7 @@ The repository must not commit Auth0 secrets. Local, stage, and production deplo
 
 Development and CI can continue using `AUTH_MODE=disabled` until Auth0 test tenant credentials are available. Trusted-header mode is restricted to controlled non-production integration scenarios and is not a production identity-provider replacement.
 
-The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT validation. After validation, the API loads `app_users` using the token `sub` claim and enforces the local `role_name`. Token permissions are useful context from Auth0, but the database remains the final application authorization source.
+The Express API uses Auth0's `express-oauth2-jwt-bearer` middleware for JWT validation. After validation, the API loads the active `app_users` account using token `sub`. A local `role_name = 'admin'` grants system access; otherwise explicit `app_user_cemetery_access` roles determine route eligibility and target-cemetery permissions. Non-admin `app_users.role_name` values are compatibility summaries. Token permissions are useful Auth0 context, but local membership and edit checks remain authoritative. See [the current membership model](0011-security-rbac-soft-delete-audit.md#november-21-2026-membership-documentation-reconciliation).
 
 The Auth0 setup script provisions all four roles, including `cemetery-admin`,
 with the permissions listed above. It does not assign roles to users or change

@@ -35,9 +35,9 @@ Gravesite detail edits also detect concurrent updates. A conflict preserves the 
 
 Implemented admin foundation.
 
-Only admins can manage application users and roles. User management lives in a dedicated admin drawer rather than the left search panel or right grave-detail panel, so map workflows remain focused on cemetery records.
+System administrators manage account identity, activation, system access and all cemetery memberships in **Admin → Users**. Cemetery administrators manage memberships only in their administered cemeteries through **Admin → Members**, including invitations when provisioning is configured. They cannot change existing account identity, activation or system access. These workflows live in the Admin drawer alongside cemetery setup and review tools.
 
-The Admin drawer uses compact left-side navigation instead of large top tabs. This keeps the panel usable as admin areas grow: Users, Cemetery Records, Lookups, Deed Evidence, Readings, Source People, Quality, Bulk, Audit Log, and System each get one focused workspace.
+The Admin drawer uses compact left-side navigation. Available workspaces depend on system access and cemetery memberships; **Users** and shared **Lookups** require system administration, while **Members** and **Policies** support assigned cemetery administrators. See [user management](operator-workflows.md#admin-user-management) and [member administration](operator-workflows.md#cemetery-member-administration).
 
 The Admin UI stores the Auth0 `user_id` as the local Auth0 user ID. When Management API credentials are configured, adding a new user can search Auth0 by email or create a database-connection Auth0 user before saving the local role assignment.
 
@@ -93,14 +93,23 @@ cemeteries but cannot edit lookup definitions. See [Lookup Maintenance](operator
 
 The regular detail panel has a Photos section for field collection. Editors can select and upload one or more images from a phone or desktop, linked to the selected monument. The selected link, notes, and optional Date taken apply to every selected photo. Uploads run one at a time and show per-file results; `Retry failed photos` retries only failed files. See [Photo Collection](operator-workflows.md#photo-collection). The inline gallery shows at most four photos, ordered newest first by date taken and then upload date. When more than four photos are linked, `View all photos (N)` opens the complete newest-first history in a responsive modal; users can close it with its close button or Escape; backdrop clicks do not dismiss it. Uploaded files are represented by `media_assets` rows and related through `headstone_media_assets` (legacy gravesite links are retained for history); the image files themselves are stored outside Postgres. In local environments, the files live under `uploads/media` unless `MEDIA_UPLOAD_DIR` points somewhere else. Readers can view linked photos and the complete history but cannot upload them. Photo downloads require reader authentication and an undeleted media asset; the gallery fetches protected images with the current access token. Soft-deleted files remain on disk for recovery but are no longer downloadable.
 
-Current role behavior:
+Current role behavior applies separately to each cemetery membership:
 
-- `reader`: map, gravesites, burial information, and marker/headstone information; no deed/owner sections and no edit controls.
-- `power-user`: reader access everywhere, plus deed/owner visibility and update access for assigned cemeteries.
-- `cemetery-admin`: can administer assigned cemeteries and has read-only access to other cemeteries.
-- `admin`: full system access, including user management, lookup maintenance, audit review, adding structural records, and soft deletes.
+| Role | Access |
+| --- | --- |
+| `reader` | General map, gravesite, burial and marker reads; no edits or deed/owner access for that cemetery. |
+| `power-user` | Permitted record edits and deed/owner access in that editable membership's cemetery. Inspection editing, deleting a photo from the library and member/policy administration require a higher cemetery role. |
+| `cemetery-admin` | Power-user access plus permitted cemetery administration, including Members, Policies, inspection editing and deleting photos within that cemetery. System-wide Users and shared Lookups remain restricted. |
+| `admin` | System-wide access across cemeteries, including account management, shared lookups, audit review and structural record administration. No membership is required. |
 
-Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account. Assignments are stored in `app_user_cemetery_access`. A reader assignment sets the map scope without granting editing permission. Switching between non-admin roles preserves the selected assignment. See [cemetery scope and navigation](operator-workflows.md#cemetery-scope-and-navigation).
+One account can be a cemetery admin in A, a power user in B and a reader in C.
+Admin → Users provides **Add cemetery** and a separate role for each membership;
+creating or saving a non-admin account requires at least one membership. The map
+opens the preferred assigned cemetery, falling back to an assignment, and lets
+members switch among their cemeteries. System admins can choose All cemeteries.
+Existing general record reads retain their visibility rules: the map selector is
+navigation, not a privacy boundary. Ownership and mutations check the target
+cemetery's role and edit permission. See [cemetery scope and navigation](operator-workflows.md#cemetery-scope-and-navigation).
 
 Admin UI hover explanations should avoid exposing Auth0 user IDs in list-row tooltips. The Auth0 user ID is shown only when intentionally editing a user record.
 

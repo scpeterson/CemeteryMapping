@@ -192,9 +192,10 @@ scans, and Esri geodatabases are source files; see the [Data Source Register](da
 2. **Auth0 signs the user into the application.** The browser obtains an access
    token from the environment's Auth0 tenant and includes it in API requests.
 3. **Express checks identity and application permissions.** An active `app_users`
-   record, its role, and cemetery assignments determine which records and actions
-   the user can access. Passing Cloudflare or signing into Auth0 alone does not
-   grant cemetery access.
+   account with `role_name = 'admin'` has system access. Other accounts use each
+   membership's role and edit permission for scoped actions and ownership data.
+   Passing Cloudflare or signing into Auth0 alone does not grant application
+   access. General record reads retain their existing visibility rules.
 
 Non-admin accounts require cemetery membership when created or saved. Admin →
 Users manages independent roles for each cemetery; memberships may span several
