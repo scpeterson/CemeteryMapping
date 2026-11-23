@@ -67,6 +67,35 @@ test('location burial capacity rejects new casket/urn conflicts atomically, incl
   assert.equal((await f.c.query('SELECT count(*)::int AS n FROM field_operations WHERE actor_subject=$1 AND operation_id=$2', [f.actorUser.subject,third.operationId])).rows[0].n, 0);
 }));
 
+test('pre-need unknown interment is allowed beside an urn; only actual interment enforces urn type', () => fixture(async f => {
+  await f.c.query("INSERT INTO location_policies(cemetery_id,section_uuid,rule_key,enabled,reason) VALUES($1,$2,'casket_or_two_urns',true,'Regression')", [f.cemetery,f.section]);
+  await f.call(await f.input({ firstName: 'First', intermentType: 'urn' }));
+  const planned = await f.call(await f.input({ firstName: 'Future', intermentType: 'unknown', recordStatusCode: 'pre_need_inscription', burialDate: '' }));
+  assert.equal(planned.intermentType, 'unknown');
+  assert.equal(planned.recordStatusCode, 'pre_need_inscription');
+  assert.equal((await getGraveSpace(f.pool, f.cemetery, 'A-ADD')).status, 'occupied');
+  await f.c.query('SET CONSTRAINTS ALL IMMEDIATE');
+  for (const intermentType of ['unknown', 'casket']) {
+    await f.c.query('SAVEPOINT incompatible_interment');
+    try {
+      await assert.rejects(f.c.query(`UPDATE burials SET burial_record_status_type_id=(SELECT id FROM burial_record_status_types WHERE code='interred'), interment_type_id=(SELECT id FROM burial_interment_types WHERE code=$2) WHERE id=$1`, [planned.id, intermentType]), e => e.code === '23514');
+    } finally { await f.c.query('ROLLBACK TO SAVEPOINT incompatible_interment'); }
+  }
+  await f.c.query('SAVEPOINT second_interment');
+  await f.c.query(`UPDATE burials SET burial_record_status_type_id=(SELECT id FROM burial_record_status_types WHERE code='interred'), interment_type_id=(SELECT id FROM burial_interment_types WHERE code='urn') WHERE id=$1`, [planned.id]);
+  await f.c.query('SET CONSTRAINTS ALL IMMEDIATE');
+  assert.equal((await getGraveSpace(f.pool, f.cemetery, 'A-ADD')).burials.length, 2);
+  await f.c.query('ROLLBACK TO SAVEPOINT second_interment');
+  await f.call(await f.input({ firstName: 'Second', intermentType: 'urn' }));
+  await f.c.query('SET CONSTRAINTS ALL IMMEDIATE');
+  assert.equal((await getGraveSpace(f.pool, f.cemetery, 'A-ADD')).burials.length, 3);
+  await f.call(await f.input({ firstName: 'Another inscription', intermentType: 'unknown', recordStatusCode: 'pre_need_inscription', burialDate: '' }));
+  await f.c.query('SAVEPOINT planned_interment');
+  try {
+    await assert.rejects(f.c.query(`UPDATE burials SET burial_record_status_type_id=(SELECT id FROM burial_record_status_types WHERE code='interred') WHERE id=$1`, [planned.id]), e => e.code === '23514');
+  } finally { await f.c.query('ROLLBACK TO SAVEPOINT planned_interment'); }
+}));
+
 test('source holder must belong to the target grave; stale holder and disallowed cemetery do not create rows', () => fixture(async f => {
   const input = await f.input({ sourceOwnerId: f.owner.id, sourceOwnerVersion: '0' });
   await assert.rejects(f.call(input), /deed holder changed/);

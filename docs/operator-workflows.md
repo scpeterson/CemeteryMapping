@@ -79,8 +79,15 @@ in a purchased gravesite without transferring the deed.
    to prefill their name, or leave **Enter a new person** selected for a family
    member or another person. For an unstructured joint owner name, enter the
    individual person's name yourself.
-4. Review the name and enter dates, interment type and other known burial details.
-5. Select **Add burial** to save. Review the resulting record and occupied status;
+4. Review the name and choose **Record status**. Use **Pre-need inscription** for
+   someone named on the headstone who is not yet buried. Leave **Interment** as
+   **Unknown or not applicable** while no burial has
+   occurred, and leave the burial date blank. An existing urn does not force a
+   pre-need record to specify Urn. When recording the actual interment, an existing
+   urn means the second interment must be Urn under the two-urn policy. Use
+   **Interred** only after burial; enter dates and other known details.
+5. Select **Add burial** to save. Pre-need inscriptions do not consume burial capacity
+   or make the gravesite occupied. Review the record;
    a gravesite already marked Needs review retains that status.
 
 The deed holders and ownership history remain unchanged. Record a separate deed

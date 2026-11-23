@@ -333,7 +333,6 @@ export function validateBurialPayload(body) {
 export function validateCreateBurialPayload(body) {
   const burial = validateBurialPayload(body);
   if (!burial.firstName && !burial.lastName && !burial.displayName) throw new BadRequestError('Enter a name or identifying display name for the person.');
-  if (burial.recordStatusCode !== 'interred') throw new BadRequestError('Add burial records an interment. Edit an existing record for other record statuses.');
   const sourceOwnerId = optionalText(body?.sourceOwnerId, 'Deed holder', 80) || '';
   if (sourceOwnerId) validateUuid(sourceOwnerId.replace(/^ownership-party-/u, ''), 'Deed holder');
   const sourceOwnerVersion = optionalText(body?.sourceOwnerVersion, 'Deed holder version', 50) || '';

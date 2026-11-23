@@ -20,9 +20,11 @@ burial record; it never modifies owners, deeds, ownership rights, geometry or
 marker links. A real deed transfer remains a separate ownership workflow.
 The selected holder is recorded as provenance, not a shared person identity.
 
-Create an active interred record using existing name/date/place/military
-validation and location capacity policies. The derived status becomes occupied
-unless needs-review takes precedence. Edit an existing pre-need record when it
+Allow the existing record statuses, including pre-need inscription, using existing
+name/date/place/military validation and location capacity policies. Pre-need and memorial
+records do not consume burial capacity; unknown status counts conservatively.
+Only interred records make the derived gravesite status occupied;
+needs-review takes precedence. Edit an existing pre-need record when it
 already represents the person; creation rejects an exact name-and-birth match
 within the gravesite, including deleted records requiring recovery review.
 
@@ -36,7 +38,9 @@ the form after a failed save. A stable operation UUID and the existing field
 operation receipts make identical retries return the original burial; reuse with
 a changed payload conflicts. Policy rejection rolls back the receipt as well.
 
-No schema migration is needed. Database regression tests cover inherited lot
+Migration 523 excludes pre-need and memorial inscriptions from capacity counts;
+rollback restores the previous conservative counting without changing records.
+Database regression tests cover inherited lot
 ownership, legacy owners, unchanged ownership/geometry/markers, stale drafts,
 duplicate prevention, retry receipts and capacity rollback. Mocked browser tests
 cover both person choices, phone layout, cancellation and target membership.

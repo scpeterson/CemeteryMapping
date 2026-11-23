@@ -4,11 +4,12 @@ import { randomUUID } from 'node:crypto';
 import { createApp } from './index.mjs';
 import { validateCreateBurialPayload } from './routes/cemeteryRouteValidation.mjs';
 
-test('new burial validates identity, actual interment, source holder and retry token', () => {
+test('new burial validates identity, record status, source holder and retry token', () => {
   const input = { firstName: 'Jane', lastName: 'Example', expectedVersion: '1', operationId: randomUUID() };
   assert.equal(validateCreateBurialPayload(input).recordStatusCode, 'interred');
   assert.throws(() => validateCreateBurialPayload({ ...input, firstName: '', lastName: '' }), /name/);
-  assert.throws(() => validateCreateBurialPayload({ ...input, recordStatusCode: 'pre_need_inscription' }), /interment/);
+  assert.equal(validateCreateBurialPayload({ ...input, recordStatusCode: 'pre_need_inscription' }).recordStatusCode, 'pre_need_inscription');
+  assert.throws(() => validateCreateBurialPayload({ ...input, recordStatusCode: 'invalid' }), /status/);
   assert.throws(() => validateCreateBurialPayload({ ...input, operationId: 'invalid' }), /Request ID/);
   assert.throws(() => validateCreateBurialPayload({ ...input, sourceOwnerId: 'invalid' }), /Deed holder/);
   assert.throws(() => validateCreateBurialPayload({ ...input, expectedVersion: undefined }), /version/);
