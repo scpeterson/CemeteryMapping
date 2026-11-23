@@ -13,6 +13,11 @@ The November 23 deployment verified version **0.3.0** at
 and [local/hosted TEST verification](release-status.md#november-23-2026-local-and-hosted-test-deployment-verified)
 for scope and recovery details.
 
+The later November 23 [DEV-authoritative data/media sync](#november-23-2026-dev-authoritative-data-and-media-sync)
+verified **22,113 rows across 78 business tables** and **789 media files** equal
+across DEV, local TEST and hosted TEST, preserving each target's users and access
+settings. That record supersedes the older data-parity observations below.
+
 The earlier November 20 live verification found **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`**
 ([PR #882](https://github.com/scpeterson/CemeteryMapping/pull/882)), version
 **0.3.0**, built **`2026-11-19T19:17:22Z`**, with migrations **521/522** applied.
@@ -37,13 +42,13 @@ explains the TEST hosting, object storage and recovery dependencies.
 The latest recorded backup-service setup and retention cleanup is the
 [November 13 encrypted Spaces backup and verified cleanup](#november-13-2026-encrypted-spaces-backup-and-verified-cleanup).
 
-The latest NHG review update is the
+The earlier NHG review update is the
 [November 10 remaining NHG reconciliation](#november-10-2026-remaining-nhg-reading-fact-and-observation-reconciliation).
 
-The latest inspection-data update is the
+The earlier inspection-data update is the
 [November 11 DEV-authoritative latest-inspection reconciliation](#november-11-2026-dev-authoritative-latest-inspection-reconciliation).
 
-The latest inspection-photo update is the
+The earlier inspection-photo update is the
 [November 11 active photo reconciliation](#november-11-2026-active-inspection-photo-reconciliation).
 
 The subsequent [November 11 final read-only comparison](#november-11-2026-final-read-only-inspection-and-photo-comparison)
@@ -52,12 +57,12 @@ confirmed the latest inspections and active photo associations match DEV for all
 
 The later [November 11 remaining inspection and photo reconciliation](#november-11-2026-remaining-inspection-and-photo-reconciliation)
 extends that check to all active monuments: **566 latest inspections and 729
-active photo associations** now match DEV after local identity normalization.
+active photo associations** matched DEV at that review after local identity normalization.
 
 The latest gravesite correction is the [November 12 Köenig split](#november-12-2026-koenig-gravesite-correction).
 
 The prior data operation is the [November 11 complete business-data reconciliation](#november-11-2026-complete-dev-authoritative-business-data-reconciliation):
-**all 30,294 rows in 76 business/reference tables now match DEV exactly**, including
+**all 30,294 rows in 76 business/reference tables matched DEV exactly at that review**, including
 IDs, timestamps and deleted history. TEST authentication, configuration and audit
 history remain environment-specific and preserved.
 
@@ -76,6 +81,91 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 23, 2026: DEV-authoritative data and media sync
+
+Following the code deployment below, user-authorized reconciliation made DEV
+authoritative for local and hosted TEST business records and media. Verification
+completed **2026-11-23T19:41:54Z** (2:41:54 p.m. EST): all **22,113 full rows in
+78 business tables** match across the three environments, including canonical
+IDs, timestamps, nested JSON, deleted/history records and exact EWKB geometry
+bytes. Final independent snapshots found zero business-table differences. A
+hosted JSON-only follow-up copied DEV's numeric representation for 393 marker
+records (for example, `90.0` rather than `90`), making full-row text hashes match
+as well as the underlying values. It passed rollback rehearsal before commit.
+The 78-table import excludes the protected tables below and the extension-owned
+`spatial_ref_sys` catalog; all **8,500** catalog rows also matched unchanged.
+This narrower counting boundary differs from the older November 11 totals.
+
+### Backups, rehearsal and preservation
+
+- Full database dumps for DEV and both TEST environments were taken and validated
+  before mutation. Local media received an APFS clone backup; hosted media received
+  a hard-link snapshot, with new files published separately so old backup bytes
+  remained unchanged. Configuration backups and hashes were retained.
+- Both TEST transactions passed rollback and committed rehearsals on isolated
+  restores. Live application used final target backups and before-state assertions,
+  verified all **167 native foreign keys**, kept audit triggers active, and restored
+  suspended non-audit triggers. Independent final checks confirmed original
+  trigger state, user/access records and existing audit history were preserved.
+- The **12 protected tables** were `app_users`, `app_user_activity`,
+  `app_user_cemetery_access`, `access_requests`, `field_operations`, `audit_events`,
+  `system_events`, `databasechangelog`, `databasechangeloglock`, `app_roles`,
+  `audit_retention_policies` and `system_event_retention_policies`. Existing TEST
+  identities, memberships, access settings, receipts, migration metadata and
+  configuration were retained. Referenced DEV user IDs already existed in each
+  target, so no identity or permission remapping was needed.
+- Existing audit rows remain intact. The business imports appended **6,818 audit
+  events in local TEST** and **423 in hosted TEST**, with the explicit authorized
+  sync reason. DEV's data and media independently verified unchanged.
+
+### Media and application verification
+
+All **789 originals**, totaling **7,651,886,763 bytes**, match by size and SHA-256.
+Hosted TEST received **34 files** totaling **325,818,358 bytes**. Its one extra
+TEST-only file was moved to `quarantined-media` in the protected backup directory;
+all pre-existing file bytes remain in the verified `media-before` snapshot.
+Local DEV and TEST already shared their media directory, so no local publication
+was required. The running hosted API user (UID **1000**) can read all 789 files.
+
+Both TEST APIs are healthy; anonymous map requests return **401**, and hosted
+HTTPS request-access returns **200**. Restricted runtime reads match DEV's
+**692 active burials, 568 markers and 761 media assets**. Local TEST remains on
+ports **5174/3003**; DEV's running services and data were preserved. Hosted API/web
+were paused for the main sync and restarted, with a further API restart for the
+numeric-format follow-up. The database and tunnel were left running.
+
+This operation changed no application code, release metadata or schema version.
+Hosted TEST remains v0.3.0 at `f4debd575c74e9b96dcb2205e60b514077697566`, built
+`2026-11-23T19:06:14Z`, schema **523**. PostgreSQL remains **18.6** everywhere;
+DEV/local TEST retain PostGIS/topology **3.6.4**, while hosted TEST retains
+**3.7.0** and legacy TIGER **3.6.4**. Environment-specific accounts, operational
+history, migration execution metadata and extension versions remain separate.
+
+DEV's known **one active photo context without an active media link** was
+preserved exactly. The initial isolated check exposed it, and the sync then
+required the same exception set with no additions; its inspection/face references
+remain valid. This is a source-data issue, not a new synchronization discrepancy.
+No fresh interactive login, invitation delivery, real Turnstile submission,
+physical offline field validation or STAGE/PRODUCTION deployment is claimed.
+
+### Recovery evidence
+
+Protected local directory: `db/backups/20261123-dev-test-sync/`.
+Protected hosted directory: `/srv/nhcemeteries/backups/20261123-dev-test-sync/`.
+They retain validated database dumps, media/configuration snapshots, source and
+target before-state records, rehearsal/apply logs, exact geometry/JSON checks and
+final comparisons. The local `sync-verification.json` is the consolidated result.
+No dumps, records, credentials or other private evidence are included in Git.
+
+The hosted `database-before.dump` and `database-final-before.dump` precede the
+business sync; `database-before-json-format.dump` already includes that sync and
+precedes only the numeric-format follow-up. Preserve subsequent TEST edits and
+the target's user/access state during recovery. Shared local media and hard-linked
+hosted backups require care: never edit backup-linked file bytes in place.
+
+See the [combined release-status record](release-status.md#november-23-2026-dev-data-and-media-synced-to-both-test-environments)
+for the complete parity boundary and verification scope.
 
 ## November 23, 2026: main revision deployment and migration 523
 
