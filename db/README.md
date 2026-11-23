@@ -707,7 +707,9 @@ Database regression scripts run sequentially (`--test-concurrency=1`) because mi
 
 The passageway release required `502-passageway-area-type`; current main's API
 contract requires `522-policy-administration`. Apply the complete current root
-changelog and refresh API grants before starting a new build. Migration 503 creates the approved
+changelog through `523-non-interred-inscription-capacity` and refresh API grants
+before starting a new build. Migration 523 excludes pre-need and memorial records
+from Section G capacity counting; it does not change burial records. Migration 503 creates the approved
 Trinity passageways and 504 adjusts the southern C rows and C-P03. Neither
 creation nor geometry correction automatically reassigns existing gravesites.
 

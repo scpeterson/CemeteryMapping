@@ -221,7 +221,7 @@ If a decision is replaced, do not rewrite history. Add a new ADR and mark the ol
 ## Map and passageway schema through migration 504
 
 The passageway release originally required `502-passageway-area-type`. The current
-API requires migration 522; see [current requirements](#current-schema-and-workspace-release). Migrations 502–503 add typed passageways, original
+API startup guard checks migration 522; current main requires the full changelog through 523; see [current requirements](#current-schema-and-workspace-release). Migrations 502–503 add typed passageways, original
 registry location references, individual-rights enforcement and the ten approved
 Trinity polygons. Migration 504 adjusts the southern C rows and C-P03. Real-data
 geometry migrations may skip a database without their source cemetery; do not
@@ -262,7 +262,7 @@ every main push still runs application validation. The required
 
 The **v0.3.0 source release baseline requires the full changelog through migration
 520**. Current main adds scoped policies and its API startup guard checks
-`522-policy-administration`; apply the complete current changelog through 522
+`522-policy-administration`; apply the complete current changelog through 523
 before starting that API. A version label alone does not distinguish the immutable
 tag from later v0.3.0-based main builds; check the exact revision and the
 [deployment record](release-status.md). The schema additions include:
@@ -279,6 +279,7 @@ tag from later v0.3.0-based main builds; check the exact revision and the
 | 520 | Automatic marker IDs and single flat Primary/Spans marker per Section G plot |
 | 521 | Identity-scoped location-policy inheritance and adoption of existing restrictions |
 | 522 | Guarded policy administration, previews and attributed history |
+| 523 | Exclude pre-need and memorial records from Section G burial capacity counts |
 
 After backing up a persistent target and rehearsing its pending migrations on an
 isolated copy, apply migrations and refresh the restricted runtime grants before
