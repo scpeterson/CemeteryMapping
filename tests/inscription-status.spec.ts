@@ -92,6 +92,8 @@ for (const width of [1280, 390]) test(`face checkboxes are exclusive and protect
   await page.screenshot({ path: testInfo.outputPath(`face-flags-${width}.png`) });
   await blank.check(); await expect(illegible).not.toBeChecked();
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
+  // Wait for the PATCH to finish and close the editor before inspecting fixture state.
+  await expect(page.getByRole("button", { name: "Edit face records", exact: true })).toBeVisible();
   expect(savedFaces[0].inscription).toBe(""); expect(savedFaces[0].inscriptionStatus).toBe("blank"); expect(savedFaces[0].currentLegibility).toBe("blank");
   await page.getByRole("button", { name: "Edit face records" }).click();
   await expect(blank).toBeChecked(); await blank.uncheck(); await expect(text).toBeEnabled();
@@ -104,6 +106,7 @@ for (const width of [1280, 390]) test(`face checkboxes are exclusive and protect
   await text.press("End"); await text.pressSequentially(" surname");
   await expect(blank).toBeDisabled(); await expect(text).toHaveValue("[blank] surname");
   await page.getByRole("button", { name: "Save marker", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Edit face records", exact: true })).toBeVisible();
   expect(savedFaces[0].inscription).toBe("[blank] surname"); expect(savedFaces[0].inscriptionStatus).toBe("transcribed");
   await page.getByRole("button", { name: "Edit face records" }).click();
   await text.fill(" \n "); await expect(blank).toBeEnabled(); await blank.check(); await expect(text).toHaveValue("");
