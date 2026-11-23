@@ -6,6 +6,7 @@ export default defineConfig({
   ...inspectionRegressions,
   workers: 2,
   testMatch: [
+    "add-burial.spec.ts",
     "ownership-map-refresh.spec.ts", "targeted-mutations.spec.ts", "passageways.spec.ts", "grave-stacks.spec.ts", "ui-consistency.spec.ts", "admin-ui-fixes.spec.ts", "ui.spec.ts", "admin-layout.spec.ts",
     "application-header.spec.ts", "auth-layout.spec.ts", "map-controls.spec.ts", "map-layer-errors.spec.ts", "marker-creation-defaults.spec.ts",
     "inspection-face-status.spec.ts", "grave-feature-lookups.spec.ts", "military-rank-lookups.spec.ts",

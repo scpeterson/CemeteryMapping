@@ -1,10 +1,11 @@
 import { DetailTabs } from "./DetailTabs";
 import { GraveOverview } from "./FeatureOverview";
-import { FileText, Flag, History, Landmark, MapPinned, UserRound } from "lucide-react";
+import { FileText, Flag, History, Landmark, MapPinned, Plus, UserRound } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { formatDate, formatGraveLabel } from "../../lib/format";
 import type {
   Burial,
+  CreateBurialInput,
   CemeteryLot,
   GraveFeature,
   GraveSpace,
@@ -26,6 +27,7 @@ import type {
   UpdateOwnerInput
 } from "../../types";
 import { CreateHeadstoneForm } from "./CreateHeadstoneForm";
+import { CreateBurialForm } from './CreateBurialForm';
 import { GraveGeometryMetadata } from "./DetailGeometry";
 import { inferredLotForGrave } from "./lotInference";
 import { GraveFeatureForm, GraveFeatureList } from "./GraveFeatureRecords";
@@ -61,6 +63,7 @@ export function GraveDetailPanel({
   isPickingMarkerPoint,
   onSaveGraveSpace,
   onSaveBurial,
+  onCreateBurial,
   onSaveHeadstone,
   onCreateHeadstone,
   onSaveGraveFeature,
@@ -104,6 +107,7 @@ export function GraveDetailPanel({
   isPickingMarkerPoint: boolean;
   onSaveGraveSpace: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
+  onCreateBurial: (input: CreateBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onCreateHeadstone: (grave: GraveSpace, headstone: SaveHeadstoneCreateInput) => Promise<Headstone>;
   onSaveGraveFeature: (feature: SaveGraveFeatureInput) => Promise<GraveFeature>;
@@ -128,6 +132,7 @@ export function GraveDetailPanel({
   onRetry?: () => void;
 }) {
   const title = formatGraveLabel(summary);
+  const [addingBurial, setAddingBurial] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "people" | "monuments" | "records" | "sources" | "location">("overview");
 
   const inferredLot = grave ? inferredLotForGrave(grave, cemeteryLots, cemeteryHeadstones) : undefined;
@@ -220,8 +225,10 @@ export function GraveDetailPanel({
             <div className="section-title burial-section-title">
               <UserRound size={17} aria-hidden="true" />
               <h3>Burials</h3>
+              {canUpdateBurials && !addingBurial && <button type="button" className="icon-text-button" onClick={() => setAddingBurial(true)}><Plus size={15} aria-hidden="true" />Add burial</button>}
               <span className="burial-gravesite-id">Gravesite {title} · Record ID {summary.id}</span>
             </div>
+            {canUpdateBurials && addingBurial && <CreateBurialForm key={grave.uuid ?? grave.id} grave={grave} lookups={headstoneLookups} onCreate={onCreateBurial} onClose={() => setAddingBurial(false)} />}
             {grave.burials.length ? (
               <div className="burial-list">
                 <Suspense fallback={<p role="status">Loading burial records…</p>}>

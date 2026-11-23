@@ -3,6 +3,7 @@ import { MapPinned } from "lucide-react";
 import { useMemo } from "react";
 import type {
   Burial,
+  CreateBurialInput,
   CemeteryLot,
   GraveFeature,
   GraveSpace,
@@ -56,6 +57,7 @@ type DetailPanelProps = {
   isPickingMarkerPoint: boolean;
   onSaveGraveSpace: (graveSpace: SaveGraveSpaceInput) => Promise<GraveSpace>;
   onSaveBurial: (id: string, burial: SaveBurialInput) => Promise<Burial>;
+  onCreateBurial: (input: CreateBurialInput) => Promise<Burial>;
   onSaveHeadstone: (id: string, headstone: SaveHeadstoneInput) => Promise<Headstone>;
   onCreateHeadstone: (grave: GraveSpace, headstone: SaveHeadstoneCreateInput) => Promise<Headstone>;
   onSaveHeadstoneRelationship: (headstoneId: string, relationship: SaveHeadstoneRelationshipInput) => Promise<Headstone>;
@@ -131,6 +133,7 @@ function DetailPanelContents({
   isPickingMarkerPoint,
   onSaveGraveSpace,
   onSaveBurial,
+  onCreateBurial,
   onSaveHeadstone,
   onCreateHeadstone,
   onSaveHeadstoneRelationship,
@@ -239,6 +242,7 @@ function DetailPanelContents({
       isPickingMarkerPoint={isPickingMarkerPoint}
       onSaveGraveSpace={onSaveGraveSpace}
       onSaveBurial={onSaveBurial}
+      onCreateBurial={onCreateBurial}
       onSaveHeadstone={onSaveHeadstone}
       onCreateHeadstone={onCreateHeadstone}
       onSaveGraveFeature={onSaveGraveFeature}

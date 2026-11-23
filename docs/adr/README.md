@@ -29,6 +29,8 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 ## Index
 
+- [ADR 0220: Separate location evidence operational geography and schematic layouts](0220-evidence-operational-and-schematic-geometry.md) — Proposed
+
 - [ADR 0206: Compare unsaved drafts when navigating](0206-draft-guard-navigation-comparison.md)
 
 - [ADR 0205: Debounce inspection recovery writes with lifecycle flushing](0205-debounced-inspection-recovery.md)
@@ -396,3 +398,5 @@ For real cemetery data imports, see ADR 0007 and ADR 0008 before running import 
 - [ADR 0218: Typed policies scoped by location identity](0218-scoped-location-policies.md)
 
 - [ADR 0219: Previewed policy administration](0219-admin-location-policies.md)
+
+- [ADR 0221: Add a burial independently of ownership](0221-add-burial-to-existing-gravesite.md)

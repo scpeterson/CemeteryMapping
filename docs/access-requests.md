@@ -27,9 +27,11 @@ return to the application's sign-in page.
    the application does not currently email administrators about new requests.
 2. Read the submitted details. Use **Reject request** for an unwanted request,
    or **Set up user** to populate the user form. New applicants default to
-   **Read-only**; choose higher privileges only deliberately. Select an assigned
-   cemetery for every non-admin applicant, including Read-only users. System
-   admins are exempt. Saving without a required assignment is blocked before
+   **Read-only**; choose higher privileges only deliberately. Under **System
+   access**, use **Cemetery member** and **Add cemetery** for each approved
+   membership, choosing its role independently. Every non-admin applicant needs
+   at least one membership, including Read-only users; system admins are exempt.
+   Saving without a required assignment is blocked before
    automatic Auth0 provisioning or request approval.
 3. Keep the request's email and **Active user** enabled. Leave Auth0 user ID blank
    to use the configured find/create workflow, or enter the verified identity

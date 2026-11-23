@@ -3,6 +3,9 @@
 
 # Hosted TEST encrypted backups and retention
 
+For the latest live audit and isolated logical recovery results, see
+[November 20 verification](#november-20-2026-schedule-retention-and-isolated-restore-verification).
+
 Decision, November 13, 2026: use a private DigitalOcean Spaces **Standard** bucket
 in SFO3, with CDN disabled and restricted listing. The actual bucket identifier
 and ownership/access inventory are recorded in the private operations repository.
@@ -222,3 +225,76 @@ Cron was active after installation. Job output is protected in `scheduler.log`;
 status JSON is logged with tag `nhcemeteries-backup-status`. Protected command and
 scheduler logs rotate weekly or at 10 MiB, retaining eight compressed rotations.
 Both disk warning and critical flags were false after setup.
+
+## November 20, 2026 schedule, retention and isolated restore verification
+
+The existing cron service was active in UTC, with exactly one daily backup job.
+The configured jobs remain daily backup at 03:30 UTC, Sunday local retention at
+05:30 UTC, Sunday offsite expiration at 06:30 UTC, full repository readback on
+day 1 at 07:30 UTC, and hourly status logging at minute 17. Log rotation retains
+eight protected rotations. Installed backup-manager source matched the reviewed
+repository SHA-256; credential files remained root-owned and mode 0600.
+
+The latest verified daily snapshot was created November 20 at 03:30:59 UTC
+(November 19 at 10:30:59 p.m. EST). Its completed verification was about 14 hours
+old during this review, within the 26-hour limit. All seven scheduled daily runs
+from November 14–20 had corresponding offsite snapshots. Nine daily snapshots and four
+recovery-hold snapshots were present. Anonymous bucket listing and repository
+configuration requests returned 403. The 30-daily/8-weekly/6-monthly policy passed
+its dry run; the repository is too new to contain that full historical depth.
+Local retention planning preserved the latest four verified release sets and the
+explicit PostgreSQL upgrade hold. Fifteen eligible roots represented about
+207 MiB of reclaimable allocation. No local cleanup or offsite expiration was
+applied, and no backups were deleted.
+
+A full repository `check --read-data` passed in 518 seconds. All 13 snapshot IDs
+matched before and after the check. An interrupted serial download had left a
+stale reader lock; its process was confirmed absent and the default liveness-checked
+`unlock` cleared the stale lock before the successful check. No forced removal of
+active locks, repair, prune or snapshot deletion ran during this review.
+
+Recovery ran on the operator's Mac, keeping large restored files off TEST's
+filesystem. A checksum-pinned restic client directly downloaded and decrypted the
+latest daily snapshot, recovering 2,574 files (7,483,230,440 bytes), including
+application source, deployment settings, media, database dumps and roles. The
+2,548 application/media/latest-dump files compared with their TEST sources all
+matched SHA-256 and size. Temporary repository access-key/password copies used
+for direct Mac access were removed after the attempt. Restored copies remain in
+a private local rehearsal directory; original local and offsite backups remain.
+
+The latest dump and globals restored without errors into a separate PostgreSQL
+18.6 cluster, using an empty `template0` database. All 90 restored application
+table fingerprints matched current TEST, including accounts and policy history.
+The schema includes migration 522; PostGIS/topology are 3.7.0 and legacy TIGER
+is 3.6.4. Counts include 566 markers, 809 gravesites, 713 burials and 755 media
+assets. All 755 stored media references resolved to recovered files with matching
+recorded sizes where available.
+
+An unpublished API image built from the recovered source ran as its normal Node
+user against the isolated database and recovered media. Database-backed health
+reported the original v0.3.0/f08cc59 build; Auth0 mode denied anonymous map access.
+A separate disposable, internal-only disabled-auth smoke session loaded 784 active
+graves, 566 markers and a photo whose response matched its recovered SHA-256.
+There were no published container ports or connections to live TEST from the
+restored application. The temporary containers, database volume, network and API
+image were removed.
+
+Final live comparison matched all 90 table fingerprints and confirmed unchanged
+API version/start time, healthy TEST, and no removed or altered files among
+66,484 pre-existing backup files (size/timestamp comparison). No deployment,
+live migration, account edit, policy save or service restart ran. Private audit,
+retention and preservation reports remain with the operator's recovery evidence.
+
+Capacity remains a follow-up: approximately **14.6 GiB free**, below the **15 GiB
+warning** threshold, above the **10 GiB critical** threshold and short of the
+**20 GiB target**. Hourly logs correctly reported warning=true/critical=false.
+The scripts log failures/status but do not deliver alerts. Removing the currently
+eligible 207 MiB alone would not resolve the capacity warning; no removal was
+authorized or performed in this review.
+
+This establishes logical database/media/settings recovery, not full host
+replacement, provider Droplet-snapshot recovery or public tunnel/login recovery.
+Direct Mac access used temporary copies of the server credentials; independent
+password-vault retrieval was not repeated. The November 13 escrow evidence retains
+its original scope. Keep these distinctions when assessing total-host-loss
+readiness.
