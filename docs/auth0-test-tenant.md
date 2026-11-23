@@ -133,7 +133,7 @@ Create test users:
 - `cemetery.cemetery-admin.test@example.com`
 - `cemetery.admin.test@example.com`
 
-Assign the matching Auth0 role to each test user. Auth0 roles are useful for token/API permission context, but the application database remains the source of truth for the app role enforced by CemeteryMapping and for cemetery-scoped assignments in `app_user_cemetery_access`.
+Assign Auth0 roles for the intended token/API permission context. CemeteryMapping authorizes the active local account: `app_users.role_name = 'admin'` grants system access, while `app_user_cemetery_access.role_name` assigns each other cemetery role independently. An Auth0 role alone does not create or upgrade a local membership. For a mixed-role test account, configure its different cemetery roles in Admin → Users.
 
 ## Optional Admin User Provisioning
 
@@ -153,7 +153,7 @@ AUTH0_MANAGEMENT_CONNECTION=Username-Password-Authentication
 AUTH0_PASSWORD_RESET_CLIENT_ID=<your-auth0-spa-client-id>
 ```
 
-When a new Admin UI user is saved without an Auth0 user ID, the API searches Auth0 by email first. If no user exists, it creates one in `AUTH0_MANAGEMENT_CONNECTION` with a generated temporary password and asks Auth0 to send the verification email. When `AUTH0_PASSWORD_RESET_CLIENT_ID` is configured, it also asks Auth0 to send a password reset email so the user can set their own password. The local role is still stored only in `app_users.role_name`.
+When a new Admin UI user is saved without an Auth0 user ID, the API searches Auth0 by email first. If no user exists, it creates one in `AUTH0_MANAGEMENT_CONNECTION` with a generated temporary password and asks Auth0 to send the verification email. When `AUTH0_PASSWORD_RESET_CLIENT_ID` is configured, it also asks Auth0 to send a password reset email so the user can set their own password. System access and cemetery membership roles remain in the application database; Auth0 provisioning does not assign those memberships.
 
 The Admin UI can also deactivate or reactivate existing application users. This updates only `app_users.is_active`; it does not delete the local mapping and does not delete or disable the Auth0 account.
 
@@ -264,7 +264,7 @@ SET email = EXCLUDED.email,
     updated_at = now();
 ```
 
-Prefer **Admin → Users** to create a reader with one assigned cemetery. For controlled manual setup, replace the cemetery UUID below with a verified existing TEST cemetery ID and run the user and assignment inserts together. Direct SQL bypasses account validation; do not create an unassigned reader.
+Prefer **Admin → Users** to create a cemetery member and add one or more memberships. The controlled manual reader example below adds one membership; it does not limit the account to one cemetery. Replace the UUID with a verified existing TEST cemetery ID and run both inserts together. Direct SQL bypasses account validation.
 
 ```sql
 \set cemetery_id 'PASTE_EXISTING_TEST_CEMETERY_UUID_HERE'
@@ -287,24 +287,28 @@ SET email = EXCLUDED.email,
 Add the assignment before committing the manual reader setup:
 
 ```sql
-INSERT INTO app_user_cemetery_access (app_user_id, cemetery_id, can_edit)
-SELECT id, :'cemetery_id'::uuid, false
+INSERT INTO app_user_cemetery_access (app_user_id, cemetery_id, role_name, can_edit)
+SELECT id, :'cemetery_id'::uuid, 'reader', false
 FROM app_users
 WHERE external_subject = 'auth0|PASTE_AUTH0_USER_ID_HERE'
-ON CONFLICT (app_user_id, cemetery_id) DO UPDATE SET can_edit = false;
+ON CONFLICT (app_user_id, cemetery_id) DO UPDATE
+SET role_name = EXCLUDED.role_name, can_edit = EXCLUDED.can_edit;
 COMMIT;
 ```
 
-Every non-admin application account, including `reader`, requires a cemetery assignment when created or saved through Admin or the user API. System admins are exempt. The current Admin form manages one cemetery per non-admin user; the database supports multiple assignments, but the map requires exactly one for a non-admin account.
+Admin → Users and the user API require at least one membership when creating or saving a non-admin account, including a reader. Use **Add cemetery** to assign several cemeteries, with a separate role for each. System admins are exempt. The header lets non-admin users switch among assigned cemeteries; My profile sets their preferred initial cemetery.
 
-Use `admin` for users who should be allowed to manage the whole system. Use `cemetery-admin` or `power-user` plus an `app_user_cemetery_access` row for users who should update assigned cemetery records and view assigned deed/owner data. Use `reader` for users who should only be able to view non-deed map, detail, and search data.
+Use `app_users.role_name = 'admin'` for system administrators. For other accounts, set each membership's `role_name` to `reader`, `power-user` or `cemetery-admin`; the two editable roles use `can_edit = true` and readers use `false`. The non-admin `app_users.role_name` is a compatibility summary, not a substitute for these rows. A `cemetery-admin` membership in one cemetery does not grant edits, deeds or admin actions in another cemetery where the same person is a reader.
 
-Verify mappings and run the [assignment audit](hosted-test.md#cemetery-assignment-audit). If updating an existing account, reconcile any prior assignments so it has exactly one intended cemetery before sign-in:
+Verify mappings and run the [assignment audit](hosted-test.md#cemetery-assignment-audit). Review each membership before sign-in and retain legitimate multiple assignments:
 
 ```sql
-SELECT external_subject, email, display_name, role_name, is_active
-FROM app_users
-ORDER BY email;
+SELECT u.external_subject, u.email, u.role_name AS account_role, u.is_active,
+       c.name AS cemetery, a.role_name AS cemetery_role, a.can_edit
+FROM app_users u
+LEFT JOIN app_user_cemetery_access a ON a.app_user_id = u.id
+LEFT JOIN cemeteries c ON c.id = a.cemetery_id
+ORDER BY u.email, c.name;
 ```
 
 After inserting or updating the row, refresh the browser. If the app still returns `403`, confirm:
@@ -312,6 +316,7 @@ After inserting or updating the row, refresh the browser. If the app still retur
 - `external_subject` exactly matches the Auth0 `user_id`.
 - `is_active` is `true`.
 - `role_name` is `reader`, `power-user`, `cemetery-admin`, or `admin`.
+- For scoped edits, the target membership has the required role and `can_edit = true`; reader memberships do not gain edit rights from another cemetery's role.
 - The API is connected to the same TEST database where the row was inserted.
 
 If a user should be blocked without deleting the mapping:
@@ -329,11 +334,12 @@ The Admin UI Deactivate button performs the same local access block. Use Reactiv
 With `AUTH_MODE=auth0`:
 
 - Not signed in: the frontend should show the sign-in screen.
-- Reader test user: has one cemetery assignment, opens the map at that cemetery, and can load detail and search data without deed/owner fields.
+- Reader test user: has one or more reader memberships, opens the preferred or first assigned cemetery, and can switch between assignments without receiving edit or deed/owner access.
 - Non-admin account creation/update: rejects missing assignments; reader assignments do not grant edits.
-- Admin test user without assignments: initial map fits all cemeteries.
+- Admin test user without a preferred cemetery: initial map fits all cemeteries; a preferred active cemetery sets its initial scope.
 - Reader test user: cannot call admin mutation endpoints.
 - Power-user and cemetery-admin test users: can update assigned cemetery records and cannot update unassigned cemetery records.
+- Mixed-role test user: cemetery-admin in A and reader in B; can administer A, but cannot edit records, see deeds/owners, edit inspections, delete photos or manage Members/Policies in B. System Users/Lookups remain unavailable. General record reads keep their existing visibility rules; map scoping is not tenant isolation.
 - Admin test user: can call admin mutation endpoints.
 - Missing `app_users` row: API returns `403`.
 - Inactive `app_users` row: API returns `403`.

@@ -1563,3 +1563,6 @@ databaseChangeLog:
   - include:
       file: changes/522-policy-administration.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/523-non-interred-inscription-capacity.sql
+      relativeToChangelogFile: true

@@ -67,10 +67,10 @@ test("listRoles falls back to system role definitions when a database snapshot i
   );
   assert.equal(
     roles[1].description,
-    "Can view cemetery records, view and edit deed/owner information for assigned cemeteries, and has read-only access to other cemeteries.",
+    "Can edit permitted records and view deed/owner information in cemeteries with an editable Power user membership. Other memberships retain their own roles.",
   );
   assert.equal(roles[1].userCount, 0);
-  assert.equal(roles[2].description, "Can administer assigned cemeteries and has read-only access to other cemeteries.");
+  assert.equal(roles[2].description, "Can administer cemeteries with an editable Cemetery admin membership, including Members and Policies. Other memberships retain their own roles; system access is separate.");
 });
 
 test("listAssignableRoles includes power-user for admin user forms", async () => {
