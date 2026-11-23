@@ -14,6 +14,70 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 23, 2026: DEV data and media synced to both TEST environments
+
+After the code deployment below, DEV was used as the authoritative source for
+local and hosted TEST business data and media. Final verification was recorded
+at **2026-11-23T19:41:54Z** (2:41:54 p.m. EST). All **22,113 full rows across
+78 business tables** now match in all three environments, including UUIDs,
+original timestamps, nested JSON, historical/deleted records and exact EWKB
+geometry bytes. Final independent read-only snapshots found **zero differing
+business tables**; hosted marker JSON numeric formatting was also aligned with
+DEV so full-row text hashes match. This was a data operation: code, release
+identity and schema version **523** were unchanged. The extension-owned
+`spatial_ref_sys` catalog was outside the import; all **8,500** catalog rows
+also matched across the three environments.
+
+All **789 media files**, totaling **7,651,886,763 bytes**, match by size and
+SHA-256. Local DEV and TEST share the same media directory, so no local file
+publication was needed. Hosted TEST received **34 missing originals**
+(325,818,358 bytes); its one TEST-only file was moved into protected recovery
+storage. All pre-existing hosted file bytes remain in the verified media backup,
+and the running API user can read all 789 published files.
+
+Full DEV/local TEST/hosted TEST database dumps were taken and validated before
+mutation, together with local media/configuration backups and hosted media and
+settings snapshots. Both target syncs passed rollback and committed rehearsals
+on isolated restores before live application. The live transactions verified
+all **167 native foreign keys**, retained audit triggers, restored temporarily
+suspended non-audit trigger states, and checked exact business-row equality.
+Fresh verification confirmed DEV data/media stayed unchanged.
+
+Each TEST environment retained these **12 protected tables**: `app_users`,
+`app_user_activity`, `app_user_cemetery_access`, `access_requests`,
+`field_operations`, `audit_events`, `system_events`, `databasechangelog`,
+`databasechangeloglock`, `app_roles`, `audit_retention_policies` and
+`system_event_retention_policies`. Accounts, memberships, access settings,
+configuration and all existing audit history were preserved. The import
+appended **6,818 local TEST** and **423 hosted TEST** audit events. No user or
+permission remapping was required: DEV's referenced user IDs already existed
+in the targets.
+
+Both TEST APIs are healthy and anonymous cemetery-map requests return **401**.
+Hosted HTTPS request-access returns **200**; restricted runtime database reads
+confirm **692 active burials, 568 markers and 761 media assets**, matching DEV.
+PostgreSQL remains 18.6 everywhere; local DEV/TEST PostGIS/topology remain
+**3.6.4**, while hosted TEST remains **3.7.0** with legacy TIGER **3.6.4**.
+Platform versions, migration execution metadata and environment-specific
+account/operational history are outside business-data equality.
+
+DEV already contains **one active photo context without an active media link**.
+The first isolated rehearsal identified it; subsequent checks explicitly
+preserved that exact exception and rejected additional ones. Its inspection
+and face references are valid. This sync establishes parity with DEV, including
+that known issue; it does not establish that every DEV relationship is clean.
+Fresh interactive sign-in, invitation delivery, real Turnstile submission and
+physical offline field validation were outside this operation.
+
+Private recovery and verification evidence is retained locally under
+`db/backups/20261123-dev-test-sync/` and on the host under
+`/srv/nhcemeteries/backups/20261123-dev-test-sync/`. The local
+`sync-verification.json` summarizes the results. These directories include
+pre-sync dumps, media/configuration snapshots, rehearsal/apply logs and
+before/after comparisons; no private artifacts are committed. Review subsequent
+TEST edits and retain each environment's own user/access state when planning
+recovery. See the [hosted sync record](hosted-test.md#november-23-2026-dev-authoritative-data-and-media-sync).
+
 ## November 23, 2026: local and hosted TEST deployment verified
 
 Both TEST environments now run version **0.3.0** at
