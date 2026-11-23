@@ -149,7 +149,7 @@ export function BurialRecord({
             ))}
           </LookupSelect>
         </label>
-        {!creating ? <label>
+        <label>
           Record status
           <LookupSelect value={form.recordStatusCode} onChange={(event) => setForm((current) => ({ ...current, recordStatusCode: event.target.value }))}>
             {recordStatusOptions.map((option) => (
@@ -158,7 +158,8 @@ export function BurialRecord({
               </option>
             ))}
           </LookupSelect>
-        </label> : <p className="burial-wide-field">Record status: Interred</p>}
+        </label>
+        {form.recordStatusCode === "pre_need_inscription" && <p className="burial-wide-field">No burial has been recorded. Interment can remain Unknown or not applicable; capacity rules apply when recording an actual interment.</p>}
         <label className="burial-wide-field">
           Funeral home
           <input value={form.funeralHome} onChange={(event) => setForm((current) => ({ ...current, funeralHome: event.target.value }))} />

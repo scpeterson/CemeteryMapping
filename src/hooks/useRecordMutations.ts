@@ -50,7 +50,7 @@ export function useRecordMutations({
   const addBurial = async (input: CreateBurialInput): Promise<Burial> => {
     if (!selectedGrave) throw new Error('Select a gravesite before adding a burial.');
     const saved = await createBurial(selectedGrave.cemeteryId, selectedGrave.id, input);
-    setSelectedGraveDetails(current => current ? { ...current, burials: [...current.burials.filter(b => b.id !== saved.id), saved], status: current.status === 'needs_review' ? current.status : 'occupied' } : current);
+    setSelectedGraveDetails(current => current ? { ...current, burials: [...current.burials.filter(b => b.id !== saved.id), saved], status: current.status === 'needs_review' || saved.recordStatusCode !== 'interred' ? current.status : 'occupied' } : current);
     refreshDetails({ preserveCurrent: true });
     refreshCemeteryData();
     return saved;

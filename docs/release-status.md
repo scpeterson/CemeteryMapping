@@ -14,6 +14,21 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 23, 2026: pre-need and Unknown interment verified in local DEV
+
+Local DEV includes the pre-need creation/editing fix and migration **523**.
+The Record status selector allows Pre-need inscription; Interment may remain
+Unknown or not applicable before an actual burial. Pre-need and memorial records
+are excluded from capacity counts. Recording a second actual interment beside
+an existing urn still requires Urn under the two-urn policy.
+
+The running DEV API and Vite server use the updated source, API health reports
+DEV with database connectivity, and migration 523 is applied. A rollback-only
+rehearsal of an existing pre-need record's change from Urn to Unknown passed all
+constraints and preserved the saved record. Disposable database checks verified
+creation, later interment, incompatible type rejection and migration
+rollback/reapply. This verification does not establish hosted TEST deployment.
+
 ## November 20, 2026: scoped-policy deployment verified
 
 Read-only live checks found hosted TEST already running **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`**

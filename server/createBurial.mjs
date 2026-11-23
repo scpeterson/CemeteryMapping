@@ -33,8 +33,8 @@ export async function createBurial(pool, cemeteryId, gravesiteId, input, { actor
     if (duplicate.rows.length) throw new ConflictError('A matching person is already recorded for this gravesite. Edit the existing record, or review deleted-record recovery, instead of adding another.');
     const created = (await client.query(`INSERT INTO burials(gravesite_uuid,interment_type_id,burial_record_status_type_id,source_properties)
       VALUES($1,(SELECT id FROM burial_interment_types WHERE code=$2 AND is_active),
-        (SELECT id FROM burial_record_status_types WHERE code='interred' AND is_active),$3::jsonb)
-      RETURNING id::text`, [grave.id, input.intermentType, JSON.stringify({
+        (SELECT id FROM burial_record_status_types WHERE code=$3 AND is_active),$4::jsonb)
+      RETURNING id::text`, [grave.id, input.intermentType, input.recordStatusCode, JSON.stringify({
       AddBurial: { operationId: input.operationId, sourceOwnerId: input.sourceOwnerId || null, sourceOwnerVersion: input.sourceOwnerVersion || null },
     })])).rows[0];
     // Use the established normalization/lookup checks inside this outer transaction.
