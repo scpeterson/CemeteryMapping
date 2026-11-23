@@ -6,7 +6,14 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
-The November 20 live verification found **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`**
+The November 23 deployment verified version **0.3.0** at
+**`f4debd575c74e9b96dcb2205e60b514077697566`**, built
+**`2026-11-23T19:06:14Z`**, with migration **523** applied. See the
+[deployment record](#november-23-2026-main-revision-deployment-and-migration-523)
+and [local/hosted TEST verification](release-status.md#november-23-2026-local-and-hosted-test-deployment-verified)
+for scope and recovery details.
+
+The earlier November 20 live verification found **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`**
 ([PR #882](https://github.com/scpeterson/CemeteryMapping/pull/882)), version
 **0.3.0**, built **`2026-11-19T19:17:22Z`**, with migrations **521/522** applied.
 See [the scoped-policy verification record](release-status.md#november-20-2026-scoped-policy-deployment-verified)
@@ -69,6 +76,58 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 23, 2026: main revision deployment and migration 523
+
+Deployed CI-verified main commit
+**`f4debd575c74e9b96dcb2205e60b514077697566`**
+([PR #894](https://github.com/scpeterson/CemeteryMapping/pull/894)) using
+`npm run deploy:test -- --ref f4debd575c74e9b96dcb2205e60b514077697566`.
+The previous hosted revision was `f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`.
+Version remains **0.3.0**, with build time **2026-11-23T19:06:14Z**
+(November 23, 2:06:14 p.m. EST). This deploys a main revision rather than the
+immutable v0.3.0 tag.
+
+Before code deployment, migration **523-non-interred-inscription-capacity**
+passed an isolated restore of a validated live database dump, apply, rollback,
+reapply and Liquibase validation. After applying 523 to live TEST, all **89
+original public tables**, excluding Liquibase metadata, retained their row
+counts and content fingerprints, matching the rehearsal preservation result.
+No cemetery records were edited by the migration. Restricted API grants were
+refreshed using existing host credentials; the rehearsal database was removed.
+
+The code deployment applied no further migrations. It validated schema status,
+backed up database/application/settings/media, built the committed Dockerfile
+and verified the candidate before switching API/web. Database and tunnel stayed
+running. Final results:
+
+- API health reports TEST, `cemetery_mapping_test`, and the exact version/SHA/build.
+- Release manifest hashes match; **215** `server/` and `shared/` runtime files
+  also match inside the API container.
+- Auth0 and restricted database access remain active. The runtime user is `node`,
+  its environment file is mode **0600**, and API restart count is **zero**.
+- Accounts, media inventory and protected settings passed preservation checks;
+  runtime configuration changed only for release identity.
+- Nginx configuration validation passed, the served request-access frontend
+  matched the release hash, and its public HTTPS URL returned **200**.
+- Anonymous `/api/me` and cemetery-map requests returned **401**.
+
+Private pre-migration dump, migration logs and preservation evidence remain in
+`/srv/nhcemeteries/staging/schema523-20261123`. The deployment report is retained
+in `staging/20261123T190614Z-f4debd575c74-831b2aef`, with recovery material under
+`/srv/nhcemeteries/backups/20261123T190614Z-f4debd575c74-831b2aef`.
+These paths identify protected host evidence, not repository artifacts.
+The code-cutover database backup already includes migration 523; reverting code
+does not revert it. Review subsequent TEST writes before any schema rollback or
+restore, using the separately retained pre-migration material where appropriate.
+
+Local TEST was independently upgraded through migrations 521–523 and started on
+ports **5174** (built frontend) and **3003** (API), preserving DEV's existing
+services. Its six burial integration checks passed. See the
+[combined verification record](release-status.md#november-23-2026-local-and-hosted-test-deployment-verified)
+for local backup, service lifetime and authentication verification limits.
+No new interactive hosted login, invitation delivery, real Turnstile submission,
+physical offline field validation or STAGE/PRODUCTION deployment was verified.
 
 ## Availability and cost
 
