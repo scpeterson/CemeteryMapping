@@ -18,6 +18,11 @@ verified **22,113 rows across 78 business tables** and **789 media files** equal
 across DEV, local TEST and hosted TEST, preserving each target's users and access
 settings. That record supersedes the older data-parity observations below.
 
+The subsequent [stale inspection-photo association correction](#november-23-2026-stale-inspection-photo-association-correction)
+resolved the sync's known TLC-HS-0573 photo-link exception in all three
+environments, preserving history and verifying zero remaining active photo-link
+inconsistencies under the checked rules.
+
 The earlier November 20 live verification found **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`**
 ([PR #882](https://github.com/scpeterson/CemeteryMapping/pull/882)), version
 **0.3.0**, built **`2026-11-19T19:17:22Z`**, with migrations **521/522** applied.
@@ -82,6 +87,53 @@ The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
 
+## November 23, 2026: stale inspection-photo association correction
+
+User-authorized correction soft-deleted the stale **TLC-HS-0573 / IMG_6677.jpeg**
+inspection-photo association in **DEV, local TEST and hosted TEST**. The photo
+and marker-photo link were already soft-deleted on November 12 with the reason
+“Replacing incorrect photo,” while their October 21, 2026 inspection association
+remained active. This was the single known exception retained during the sync
+below.
+
+Each database received a validated full backup and a rollback rehearsal before
+its guarded one-row update. The association remains stored with its ID, marker,
+media, inspection, face, phase and creation details preserved. Only `deleted_at`
+and `updated_at` changed, identically across the three environments, to
+**2026-11-23T19:47:47.838474Z** (2:47:47 p.m. EST). Audit triggers stayed enabled,
+and each database received **one attributed soft-delete audit event** with the
+user-authorized correction reason. Existing association audit history was retained.
+
+Independent verification completed **2026-11-23T19:49:02Z** (2:49:02 p.m. EST):
+
+- The retained soft-deleted association rows match across all three environments.
+- Original association details and photo/link/inspection history are preserved;
+  all other photo contexts are unchanged.
+- The original photo file remains present and its SHA-256 matches the pre-fix
+  value in local and hosted storage.
+- **Zero active photo-link inconsistencies** remain under the checked active
+  media/link, inspection and face-reference rules in any environment.
+- DEV and both TEST APIs report healthy database connectivity.
+
+No application release, migration, user/access setting or environment
+configuration changed. This targeted data correction resolves the sync's known
+exception; it does not claim a general data-quality audit or fresh interactive
+sign-in, invitation, Turnstile or offline-field verification.
+
+Protected local recovery directory: `db/backups/20261123-stale-photo-context/`.
+Protected hosted recovery directory:
+`/srv/nhcemeteries/backups/20261123-stale-photo-context/`.
+They retain pre-fix database backups and before-state evidence; the guarded SQL,
+rehearsal/apply logs and verification results are retained locally, with hosted
+SQL/apply evidence also on the host. The local `verification.json` records the
+independent three-environment result. Private artifacts are outside Git.
+
+For recovery, retain the existing deleted photo/link state and inspection
+history. Reversing this correction would reactivate the stale association and
+reintroduce the inconsistency; any reviewed recovery should account for later
+edits and preserve each environment's users and audit history. See the
+[combined verification record](release-status.md#november-23-2026-stale-inspection-photo-association-resolved).
+
 ## November 23, 2026: DEV-authoritative data and media sync
 
 Following the code deployment below, user-authorized reconciliation made DEV
@@ -142,10 +194,12 @@ DEV/local TEST retain PostGIS/topology **3.6.4**, while hosted TEST retains
 **3.7.0** and legacy TIGER **3.6.4**. Environment-specific accounts, operational
 history, migration execution metadata and extension versions remain separate.
 
-DEV's known **one active photo context without an active media link** was
+At sync time, DEV's **one active photo context without an active media link** was
 preserved exactly. The initial isolated check exposed it, and the sync then
 required the same exception set with no additions; its inspection/face references
-remain valid. This is a source-data issue, not a new synchronization discrepancy.
+remain valid. This was a pre-existing source-data issue. The later
+[targeted correction](#november-23-2026-stale-inspection-photo-association-correction)
+resolved it in DEV and both TEST environments.
 No fresh interactive login, invitation delivery, real Turnstile submission,
 physical offline field validation or STAGE/PRODUCTION deployment is claimed.
 

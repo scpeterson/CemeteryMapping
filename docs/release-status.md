@@ -14,6 +14,37 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 23, 2026: stale inspection-photo association resolved
+
+The photo-link exception identified during the data sync below is resolved in
+**DEV, local TEST and hosted TEST**. The stale association for marker
+**TLC-HS-0573**, photo **IMG_6677.jpeg**, was soft-deleted in each environment at
+**2026-11-23T19:47:47.838474Z** (2:47:47 p.m. EST). Verification completed at
+**2026-11-23T19:49:02Z** (2:49:02 p.m. EST).
+
+The photo and marker-photo link had already been soft-deleted on November 12
+with the reason “Replacing incorrect photo,” but their association with the
+October 21, 2026 inspection remained active. Validated database backups and
+rollback rehearsals preceded the guarded one-row correction in each database.
+Audit triggers stayed enabled; each environment received **one attributed
+soft-delete audit event**. Only the association's `deleted_at` and `updated_at`
+changed, using the same timestamp across all three environments.
+
+Independent saved-state checks confirmed identical retained association rows,
+preserved original details and existing audit history, unchanged photo/link/
+inspection history, unchanged other photo contexts and **zero remaining active
+photo-link inconsistencies** under the checked media/inspection/face rules.
+The original photo file remains present with its SHA-256 unchanged. All three
+APIs remain healthy. No application code, schema, users or access configuration
+was changed; this was a targeted data correction.
+
+Private backups, rehearsal/apply logs and the final `verification.json` are
+retained locally under `db/backups/20261123-stale-photo-context/` and on the
+host under `/srv/nhcemeteries/backups/20261123-stale-photo-context/`.
+See the [hosted correction record](hosted-test.md#november-23-2026-stale-inspection-photo-association-correction)
+for recovery details. This supersedes the sync record's known-photo-issue status
+without claiming a broader data-quality audit or new interactive-login check.
+
 ## November 23, 2026: DEV data and media synced to both TEST environments
 
 After the code deployment below, DEV was used as the authoritative source for
@@ -61,11 +92,13 @@ PostgreSQL remains 18.6 everywhere; local DEV/TEST PostGIS/topology remain
 Platform versions, migration execution metadata and environment-specific
 account/operational history are outside business-data equality.
 
-DEV already contains **one active photo context without an active media link**.
+At the sync verification, DEV contained **one active photo context without an active media link**.
 The first isolated rehearsal identified it; subsequent checks explicitly
 preserved that exact exception and rejected additional ones. Its inspection
 and face references are valid. This sync establishes parity with DEV, including
 that known issue; it does not establish that every DEV relationship is clean.
+The later [targeted correction](#november-23-2026-stale-inspection-photo-association-resolved)
+resolved this exception in all three environments.
 Fresh interactive sign-in, invitation delivery, real Turnstile submission and
 physical offline field validation were outside this operation.
 
