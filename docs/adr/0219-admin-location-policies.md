@@ -36,3 +36,12 @@ Group related admin workflows into a lazy admin bundle to improve compression
 without increasing bundle budgets; related workflows load together on admin open.
 Keep the existing minifier and dependencies. See [Location policies](../location-policies.md)
 for operator steps, rollout, preview-key handling and rollback/history precautions.
+
+## Rehearsal harness clarification — November 20, 2026
+
+The isolated policy browser profile uses mocked APIs and a closed backend port.
+Keep `app.spec.ts` in the main API-backed E2E profile: its profile/lookup requests
+are not fully mocked, so including it in the policy profile causes a search
+timeout and skips its remaining serial cases. The policy profile retains the
+policy editor, layout, marker-default, marker-section and map-control fixtures.
+This changes test selection only; the main E2E suite retains the application tests.

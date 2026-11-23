@@ -101,13 +101,14 @@ Auth0 authenticates the user. Cemetery Mapping authorizes the user from local da
 For each production user:
 
 - Create or invite the user in Auth0.
-- Assign the matching Auth0 role.
+- Configure the intended Auth0 token/API permission context; Auth0 roles do not replace local membership authorization.
 - Copy the Auth0 `user_id`, such as `auth0|abc123`.
 - Create or update the local `app_users` row:
   - `external_subject` must exactly match the Auth0 `user_id`.
-  - `role_name` must be `reader`, `power-user`, `cemetery-admin`, or `admin`.
+  - `role_name = 'admin'` grants system-wide administration; other allowed values (`reader`, `power-user`, `cemetery-admin`) are compatibility summaries.
   - `is_active` must be `true`.
-- Add `app_user_cemetery_access` rows for `power-user` and `cemetery-admin` users who need cemetery-scoped edit/deed access.
+- Prefer **Admin → Users → Cemetery member → Add cemetery** for non-admin accounts. At least one membership is required when creating or saving them; several are supported, with an independent role per cemetery.
+- Each `app_user_cemetery_access` row needs an explicit `role_name` (`reader`, `power-user`, `cemetery-admin`) and corresponding `can_edit` (`false` for readers, `true` for editable roles). Scoped writes and deed/owner access check the target cemetery, even if another membership has a higher role. System admins do not require memberships.
 
 ## Production Database Access
 
@@ -126,9 +127,10 @@ For each production user:
 - Open the production frontend URL.
 - Confirm the Auth0 sign-in screen appears.
 - Create a `reader` without an assignment and confirm saving is blocked; assign one cemetery and confirm saving succeeds. Repeat the missing-assignment check when updating an account.
-- Sign in as that `reader` and confirm the map opens at the assigned cemetery and deed/owner sections are hidden.
+- Sign in as that `reader` and confirm the map opens at the preferred or first assigned cemetery, assigned cemeteries are selectable, and deed/owner sections and editing remain unavailable.
 - Sign in as a `power-user` or `cemetery-admin` with cemetery access and confirm assigned cemetery edits work.
-- Sign in as an `admin` without an assignment and confirm the initial map fits all cemeteries and user management and audit/system event tabs are visible.
+- Verify a mixed-role account (cemetery-admin in A, reader in B): it can administer A but cannot edit B, view B's deeds/owners, edit B's inspections, delete B's photos or manage B's Members/Policies. System Users and shared Lookups remain unavailable.
+- Sign in as an `admin` without a preferred cemetery and confirm the initial map fits all cemeteries and user management and audit/system event tabs are visible. A preferred active cemetery sets its initial scope.
 - Run the [assignment audit](hosted-test.md#cemetery-assignment-audit) after deployment or account-data restores. Correct legacy unassigned users before reactivation; the release does not backfill assignments.
 - Confirm an audit event records the application user fields and database user/session fields after an edit.
 

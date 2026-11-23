@@ -22,6 +22,8 @@
   url: /adr/supporting/passageway-review-2026-10-29/
 - title: "Data Model"
   url: /data-model.html
+- title: "Geometry Model Proposal"
+  url: /geometry-model.html
 - title: "Synthetic Cemetery Data Coverage Plan"
   url: /test-data-coverage.html
 - title: "Admin Workflows"
@@ -210,3 +212,7 @@
   url: /adr/0179-shift-southern-c-lots.html
 - title: "ADR 0180: Resolve current ownership once per search query"
   url: /adr/0180-search-ownership-query.html
+- title: "ADR 0220 Geometry Representations Proposal"
+  url: /adr/0220-evidence-operational-and-schematic-geometry.html
+- title: "ADR 0221 Add Burial Independently of Ownership"
+  url: /adr/0221-add-burial-to-existing-gravesite.html
