@@ -9,6 +9,12 @@ Use this register to track where cemetery data came from, who owns it, when it w
 
 Every real-data import or source change should update this file and the relevant ADR.
 
+The [geometry model proposal](geometry-model.md) distinguishes preserved source
+observations, accepted operational geography and independent schematic layouts.
+Collection method, accuracy and source CRS marked TBD here must remain unknown
+during a future lineage migration; a reviewed interpretation does not supply
+missing field measurements or survey accuracy.
+
 ## Cemetery and Section Geometry
 
 | Field | Value |
