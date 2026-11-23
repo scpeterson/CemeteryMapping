@@ -123,3 +123,10 @@ export type SaveBurialInput = {
   sourceConflict: boolean;
   reason?: string;
 };
+
+export type CreateBurialInput = SaveBurialInput & {
+  expectedVersion: string;
+  operationId: string;
+  sourceOwnerId?: string;
+  sourceOwnerVersion?: string;
+};

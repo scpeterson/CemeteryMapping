@@ -8,19 +8,20 @@ Use this guide if you are new to using Cemetery Mapping to find cemetery records
 ## Get access and sign in
 
 1. Obtain the correct application address from your administrator. [Hosted TEST](https://test.nhcemeteries.org) is a testing environment: confirm where you should enter real work before making changes.
-2. Ask for a **power-user** account and assignment to the cemetery you maintain. If access has not been arranged, follow [Requesting and Approving Access](access-requests.md).
+2. Ask for a **Power user** membership in each cemetery you maintain. One account can have a different role in each cemetery. If access has not been arranged, follow [Requesting and Approving Access](access-requests.md).
 3. On hosted TEST, your administrator must also allow your email through Cloudflare Access. Complete the gateway's sign-in prompts, then the application's sign-in prompts.
 4. For a new application account, complete account/password setup and the email verification or setup link sent to your inbox. Return to the application and sign in using the approved email address.
-5. Confirm you can open records for the assigned cemetery and see its permitted edit controls. If controls are missing, ask the administrator to check your role and cemetery assignment. Sign out and back in after access changes.
+5. Choose an assigned cemetery in the header and confirm its permitted edit controls appear. Set your preferred initial cemetery in **My profile**. If controls are missing, ask the administrator to check that cemetery's membership and refresh the app. Sign out and back in when Auth0 token permissions change.
 
 Cloudflare access, your sign-in account, and your application role are separate requirements. Completing one does not grant the others.
 
 ## New workspaces and availability
 
 Confirm the environment's [release status](release-status.md) with your administrator.
-The seven November features are deployed to DEV; that does not establish their
-availability on hosted TEST. Each person uses one account, with an independent
-role for each cemetery. Update contact/preferences through **My profile**.
+The November feature workflows have recorded DEV and hosted TEST deployments;
+consult the dated release status for exact revisions and validation limits.
+Each person uses one account, with an independent role for each cemetery.
+Update contact/preferences through **My profile**.
 
 - **Field** saves encrypted marker/person drafts and original photos on your device.
   Prepare the built offline page while online, then synchronize with the original
@@ -39,6 +40,11 @@ discards the local draft after confirmation. Detailed steps are in
 [Operator Workflows](operator-workflows.md#recovering-other-conflicting-edits).
 
 ## Take a first tour
+
+To record an interment in a purchased gravesite, use **People → Add burial** when
+available in your deployed version. Choose the deed holder or enter another
+person; ownership stays unchanged. See
+[Adding a burial to an existing gravesite](operator-workflows.md#adding-a-burial-to-an-existing-gravesite).
 
 1. Open the map and use its legend to identify the displayed features. Zoom into your cemetery and select a gravesite or monument.
 2. Read **Overview** first, then open **Details** or the relevant record section for more information. You can also use search to locate a person or known record identifier.

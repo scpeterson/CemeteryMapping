@@ -74,6 +74,11 @@ Do not create one PostgreSQL login for every normal web application session. The
 
 Each direct human or automation login should be granted exactly one of the mirrored group roles by default. If temporary elevated access is needed, grant it deliberately, document the reason, and revoke it after the task.
 
+These PostgreSQL groups grant database privileges; they do not enforce the web
+application's independent per-cemetery memberships. An application membership is
+an `app_user_cemetery_access` row, not a PostgreSQL login or group grant. Review
+direct database access separately from Admin → Users and Admin → Members.
+
 Example:
 
 ```sql

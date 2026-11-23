@@ -17,16 +17,16 @@ const roleLabels: Record<AppRoleName, string> = {
 };
 
 const roleDescriptions: Record<AppRoleName, string> = {
-  reader: "Read-only users can view map, gravesite, and burial information, but cannot see deed or owner information.",
-  "power-user": "Power users can view deed and owner information and update existing records for their assigned cemetery.",
-  "cemetery-admin": "Cemetery admins can administer their assigned cemetery and have read-only access to others.",
+  reader: "A Read-only membership permits viewing records without edits or deed/owner access in that cemetery.",
+  "power-user": "A Power user membership permits record edits and deed/owner access in that cemetery. Other memberships keep their own roles.",
+  "cemetery-admin": "A Cemetery admin membership permits administration of that cemetery, including Members and Policies. System access is separate.",
   admin: "Admins can manage users, add cemetery records, update records, and soft-delete records.",
 };
 
 const roleLabel = (role: AppRoleName) => roleLabels[role] ?? role;
 const roleTitle = (role: AppRole) => `${roleLabel(role.name)}: ${role.description}`;
 const userTitle = (user: AppUser) =>
-  `Edit ${user.displayName || user.email}. Role: ${roleLabel(user.role)}. Status: ${user.isActive ? "active" : "inactive"}.`;
+  `Edit ${user.displayName || user.email}. Access: ${user.role === "admin" ? "System administrator" : "Cemetery member"}. Status: ${user.isActive ? "active" : "inactive"}.`;
 
 function userFormFromUser(user: AppUser): UserFormState {
   return {
