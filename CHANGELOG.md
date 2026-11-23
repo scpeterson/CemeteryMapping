@@ -4,6 +4,32 @@ This project uses semantic application versions and GitHub releases. Each releas
 
 ## Unreleased
 
+### Added and improved
+
+- Add scoped cemetery/section/block policy inheritance and Admin → Policies with
+  previews, scoped editing authority and attributed history (PRs #880–#882,
+  migrations 521–522). Failed policy loads offer Retry and block dependent saves.
+- Add **People → Add burial** on existing gravesites, with optional current
+  deed-holder name prefilling, duplicate prevention and safe retries. Burial
+  creation preserves ownership, geometry and marker links (PR #892).
+- Allow **Pre-need inscription** with **Unknown or not applicable** interment.
+  Migration 523 excludes pre-need and memorial records from Section G capacity
+  counts; recording an actual burial still enforces the location policy (PR #893).
+
+### Documentation and maintenance
+
+- Propose separate evidence, operational and schematic geometry; the proposal
+  does not change stored geometry or current map behavior (PR #891).
+- Expand permissions, scoped-policy rollout, backup schedules and isolated
+  restore-verification guidance (PRs #888–#890).
+- Update Playwright to 1.65.1, ESLint to 10.15.0, Lucide React to 1.73.0,
+  React Refresh lint plugin to 0.5.8 and Node.js types to 26.6.6 (PRs #883–#887).
+  The application runtime remains Node.js 24.
+
+Current main requires the complete changelog through migration **523** and refreshed
+restricted API grants. These entries describe merged source, not hosted deployment;
+see [dated deployment verification](docs/release-status.md).
+
 ## 0.3.0 — 2026-11-18
 
 ### Added and improved

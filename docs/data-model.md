@@ -112,6 +112,22 @@ erDiagram
 | `military_war_service_types` | Controlled values for wars or service periods. |
 | `memorials` | Point memorial records linked to burials when a memorial is separate from the primary headstone workflow. |
 
+### Burial Status, Capacity And Ownership
+
+**People → Add burial** creates a person/burial record on an existing gravesite.
+An optional current deed holder supplies a name and provenance; it does not create
+shared person identity or change deeds, ownership rights, geometry or marker links.
+Edit an existing pre-need record when it already represents the person. See the
+[creation workflow and integrity rules](adr/0221-add-burial-to-existing-gravesite.md).
+
+Record status and interment type describe different facts. A pre-need inscription
+may use `unknown` interment (Unknown or not applicable) until an actual burial is
+recorded. Migration 523 excludes `pre_need_inscription` and `memorial` records from
+Section G's one-casket-or-two-urn capacity calculation. Unknown record statuses
+still count conservatively. Changing a record to an actual interment rechecks
+capacity; alongside an existing urn the second interment must also be an urn.
+Only interred records derive occupied status; needs-review takes precedence.
+
 ### Burial Name Semantics
 
 Migration 399 adds nullable `given_name_status` and `display_name`; migration 404 adds nullable `name_prefix`. Apply these migrations in each environment before deploying code that uses the fields.

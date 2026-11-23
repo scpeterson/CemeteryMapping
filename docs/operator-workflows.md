@@ -358,7 +358,7 @@ For military ranks, choose **Military ranks** from the lookup table dropdown. Ad
 
 The Army's **Technician Fourth Grade (Tec 4)** is seeded with the historical `4th Grade`, not modern `E-4`. It is also known as `T/4`; source: [Technician fourth grade](https://en.wikipedia.org/wiki/Technician_fourth_grade).
 
-Gravesite status labels are not all manually assigned. `reserved` and `needs_review` are human workflow flags, while `occupied`, `sold`, `available`, and `unknown` are derived from active burials and current deed or ownership-right records. `sold` means the gravesite has a deed or ownership right, either directly or through its lot, but has no active burial.
+Gravesite status labels are not all manually assigned. `reserved` and `needs_review` are human workflow flags, while `occupied`, `sold`, `available`, and `unknown` are derived from active burials and current deed or ownership-right records. `sold` means the gravesite has a deed or ownership right, either directly or through its lot, but has no active interred burial. Pre-need inscriptions and memorial records do not make a gravesite occupied; a pre-need inscription without ownership derives reserved status.
 
 After a successful deed/ownership save, correction, release, owner update or
 removal of a gravesite ownership connection, the application automatically

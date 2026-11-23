@@ -277,31 +277,31 @@ Use [the current map guide](../map-layout-and-passageways.md) for later accepted
 
 The main software choices are captured in the ADRs. Exact JavaScript dependency versions come from `package-lock.json`; container image versions come from `docker-compose.yml`; CI runtime versions come from `.github/workflows/ci.yml`.
 
-Core versions in the merged source as of 2026-09-25 (running deployments may lag):
+Core versions in the merged source as of 2026-11-23 (running deployments may lag):
 
 | Component | Version | Source |
 | --- | --- | --- |
 | Node.js in CI | 24 | `.github/workflows/ci.yml` |
-| React | 19.3.0 | `package-lock.json` |
-| React DOM | 19.3.0 | `package-lock.json` |
-| Auth0 React SDK | 2.27.0 | `package-lock.json` |
-| Vite | 8.2.1 | `package-lock.json` |
+| React | 19.3.1 | `package-lock.json` |
+| React DOM | 19.3.1 | `package-lock.json` |
+| Auth0 React SDK | 2.30.0 | `package-lock.json` |
+| Vite | 8.3.8 | `package-lock.json` |
 | TypeScript | 6.0.3 | `package-lock.json` |
-| Express | 5.2.1 | `package-lock.json` |
-| pg | 8.22.0 | `package-lock.json` |
-| MapLibre GL JS | 6.10.0 | `package-lock.json` |
-| Lucide React | 1.46.0 | `package-lock.json` |
-| Node.js type definitions | 26.6.2 | `package-lock.json` |
+| Express | 5.3.0 | `package-lock.json` |
+| pg | 8.23.1 | `package-lock.json` |
+| MapLibre GL JS | 6.18.0 | `package-lock.json` |
+| Lucide React | 1.73.0 | `package-lock.json` |
+| Node.js type definitions | 26.6.6 | `package-lock.json` |
 | ExcelJS | 4.4.0 | `package-lock.json` |
 | PostgreSQL/PostGIS image definition | `cemeterymapping-postgis:18-3.7-tiger3.6.4` | Root/hosted Compose; see ADR 0212 and the PostgreSQL upgrade guide |
 | Liquibase image | `liquibase/liquibase:4.33.0` | `docker-compose.yml` |
-| Playwright | 1.63.0 | `package-lock.json` |
-| ESLint | 10.8.0 | `package-lock.json` |
+| Playwright | 1.65.1 | `package-lock.json` |
+| ESLint | 10.15.0 | `package-lock.json` |
 | Ruby for documentation builds | 3.4.1 | local Ruby toolchain and `docs/Gemfile.lock` |
 | Bundler for documentation builds | 2.6.2 | `docs/Gemfile.lock` |
 | Jekyll | 4.4.1 | `docs/Gemfile.lock` |
-| jekyll-relative-links | 0.8.0 | `docs/Gemfile.lock` |
-| jekyll-seo-tag | 2.9.0 | `docs/Gemfile.lock` |
+| jekyll-relative-links | 0.9.2 | `docs/Gemfile.lock` |
+| jekyll-seo-tag | 2.9.1 | `docs/Gemfile.lock` |
 
 ## Rebuild Checklist
 
