@@ -14,6 +14,82 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 23, 2026: local and hosted TEST deployment verified
+
+Both TEST environments now run version **0.3.0** at
+**`f4debd575c74e9b96dcb2205e60b514077697566`**
+([PR #894](https://github.com/scpeterson/CemeteryMapping/pull/894)), with the
+complete changelog through **523-non-interred-inscription-capacity** applied.
+This includes scoped policies, Add burial on existing gravesites and the
+pre-need/Unknown interment fix. This is a v0.3.0-based main deployment, not
+verification of the immutable v0.3.0 tag.
+
+Exact-main [CI passed](https://github.com/scpeterson/CemeteryMapping/actions/runs/45241653400),
+including lint, unit/deployment tests, builds, database/Docker checks, all four
+browser shards and documentation validation. The separate
+[GitHub Pages build/deployment passed](https://github.com/scpeterson/CemeteryMapping/actions/runs/45241652620);
+live documentation pages returned HTTP 200 with the updated content.
+
+### Local TEST
+
+Local TEST required migrations **521–523**. A validated custom-format database
+backup was restored into an isolated database; apply, rollback of all three,
+reapply and Liquibase validation passed. All **85 original public tables**
+(excluding Liquibase metadata) matched their pre-migration row counts and
+content fingerprints after rehearsal and after the live migration. The isolated
+database was removed, and the restricted API grants were refreshed using the
+existing runtime credential.
+
+The built TEST frontend is served at **http://127.0.0.1:5174/**, with its API on
+**http://127.0.0.1:3003/**, leaving DEV on ports 5173/3001 unchanged. The frontend
+returned HTTP 200; proxied API health reported TEST, the exact deployed SHA and
+`cemetery_mapping_test` connectivity. Local API start metadata is
+**`2026-11-23T19:03:31.397Z`** (2:03:31 p.m. EST); it is not the frontend build
+time. Existing local TEST Auth0 settings are used, and anonymous map access
+returned 401. All **six burial integration checks** and `npm run build:test`
+passed. This was a built frontend served by Vite preview, not a registered
+persistent service; a machine restart requires starting it again. A fresh
+interactive sign-in at this port was not tested.
+
+Protected local recovery copies are retained under
+`db/backups/test-deploy-20261123/`; operational logs and process IDs remain in
+the local temporary deployment directory. No backups, credentials, private data
+or verification artifacts are committed to this repository.
+
+### Hosted TEST
+
+Hosted TEST advanced from **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`** to the
+revision above, built **`2026-11-23T19:06:14Z`** (2:06:14 p.m. EST). Migration
+**523** was applied separately before the code deployment. Its isolated
+backup/restore, apply/rollback/reapply and validation passed, and all **89
+original public tables** (excluding Liquibase metadata) matched before/after
+both rehearsal and live migration. The isolated database was removed and
+restricted API grants refreshed with the existing host credentials.
+
+The standard exact-commit deployment backed up the database, application,
+settings and media; verified a candidate API; then switched API/web while
+leaving the database and tunnel running. Release-manifest verification passed,
+including **215 runtime source files** checked inside the API container. Health
+confirmed TEST, version/SHA/build identity and database connectivity. Auth0 and
+the restricted runtime role remain active, the API runs as `node` with private
+mode-0600 environment files, and its restart count was **zero**. Anonymous
+`/api/me` and map requests returned 401. The served frontend matched its release
+hash, Nginx validation passed, and the public HTTPS request-access page returned
+200. Accounts, media and protected configuration passed preservation checks.
+
+The deployment report's `schemaChanges: false` describes the code cutover only;
+it does not negate the separate migration 523 operation. Retained pre-migration
+recovery evidence is under the host's protected
+`staging/schema523-20261123` directory. Code-cutover recovery material is under
+`backups/20261123T190614Z-f4debd575c74-831b2aef`; that database backup already
+includes migration 523. Code rollback does not undo the earlier schema change.
+See the [hosted deployment record](hosted-test.md#november-23-2026-main-revision-deployment-and-migration-523).
+
+These checks do not establish a fresh interactive hosted login, invitation
+email delivery, real Turnstile submission, physical offline field validation,
+or STAGE/PRODUCTION deployment. Earlier dated records retain their original
+scope; this deployment supersedes the older TEST availability observations.
+
 ## November 23, 2026: pre-need and Unknown interment verified in local DEV
 
 Local DEV includes the pre-need creation/editing fix and migration **523**.
