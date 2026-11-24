@@ -41,3 +41,16 @@ settings. Revert the query change to restore the previous execution strategy
 without changing records. Hosted TEST deployment remains a separate action.
 
 See [ADR 0175](0175-map-ownership-query.md) for the analogous map-query correction.
+
+## Scope military matches before matching reasons
+
+Military branch, rank, war service and decoration matches are computed once
+per query for the graves in the selected cemetery and status filters. Grave
+UUIDs attach those reasons to the existing result groups before pagination.
+The military predicates, reason labels and ownership checks stay the same.
+
+On local DEV, a read-only comparison with 20 samples per case measured the
+broad query at 55.0 ms before and 45.6 ms after, and a no-match query at 37.6 ms
+before and 24.2 ms after. These are warm-cache median repository timings.
+Complete ordered responses matched across 13 cases, including scope,
+pagination, ownership visibility and military terms.
