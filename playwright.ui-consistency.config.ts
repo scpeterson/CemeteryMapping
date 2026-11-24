@@ -12,7 +12,7 @@ export default defineConfig({
     "inspection-face-status.spec.ts", "grave-feature-lookups.spec.ts", "military-rank-lookups.spec.ts",
     "unreadable-inscriptions-report.spec.ts", "record-exports.spec.ts",
     "maintenance-tasks.spec.ts", "offline-fieldwork.spec.ts", "access-requests.spec.ts",
-    "user-profiles.spec.ts", "record-photos.spec.ts", "edit-ownership.spec.ts",
+    "user-profiles.spec.ts", "record-photos*.spec.ts", "edit-ownership.spec.ts",
     "burial-date-validation.spec.ts", "source-people-layout.spec.ts",
     "readings-detail-layout.spec.ts", "bulk-layout.spec.ts",
   ],

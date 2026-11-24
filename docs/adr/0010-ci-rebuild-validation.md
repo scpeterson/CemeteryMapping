@@ -98,3 +98,16 @@ Database setup took a median of 46 seconds per browser shard over 12 jobs.
 Four fixture shards preserve test parallelism while the separate database job
 incurs its own runner and Chromium setup. Measured wall-clock savings depend
 on the new job distribution.
+
+### Balance fixture shards by measured duration
+
+Fixture CI assigns whole spec files to four shards. It places the longest
+estimated file on the lightest shard first. The weights come from summed
+Playwright case durations in CI run 45430329027. New files receive a
+10-second estimate and are assigned automatically. Refresh the estimates
+from recent passing fixture jobs when the shard durations drift.
+
+The record photo spec is split into gallery/save/recovery, review/corrections,
+and display preferences. The three files share the same fixtures. Locally,
+`BROWSER_SUITE=fixture BROWSER_FIXTURE_SHARD=1 npm run test:e2e` runs the first
+weighted shard. Omit the shard selector to run the entire fixture suite.
