@@ -16,6 +16,29 @@ or successor access. Generic relationships belong here; account identifiers,
 vault item names and authorized recovery access belong in the private operations
 repository.
 
+## Local DEV and TEST operations
+
+The [November 24 verification](hosted-test.md#november-24-2026-runtime-consistency-and-hosted-capacity)
+adds managed local services and a maintained parity audit to the recorded
+operations. The hosted request/backup relationships below are unchanged; this
+update does not re-audit provider accounts or billing.
+
+| Local service | DEV | TEST |
+| --- | --- | --- |
+| Browser / API | 5173 / 3001 | 5174 / 3003 |
+| Frontend | Working-tree Vite / HMR | Dedicated built preview |
+| API source | Working tree | Captured with the TEST frontend build |
+| Process supervision | Checkout-specific macOS LaunchAgent | Checkout-specific macOS LaunchAgent |
+
+Both local containers use the pinned PostgreSQL 18.6 / PostGIS 3.7.0 image with
+legacy TIGER 3.6.4 compatibility, retaining separate existing database volumes.
+Local DEV and TEST currently share a media directory; hosted TEST has separate
+media storage. Isolate TEST media before mutation tests. User/access records,
+Auth0 clients and secrets remain environment-specific. Use the
+[managed runtime and parity guide](environment-consistency.md) for startup,
+shutdown, private profiles, comparisons and controlled refreshes. A source merge
+or Pages publication does not restart these services or deploy hosted TEST.
+
 ## Application, hosting, and external data
 
 Arrows show the direction of a request or action; responses return along the same

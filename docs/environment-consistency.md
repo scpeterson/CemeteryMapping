@@ -58,17 +58,37 @@ runs at login and restarts a failed API/frontend pair. `stop dev|test` unloads t
 agent; it does not remove data or builds. Stop pre-existing temporary services by
 verified ownership before the first start. The runner refuses occupied ports and
 does not kill their owners. Private logs are `.runtime/<environment>/runtime.log`.
-On other platforms, run `npm run local:runtime -- run test` under the platform's
-service manager; automatic service installation is macOS-only.
+On Linux, run `npm run local:runtime -- run test` under a configured service
+manager; automatic service installation is macOS-only.
 
 A TEST build captures API/shared source and frontend assets together in a new
 `.runtime/test/releases/<timestamp>` directory. It does not serve root `dist`.
-The API snapshot uses the checkout's lockfile-installed `node_modules`; after
-`npm ci` or a dependency change, rebuild/restart TEST. DEV intentionally serves
-working-tree source with HMR. Build metadata records HEAD and build time, so
+The API snapshot uses the checkout's lockfile-installed `node_modules`. Stop both
+managed runtimes before `npm ci` or a dependency change, then rebuild and restart
+them; retained TEST snapshots do not carry an independent dependency tree. DEV
+intentionally serves working-tree source with HMR. Build metadata records HEAD and build time, so
 commit application edits before preparing a release. After a build, stop/start
 the affected runtime to activate it; `status` rejects an older running release.
 The older TEST release directories remain available for reviewed rollback.
+
+For an already installed service, use an explicit stop/build/start sequence:
+
+```bash
+npm run local:runtime -- stop test
+npm run local:runtime -- build test
+npm run local:runtime -- start test
+npm run local:runtime -- status test
+```
+
+Use `dev` for DEV. A build prepares metadata/artifacts; it does not switch the
+running service. If `status` reports a release mismatch, compare the prepared
+`.runtime/<environment>/release.json` with `/api/health`, then activate the
+intended build. On a port collision, identify the listener and its owner rather
+than terminating an unknown process. For startup/authentication errors, inspect
+the private runtime log and confirm the original bare Auth0 hostname/audience,
+exact callback origin and mapped identity provider. Never disable authentication
+to repair startup. Stop services before moving/removing their checkout, because
+the LaunchAgent and captured dependency link use absolute checkout paths.
 
 Local DEV and TEST currently share the local media directory. They have separate
 databases and users; a local TEST upload changes shared disk contents. Use a

@@ -6,6 +6,12 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
+[PR #900](https://github.com/scpeterson/CemeteryMapping/pull/900) merged the
+maintained local runtime/parity tools and verification records as `17046b4`.
+That repository merge did not redeploy the application. The
+[current release-status summary](release-status.md#november-24-2026-environment-consistency-and-managed-local-services)
+distinguishes merged source, runtime revision and documentation publication.
+
 The latest [November 24 runtime/capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
 records current revision `aa4b0b7`, aligned active database versions, equal
 business data/media, managed local runtimes and cleared hosted disk alerts.

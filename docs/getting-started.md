@@ -238,6 +238,15 @@ http://127.0.0.1:5173
 
 For the basic local demo, Auth0 is not required. The app can run with local disabled-auth behavior so you can verify the map and workflows first.
 
+This demo launcher is separate from the maintained authenticated environments.
+If DEV or local TEST is already running under a service manager, use
+[managed local services](environment-consistency.md#managed-local-services)
+instead: DEV uses browser/API ports **5173/3001**, and local TEST uses
+**5174/3003** with a separate build. Do not launch the demo on an occupied port
+or load demo data into an operational database. The managed runner requires a
+private Auth0 profile; its setup and recovery commands are in that guide.
+
+
 ## Confirm The Demo Works
 
 In the browser:

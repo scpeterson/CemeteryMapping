@@ -14,6 +14,61 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 24, 2026: environment consistency and managed local services
+
+[PR #900](https://github.com/scpeterson/CemeteryMapping/pull/900) merged as
+**`17046b4875270363074f1837006f07b9cc9b8403`** after all checks passed on its
+final head: lint/unit/build, database/Docker startup, four browser shards and
+[documentation validation](https://github.com/scpeterson/CemeteryMapping/actions/runs/45416705707).
+The [Pages workflow for merged main](https://github.com/scpeterson/CemeteryMapping/actions/runs/45419188796)
+also passed. PR checks, main CI and documentation publishing are separate runs;
+none of them by itself redeploys a running application.
+
+The last verified **application runtime** revision remains
+**`aa4b0b7e6d95864524366de5e499a796e1618d05`**, version **0.3.0**, in DEV and both
+TEST environments. PR #900 added operational tooling/documentation, not an
+application cutover or schema migration. Different build timestamps identify the
+separate builds; see the [dated runtime and capacity record](hosted-test.md#november-24-2026-runtime-consistency-and-hosted-capacity).
+
+The November 24 audit confirmed equal application source/dependency
+configuration, **22,113 rows in 78 business tables**, and **789 media files /
+7,651,886,763 bytes** across all three environments. All active application
+databases use PostgreSQL **18.6**, PostGIS/topology **3.7.0** and legacy TIGER
+**3.6.4**. This supersedes the older local PostGIS 3.6.4 observation below;
+historical databases keep their original extension versions. Users, access,
+secrets, activity, audit history and migration-ledger rows remain separate.
+
+Local database containers were backed up and recreated from the pinned image
+with original volumes, database contents, users, credentials and ports preserved.
+DEV and local TEST now run under macOS LaunchAgents. TEST serves its own API
+snapshot and frontend build, independently of root `dist`; automatic recovery
+was verified. The [managed runtime guide](environment-consistency.md#managed-local-services)
+replaces the older temporary-process startup guidance below.
+
+Hosted disk usage fell from **92%** to **80%**, leaving about **16 GiB** free,
+after guarded offsite-verified retention and content-verified off-host image
+archives. Disk/backup alerts were clear at verification. Current images, recent
+rollback sets, manual holds, live media and database volumes were preserved.
+
+With explicit approval, the dedicated Local TEST Auth0 client gained exact
+port-5174 callback/logout/web-origin entries while retaining 5173; the separate
+hosted client was unchanged. Fresh sign-in and existing-photo readback passed in
+all three environments, including hosted Cloudflare Access. Existing mapped
+identities were used; unmapped identities stayed denied. Upload/retry and
+reader/offline workflows passed isolated browser tests (**63 passed**, one
+source-only check skipped in built mode). This does not claim live uploads to
+operational records, invitation delivery or real Turnstile submission.
+The physical-phone offline observation/photo/reconnect test was **deferred by
+the user**.
+
+Use the [read-only parity command](environment-consistency.md#read-only-parity-verification)
+for another audit and the [controlled refresh procedure](environment-consistency.md#controlled-dev-to-test-refresh)
+for a reviewed DEV-to-TEST sync. Private evidence is retained under
+`db/backups/20261124-runtime-consistency/`,
+`db/backups/20261124-parity-managed-3/` and the two
+`db/backups/20261124-hosted-*-image-archive/` directories. These local recovery
+copies do not establish a new full host/media restore rehearsal.
+
 ## November 23, 2026: G-0001 shared-boundary placement verified
 
 User-confirmed placement moved **G-0001** north onto the shared boundary of
