@@ -6,6 +6,6 @@ export default defineConfig(inspectionRegressions, {
   testMatch: [
     "selected-record-details.spec.ts", "targeted-mutations.spec.ts", "improvements.spec.ts",
     "overview.spec.ts", "grave-lot-assignment.spec.ts", "edit-ownership.spec.ts",
-    "marker-overview-actions.spec.ts", "saved-drafts.spec.ts", "record-photos.spec.ts",
+    "marker-overview-actions.spec.ts", "saved-drafts.spec.ts", "record-photos*.spec.ts",
   ],
 });
