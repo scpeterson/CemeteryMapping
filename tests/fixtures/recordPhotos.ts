@@ -10,7 +10,7 @@ export async function openRecord(page:Page,reload=false){
  await page.getByRole('tab',{name:'Details',exact:true}).click();
 }
 
-export async function setup(page:Page,multipleFaces=false,threeFaces=false){
+export async function setup(page:Page,multipleFaces=false,threeFaces=false,lostPhotoResponse?:string){
  await overviewFixture(page);
  const entries=[
   {id:'field',inspectedAt:'2026-06-12',inspectionYear:2026,sourceType:'field_survey',source:'Field',conditionId:marker.condition.id,condition:'Fair',conditionNotes:'',inscription:'Current reading',updatedAt:'2026-10-22T12:00:00Z'},
@@ -38,16 +38,24 @@ export async function setup(page:Page,multipleFaces=false,threeFaces=false){
   if(route.request().method()!=='DELETE')links.push({id:`new-${id}-${body.inspectionId||body.maintenanceRecordId}`,mediaAssetId:id,...body});
   return route.fulfill({json:{saved:true}});
  });
+ const receipts=new Map<string,typeof photos[number]>();
+ const uploadAttempts:{filename:string|null;operationId:string|null}[]=[];
  const uploads:{inspectionId:string|null;maintenanceRecordId:string|null;phase:string|null;faceId:string|null}[]=[];
  await page.route('**/api/headstones/marker-1/media-assets?**',route=>{
   const params=new URL(route.request().url()).searchParams;
+  const filename=params.get('filename'),operationId=params.get('operationId');
+  uploadAttempts.push({filename,operationId});
+  const receipt=operationId?receipts.get(operationId):undefined;
+  if(receipt)return route.fulfill({json:receipt});
   const target={inspectionId:params.get('inspectionId'),maintenanceRecordId:params.get('maintenanceRecordId'),phase:params.get('phase'),faceId:params.get('faceId')};uploads.push(target);
   const photo={...photos[0],id:uploads.length===1?'uploaded':`uploaded-${uploads.length}`,fileUrl:'/media/uploaded.png',originalFilename:'uploaded.png',notes:'uploaded'};photos.push(photo);
   if(target.inspectionId||target.maintenanceRecordId)links.push({id:`uploaded-link-${uploads.length}`,mediaAssetId:photo.id,inspectionId:target.inspectionId??undefined,maintenanceRecordId:target.maintenanceRecordId??undefined,phase:target.phase??'unspecified',faceId:target.faceId??undefined});
+  if(operationId)receipts.set(operationId,photo);
+  if(lostPhotoResponse && filename===lostPhotoResponse)return route.abort();
   return route.fulfill({json:photo});
  });
  await openRecord(page);
- return {uploads,getLinks:()=>links,getInspections:()=>readings,getPhotos:()=>photos};
+ return {uploads,uploadAttempts,getLinks:()=>links,getInspections:()=>readings,getPhotos:()=>photos};
 }
 
 export async function showPhotos(region:import('@playwright/test').Locator,count:number){

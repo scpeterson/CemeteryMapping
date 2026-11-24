@@ -81,41 +81,41 @@ export async function selectSearchMatches(pool, { query = "", statuses = [], inc
   const militaryRankValue = "concat_ws(' ', military_rank_types.abbreviation, military_rank_types.label, military_rank_types.pay_grade)";
   const militaryWarServiceJoin = "LEFT JOIN military_war_service_types ON military_war_service_types.id = burials.military_war_service_type_id";
   const militaryWarServiceValue = "military_war_service_types.label";
-  const militaryServiceSearchSql = `
-        UNION ALL
-        SELECT 'Military branch', ${militaryBranchValue}
-        FROM burials
+  // Match military lookups once for the graves that passed scope and status filters.
+  const militaryReasons = `
+        SELECT burials.gravesite_uuid, 'Military branch', ${militaryBranchValue}
+        FROM base_graves
+        JOIN burials ON burials.gravesite_uuid = base_graves.grave_uuid
         ${militaryBranchJoin}
         WHERE $1 <> ''
-          AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
           AND ${normalizedSearchSql(`coalesce(${militaryBranchValue}, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
-        SELECT 'Military rank', ${militaryRankValue}
-        FROM burials
+        SELECT burials.gravesite_uuid, 'Military rank', ${militaryRankValue}
+        FROM base_graves
+        JOIN burials ON burials.gravesite_uuid = base_graves.grave_uuid
         ${militaryRankJoin}
         WHERE $1 <> ''
-          AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
           AND ${normalizedSearchSql(`coalesce(${militaryRankValue}, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
-        SELECT 'War service', ${militaryWarServiceValue}
-        FROM burials
+        SELECT burials.gravesite_uuid, 'War service', ${militaryWarServiceValue}
+        FROM base_graves
+        JOIN burials ON burials.gravesite_uuid = base_graves.grave_uuid
         ${militaryWarServiceJoin}
         WHERE $1 <> ''
-          AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
           AND ${normalizedSearchSql(`coalesce(${militaryWarServiceValue}, '')`)} LIKE '%' || $1 || '%'
 
         UNION ALL
-        SELECT 'Military decoration', military_decoration_types.label
-        FROM burials
+        SELECT burials.gravesite_uuid, 'Military decoration', military_decoration_types.label
+        FROM base_graves
+        JOIN burials ON burials.gravesite_uuid = base_graves.grave_uuid
         JOIN burial_military_decorations ON burial_military_decorations.burial_uuid = burials.id
         JOIN military_decoration_types ON military_decoration_types.id = burial_military_decorations.military_decoration_type_id
         WHERE $1 <> ''
-          AND burials.gravesite_uuid = base_graves.grave_uuid
           AND burials.deleted_at IS NULL
           AND ${normalizedSearchSql(`military_decoration_types.label`)} LIKE '%' || $1 || '%'
       `;
@@ -165,6 +165,8 @@ export async function selectSearchMatches(pool, { query = "", statuses = [], inc
             cardinality($2::text[]) = 0
             OR derived_status.status = ANY($2::text[])
           )
+      ), matching_military(gravesite_uuid, reason_label, reason_value) AS MATERIALIZED (
+        ${militaryReasons}
       ), matched_rows AS MATERIALIZED (
       SELECT
         base_graves.grave_uuid,
@@ -320,7 +322,10 @@ export async function selectSearchMatches(pool, { query = "", statuses = [], inc
           AND ${veteranSql("burials.veteran")}
           AND 'veteran' LIKE '%' || $1 || '%'
 
-        ${militaryServiceSearchSql}
+        UNION ALL
+        SELECT reason_label, reason_value
+        FROM matching_military
+        WHERE gravesite_uuid = base_graves.grave_uuid
       ) reasons ON reasons.reason_value IS NOT NULL
       ), page_graves AS (
         SELECT DISTINCT grave_uuid, cemetery_id, cemetery_name, section_id, lot_id, grave_id, gravesite_id, display_label, label_aliases

@@ -52,9 +52,9 @@ function emptyCemeteryPool() {
       assert.match(sql, /SELECT 'Lot name'/u);
       assert.match(sql, /SELECT 'Lot number'/u);
       assert.match(sql, /SELECT 'Veteran'/u);
-      assert.match(sql, /SELECT 'Military branch'/u);
-      assert.match(sql, /SELECT 'Military rank'/u);
-      assert.match(sql, /SELECT 'War service'/u);
+      assert.match(sql, /SELECT burials\.gravesite_uuid, 'Military branch'/u);
+      assert.match(sql, /SELECT burials\.gravesite_uuid, 'Military rank'/u);
+      assert.match(sql, /SELECT burials\.gravesite_uuid, 'War service'/u);
       assert.doesNotMatch(sql, /SELECT 'Cemetery ID'/u);
       assert.doesNotMatch(sql, /SELECT 'Lot ID'/u);
       assert.doesNotMatch(sql, /WITH status_labels/u);
