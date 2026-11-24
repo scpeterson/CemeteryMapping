@@ -14,6 +14,36 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 23, 2026: G-0001 shared-boundary placement verified
+
+User-confirmed placement moved **G-0001** north onto the shared boundary of
+**G-1/G-2** (stored gravesite IDs `G-001`/`G-002`), **0.3 feet east along that
+boundary from its western junction**. The correction was applied to **DEV,
+local TEST and hosted TEST**. Independent verification completed at
+**2026-11-24T00:29:51Z** (November 23, **7:29:51 p.m. EST**).
+
+The saved geometry is longitude **-80.07968915608267**, latitude
+**40.60137031730726**. Fresh reads measured **0.3 feet** from the western corner
+and **zero distance** from the shared boundary in all three environments; their
+saved marker, gravesite and link records match. This records the owner's
+requested placement, not a new survey measurement.
+
+Validated full database backups and rollback rehearsals preceded the live
+updates. Only the marker's geometry, latitude, longitude and update timestamp
+changed. Gravesite polygons, existing marker/grave/burial links, all other marker
+details and records, and existing audit history were preserved. The transaction
+checked **16 protected tables**, retained audit and native constraint checks,
+restored the timestamp trigger after applying a common timestamp, and added
+**one attributed update audit event per environment**. All three APIs remained
+healthy. No application code, schema migration or user/access setting changed.
+
+Private backups, before-state records, guarded SQL and verification evidence are
+retained locally under `db/backups/20261123-g0001-boundary-move/` and on the host
+under `/srv/nhcemeteries/backups/20261123-g0001-boundary-move/`. The local
+`verification.json` summarizes the independent result. Private records and
+backup artifacts remain outside Git. See the [hosted correction record](hosted-test.md#november-23-2026-g-0001-shared-boundary-placement)
+for recovery scope. Fresh interactive browser validation was outside this check.
+
 ## November 23, 2026: stale inspection-photo association resolved
 
 The photo-link exception identified during the data sync below is resolved in
