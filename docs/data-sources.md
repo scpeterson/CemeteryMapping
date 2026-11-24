@@ -21,7 +21,7 @@ missing field measurements or survey accuracy.
 | --- | --- |
 | Source name | Cemetery Data Management |
 | Source type | Esri File Geodatabase |
-| Source path used during development | `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/Cemetery Data Management.gdb` |
+| Source path used during development | `/Users/yourname/Library/CloudStorage/Dropbox/CemeteryDataManagement/Cemetery Data Management.gdb` |
 | Feature dataset | `CemeteryDataManagement` |
 | Layers imported | `Cemeteries`, `Sections`, `Blocks`, `Lots` when present |
 | Application import command | `APP_ENV=<env> npm run db:import:geodatabase -- "/path/to/Cemetery Data Management.gdb" --source-name "Cemetery Data Management"` |
@@ -52,7 +52,7 @@ missing field measurements or survey accuracy.
 | --- | --- |
 | Source name | TLC Gravesite Registry Geo Locations |
 | Source type | Excel workbook |
-| Source path used during development | `/Users/scottpeterson/Downloads/Cemetery/TLC Gravesite Registry Geo Locations 2024.09.25_SCP.xlsx` |
+| Source path used during development | `/Users/yourname/Downloads/Cemetery/TLC Gravesite Registry Geo Locations 2024.09.25_SCP.xlsx` |
 | Worksheet | `TELC_TABLE_12_18_2019` |
 | Coordinate columns | `Latitude`, `Longitude` |
 | Person columns | `Person1First` / `Person1Last` through `Person6First` / `Person6Last` |
@@ -73,7 +73,7 @@ missing field measurements or survey accuracy.
 | --- | --- |
 | Source name | Section G Plot Plan With Notations |
 | Source type | PDF exported from Excel |
-| Source path used during development | `/Users/scottpeterson/Downloads/Cemetery/Section G Plot Plan With Notations.pdf` |
+| Source path used during development | `/Users/yourname/Downloads/Cemetery/Section G Plot Plan With Notations.pdf` |
 | Application command | `APP_ENV=<env> npm run section-g:generate-gravesites -- --output /tmp/section-g-plot-gravesites.geojson --section-output /tmp/section-g-tight-boundary.geojson` |
 | Interpretation | References to Section F in this document are typos; the plan describes Section G. Section G has no lots. Its plots are gravesites sold individually. |
 | Dimensions | The small grid squares are 4 feet by 4 feet. Each plot/gravesite is 4 feet by 8 feet. |
@@ -91,7 +91,7 @@ missing field measurements or survey accuracy.
 | --- | --- |
 | Source name | Historic Trinity lot map scans |
 | Source type | PNG scans of older cemetery lot maps |
-| Source paths used during development | `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2042-01.png`; `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2043-01.png` |
+| Source paths used during development | `/Users/yourname/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2042-01.png`; `/Users/yourname/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2043-01.png` |
 | Application table | `historic_lot_map_gravesite_evidence` |
 | Current use | Staged review evidence for gravesite-to-lot or passageway interpretation, plus reviewed anchor measurements for explicitly documented production lot geometry. |
 | Known Section C observations | `C-0168`, `C-0167A`, `C-0167B`, `C-0166A`, and `C-0166B` appear to be in lot `70`; `C-0171B`, `C-0171A`, `C-0170`, and `C-0169` appear to be in lot `51`; `C-0172A` and `C-0172B` appear to be in the passageway between lots `29` and `51`. One lot `51` gravesite may remain unaccounted for. |
@@ -126,7 +126,7 @@ missing field measurements or survey accuracy.
 | --- | --- |
 | Source name | Trinity Cemetery Registry 2022 |
 | Source type | Excel workbook |
-| Source path used during development | `/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx` |
+| Source path used during development | `/Users/yourname/Downloads/Trinity Cemetery Registry 2022.xlsx` |
 | Worksheets | `Original 2017`, `Investigated`, `Updated 2022` |
 | Application import command | `APP_ENV=<env> npm run db:import:deed-registry -- "/path/to/Trinity Cemetery Registry 2022.xlsx"` |
 | Three-sheet import command | `APP_ENV=<env> npm run db:import:deed-registry -- "/path/to/Trinity Cemetery Registry 2022.xlsx" --all-sheets true --source-name "Trinity Cemetery Registry 2022"` |
@@ -141,7 +141,7 @@ missing field measurements or survey accuracy.
 | --- | --- |
 | Source name | North Hills Genealogists Trinity OCR |
 | Source type | Searchable PDF generated from a scanned North Hills Genealogists Trinity excerpt |
-| Source path used during development | `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/FedEx Scan 2026-05-29_10-13-35.pdf` |
+| Source path used during development | `/Users/yourname/Library/CloudStorage/Dropbox/CemeteryDataManagement/FedEx Scan 2026-05-29_10-13-35.pdf` |
 | Source coverage | Trinity German Evangelical Lutheran Church narrative and cemetery readings, printed pages 180-236 |
 | Application import command | `APP_ENV=<env> npm run db:import:north-hills-ocr -- "/path/to/FedEx Scan 2026-05-29_10-13-35.pdf"` |
 | Staging tables | `north_hills_ocr_import_batches`, `north_hills_ocr_entries`; source-only church/funeral records can also be preserved in `source_person_records` |

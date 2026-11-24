@@ -45,7 +45,7 @@ Known source:
 | Field | Value |
 | --- | --- |
 | Source type | Esri File Geodatabase |
-| Local path used during development | `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/Cemetery Data Management.gdb` |
+| Local path used during development | `/Users/yourname/Library/CloudStorage/Dropbox/CemeteryDataManagement/Cemetery Data Management.gdb` |
 | Feature dataset | `CemeteryDataManagement` |
 | Layers used | `Cemeteries`, `Sections`, `Blocks`, `Lots` when present |
 | Responsible data owner | TBD |

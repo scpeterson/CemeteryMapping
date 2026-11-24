@@ -57,7 +57,7 @@ Known source:
 | Field | Value |
 | --- | --- |
 | Source type | Excel workbook |
-| Local path used during development | `/Users/scottpeterson/Downloads/Cemetery/TLC Gravesite Registry Geo Locations 2024.09.25_SCP.xlsx` |
+| Local path used during development | `/Users/yourname/Downloads/Cemetery/TLC Gravesite Registry Geo Locations 2024.09.25_SCP.xlsx` |
 | Worksheet | `TELC_TABLE_12_18_2019` |
 | Coordinate columns | `Latitude`, `Longitude` |
 | People columns | `Person1...Person6` |
