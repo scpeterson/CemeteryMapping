@@ -86,7 +86,8 @@
     "maplibre-gl": "6.18.0",
     "pg": "^8.23.1",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@emnapi/core": "^1.11.3",

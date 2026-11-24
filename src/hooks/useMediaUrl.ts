@@ -3,6 +3,17 @@ import { getAuthSessionVersion, subscribeAuthSession } from "../api/apiClient";
 import { sharedMediaDownloads } from "../lib/sharedMediaDownloads";
 import { apiBaseUrl } from "../config/environment";
 
+export function photoPreviewUrl(original: string, thumbnail?: string) {
+  if (thumbnail) return thumbnail;
+  const apiOrigin = new URL(apiBaseUrl, window.location.origin).origin;
+  const source = new URL(original, apiOrigin);
+  if (source.origin === apiOrigin && /^\/media\/[0-9a-f-]{36}\.(jpg|jpeg|png|webp|heic|heif)$/iu.test(source.pathname)) {
+    source.searchParams.set("variant", "thumbnail");
+    return source.href;
+  }
+  return original;
+}
+
 export function useMediaUrl(fileUrl: string, enabled = true) {
   const session = useSyncExternalStore(subscribeAuthSession, getAuthSessionVersion);
   const [attempt, setAttempt] = useState(0);

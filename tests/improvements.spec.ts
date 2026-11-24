@@ -63,7 +63,7 @@ test("the photo gallery uses authorized fetch and displays a browser object URL"
   await fixture(page);
   const fileUrl = "/media/33333333-3333-4333-8333-333333333333.png";
   let authorization: string | undefined;
-  await page.route(`**${fileUrl}`, async (route) => {
+  await page.route(`**${fileUrl}?variant=thumbnail`, async (route) => {
     authorization = route.request().headers().authorization;
     await route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jJ1kAAAAASUVORK5CYII=", "base64") });
   });

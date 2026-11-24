@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useMediaUrl } from "../../hooks/useMediaUrl";
+import { photoPreviewUrl, useMediaUrl } from "../../hooks/useMediaUrl";
 import { useNearViewport } from "../../hooks/useNearViewport";
 import { Modal } from "../ui/Modal";
 import { FullPhoto } from "./FullPhoto";
@@ -9,7 +9,7 @@ export function MediaPhoto({ asset, children }: { asset: MediaAsset; children: R
   const { ref, active } = useNearViewport();
   const [expanded, setExpanded] = useState(false);
   const label = asset.notes || asset.originalFilename || "Cemetery record photo";
-  const { url, failed, error, retry, reportImageFailure, attempt } = useMediaUrl(asset.thumbnailUrl || asset.fileUrl, active);
+  const { url, failed, error, retry, reportImageFailure, attempt } = useMediaUrl(photoPreviewUrl(asset.fileUrl, asset.thumbnailUrl), active);
   return (
     <div className="media-gallery-item" ref={ref}>
       {failed ? <div role="alert"><p>Photo couldn't be loaded. {error}</p><button type="button" onClick={retry}>Retry photo</button></div>

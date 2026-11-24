@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useMediaUrl } from "../../hooks/useMediaUrl";
+import { photoPreviewUrl, useMediaUrl } from "../../hooks/useMediaUrl";
 import { formatDate } from "../../lib/format";
 import type { OverviewImage } from "./overviewImages";
 import { FullPhoto } from "./FullPhoto";
 import { Modal } from "../ui/Modal";
 
 function Photo({ image, count }: { image: OverviewImage; count: number }) {
-  const { url, failed, error, retry, reportImageFailure, attempt } = useMediaUrl(image.thumbnailUrl || image.url);
+  const { url, failed, error, retry, reportImageFailure, attempt } = useMediaUrl(photoPreviewUrl(image.url, image.thumbnailUrl));
   const [expanded, setExpanded] = useState(false);
   return <figure className="overview-photo">
     {failed ? <div role="alert"><p>Photo couldn't be loaded. {error}</p><button type="button" onClick={retry}>Retry photo</button></div> : url ? <>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { MediaAsset } from "../../types";
 import type { PhotoContext } from "../../api/mediaApi";
-import { useMediaUrl } from "../../hooks/useMediaUrl";
+import { photoPreviewUrl, useMediaUrl } from "../../hooks/useMediaUrl";
 import { useNearViewport } from "../../hooks/useNearViewport";
 
 import { Modal } from "../ui/Modal";
@@ -10,7 +10,7 @@ import { timingLabels } from "./photoLabels";
 
 export function PhotoThumbnail({asset}: {asset: MediaAsset}) {
  const {ref,active}=useNearViewport();
- const {url,failed,retry,reportImageFailure}=useMediaUrl(asset.thumbnailUrl||asset.fileUrl,active);
+ const {url,failed,retry,reportImageFailure}=useMediaUrl(photoPreviewUrl(asset.fileUrl, asset.thumbnailUrl),active);
  return <span className="record-photo-thumbnail" ref={ref}>
   {url&&!failed?<img src={url} alt="" onError={reportImageFailure} />:failed?<button type="button" onClick={retry}>Retry thumbnail</button>:<span>Loading photo…</span>}
  </span>;
