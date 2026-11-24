@@ -4,7 +4,7 @@ import browserChecks from "./playwright.ui-consistency.config";
 // Isolated fixture-backed workflows; never start an API or connect to a live DB.
 export default defineConfig({
   ...browserChecks,
-  testMatch: ["offline-fieldwork.spec.ts", "multiple-photo-upload.spec.ts", "record-photos.spec.ts"],
+  testMatch: ["offline-fieldwork.spec.ts", "multiple-photo-upload.spec.ts", "record-photos*.spec.ts"],
   workers: 2,
   use: { ...browserChecks.use, baseURL: "http://127.0.0.1:5198" },
   webServer: {
