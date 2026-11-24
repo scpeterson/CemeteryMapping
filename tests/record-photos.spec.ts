@@ -238,33 +238,46 @@ test('canceling a draft with face photos uploads nothing and leaves records unto
  await expect(region.getByRole('img',{name:'Preview of cancel.png'})).toHaveCount(0);
 });
 
-test('failed photo uploads retry only pending photos and never create a second inspection',async({page})=>{
- const state=await setup(page,true);const originals=structuredClone(state.getInspections());let attempts=0;
- await page.route('**/api/headstones/marker-1/media-assets?**',route=>{
-  attempts++;if(attempts===2)return route.fulfill({status:500,json:{error:'Temporary photo failure'}});
-  return route.fallback();
+for(const lostResponse of [false,true]) {
+ test(lostResponse ? 'lost upload response replays the committed photo after draft recovery' : 'failed photo uploads retry only pending photos and never create a second inspection',async({page})=>{
+  const state=await setup(page,true,false,lostResponse?'retry.png':undefined);const originals=structuredClone(state.getInspections());let attempts=0;
+  await page.route('**/api/headstones/marker-1/media-assets?**',route=>{
+   attempts++;if(!lostResponse&&attempts===2)return route.fulfill({status:500,json:{error:'Temporary photo failure'}});
+   return route.fallback();
+  });
+  const region=page.getByRole('region',{name:'Inspections',exact:true});
+  await region.getByRole('button',{name:'New inspection',exact:true}).click();
+  await inspectionStep(page, 'Visit & condition');
+  await region.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
+  await inspectionStep(page, 'Visit & condition');
+  await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
+  await inspectionStep(page, 'Faces & photos');
+  await region.getByRole('group',{name:'Inspection face 1',exact:true}).getByLabel('Choose photos to upload',{exact:true}).setInputFiles([draftPhoto('first.png'),draftPhoto('retry.png'),draftPhoto('third.png')]);
+  await inspectionStep(page, 'Review & save');
+  await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+  await expect(region.getByRole('alert')).toContainText(lostResponse?'retry.png:':'retry.png: Something went wrong on the server');
+  await expect(region.getByRole('status').filter({hasText:'first.png: Saved and linked'})).toContainText('first.png: Saved and linked');
+  await expect(region.getByRole('status').filter({hasText:'retry.png: Pending'})).toContainText('retry.png: Pending');
+  await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toContainText('photos need retry');
+  expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(lostResponse?3:2);
+  if(lostResponse){
+   await openRecord(page,true);
+   await region.getByRole('button',{name:'Resume draft',exact:true}).click();
+   await region.getByLabel('Reselect retry.png',{exact:true}).setInputFiles(draftPhoto('retry.png'));
+  }
+  await region.getByRole('button',{name:'Retry remaining photos',exact:true}).click();
+  await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
+  await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toHaveText('All changes saved.');
+  expect(attempts).toBe(4);expect(state.uploads).toHaveLength(3);expect(state.getInspections()).toHaveLength(3);
+  expect(state.getInspections().slice(0,2)).toEqual(originals);
+  if(lostResponse){
+   const ids=state.uploadAttempts.filter(attempt=>attempt.filename==='retry.png').map(attempt=>attempt.operationId);
+   expect(ids).toHaveLength(2);
+   expect(ids[0]).toMatch(/^[0-9a-f-]{36}$/u);
+   expect(ids[1]).toBe(ids[0]);
+  }
  });
- const region=page.getByRole('region',{name:'Inspections',exact:true});
- await region.getByRole('button',{name:'New inspection',exact:true}).click();
- await inspectionStep(page, 'Visit & condition');
- await region.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
- await inspectionStep(page, 'Visit & condition');
- await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
- await inspectionStep(page, 'Faces & photos');
- await region.getByRole('group',{name:'Inspection face 1',exact:true}).getByLabel('Choose photos to upload',{exact:true}).setInputFiles([draftPhoto('first.png'),draftPhoto('retry.png'),draftPhoto('third.png')]);
- await inspectionStep(page, 'Review & save');
- await region.getByRole('button',{name:'Save inspection',exact:true}).click();
- await expect(region.getByRole('alert')).toContainText('retry.png: Something went wrong on the server');
- await expect(region.getByRole('status').filter({hasText:'first.png: Saved and linked'})).toContainText('first.png: Saved and linked');
- await expect(region.getByRole('status').filter({hasText:'retry.png: Pending'})).toContainText('retry.png: Pending');
- await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toContainText('photos need retry');
- expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(2);
- await region.getByRole('button',{name:'Retry remaining photos',exact:true}).click();
- await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
- await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toHaveText('All changes saved.');
- expect(attempts).toBe(4);expect(state.uploads).toHaveLength(3);expect(state.getInspections()).toHaveLength(3);
- expect(state.getInspections().slice(0,2)).toEqual(originals);
-});
+}
 
 test('inspection save failure keeps face edits and selected photos without uploading files',async({page})=>{
  const state=await setup(page,true);const original=structuredClone({visits:state.getInspections(),links:state.getLinks()});let writes=0;
