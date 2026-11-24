@@ -8,7 +8,7 @@ export function classifyChanges(paths, event) {
 export function assertCiResults(needs) {
   if (needs.changes?.result !== 'success') throw new Error('Change classification did not succeed.');
   if (!['true', 'false'].includes(needs.changes.outputs?.application) || !['true', 'false'].includes(needs.changes.outputs?.documentation)) throw new Error('Missing or invalid classification outputs.');
-  for (const job of ['quick', 'database', 'browser']) {
+  for (const job of ['quick', 'database', 'browser', 'browser_database']) {
     const expected = needs.changes.outputs.application === 'true' ? 'success' : 'skipped';
     if (needs[job]?.result !== expected) throw new Error(`${job} must be ${expected}.`);
   }
