@@ -14,6 +14,30 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 24, 2026: 8ea222b deployed to local and hosted TEST
+
+Local and hosted TEST advanced from `ee464fa` to version **0.3.0** at main
+commit **`8ea222b320b1dc4656b3812b3101014e39e6c80f`**. This commit updated
+the deployment documentation. Main CI and GitHub Pages passed for the exact
+revision. [Main CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/45490032604) ·
+[Pages deployment](https://github.com/scpeterson/CemeteryMapping/actions/runs/45490032500)
+
+- **Local TEST** validated a pre-deployment database dump and restarted the
+  managed API and frontend. Health reported the exact revision and a healthy
+  `cemetery_mapping_test` database. The served frontend matched the build,
+  all **91 database table fingerprints** matched before and after cutover,
+  settings were preserved, and anonymous identity requests returned **HTTP 401**.
+  Private recovery and verification files are under
+  `db/backups/20261124-local-test-8ea222b/`.
+- **Hosted TEST** validated backups and reported the exact revision and a
+  healthy `cemetery_mapping_test` database. Verification covered **216 runtime
+  files** and confirmed account and media preservation. The schema was already
+  current, and public request-access returned **HTTP 200**.
+  [Hosted deployment record](hosted-test.md#november-24-2026-8ea222b-deployment)
+
+The signed-in gallery benchmark was recorded on `f98e86a`.
+[Signed-in gallery verification](#signed-in-gallery-verification)
+
 ## November 24, 2026: ee464fa deployed to local and hosted TEST
 
 Both TEST environments advanced from `f98e86a` to version **0.3.0** at main
