@@ -34,3 +34,6 @@ __pycache__/
 
 # Local database-volume cutover and other machine-specific Compose overrides.
 /docker-compose.override.yml
+
+# Private managed local runtimes and isolated TEST builds
+.runtime/

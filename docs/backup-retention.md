@@ -298,3 +298,12 @@ Direct Mac access used temporary copies of the server credentials; independent
 password-vault retrieval was not repeated. The November 13 escrow evidence retains
 its original scope. Keep these distinctions when assessing total-host-loss
 readiness.
+
+## November 24, 2026 capacity verification
+
+Guarded retention and separately archived unused images cleared hosted disk
+alerts, leaving about 16 GiB free. See the [dated deployment record](hosted-test.md#november-24-2026-runtime-consistency-and-hosted-capacity).
+Container-image cleanup is separate from this tool: review all container image
+references, retain current/four recent rollback releases and manual holds, archive
+and content-verify exact selected images off-host, then recheck references before
+removing only those images. Never include data volumes in image cleanup.

@@ -73,7 +73,9 @@
     "db:benchmark": "node scripts/db-benchmark.mjs",
     "db:preview:spatial-repair": "node scripts/db-preview-spatial-repair.mjs",
     "db:query-stats": "node scripts/db-query-stats.mjs",
-    "test:policies:browser": "playwright test --config playwright.location-policies.config.ts"
+    "test:policies:browser": "playwright test --config playwright.location-policies.config.ts",
+    "local:runtime": "node scripts/local-runtime.mjs",
+    "verify:environments": "python3 scripts/verify-environments.py"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.30.0",
