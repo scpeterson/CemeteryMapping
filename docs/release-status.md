@@ -14,9 +14,33 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 24, 2026: ee464fa deployed to local and hosted TEST
+
+Both TEST environments advanced from `f98e86a` to version **0.3.0** at main
+commit **`ee464fa20c8d0600e74a985e61bd5d1ba08d6b47`**. The commits between
+these revisions changed deployment documentation, including the signed-in
+gallery results recorded below. Main CI and GitHub Pages passed at `ee464fa`.
+[Main CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/45485848155) ·
+[Pages deployment](https://github.com/scpeterson/CemeteryMapping/actions/runs/45485847134)
+
+Local TEST validated a pre-deployment database dump, then restarted the managed
+API and frontend. Health reported the exact commit and `cemetery_mapping_test`.
+The served frontend matched the build, all **91 database table fingerprints**
+matched before and after cutover, local settings were preserved, and anonymous
+identity returned **HTTP 401**. Private recovery and verification files are
+under `db/backups/20261124-local-test-ee464fa/`.
+
+Hosted TEST validated its backups, verified **216 runtime files**, and
+confirmed account and media preservation. The origin reported the exact commit
+and a healthy TEST database, with zero API restarts recorded during
+verification. The public request-access page returned **HTTP 200**.
+[Hosted deployment record](hosted-test.md#november-24-2026-ee464fa-deployment)
+
+The signed-in thumbnail benchmark below was recorded on `f98e86a`.
+
 ## November 24, 2026: f98e86a deployed to local and hosted TEST
 
-Local and hosted TEST now run version **0.3.0** at exact main commit
+Local and hosted TEST deployed version **0.3.0** at exact main commit
 **`f98e86a2d045f19142ae4fd553212fc14b849f63`**. The release includes protected
 photo thumbnails, scoped SQL search, the inspection save and navigation
 refactors, and upload receipt reuse for inspection photo retries. The

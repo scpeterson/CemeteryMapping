@@ -12,8 +12,8 @@ That repository merge did not redeploy the application. The
 [current release-status summary](release-status.md#november-24-2026-environment-consistency-and-managed-local-services)
 distinguishes merged source, runtime revision and documentation publication.
 
-Hosted TEST runs version **0.3.0** at **`f98e86a`**, deployed November 24,
-2026. See the [current deployment record](#november-24-2026-f98e86a-deployment).
+Hosted TEST runs version **0.3.0** at **`ee464fa`**, deployed November 24,
+2026. See the [current deployment record](#november-24-2026-ee464fa-deployment).
 The earlier [runtime and capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
 records database alignment, managed local runtimes and storage recovery.
 
@@ -102,6 +102,23 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 24, 2026: ee464fa deployment
+
+Hosted TEST advanced from `f98e86a` to main commit
+**`ee464fa20c8d0600e74a985e61bd5d1ba08d6b47`** (version **0.3.0**), built at
+**`2026-11-24T21:08:10Z`**. The deployer validated backups of the TEST database,
+application settings, and media before switching the API and frontend. The
+schema was already current, and the database and tunnel stayed running.
+
+The origin reported healthy TEST on `cemetery_mapping_test` and returned the
+exact commit and build time. Verification checked **216 runtime files**,
+recorded **zero API restarts**, and confirmed account and media preservation.
+The public HTTPS request-access page returned **HTTP 200**.
+
+The private recovery set is `backups/20261124T210810Z-ee464fa20c8d-dd3f8212`
+under the hosted application root. The release report is in the corresponding
+staging directory. [Combined TEST verification](release-status.md#november-24-2026-ee464fa-deployed-to-local-and-hosted-test)
 
 ## November 24, 2026: f98e86a deployment
 
