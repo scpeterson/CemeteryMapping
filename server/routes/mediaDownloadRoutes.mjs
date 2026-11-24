@@ -1,6 +1,10 @@
+import { join } from "node:path";
+import { createPhotoThumbnails } from "../media/photoThumbnails.mjs";
+
 // Media bytes follow the same reader access policy as cemetery records. Retain
 // files for recovery, but never serve soft-deleted assets or arbitrary disk paths.
 export function registerMediaDownloadRoutes(app, { pool, requireReader, uploadRoot }) {
+  const thumbnail = createPhotoThumbnails();
   app.get("/media/:storageKey", requireReader, async (request, response, next) => {
     const { storageKey } = request.params;
     if (!/^[0-9a-f-]{36}\.(jpg|jpeg|png|webp|heic|heif)$/iu.test(storageKey)) {
@@ -17,6 +21,13 @@ export function registerMediaDownloadRoutes(app, { pool, requireReader, uploadRo
         return;
       }
       response.set({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" });
+      if (request.query.variant === "thumbnail") {
+        const bytes = await thumbnail(join(uploadRoot, storageKey));
+        if (bytes) {
+          response.type("jpeg").send(bytes);
+          return;
+        }
+      }
       response.sendFile(storageKey, { root: uploadRoot, cacheControl: false }, (error) => {
         if (!error) return;
         if (!response.headersSent && error.status === 404) response.status(404).json({ error: "Photo not found" });

@@ -30,3 +30,17 @@ Users have one photo location and one consistent association editor, while photo
 ## Validation And Rebuild
 
 Run `npm run lint`, `npm run build`, and `npm run test:inspections:browser`. The focused browser suite uses mocked API state on port 5199, covering contextual entry points, filters, duplicate-free rendering, independent links/unlink, uploads, read-only access, pending-change protection, refresh/retry behavior, inspection draft recovery, primary ordering, protected images, natural image proportions and phone layout. No database rebuild is required.
+
+## Protected previews for original-only photos
+
+Gallery tiles, record thumbnails and overview previews request a 480-pixel
+JPEG rendition through the original photo route when an app-hosted photo has
+no stored thumbnail. The route applies reader authorization and checks that
+the parent asset is active on every request, including cache hits. Full-size
+viewing still requests the original bytes. Existing thumbnail URLs take precedence.
+
+The API generates previews on demand with Sharp, applies source orientation,
+and keeps recent results in a bounded process-local cache. Generation is
+deduplicated and concurrency is limited. An unsupported image or a full
+generation queue falls back to the original response. The cache is disposable
+and needs no database migration, media backfill or recovery step.
