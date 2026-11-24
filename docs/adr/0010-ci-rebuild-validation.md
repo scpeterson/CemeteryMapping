@@ -78,3 +78,23 @@ APP_ENV=test npm run db:down
 ## Update Triggers
 
 Update this ADR when CI runner versions, Node.js version, workflow steps, test database image, migration validation, e2e testing strategy, or the representative demo-fixture contract changes.
+
+## Browser suite split
+
+CI runs fixture browser specs on four shards with Vite and an unreachable API
+proxy. The built offline field shell check stays on the first fixture shard.
+A separate job provisions the seeded PostGIS database and runs `app.spec.ts`
+as a group, including its real API search, delete/restore and admin checks.
+The aggregate CI gate requires both browser jobs for application changes.
+
+`npm run test:e2e` still runs the full suite. To select a group locally, use
+`BROWSER_SUITE=fixture APP_ENV=test npm run test:e2e` or, with a migrated and
+seeded disposable TEST database, `BROWSER_SUITE=database APP_ENV=test npm run test:e2e`.
+A spec that requires live API or database behavior belongs in the database
+group. Keep the fixture exclusion and database selection in sync through the
+shared selector in the Playwright config.
+
+Database setup took a median of 46 seconds per browser shard over 12 jobs.
+Four fixture shards preserve test parallelism while the separate database job
+incurs its own runner and Chromium setup. Measured wall-clock savings depend
+on the new job distribution.
