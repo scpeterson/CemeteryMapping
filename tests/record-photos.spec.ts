@@ -10,7 +10,7 @@ async function openRecord(page:Page,reload=false){
  await page.getByRole('tab',{name:'Details',exact:true}).click();
 }
 
-async function setup(page:Page,multipleFaces=false,threeFaces=false){
+async function setup(page:Page,multipleFaces=false,threeFaces=false,lostPhotoResponse?:string){
  await overviewFixture(page);
  const entries=[
   {id:'field',inspectedAt:'2026-06-12',inspectionYear:2026,sourceType:'field_survey',source:'Field',conditionId:marker.condition.id,condition:'Fair',conditionNotes:'',inscription:'Current reading',updatedAt:'2026-10-22T12:00:00Z'},
@@ -38,16 +38,24 @@ async function setup(page:Page,multipleFaces=false,threeFaces=false){
   if(route.request().method()!=='DELETE')links.push({id:`new-${id}-${body.inspectionId||body.maintenanceRecordId}`,mediaAssetId:id,...body});
   return route.fulfill({json:{saved:true}});
  });
+ const receipts=new Map<string,typeof photos[number]>();
+ const uploadAttempts:{filename:string|null;operationId:string|null}[]=[];
  const uploads:{inspectionId:string|null;maintenanceRecordId:string|null;phase:string|null;faceId:string|null}[]=[];
  await page.route('**/api/headstones/marker-1/media-assets?**',route=>{
   const params=new URL(route.request().url()).searchParams;
+  const filename=params.get('filename'),operationId=params.get('operationId');
+  uploadAttempts.push({filename,operationId});
+  const receipt=operationId?receipts.get(operationId):undefined;
+  if(receipt)return route.fulfill({json:receipt});
   const target={inspectionId:params.get('inspectionId'),maintenanceRecordId:params.get('maintenanceRecordId'),phase:params.get('phase'),faceId:params.get('faceId')};uploads.push(target);
   const photo={...photos[0],id:uploads.length===1?'uploaded':`uploaded-${uploads.length}`,fileUrl:'/media/uploaded.png',originalFilename:'uploaded.png',notes:'uploaded'};photos.push(photo);
   if(target.inspectionId||target.maintenanceRecordId)links.push({id:`uploaded-link-${uploads.length}`,mediaAssetId:photo.id,inspectionId:target.inspectionId??undefined,maintenanceRecordId:target.maintenanceRecordId??undefined,phase:target.phase??'unspecified',faceId:target.faceId??undefined});
+  if(operationId)receipts.set(operationId,photo);
+  if(lostPhotoResponse && filename===lostPhotoResponse)return route.abort();
   return route.fulfill({json:photo});
  });
  await openRecord(page);
- return {uploads,getLinks:()=>links,getInspections:()=>readings,getPhotos:()=>photos};
+ return {uploads,uploadAttempts,getLinks:()=>links,getInspections:()=>readings,getPhotos:()=>photos};
 }
 
 async function showPhotos(region:import('@playwright/test').Locator,count:number){
@@ -313,33 +321,46 @@ test('canceling a draft with face photos uploads nothing and leaves records unto
  await expect(region.getByRole('img',{name:'Preview of cancel.png'})).toHaveCount(0);
 });
 
-test('failed photo uploads retry only pending photos and never create a second inspection',async({page})=>{
- const state=await setup(page,true);const originals=structuredClone(state.getInspections());let attempts=0;
- await page.route('**/api/headstones/marker-1/media-assets?**',route=>{
-  attempts++;if(attempts===2)return route.fulfill({status:500,json:{error:'Temporary photo failure'}});
-  return route.fallback();
+for(const lostResponse of [false,true]) {
+ test(lostResponse ? 'lost upload response replays the committed photo after draft recovery' : 'failed photo uploads retry only pending photos and never create a second inspection',async({page})=>{
+  const state=await setup(page,true,false,lostResponse?'retry.png':undefined);const originals=structuredClone(state.getInspections());let attempts=0;
+  await page.route('**/api/headstones/marker-1/media-assets?**',route=>{
+   attempts++;if(!lostResponse&&attempts===2)return route.fulfill({status:500,json:{error:'Temporary photo failure'}});
+   return route.fallback();
+  });
+  const region=page.getByRole('region',{name:'Inspections',exact:true});
+  await region.getByRole('button',{name:'New inspection',exact:true}).click();
+  await inspectionStep(page, 'Visit & condition');
+  await region.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
+  await inspectionStep(page, 'Visit & condition');
+  await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
+  await inspectionStep(page, 'Faces & photos');
+  await region.getByRole('group',{name:'Inspection face 1',exact:true}).getByLabel('Choose photos to upload',{exact:true}).setInputFiles([draftPhoto('first.png'),draftPhoto('retry.png'),draftPhoto('third.png')]);
+  await inspectionStep(page, 'Review & save');
+  await region.getByRole('button',{name:'Save inspection',exact:true}).click();
+  await expect(region.getByRole('alert')).toContainText(lostResponse?'retry.png:':'retry.png: Something went wrong on the server');
+  await expect(region.getByRole('status').filter({hasText:'first.png: Saved and linked'})).toContainText('first.png: Saved and linked');
+  await expect(region.getByRole('status').filter({hasText:'retry.png: Pending'})).toContainText('retry.png: Pending');
+  await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toContainText('photos need retry');
+  expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(lostResponse?3:2);
+  if(lostResponse){
+   await openRecord(page,true);
+   await region.getByRole('button',{name:'Resume draft',exact:true}).click();
+   await region.getByLabel('Reselect retry.png',{exact:true}).setInputFiles(draftPhoto('retry.png'));
+  }
+  await region.getByRole('button',{name:'Retry remaining photos',exact:true}).click();
+  await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
+  await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toHaveText('All changes saved.');
+  expect(attempts).toBe(4);expect(state.uploads).toHaveLength(3);expect(state.getInspections()).toHaveLength(3);
+  expect(state.getInspections().slice(0,2)).toEqual(originals);
+  if(lostResponse){
+   const ids=state.uploadAttempts.filter(attempt=>attempt.filename==='retry.png').map(attempt=>attempt.operationId);
+   expect(ids).toHaveLength(2);
+   expect(ids[0]).toMatch(/^[0-9a-f-]{36}$/u);
+   expect(ids[1]).toBe(ids[0]);
+  }
  });
- const region=page.getByRole('region',{name:'Inspections',exact:true});
- await region.getByRole('button',{name:'New inspection',exact:true}).click();
- await inspectionStep(page, 'Visit & condition');
- await region.getByLabel('Inspection date',{exact:true}).fill('2027-01-01');
- await inspectionStep(page, 'Visit & condition');
- await region.getByRole('combobox',{name:'Monument condition',exact:true}).selectOption(marker.condition.id);
- await inspectionStep(page, 'Faces & photos');
- await region.getByRole('group',{name:'Inspection face 1',exact:true}).getByLabel('Choose photos to upload',{exact:true}).setInputFiles([draftPhoto('first.png'),draftPhoto('retry.png'),draftPhoto('third.png')]);
- await inspectionStep(page, 'Review & save');
- await region.getByRole('button',{name:'Save inspection',exact:true}).click();
- await expect(region.getByRole('alert')).toContainText('retry.png: Something went wrong on the server');
- await expect(region.getByRole('status').filter({hasText:'first.png: Saved and linked'})).toContainText('first.png: Saved and linked');
- await expect(region.getByRole('status').filter({hasText:'retry.png: Pending'})).toContainText('retry.png: Pending');
- await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toContainText('photos need retry');
- expect(state.getInspections()).toHaveLength(3);expect(state.uploads).toHaveLength(2);
- await region.getByRole('button',{name:'Retry remaining photos',exact:true}).click();
- await expect(region.getByRole('button',{name:'New inspection',exact:true})).toBeVisible();
- await expect(region.getByRole('status',{name:'Inspection save status',exact:true})).toHaveText('All changes saved.');
- expect(attempts).toBe(4);expect(state.uploads).toHaveLength(3);expect(state.getInspections()).toHaveLength(3);
- expect(state.getInspections().slice(0,2)).toEqual(originals);
-});
+}
 
 test('inspection save failure keeps face edits and selected photos without uploading files',async({page})=>{
  const state=await setup(page,true);const original=structuredClone({visits:state.getInspections(),links:state.getLinks()});let writes=0;

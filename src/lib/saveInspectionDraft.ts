@@ -30,6 +30,7 @@ export async function saveInspectionDraft({
       if (photo.file) {
         if (!uploadPhoto) throw new Error("Photo uploads are unavailable. The inspection has been saved.");
         await uploadPhoto({
+          operationId: photo.id,
           file: photo.file,
           headstoneId: headstone.id,
           inspectionId: entry.id,
