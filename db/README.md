@@ -407,7 +407,7 @@ This allows one photo to document a gravesite overview, a specific marker, or bo
 The application stores local upload files under `uploads/media` by default and serves them from `/media/<storage_key>`. In this workspace, that default resolves to:
 
 ```text
-/Users/scottpeterson/Dev/CemeteryMapping/uploads/media
+/Users/yourname/Dev/CemeteryMapping/uploads/media
 ```
 
 The file name on disk is generated from the `media_assets.id` UUID plus the detected extension, such as `fdb26c81-0878-4520-8f1b-69242bc7b049.jpg`. The original Apple Photos filename, for example `IMG_5151.jpeg`, is preserved in `media_assets.original_filename`. Postgres stores metadata, the public `file_url`, and link-table relationships; it does not store the image bytes.
@@ -554,19 +554,19 @@ Section F and Section G have explicit business rules. Section F cannot contain g
 Run a dry run first:
 
 ```bash
-APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --dry-run
+APP_ENV=test npm run db:import:deed-registry -- "/Users/yourname/Downloads/Trinity Cemetery Registry 2022.xlsx" --dry-run
 ```
 
 Import into a target environment:
 
 ```bash
-APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --source-name "Trinity Cemetery Registry 2022" --imported-by "Scott Peterson"
+APP_ENV=test npm run db:import:deed-registry -- "/Users/yourname/Downloads/Trinity Cemetery Registry 2022.xlsx" --source-name "Trinity Cemetery Registry 2022" --imported-by "Scott Peterson"
 ```
 
 The same workbook also contains an `Investigated` sheet. Import it as a separate staging batch so its owner rows and interleaved research notes remain traceable to that worksheet:
 
 ```bash
-APP_ENV=test npm run db:import:deed-registry -- "/Users/scottpeterson/Downloads/Trinity Cemetery Registry 2022.xlsx" --sheet "Investigated" --source-name "Trinity Cemetery Registry 2022 - Investigated" --imported-by "Scott Peterson"
+APP_ENV=test npm run db:import:deed-registry -- "/Users/yourname/Downloads/Trinity Cemetery Registry 2022.xlsx" --sheet "Investigated" --source-name "Trinity Cemetery Registry 2022 - Investigated" --imported-by "Scott Peterson"
 ```
 
 `Investigated` rows with owner data are staged as owner records. Note-only rows are staged as investigation notes: the original cells remain in `source_row`, while the disposition and remarks are combined into `raw_remarks` and left for review instead of being parsed as a lot assignment.

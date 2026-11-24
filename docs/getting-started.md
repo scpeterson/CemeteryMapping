@@ -58,7 +58,7 @@ Recommended install options:
 Windows path examples look different from Mac paths. For example:
 
 ```text
-Mac:     /Users/scottpeterson/Dev/CemeteryMapping
+Mac:     /Users/yourname/Dev/CemeteryMapping
 Windows: C:\Users\YourName\Dev\CemeteryMapping
 WSL:     /home/yourname/Dev/CemeteryMapping
 ```
@@ -118,7 +118,7 @@ cd /path/to/CemeteryMapping
 On this Mac workspace, the project path is:
 
 ```bash
-cd /Users/scottpeterson/Dev/CemeteryMapping
+cd /Users/yourname/Dev/CemeteryMapping
 ```
 
 You should now be in the folder that contains `package.json`.

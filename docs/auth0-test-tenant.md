@@ -361,7 +361,7 @@ Cause: the command was run from the wrong directory.
 Fix:
 
 ```bash
-cd /Users/scottpeterson/Dev/CemeteryMapping
+cd /Users/yourname/Dev/CemeteryMapping
 npm run dev:web:test
 ```
 

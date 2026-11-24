@@ -15,7 +15,7 @@ Accepted
 
 ## Context
 
-The deed registry and lot model need to reconcile several imperfect sources: 2017 deed registry rows, 2022 updated registry rows, investigation notes, current map geometry, headstone-derived gravesite polygons, and older scanned lot maps. The historic map scans at `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2042-01.png` and `/Users/scottpeterson/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2043-01.png` show lot numbers and passageways, but they are not georeferenced and are not survey-grade.
+The deed registry and lot model need to reconcile several imperfect sources: 2017 deed registry rows, 2022 updated registry rows, investigation notes, current map geometry, headstone-derived gravesite polygons, and older scanned lot maps. The historic map scans at `/Users/yourname/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2042-01.png` and `/Users/yourname/Library/CloudStorage/Dropbox/CemeteryDataManagement/TIFF2043-01.png` show lot numbers and passageways, but they are not georeferenced and are not survey-grade.
 
 The scans are still useful evidence. North and south appear to be reversed between the two scans, so orientation must be confirmed during review. For example, after accounting for that orientation issue, they appear to place `C-0168`, `C-0167A`, `C-0167B`, `C-0166A`, and `C-0166B` in Section C lot `70`; `C-0171B`, `C-0171A`, `C-0170`, and `C-0169` in Section C lot `51`; and `C-0172A` and `C-0172B` in the passageway between Section C lots `29` and `51`.
 
