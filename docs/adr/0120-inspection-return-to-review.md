@@ -16,3 +16,10 @@ Navigation changes only transient UI state. Preserve all inspection values, file
 ## Validation
 
 Run `npm run lint`, `npm run build`, and `npm run test:inspections:browser`. Browser coverage checks contextual action visibility, keyboard activation and focus in both directions, renamed/unlabeled faces, repeated corrections, normal-navigation reset, draft and photo retention, correct final save associations, and phone layout. No API or database changes are needed.
+
+## Review navigation ownership
+
+The inspection review navigation hook owns correction order, step transitions,
+and focus restoration between the editor and review. It accepts the existing
+draft and display preferences. The editor still renders the fields and status
+messages and connects its elements to the hook's focus targets.
