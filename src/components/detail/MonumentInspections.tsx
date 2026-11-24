@@ -9,6 +9,7 @@ import { PhotoGalleryContext } from "./photoGalleryContext";
 import { RecordPhotos } from "./RecordPhotos";
 import type { ComponentProps } from "react";
 import { lazy, Suspense, useContext, useEffect, useEffectEvent, useId, useRef, useState } from "react";
+import { requiredVisitLabels, useInspectionReviewNavigation } from "./useInspectionReviewNavigation";
 import { useInspectionDraft } from "./useInspectionDraft";
 import { useInspectionDisplayPreferences } from "./useInspectionDisplayPreferences";
 import { useInspectionPhotoLinks } from "./useInspectionPhotoLinks";
@@ -19,10 +20,6 @@ import { formatDate } from "../../lib/format";
 const InspectionFacePhotos = lazy(() => import("./InspectionFacePhotos").then(module => ({default:module.InspectionFacePhotos})));
 
 const InspectionFacePhotoReview = lazy(() => import("./InspectionFacePhotos").then(module => ({default:module.InspectionFacePhotoReview})));
-
-type RequiredVisitField = "date" | "source" | "condition";
-const requiredVisitLabels = {date:"Inspection date",source:"Inspection source",condition:"Monument condition"};
-
 
 const localToday = () => {
   const date = new Date();
@@ -54,48 +51,12 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
   const selected = inspections.find((entry) => entry.id === selectedId) ?? inspections[0];
   const [saving, setSaving] = useState(false);
   const [savedNotice,setSavedNotice] = useState(false);
-  const [stepFocusRequest, setStepFocusRequest] = useState(0);
-  const [editingFromReview, setEditingFromReview] = useState<"face" | "visit" | null>(null);
-  const [requiredCorrection, setRequiredCorrection] = useState<string | null>(null);
-  const [returnToRequiredSummary, setReturnToRequiredSummary] = useState(false);
-  const activeFace = draft?.faces?.find(face => face.id === activeFaceId) ?? draft?.faces?.[0];
   const missingPhotoFiles = (draft?.photos??[]).filter(photo=>!photo.saved && photo.missingFileName && !photo.file);
 
   const editInspectionId = updating && draft && !draft.recordSaved ? draft.id : undefined;
   const { photoCountsReady, photoCountsError, existingPhotoLinks, setPhotoCountRetry } = useInspectionPhotoLinks(headstone.id, editInspectionId);
   const steps = ["Visit & condition", "Faces & photos", "Review & save"];
   const requirementsId = useId();
-  const missingVisitFields: RequiredVisitField[] = draft ? [
-    ...(!draft.inspectedAt && !updating ? ["date" as const] : []),
-    ...(!draft.source.trim() ? ["source" as const] : []),
-    ...(!draft.conditionId ? ["condition" as const] : []),
-  ] : [];
-  const missingFaces = (draft?.faces ?? []).flatMap((face,index) => !face.label.trim() ? [{id:face.id,number:index+1}] : []);
-  const missingRequiredCount = missingVisitFields.length + missingFaces.length;
-  const missingItems: {key:string;field?:RequiredVisitField;faceId?:string}[] = [
-    ...missingVisitFields.map(field=>({key:`visit:${field}`,field})),
-    ...missingFaces.map(face=>({key:`face:${face.id}`,faceId:face.id})),
-  ];
-  const currentCorrectionKey = requiredCorrection && step===1 && activeFace ? `face:${activeFace.id}` : requiredCorrection;
-  const currentCorrectionIndex = missingItems.findIndex(item=>item.key===currentCorrectionKey);
-  const correctionFaceIndex = (draft?.faces??[]).findIndex(face=>`face:${face.id}`===currentCorrectionKey);
-  const correctionLabel = currentCorrectionKey?.startsWith("visit:") ? requiredVisitLabels[currentCorrectionKey.slice(6) as RequiredVisitField]
-    : correctionFaceIndex>=0 ? `Face ${correctionFaceIndex+1} label` : "Required item";
-  const correctionStatus = !currentCorrectionKey ? "Choose a remaining required item below, or use Previous or Next."
-    : currentCorrectionIndex>=0 ? `Correcting: ${correctionLabel}.` : `${correctionLabel} complete.`;
-  const correctingRequired = requiredCorrection !== null || Boolean(editingFromReview && missingRequiredCount);
-  const showCorrectionPanel = Boolean(draft && !draft.recordSaved && step<2 && correctingRequired);
-  const correctionPanel = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const panel = correctionPanel.current;
-    const editor = panel?.closest('fieldset');
-    if (!panel || !editor) return;
-    const measure = () => editor.style.setProperty('--inspection-correction-height', `${panel.getBoundingClientRect().height + 12}px`);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(panel);
-    return () => { observer.disconnect(); editor.style.removeProperty('--inspection-correction-height'); };
-  }, [showCorrectionPanel]);
   const {
     displayPreferencesReset, setDisplayPreferencesReset, remainingItemsOpen,
     correctionCollapsed, setCorrectionCollapsed, remainingItemsControl, keyboardHelpControl,
@@ -103,116 +64,17 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
     displayResetButton, displayResetNotice, pendingItemListFocusRef,
     dismissDisplayReset, resetDisplayPreferences,
   } = useInspectionDisplayPreferences();
-  const requiredItemButtons = useRef(new Map<string, HTMLButtonElement>());
-  useEffect(()=>{
-    if(correctionCollapsed || !pendingItemListFocusRef.current) return;
-    const target=requiredItemButtons.current.get(pendingItemListFocusRef.current);
-    pendingItemListFocusRef.current=null;
-    target?.scrollIntoView({block:"nearest",inline:"nearest"});
-    target?.focus({preventScroll:true});
-  },[correctionCollapsed, pendingItemListFocusRef]);
-  const requiredSummaryHeading = useRef<HTMLHeadingElement | null>(null);
-  const pendingRequiredSummaryFocus = useRef(false);
-  const requiredVisitInputs = useRef(new Map<RequiredVisitField, HTMLInputElement | HTMLSelectElement>());
-  const requiredVisitFocus = useRef<RequiredVisitField | null>(null);
-  const visitTypeInput = useRef<HTMLSelectElement | null>(null);
-  const reviewVisitButton = useRef<HTMLButtonElement | null>(null);
-  const pendingVisitFocus = useRef<"editor" | "review" | null>(null);
-  const faceLabelInputs = useRef(new Map<string, HTMLInputElement>());
-  const reviewEditButtons = useRef(new Map<string, HTMLButtonElement>());
-  const reviewReturnFocus = useRef<string | undefined>(undefined);
-  const reviewFaceFocus = useRef<string | undefined>(undefined);
-  const stageHeadings = useRef<(HTMLHeadingElement | null)[]>([]);
-  const hasDraft=Boolean(draft);
-  useEffect(()=>{
-    if(!hasDraft)return;
-    const summaryHeading = step === 2 && pendingRequiredSummaryFocus.current ? requiredSummaryHeading.current : null;
-    pendingRequiredSummaryFocus.current = false;
-    if(summaryHeading){summaryHeading.scrollIntoView({block:"start"});summaryHeading.focus({preventScroll:true});return;}
-    const requiredInput = step === 0 && requiredVisitFocus.current ? requiredVisitInputs.current.get(requiredVisitFocus.current) : undefined;
-    requiredVisitFocus.current = null;
-    if(requiredInput){requiredInput.scrollIntoView({block:"center"});requiredInput.focus({preventScroll:true});return;}
-    const visitTarget = step === 0 && pendingVisitFocus.current === "editor" ? visitTypeInput.current
-      : step === 2 && pendingVisitFocus.current === "review" ? reviewVisitButton.current : null;
-    pendingVisitFocus.current = null;
-    if(visitTarget){visitTarget.scrollIntoView({block:"center"});visitTarget.focus({preventScroll:true});return;}
-    const reviewButton = step === 2 && reviewReturnFocus.current ? reviewEditButtons.current.get(reviewReturnFocus.current) : undefined;
-    reviewReturnFocus.current = undefined;
-    if(reviewButton){reviewButton.scrollIntoView({block:"center"});reviewButton.focus({preventScroll:true});return;}
-    const faceInput = step === 1 && reviewFaceFocus.current ? faceLabelInputs.current.get(reviewFaceFocus.current) : undefined;
-    reviewFaceFocus.current = undefined;
-    if(faceInput){faceInput.scrollIntoView({block:"center"});faceInput.focus({preventScroll:true});return;}
-    const heading=stageHeadings.current[step];
-    heading?.scrollIntoView({block:"nearest"});heading?.focus({preventScroll:true});
-  },[hasDraft,step,stepFocusRequest]);
-  const goToStep = (next:number) => {
-    setEditingFromReview(null);
-    setRequiredCorrection(null);
-    setReturnToRequiredSummary(false);
-    setStep(next);
-  };
-  const collapseForRequiredItem = () => {
-    if(window.matchMedia("(max-width: 760px)").matches) setCorrectionCollapsed(true);
-  };
-  const editVisit = (field?:RequiredVisitField) => {
-    if(field) collapseForRequiredItem();
-    if(field) requiredVisitFocus.current=field;
-    else pendingVisitFocus.current="editor";
-    goToStep(0);
-    setEditingFromReview("visit");
-    setReturnToRequiredSummary(Boolean(field));
-    setRequiredCorrection(field?`visit:${field}`:null);
-  };
-  const editFace = (faceId:string, fromRequiredSummary=false) => {
-    if(fromRequiredSummary) collapseForRequiredItem();
-    reviewFaceFocus.current=faceId;
-    setActiveFaceId(faceId);
-    goToStep(1);
-    setEditingFromReview("face");
-    setReturnToRequiredSummary(fromRequiredSummary);
-    setRequiredCorrection(fromRequiredSummary?`face:${faceId}`:null);
-  };
-  const navigateToStep = (next:number) => {
-    setStepFocusRequest(current=>current+1);
-    const visitField = next !== 1 ? missingVisitFields[0] : undefined;
-    const face = next !== 0 ? missingFaces[0] : undefined;
-    const fromReview = step === 2 || next === 2;
-    if(visitField || face) collapseForRequiredItem();
-    if(visitField){
-      if(fromReview) editVisit(visitField);
-      else {requiredVisitFocus.current=visitField;goToStep(0);setRequiredCorrection(`visit:${visitField}`);}
-    } else if(face){
-      if(fromReview) editFace(face.id,true);
-      else {reviewFaceFocus.current=face.id;setActiveFaceId(face.id);goToStep(1);setRequiredCorrection(`face:${face.id}`);}
-    } else goToStep(next);
-  };
-  const advanceStep = () => {
-    if(returnToRequiredSummary || requiredCorrection) pendingRequiredSummaryFocus.current=true;
-    else if(editingFromReview === "face") reviewReturnFocus.current=activeFace?.id;
-    else if(editingFromReview === "visit") pendingVisitFocus.current="review";
-    goToStep(editingFromReview || correctingRequired ? 2 : step + 1);
-  };
-  const hideRemainingItems = () => {
-    remainingItemsControl.apply(false);
-    pendingItemListFocusRef.current=null;
-    if(step===0 && currentCorrectionKey?.startsWith("visit:")) requiredVisitFocus.current=currentCorrectionKey.slice(6) as RequiredVisitField;
-    else if(step===1 && activeFace) reviewFaceFocus.current=activeFace.id;
-    else if(step===0) pendingVisitFocus.current="editor";
-    setStepFocusRequest(current=>current+1);
-  };
-  const selectMissingItem = (item:typeof missingItems[number]) => {
-    setStepFocusRequest(current=>current+1);
-    if(item.field) editVisit(item.field);
-    else if(item.faceId) editFace(item.faceId,true);
-  };
-  const moveMissingItem = (direction:1|-1) => {
-    const order = ["visit:date","visit:source","visit:condition",...(draft?.faces??[]).map(face=>`face:${face.id}`)];
-    const currentIndex = currentCorrectionKey ? order.indexOf(currentCorrectionKey) : direction===1 ? -1 : order.length;
-    const candidates = direction===1 ? missingItems : [...missingItems].reverse();
-    const next = candidates.find(item=>direction===1 ? order.indexOf(item.key)>currentIndex : order.indexOf(item.key)<currentIndex) ?? candidates[0];
-    if(!next) return;
-    selectMissingItem(next);
-  };
+  const {
+    activeFace, missingVisitFields, missingFaces, missingRequiredCount, missingItems,
+    currentCorrectionKey, currentCorrectionIndex, correctionStatus, correctingRequired, showCorrectionPanel,
+    correctionPanel, requiredItemButtons, requiredSummaryHeading, requiredVisitInputs, visitTypeInput,
+    reviewVisitButton, faceLabelInputs, reviewEditButtons, setStageHeading,
+    editingFromReview, goToStep, editVisit, editFace, navigateToStep, advanceStep,
+    selectMissingItem, moveMissingItem, handleRemainingItemsKey, handleRequiredItemKey, requestStepFocus,
+  } = useInspectionReviewNavigation({
+    draft, updating, step, setStep, activeFaceId, setActiveFaceId,
+    correctionCollapsed, setCorrectionCollapsed, remainingItemsControl, pendingItemListFocusRef,
+  });
   const [error, setError] = useState<string>();
   const change = (value: Partial<InspectionInput>) => setDraft((current) => current ? { ...current, ...value } : current);
 
@@ -296,7 +158,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
     {selected && !draft ? <RecordPhotos key={selected.id} headstone={headstone} faces={selected.faces ?? []} inspectionId={selected.id} canUpdate={Boolean(onSave)} onUpload={onUploadPhoto} /> : null}
     {onSave && !draft && recovery ? <section className="inspection-recovery" aria-label="Saved inspection draft">
       <p><strong>Unfinished inspection available.</strong> Saved on this browser {formatDate(recovery.savedAt)}.</p>
-      <button type="button" onClick={()=>{setUpdating(recovery.updating);setActiveFaceId(recovery.activeFaceId);setDraft(()=>recovery.draft);setStep(recovery.step);setStepFocusRequest(value=>value+1);setRecovery(null);setSavedNotice(false);}}>Resume draft</button>
+      <button type="button" onClick={()=>{setUpdating(recovery.updating);setActiveFaceId(recovery.activeFaceId);setDraft(()=>recovery.draft);setStep(recovery.step);requestStepFocus();setRecovery(null);setSavedNotice(false);}}>Resume draft</button>
       <button type="button" className="secondary-button" onClick={()=>{if(window.confirm("Discard the saved inspection draft?"))clearRecovery();}}>Discard saved draft</button>
     </section> : null}
     {onSave && !draft && !recovery && !saving ? <div className="headstone-form-actions inspection-actions">
@@ -346,7 +208,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
       </nav> : null}
       <fieldset disabled={Boolean(draft.recordSaved)} className="inspection-fields" hidden={Boolean(draft.recordSaved)}>
       <div className="inspection-stage" hidden={step !== 0}>
-      <h5 tabIndex={-1} ref={element => { stageHeadings.current[0] = element; }}>Visit &amp; condition</h5>
+      <h5 tabIndex={-1} ref={element => setStageHeading(0, element)}>Visit &amp; condition</h5>
       <label>Inspection type<select ref={visitTypeInput} value={draft.sourceType} onChange={(e) => change({
         sourceType: e.target.value as InspectionInput["sourceType"],
         ...(e.target.value === "nhg" ? { inspectedAt: "2005-10-11", inspectionYear: 2005 } : {}),
@@ -362,7 +224,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
       <label>Monument condition notes<textarea value={draft.conditionNotes} maxLength={4000} rows={3} onChange={(e) => change({ conditionNotes: e.target.value })} /></label>
       </div>
       <div className="inspection-stage" hidden={step !== 1}>
-      <h5 tabIndex={-1} ref={element => { stageHeadings.current[1] = element; }}>Faces &amp; photos</h5>
+      <h5 tabIndex={-1} ref={element => setStageHeading(1, element)}>Faces &amp; photos</h5>
       <p className="muted">Keep line breaks in each reading. Photos are optional and stay with this inspection.</p>
       {editInspectionId && photoCountsError ? <p role="alert" className="detail-message is-error">{photoCountsError} <button type="button" className="secondary-button" onClick={() => setPhotoCountRetry(current => current + 1)}>Retry linked photo counts</button></p> : null}
       <div className="inspection-face-cards" role="group" aria-label="Choose inspection face">
@@ -403,7 +265,7 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
       <label>Inspection inscription<textarea value={draft.inscription} maxLength={20000} rows={5} onChange={(e) => change({ inscription: e.target.value })} /></label></> : <p className="muted">The combined inscription is kept in sync with these face readings.</p>}
       </div>
       <div className="inspection-stage" hidden={step !== 2}>
-        <h5 tabIndex={-1} ref={element => { stageHeadings.current[2] = element; }}>Review &amp; save</h5>
+        <h5 tabIndex={-1} ref={element => setStageHeading(2, element)}>Review &amp; save</h5>
         <section className={`inspection-review-required${missingRequiredCount?" has-missing":""}`} aria-label="Required information">
           <h5 tabIndex={-1} ref={requiredSummaryHeading}>{missingRequiredCount ? `${missingRequiredCount} required ${missingRequiredCount===1?"item is":"items are"} missing` : "Required information complete"}</h5>
           {missingRequiredCount ? <><p>Complete these items before saving. Your draft stays intact while you make corrections.</p>
@@ -464,25 +326,11 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
           <li><kbd>Escape</kbd> <span>Return to field</span></li>
           </ul>
         </details> : null}
-        {missingRequiredCount>0 ? <ol className="inspection-required-choices" aria-label="Remaining required items" aria-describedby={`${requirementsId}-keyboard-hint`} onKeyDown={event=>{
-          if(event.key!=="Escape" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-          event.preventDefault();event.stopPropagation();hideRemainingItems();
-        }}>
+        {missingRequiredCount>0 ? <ol className="inspection-required-choices" aria-label="Remaining required items" aria-describedby={`${requirementsId}-keyboard-hint`} onKeyDown={handleRemainingItemsKey}>
           {missingItems.map(item=><li key={item.key}><button type="button" className="secondary-button"
             ref={element=>{if(element)requiredItemButtons.current.set(item.key,element);else requiredItemButtons.current.delete(item.key);}}
             aria-keyshortcuts="ArrowUp ArrowDown Home End Escape"
-            onKeyDown={event=>{
-              if(event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-              const index=missingItems.findIndex(candidate=>candidate.key===item.key);
-              const next=event.key==="ArrowDown" ? (index+1)%missingItems.length
-                : event.key==="ArrowUp" ? (index+missingItems.length-1)%missingItems.length
-                : event.key==="Home" ? 0 : event.key==="End" ? missingItems.length-1 : -1;
-              if(next<0) return;
-              event.preventDefault();
-              const target=requiredItemButtons.current.get(missingItems[next].key);
-              target?.scrollIntoView({block:"nearest",inline:"nearest"});
-              target?.focus({preventScroll:true});
-            }}
+            onKeyDown={event => handleRequiredItemKey(event, item.key)}
             aria-current={item.key===currentCorrectionKey ? "true" : undefined} onClick={()=>{setCorrectionCollapsed(true);selectMissingItem(item);}}>
             {item.field ? requiredVisitLabels[item.field] : `Face ${(draft.faces??[]).findIndex(face=>face.id===item.faceId)+1} label`}
             {item.key===currentCorrectionKey ? <span> — Current item</span> : null}
