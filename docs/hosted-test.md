@@ -23,6 +23,11 @@ resolved the sync's known TLC-HS-0573 photo-link exception in all three
 environments, preserving history and verifying zero remaining active photo-link
 inconsistencies under the checked rules.
 
+The later [G-0001 placement correction](#november-23-2026-g-0001-shared-boundary-placement)
+put the marker on the G-1/G-2 shared boundary, **0.3 feet east of the western
+junction**, with identical saved positions verified in DEV and both TEST
+environments. Grave geometry and existing relationships were preserved.
+
 The earlier November 20 live verification found **`f08cc5987ad4dde6b5bd53153c1b2c1acff045e0`**
 ([PR #882](https://github.com/scpeterson/CemeteryMapping/pull/882)), version
 **0.3.0**, built **`2026-11-19T19:17:22Z`**, with migrations **521/522** applied.
@@ -86,6 +91,46 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 23, 2026: G-0001 shared-boundary placement
+
+The owner confirmed moving **G-0001** north onto the shared east–west boundary
+between **G-1 and G-2**, **0.3 feet east along the boundary from its western
+corner**. Stored plot IDs are `G-001` and `G-002`. DEV, local TEST and hosted TEST
+received the same geometry: longitude **-80.07968915608267**, latitude
+**40.60137031730726**. This is an owner-requested correction, not a survey claim.
+
+Full database backups were validated before mutation. Each target passed a
+rollback rehearsal before the guarded one-row update. The shared boundary and
+old marker position were checked against the captured before-state. Audit and
+native constraints remained enabled. The timestamp trigger was temporarily
+suspended inside the transaction to store the same update time across targets,
+then restored and independently verified enabled.
+
+Independent saved-state verification completed **2026-11-24T00:29:51Z**
+(November 23, **7:29:51 p.m. EST**):
+
+- All three environments measured **0.3 feet** from the western junction and
+  **zero distance** from the shared boundary, with identical marker geometry.
+- Only marker geometry, latitude, longitude and update timestamp changed.
+  Grave polygons and existing marker/grave/burial links remain unchanged;
+  this move did not add or remove a relationship.
+- Other marker details, all other marker records, existing audit history and
+  **16 protected tables** were preserved. Each database received **one
+  attributed marker-update audit event** recording the owner's placement request.
+- DEV and both TEST APIs remained healthy. No application code, release identity,
+  migration or user/access configuration changed.
+
+Private local recovery directory: `db/backups/20261123-g0001-boundary-move/`.
+Private hosted recovery directory:
+`/srv/nhcemeteries/backups/20261123-g0001-boundary-move/`.
+The retained artifacts include validated pre-move dumps, before-state geometry,
+guarded SQL, rehearsal/apply evidence and saved-state verification; the local
+`verification.json` is the consolidated result. No private artifacts are in Git.
+Use a reviewed coordinate-only forward correction for later evidence, retaining
+relationships and audit history; a full restore must account for subsequent TEST
+edits and each environment's users. Fresh interactive browser checks were not
+part of this verification. See the [release-status summary](release-status.md#november-23-2026-g-0001-shared-boundary-placement-verified).
 
 ## November 23, 2026: stale inspection-photo association correction
 
