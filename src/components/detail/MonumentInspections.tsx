@@ -1,11 +1,10 @@
 import { InscriptionFields } from "./InscriptionFields";
 import { InspectionFaceReading, InspectionReading } from "./InspectionFaceReading";
 import { combinedInspectionReading as combinedReading, isCombinedInspectionReading as isCombined, inspectionDraftReading } from "../../lib/inspectionReadings";
-import type { InspectionDraft } from "../../lib/inspectionDraftRecovery";
+import { saveInspectionDraft } from "../../lib/saveInspectionDraft";
 import { useAccountSession } from "../../auth/sessionContext";
 import { sortedMonumentInspections, inspectionTypeLabels } from "../../lib/monumentInspections";
 import { inspectionFacePhotos } from "../../lib/inspectionPhotos";
-import { savePhotoContext } from "../../api/mediaApi";
 import { PhotoGalleryContext } from "./photoGalleryContext";
 import { RecordPhotos } from "./RecordPhotos";
 import type { ComponentProps } from "react";
@@ -115,30 +114,23 @@ function InspectionEditor({ headstone, conditions = [], onSave, onDelete, onUplo
     if (!draft || !onSave || missingRequiredCount || missingPhotoFiles.length) return;
     setSaving(true); setError(undefined);
     try {
-      if (!draft.recordSaved) {
-        const entry: InspectionDraft = {...draft};
-        delete entry.photos; delete entry.recordSaved;
-        await onSave(entry, updating);
-        setSelectedId(draft.id);
-        setDraft(current=>current?{...current,recordSaved:true}:current);
-      }
-      const failures: string[] = [];
-      for (const photo of draft.photos ?? []) {
-        if (photo.saved) continue;
-        try {
-          if (photo.file) {
-            if (!onUploadPhoto) throw new Error("Photo uploads are unavailable. The inspection has been saved.");
-            await onUploadPhoto({file:photo.file,headstoneId:headstone.id,inspectionId:draft.id,faceId:photo.faceId,notes:photo.notes,capturedAt:photo.capturedAt||undefined});
-          } else if (photo.mediaAssetId) {
-            await savePhotoContext(headstone.id,photo.mediaAssetId,{inspectionId:draft.id,faceId:photo.faceId,phase:"unspecified"});
-          }
-          setDraft(current=>current?{...current,photos:current.photos?.map(p=>p.id===photo.id?{...p,saved:true}:p)}:current);
-        } catch (cause) {
-          const name=photo.file?.name||photo.missingFileName||headstone.mediaAssets?.find(a=>a.id===photo.mediaAssetId)?.originalFilename||"Photo";
-          failures.push(`${name}: ${cause instanceof Error?cause.message:"Unable to save photo."}`);
-        }
-      }
-      if(failures.length) throw new Error(failures.join(" "));
+      await saveInspectionDraft({
+        draft,
+        updating,
+        headstone,
+        saveInspection: onSave,
+        uploadPhoto: onUploadPhoto,
+        onInspectionSaved: () => {
+          setSelectedId(draft.id);
+          setDraft(current => current ? { ...current, recordSaved: true } : current);
+        },
+        onPhotoSaved: photoId => {
+          setDraft(current => current ? {
+            ...current,
+            photos: current.photos?.map(photo => photo.id === photoId ? { ...photo, saved: true } : photo),
+          } : current);
+        },
+      });
       setSelectedId(draft.id);
       clearRecovery();
       setDraft(null);
