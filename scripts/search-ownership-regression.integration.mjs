@@ -37,5 +37,20 @@ test('batched search preserves ownership visibility, status, reasons, scoping an
   assert.deepEqual(bounded,all.slice(offset,offset+2));
  }
  assert.deepEqual(await searchCemetery(c,{cemeteryId:cemetery,query:'no-such-search-term',includeOwnership:false}),[]);
+ await c.query("CREATE TEMP TABLE military_rank_types(id uuid, abbreviation text, label text, pay_grade text) ON COMMIT DROP");
+ const rank = randomUUID();
+ await c.query("INSERT INTO military_rank_types VALUES ($1,'FR','Fixture distinction','E-4')", [rank]);
+ await c.query(`INSERT INTO burials(gravesite_uuid,full_name,military_rank_type_id,interment_type_id,burial_record_status_type_id,deleted_at)
+   SELECT id,'Fixture person',$1,gen_random_uuid(),
+     (SELECT id FROM burial_record_status_types WHERE code='interred'),
+     CASE WHEN gravesite_id='FIXTURE-3' THEN now() END
+   FROM gravesites WHERE gravesite_id IN ('FIXTURE-1','FIXTURE-3','OTHER-5')`, [rank]);
+ const militaryOptions = { query: 'distinction', cemeteryId: cemetery, includeOwnership: false };
+ const military = await searchCemetery(c, { ...militaryOptions, statuses: ['occupied'] });
+ assert.equal(military.length, 1);
+ assert.equal(military[0].grave.id, 'FIXTURE-1');
+ assert.deepEqual(military[0].reasons, ['Military rank: FR Fixture distinction E-4']);
+ assert.deepEqual(await searchCemetery(c, { ...militaryOptions, statuses: ['available'] }), []);
+ assert.deepEqual((await searchCemetery(c, { ...militaryOptions, cemeteryId: other })).map(m => m.grave.id), ['OTHER-5']);
  }finally{await c.query('ROLLBACK');await c.end();}
 });
