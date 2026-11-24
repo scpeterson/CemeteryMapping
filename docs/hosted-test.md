@@ -3411,4 +3411,10 @@ registered in the TEST SPA client's exact callback/logout/web-origin lists;
 cached sessions did not prove that configuration. Final callback/live TEST login
 verification is recorded separately when completed. Physical-phone offline
 observation/photo/reconnect verification was explicitly deferred by the user.
-Fixture-backed browser checks are separate from live sign-in and phone evidence.
+The isolated built-browser workflow suite passed **63 tests**, with one
+source-module-only vault test intentionally skipped in built mode. Coverage
+included original photo persistence/retry, reader restrictions, real browser
+offline reload/service-worker cache behavior and reconnect queues. Lint,
+**939** server/script tests, **five** Python tests, the TEST frontend build, and
+Jekyll build/link validation also passed. These fixture-backed checks are separate
+from live sign-in and phone evidence.

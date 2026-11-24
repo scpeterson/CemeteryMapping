@@ -20,6 +20,7 @@ function run(command, args, options = {}) {
 export function runtimeEnvironment(config, profile, release) {
   // A managed runtime must never silently downgrade an existing authenticated environment.
   if (profile.AUTH_MODE !== "auth0" || !profile.AUTH0_DOMAIN || !profile.AUTH0_AUDIENCE) throw new Error("Private profile must explicitly configure AUTH_MODE=auth0, AUTH0_DOMAIN and AUTH0_AUDIENCE.");
+  if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/iu.test(profile.AUTH0_DOMAIN)) throw new Error("AUTH0_DOMAIN must be a bare hostname without whitespace or process-environment text.");
   return { ...process.env, ...profile, APP_ENV: config.environment, API_PORT: String(config.api),
     VITE_PROXY_API_TARGET: `http://127.0.0.1:${config.api}`, GIT_SHA: release.gitSha,
     BUILD_TIME: release.buildTime, APP_VERSION: release.version };
