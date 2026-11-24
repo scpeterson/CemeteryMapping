@@ -182,6 +182,11 @@ they do not establish fresh sign-in or physical-phone behavior. The user deferre
 the physical phone offline observation/photo/reconnect test on November 24, 2026.
 Track that check explicitly until performed.
 
+Use the same identity provider as the existing application-user mapping. A Google
+identity and a password identity with the same email have different Auth0
+subjects. An authenticated but unmapped identity must remain denied; do not grant
+it access or relink users merely to make smoke verification pass.
+
 Environment-specific users, secrets, Auth0 client IDs, ports, media roots,
 audit/system history and runtime supervision settings are expected differences.
 Historical databases retain their original extensions until separately migrated;

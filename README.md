@@ -30,6 +30,12 @@ The application supports four environments all the way through the front end, Do
 - `STAGE`
 - `PROD`
 
+The development launchers below run one environment at a time on port 5173.
+For concurrent maintained DEV and local TEST, use the
+[managed runtime commands](docs/environment-consistency.md#managed-local-services):
+DEV uses 5173/3001 and TEST uses 5174/3003 with a dedicated build and private
+Auth0 profiles. Do not run the temporary launchers over those managed services.
+
 Frontend modes:
 
 ```bash

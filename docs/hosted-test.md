@@ -3408,8 +3408,19 @@ snapshot consumes substantial space even though the immediate warning is clear.
 Fresh DEV Auth0 sign-in loaded all three cemeteries and authenticated existing
 marker-photo readback. It also exposed a local TEST gap: port **5174** must be
 registered in the TEST SPA client's exact callback/logout/web-origin lists;
-cached sessions did not prove that configuration. Final callback/live TEST login
-verification is recorded separately when completed. Physical-phone offline
+cached sessions did not prove that configuration. With explicit approval, only
+the dedicated Local TEST client received `http://127.0.0.1:5174` in all three
+lists; existing 5173 entries were retained and persistence was confirmed after
+reload. Hosted TEST uses a separate SPA client, which was not edited. Local TEST
+fresh login/logout, three-cemetery record access and existing-photo readback then
+passed with the existing Google-mapped admin identity. A password identity with
+the same email was correctly denied because its Auth0 subject is different; no
+user mapping, role or cemetery assignment was changed. Hosted TEST also
+passed a fresh Cloudflare Access sign-in and application logout/login using its
+existing password-mapped admin identity, loading the same three cemeteries and
+784 search results, with authenticated existing-photo readback. Its Google
+identity was correctly denied. These different providers are intentional
+environment-specific mappings, not accounts to merge. Physical-phone offline
 observation/photo/reconnect verification was explicitly deferred by the user.
 The isolated built-browser workflow suite passed **63 tests**, with one
 source-module-only vault test intentionally skipped in built mode. Coverage
