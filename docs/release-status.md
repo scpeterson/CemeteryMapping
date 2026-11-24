@@ -45,8 +45,28 @@ The post-deployment audit matched source and dependency configuration, active
 database versions, **22,113 rows in 78 business tables**, and all **789 media
 files** by content across DEV and both TEST environments. User, access and
 operational history tables remain outside business parity. The audit summary is
-under `db/backups/20261124-f98e86a-parity-final/`. The deployment checks did not
-include a fresh signed-in browser session or new photo uploads.
+under `db/backups/20261124-f98e86a-parity-final/`.
+
+### Signed-in gallery verification
+
+On both TEST environments, signed-in Chrome rendered **IMG_6678.jpeg** in
+the one-photo gallery for **TLC-HS-0573**. Both `variant=thumbnail` requests
+returned HTTP **200**.
+
+| Environment | First-open gallery transfer | Thumbnail request transfer | Median first open to visible photo | Median reopen to visible photo |
+| --- | ---: | ---: | ---: | ---: |
+| Local TEST | 64,813 bytes | 56.8 kB | ≈450 ms | ≈100 ms |
+| Hosted TEST | 66,309 bytes | 57.1 kB | ≈450 ms | ≈200 ms |
+
+Transfer sizes come from one first-open Chrome Network capture per environment.
+Gallery totals include all requests captured during that open. Thumbnail request
+sizes use Chrome's rounded transfer figures.
+
+Timing used three pairs per environment in signed-in Chrome. Each pair began
+with a fresh page load, followed by closing and reopening the gallery on the
+same page. The interval ran from the gallery button click to the appearance of
+the thumbnail in the Chrome Performance filmstrip. Screenshot sampling makes
+the medians approximate. The browser check used an existing photo.
 
 ## November 24, 2026: environment consistency and managed local services
 

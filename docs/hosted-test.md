@@ -122,9 +122,11 @@ media requests returned **401** at the hosted origin.
 
 The deployed Linux API image generated a **480 × 360 JPEG preview** from an
 existing **9,086,251-byte** original. The preview was **53,152 bytes**, matching
-the local TEST smoke result. This was a direct read-only generator check and
-an anonymous route check. Interactive signed-in browser coverage was outside
-this deployment verification.
+the local TEST smoke result. The follow-up signed-in Chrome check rendered
+**IMG_6678.jpeg** for **TLC-HS-0573** in hosted TEST and returned **200** for
+its thumbnail request. The combined browser record lists gallery transfer sizes,
+median first-open and reopen timings, and the measurement method for both TEST
+environments. [Signed-in gallery verification](release-status.md#signed-in-gallery-verification)
 
 The private hosted recovery set is
 `backups/20261124T170107Z-f98e86a2d045-d6b4dc31` under the hosted application
