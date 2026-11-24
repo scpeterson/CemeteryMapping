@@ -15,7 +15,7 @@ Existing PostgreSQL 17 environments must follow the [PostgreSQL 18 upgrade guide
 
 Install:
 
-- Node.js 24 or a compatible current Node.js version for local development
+- Node.js 24.22.3 from `.nvmrc` for local development
 - npm
 - Ruby 3.4.1
 - Bundler 2.6.2
@@ -61,6 +61,22 @@ APP_ENV=test npm run db:configure-api
 ```
 
 The DEV and TEST containers use separate Docker Compose projects, databases, ports, and Docker volumes, so they can exist side by side on the same machine.
+
+## Recover the operational dataset
+
+Schema migration and demo seeding do not reproduce the operational DEV/TEST
+dataset. To recover an existing environment, use its verified database and media
+backup together, preserving its globals/roles, ignored configuration and Auth0
+client. Rehearse the restore in an isolated database/media root, validate schema,
+geometry, constraints and media references, then verify health and access before
+cutover. A DEV-to-TEST business-data refresh must use the
+[controlled refresh procedure](environment-consistency.md#controlled-dev-to-test-refresh)
+so target users, access and audit history survive. Do not restore all of DEV over
+an existing TEST database or seed demo records into recovered operational data.
+
+For concurrent maintained local services and read-only cross-environment checks,
+use [DEV and TEST consistency](environment-consistency.md). TEST has its own build
+output and port 5174; DEV remains on 5173.
 
 ## Load Demo Data
 

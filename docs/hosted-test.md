@@ -6,7 +6,11 @@
 The dedicated host is managed separately from local TEST. See
 [ADR 0073](adr/0073-private-hosted-test.md).
 
-The November 23 deployment verified version **0.3.0** at
+The latest [November 24 runtime/capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
+records current revision `aa4b0b7`, aligned active database versions, equal
+business data/media, managed local runtimes and cleared hosted disk alerts.
+
+The earlier November 23 deployment verified version **0.3.0** at
 **`f4debd575c74e9b96dcb2205e60b514077697566`**, built
 **`2026-11-23T19:06:14Z`**, with migration **523** applied. See the
 [deployment record](#november-23-2026-main-revision-deployment-and-migration-523)
@@ -3343,3 +3347,68 @@ TEST or redeploy the application.
 ### Policy administration verification (migration 522)
 
 After backup/rehearsal, apply migrations and re-run the reviewed API role grants before switching API/web. Confirm schema 522, SELECT-only policy/history tables and EXECUTE on the guarded policy function. Verify system-admin scope choices and inherited sources. With an existing assigned cemetery-admin account or an isolated role fixture, verify own-scope access and denial of system/other-cemetery edits; power users/readers must be denied. Prefer rollback-only previews against real cemetery data. Use disposable fixtures for save/history/concurrency checks so operational rules are not changed by verification. Check desktop/mobile layout, draft invalidation, expired/stale preview rejection, conflict messages and history pagination. Optional preview secrets must remain private API-only configuration; see [Location policies](location-policies.md).
+
+## November 24, 2026: runtime consistency and hosted capacity
+
+The active DEV, local TEST and hosted TEST application revision is
+**`aa4b0b7e6d95864524366de5e499a796e1618d05`**, package **0.3.0**.
+Hosted build time is **`2026-11-24T00:42:02Z`**; refreshed local DEV and TEST
+metadata records **`2026-11-24T14:16:07.447Z`** and
+**`2026-11-24T14:16:07.482Z`**, respectively. Build timestamps describe different
+builds of the same application revision. This supersedes the older runtime
+metadata and code-deployment entries above; no application migration or business
+refresh was performed during this consistency work.
+
+The maintained read-only audit verified **78 business tables / 22,113 rows**,
+including deleted history and geometry EWKB, and **789 media files /
+7,651,886,763 bytes** equal across all three environments. Application source and
+dependency/runtime configuration, public columns/functions and active database
+extension versions matched. Active databases run PostgreSQL **18.6**, PostGIS and
+topology **3.7.0**, retaining legacy TIGER **3.6.4**. Users, access settings,
+operational history and migration-ledger rows remain intentionally separate.
+See [environment consistency](environment-consistency.md) for the command,
+comparison scope, protected exclusions and controlled refresh procedure.
+
+Both local database containers were recreated from the pinned compatibility
+image, retaining their original volumes and published ports. Fresh full-cluster
+logical dumps, role/configuration evidence and validated cold physical archives
+were taken first. Before/after fingerprints, including geometry and sequences,
+matched for the DEV and TEST application/historical databases. DEV retained two
+non-template databases and local TEST seven. Roles, credentials and container
+environment/port bindings were unchanged; image metadata is now available for
+both running containers. Historical databases retain their earlier extension
+versions; they were not silently migrated.
+
+Local services now use checkout-specific macOS LaunchAgents. DEV reports the
+current revision/build time. TEST serves its dedicated captured API/shared source
+and frontend build rather than root `dist`. Terminating the owned TEST API child
+proved automatic pair recovery with the same release. A separate root frontend
+build did not change TEST's served artifact. Anonymous identity requests return
+**401**; the private runtime profiles retain each environment's own Auth0 values.
+
+Hosted root disk initially had about **6.2 GiB** free (**92%** used), insufficient
+for another full media snapshot. Existing guarded retention encrypted and
+verified offsite snapshot `4ba5414d…` before removing seven eligible older
+backup/staging roots (about **78 MiB**). Separately, **37** reviewed old versioned
+API images and **four** confirmed-unused vendor images were archived off-host
+and verified against their OCI manifests, configuration and content digests before
+removal. Current service images, four recent release rollback sets, manual
+rollback/upgrade holds and every database volume were retained.
+
+Final root capacity was **17,147,523,072 bytes free** (about **16.0 GiB**),
+**80%** used. Both disk warning/critical flags were false; the verified daily
+offsite backup was about **10.8 hours** old. All four hosted containers remained
+running and the database healthy. The application release was unchanged.
+Archives, raw fingerprints, configuration evidence and full database/media
+recovery material remain private. Local off-host image archives are recovery
+copies, not evidence of a new encrypted daily database backup or a complete
+host/media restore rehearsal. Continue capacity alerts: a later new full media
+snapshot consumes substantial space even though the immediate warning is clear.
+
+Fresh DEV Auth0 sign-in loaded all three cemeteries and authenticated existing
+marker-photo readback. It also exposed a local TEST gap: port **5174** must be
+registered in the TEST SPA client's exact callback/logout/web-origin lists;
+cached sessions did not prove that configuration. Final callback/live TEST login
+verification is recorded separately when completed. Physical-phone offline
+observation/photo/reconnect verification was explicitly deferred by the user.
+Fixture-backed browser checks are separate from live sign-in and phone evidence.

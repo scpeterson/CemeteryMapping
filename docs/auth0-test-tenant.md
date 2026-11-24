@@ -75,23 +75,25 @@ Application Type: Single Page Application
 Token Endpoint Authentication Method: None
 ```
 
-For local development, configure:
+For concurrent DEV and local TEST, keep DEV on port **5173** and configure
+local TEST's dedicated SPA client for port **5174**. On the TEST application,
+retain any existing hosted TEST URLs and add the exact local origin to all three
+lists:
 
 ```text
-Application Login URI: http://127.0.0.1:5173
-Application Origin URL: http://127.0.0.1:5173
-Allowed Callback URLs: http://127.0.0.1:5173
-Allowed Logout URLs: http://127.0.0.1:5173
-Allowed Web Origins: http://127.0.0.1:5173
+Allowed Callback URLs: http://127.0.0.1:5174
+Allowed Logout URLs: http://127.0.0.1:5174
+Allowed Web Origins: http://127.0.0.1:5174
 ```
 
-Use the exact same origin in the browser. This project runs Vite on a strict port so Auth0 callbacks do not drift:
-
-```text
-http://127.0.0.1:5173
-```
-
-If you choose to open the app as `http://localhost:5173` instead, add that origin to all three Auth0 URL fields too. The protocol, host, and port must match exactly.
+Use the exact same origin in the browser. The managed local TEST runtime uses a
+strict port; see [environment consistency](environment-consistency.md). DEV's
+separate tenant/application continues to use `http://127.0.0.1:5173`.
+If you choose `localhost` instead of `127.0.0.1`, that is a different origin and
+requires a separately reviewed exact URL in all three fields. Do not add wildcards
+or replace the hosted client's existing origins. Verify a fresh sign-in and
+sign-out after changing these settings; a cached session does not prove callback
+configuration works.
 
 Add TEST/STAGE URLs when those deployments exist.
 

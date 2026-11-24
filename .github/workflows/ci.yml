@@ -54,7 +54,7 @@ jobs:
           python3 deploy/test/install_restic.py "$RUNNER_TEMP/backup-retention-bin"
           echo "$RUNNER_TEMP/backup-retention-bin" >> "$GITHUB_PATH"
       - run: npm run test:deploy
-      - run: python3 -m unittest discover -s scripts -p 'check_docs_test.py'
+      - run: python3 -m unittest discover -s scripts -p '*_test.py'
       - run: npm run build:test
       # Commit/time literals change chunk hashes and gzip sizes even when only
       # documentation changes. These CI files are not deployment artifacts;
