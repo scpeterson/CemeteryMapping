@@ -12,9 +12,10 @@ That repository merge did not redeploy the application. The
 [current release-status summary](release-status.md#november-24-2026-environment-consistency-and-managed-local-services)
 distinguishes merged source, runtime revision and documentation publication.
 
-The latest [November 24 runtime/capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
-records current revision `aa4b0b7`, aligned active database versions, equal
-business data/media, managed local runtimes and cleared hosted disk alerts.
+Hosted TEST runs version **0.3.0** at **`f98e86a`**, deployed November 24,
+2026. See the [current deployment record](#november-24-2026-f98e86a-deployment).
+The earlier [runtime and capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
+records database alignment, managed local runtimes and storage recovery.
 
 The earlier November 23 deployment verified version **0.3.0** at
 **`f4debd575c74e9b96dcb2205e60b514077697566`**, built
@@ -101,6 +102,35 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 24, 2026: f98e86a deployment
+
+The release advanced hosted TEST from `aa4b0b7` to
+**`f98e86a2d045f19142ae4fd553212fc14b849f63`** (version **0.3.0**), built at
+**`2026-11-24T17:01:07Z`**. The exact commit passed
+[main CI](https://github.com/scpeterson/CemeteryMapping/actions/runs/45441361249).
+Liquibase validated the existing schema. The deployer backed up the database,
+application/settings and media, verified the candidate API, then switched API
+and web while the database and tunnel stayed running.
+
+The origin reported healthy TEST on `cemetery_mapping_test` with the expected
+revision and build time. The served frontend matched the release manifest.
+Verification checked **216 runtime source files**, **zero API restarts**, and
+preservation of accounts, media and protected settings. The public HTTPS
+request-access page returned **200**. Anonymous identity and original/preview
+media requests returned **401** at the hosted origin.
+
+The deployed Linux API image generated a **480 × 360 JPEG preview** from an
+existing **9,086,251-byte** original. The preview was **53,152 bytes**, matching
+the local TEST smoke result. This was a direct read-only generator check and
+an anonymous route check. Interactive signed-in browser coverage was outside
+this deployment verification.
+
+The private hosted recovery set is
+`backups/20261124T170107Z-f98e86a2d045-d6b4dc31` under the hosted application
+root. The release report is in the corresponding staging directory.
+The [combined TEST verification](release-status.md#november-24-2026-f98e86a-deployed-to-local-and-hosted-test)
+records local recovery and post-cutover parity.
 
 ## November 23, 2026: G-0001 shared-boundary placement
 
@@ -3356,7 +3386,7 @@ After backup/rehearsal, apply migrations and re-run the reviewed API role grants
 
 ## November 24, 2026: runtime consistency and hosted capacity
 
-The active DEV, local TEST and hosted TEST application revision is
+At that verification, the active DEV, local TEST and hosted TEST application revision was
 **`aa4b0b7e6d95864524366de5e499a796e1618d05`**, package **0.3.0**.
 Hosted build time is **`2026-11-24T00:42:02Z`**; refreshed local DEV and TEST
 metadata records **`2026-11-24T14:16:07.447Z`** and

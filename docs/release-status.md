@@ -14,6 +14,40 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 24, 2026: f98e86a deployed to local and hosted TEST
+
+Local and hosted TEST now run version **0.3.0** at exact main commit
+**`f98e86a2d045f19142ae4fd553212fc14b849f63`**. The release includes protected
+photo thumbnails, scoped SQL search, the inspection save and navigation
+refactors, and upload receipt reuse for inspection photo retries. The
+[main CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/45441361249)
+and [GitHub Pages deployment](https://github.com/scpeterson/CemeteryMapping/actions/runs/45441360495)
+passed for this commit. Both application deployments used the existing schema
+through migration 523.
+
+| Check | Local TEST | Hosted TEST |
+| --- | --- | --- |
+| Build time (UTC) | `2026-11-24T17:01:36.019Z` | `2026-11-24T17:01:07Z` |
+| Health and identity | Healthy on the exact release | Healthy on the exact release, zero API restarts |
+| Frontend | Port 5174 served the dedicated build | Origin matched release manifest, public HTTPS request-access returned 200 |
+| Preservation | All 91 public table fingerprints matched and private settings were preserved | 216 runtime files verified, accounts/media and protected settings preserved |
+
+Local TEST used a validated pre-deployment database dump and retained the
+previous release record. The managed API and frontend were restarted as a pair
+under launchd. Private local evidence is under
+`db/backups/20261124-local-test-f98e86a/`. The
+[hosted deployment record](hosted-test.md#november-24-2026-f98e86a-deployment)
+describes the hosted recovery set and cutover.
+
+Both environments generated a 480 × 360 preview from the same existing JPEG
+and returned **401** to anonymous requests for the original and preview.
+The post-deployment audit matched source and dependency configuration, active
+database versions, **22,113 rows in 78 business tables**, and all **789 media
+files** by content across DEV and both TEST environments. User, access and
+operational history tables remain outside business parity. The audit summary is
+under `db/backups/20261124-f98e86a-parity-final/`. The deployment checks did not
+include a fresh signed-in browser session or new photo uploads.
+
 ## November 24, 2026: environment consistency and managed local services
 
 [PR #900](https://github.com/scpeterson/CemeteryMapping/pull/900) merged as
@@ -24,7 +58,7 @@ The [Pages workflow for merged main](https://github.com/scpeterson/CemeteryMappi
 also passed. PR checks, main CI and documentation publishing are separate runs;
 none of them by itself redeploys a running application.
 
-The last verified **application runtime** revision remains
+At that verification, the **application runtime** revision was
 **`aa4b0b7e6d95864524366de5e499a796e1618d05`**, version **0.3.0**, in DEV and both
 TEST environments. PR #900 added operational tooling/documentation, not an
 application cutover or schema migration. Different build timestamps identify the
