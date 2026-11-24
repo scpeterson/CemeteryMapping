@@ -44,3 +44,11 @@ cancellation, account/marker isolation, file reselection, partial-save recovery,
 and storage-failure retry using a controlled browser clock. The existing
 inspection suite also covers actual reload, saves, discarded drafts, photo
 retries, navigation, keyboard behavior, and phone workflows.
+
+## Save workflow boundary
+
+The inspection save workflow writes the inspection first, then attempts each
+pending photo upload or library link. It reports each successful write to the
+editor so the existing draft recovery hook can retain partial progress. The
+editor owns validation, selection, messages and recovery cleanup. A retry uses
+the current draft and skips the saved inspection and completed photos.
