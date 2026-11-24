@@ -52,3 +52,10 @@ pending photo upload or library link. It reports each successful write to the
 editor so the existing draft recovery hook can retain partial progress. The
 editor owns validation, selection, messages and recovery cleanup. A retry uses
 the current draft and skips the saved inspection and completed photos.
+
+Each queued inspection file uses its persisted draft photo UUID as the upload
+operation ID. If the upload commits and the response is lost, retrying with
+the same file and metadata returns the existing result after the server checks
+current access. This also works after resuming a draft and reselecting the
+same file. If the reselected file or metadata differs from a committed
+upload, the server reports a conflict and leaves the draft available.
