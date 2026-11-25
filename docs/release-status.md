@@ -14,6 +14,28 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 24, 2026: d2d01cc deployed to local and hosted TEST
+
+Local and hosted TEST advanced from `8ea222b` to version **0.3.0** at main
+commit **`d2d01cc81eb9bea3093ec92b183d8ec2cb22fdb4`**. This commit updated
+the username placeholder in documentation paths. Main CI and GitHub Pages
+passed for the exact revision.
+[Main CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/45495247158) ·
+[Pages deployment](https://github.com/scpeterson/CemeteryMapping/actions/runs/45495246708)
+
+- **Local TEST** validated a pre-deployment database dump and restarted the
+  managed API and frontend. Health reported the exact revision and a healthy
+  `cemetery_mapping_test` database. The served frontend matched the build,
+  all **91 database table fingerprints** matched before and after cutover,
+  settings were preserved, and anonymous identity requests returned **HTTP 401**.
+  Private recovery and verification files are under
+  `db/backups/20261124-local-test-d2d01cc/`.
+- **Hosted TEST** validated its backups and reported the exact revision and a
+  healthy `cemetery_mapping_test` database. Verification covered **216 runtime
+  files** and confirmed account and media preservation. The schema was already
+  current, and the public request-access page returned **HTTP 200**.
+  [Hosted deployment record](hosted-test.md#november-24-2026-d2d01cc-deployment)
+
 ## November 24, 2026: 8ea222b deployed to local and hosted TEST
 
 Local and hosted TEST advanced from `ee464fa` to version **0.3.0** at main
