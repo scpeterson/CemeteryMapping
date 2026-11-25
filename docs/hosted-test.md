@@ -12,8 +12,8 @@ That repository merge did not redeploy the application. The
 [current release-status summary](release-status.md#november-24-2026-environment-consistency-and-managed-local-services)
 distinguishes merged source, runtime revision and documentation publication.
 
-Hosted TEST runs version **0.3.0** at **`8ea222b`**, deployed November 24,
-2026. See the [current deployment record](#november-24-2026-8ea222b-deployment).
+Hosted TEST runs version **0.3.0** at **`d2d01cc`**, deployed November 24,
+2026. See the [current deployment record](#november-24-2026-d2d01cc-deployment).
 The earlier [runtime and capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
 records database alignment, managed local runtimes and storage recovery.
 
@@ -102,6 +102,23 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 24, 2026: d2d01cc deployment
+
+Hosted TEST advanced from `8ea222b` to main commit
+**`d2d01cc81eb9bea3093ec92b183d8ec2cb22fdb4`** (version **0.3.0**), built at
+**`2026-11-24T21:59:31Z`**. The deployer validated backups of the TEST database,
+application settings, and media before switching the API and frontend. The
+schema was already current.
+
+The origin reported the exact commit and a healthy `cemetery_mapping_test`
+database. Verification checked **216 runtime files**, recorded **zero API
+restarts**, and confirmed account and media preservation. The public HTTPS
+request-access page returned **HTTP 200**.
+
+The private recovery set is `backups/20261124T215931Z-d2d01cc81eb9-78bd2fa0`
+under the hosted application root. The release report is in the corresponding
+staging directory. [Combined TEST verification](release-status.md#november-24-2026-d2d01cc-deployed-to-local-and-hosted-test)
 
 ## November 24, 2026: 8ea222b deployment
 
