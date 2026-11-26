@@ -45,6 +45,7 @@ export function markerEditPayload(headstone: Headstone, markerTypeOptions?: Look
     expectedVersion:headstone.version,
     newInspections: [],
     markerTypeId,
+    dimensions: headstone.dimensions,
     markerScopeId: headstone.markerScope.id,
     materialId: headstone.material.id,
     conditionId: headstone.condition.id,

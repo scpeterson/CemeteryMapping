@@ -91,12 +91,17 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
       headstone.currentLegibility ?? null,
       headstone.historicalTranscriptions === undefined ? null : JSON.stringify(headstone.historicalTranscriptions),
       headstone.orientationBearingDegrees === undefined || headstone.orientationBearingDegrees === "" ? null : Number(headstone.orientationBearingDegrees),
+      JSON.stringify(headstone.dimensions ?? {}),
     );
 
     const updateResult = await client.query(
       `
         UPDATE headstones
         SET marker_type_id = $2::uuid,
+            width_inches = CASE WHEN $26::jsonb ? 'width' THEN ($26::jsonb->>'width')::numeric ELSE width_inches END,
+            height_inches = CASE WHEN $26::jsonb ? 'height' THEN ($26::jsonb->>'height')::numeric ELSE height_inches END,
+            depth_inches = CASE WHEN $26::jsonb ? 'depth' THEN ($26::jsonb->>'depth')::numeric ELSE depth_inches END,
+            rise_inches = CASE WHEN $26::jsonb ? 'rise' THEN ($26::jsonb->>'rise')::numeric ELSE rise_inches END,
             marker_scope_type_id = $15::uuid,
             material_type_id = $3::uuid,
             condition_type_id = $4::uuid,
@@ -126,6 +131,7 @@ export async function updateHeadstone(pool, id, headstone, { actorUser, reason, 
         RETURNING
           id::text,
           headstone_id,
+          width_inches, height_inches, depth_inches, rise_inches,
           xmin::text AS version,
           marker_type_id::text,
           (SELECT code FROM marker_types WHERE marker_types.id = headstones.marker_type_id) AS marker_type_code,
@@ -311,6 +317,7 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
           source_conflict,
           source_properties,
           marker_scope_type_id,
+          width_inches, height_inches, depth_inches, rise_inches,
           updated_at
         )
         VALUES (
@@ -347,6 +354,8 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
             )
           ),
           $20::uuid,
+          ($24::jsonb->>'width')::numeric, ($24::jsonb->>'height')::numeric,
+          ($24::jsonb->>'depth')::numeric, ($24::jsonb->>'rise')::numeric,
           now()
         )
         RETURNING id::text
@@ -375,6 +384,7 @@ export async function createHeadstoneForGrave(pool, cemeteryId, gravesiteId, hea
         headstone.inscriptionStatus ?? null,
         headstone.currentLegibility ?? null,
         headstone.historicalTranscriptions === undefined ? null : JSON.stringify(headstone.historicalTranscriptions),
+        JSON.stringify(headstone.dimensions ?? {}),
       ],
     );
     const headstoneUuid = insertResult.rows[0].id;

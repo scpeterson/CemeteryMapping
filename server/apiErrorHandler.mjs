@@ -18,12 +18,15 @@ export function createApiErrorHandler(pool, config, versionMetadata) {
     if (["section_g_single_primary", "section_g_primary_marker_claims_pkey"].includes(error.constraint)) {
       response.status(409).json({ error: "Location policy permits only one flat marker per gravesite (primary or spanning). Review the marker type and relationship before adding, linking, or restoring a marker." }); return;
     }
+    if (error.code === "23514" && error.constraint === "trinity_marker_size") {
+      response.status(409).json({ error: error.message }); return;
+    }
     const policyErrors = {
       location_policy_legacy_block: "Assign the canonical block reference before using this policy-controlled block.",
       location_policy_legacy_section: "Assign canonical section references to legacy graves before renaming this policy section.",
       location_policy_gravesites: "This location does not permit gravesites.",
       location_policy_markers: "This location permits only flat markers.",
-      location_policy_capacity: "This location permits either one casket burial or up to two funeral urn burials.",
+      location_policy_capacity: "This burial exceeds the plot’s permitted casket and ashes combination. Check the cemetery rule and any approved deed exception.",
     };
     if (error.code === "23514" && Object.hasOwn(policyErrors, error.constraint)) {
       response.status(409).json({ error: policyErrors[error.constraint] }); return;

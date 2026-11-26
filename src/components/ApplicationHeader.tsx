@@ -1,10 +1,12 @@
 import {TaskReminderLink} from "./TaskReminderLink";
 import { roleForCemetery } from "../lib/selectionPermissions";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Download, BarChart3, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react";
 import { useAccountSession } from "../auth/sessionContext";
 import type { CurrentUser } from "../types";
 import { apiBaseUrl, appEnvironment, appVersionMetadata } from "../config/environment";
+
+const TrinityCemeteryRules = lazy(() => import("./TrinityCemeteryRules"));
 
 type ApplicationHeaderProps = {
   cemeteryScopeLabel: string;
@@ -25,6 +27,8 @@ export function ApplicationHeader({
 }: ApplicationHeaderProps) {
   const session = useAccountSession();
   const [menuOpen, setMenuOpen] = useState(false);
+  const canSeeTrinityRules = cemeteries?.some((cemetery) =>
+    cemetery.name === "Trinity Lutheran Church Cemetery" && (!cemeteryScope || cemetery.id === cemeteryScope));
   const menuButton = useRef<HTMLButtonElement>(null);
   useEffect(()=>{
     if(!menuOpen)return;
@@ -88,6 +92,7 @@ export function ApplicationHeader({
             <BarChart3 size={16} aria-hidden="true" /> Reports
           </button>
           <a href="/exports/" aria-label="Export cemetery records" title="Download scoped CSV and GeoJSON records."><Download size={16} aria-hidden="true"/>Export</a>
+          {canSeeTrinityRules && <Suspense fallback={null}><TrinityCemeteryRules /></Suspense>}
           {currentUser.role!=="reader"?<TaskReminderLink accountId={currentUser.id}/>:null}
           {currentUser.role!=="reader"?<a href="/field/" aria-label="Open field collection: prepare records and save work offline" title="Prepare records and collect field observations and photos."><MapPinned size={16} aria-hidden="true"/>Field</a>:null}
           {currentUser.permissions.canOpenAdminPanel ? <>

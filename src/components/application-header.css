@@ -47,7 +47,8 @@
 .environment-stage { border-color: rgba(217, 164, 65, 0.5); color: #795316; }
 .environment-badge:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-.whats-new-panel {
+.whats-new-panel,
+.cemetery-rules-panel {
   width: min(560px, calc(100vw - 24px));
   padding: var(--space-6);
   border: 1px solid var(--panel-border);
@@ -56,6 +57,13 @@
   box-shadow: var(--shadow);
   line-height: 1.6;
 }
+.cemetery-rules-panel {
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}
+.cemetery-rules-panel > button { float: right; min-height: 44px; margin-left: var(--space-3); }
+.cemetery-rules-panel li + li { margin-top: var(--space-2); }
 .whats-new-panel h2 { margin: 0; font-size: 1.125rem; }
 .whats-new-panel > button { float: right; min-height: 44px; margin-left: var(--space-3); }
 .whats-new-panel > p { color: var(--text-muted); }

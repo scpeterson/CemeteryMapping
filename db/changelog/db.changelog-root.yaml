@@ -1566,3 +1566,9 @@ databaseChangeLog:
   - include:
       file: changes/523-non-interred-inscription-capacity.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/524-trinity-burial-capacity.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/525-trinity-marker-dimensions.sql
+      relativeToChangelogFile: true

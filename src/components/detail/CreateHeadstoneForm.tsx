@@ -1,3 +1,4 @@
+import { MarkerDimensionFields } from "./MarkerDimensionFields";
 import { normalizeInscriptionPlaceholder } from "../../../shared/inscriptionStatus.mjs";
 import { InscriptionFields } from "./InscriptionFields";
 import { LookupForm, LookupSelect, LookupSaveButton } from "./EditingOptions";
@@ -167,6 +168,8 @@ export function CreateHeadstoneForm({
           ))}
         </LookupSelect>
       </label>
+      <MarkerDimensionFields dimensions={form.dimensions}
+        onChange={(dimensions) => setForm((current) => ({ ...current, dimensions }))} />
       <label>
         Marker scope
         <LookupSelect value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>

@@ -5,7 +5,7 @@ import {validateUuid,requiredText} from "./inputValidation.mjs";
 export const policyCatalog=[
  ["no_gravesites","Prohibit gravesites"], ["no_interactive_creation","Prohibit Add gravesite"],
  ["flat_markers_only","Flat markers only"], ["single_primary_marker","One primary or spanning flat marker"],
- ["casket_or_two_urns","One casket or two urns, without mixing"],
+ ["casket_or_two_urns","Enforce the plot’s casket and ashes limits"],
 ].map(([key,label])=>({key,label}));
 const secret=process.env.POLICY_PREVIEW_SECRET || randomBytes(32);
 if(Buffer.byteLength(secret)<32)throw new Error('POLICY_PREVIEW_SECRET must have at least 32 bytes.');

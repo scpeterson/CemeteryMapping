@@ -45,9 +45,12 @@ for(const scenario of [{section:'G',existing:false},{section:'A',existing:false}
    await expect(form.getByRole('combobox',{name:'Relationship',exact:true}).locator('option')).toHaveCount(6);
   }
   if(restricted)await form.getByRole('combobox',{name:'Relationship',exact:true}).selectOption('spans');
+  await form.getByLabel('Width (inches)', {exact:true}).fill('28');
+  await form.getByLabel('Depth (inches)', {exact:true}).fill('18');
   await expect(form.getByRole('button',{name:'Save marker',exact:true})).toBeEnabled();
   await form.getByRole('button',{name:'Save marker',exact:true}).click();
   await expect.poll(()=>saved?.headstoneId).toBe('');
+  expect(saved?.dimensions).toEqual({width:28,depth:18});
   if(restricted)expect(saved?.relationshipType).toBe('spans');
   await expect(page.getByText('Marker TLC-HS-0600 added.',{exact:true})).toBeVisible();
  });

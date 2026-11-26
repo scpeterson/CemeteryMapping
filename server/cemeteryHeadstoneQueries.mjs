@@ -19,6 +19,7 @@ const headstoneDetailColumnsSql = `
   headstones.id::text,
   headstones.row_version AS version,
   headstones.headstone_id,
+  headstones.width_inches, headstones.height_inches, headstones.depth_inches, headstones.rise_inches,
   marker_types.id::text AS marker_type_id,
   marker_types.code AS marker_type_code,
   marker_types.label AS marker_type_label,

@@ -220,6 +220,12 @@ export function toHeadstone(row) {
     id: row.id,
     ...(row.version ? { version: row.version } : {}),
     headstoneId: row.headstone_id,
+    dimensions: {
+      width: row.width_inches == null ? null : Number(row.width_inches),
+      height: row.height_inches == null ? null : Number(row.height_inches),
+      depth: row.depth_inches == null ? null : Number(row.depth_inches),
+      rise: row.rise_inches == null ? null : Number(row.rise_inches),
+    },
     flatMarkersOnly: Boolean(row.flat_markers_only),
     markerType: toLookupValue(row, "marker_type"),
     markerScope: toLookupValue(row, "marker_scope"),
