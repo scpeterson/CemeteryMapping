@@ -26,7 +26,7 @@ export function createApiErrorHandler(pool, config, versionMetadata) {
       location_policy_legacy_section: "Assign canonical section references to legacy graves before renaming this policy section.",
       location_policy_gravesites: "This location does not permit gravesites.",
       location_policy_markers: "This location permits only flat markers.",
-      location_policy_capacity: "This burial exceeds the plot’s permitted casket and ashes combination. Check the cemetery rule and any approved deed exception.",
+      location_policy_capacity: "This location does not permit that casket and ashes combination. Check the plot’s capacity and any approved deed exception.",
     };
     if (error.code === "23514" && Object.hasOwn(policyErrors, error.constraint)) {
       response.status(409).json({ error: policyErrors[error.constraint] }); return;

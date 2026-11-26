@@ -3,6 +3,7 @@ import test from "node:test";
 import pg from "pg";
 import { integrationAdminDatabase } from "./lib/integration-admin.mjs";
 import { loadApiConfig } from "../server/config.mjs";
+import { selectHeadstoneById, selectHeadstonesForGrave } from "../server/cemeteryHeadstoneQueries.mjs";
 
 const { Pool } = pg;
 
@@ -413,6 +414,8 @@ test("Trinity marker dimensions enforce standard limits and isolate the signed G
     const footstone = await add(exceptionPlot, "footstone");
     await measure(flat, 28, null, 18, 0.5);
     await measure(approved, 36, null, 18, 0.5);
+    assert.equal((await selectHeadstoneById(client, approved)).width_inches, "36");
+    assert.equal((await selectHeadstonesForGrave(client, exceptionPlot))[0].width_inches, "36");
     await measure(upright, 36, 36, 16, null);
     await measure(footstone, 24, null, 12, 0.5);
     for (const values of [
