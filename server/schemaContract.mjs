@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "522-policy-administration";
+export const requiredSchemaChangeset = "525-trinity-marker-dimensions";
 
 export async function assertCurrentSchema(pool) {
   let result;

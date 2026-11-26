@@ -1,3 +1,4 @@
+import { MarkerDimensionFields } from "./MarkerDimensionFields";
 import { normalizeInscriptionPlaceholder } from "../../../shared/inscriptionStatus.mjs";
 import { markerEditPayload as blankHeadstoneForm } from "../../lib/recordEditPayloads";
 import { isRecordConflict } from "../../api/apiClient";
@@ -250,6 +251,8 @@ export function HeadstoneRecord({
           </LookupSelect>
         </label>
         {flatMarkersOnly ? <p className="muted headstone-wide-field">Only flat markers are permitted here.</p> : null}
+        <MarkerDimensionFields dimensions={form.dimensions}
+          onChange={(dimensions) => setForm((current) => ({ ...current, dimensions }))} />
         <label>
           Marker scope
           <LookupSelect value={form.markerScopeId} onChange={(event) => setForm((current) => ({ ...current, markerScopeId: event.target.value }))}>

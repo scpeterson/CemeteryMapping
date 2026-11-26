@@ -73,7 +73,10 @@ export type MonumentInspection = {
   sourceEntries?: { entryId: string; page?: number; rawText: string }[];
 };
 
+export type MarkerDimensions = Partial<Record<"width" | "height" | "depth" | "rise", number | null>>;
+
 export type Headstone = {
+  dimensions?: MarkerDimensions;
   flatMarkersOnly?: boolean;
   version?: string;
   inspections?: MonumentInspection[];
@@ -219,6 +222,7 @@ export type InspectionInput = {
 };
 
 export type SaveHeadstoneInput = {
+  dimensions?: MarkerDimensions;
   expectedVersion?: string;
   deletedInspections?: {id: string; expectedUpdatedAt: string}[];
   inspectionChangesOnly?: boolean;

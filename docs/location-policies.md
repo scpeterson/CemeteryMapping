@@ -3,6 +3,40 @@
 
 # Location policies and existing rule inventory
 
+## Trinity Cemetery Exhibit B
+
+Operators can open **Trinity rules** from the application menu when Trinity
+Lutheran Church Cemetery is in scope. The reference summarizes the Council's
+October 20, 2025 Exhibit B, including the marker types permitted in Sections
+A–E and F–G, fees, eligibility, and notice periods. Use the source Exhibit B
+and the applicable deed for operational decisions.
+
+The reference includes both automated and operator-reviewed rules. In Section G,
+the app enforces one casket plus up to one set of ashes or up to two sets of
+ashes alone. The signed G-72 deed specifies one casket or up to three sets of
+ashes in any approved cremation form, and separately allows a marker up to 36
+inches wide. The app enforces the G-72 burial limit and applies its marker-width exception
+only to a single-plot flush marker on G-72.
+
+Enter measurements in inches in **Add marker** or **Edit marker information**.
+Migration 525 validates supplied dimensions against Trinity's single-plot,
+shared-marker and foot-marker limits. A shared marker must span two adjoining
+plots in the app. Operators verify family eligibility and veteran status using
+the applicable deed and records. Measure a flush marker's rise separately
+from its overall height. An unrecorded measurement is treated as unknown, so
+historical records can still be maintained. The two-ashes depth allowance uses
+two recorded interments of ashes. A missing burial record may need updating
+before recording the extended depth. Future plot-specific width exceptions
+require a reviewed migration with the written approval reference.
+
+Migration 524 stores the burial exception by gravesite UUID with a written
+approval reference. To register another approved exception, use a reviewed
+database migration that records the exact plot, limits, and written approval.
+The application role has read access and cannot modify exception records.
+The Section F rule prohibiting active gravesites still applies.
+
+## Policy resolution
+
 Migration 521 introduces a typed policy foundation. Policies resolve per rule in
 this order: system default → cemetery → section → block. The nearest explicit
 value wins; `false` is an explicit override, and absence means inherit. With no
@@ -25,7 +59,7 @@ including changes to scoped parents.
 | `no_interactive_creation` | Reject the Add gravesite workflow at that location; existing/imported graves remain valid. |
 | `flat_markers_only` | Permit only Flat marker for every active directly or explicitly associated marker. |
 | `single_primary_marker` | Permit zero or one flat marker per grave, with Primary or Spans relationships. A shared marker counts once on each linked grave. |
-| `casket_or_two_urns` | Permit one casket or up to two urns, never a mixture. Unknown interment types continue to count as caskets. |
+| `casket_or_two_urns` | Enforce plot burial capacity. At Trinity this permits one casket plus one set of ashes or up to two sets of ashes alone, subject to approved plot exceptions. Other cemeteries retain the one-casket or two-urn limit without mixing. Unknown interment types count as caskets. |
 
 These are deliberately small, tested handlers, not user-written formulas or SQL.
 Adding a new kind of rule requires an application migration, enforcement and
@@ -80,7 +114,7 @@ DML on `location_policies`, `location_policy_revision`,
 entry is `change_location_policy`, a narrow SECURITY DEFINER function with a fixed
 search path, current-account/membership checks, hierarchy validation and a required
 reason. Apply migrations 521/522 and re-run the reviewed API grants before starting
-the new API; startup requires schema 522. Granting the function does not grant
+the new API; startup requires schema 525. Granting the function does not grant
 catalog/history DML.
 
 Policy changes require a nonempty reason and a READ COMMITTED transaction. Operator migrations remain available for reviewed configuration changes. A deployment should take its usual backup and

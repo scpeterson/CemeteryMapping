@@ -1,10 +1,35 @@
 import { expect, test } from "@playwright/test";
-import { fixture, showApplicationActions } from "./fixtures/cemetery";
+import { cemeteryId, fixture, geometry, showApplicationActions } from "./fixtures/cemetery";
 import { readFileSync } from "node:fs";
 import { resolveAppEnvironment } from "../shared/appEnvironment.mjs";
 
 const version = JSON.parse(readFileSync("package.json", "utf8")).version;
 const environment = resolveAppEnvironment(process.env.VITE_APP_ENV, process.env.APP_ENV ?? "dev");
+
+test("Trinity rules follow the selected cemetery", async ({ page }) => {
+  await fixture(page);
+  const otherId = "22222222-2222-4222-8222-222222222222";
+  await page.route("**/api/cemetery-map", (route) => route.fulfill({ json: {
+    boundaries: [
+      { type: "Feature", properties: { id: cemeteryId, name: "Trinity Lutheran Church Cemetery" }, geometry },
+      { type: "Feature", properties: { id: otherId, name: "Other Cemetery" }, geometry },
+    ],
+    sections: [], lots: [], graves: [], headstones: [],
+  } }));
+  await page.goto("/tests/auth.html");
+  await showApplicationActions(page);
+  const scope = page.getByLabel("Cemetery", { exact: true });
+  await scope.selectOption(otherId);
+  const rules = page.getByRole("button", { name: "Trinity rules" });
+  await expect(rules).toHaveCount(0);
+  await scope.selectOption(cemeteryId);
+  await rules.click();
+  const dialog = page.getByRole("dialog", { name: "Trinity cemetery rules" });
+  await expect(dialog).toContainText("Sections F and G permit flush markers only.");
+  await expect(dialog).toContainText("October 20, 2025");
+  await page.keyboard.press("Escape");
+  await expect(rules).toBeFocused();
+});
 
 for (const width of [320, 390, 760, 768, 1280, 1920]) {
   test(`application header fits and exposes actions at ${width}px`, async ({ page }, testInfo) => {

@@ -31,6 +31,24 @@ export function validateReportQueryPayload(body) {
   };
 }
 
+function validateMarkerDimensions(input) {
+  if (input === undefined) return undefined;
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new BadRequestError("Marker dimensions must be an object.");
+  }
+  const dimensions = {};
+  for (const [field, value] of Object.entries(input)) {
+    if (!["width", "height", "depth", "rise"].includes(field)) {
+      throw new BadRequestError("Unknown marker dimension.");
+    }
+    if (value !== null && (!Number.isFinite(value) || value > 10000 || value < 0 || (field !== "rise" && value === 0))) {
+      throw new BadRequestError("Enter marker measurements in inches. Width, height, and depth must be greater than zero.");
+    }
+    dimensions[field] = value;
+  }
+  return dimensions;
+}
+
 export function validateHeadstonePayload(body) {
   if (body?.backDescription != null && body.backDescription !== "") {
     throw new BadRequestError("Back of stone has been replaced by faces. Enter this reading as a Back face inscription.");
@@ -50,6 +68,7 @@ export function validateHeadstonePayload(body) {
     inspectionChangesOnly: optionalBoolean(body?.inspectionChangesOnly, "Inspection changes only"),
     ...(body?.updatedInspections === undefined ? {} : { updatedInspections: validateNewInspections(body.updatedInspections, { updating: true }) }),
     ...(body?.newInspections === undefined ? {} : { newInspections: validateNewInspections(body.newInspections) }),
+    ...(body?.dimensions === undefined ? {} : { dimensions: validateMarkerDimensions(body.dimensions) }),
     markerTypeId: validateUuid(body?.markerTypeId, "Marker type"),
     markerScopeId: validateUuid(body?.markerScopeId, "Marker scope"),
     materialId: validateUuid(body?.materialId, "Marker material"),

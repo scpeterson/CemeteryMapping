@@ -14,7 +14,7 @@ export function registerLocationPolicyRoutes(app,{pool,requireCemeteryAdmin}){
   }catch(e){
    if(e.code==='42501')return res.status(403).json({error:'Policy permission denied.'});
    if(['23514','22023'].includes(e.code)){
-    const detail={location_policy_gravesites:'Existing graves are prohibited by this rule.',location_policy_markers:'Existing markers are not all flat markers.',location_policy_capacity:'Existing burials exceed one casket or two unmixed urns.',section_g_single_primary:'A grave has multiple markers, a non-flat marker or a non-primary/non-spanning relationship.',location_policy_legacy_section:'Canonical section references are required.',location_policy_legacy_block:'Canonical block references are required.'}[e.constraint] || 'Review the selected scope, existing records and canonical location references.';
+    const detail={location_policy_gravesites:'Existing graves are prohibited by this rule.',location_policy_markers:'Existing markers are not all flat markers.',location_policy_capacity:'Existing burials exceed the applicable plot capacity.',section_g_single_primary:'A grave has multiple markers, a non-flat marker or a non-primary/non-spanning relationship.',location_policy_legacy_section:'Canonical section references are required.',location_policy_legacy_block:'Canonical block references are required.'}[e.constraint] || 'Review the selected scope, existing records and canonical location references.';
     return res.status(409).json({error:`Policy conflict: ${detail} No policy was saved.`});
    }
    next(e);

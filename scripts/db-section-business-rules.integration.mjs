@@ -3,6 +3,7 @@ import test from "node:test";
 import pg from "pg";
 import { integrationAdminDatabase } from "./lib/integration-admin.mjs";
 import { loadApiConfig } from "../server/config.mjs";
+import { selectHeadstoneById, selectHeadstonesForGrave } from "../server/cemeteryHeadstoneQueries.mjs";
 
 const { Pool } = pg;
 
@@ -310,6 +311,144 @@ test("database enforces Section F and Section G marker business rules", async ()
     await client.query("ROLLBACK");
     throw error;
   } finally {
+    client.release();
+    await pool.end();
+  }
+});
+
+test("Trinity Section G enforces standard capacity and the signed G-72 exception", async () => {
+  const pool = new Pool(integrationAdminDatabase(loadApiConfig()));
+  const client = await pool.connect();
+  const suffix = uniqueSuffix();
+  try {
+    await client.query("BEGIN");
+    const geometry = sectionPolygon(0.002);
+    const cemetery = (await client.query(`
+      INSERT INTO cemeteries (name, facility_id, geometry)
+      VALUES ('Trinity capacity fixture', '1', ST_GeomFromText($1, 4326))
+      ON CONFLICT (facility_id) DO UPDATE SET facility_id = EXCLUDED.facility_id
+      RETURNING id`, [geometry])).rows[0].id;
+    const section = await insertSection(client, cemetery, suffix, `G${suffix.slice(-4)}`, 0.002);
+    await client.query(`INSERT INTO location_policies(cemetery_id, section_uuid, rule_key, enabled, reason)
+      VALUES ($1, $2, 'casket_or_two_urns', true, 'Capacity regression fixture')`, [cemetery, section]);
+    const statusId = await lookupId(client, "gravesite_status_types", "available");
+    const common = { cemeteryId: cemetery, sectionUuid: section, sectionName: `G${suffix.slice(-4)}`, suffix, statusId, offset: 0.002 };
+    const standard = await insertGravesite(client, { ...common, graveId: "1" });
+    const ashesOnly = await insertGravesite(client, { ...common, graveId: "2" });
+    const exceptionPlot = await insertGravesite(client, { ...common, graveId: "72" });
+    await client.query(`INSERT INTO burial_capacity_exceptions
+      VALUES ($1, 3, 0, 'Signed fixture deed authorizes up to three sets of ashes')`, [exceptionPlot]);
+    const realPlot = await client.query(`
+      SELECT e.max_ashes_without_casket, e.max_ashes_with_casket
+      FROM gravesites g LEFT JOIN burial_capacity_exceptions e ON e.gravesite_uuid = g.id
+      WHERE g.cemetery_id = $1 AND g.gravesite_id = 'G-072' AND g.deleted_at IS NULL`, [cemetery]);
+    if (realPlot.rowCount) assert.deepEqual(realPlot.rows, [{ max_ashes_without_casket: 3, max_ashes_with_casket: 0 }]);
+    await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    const add = (gravesiteId, intermentType) => insertBurial(client, {
+      gravesiteId, intermentType, firstName: "Fixture", lastName: uniqueSuffix(),
+    });
+    await add(standard, "casket");
+    await add(standard, "urn");
+    const reject = async (grave, type) => {
+      await client.query("SAVEPOINT capacity");
+      await assert.rejects(add(grave, type), { constraint: "location_policy_capacity" });
+      await client.query("ROLLBACK TO SAVEPOINT capacity");
+      await client.query("RELEASE SAVEPOINT capacity");
+    };
+    await reject(standard, "urn");
+    await reject(standard, "casket");
+    await add(ashesOnly, "urn");
+    await add(ashesOnly, "urn");
+    await reject(ashesOnly, "urn");
+    for (let i = 0; i < 3; i++) await add(exceptionPlot, "urn");
+    await reject(exceptionPlot, "urn");
+    await reject(exceptionPlot, "casket");
+  } finally {
+    await client.query("ROLLBACK");
+    client.release();
+    await pool.end();
+  }
+});
+
+test("Trinity marker dimensions enforce standard limits and isolate the signed G-72 width exception", async () => {
+  const pool = new Pool(integrationAdminDatabase(loadApiConfig()));
+  const client = await pool.connect();
+  const suffix = uniqueSuffix();
+  try {
+    await client.query("BEGIN");
+    const cemetery = (await client.query(`
+      INSERT INTO cemeteries (name, facility_id, geometry)
+      VALUES ('Trinity marker fixture', '1', ST_GeomFromText($1, 4326))
+      ON CONFLICT (facility_id) DO UPDATE SET facility_id = EXCLUDED.facility_id
+      RETURNING id`, [sectionPolygon(0.003)])).rows[0].id;
+    const sectionName = `M${suffix.slice(-4)}`;
+    const section = await insertSection(client, cemetery, suffix, sectionName, 0.003);
+    const common = {
+      cemeteryId: cemetery, sectionUuid: section, sectionName, suffix,
+      statusId: await lookupId(client, "gravesite_status_types", "available"), offset: 0.003,
+    };
+    const standard = await insertGravesite(client, { ...common, graveId: "1" });
+    const exceptionPlot = await insertGravesite(client, { ...common, graveId: "72" });
+    const adjoining = await insertGravesite(client, { ...common, graveId: "2", offset: 0.00301 });
+    await client.query(`INSERT INTO marker_width_exceptions VALUES ($1, 36, 'Signed fixture deed')`, [exceptionPlot]);
+    const actualException = await client.query(`
+      SELECT e.max_width_inches FROM gravesites g
+      LEFT JOIN marker_width_exceptions e ON e.gravesite_uuid = g.id
+      WHERE g.cemetery_id = $1 AND g.gravesite_id = 'G-072' AND g.deleted_at IS NULL`, [cemetery]);
+    if (actualException.rowCount) assert.deepEqual(actualException.rows, [{ max_width_inches: "36" }]);
+
+    const materialId = await lookupId(client, "marker_material_types", "granite");
+    const conditionId = await lookupId(client, "headstone_condition_types", "good");
+    const add = async (grave, type) => insertHeadstone(client, {
+      gravesiteId: grave, headstoneId: `DIM-${uniqueSuffix()}`, materialId, conditionId,
+      markerTypeId: await lookupId(client, "marker_types", type), offset: 0.003,
+    });
+    const measure = (marker, width, height, depth, rise) => client.query(
+      "UPDATE headstones SET width_inches=$2, height_inches=$3, depth_inches=$4, rise_inches=$5 WHERE id=$1",
+      [marker, width, height, depth, rise],
+    );
+    await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    const flat = await add(standard, "flat_marker");
+    const approved = await add(exceptionPlot, "flat_marker");
+    const upright = await add(standard, "upright_headstone");
+    const footstone = await add(exceptionPlot, "footstone");
+    await measure(flat, 28, null, 18, 0.5);
+    await measure(approved, 36, null, 18, 0.5);
+    assert.equal((await selectHeadstoneById(client, approved)).width_inches, "36");
+    assert.equal((await selectHeadstonesForGrave(client, exceptionPlot))[0].width_inches, "36");
+    await measure(upright, 36, 36, 16, null);
+    await measure(footstone, 24, null, 12, 0.5);
+    for (const values of [
+      [flat, 36, null, 18, 0.5], [approved, 36.01, null, 18, 0.5],
+      [flat, 28, null, 18, 0.51], [approved, 36, null, 19, 0.5],
+      [upright, 36, 37, 16, null], [footstone, 25, null, 12, 0.5],
+    ]) {
+      await client.query("SAVEPOINT dimension_limit");
+      await assert.rejects(measure(...values), { constraint: "trinity_marker_size" });
+      await client.query("ROLLBACK TO SAVEPOINT dimension_limit");
+      await client.query("RELEASE SAVEPOINT dimension_limit");
+    }
+    await expectRuleViolation(client, "UPDATE headstones SET gravesite_uuid=$2 WHERE id=$1",
+      [approved, standard], /Trinity marker limits/u);
+    await client.query("INSERT INTO headstone_gravesites(headstone_uuid, gravesite_uuid, relationship_type) VALUES ($1,$2,'spans'), ($3,$2,'spans')",
+      [flat, adjoining, upright]);
+    await measure(flat, 54, null, 18, 0.5);
+    await measure(upright, 50, 36, 16, null);
+    await expectRuleViolation(client, "UPDATE headstones SET width_inches=54.01 WHERE id=$1",
+      [flat], /Trinity marker limits/u);
+    await expectRuleViolation(client, "DELETE FROM headstone_gravesites WHERE headstone_uuid=$1 AND gravesite_uuid=$2",
+      [flat, adjoining], /Trinity marker limits/u);
+    await measure(flat, 28, null, 18, 0.5);
+    await client.query("DELETE FROM headstone_gravesites WHERE headstone_uuid=$1 AND gravesite_uuid=$2", [flat, adjoining]);
+    for (const firstName of ["First", "Second"]) {
+      await insertBurial(client, { gravesiteId: standard, firstName, lastName: suffix, intermentType: "urn" });
+    }
+    await measure(flat, 28, null, 34, 0.5);
+    await expectRuleViolation(client, `UPDATE burials SET deleted_at=now()
+      WHERE id=(SELECT id FROM burials WHERE gravesite_uuid=$1 AND first_name='Second')`,
+      [standard], /Trinity marker limits/u);
+  } finally {
+    await client.query("ROLLBACK");
     client.release();
     await pool.end();
   }

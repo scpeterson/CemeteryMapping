@@ -26,7 +26,6 @@ import type {
   SaveOwnershipEventInput,
   UpdateOwnerInput
 } from "../../types";
-import { CreateHeadstoneForm } from "./CreateHeadstoneForm";
 import { CreateBurialForm } from './CreateBurialForm';
 import { GraveGeometryMetadata } from "./DetailGeometry";
 import { inferredLotForGrave } from "./lotInference";
@@ -40,6 +39,7 @@ import { PickedMarkerPoint } from "./detailTypes";
 
 const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
 
+const CreateHeadstoneForm = lazy(() => import("./CreateHeadstoneForm").then((module) => ({ default: module.CreateHeadstoneForm })));
 const BurialRecord = lazy(() => import("./BurialRecord").then((module) => ({ default: module.BurialRecord })));
 
 export function GraveDetailPanel({
@@ -314,17 +314,19 @@ export function GraveDetailPanel({
               <p className="muted">No markers are recorded for this grave site.</p>
             )}
             {canUpdateHeadstones ? (
-              <CreateHeadstoneForm
-                grave={grave}
-                headstones={headstones}
-                lookups={headstoneLookups}
-                sectionName={summary.section}
-                pickedMarkerPoint={pickedMarkerPoint}
-                isPickingMarkerPoint={isPickingMarkerPoint}
-                onSave={(headstone) => onCreateHeadstone(grave, headstone)}
-                onStartMarkerPointPick={onStartMarkerPointPick}
-                onCancelMarkerPointPick={onCancelMarkerPointPick}
-              />
+              <Suspense fallback={<p role="status">Loading marker form…</p>}>
+                <CreateHeadstoneForm
+                  grave={grave}
+                  headstones={headstones}
+                  lookups={headstoneLookups}
+                  sectionName={summary.section}
+                  pickedMarkerPoint={pickedMarkerPoint}
+                  isPickingMarkerPoint={isPickingMarkerPoint}
+                  onSave={(headstone) => onCreateHeadstone(grave, headstone)}
+                  onStartMarkerPointPick={onStartMarkerPointPick}
+                  onCancelMarkerPointPick={onCancelMarkerPointPick}
+                />
+              </Suspense>
             ) : null}
           </section>
 
