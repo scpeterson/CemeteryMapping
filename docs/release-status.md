@@ -14,6 +14,34 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 27, 2026: 812f5af deployed to local and hosted TEST
+
+Both TEST environments advanced from `8aaddef` to version **0.3.0** at main
+commit **`812f5af3a689acc90112fab931338b3c9c51fc30`**. Each environment
+validated a database backup, rehearsed Liquibase changeset **526** on an
+isolated copy, and applied it before the application cutover.
+[Gravesite exception editor PR](https://github.com/scpeterson/CemeteryMapping/pull/919)
+
+- **Local TEST** reported healthy on the exact revision. The served frontend
+  matched the build, all **94 database table fingerprints** matched before and
+  after application cutover, and local settings were preserved. Anonymous
+  identity requests returned **HTTP 401**. Private schema and application
+  recovery files are under `db/backups/20261127-local-test-919-schema/` and
+  `db/backups/20261127-local-test-812f5af/`.
+- **Hosted TEST** reported healthy on the exact revision. The deployer verified
+  **217 runtime files**, **zero API restarts** during verification, and account
+  and media preservation. [Hosted deployment record](hosted-test.md#november-27-2026-812f5af-deployment)
+
+### G-72 signed-in verification
+
+In signed-in Chrome on both environments, **Admin → Policies → Trinity
+Lutheran Church Cemetery → Gravesite exceptions** returned **G-072** when
+searched as **G-72**. The burial limit was **one casket or up to three sets of
+ashes**, with **zero sets of ashes alongside a casket**. The flush-marker width
+limit was **36 inches**. Both entries cited the May 2025 signed plot deed and
+its Council approval. Verification read the saved values without submitting
+any exception changes.
+
 ## November 24, 2026: 8ea222b deployed to local and hosted TEST
 
 Local and hosted TEST advanced from `ee464fa` to version **0.3.0** at main
