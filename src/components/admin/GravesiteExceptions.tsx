@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { findGravesiteExceptions, saveGravesiteException, type GravesiteExceptions } from "../../api/policyApi";
-
 import GravesiteDeeds from "../detail/GravesiteDeeds";
 
 const noDeedReference = "No deed available";
@@ -45,28 +44,28 @@ export function ExceptionForm({ cemeteryId, plot, rule, onSaved, noDeed }: {
   }
 
   return <form aria-label={title} onSubmit={submit}>
-    <fieldset disabled={busy || (rule === "burial" && !plot.capacityEnforced)}>
+    <fieldset className="gravesite-policy-card" disabled={busy || (rule === "burial" && !plot.capacityEnforced)}>
       <legend>{title}</legend>
       {rule === "burial" && !plot.capacityEnforced && <p>Burial capacity enforcement is inactive for this plot.</p>}
       <div className="policies-fields">
         {rule === "burial" ? <>
-          <label>Maximum sets of ashes without a casket
+          <label className="ui-field">Maximum sets of ashes without a casket
             <input type="number" name="ashesOnly" min="0" max="2147483647" required defaultValue={plot.burial?.max_ashes_without_casket ?? 2} />
           </label>
-          <label>Maximum sets of ashes with one casket
+          <label className="ui-field">Maximum sets of ashes with one casket
             <input type="number" name="ashesWithCasket" min="0" max="2147483647" required defaultValue={plot.burial?.max_ashes_with_casket ?? 1} />
           </label>
-        </> : <label>Maximum width (inches)
+        </> : <label className="ui-field">Maximum width (inches)
           <input type="number" name="markerWidth" min="0" max="10000" step="any" required defaultValue={plot.marker?.max_width_inches ?? 28} />
         </label>}
-        <label>Written approval reference
+        <label className="ui-field">Written approval reference
           <input name="approval" required={!defaultApproval} maxLength={500} defaultValue={saved?.approval_reference ?? ""} placeholder={defaultApproval || undefined} />
         </label>
       </div>
-      {defaultApproval && <p>Use the written decision if one is available. An exception still requires approval.</p>}
+      {defaultApproval && <p className="muted">Use the written decision if one is available. An exception still requires approval.</p>}
       <button className="ui-button ui-button--primary" type="submit">{saved ? "Update" : "Add"} {rule === "burial" ? "burial exception" : "marker width exception"}</button>
     </fieldset>
-    {error && <p role="alert">{error}</p>}
+    {error && <p className="ui-notice ui-notice--error" role="alert">{error}</p>}
   </form>;
 }
 
@@ -104,12 +103,12 @@ export function GravesiteExceptionsPanel({ cemeteryId }: { cemeteryId: string })
   return <details>
     <summary>Gravesite exceptions</summary>
     <p>Use the approved deed or written decision.</p>
-    <form onSubmit={search}>
-      <label>Gravesite ID <input name="plotId" placeholder="G-72" required maxLength={50} /></label>
-      <button type="submit" disabled={busy}>{busy ? "Finding…" : "Find gravesite"}</button>
+    <form className="gravesite-policy-form" onSubmit={search}>
+      <label className="ui-field">Gravesite ID <input name="plotId" placeholder="G-72" required maxLength={50} /></label>
+      <button className="ui-button ui-button--secondary" type="submit" disabled={busy}>{busy ? "Finding…" : "Find gravesite"}</button>
     </form>
-    {error && <p role="alert">{error}</p>}
-    {message && <p role="status">{message}</p>}
+    {error && <p className="ui-notice ui-notice--error" role="alert">{error}</p>}
+    {message && <p className="ui-notice" role="status">{message}</p>}
     {plot && <>
       <h3>Approved exceptions for {plot.plotId}</h3>
       <GravesiteDeeds key={plot.id} cemeteryId={cemeteryId} graveId={plot.id} canUpload onAvailability={setHasDeed} />

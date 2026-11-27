@@ -47,11 +47,11 @@ export default function GraveExceptions({ grave, canViewOwnership, onSaved: refr
         {!grave.locationPolicies?.casket_or_two_urns && " Burial capacity enforcement is inactive for this plot."}</p>}
       {width != null && <p>Maximum flush marker width: {width} inches.</p>}
       {!burial && width == null && <p>No approved exceptions recorded.</p>}
-      {grave.canManageExceptions && !plot && <button type="button" disabled={loading} onClick={() => void openEditor()}>
+      {grave.canManageExceptions && !plot && <button className="ui-button ui-button--secondary" type="button" disabled={loading} onClick={() => void openEditor()}>
         {burial || width != null ? "Edit approved exceptions" : "Add approved exception"}
       </button>}
-      {error && <p role="alert">{error}</p>}
-      {message && <p role="status">{message}</p>}
+      {error && <p className="ui-notice ui-notice--error" role="alert">{error}</p>}
+      {message && <p className="ui-notice" role="status">{message}</p>}
       {grave.canManageExceptions && plot && <>
         <ExceptionForm noDeed={hasDeed === false} cemeteryId={grave.cemeteryId} plot={plot} rule="burial" onSaved={onSaved} />
         <ExceptionForm noDeed={hasDeed === false} cemeteryId={grave.cemeteryId} plot={plot} rule="marker" onSaved={onSaved} />

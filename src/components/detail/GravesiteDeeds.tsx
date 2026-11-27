@@ -74,17 +74,17 @@ export default function GravesiteDeeds({ cemeteryId, graveId, canUpload, onAvail
     }
   }
 
-  return <section className="detail-section" aria-label="Gravesite deeds">
+  return <section className="detail-section gravesite-deeds" aria-label="Gravesite deeds">
     <h3>Gravesite deeds</h3>
-    {deeds?.length === 0 && <p>No deed available</p>}
-    {!!deeds?.length && <label><input type="checkbox" checked readOnly disabled />Deed on file</label>}
-    {!!deeds?.length && <ul>{deeds.map(deed => <li key={deed.id}>
-      <button type="button" onClick={() => void download(deed)}>Download {deed.filename}</button>
+    {deeds?.length === 0 && <p className="muted">No deed available</p>}
+    {!!deeds?.length && <label className="checkbox-row"><input type="checkbox" checked readOnly disabled />Deed on file</label>}
+    {!!deeds?.length && <ul className="gravesite-deed-list">{deeds.map(deed => <li key={deed.id}>
+      <button className="ui-button ui-button--secondary" type="button" onClick={() => void download(deed)}>Download {deed.filename}</button>
     </li>)}</ul>}
-    {canUpload && <form onSubmit={upload}>
-      <label>Deed PDF <input type="file" accept=".pdf,application/pdf" name="deed" required disabled={busy} /></label>
-      <button type="submit" disabled={busy || !deeds}>{busy ? "Uploading…" : "Upload deed"}</button>
+    {canUpload && <form className="gravesite-policy-form" onSubmit={upload}>
+      <label className="ui-field">Deed PDF <input type="file" accept=".pdf,application/pdf" name="deed" required disabled={busy} /></label>
+      <button className="ui-button" type="submit" disabled={busy || !deeds}>{busy ? "Uploading…" : "Upload deed"}</button>
     </form>}
-    {error && <p role="alert">{error}</p>}
+    {error && <p className="ui-notice ui-notice--error" role="alert">{error}</p>}
   </section>;
 }

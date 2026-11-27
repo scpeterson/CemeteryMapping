@@ -1,1 +1,56 @@
 .policies-admin{min-width:0}.policies-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:1rem}.policies-fields label{display:flex;flex-direction:column;gap:.35rem;min-width:0}.policies-fields input,.policies-fields select,.policies-fields textarea{width:100%;min-width:0;box-sizing:border-box}.policies-rules{display:grid;gap:1rem;margin:1rem 0}.policies-rules article{border:1px solid var(--border-color,#ccd3ca);border-radius:.5rem;padding:1rem;overflow-wrap:anywhere}.policies-actions{display:flex;gap:.75rem;flex-wrap:wrap;margin:1rem 0}.policies-admin fieldset{min-width:0;margin:1rem 0}.policies-admin li{overflow-wrap:anywhere}
+
+.gravesite-policy-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.gravesite-policy-form .ui-field {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font-weight: 650;
+}
+
+.gravesite-policy-form input {
+  box-sizing: border-box;
+}
+
+.gravesite-deeds input::file-selector-button {
+  margin-inline-end: var(--space-2);
+  padding: 4px var(--space-2);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--control-radius);
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+}
+
+.gravesite-deed-list {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.gravesite-deed-list button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+.policies-admin .gravesite-policy-card {
+  padding: var(--space-3);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+}
+
+.gravesite-policy-card legend {
+  padding-inline: var(--space-2);
+  font-weight: 650;
+}
+
+.gravesite-policy-card > button {
+  margin-top: var(--space-3);
+}
