@@ -1,4 +1,4 @@
-export const requiredSchemaChangeset = "525-trinity-marker-dimensions";
+export const requiredSchemaChangeset = "526-gravesite-exception-administration";
 
 export async function assertCurrentSchema(pool) {
   let result;

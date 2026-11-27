@@ -1,4 +1,5 @@
 import "./policies.css";
+import { GravesiteExceptionsPanel } from "./GravesiteExceptions";
 import {useEffect,useState} from "react";
 import {fetchPolicies,postPolicy,type PolicySnapshot,type PolicyRow,type PolicyPreview} from "../../api/policyApi";
 import {matchingPolicies,localPolicy} from "../../../shared/locationPolicyResolution.mjs";
@@ -33,6 +34,8 @@ export function PoliciesAdminTab({systemAdmin,hasAccount}:{systemAdmin:boolean;h
     <label>Section<select value={sectionId} disabled={!cemeteryId} onChange={e=>chooseScope(cemeteryId,e.target.value)}><option value="">Cemetery defaults</option>{data.sections.filter(s=>s.cemeteryId===cemeteryId).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
     <label>Block<select value={blockId} disabled={!sectionId} onChange={e=>chooseScope(cemeteryId,sectionId,e.target.value)}><option value="">Section defaults</option>{data.blocks.filter(b=>b.sectionId===sectionId).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
    </div></fieldset>
+   {hasAccount && data.cemeteries.some(c => c.id === cemeteryId && c.facilityId === "1")
+     && <GravesiteExceptionsPanel key={cemeteryId} cemeteryId={cemeteryId} />}
    <div className="policies-rules">{data.catalog.map(r=>{const effective=matchingPolicies(data.policies,scope,r.key)[0],local=localPolicy(data.policies,scope,r.key);return <article key={r.key}><h3>{r.label}</h3><p>Local: {valueLabel(local)} · Effective: {effective?.enabled?'Enabled':'Disabled'} · Source: {source(effective)}</p><p>{effective?.reason??'No inherited restriction is configured.'}</p><button className="ui-button ui-button--secondary" type="button" disabled={busy||!hasAccount||(!systemAdmin&&!cemeteryId)} onClick={()=>{setRule(r.key);setValue(local?(local.enabled?'enabled':'disabled'):'inherit');setReason('');}}>Edit {r.label}</button></article>;})}</div>
    <fieldset disabled={busy||!hasAccount||(!systemAdmin&&!cemeteryId)}><legend>Change a policy</legend><div className="policies-fields">
     <label>Rule<select value={rule} onChange={e=>{setRule(e.target.value);const p=localPolicy(data.policies,scope,e.target.value);setValue(p?(p.enabled?'enabled':'disabled'):'inherit');}}>{data.catalog.map(r=><option key={r.key} value={r.key}>{r.label}</option>)}</select></label>

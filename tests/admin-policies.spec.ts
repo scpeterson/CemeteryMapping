@@ -60,3 +60,33 @@ test('failed policy load stops loading and retry clears the error',async({page})
  await expect(admin.getByRole('combobox',{name:'Cemetery',exact:true})).toHaveValue(cemeteryId);
  await expect(admin).toContainText('Source: Example Cemetery');
 });
+
+test("a Trinity administrator can view and update one plot's approved exceptions", async ({ page }) => {
+  const { admin, data } = await setup(page);
+  Object.assign(data.cemeteries[0], { facilityId: "1", name: "Trinity Lutheran Church Cemetery" });
+  const approval = "Signed G-72 deed";
+  const burial = { max_ashes_without_casket: 3, max_ashes_with_casket: 0, approval_reference: approval };
+  const marker = { max_width_inches: 36, approval_reference: approval };
+  await page.route("**/api/admin/policies/gravesite-exceptions**", route => {
+    if (route.request().method() === "GET") {
+      expect(new URL(route.request().url()).searchParams.get("query")).toBe("G-72");
+      return route.fulfill({ json: [{ id: block, plotId: "G-072", capacityEnforced: true, burial, marker }] });
+    }
+    expect(route.request().postDataJSON()).toMatchObject({
+      cemeteryId, graveId: block, rule: "marker", expected: marker, markerWidth: 37, approval: "Updated written approval",
+    });
+    return route.fulfill({ json: { max_width_inches: 37, approval_reference: "Updated written approval" } });
+  });
+  await admin.getByRole("button", { name: "Policies", exact: true }).click();
+  await admin.getByRole("combobox", { name: "Cemetery", exact: true }).selectOption(cemeteryId);
+  await admin.getByText("Gravesite exceptions", { exact: true }).click();
+  await admin.getByLabel("Gravesite ID").fill("G-72");
+  await admin.getByRole("button", { name: "Find gravesite" }).click();
+  await expect(admin.getByLabel("Maximum sets of ashes without a casket")).toHaveValue("3");
+  const width = admin.getByRole("form", { name: "Flush marker width exception" });
+  await expect(width.getByLabel("Maximum width (inches)")).toHaveValue("36");
+  await width.getByLabel("Maximum width (inches)").fill("37");
+  await width.getByLabel("Written approval reference").fill("Updated written approval");
+  await width.getByRole("button", { name: "Update marker width exception" }).click();
+  await expect(admin.getByRole("status")).toHaveText("Approved exception saved.");
+});
