@@ -12,8 +12,8 @@ That repository merge did not redeploy the application. The
 [current release-status summary](release-status.md#november-24-2026-environment-consistency-and-managed-local-services)
 distinguishes merged source, runtime revision and documentation publication.
 
-Hosted TEST runs version **0.3.0** at **`8ea222b`**, deployed November 24,
-2026. See the [current deployment record](#november-24-2026-8ea222b-deployment).
+Hosted TEST runs version **0.3.0** at **`812f5af`**, deployed November 27,
+2026. See the [current deployment record](#november-27-2026-812f5af-deployment).
 The earlier [runtime and capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
 records database alignment, managed local runtimes and storage recovery.
 
@@ -102,6 +102,26 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 27, 2026: 812f5af deployment
+
+Hosted TEST advanced from `8aaddef` to main commit
+**`812f5af3a689acc90112fab931338b3c9c51fc30`** (version **0.3.0**), built at
+**`2026-11-27T15:11:38Z`**. The deployer validated the database backup,
+rehearsed Liquibase changeset **526** on an isolated database copy, and applied
+it before cutover. The rehearsal exercised adding and updating exceptions and
+rejecting stale and unauthorized changes.
+
+The hosted origin reported the exact revision and a healthy
+`cemetery_mapping_test` database. Verification covered **217 runtime files**,
+recorded **zero API restarts**, and confirmed account and media preservation.
+Signed-in Chrome showed G-72's Council-approved deed limits in **Admin →
+Policies → Gravesite exceptions**.
+[Combined browser verification](release-status.md#g-72-signed-in-verification)
+
+The private schema backup is `backups/20261127-hosted-test-919-schema` and the
+application recovery set is `backups/20261127T151138Z-812f5af3a689-8435b41a`
+under the hosted application root.
 
 ## November 24, 2026: 8ea222b deployment
 
