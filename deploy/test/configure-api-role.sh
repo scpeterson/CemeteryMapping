@@ -23,12 +23,15 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO cemetery_api;
 SELECT format('GRANT INSERT, UPDATE, DELETE ON TABLE %I.%I TO cemetery_api', n.nspname, c.relname)
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
-  AND c.relname NOT IN ('databasechangelog', 'databasechangeloglock', 'section_g_primary_marker_claims', 'location_policies', 'location_policy_revision', 'location_burial_capacity_claims', 'location_policy_history', 'burial_capacity_exceptions', 'marker_width_exceptions')
+  AND c.relname NOT IN ('databasechangelog', 'databasechangeloglock', 'section_g_primary_marker_claims', 'location_policies', 'location_policy_revision', 'location_burial_capacity_claims', 'location_policy_history', 'burial_capacity_exceptions', 'marker_width_exceptions', 'gravesite_exception_history')
   AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_class'::regclass
                   AND d.objid = c.oid AND d.deptype = 'e') \gexec
 DO $$ BEGIN
  IF to_regprocedure('change_location_policy(uuid,uuid,uuid,uuid,text,boolean,text,bigint)') IS NOT NULL THEN
    GRANT EXECUTE ON FUNCTION change_location_policy(uuid,uuid,uuid,uuid,text,boolean,text,bigint) TO cemetery_api;
+ END IF;
+ IF to_regprocedure('save_gravesite_exception(uuid,uuid,uuid,text,jsonb,text,integer,integer,numeric)') IS NOT NULL THEN
+   GRANT EXECUTE ON FUNCTION save_gravesite_exception(uuid,uuid,uuid,text,jsonb,text,integer,integer,numeric) TO cemetery_api;
  END IF;
 END $$;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO cemetery_api;

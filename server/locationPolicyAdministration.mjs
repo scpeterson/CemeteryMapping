@@ -32,7 +32,7 @@ export async function policySnapshot(pool,user,before=null){
  const ids=user.role==='admin'?null:(user.cemeteryAccess??[]).filter(a=>canManageCemeteryMembers(user,a.cemeteryId)).map(a=>a.cemeteryId);
  const queries=[
   ["SELECT revision::text FROM location_policy_revision WHERE singleton",[]],
-  ['SELECT id::text,name FROM cemeteries WHERE deleted_at IS NULL AND ($1::uuid[] IS NULL OR id=ANY($1)) ORDER BY name',[ids]],
+  ['SELECT id::text,name,facility_id AS "facilityId" FROM cemeteries WHERE deleted_at IS NULL AND ($1::uuid[] IS NULL OR id=ANY($1)) ORDER BY name',[ids]],
   ['SELECT section_id::text AS id,cemetery_id::text AS "cemeteryId",name FROM sections WHERE deleted_at IS NULL AND ($1::uuid[] IS NULL OR cemetery_id=ANY($1)) ORDER BY name',[ids]],
   ['SELECT id::text,cemetery_id::text AS "cemeteryId",section_uuid::text AS "sectionId",block_id AS name FROM blocks WHERE deleted_at IS NULL AND ($1::uuid[] IS NULL OR cemetery_id=ANY($1)) ORDER BY block_id',[ids]],
   ['SELECT * FROM location_policies WHERE $1::uuid[] IS NULL OR cemetery_id IS NULL OR cemetery_id=ANY($1)',[ids]],

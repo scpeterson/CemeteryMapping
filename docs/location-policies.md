@@ -26,13 +26,18 @@ the applicable deed and records. Measure a flush marker's rise separately
 from its overall height. An unrecorded measurement is treated as unknown, so
 historical records can still be maintained. The two-ashes depth allowance uses
 two recorded interments of ashes. A missing burial record may need updating
-before recording the extended depth. Future plot-specific width exceptions
-require a reviewed migration with the written approval reference.
+before recording the extended depth. Plot-specific width exceptions require a written approval reference.
 
 Migration 524 stores the burial exception by gravesite UUID with a written
-approval reference. To register another approved exception, use a reviewed
-database migration that records the exact plot, limits, and written approval.
-The application role has read access and cannot modify exception records.
+approval reference. In **Admin → Policies**, select Trinity and open
+**Gravesite exceptions**. Search for a plot ID (for example, G-72), then add or
+update its burial capacity or flush-marker width exception. Enter the written
+approval reference for each rule. The editor records an existing approval.
+
+Migration 526 adds the guarded save operation. The database checks cemetery
+permission and the previously loaded value, validates existing burials or
+markers against the proposed limits, and records the actor and before/after
+values. The application role has read access and saves through this operation.
 The Section F rule prohibiting active gravesites still applies.
 
 ## Policy resolution
@@ -114,7 +119,7 @@ DML on `location_policies`, `location_policy_revision`,
 entry is `change_location_policy`, a narrow SECURITY DEFINER function with a fixed
 search path, current-account/membership checks, hierarchy validation and a required
 reason. Apply migrations 521/522 and re-run the reviewed API grants before starting
-the new API; startup requires schema 525. Granting the function does not grant
+the new API; startup requires schema 526. Granting the function does not grant
 catalog/history DML.
 
 Policy changes require a nonempty reason and a READ COMMITTED transaction. Operator migrations remain available for reviewed configuration changes. A deployment should take its usual backup and
