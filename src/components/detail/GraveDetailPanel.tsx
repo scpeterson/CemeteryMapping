@@ -39,6 +39,7 @@ import { PickedMarkerPoint } from "./detailTypes";
 
 const ownerName = (ownersById: Map<string, Owner>, ownerId: string) => ownersById.get(ownerId)?.displayName ?? "Unknown owner";
 
+const GraveExceptions = lazy(() => import("./GraveExceptions"));
 const CreateHeadstoneForm = lazy(() => import("./CreateHeadstoneForm").then((module) => ({ default: module.CreateHeadstoneForm })));
 const BurialRecord = lazy(() => import("./BurialRecord").then((module) => ({ default: module.BurialRecord })));
 
@@ -129,7 +130,7 @@ export function GraveDetailPanel({
   canReorderPhotos: boolean;
   isLoading: boolean;
   error?: string;
-  onRetry?: () => void;
+  onRetry?: (options?: { preserveCurrent?: boolean }) => void;
 }) {
   const title = formatGraveLabel(summary);
   const [addingBurial, setAddingBurial] = useState(false);
@@ -166,7 +167,7 @@ export function GraveDetailPanel({
         <div className="detail-message is-error" role="alert">
           <p>Unable to load grave details: {error}</p>
           {onRetry ? (
-            <button type="button" onClick={onRetry}>
+            <button type="button" onClick={() => onRetry()}>
               Retry
             </button>
           ) : null}
@@ -183,13 +184,17 @@ export function GraveDetailPanel({
             aria-labelledby={`grave-detail-tab-${activeTab}`}
             className="detail-tab-panel"
           >
-          {activeTab === "overview" ? <GraveOverview
+          {activeTab === "overview" ? <><GraveOverview
             grave={grave} headstones={headstones}
             owners={grave.currentOwnerIds.flatMap((id) => ownersById.get(id) ? [ownersById.get(id)!] : [])}
             canViewOwnership={canViewOwnership} markerSummaries={cemeteryHeadstones} onSelectMarker={onSelectHeadstone}
             onShowPeople={() => { setActiveTab("people"); document.getElementById("grave-detail-tab-people")?.focus(); }}
             onShowMonuments={() => { setActiveTab("monuments"); document.getElementById("grave-detail-tab-monuments")?.focus(); }}
-          /> : null}
+          />
+          {grave.uuid && grave.approvedExceptions && <Suspense fallback={null}>
+            <GraveExceptions key={grave.uuid} grave={grave} onSaved={() => onRetry?.({ preserveCurrent: true })} />
+          </Suspense>}
+          </> : null}
 
           {activeTab === "people" ? <>
           {canViewOwnership ? (

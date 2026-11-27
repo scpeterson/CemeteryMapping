@@ -1,3 +1,4 @@
+import { canManagePolicy } from "../locationPolicyAdministration.mjs";
 import {getOwnershipEditor} from "../ownershipEditing.mjs";
 import { validateExpectedVersion } from "../recordVersions.mjs";
 import { readOwnerEdit } from "../ownerEditVersion.mjs";
@@ -72,7 +73,10 @@ export function registerGraveRoutes(app, context) {
             return;
           }
     
-          response.json(grave);
+          response.json({
+            ...grave,
+            canManageExceptions: Boolean(grave.approvedExceptions && request.user.id && canManagePolicy(request.user, { cemeteryId })),
+          });
         } catch (error) {
           next(error);
         }

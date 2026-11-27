@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { findGravesiteExceptions, saveGravesiteException, type GravesiteExceptions } from "../../api/policyApi";
 
-function ExceptionForm({ cemeteryId, plot, rule, onSaved }: {
+export function ExceptionForm({ cemeteryId, plot, rule, onSaved }: {
   cemeteryId: string;
   plot: GravesiteExceptions;
   rule: "burial" | "marker";
