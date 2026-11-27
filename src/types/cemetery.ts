@@ -31,6 +31,11 @@ export type GraveSpaceSummary = {
 };
 
 export type GraveSpace = GraveSpaceSummary & {
+  approvedExceptions?: {
+    burial: { ashesOnly: number; ashesWithCasket: number } | null;
+    markerWidth: number | null;
+  };
+  canManageExceptions?: boolean;
   uuid?: string;
   version: string;
   name: string;

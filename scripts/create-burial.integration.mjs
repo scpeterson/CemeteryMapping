@@ -132,3 +132,32 @@ test('restricted runtime database role can create an attributed burial', () => f
     assert.ok(saved.auditEventId);
   } finally { await f.c.query('RESET ROLE'); }
 }));
+
+test('Add burial honors an approved three-ashes exception only on the associated plot', () => fixture(async f => {
+  await f.c.query(`INSERT INTO location_policies(cemetery_id,section_uuid,rule_key,enabled,reason)
+    VALUES($1,$2,'casket_or_two_urns',true,'Regression')`, [f.cemetery, f.section]);
+  const { rows: [approved] } = await f.c.query(`
+    INSERT INTO gravesites(cemetery_id,section_uuid,section_id,grave_id,gravesite_id,status_type_id,geometry)
+    VALUES($1,$2,'A','72','A-EXCEPTION',(SELECT id FROM gravesite_status_types WHERE code='sold'),${area})
+    RETURNING id, xmin::text AS version`, [f.cemetery, f.section]);
+  await f.c.query("INSERT INTO burial_capacity_exceptions VALUES($1,3,0,'Fixture approved deed')", [approved.id]);
+  await f.c.query('SET CONSTRAINTS ALL IMMEDIATE');
+
+  const add = async (name, exception = false) => {
+    const data = await f.input({ firstName: name, intermentType: 'urn', ...(exception ? { expectedVersion: approved.version } : {}) });
+    return exception
+      ? createBurial(f.pool, f.cemetery, 'A-EXCEPTION', data, { actorUser: f.actorUser, allowedCemeteryIds: [f.cemetery] })
+      : f.call(data);
+  };
+  for (const name of ['First', 'Second']) {
+    await add(name);
+    await add(name, true);
+  }
+  await f.c.query('SAVEPOINT third_standard');
+  await assert.rejects(add('Third'), { constraint: 'location_policy_capacity' });
+  await f.c.query('ROLLBACK TO SAVEPOINT third_standard');
+  await f.c.query('RELEASE SAVEPOINT third_standard');
+  assert.equal((await add('Third', true)).intermentType, 'urn');
+  assert.equal((await getGraveSpace(f.pool, f.cemetery, 'A-ADD')).burials.length, 2);
+  assert.equal((await getGraveSpace(f.pool, f.cemetery, 'A-EXCEPTION')).burials.length, 3);
+}));

@@ -15,7 +15,8 @@ export const budgets = [
 ];
 // ADR 0213: one KiB for per-inspection face status and reading attribution.
 // This is explicit application growth, never a third-party growth credit.
-export const totalJavaScriptGzipBudgetKilobytes = 702;
+// One additional KiB for the lazy gravesite exception editor and summary.
+export const totalJavaScriptGzipBudgetKilobytes = 703;
 // Keep the historical map runtime in core, but credit all upstream growth.
 // ADR 0209: the former 12 KiB allowance is now a reporting threshold only.
 // Credit applies only to named map vendor/worker assets, never application code.

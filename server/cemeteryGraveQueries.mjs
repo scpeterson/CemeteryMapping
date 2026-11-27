@@ -71,6 +71,12 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
         gravesites.id::text AS uuid,
         gravesites.cemetery_id::text, gravesite_location_policies(gravesites.id) AS location_policies,
         cemeteries.name AS cemetery_name,
+        CASE WHEN cemeteries.facility_id = '1' THEN jsonb_build_object(
+          'burial', CASE WHEN b.gravesite_uuid IS NOT NULL THEN jsonb_build_object(
+            'ashesOnly', b.max_ashes_without_casket, 'ashesWithCasket', b.max_ashes_with_casket
+          ) END,
+          'markerWidth', m.max_width_inches
+        ) END AS approved_exceptions,
         gravesites.section_id,
         COALESCE(lots.lot_id, gravesites.lot_id) AS lot_id,
         gravesites.grave_id,
@@ -95,6 +101,8 @@ async function selectGraveByCemeteryAndId(client, cemeteryId, gravesiteId) {
       FROM gravesites
       JOIN cemeteries
         ON cemeteries.id = gravesites.cemetery_id
+      LEFT JOIN burial_capacity_exceptions b ON b.gravesite_uuid = gravesites.id
+      LEFT JOIN marker_width_exceptions m ON m.gravesite_uuid = gravesites.id
       LEFT JOIN lots
         ON lots.id = gravesites.lot_uuid
        AND lots.deleted_at IS NULL
@@ -196,6 +204,7 @@ export function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstone
   }
   const detailedGrave = {
     ...toGraveSummary(grave),
+    approvedExceptions: grave.approved_exceptions ?? undefined,
     stackingAuthorizedOn: includeOwnership ? grave.stacking_authorized_on ?? undefined : undefined,
     stackingAuthorizationReference: includeOwnership ? grave.stacking_authorization_reference ?? undefined : undefined,
     name: grave.name ?? "",

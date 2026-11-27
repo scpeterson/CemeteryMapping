@@ -140,3 +140,43 @@ test("leaving a marker overview aborts its pending summary request", async ({ pa
   await expect(overview(page)).toContainText("Alice Example");
   await expect(overview(page)).not.toContainText("Some linked gravesite details could not be loaded");
 });
+
+for (const canManageExceptions of [false, true]) {
+  test(`gravesite overview shows plot exceptions with admin editing ${canManageExceptions ? "enabled" : "hidden"}`, async ({ page }) => {
+    await overviewFixture(page);
+    const uuid = "55555555-5555-4555-8555-555555555555";
+    await page.route(gravePath("A-TEST"), route => route.fulfill({ json: {
+      ...overviewGrave("A-TEST"), uuid, canManageExceptions,
+      locationPolicies: { casket_or_two_urns: true },
+      approvedExceptions: { burial: { ashesOnly: 3, ashesWithCasket: 0 }, markerWidth: 36 },
+    } }));
+    const marker = { max_width_inches: 36, approval_reference: "Signed deed" };
+    await page.route("**/api/admin/policies/gravesite-exceptions**", route => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({ json: [{ id: uuid, plotId: "A-TEST", capacityEnforced: true, marker, burial: null }] });
+      }
+      expect(route.request().postDataJSON()).toMatchObject({
+        cemeteryId, graveId: uuid, rule: "marker", expected: marker, markerWidth: 37, approval: "Updated approval",
+      });
+      return route.fulfill({ json: { max_width_inches: 37, approval_reference: "Updated approval" } });
+    });
+    await page.goto("/");
+    await select(page, "A-TEST");
+    const exceptions = overview(page).getByRole("region", { name: "Approved exceptions", exact: true });
+    await expect(exceptions).toContainText("Up to 3 sets of ashes");
+    await expect(exceptions).toContainText("36 inches");
+    const edit = exceptions.getByRole("button", { name: "Edit approved exceptions" });
+    if (!canManageExceptions) {
+      await expect(edit).toHaveCount(0);
+      return;
+    }
+    await edit.click();
+    const form = exceptions.getByRole("form", { name: "Flush marker width exception" });
+    await expect(form.getByLabel("Written approval reference")).toHaveValue("Signed deed");
+    await form.getByLabel("Maximum width (inches)").fill("37");
+    await form.getByLabel("Written approval reference").fill("Updated approval");
+    await form.getByRole("button", { name: "Update marker width exception" }).click();
+    await expect(exceptions.getByRole("status")).toHaveText("Approved exception saved.");
+    await expect(exceptions).toContainText("37 inches");
+  });
+}

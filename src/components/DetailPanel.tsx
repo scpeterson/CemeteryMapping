@@ -87,7 +87,7 @@ type DetailPanelProps = {
   canReorderPhotos: boolean;
   isLoading?: boolean;
   error?: string;
-  onRetry?: () => void;
+  onRetry?: (options?: { preserveCurrent?: boolean }) => void;
 };
 
 function EmptyDetailPanel() {
