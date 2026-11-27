@@ -14,6 +14,33 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 27, 2026: f85bcfd deployed to local and hosted TEST
+
+Both TEST environments advanced from `39fe172` to version **0.3.0** at main
+commit **`f85bcfd1907b2e474127a66c55f838d01ae71900`**. The intervening changes
+updated deployment documentation. Both databases were already at the required
+schema. [Main CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/46032303826)
+
+- **Local TEST** validated its backup and reported healthy on the exact
+  revision. The served frontend matched the build, all **94 database table
+  fingerprints** matched before and after cutover, and settings were preserved.
+  Anonymous identity requests returned **HTTP 401**. Private recovery and
+  verification files are under `db/backups/20261127-local-test-f85bcfd/`.
+- **Hosted TEST** validated backups and reported healthy on the exact revision.
+  Verification covered **217 runtime files**, recorded **zero API restarts**
+  during verification, and confirmed account and media preservation.
+  [Hosted deployment record](hosted-test.md#november-27-2026-f85bcfd-deployment)
+
+### G-72 Overview and edit forms on f85bcfd
+
+In signed-in Chrome, both environments showed **one casket or up to three sets
+of ashes** and a **36-inch maximum flush-marker width** under **Overview →
+Approved exceptions** for Trinity's G-72. An authorized admin opened both forms
+using **Edit approved exceptions**. The fields showed **3** sets of ashes
+without a casket, **0** with a casket, and **36 inches** for marker width.
+Both forms cited the May 2025 signed plot deed and Council approval. The
+browser check left both forms unsaved.
+
 ## November 27, 2026: 4d1bee0 deployed to DEV
 
 The managed local DEV API and frontend advanced from `812f5af` to version
