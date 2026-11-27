@@ -204,6 +204,7 @@ export function toDetailedGrave(grave, graveOwners, graveBurials, graveHeadstone
   }
   const detailedGrave = {
     ...toGraveSummary(grave),
+    uuid: grave.uuid,
     approvedExceptions: grave.approved_exceptions ?? undefined,
     stackingAuthorizedOn: includeOwnership ? grave.stacking_authorized_on ?? undefined : undefined,
     stackingAuthorizationReference: includeOwnership ? grave.stacking_authorization_reference ?? undefined : undefined,
