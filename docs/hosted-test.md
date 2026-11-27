@@ -12,8 +12,8 @@ That repository merge did not redeploy the application. The
 [current release-status summary](release-status.md#november-24-2026-environment-consistency-and-managed-local-services)
 distinguishes merged source, runtime revision and documentation publication.
 
-Hosted TEST runs version **0.3.0** at **`f85bcfd`**, deployed November 27,
-2026. See the [current deployment record](#november-27-2026-f85bcfd-deployment).
+Hosted TEST runs version **0.3.0** at **`079eaa3`**, deployed November 27,
+2026. See the [current deployment record](#november-27-2026-079eaa3-deployment).
 The earlier [runtime and capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
 records database alignment, managed local runtimes and storage recovery.
 
@@ -102,6 +102,23 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 27, 2026: 079eaa3 deployment
+
+Hosted TEST advanced from `f85bcfd` to main commit
+**`079eaa3688aa619fc378e9b1d7da166c8ed9a75e`** (version **0.3.0**), built at
+**`2026-11-27T16:33:13Z`**. The deployer validated backups, confirmed that the
+schema was current, and verified a healthy `cemetery_mapping_test` database,
+**217 runtime files**, **zero API restarts** during verification, and account
+and media preservation.
+
+Signed-in Chrome showed G-72's approved burial and flush-marker limits on the
+Overview. An authorized admin opened both forms and verified the saved
+values and deed reference. The forms were left unsaved.
+[Combined TEST browser verification](release-status.md#g-72-overview-and-edit-forms-on-079eaa3)
+
+The private recovery set is `backups/20261127T163313Z-079eaa3688aa-66ed442b`
+under the hosted application root.
 
 ## November 27, 2026: f85bcfd deployment
 
