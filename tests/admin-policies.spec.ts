@@ -61,13 +61,14 @@ test('failed policy load stops loading and retry clears the error',async({page})
  await expect(admin).toContainText('Source: Example Cemetery');
 });
 
-test("a Trinity administrator can view and update one plot's approved exceptions", async ({ page }) => {
+test("a Trinity administrator can manage deeds and exceptions on a narrow screen", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   const { admin, data } = await setup(page);
   Object.assign(data.cemeteries[0], { facilityId: "1", name: "Trinity Lutheran Church Cemetery" });
   const approval = "Signed G-72 deed";
   const burial = { max_ashes_without_casket: 3, max_ashes_with_casket: 0, approval_reference: approval };
   const marker = { max_width_inches: 36, approval_reference: approval };
-  const deed = { id: section, filename: "G-72 signed deed.pdf" };
+  const deed = { id: section, filename: "G-72-Signed-Deed-and-Approved-Cemetery-Council-Exceptions-May-2025.pdf" };
   const pdf = Buffer.from("%PDF-1.7\n%%EOF\n");
   const deedUrl = `**/api/cemeteries/${cemeteryId}/grave-spaces/${block}/deeds`;
   await page.route(deedUrl, route => route.fulfill({ json: [] }));
@@ -103,7 +104,11 @@ test("a Trinity administrator can view and update one plot's approved exceptions
   await deeds.getByRole("button", { name: "Upload deed" }).click();
   await expect(deeds.getByRole("checkbox", { name: "Deed on file", exact: true })).toBeChecked();
   const download = page.waitForEvent("download");
-  await deeds.getByRole("button", { name: `Download ${deed.filename}` }).click();
+  const downloadButton = deeds.getByRole("button", { name: `Download ${deed.filename}` });
+  const deedBounds = await deeds.boundingBox();
+  const buttonBounds = await downloadButton.boundingBox();
+  expect(buttonBounds!.x + buttonBounds!.width).toBeLessThanOrEqual(deedBounds!.x + deedBounds!.width + 1);
+  await downloadButton.click();
   expect((await download).suggestedFilename()).toBe(deed.filename);
   await expect(width.getByLabel("Written approval reference")).toHaveValue(approval);
   await width.getByLabel("Maximum width (inches)").fill("37");
