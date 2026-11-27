@@ -18,8 +18,8 @@ test("current ownership resolves owners returned with the selected gravesite", (
 
 test("current ownership shows the date and both deed-file statuses without internal right notes", () => {
   assert.match(ownershipRecords, /Date: \{owner\.effectiveDate/u);
-  assert.match(ownershipRecords, /checked=\{owner\.deedOnFile/u);
+  assert.match(ownershipRecords, /checked=\{hasDeedDocument \|\| owner\.deedOnFile\}/u);
   assert.match(ownershipRecords, /checked=\{owner\.deedRegisterOnFile/u);
-  assert.match(ownershipRecords, /checked=\{form\.deedOnFile\}/u);
+  assert.match(ownershipRecords, /checked=\{hasDeedDocument \|\| form\.deedOnFile\}/u);
   assert.match(ownershipRecords, /checked=\{form\.deedRegisterOnFile\}/u);
 });
