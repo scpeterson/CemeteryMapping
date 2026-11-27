@@ -191,8 +191,8 @@ export function GraveDetailPanel({
             onShowPeople={() => { setActiveTab("people"); document.getElementById("grave-detail-tab-people")?.focus(); }}
             onShowMonuments={() => { setActiveTab("monuments"); document.getElementById("grave-detail-tab-monuments")?.focus(); }}
           />
-          {grave.uuid && grave.approvedExceptions && <Suspense fallback={null}>
-            <GraveExceptions key={grave.uuid} grave={grave} onSaved={() => onRetry?.({ preserveCurrent: true })} />
+          {grave.uuid && (grave.approvedExceptions || canViewOwnership) && <Suspense fallback={null}>
+            <GraveExceptions key={grave.uuid} grave={grave} canViewOwnership={canViewOwnership} onSaved={() => onRetry?.({ preserveCurrent: true })} />
           </Suspense>}
           </> : null}
 
@@ -210,7 +210,7 @@ export function GraveDetailPanel({
                     const isFirstOwnerForRight = owner?.ownershipEventRightId
                       ? grave.currentOwnerIds.findIndex((candidateId) => ownersById.get(candidateId)?.ownershipEventRightId === owner.ownershipEventRightId) === index
                       : false;
-                    return owner ? <OwnerRecord key={id} owner={owner} canUpdate={canUpdateGravesites} canRemove={canManageLotAssignment && isFirstOwnerForRight} onSave={onUpdateOwner} onRemove={onRemoveOwnershipConnection} /> : null;
+                    return owner ? <OwnerRecord key={id} owner={owner} hasDeedDocument={grave.hasDeedDocument} canUpdate={canUpdateGravesites} canRemove={canManageLotAssignment && isFirstOwnerForRight} onSave={onUpdateOwner} onRemove={onRemoveOwnershipConnection} /> : null;
                   })
                 ) : (
                   <p className="muted">No current ownership is recorded.</p>

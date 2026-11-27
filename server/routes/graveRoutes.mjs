@@ -1,3 +1,4 @@
+import { canUploadGravesiteDeed, hasGravesiteDeed } from "./gravesiteDeedRoutes.mjs";
 import { canManagePolicy } from "../locationPolicyAdministration.mjs";
 import {getOwnershipEditor} from "../ownershipEditing.mjs";
 import { validateExpectedVersion } from "../recordVersions.mjs";
@@ -67,7 +68,8 @@ export function registerGraveRoutes(app, context) {
         try {
           const cemeteryId = validateCemeteryId(request.params.cemeteryId);
           const id = validateGraveSpaceId(request.params.id);
-          const grave = await getGraveSpace(pool, cemeteryId, id, { includeOwnership: canViewOwnershipForCemetery(request.user, cemeteryId) });
+          const includeOwnership = canViewOwnershipForCemetery(request.user, cemeteryId);
+          const grave = await getGraveSpace(pool, cemeteryId, id, { includeOwnership });
           if (!grave) {
             response.status(404).json({ error: "Grave space not found" });
             return;
@@ -75,6 +77,8 @@ export function registerGraveRoutes(app, context) {
     
           response.json({
             ...grave,
+            hasDeedDocument: includeOwnership && grave.uuid ? await hasGravesiteDeed(pool, cemeteryId, grave.uuid) : undefined,
+            canUploadDeeds: canUploadGravesiteDeed(request.user, cemeteryId),
             canManageExceptions: Boolean(grave.approvedExceptions && request.user.id && canManagePolicy(request.user, { cemeteryId })),
           });
         } catch (error) {

@@ -145,11 +145,17 @@ for (const canManageExceptions of [false, true]) {
   test(`gravesite overview shows plot exceptions with admin editing ${canManageExceptions ? "enabled" : "hidden"}`, async ({ page }) => {
     await overviewFixture(page);
     const uuid = "55555555-5555-4555-8555-555555555555";
+    let hasDeedDocument = false;
     await page.route(gravePath("A-TEST"), route => route.fulfill({ json: {
-      ...overviewGrave("A-TEST"), uuid, canManageExceptions,
+      ...overviewGrave("A-TEST"), uuid, canManageExceptions, canUploadDeeds: canManageExceptions, hasDeedDocument,
       locationPolicies: { casket_or_two_urns: true },
       approvedExceptions: { burial: { ashesOnly: 3, ashesWithCasket: 0 }, markerWidth: 36 },
     } }));
+    await page.route(`**/api/cemeteries/${cemeteryId}/grave-spaces/${uuid}/deeds`, route => route.fulfill({ json: [] }));
+    await page.route(`**/api/cemeteries/${cemeteryId}/grave-spaces/${uuid}/deeds?*`, route => {
+      hasDeedDocument = true;
+      return route.fulfill({ status: 201, json: { id: uuid, filename: "Deed.pdf" } });
+    });
     const marker = { max_width_inches: 36, approval_reference: "Signed deed" };
     await page.route("**/api/admin/policies/gravesite-exceptions**", route => {
       if (route.request().method() === "GET") {
@@ -165,12 +171,18 @@ for (const canManageExceptions of [false, true]) {
     const exceptions = overview(page).getByRole("region", { name: "Approved exceptions", exact: true });
     await expect(exceptions).toContainText("Up to 3 sets of ashes");
     await expect(exceptions).toContainText("36 inches");
+    const deeds = overview(page).getByRole("region", { name: "Gravesite deeds" });
+    await expect(deeds).toContainText("No deed available");
     const edit = exceptions.getByRole("button", { name: "Edit approved exceptions" });
     if (!canManageExceptions) {
       await expect(edit).toHaveCount(0);
+      await expect(deeds.getByRole("button", { name: "Upload deed" })).toHaveCount(0);
       return;
     }
     await edit.click();
+    await expect(deeds.getByRole("button", { name: "Upload deed" })).toBeEnabled();
+    const burial = exceptions.getByRole("form", { name: "Burial capacity exception" });
+    await expect(burial.getByLabel("Written approval reference")).toHaveAttribute("placeholder", "No deed available");
     const form = exceptions.getByRole("form", { name: "Flush marker width exception" });
     await expect(form.getByLabel("Written approval reference")).toHaveValue("Signed deed");
     await form.getByLabel("Maximum width (inches)").fill("37");
@@ -178,5 +190,10 @@ for (const canManageExceptions of [false, true]) {
     await form.getByRole("button", { name: "Update marker width exception" }).click();
     await expect(exceptions.getByRole("status")).toHaveText("Approved exception saved.");
     await expect(exceptions).toContainText("37 inches");
+    await deeds.getByLabel("Deed PDF").setInputFiles({ name: "Deed.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\n%%EOF") });
+    await deeds.getByRole("button", { name: "Upload deed" }).click();
+    await expect(deeds.getByRole("checkbox", { name: "Deed on file", exact: true })).toBeChecked();
+    await page.getByRole("tab", { name: "People and ownership" }).click();
+    await expect(page.getByRole("checkbox", { name: "Deed on file", exact: true }).first()).toBeChecked();
   });
 }

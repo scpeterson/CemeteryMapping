@@ -186,6 +186,7 @@ export async function softDeleteMediaAsset(pool, mediaAssetId, { actorUser, reas
           deleted_at
         FROM media_assets
         WHERE id = $1
+          AND file_url NOT LIKE '/api/cemeteries/%/grave-spaces/%/deeds/%'
         LIMIT 1
       `,
       [mediaAssetId],

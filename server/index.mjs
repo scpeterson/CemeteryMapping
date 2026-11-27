@@ -94,6 +94,7 @@ import { registerLocationPolicyRoutes } from "./routes/locationPolicyRoutes.mjs"
 import { registerAdminRoutes } from "./routes/adminRoutes.mjs";
 import { registerCemeteryRoutes } from "./routes/cemeteryRoutes.mjs";
 import { registerMediaDownloadRoutes } from "./routes/mediaDownloadRoutes.mjs";
+import { registerGravesiteDeedRoutes } from "./routes/gravesiteDeedRoutes.mjs";
 import { registerMediaRoutes } from "./routes/mediaRoutes.mjs";
 import { canEditLot, canEditSection, validateHeadstoneBusinessRules } from "./routes/routeBusinessRules.mjs";
 import { assertCurrentSchema } from "./schemaContract.mjs";
@@ -142,6 +143,7 @@ export function createApp(config, pool) {
     moveMediaAssetLink, pool, requireReader, requireCemeteryAdmin, requirePowerUser, softDeleteMediaAsset, uploadRoot,
   });
 
+  registerGravesiteDeedRoutes(app, { express, pool, requireReader, requireCemeteryAdmin, uploadRoot });
   registerLocationPolicyRoutes(app, {pool,requireCemeteryAdmin});
   registerGravesiteExceptionRoutes(app, { pool, requireCemeteryAdmin });
   registerAdminRoutes(app, {

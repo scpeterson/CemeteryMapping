@@ -1,21 +1,27 @@
 import { useState, type FormEvent } from "react";
 import { findGravesiteExceptions, saveGravesiteException, type GravesiteExceptions } from "../../api/policyApi";
 
-export function ExceptionForm({ cemeteryId, plot, rule, onSaved }: {
+import GravesiteDeeds from "../detail/GravesiteDeeds";
+
+const noDeedReference = "No deed available";
+
+export function ExceptionForm({ cemeteryId, plot, rule, onSaved, noDeed }: {
   cemeteryId: string;
   plot: GravesiteExceptions;
   rule: "burial" | "marker";
+  noDeed?: boolean;
   onSaved: (plotId: string, patch: Partial<Pick<GravesiteExceptions, "marker" | "burial">>) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const saved = plot[rule];
+  const defaultApproval = !saved && noDeed ? noDeedReference : "";
   const title = rule === "burial" ? "Burial capacity exception" : "Flush marker width exception";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const common = { cemeteryId, graveId: plot.id, approval: String(form.get("approval") ?? "") };
+    const common = { cemeteryId, graveId: plot.id, approval: String(form.get("approval") ?? "").trim() || defaultApproval };
     setBusy(true);
     setError("");
     try {
@@ -54,9 +60,10 @@ export function ExceptionForm({ cemeteryId, plot, rule, onSaved }: {
           <input type="number" name="markerWidth" min="0" max="10000" step="any" required defaultValue={plot.marker?.max_width_inches ?? 28} />
         </label>}
         <label>Written approval reference
-          <input name="approval" required maxLength={500} defaultValue={saved?.approval_reference ?? ""} />
+          <input name="approval" required={!defaultApproval} maxLength={500} defaultValue={saved?.approval_reference ?? ""} placeholder={defaultApproval || undefined} />
         </label>
       </div>
+      {defaultApproval && <p>Use the written decision if one is available. An exception still requires approval.</p>}
       <button className="ui-button ui-button--primary" type="submit">{saved ? "Update" : "Add"} {rule === "burial" ? "burial exception" : "marker width exception"}</button>
     </fieldset>
     {error && <p role="alert">{error}</p>}
@@ -64,6 +71,7 @@ export function ExceptionForm({ cemeteryId, plot, rule, onSaved }: {
 }
 
 export function GravesiteExceptionsPanel({ cemeteryId }: { cemeteryId: string }) {
+  const [hasDeed, setHasDeed] = useState<boolean>();
   const [plot, setPlot] = useState<GravesiteExceptions>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -76,6 +84,7 @@ export function GravesiteExceptionsPanel({ cemeteryId }: { cemeteryId: string })
     setError("");
     setMessage("");
     setPlot(undefined);
+    setHasDeed(undefined);
     try {
       const matches = await findGravesiteExceptions(cemeteryId, query);
       if (matches.length === 1) setPlot(matches[0]);
@@ -103,8 +112,9 @@ export function GravesiteExceptionsPanel({ cemeteryId }: { cemeteryId: string })
     {message && <p role="status">{message}</p>}
     {plot && <>
       <h3>Approved exceptions for {plot.plotId}</h3>
-      <ExceptionForm key={`${plot.id}-burial`} cemeteryId={cemeteryId} plot={plot} rule="burial" onSaved={onSaved} />
-      <ExceptionForm key={`${plot.id}-marker`} cemeteryId={cemeteryId} plot={plot} rule="marker" onSaved={onSaved} />
+      <GravesiteDeeds key={plot.id} cemeteryId={cemeteryId} graveId={plot.id} canUpload onAvailability={setHasDeed} />
+      <ExceptionForm noDeed={hasDeed === false} key={`${plot.id}-burial`} cemeteryId={cemeteryId} plot={plot} rule="burial" onSaved={onSaved} />
+      <ExceptionForm noDeed={hasDeed === false} key={`${plot.id}-marker`} cemeteryId={cemeteryId} plot={plot} rule="marker" onSaved={onSaved} />
     </>}
   </details>;
 }

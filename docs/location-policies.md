@@ -40,6 +40,25 @@ markers against the proposed limits, and records the actor and before/after
 values. The application role has read access and saves through this operation.
 The Section F rule prohibiting active gravesites still applies.
 
+## Gravesite deeds
+
+Open a gravesite's **Overview** and use **Gravesite deeds** to upload a PDF
+(up to 25 MiB). Cemetery and system administrators can upload for cemeteries
+they administer. Users with ownership access can see and download the deeds
+for that cemetery. The deeds also appear alongside the exception forms in
+**Admin → Policies** under **Gravesite exceptions**.
+
+When an uploaded deed contains an exception, identify the deed and the relevant
+provision in that rule's **Written approval reference**. If the gravesite has no
+PDF, a new exception defaults to **No deed available** when the field is left
+blank. You can enter the deed's current status or cite a separate written
+approval. Record an exception only after it has been approved. Uploading a deed
+automatically checks **Deed on file** for that gravesite. Any existing limits
+and approval references are preserved.
+
+Deed PDFs use the private media upload store. Include that store and the
+database together in backups and restores.
+
 ## Policy resolution
 
 Migration 521 introduces a typed policy foundation. Policies resolve per rule in

@@ -2,9 +2,11 @@ import { useState } from "react";
 import { findGravesiteExceptions, type GravesiteExceptions } from "../../api/policyApi";
 import type { GraveSpace } from "../../types";
 import { ExceptionForm } from "../admin/GravesiteExceptions";
+import GravesiteDeeds from "./GravesiteDeeds";
 import "../admin/policies.css";
 
-export default function GraveExceptions({ grave, onSaved: refresh }: { grave: GraveSpace; onSaved: () => void }) {
+export default function GraveExceptions({ grave, canViewOwnership, onSaved: refresh }: { grave: GraveSpace; canViewOwnership: boolean; onSaved: () => void }) {
+  const [hasDeed, setHasDeed] = useState<boolean>();
   const [plot, setPlot] = useState<GravesiteExceptions>();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -36,21 +38,24 @@ export default function GraveExceptions({ grave, onSaved: refresh }: { grave: Gr
     refresh();
   }
 
-  if (!burial && width == null && !grave.canManageExceptions) return null;
-  return <section className="detail-section policies-admin" aria-label="Approved exceptions">
-    <h3>Approved exceptions</h3>
-    {burial && <p>Burial capacity: Up to {burial.ashesOnly} sets of ashes without a casket, or one casket with {burial.ashesWithCasket} sets of ashes.
-      {!grave.locationPolicies?.casket_or_two_urns && " Burial capacity enforcement is inactive for this plot."}</p>}
-    {width != null && <p>Maximum flush marker width: {width} inches.</p>}
-    {!burial && width == null && <p>No approved exceptions recorded.</p>}
-    {grave.canManageExceptions && !plot && <button type="button" disabled={loading} onClick={() => void openEditor()}>
-      {burial || width != null ? "Edit approved exceptions" : "Add approved exception"}
-    </button>}
-    {error && <p role="alert">{error}</p>}
-    {message && <p role="status">{message}</p>}
-    {grave.canManageExceptions && plot && <>
-      <ExceptionForm cemeteryId={grave.cemeteryId} plot={plot} rule="burial" onSaved={onSaved} />
-      <ExceptionForm cemeteryId={grave.cemeteryId} plot={plot} rule="marker" onSaved={onSaved} />
-    </>}
-  </section>;
+  return <>
+    {canViewOwnership && grave.uuid && <GravesiteDeeds cemeteryId={grave.cemeteryId} graveId={grave.uuid}
+      canUpload={Boolean(grave.canUploadDeeds)} onAvailability={setHasDeed} onUploaded={refresh} />}
+    {(burial || width != null || grave.canManageExceptions) && <section className="detail-section policies-admin" aria-label="Approved exceptions">
+      <h3>Approved exceptions</h3>
+      {burial && <p>Burial capacity: Up to {burial.ashesOnly} sets of ashes without a casket, or one casket with {burial.ashesWithCasket} sets of ashes.
+        {!grave.locationPolicies?.casket_or_two_urns && " Burial capacity enforcement is inactive for this plot."}</p>}
+      {width != null && <p>Maximum flush marker width: {width} inches.</p>}
+      {!burial && width == null && <p>No approved exceptions recorded.</p>}
+      {grave.canManageExceptions && !plot && <button type="button" disabled={loading} onClick={() => void openEditor()}>
+        {burial || width != null ? "Edit approved exceptions" : "Add approved exception"}
+      </button>}
+      {error && <p role="alert">{error}</p>}
+      {message && <p role="status">{message}</p>}
+      {grave.canManageExceptions && plot && <>
+        <ExceptionForm noDeed={hasDeed === false} cemeteryId={grave.cemeteryId} plot={plot} rule="burial" onSaved={onSaved} />
+        <ExceptionForm noDeed={hasDeed === false} cemeteryId={grave.cemeteryId} plot={plot} rule="marker" onSaved={onSaved} />
+      </>}
+    </section>}
+  </>;
 }

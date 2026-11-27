@@ -36,6 +36,8 @@ export type GraveSpace = GraveSpaceSummary & {
     markerWidth: number | null;
   };
   canManageExceptions?: boolean;
+  canUploadDeeds?: boolean;
+  hasDeedDocument?: boolean;
   uuid?: string;
   version: string;
   name: string;
