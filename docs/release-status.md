@@ -14,6 +14,23 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 27, 2026: 4d1bee0 deployed to DEV
+
+The managed local DEV API and frontend advanced from `812f5af` to version
+**0.3.0** at main commit **`4d1bee082599a1ce9688cc9e6c80dbe53ef27672`**. Both
+services restarted with build time **`2026-11-27T16:14:28.001Z`**. Runtime
+verification reported healthy DEV on the exact revision, and anonymous identity
+requests returned **HTTP 401**. The rollout required no database migration.
+
+In signed-in Chrome, G-72's **Overview → Approved exceptions** showed **one
+casket or up to three sets of ashes** and a **36-inch maximum flush-marker
+width**. The authorized admin opened both edit forms directly from the Overview
+and verified the prefilled limits of **3** sets of ashes without a casket,
+**0** with a casket, and **36 inches** for marker width. Both forms cited the
+May 2025 signed plot deed and Council approval. The browser check opened the
+editors without submitting updates.
+[Local and hosted TEST browser verification](#g-72-overview-and-admin-edit-verification)
+
 ## November 27, 2026: 39fe172 deployed to local and hosted TEST
 
 Both TEST environments advanced from `bec999b` to version **0.3.0** at main
