@@ -67,6 +67,17 @@ test("a Trinity administrator can view and update one plot's approved exceptions
   const approval = "Signed G-72 deed";
   const burial = { max_ashes_without_casket: 3, max_ashes_with_casket: 0, approval_reference: approval };
   const marker = { max_width_inches: 36, approval_reference: approval };
+  const deed = { id: section, filename: "G-72 signed deed.pdf" };
+  const pdf = Buffer.from("%PDF-1.7\n%%EOF\n");
+  const deedUrl = `**/api/cemeteries/${cemeteryId}/grave-spaces/${block}/deeds`;
+  await page.route(deedUrl, route => route.fulfill({ json: [] }));
+  await page.route(`${deedUrl}?*`, route => {
+    expect(route.request().method()).toBe("POST");
+    expect(new URL(route.request().url()).searchParams.get("filename")).toBe(deed.filename);
+    expect(route.request().postDataBuffer()).toEqual(pdf);
+    return route.fulfill({ status: 201, json: deed });
+  });
+  await page.route(`${deedUrl}/${deed.id}`, route => route.fulfill({ contentType: "application/pdf", body: pdf }));
   await page.route("**/api/admin/policies/gravesite-exceptions**", route => {
     if (route.request().method() === "GET") {
       expect(new URL(route.request().url()).searchParams.get("query")).toBe("G-72");
@@ -85,6 +96,16 @@ test("a Trinity administrator can view and update one plot's approved exceptions
   await expect(admin.getByLabel("Maximum sets of ashes without a casket")).toHaveValue("3");
   const width = admin.getByRole("form", { name: "Flush marker width exception" });
   await expect(width.getByLabel("Maximum width (inches)")).toHaveValue("36");
+  const deeds = admin.getByRole("region", { name: "Gravesite deeds" });
+  await expect(deeds).toContainText("No deed available");
+  await expect(width.getByLabel("Written approval reference")).toHaveValue(approval);
+  await deeds.getByLabel("Deed PDF").setInputFiles({ name: deed.filename, mimeType: "application/pdf", buffer: pdf });
+  await deeds.getByRole("button", { name: "Upload deed" }).click();
+  await expect(deeds.getByRole("checkbox", { name: "Deed on file", exact: true })).toBeChecked();
+  const download = page.waitForEvent("download");
+  await deeds.getByRole("button", { name: `Download ${deed.filename}` }).click();
+  expect((await download).suggestedFilename()).toBe(deed.filename);
+  await expect(width.getByLabel("Written approval reference")).toHaveValue(approval);
   await width.getByLabel("Maximum width (inches)").fill("37");
   await width.getByLabel("Written approval reference").fill("Updated written approval");
   await width.getByRole("button", { name: "Update marker width exception" }).click();

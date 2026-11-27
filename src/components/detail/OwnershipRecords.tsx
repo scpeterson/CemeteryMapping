@@ -290,7 +290,7 @@ export function OwnershipEventForm({ grave, cemeteryGraves, onSave, initial, onF
       </label>
       <div className="ownership-file-status-fields">
         <label className="ownership-checkbox-field">
-          <input type="checkbox" checked={form.deedOnFile} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />
+          <input type="checkbox" checked={grave.hasDeedDocument || form.deedOnFile} disabled={grave.hasDeedDocument} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />
           Deed on file
         </label>
         <label className="ownership-checkbox-field">
@@ -329,7 +329,7 @@ function ownerEditForm(owner:Owner):UpdateOwnerInput {
     deedOnFile:owner.deedOnFile,deedRegisterOnFile:owner.deedRegisterOnFile,reason:"Owner information update"};
 }
 
-export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: { owner: Owner; canUpdate: boolean; canRemove: boolean; onSave: (partyId: string, eventId: string, update: UpdateOwnerInput) => Promise<void>; onRemove: (rightId: string) => Promise<void> }) {
+export function OwnerRecord({ owner, hasDeedDocument, canUpdate, canRemove, onSave, onRemove }: { owner: Owner; hasDeedDocument?: boolean; canUpdate: boolean; canRemove: boolean; onSave: (partyId: string, eventId: string, update: UpdateOwnerInput) => Promise<void>; onRemove: (rightId: string) => Promise<void> }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirmingRemoval, setIsConfirmingRemoval] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -362,7 +362,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
       </div>
       {owner.contactNote ? <span>{owner.contactNote}</span> : null}
       <span>Date: {owner.effectiveDate || "Not recorded"}</span>
-      <label className="owner-deed-register-status"><input type="checkbox" checked={owner.deedOnFile} readOnly />Deed on file</label>
+      <label className="owner-deed-register-status"><input type="checkbox" checked={hasDeedDocument || owner.deedOnFile} readOnly />Deed on file</label>
       <label className="owner-deed-register-status"><input type="checkbox" checked={owner.deedRegisterOnFile} readOnly />Deed register on file</label>
       {isConfirmingRemoval ? (
         <div className="owner-remove-confirmation">
@@ -383,7 +383,7 @@ export function OwnerRecord({ owner, canUpdate, canRemove, onSave, onRemove }: {
       <label>ZIP<input value={form.zip} onChange={(event) => setForm((current) => ({ ...current, zip: event.target.value }))} /></label>
       <label>Effective date<input value={form.effectiveDate} placeholder="YYYY, YYYY-MM, or exact date" onChange={(event) => setForm((current) => ({ ...current, effectiveDate: event.target.value }))} /></label>
       <div className="ownership-file-status-fields ownership-wide-field">
-        <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedOnFile} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />Deed on file</label>
+        <label className="ownership-checkbox-field"><input type="checkbox" checked={hasDeedDocument || form.deedOnFile} disabled={hasDeedDocument} onChange={(event) => setForm((current) => ({ ...current, deedOnFile: event.target.checked }))} />Deed on file</label>
         <label className="ownership-checkbox-field"><input type="checkbox" checked={form.deedRegisterOnFile} onChange={(event) => setForm((current) => ({ ...current, deedRegisterOnFile: event.target.checked }))} />Deed register on file</label>
       </div>
       {conflict&&<ConflictRecovery disabled={isSaving} reload={async()=>{if(!owner.ownershipEventId)return;const latest=await fetchOwnerEdit(owner.id,owner.ownershipEventId);setForm({...latest,expectedVersion:latest.version,reason:"Owner information update"});setError(undefined);setConflict(false);}}/>}
