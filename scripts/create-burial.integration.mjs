@@ -159,5 +159,7 @@ test('Add burial honors an approved three-ashes exception only on the associated
   await f.c.query('RELEASE SAVEPOINT third_standard');
   assert.equal((await add('Third', true)).intermentType, 'urn');
   assert.equal((await getGraveSpace(f.pool, f.cemetery, 'A-ADD')).burials.length, 2);
-  assert.equal((await getGraveSpace(f.pool, f.cemetery, 'A-EXCEPTION')).burials.length, 3);
+  const approvedDetail = await getGraveSpace(f.pool, f.cemetery, 'A-EXCEPTION');
+  assert.equal(approvedDetail.uuid, approved.id);
+  assert.equal(approvedDetail.burials.length, 3);
 }));
