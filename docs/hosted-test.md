@@ -12,8 +12,8 @@ That repository merge did not redeploy the application. The
 [current release-status summary](release-status.md#november-24-2026-environment-consistency-and-managed-local-services)
 distinguishes merged source, runtime revision and documentation publication.
 
-Hosted TEST runs version **0.3.0** at **`8ea222b`**, deployed November 24,
-2026. See the [current deployment record](#november-24-2026-8ea222b-deployment).
+Hosted TEST runs version **0.3.0** at **`39fe172`**, deployed November 27,
+2026. See the [current deployment record](#november-27-2026-39fe172-deployment).
 The earlier [runtime and capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
 records database alignment, managed local runtimes and storage recovery.
 
@@ -102,6 +102,25 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 27, 2026: 39fe172 deployment
+
+Hosted TEST advanced from `bec999b` to main commit
+**`39fe17262f2b0dd30c4fc50f3f704271f15a1a37`** (version **0.3.0**), built at
+**`2026-11-27T16:06:48Z`**. The deployer validated backups and confirmed the
+schema was current before cutover. The origin reported the exact revision
+and a healthy `cemetery_mapping_test` database. Verification covered **217
+runtime files**, recorded **zero API restarts** during verification, and
+confirmed account and media preservation.
+
+Signed-in Chrome showed both G-72 deed exceptions on the gravesite Overview.
+An authorized admin opened both edit forms directly from the Overview and
+confirmed the saved values and written approval reference. The forms were
+left unsaved. [Combined TEST browser verification](release-status.md#g-72-overview-and-admin-edit-verification)
+
+The private recovery set is `backups/20261127T160648Z-39fe17262f2b-70c48505`
+under the hosted application root. The release report is in the corresponding
+staging directory.
 
 ## November 24, 2026: 8ea222b deployment
 

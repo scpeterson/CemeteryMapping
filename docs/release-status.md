@@ -14,6 +14,38 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 27, 2026: 39fe172 deployed to local and hosted TEST
+
+Both TEST environments advanced from `bec999b` to version **0.3.0** at main
+commit **`39fe17262f2b0dd30c4fc50f3f704271f15a1a37`**. The gravesite detail API
+now returns the UUID the Overview needs to display the approved exceptions and
+open the editor for the selected plot. The rollout required no database migration.
+[Overview UUID fix](https://github.com/scpeterson/CemeteryMapping/pull/922) ·
+[Main CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/46029994938)
+
+- **Local TEST** validated its pre-deployment backup and reported healthy on the
+  exact revision. The served frontend matched the build, all **94 database table
+  fingerprints** matched before and after cutover, and settings were preserved.
+  Anonymous identity requests returned **HTTP 401**. Private recovery and
+  verification files are under `db/backups/20261127-local-test-39fe172/`.
+- **Hosted TEST** validated backups and reported healthy on the exact revision.
+  Verification covered **217 runtime files**, recorded **zero API restarts**
+  during verification, and confirmed account and media preservation.
+  [Hosted deployment record](hosted-test.md#november-27-2026-39fe172-deployment)
+
+### G-72 Overview and admin edit verification
+
+In signed-in Chrome on both TEST environments, searching for **G-72** opened
+Trinity's **G-072** gravesite. Under **Overview → Approved exceptions**, both
+environments showed **one casket or up to three sets of ashes** and a **36-inch
+maximum flush-marker width**.
+
+The authorized admin selected **Edit approved exceptions** directly on the
+Overview. Both forms opened with editable fields showing **3** sets of ashes
+without a casket, **0** with a casket, and **36 inches** maximum width. Both
+forms displayed the May 2025 signed plot deed and Council approval reference.
+The browser check opened the editors without submitting updates.
+
 ## November 24, 2026: 8ea222b deployed to local and hosted TEST
 
 Local and hosted TEST advanced from `ee464fa` to version **0.3.0** at main
