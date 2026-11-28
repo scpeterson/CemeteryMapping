@@ -14,6 +14,43 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 27, 2026: d85e36f deployed to local and hosted TEST
+
+Both TEST environments advanced from `079eaa3` to version **0.3.0** at main
+commit **`d85e36f54cf21cac9c189f9578d999edc5d22f64`**. This release includes
+private PDF deeds, automatic deed status, and consistent styling for the
+deed and exception controls. [Main CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/46053358412)
+
+- **Local TEST** validated its database backup and reported healthy on the exact
+  revision, built at **`2026-11-27T19:23:43.551Z`**. Anonymous identity requests
+  returned **HTTP 401**. The private recovery set is under
+  `db/backups/20261127-local-test-d85e36f/`.
+- **Hosted TEST** validated its backups and reported healthy on the exact
+  revision. Verification covered **219 runtime files**, recorded **zero API
+  restarts** during verification, and confirmed account and media preservation.
+  [Hosted deployment record](hosted-test.md#november-27-2026-d85e36f-deployment)
+
+### G-72 deed and exception verification on d85e36f
+
+On November 28, signed-in Chrome verification passed in both TEST environments.
+An administrator uploaded a 612-byte synthetic PDF from Trinity G-72's
+**Overview → Gravesite deeds**, then downloaded it using the displayed control.
+Each downloaded file matched the source byte for byte. **Deed on file** checked
+automatically in **Overview** and **People and ownership**. The synthetic
+attachments were soft-deleted after verification, restoring the prior status.
+
+**Edit approved exceptions** opened both forms. The burial form showed **3**
+sets of ashes without a casket and **0** with one casket. The marker form showed
+a **36-inch maximum flush-marker width**. Both cited the May 2025 signed plot
+deed and Council approval. The forms were left unsaved.
+
+Local TEST initially reused the hosted TEST Auth0 email/password identity, and
+its API denied identity and records requests. Signing out at
+`http://127.0.0.1:5174/` and explicitly selecting **Continue with Google**
+restored access with the existing linked Google identity. The two sign-in
+methods have different Auth0 subjects. Hosted TEST continued to use its linked
+email/password identity. Account mappings and permissions were preserved.
+
 ## November 27, 2026: 079eaa3 deployed to local and hosted TEST
 
 Both TEST environments advanced from `f85bcfd` to version **0.3.0** at main
