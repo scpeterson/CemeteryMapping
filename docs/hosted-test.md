@@ -12,8 +12,8 @@ That repository merge did not redeploy the application. The
 [current release-status summary](release-status.md#november-24-2026-environment-consistency-and-managed-local-services)
 distinguishes merged source, runtime revision and documentation publication.
 
-Hosted TEST runs version **0.3.0** at **`d85e36f`**, deployed November 27,
-2026. See the [current deployment record](#november-27-2026-d85e36f-deployment).
+Hosted TEST runs version **0.3.0** at **`d60ff76`**, deployed November 28,
+2026. See the [current deployment record](#november-28-2026-d60ff76-deployment).
 The earlier [runtime and capacity verification](#november-24-2026-runtime-consistency-and-hosted-capacity)
 records database alignment, managed local runtimes and storage recovery.
 
@@ -102,6 +102,23 @@ the current release. TEST's application release was unchanged.
 The latest edge-security change is the
 [November 9 Cloudflare burst protection](#november-9-2026-cloudflare-burst-protection)
 for the public access-request API.
+
+## November 28, 2026: d60ff76 deployment
+
+Hosted TEST advanced from `d85e36f` to main commit
+**`d60ff76bc0bdae288fc9297f58cb62cae6d58428`** (version **0.3.0**), built at
+**`2026-11-28T14:31:52Z`**. The deployer validated database, settings, and
+media backups and reported a healthy `cemetery_mapping_test` database,
+**219 verified runtime files**, **zero API restarts** during verification,
+and account and media preservation. The schema was already current.
+
+Signed-in Chrome verified G-72's PDF upload and byte-for-byte download,
+automatic **Deed on file** status in both views, and the saved values in both
+exception forms. The synthetic attachment was soft-deleted after verification.
+[Combined TEST browser verification](release-status.md#g-72-deed-and-exception-verification-on-d60ff76)
+
+The private recovery set is `backups/20261128T143152Z-d60ff76bc0bd-ac343e67`
+on the hosted TEST server.
 
 ## November 27, 2026: d85e36f deployment
 

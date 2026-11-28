@@ -14,6 +14,39 @@ and is deployed in the v0.3.0-based main revision recorded below. Publication an
 exact-tag deployment follow [the release policy](adr/0016-versioned-releases.md#november-9-2026-current-release-policy);
 a package bump alone does not establish deployment.
 
+## November 28, 2026: d60ff76 deployed to local and hosted TEST
+
+Both TEST environments advanced from `d85e36f` to version **0.3.0** at main
+commit **`d60ff76bc0bdae288fc9297f58cb62cae6d58428`**. The intervening change
+updated deployment documentation. [Main CI run](https://github.com/scpeterson/CemeteryMapping/actions/runs/46154591450)
+
+- **Local TEST** validated its database backup and reported healthy on the exact
+  revision, built at **`2026-11-28T14:31:56.873Z`**. Anonymous identity requests
+  returned **HTTP 401**. The private recovery set is under
+  `db/backups/20261128-local-test-d60ff76/`.
+- **Hosted TEST** validated its backups and reported healthy on the exact revision.
+  Verification covered **219 runtime files**, recorded **zero API restarts**
+  during verification, and confirmed account and media preservation.
+  [Hosted deployment record](hosted-test.md#november-28-2026-d60ff76-deployment)
+
+### G-72 deed and exception verification on d60ff76
+
+In signed-in Chrome on each TEST environment, an administrator uploaded and
+downloaded a 612-byte synthetic PDF from Trinity G-72's **Overview → Gravesite
+deeds**. Both downloads matched the source byte for byte. **Deed on file**
+checked automatically in **Overview** and **People and ownership**. The
+synthetic attachments were soft-deleted, restoring the prior attachment status.
+
+**Edit approved exceptions** opened both forms in each environment. The burial
+form showed **3** sets of ashes without a casket and **0** with one casket. The
+marker form showed a **36-inch maximum flush-marker width**. Both cited the May
+2025 signed plot deed and Council approval. The forms were left unsaved.
+
+Local TEST used its linked Google identity. The hosted browser initially
+reused that identity after reload and the hosted API denied it. Signing in
+with the approved hosted email/password account restored access for the
+browser check.
+
 ## November 27, 2026: d85e36f deployed to local and hosted TEST
 
 Both TEST environments advanced from `079eaa3` to version **0.3.0** at main
